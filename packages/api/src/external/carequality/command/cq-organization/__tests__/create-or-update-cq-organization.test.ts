@@ -48,7 +48,7 @@ beforeEach(() => {
     cwOboOid: faker.string.uuid(),
   });
   getAddressWithCoordination = jest.spyOn(getAddress, "getAddressWithCoordinates");
-  makeCarequalityManagementAPIMock = jest.spyOn(apiFhirFile, "makeCarequalityManagementAPIOrFail");
+  makeCarequalityManagementAPIMock = jest.spyOn(apiFhirFile, "makeCarequalityManagementApiOrFail");
 });
 
 afterEach(() => {

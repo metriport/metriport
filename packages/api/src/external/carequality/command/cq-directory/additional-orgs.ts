@@ -9,14 +9,14 @@ import { getCqOrgUrls } from "../../shared";
  */
 export function getAdditionalOrgs(): CQDirectoryEntryData2[] {
   if (Config.isStaging() || Config.isDev()) {
-    const partnerOrgs = getStagingPartnerOrgs();
+    const partnerOrgs = getTestingPartnerOrgs();
     const metriportOrg = getMetriportOrg();
     return [...partnerOrgs, metriportOrg];
   }
   return [];
 }
 
-function getStagingPartnerOrgs(): CQDirectoryEntryData2[] {
+function getTestingPartnerOrgs(): CQDirectoryEntryData2[] {
   const additionalOrgsParam = Config.getCqAdditionalOrgs();
   if (!additionalOrgsParam) return [];
   const additionalOrgs = JSON.parse(additionalOrgsParam) as CqDirectorySimplifiedOrg[];

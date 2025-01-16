@@ -11,7 +11,7 @@ import { partition } from "lodash";
 import { QueryTypes } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { Config } from "../../../../shared/config";
-import { makeCarequalityManagementAPIOrFail } from "../../api";
+import { makeCarequalityManagementApiOrFail } from "../../api";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
@@ -51,7 +51,8 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   let currentPosition = 0;
   let isDone = false;
   const startedAt = Date.now();
-  const cq = makeCarequalityManagementAPIOrFail();
+  const cq = makeCarequalityManagementApiOrFail();
+  let parsedOrgsCount = 0;
   const parsingErrors: Error[] = [];
   try {
     await createTempCQDirectoryTable();
@@ -65,10 +66,9 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           count: BATCH_SIZE,
           active: true,
         });
-        // If CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         if (orgs.length < BATCH_SIZE) isDone = true;
         currentPosition = maxPosition;
-        await cache.populate(orgs);
+        cache.populate(orgs);
         const parsedOrgs: CQDirectoryEntryData2[] = [];
         await executeAsynchronously(
           orgs,
@@ -82,7 +82,8 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           },
           { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }
         );
-        const orgsToInsert = filterAndNormalizeExternalOrgs(parsedOrgs);
+        parsedOrgsCount += parsedOrgs.length;
+        const orgsToInsert = normalizeExternalOrgs(parsedOrgs);
         log(`Adding ${orgsToInsert.length} CQ directory entries...`);
         await bulkInsertCqDirectoryEntries(sequelize, orgsToInsert, cqDirectoryEntryTemp);
         if (!isDone) await sleep(SLEEP_TIME.asMilliseconds());
@@ -102,7 +103,8 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
       capture.message(msg, {
         extra: {
           context: `rebuildCQDirectory`,
-          amountOfErrors: parsingErrors.length,
+          amountParsed: parsedOrgsCount,
+          amountError: parsingErrors.length,
           errors,
         },
       });
@@ -165,9 +167,7 @@ async function updateViewDefinition(): Promise<void> {
  * and very likely won't have any patient that matches our test's demographics, so we might
  * as well keep them inactive to minimize cost/scale issues on pre-prod envs.
  */
-function filterAndNormalizeExternalOrgs(
-  parsedOrgs: CQDirectoryEntryData2[]
-): CQDirectoryEntryData2[] {
+function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData2[]): CQDirectoryEntryData2[] {
   if (Config.isStaging() || Config.isDev()) {
     return parsedOrgs.map(org => ({
       ...org,

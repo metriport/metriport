@@ -134,7 +134,7 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     const url = `${CarequalityManagementApiFhir.ORG_ENDPOINT}/${oid}?${query.toString()}`;
     try {
       const resp = await this.sendGetRequest(url);
-      if (!resp.data || !resp.data.id) return undefined;
+      if (!resp.data) return undefined;
       return resp.data as OrganizationWithId;
     } catch (error) {
       if (error instanceof AxiosError && this.isNotFoundError(error)) return undefined;

@@ -86,8 +86,8 @@ async function getRootForOrg(
 
   const parentOrg = await cache.getCqOrg(parentOrgOid);
   if (!parentOrg) {
-    log(`No Org found for parent OID ${parentOrgOid}, returning its own name`);
-    return org.name;
+    log(`No Org found for parent OID ${parentOrgOid}, returning the OID`);
+    return parentOrgOid;
   }
   return getRootForOrg(parentOrg, cache, log);
 }
