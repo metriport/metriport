@@ -70,7 +70,12 @@ export function getCqOrgUrls(): CQOrgUrls {
   return urls;
 }
 
-/** Implementer is Metriport, all other Orgs/Facilities we manage are Connection */
+/**
+ * Carequality Organization type.
+ * - Implementer is the Org that manages the Connections (e.g., Metriport).
+ * - Connection is the Org that provides care and/or services to other Connections.
+ * @see https://sequoiaproject.org/SequoiaProjectHealthcareDirectoryImplementationGuide/output/ValueSet-OrganizationType.html
+ */
 export type CqOrgType = "Connection" | "Implementer";
 
 export type CQOrgDetails = {

@@ -4,11 +4,14 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else.
 import { faker } from "@faker-js/faker";
+import { APIMode, CarequalityManagementApi } from "@metriport/carequality-sdk";
+import { OrganizationWithId } from "@metriport/carequality-sdk/client/carequality";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
 import { cloneDeep } from "lodash";
-import { APIMode, CarequalityManagementApi, OrganizationWithId } from "../carequality";
+import { metriportOid } from "../constants";
+import { getOrganizationFhirTemplate } from "../organization-template";
 import { CarequalityManagementApiFhirMock } from "./carequality-fhir-mock";
-import { getOrganizationFhirTemplate } from "./organization-template";
-import { getApiMode, getEnvVar, getEnvVarOrFail } from "./shared";
+import { getApiMode } from "./shared";
 
 jest.setTimeout(80_000);
 
@@ -31,7 +34,7 @@ describe("CarequalityManagementApiFhir", () => {
     it.skip("skipping tests", () => {});
     return;
   }
-  const managementOid = getEnvVarOrFail("CQ_MANAGEMENT_ORG_OID");
+  const managementOid = metriportOid;
 
   let oid: string | undefined = undefined;
   function getOid(): string {

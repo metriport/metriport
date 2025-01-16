@@ -1,4 +1,5 @@
-import { Endpoint, Organization } from "@medplum/fhirtypes";
+import { Endpoint } from "@medplum/fhirtypes";
+import { OrganizationWithId } from "@metriport/carequality-sdk/client/carequality";
 import {
   ChannelUrl,
   XCA_DQ_STRING,
@@ -10,8 +11,6 @@ import { metriportOid } from "./constants";
 
 export const transactionUrl =
   "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Transaction";
-
-export type OrganizationWithId = Organization & Required<Pick<Organization, "id">>;
 
 export function getOrganizationFhirTemplate(orgDetails: CQOrgDetailsWithUrls): OrganizationWithId {
   const { oid, role, urlXCPD, urlDQ, urlDR } = orgDetails;
