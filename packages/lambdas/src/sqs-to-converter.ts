@@ -182,7 +182,9 @@ export async function handler(event: SQSEvent) {
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
         if (payloadRaw.includes("nonXMLBody")) {
-          log(`XML document is unstructured CDA with nonXMLBody, skipping...`);
+          log(
+            `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
+          );
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
@@ -209,7 +211,7 @@ export async function handler(event: SQSEvent) {
         };
 
         if (!payloadClean.trim().length) {
-          log("XML document is empty, skipping...");
+          log(`XML document is empty, skipping... Filename: ${s3FileName}`);
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
