@@ -130,7 +130,7 @@ function extractName(names: HumanName[] | undefined): string | undefined {
   for (const name of names) {
     const first = name.given?.map(name => name.trim()).join(" ");
     const last = name.family?.trim();
-    const text = name.text?.trim();
+    const text = name.text?.toString().trim();
 
     if (first && last) return toTitleCase(`${first} ${last}`);
     if (text) return toTitleCase(text);
