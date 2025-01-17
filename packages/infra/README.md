@@ -40,7 +40,11 @@ The `cdk.json` file tells the CDK Toolkit how to execute the app.
 4. **Extract Certificates**
 
    - There will be several different Intermediate Certs inside the file.
-   - _First_, identify the cert that corresponds to the intermediate cert that `<your_domain_name>.pem` points to. You can check this by pasting the cert into [SSL Checker](https://tools.keycdn.com/ssl). Choose the correct cert and store it in `intermediate_cert.pem`. The format should look like this:
+
+   - _First_, identify the cert that corresponds to the issuer of `<your_domain_name>.pem`. You can
+     find the issuer by pasting your pem/cert into DevUtils and getting the CN (Common Name) of the
+     issuer. Then, find the cert in the file from the previous step (SubCA2.pem) that has the same CN
+     and store it in `intermediate_cert.pem`. The format should look like this:
 
      ```
      -----BEGIN CERTIFICATE-----
@@ -48,9 +52,18 @@ The `cdk.json` file tells the CDK Toolkit how to execute the app.
      -----END CERTIFICATE-----
      ```
 
-   - _Second_, examine the intermediate cert you chose and note the issuer listed for it. Then select that cert and store it into `root_cert.pem`.
+   - _Second_, examine the intermediate cert you chose and note the issuer listed for it. Then select
+     the cert with that value on the subject and store it into `root_cert.pem`.
 
 5. **Validate Issued Certificate**
+
+   5.1 With `openssl`
+
+   ```
+   openssl verify -CAfile root_cert.pem -untrusted intermediate_cert.pem <your_domain_name>.pem
+   ```
+
+   5.2 With SSL Checker
 
    - Concatenate your certs and validate that it is good by copy and pasting it into [SSL Checker](https://tools.keycdn.com/ssl):
      ```
@@ -77,17 +90,21 @@ The `cdk.json` file tells the CDK Toolkit how to execute the app.
      -----END CERTIFICATE-----
      ```
 
-   - _Alternatively_, you can verify your certs by concatenating your cert and the intermediate cert into `chained_no_root.pe`m:
+   - You should get a "No chain issues detected" message on the SSL Checker.
+
+     5.3 With local server
+
+   - Concatenate your cert and the intermediate cert into `chained_no_root.pem`:
      ```
      cat <your_domain_name>.pem intermediate_cert.pem > chained_no_root.pem
      ```
-   - Fill in the your path to `privateKey` and `certificateChain` in `test/run-cert.ts` and then run:
+   - Fill in the your path to `privateKey` and `certificateChain` in `packages/utils/src/carequality/cq-cert-checker.ts` and then run:
      ```
-     npm run run-cert
+     ts-node src/carequality/cq-cert-checker.ts
      ```
    - Then, use OpenSSL to connect to your server:
      ```
-     openssl s_client -connect localhost:3000 -servername localhost --CAfile root_cert.pem
+     openssl s_client -connect localhost:3000 -servername localhost --CAfile root_cert.pem | grep 'Verify return code'
      ```
    - If you see `Verify return code: 0 (ok)``, then you know the cert is valid.
 

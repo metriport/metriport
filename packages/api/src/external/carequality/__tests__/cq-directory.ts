@@ -1,7 +1,7 @@
-import { CQDirectoryEntry } from "../cq-directory";
-import { makeBaseDomain } from "../../../domain/__tests__/base-domain";
 import { faker } from "@faker-js/faker";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { makeBaseDomain } from "../../../domain/__tests__/base-domain";
+import { CQDirectoryEntry } from "../cq-directory";
 
 // TODO implement this
 export function makeOrganization(): Organization | undefined {

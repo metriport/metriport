@@ -1,22 +1,27 @@
+import { Organization } from "@medplum/fhirtypes";
+import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
-import { sleep } from "@metriport/core/util/sleep";
+import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { addUpdatedAtTrigger } from "../../../../sequelize/migrations-shared";
 import { Config } from "../../../../shared/config";
-import { capture } from "../../../../shared/notifications";
 import { makeCarequalityManagementAPI } from "../../api";
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
+import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
-import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
-import { cqDirectoryEntry, cqDirectoryEntryBackup, cqDirectoryEntryTemp } from "./shared";
 
 dayjs.extend(duration);
 const BATCH_SIZE = 1000;
+const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
+const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
+const cqDirectoryEntry = `cq_directory_entry_new`;
+const cqDirectoryEntryBackup = `cq_directory_entry_backup`;
 
 const dbCreds = Config.getDBCreds();
 const sequelize = initDbPool(dbCreds, {
@@ -40,7 +45,15 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
-        const parsedOrgs = parseCQDirectoryEntries(orgs);
+        const parsedOrgs: CQDirectoryEntryData2[] = [];
+        await executeAsynchronously(
+          orgs,
+          async (org: Organization) => {
+            const parsed = await parseCQOrganization(org);
+            if (parsed) parsedOrgs.push(parsed);
+          },
+          { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }
+        );
         log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );
@@ -56,10 +69,9 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   } catch (error) {
     await deleteTempCQDirectoryTable();
     const msg = `Failed to rebuild the directory`;
-    log(`${msg}, error: ${error}`);
-    capture.message(msg, {
+    log(`${msg}, Cause: ${errorToString(error)}`);
+    capture.error(msg, {
       extra: { context: `rebuildCQDirectory`, error },
-      level: "error",
     });
     throw error;
   }
@@ -69,10 +81,9 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     await deleteTempCQDirectoryTable();
-    log(`${msg}. Cause: ${error}`);
-    capture.message(msg, {
+    log(`${msg}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
       extra: { context: `renameCQDirectoryTablesAndUpdateIndexes`, error },
-      level: "error",
     });
     throw error;
   }
@@ -94,7 +105,7 @@ async function deleteTempCQDirectoryTable(): Promise<void> {
 }
 
 async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
-  await executeOnDBTx(CQDirectoryEntryModel.prototype, async transaction => {
+  await executeOnDBTx(CQDirectoryEntryViewModel.prototype, async transaction => {
     const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
     await sequelize.query(dropBackupQuery, {
       type: QueryTypes.DELETE,
