@@ -1,14 +1,13 @@
-import { errorToString } from "@metriport/core/util/error/shared";
-import { capture } from "@metriport/core/util/notifications";
-import { out } from "@metriport/core/util/log";
 import { DocumentQueryProgress, ProgressType } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
-import { processPatientDocumentRequest } from "./document-webhook";
-import { MAPIWebhookStatus } from "./document-webhook";
-import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
-import { getDocumentsFromFHIR } from "../../../external/fhir/document/get-documents";
-import { toDTO, DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
+import { errorToString } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { DocumentReferenceDTO, toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
+import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
+import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 const { log } = out(`Doc Query Webhook`);
 const isSandbox = Config.isSandbox();
@@ -117,7 +116,11 @@ export const composeDocRefPayload = async (
 ): Promise<DocumentReferenceDTO[]> => {
   const docRefs = await getAllDocRefMapping({ requestId });
   const docRefsIds = docRefs.map(docRef => docRef.id);
-  const documents = await getDocumentsFromFHIR({ patientId, cxId, documentIds: docRefsIds });
+
+  // We only want to call getDocuments if docRefsIds is a non-empty array.
+  // Otherwise, it would return all DocumentReferences, and not just the ones we're interested in
+  const documents =
+    docRefsIds.length > 0 ? await getDocuments({ patientId, cxId, documentIds: docRefsIds }) : [];
 
   return toDTO(documents);
 };

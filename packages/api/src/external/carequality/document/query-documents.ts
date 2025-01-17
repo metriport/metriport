@@ -21,6 +21,7 @@ import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const staleLookbackHours = 24;
 
@@ -72,7 +73,8 @@ export async function getDocumentsFromCQ({
       }),
     ]);
 
-    const patientCQData = getCQData(patient.data.externalData);
+    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
+    const patientCQData = getCQData(currentPatient.data.externalData);
     const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
     const isProcessing = patientCQData?.discoveryStatus === "processing";
     const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);

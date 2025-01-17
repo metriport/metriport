@@ -66,6 +66,7 @@ import {
   getFileName,
 } from "./shared";
 import { validateCWEnabled } from "../shared";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const staleLookbackHours = 24;
 
@@ -150,7 +151,8 @@ export async function queryAndProcessDocuments({
       }),
     ]);
 
-    const patientCWData = getCWData(patientParam.data.externalData);
+    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
+    const patientCWData = getCWData(currentPatient.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
     const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);

@@ -16,7 +16,7 @@ import {
   AthenaClientJwtTokenData,
   AthenaClientJwtTokenInfo,
 } from "@metriport/shared/interface/external/athenahealth/jwt-token";
-import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
@@ -27,7 +27,7 @@ const region = Config.getAWSRegion();
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createMetriportContacts(patient: PatientResource): Contact[] {
+export function createMetriportContacts(patient: PatientResourceWithHomeAddress): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       return {
@@ -42,7 +42,7 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
   });
 }
 
-export function createMetriportAddresses(patient: PatientResource): Address[] {
+export function createMetriportAddresses(patient: PatientResourceWithHomeAddress): Address[] {
   return patient.address.map(address => {
     if (address.line.length === 0) {
       throw new Error("AthenaHealth patient missing at least one line in address");
@@ -58,7 +58,9 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
   });
 }
 
-export function createNames(patient: PatientResource): { firstName: string; lastName: string }[] {
+export function createNames(
+  patient: PatientResourceWithHomeAddress
+): { firstName: string; lastName: string }[] {
   const names: { firstName: string; lastName: string }[] = [];
   patient.name.map(name => {
     const lastName = name.family.trim();
