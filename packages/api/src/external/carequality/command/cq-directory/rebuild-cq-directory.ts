@@ -1,13 +1,10 @@
 import { Organization } from "@medplum/fhirtypes";
-import { getEndpoints } from "@metriport/core/external/fhir/organization/endpoint";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import stringify from "json-stringify-safe";
-import { partition } from "lodash";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementApiOrFail } from "../../api";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
@@ -19,9 +16,7 @@ import {
   createTempCqDirectoryTable,
   deleteCqDirectoryEntries,
   deleteTempCqDirectoryTable,
-  getCqDirectoryEntries,
   insertCqDirectoryEntries,
-  setCqDirectoryEntryActive,
   updateCqDirectoryViewDefinition,
 } from "./rebuild-cq-directory-raw-sql";
 
@@ -150,23 +145,13 @@ async function processAdditionalOrgs(): Promise<void> {
   try {
     const additionalOrgs = getAdditionalOrgs();
     if (additionalOrgs.length < 1) return;
-
     const additionalOrgIds = additionalOrgs.map(o => o.id);
-    const existingEntries = await getCqDirectoryEntries(
-      sequelize,
-      additionalOrgIds,
-      cqDirectoryEntryTemp
-    );
 
-    const [orgsToUpdate, orgsToCreate] = partition(additionalOrgs, a =>
-      existingEntries.some(e => e.id === a.id)
-    );
+    log(`Removing external CQ entries for ${additionalOrgs.length} additional Orgs...`);
+    await deleteCqDirectoryEntries(sequelize, additionalOrgIds, cqDirectoryEntryTemp);
 
-    log(`Inserting/updating ${additionalOrgs.length} additional Orgs...`);
-    await Promise.all([
-      insertCqDirectoryEntries(sequelize, orgsToCreate, cqDirectoryEntryTemp),
-      ...orgsToUpdate.map(org => updateAdditionalEntry(org, cqDirectoryEntryTemp)),
-    ]);
+    log(`Inserting static CQ entries for ${additionalOrgs.length} additional Orgs...`);
+    await insertCqDirectoryEntries(sequelize, additionalOrgs, cqDirectoryEntryTemp);
   } catch (error) {
     const msg = `Failed to process additional orgs`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -174,43 +159,4 @@ async function processAdditionalOrgs(): Promise<void> {
       extra: { context, error },
     });
   }
-}
-
-async function updateAdditionalEntry(
-  additionalOrg: CQDirectoryEntryData2,
-  tableName: string
-): Promise<void> {
-  const context = "updateAdditionalEntry";
-  const { log } = out(context);
-
-  const entries = await getCqDirectoryEntries(sequelize, [additionalOrg.id], tableName);
-  if (!entries || entries.length < 1) return;
-  if (entries.length > 1) {
-    const msg = `Found multiple entries for additional org`;
-    log(`${msg} ID ${additionalOrg.id}`);
-    capture.error(msg, {
-      extra: {
-        context,
-        additionalOrgId: additionalOrg.id,
-        entries: stringify(entries),
-      },
-    });
-  }
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const entry = entries[0]!;
-  const endpoints = entry.data ? getEndpoints(entry.data) : [];
-
-  if (endpoints.length > 0) {
-    log(
-      `${additionalOrg.id} already has endpoints, setting active to true and skipping from config`
-    );
-    await setCqDirectoryEntryActive(sequelize, additionalOrg.id, tableName, true);
-    return;
-  }
-
-  log(
-    `${additionalOrg.id} does not have endpoints, removing existing and adding new one from config`
-  );
-  await deleteCqDirectoryEntries(sequelize, [additionalOrg.id], tableName);
-  await insertCqDirectoryEntries(sequelize, [additionalOrg], tableName);
 }

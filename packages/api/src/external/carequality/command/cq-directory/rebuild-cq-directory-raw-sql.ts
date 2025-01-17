@@ -87,28 +87,6 @@ function createKeys(): string {
   return Object.values(allKeys).join(", ");
 }
 
-export async function getCqDirectoryEntries(
-  sequelize: Sequelize,
-  ids: string[],
-  tableName: string
-): Promise<CQDirectoryEntryViewModel[]> {
-  const query = `SELECT * FROM ${tableName} WHERE id in ('${ids.join(`','`)}');`;
-  const result = await sequelize.query<CQDirectoryEntryViewModel>(query, {
-    type: QueryTypes.SELECT,
-  });
-  return result;
-}
-
-export async function setCqDirectoryEntryActive(
-  sequelize: Sequelize,
-  id: string,
-  tableName: string,
-  active = true
-): Promise<void> {
-  const query = `UPDATE ${tableName} SET active = ${active} WHERE id = '${id}';`;
-  await sequelize.query(query, { type: QueryTypes.UPDATE });
-}
-
 export async function deleteCqDirectoryEntries(
   sequelize: Sequelize,
   ids: string[],
