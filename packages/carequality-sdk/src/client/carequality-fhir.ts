@@ -15,7 +15,7 @@ dayjs.extend(duration);
 const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds");
 const DEFAULT_MAXIMUM_BACKOFF = dayjs.duration(30, "seconds");
 const BASE_DELAY = dayjs.duration(1, "seconds");
-const MAX_COUNT = 1000;
+const MAX_COUNT = 5_000;
 const DEFAULT_MAX_RETRIES = 3;
 const JSON_FORMAT = "json";
 
@@ -134,7 +134,7 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     const url = `${CarequalityManagementApiFhir.ORG_ENDPOINT}/${oid}?${query.toString()}`;
     try {
       const resp = await this.sendGetRequest(url);
-      if (!resp.data || !resp.data.id) return undefined;
+      if (!resp.data) return undefined;
       return resp.data as OrganizationWithId;
     } catch (error) {
       if (error instanceof AxiosError && this.isNotFoundError(error)) return undefined;

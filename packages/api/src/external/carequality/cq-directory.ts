@@ -17,7 +17,7 @@ export type CQDirectoryEntryData = {
   // TODO  2553 Update data to be of type FhirOrganization
   data?: Organization;
   point?: string;
-  managingOrganization?: string;
+  rootOrganization?: string;
   managingOrganizationId?: string;
   active: boolean;
   lastUpdatedAtCQ: string;
@@ -42,7 +42,7 @@ export type CQDirectoryEntryData2 = {
   zip?: string;
   data?: FhirOrganization;
   point?: string;
-  managingOrganization?: string;
+  rootOrganization?: string;
   managingOrganizationId?: string;
   active: boolean;
   lastUpdatedAtCQ: string;

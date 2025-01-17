@@ -12,7 +12,8 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import stringify from "json-stringify-safe";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
-import { getCqOrg } from "./get-cq-organization";
+import { CachedCqOrgLoader } from "./get-cq-organization-cached";
+import { getParentOid } from "./get-parent-org";
 import { transactionUrl } from "./organization-template";
 
 const EARTH_RADIUS = 6378168;
@@ -22,7 +23,10 @@ const XCA_DR_STRING = "ITI-39";
 const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
-export async function parseCQOrganization(org: Organization): Promise<CQDirectoryEntryData2> {
+export async function parseCQOrganization(
+  org: Organization,
+  cache = new CachedCqOrgLoader()
+): Promise<CQDirectoryEntryData2> {
   const { log } = out(`parseCQOrganization`);
 
   const id = org.id ?? org.identifier?.[0]?.value;
@@ -47,13 +51,8 @@ export async function parseCQOrganization(org: Organization): Promise<CQDirector
   const lon = location?.[0]?.position?.longitude;
   const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
 
-  const parentOrg = org.partOf?.reference ?? org.partOf?.identifier?.value;
-  const parentOrgOid = parentOrg?.split("/")[1];
-  let parentOrgName: string | undefined;
-  if (parentOrgOid) {
-    const parentOrg = await getCqOrg(parentOrgOid);
-    if (parentOrg) parentOrgName = parentOrg.name;
-  }
+  const parentOrgOid = getParentOid(org);
+  const rootOrgName = await getRootForOrg(org, cache, log);
 
   const endpoints: Endpoint[] = org.contained?.filter(isEndpoint) ?? [];
 
@@ -67,13 +66,30 @@ export async function parseCQOrganization(org: Organization): Promise<CQDirector
     city,
     state: state ? normalizeUSStateForAddressSafe(state) : undefined,
     zip: postalCode ? normalizeZipCodeNewSafe(postalCode) : undefined,
-    managingOrganization: parentOrgName,
+    rootOrganization: rootOrgName,
     managingOrganizationId: parentOrgOid,
     active,
     lastUpdatedAtCQ,
     data: org,
     ...getUrls(endpoints),
   };
+}
+
+async function getRootForOrg(
+  org: Organization,
+  cache: CachedCqOrgLoader,
+  log: typeof console.log
+): Promise<string | undefined> {
+  const parentOrgOid = getParentOid(org);
+  if (!parentOrgOid) return org.name;
+  if (parentOrgOid === org.id) return org.name;
+
+  const parentOrg = await cache.getCqOrg(parentOrgOid);
+  if (!parentOrg) {
+    log(`No Org found for parent OID ${parentOrgOid}, returning the OID`);
+    return parentOrgOid;
+  }
+  return getRootForOrg(parentOrg, cache, log);
 }
 
 /**
