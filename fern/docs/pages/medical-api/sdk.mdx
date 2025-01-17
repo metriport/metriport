@@ -1,0 +1,51 @@
+How to access the Medical API using our SDK
+
+We've developed an SDK to help you get access to our API without the HTTP plumbing. It's currently only available for
+Node-based applications ([let us know](https://www.metriport.com/contact-us) what other languages you'd like to see it available on).
+
+The SDK is available as an NPM package and you can access it [here](https://www.npmjs.com/package/@metriport/api-sdk).
+
+To install:
+<CodeBlock title = "Shell">
+  ```shell
+  npm install --save @metriport/api-sdk
+  ```
+</CodeBlock>
+
+Initialize it like so:
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+  const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+  ```
+</CodeBlock>
+
+Some examples of usage, once the API client is initialized:
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  // Create a Facility
+  const patient = await metriportClient.createFacility({
+    // facility data
+  });
+
+// Get a Patient
+const patient = await metriportClient.getPatient(patientId);
+
+// List the given Patient's available documents/records
+const documents = await metriportClient.listDocuments(patientId, facilityId);
+```
+</CodeBlock>
+
+The operations available follow the [API specification](/medical-api/api-reference/organization/create-organization), 
+with this pattern:
+- `GET /` endpoints are exposed as `list<EntityNameInPlural>()`
+- `GET /:id` endpoints are exposed as `get<EntityName>()`
+- `POST /` endpoints are exposed as `create<EntityName>()`
+- `PUT /:id` endpoints are exposed as `update<EntityName>()`
+- `DELETE /:id` endpoints are exposed as `remove<EntityName>()`
+
+The client source code contain only the exposed operations and is available
+[here](https://github.com/metriport/metriport/blob/develop/packages/api-sdk/src/medical/client/metriport.ts).

@@ -1,0 +1,199 @@
+Receive data as soon as it becomes available.
+​
+## Overview
+
+Usually, when an application wants to consume information from another it makes a request to obtain such information.
+
+Webhooks turn this around: the producer of information calls the consumer when data is available. This way, the consumer doesn’t have to poll the producer regularly to obtain information.
+
+Metriport will call your app’s webhook endpoint when user data is available - there’s no way for your application to request data exposed through webhooks.
+
+To enable this integration approach with Metriport:
+
+  1. Expose a public endpoint on your app;
+  2. Set this endpoint URL on the [Developers page](https://dash.metriport.com/developers) in the developer dashboard, or via the [Update Settings endpoint](https://docs.metriport.com/home/api-reference/settings/post-settings);
+  3. This will generate a webhook key that should be used to authenticate requests on your app’s endpoint (webhook).
+
+General requirements for the endpoint:
+
+  1. Public endpoint accessible from the internet;
+  2. Does not do an HTTP redirect (redirects will not be followed);
+  3. Accepts a `POST` HTTP request;
+  4. Verifies requests by comparing the HTTP header `x-webhook-key` with the webhook key;
+  5. Accepts and responds to a `ping` [message](https://docs.metriport.com/home/api-info/webhooks#the-ping-message);
+
+Additionally, depending on what Metriport APIs you’re using, your endpoint will need to accept and process different messages when they become available - specifically:
+
+  1. If using the Devices API - accept and process [user data messages](https://docs.metriport.com/home/api-info/webhooks#devices-api-messages).
+  2. If using the Medical API - accept and process [patient data messages](https://docs.metriport.com/home/api-info/webhooks#medical-api-messages).
+
+​
+## Authentication
+
+When Metriport sends a webhook message, it includes an `x-metriport-signature` header.
+
+  - `x-metriport-signature`: This is an [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA-256 hash computed using your webhook key and the body of the webhook message.
+
+At a high level, an HMAC works by taking a secret key and a message, and performing iterative hashes of the two to create a signature. That signature is compared against the signature in the header for equality. If the signatures are equal, you can trust the webhook payload is authentic and has not been tampered with. If they aren’t equal, you should throw it awasy.
+
+You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. Here’s an example of how you can do this in Node.js:
+
+```
+  const signature = req.headers["x-metriport-signature"];
+  const signatureAsString = // codeToValidateAndConvertToString(signature);
+  const metriportApi = new MetriportMedicalApi(apiKey, {
+    baseAddress: apiUrl,
+  });
+  if (metriportApi.verifyWebhookSignature(whKey, req.body, signatureAsString)) {
+    console.log(`Signature verified`);
+  } else {
+    console.log(`Signature verification failed`);
+  }
+```
+
+The important thing is to make sure you use a trusted cryptography library in whatever language you choose to validate the webhook message in. You can also compute an HMAC in python:
+
+```
+import hmac
+import hashlib
+import json
+
+def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
+    """
+    Verify the HMAC signature for a given message and key.
+
+    :param key: The secret key (string).
+    :param message: The message to be authenticated (string in JSON format).
+    :param signature: The provided HMAC signature to verify against (string).
+    :param digestmod: The hash function to use (defaults to hashlib.sha256).
+    :return: True if signature is verified, False otherwise.
+    """
+    message_bytestring = json.dumps(message, separators=(',', ':')).encode()  # Convert the message string to bytes
+    key_bytestring = key.encode()  # Convert the key string to bytes
+    hmac_object = hmac.new(key_bytestring, message_bytestring, digestmod)
+    computed_signature = hmac_object.hexdigest()
+    print(computed_signature)
+    return signature == computed_signature
+
+# Example usage
+```python
+key = 'your_secret_key'  # Your key 
+message = '{"webhookUrl": "https://api.app.com/webhook"}'  # The message from the request in JSON format
+signature = 'the-request-signature'  # The signature from the header 
+
+is_signature_valid = compute_hmac(key, message, signature)
+
+if is_signature_valid:
+    print("Signature verified")
+else:
+    print("Signature verification failed")
+```
+
+<Callout intent="warn">
+The previous method of authenticating webhooks, comparing your webhook key with the `x-webhook-key` in each request’s HTTP header, is being deprecated on **December 9th, 2023**. Please update your implementation to use the `x-metriport-signature` header for authentication.
+</Callout>
+​
+## Generating a new webhook key
+
+If using the dashboard: simply delete your webhook URL on the [Developers page](https://dash.metriport.com/developers), save, and enter it again.
+
+If using the API: set the webhook URL to an empty string via the [Update Settings endpoint](https://docs.metriport.com/home/api-reference/settings/post-settings), and then set it to your desired URL making another request to the same endpoint.
+​
+## Format
+
+Webhook requests contain the relevant information on the body of the HTTP request.
+
+There are several types of messages you can expect to receive:
+
+  - `ping`: validation of the webhook connection between Metriport and your app;
+  - [Devices API messages](https://docs.metriport.com/home/api-info/webhooks#devices-api-messages);
+  - [Medical API messages](https://docs.metriport.com/home/api-info/webhooks#medical-api-messages).
+
+In general, upon successful receiving of these messages, it’s expected that your app responds with a `200` HTTP status code (OK).
+
+There’s no need to include anything on the response body.
+​
+## The `ping` message
+
+This is a simple message to validate access to your app’s webhook endpoint. Your app should accept a `POST` request with this body…
+
+```json
+{
+  "ping": "<random-sequence>"
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "ping"
+  }
+}
+```
+
+…and respond to this request by sending back the `<random-sequence>` as below:
+
+```json
+{
+  "pong": "<random-sequence>"
+}
+```
+
+You can check the [webhook mock server available on our repository](https://github.com/metriport/metriport/blob/master/utils/src/mock-webhook.ts) for a simple implementation of this message.
+​
+## Devices API messages
+
+When using the Devices API, Metriport will send Webhook messages containing [new provider connections](https://docs.metriport.com/devices-api/more-info/webhooks#provider-connected-message) for each user, as well as [user data](https://docs.metriport.com/devices-api/more-info/webhooks#user-health-data-message) to your app from [our supported Providers](https://docs.metriport.com/devices-api/more-info/our-integrations), as soon as the data becomes available.
+
+You can see Webhook details specific to the Devices API on [this page](https://docs.metriport.com/devices-api/more-info/webhooks).
+​
+## Medical API messages
+
+When using the Medical API, Metriport will send Webhook messages containing status updates to your app, as soon as the data becomes available.
+
+You can see Webhook details specific to the Medical API, including which operations trigger Webhook messages, on [this page](https://docs.metriport.com/medical-api/more-info/webhooks).
+​
+## Meta data
+
+Webhook updates will contain meta information.
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "devices.health-data"
+  }
+}
+```
+
+The format follows:
+`meta` `required`
+
+Metadata about the message.
+​
+## Retries
+
+Sometimes, due to temporary network disruption (or whatever other reason), a Webhook payload may fail to be delivered to your app. In these cases, Metriport will store the failed requests, and you can then manually retry them - using either the dashboard, or the API.
+
+<Callout intent="warn">
+If you do not have the Webhook URL configured, the Metriport will not attempt to deliver Webhook messages for the Medical API - in which case retries are not applicable.
+</Callout>
+
+## Retry Using the Dashboard
+
+On the [Developers page](https://dash.metriport.com/developers) in the dashboard, you’re able to see the count of Webhook requests currently processing, and a count of outstanding ones that failed:
+
+
+![image](https://mintlify.s3-us-west-1.amazonaws.com/metriport/images/dash-webhook-retry.png)
+
+
+To retry failed requests, simply click the `Retry` button, and those requests will be sent to your app again.
+​
+## Retry Using the API
+
+  1. Using the [Get Webhook Status endpoint](https://docs.metriport.com/home/api-reference/settings/get-webhook), check to see if there are any failed requests;
+  2. Then, use the [Retry Webhook requests endpoint](https://docs.metriport.com/home/api-reference/settings/retry-webhook), to kick off the retry.
+
+<Callout intent="warn">
+Currently, the Metriport API doesn’t implement automatic retries - let us know if this is something you need.
+</Callout>

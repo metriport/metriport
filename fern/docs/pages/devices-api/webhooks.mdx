@@ -1,0 +1,149 @@
+Receive user health data as soon as it becomes available.
+
+## Overview
+
+When using the Devices API, Metriport will send the following Webhook messages:
+
+- [New provider connections](#provider-connected-message) for each user.
+- [Removed provider connections](#provider-disconnected-message) for each user.
+- [User data](#user-health-data-message) to your app from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
+
+To enable this integration approach with Metriport, and for some prerequesite reading to understand
+how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
+
+<Callout intent="info">
+  Each provider may have unique use cases so be sure to check the [notes
+  section](/devices-api/more-info/our-integrations#notes) of our [Our Integrations
+  page](/devices-api/more-info/our-integrations).
+</Callout>
+
+## Provider connected message
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "devices.provider-connected"
+  },
+  "users": [
+    {
+      "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
+      "providers": ["tenovi"],
+      "devices": ["12345678-abcd-1234-abcd-1234567890ab"],
+      "connectedDevices": [
+        {
+          "tenovi": ["11112222-wxyz-9999-wxyz-1234567890yz", "12345678-abcd-1234-abcd-1234567890ab"]
+        }
+      ],
+      "connectedProviders": ["fitbit", "garmin", "cronometer", "tenovi"]
+    }
+  ]
+}
+```
+
+## Provider disconnected message
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "devices.provider-disconnected"
+  },
+  "users": [
+    {
+      "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
+      "providers": ["fitbit", "cronometer"],
+      "connectedProviders": ["garmin"]
+    }
+  ]
+}
+```
+
+## User health data message
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "devices.health-data"
+  },
+  "users": [
+    {
+      "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
+      "sleep": [
+        {
+          "metadata": {
+            "date": "2022-12-21",
+            "source": "garmin"
+          },
+          "start_time": "2022-12-12T22:15:40Z",
+          "end_time": "2022-12-13T04:15:40Z",
+          "durations": {
+            "awake_seconds": 400,
+            ...
+          },
+          "biometrics": {
+            "heart_rate": {
+              "avg_bpm": 70,
+              ...
+            },
+            ...
+          }
+        },
+        {
+          "metadata": {
+            "date": "2022-12-21",
+            "source": "garmin"
+          },
+          "start_time": "2022-12-12T22:15:40Z",
+          "end_time": "2022-12-13T04:15:40Z",
+          "durations": {
+            "awake_seconds": 400,
+            ...
+          },
+          "biometrics": {
+            "heart_rate": {
+              "avg_bpm": 70,
+              ...
+            },
+            ...
+          }
+        }
+      ],
+      "activity": [
+        {
+          "metadata": {
+            "date": "2022-12-21",
+            "source": "garmin"
+          },
+          "summary": {
+            "biometrics": {
+              ...
+            },
+            "durations": {
+              ...
+            },
+            ...
+          },
+          "activity_logs": [
+            ...
+          ],
+        }
+      ]
+    },
+    {
+      "userId": "3a3a7677-25bb-4f1b-bf3c-6e0ff46ce905",
+      ...
+    }
+  ]
+}
+```

@@ -1,0 +1,128 @@
+instances:
+  - url: metriport-m.docs.buildwithfern.com
+
+title: Metriport | Docs
+
+tabs:
+  home:
+    display-name: Home
+    icon: "fa-solid fa-house"
+  medical-api:
+    display-name: Medical API Overview
+    icon: "fa-duotone fa-file-medical"
+  devices-api:
+    display-name: Devices API Overview
+    icon: "fa-duotone fa-watch-apple"
+  api-reference:
+    display-name: API Reference
+    icon: "fa-duotone fa-book"
+navigation:
+  - tab: home
+    layout:
+      - section: Getting Started
+        contents:
+          - page: Welcome
+            path: ./docs/pages/welcome.mdx
+          - page: API Keys
+            path: ./docs/pages/api-keys.mdx
+          - page: SDK Explorer
+            path: ./docs/pages/sdks.mdx
+          - page: Error Responses
+            path: ./docs/pages/error-responses.mdx
+      - section: Webhooks
+        contents:
+          - page: Overview
+            path: ./docs/pages/webhooks/overview.mdx
+          - page: Authentication
+            path: ./docs/pages/webhooks/authentication.mdx
+          - page: Generating A New Webhook
+            path: ./docs/pages/webhooks/generate-webhooks.mdx
+          - page: API Messages
+            path: ./docs/pages/webhooks/api-messages.mdx
+          - page: Retries
+            path: ./docs/pages/webhooks/retries.mdx
+      - api: General Settings API
+  - tab: medical-api
+    layout:
+      - section: Getting Started
+        contents:
+          - page: Medical API
+            path: ./docs/pages/medical-api/quick-start-medical-api.mdx
+      - section: FHIR
+        contents:
+          - page: FHIR Overview
+            path: ./docs/pages/medical-api/overview-fhir.mdx
+      - section: More Info
+        contents:
+          - page: General Information
+            path: ./docs/pages/api-keys.mdx
+          - page: Using Webhooks
+            path: ./docs/pages/medical-api/webhooks.mdx
+          - page: SDK
+            path: ./docs/pages/medical-api/sdk.mdx
+          - page: Sandbox Mode
+            path: ./docs/pages/medical-api/sandbox-mode.mdx
+          - page: Avoid mid-air collisions
+            path: ./docs/pages/medical-api/collisions.mdx
+  - tab: devices-api
+    layout:
+      - section: Getting Started
+        contents:
+          - page: Devices API
+            path: ./docs/pages/devices-api/devices-api.mdx
+          - page: Connect Widget
+            path: ./docs/pages/devices-api/connect-widget.mdx
+          - page: Apple Health
+            path: ./docs/pages/devices-api/apple-health.mdx
+          - page: Tenovi
+            path: ./docs/pages/devices-api/tenovi.mdx
+      - section: SDKs
+        contents:
+          - page: API
+            path: ./docs/pages/welcome.mdx
+          - page: Connect Widget
+            path: ./docs/pages/welcome.mdx
+      - section: More Info
+        contents:
+          - page: Our Integrations
+            path: ./docs/pages/devices-api/our-integrations.mdx
+          - page: Using Webhooks
+            path: ./docs/pages/devices-api/webhooks.mdx
+          - page: Data Models
+            path: ./docs/pages/devices-api/data-models.mdx
+  - tab: api-reference
+    layout:
+      - section: API Directory
+        contents:
+          - page: Explorer
+            path: ./docs/pages/api-directory/explorer.mdx
+      - api: API Reference
+
+navbar-links: 
+  - type: secondary
+    text: Website
+    url: "https://metriport.com"
+  - type: secondary
+    text: Github
+    url: "https://github.com/metriport/metriport"
+  - type: secondary
+    text: Contact us
+    url: "contact@metriport.com"
+  - type: primary
+    text: Get Started
+    url: https://dash.metriport.com/
+colors:
+  accentPrimary:
+    dark: "#a6b4ec"
+    light: "#4958a9"
+  background:
+    dark: "#0d0e11"
+    light: "#ffffff"
+
+logo:
+  dark: ./docs/assets/light.png
+  light: ./docs/assets/light.png
+  height: 35
+  href: metriport-m.docs.buildwithfern.com
+
+favicon: ./docs/assets/favicon.ico

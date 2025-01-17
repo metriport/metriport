@@ -1,0 +1,43 @@
+Usually, when an application wants to consume information from another it makes a request to obtain such information.
+
+Webhooks turn this around: the producer of information calls the consumer when data is available. This way, the consumer doesn’t have to poll the producer regularly to obtain information.
+
+Metriport will call your app’s webhook endpoint when user data is available - there’s no way for your application to request data exposed through webhooks.
+
+To enable this integration approach with Metriport:
+
+  1. Expose a public endpoint on your app;
+  2. Set this endpoint URL on the [Developers page](https://dash.metriport.com/developers) in the developer dashboard, or via the [Update Settings endpoint](https://docs.metriport.com/home/api-reference/settings/post-settings);
+  3. This will generate a webhook key that should be used to authenticate requests on your app’s endpoint (webhook).
+
+General requirements for the endpoint:
+
+  1. Public endpoint accessible from the internet;
+  2. Does not do an HTTP redirect (redirects will not be followed);
+  3. Accepts a `POST` HTTP request;
+  4. Verifies requests by comparing the HTTP header `x-webhook-key` with the webhook key;
+  5. Accepts and responds to a `ping` [message](https://docs.metriport.com/home/api-info/webhooks#the-ping-message);
+
+Additionally, depending on what Metriport APIs you’re using, your endpoint will need to accept and process different messages when they become available - specifically:
+
+  1. If using the Devices API - accept and process [user data messages](https://docs.metriport.com/home/api-info/webhooks#devices-api-messages).
+  2. If using the Medical API - accept and process [patient data messages](https://docs.metriport.com/home/api-info/webhooks#medical-api-messages).
+
+## Meta data
+
+Webhook updates will contain meta information.
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "devices.health-data"
+  }
+}
+```
+
+The format follows:
+`meta` `required`
