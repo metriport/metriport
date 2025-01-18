@@ -3,6 +3,7 @@ import Router from "express-promise-router";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler } from "../util";
 import status from "http-status";
+import { networkGetSchema } from "./schemas/network";
 
 const router = Router();
 
@@ -10,7 +11,8 @@ router.get(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    return res.status(status.OK).json({ cxId: "none" });
+    const params = networkGetSchema.parse(req.query);
+    return res.status(status.OK).json({ params });
   })
 );
 
