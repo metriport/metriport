@@ -3,9 +3,12 @@ import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
+import ehr from "./ehr";
+import ehrInternal from "./ehr-internal";
 import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
 import internal from "./internal";
+import jwtToken from "./jwt-token";
 import medical from "./medical";
 import fhirRouter from "./medical/fhir-r4-proxy";
 import { checkMAPIAccess, processCxId } from "./middlewares/auth";
@@ -16,9 +19,6 @@ import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
-import ehr from "./ehr";
-import jwtToken from "./jwt-token";
-import ehrInternal from "./ehr-internal";
 
 // Supports requests from the Dashboard through the dedicated JWT-based auth on API GW
 const dash = "/dash-oss";

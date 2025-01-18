@@ -1,12 +1,19 @@
+import { normalizeState } from "@metriport/shared";
 import { Network } from "../../../domain/medical/network";
+import { CQDirectoryEntry2 } from "../../../external/carequality/cq-directory";
 import { BaseDTO } from "./baseDTO";
 
 export type NetworkDTO = BaseDTO & Network;
 
-export function dtoFromModel(network: Network): NetworkDTO {
+export function dtoFromCQDirectoryEntry(network: CQDirectoryEntry2): NetworkDTO {
   return {
-    id: "1",
+    id: network.id,
     eTag: "1",
-    ...network,
+    name: network.name,
+    oid: network.id,
+    zip: network.zip,
+    state: network.state ? normalizeState(network.state) : undefined,
+    managingOrg: network.data?.name,
+    managingOrgOid: network.managingOrganizationId,
   };
 }
