@@ -1,10 +1,10 @@
 import { z } from "zod";
+import { queryMetaSchema } from "../../pagination";
 
-export const networkGetSchema = z.object({
-  filter: z.string().optional(),
-  fromItem: z.string().optional(),
-  toItem: z.string().optional(),
-  count: z.coerce.number().int().optional(),
-});
+export const networkGetSchema = z
+  .object({
+    filter: z.string().optional(),
+  })
+  .and(queryMetaSchema);
 
 export type NetworkGetParams = z.infer<typeof networkGetSchema>;
