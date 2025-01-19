@@ -24,8 +24,7 @@ const number_of_keys = keys.split(",").length;
 
 export async function insertCqDirectoryEntries(
   sequelize: Sequelize,
-  orgDataArray: CQDirectoryEntryData2[],
-  tableName: string
+  orgDataArray: CQDirectoryEntryData2[]
 ): Promise<void> {
   if (orgDataArray.length === 0) return;
   const placeholders = orgDataArray
@@ -48,11 +47,11 @@ export async function insertCqDirectoryEntries(
     entry.data ? JSON.stringify(entry.data) : null,
     entry.rootOrganization ?? null,
     entry.managingOrganizationId ?? null,
-    entry.active ?? false,
-    entry.lastUpdatedAtCQ ?? null,
+    entry.active,
+    entry.lastUpdatedAtCQ,
   ]);
 
-  const query = `INSERT INTO ${tableName} (${keys}) VALUES ${placeholders};`;
+  const query = `INSERT INTO ${cqDirectoryEntryTemp} (${keys}) VALUES ${placeholders};`;
   await sequelize.query(query, {
     replacements: flattenedData,
     type: QueryTypes.INSERT,
@@ -87,13 +86,21 @@ function createKeys(): string {
   return Object.values(allKeys).join(", ");
 }
 
-export async function deleteCqDirectoryEntries(
+export async function getCqDirectoryEntries(
   sequelize: Sequelize,
-  ids: string[],
-  tableName: string
-): Promise<void> {
+  ids: string[] = []
+): Promise<CQDirectoryEntryViewModel[]> {
+  const whereClause = ids.length > 0 ? `WHERE id in ('${ids.join(`','`)}')` : "";
+  const query = `SELECT * FROM ${cqDirectoryEntryTemp} ${whereClause};`;
+  const result = await sequelize.query<CQDirectoryEntryViewModel>(query, {
+    type: QueryTypes.SELECT,
+  });
+  return result;
+}
+
+export async function deleteCqDirectoryEntries(sequelize: Sequelize, ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const query = `DELETE FROM ${tableName} WHERE id in ('${ids.join(`','`)}');`;
+  const query = `DELETE FROM ${cqDirectoryEntryTemp} WHERE id in ('${ids.join(`','`)}');`;
   await sequelize.query(query, { type: QueryTypes.DELETE });
 }
 
