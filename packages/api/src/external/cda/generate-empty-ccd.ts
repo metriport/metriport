@@ -1,8 +1,8 @@
 import { Address as FhirAddress, Organization } from "@medplum/fhirtypes";
 import { AddressStrict } from "@metriport/core/domain/location-address";
 import { Patient } from "@metriport/core/domain/patient";
-import { Address } from "@metriport/core/src/domain/address";
-import { Contact } from "@metriport/core/src/domain/contact";
+import { Address } from "@metriport/core/domain/address";
+import { Contact } from "@metriport/core/domain/contact";
 import { metriportOrganization } from "@metriport/shared/common/metriport-organization";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { OrganizationModel } from "../../models/medical/organization";

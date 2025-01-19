@@ -278,6 +278,9 @@ export function createAPIService({
           ...(props.config.carequality?.envVars?.CQ_URLS_TO_EXCLUDE && {
             CQ_URLS_TO_EXCLUDE: props.config.carequality.envVars.CQ_URLS_TO_EXCLUDE,
           }),
+          ...(props.config.carequality?.envVars?.CQ_ADDITIONAL_ORGS && {
+            CQ_ADDITIONAL_ORGS: JSON.stringify(props.config.carequality.envVars.CQ_ADDITIONAL_ORGS),
+          }),
           ...(props.config.locationService && {
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,

@@ -6,11 +6,11 @@ describe("facilitiesWithEpicFilter", () => {
     const isEpicEnabled = true;
 
     const epicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganization: EPIC_ORG_NAME,
+      rootOrganization: EPIC_ORG_NAME,
     });
 
     const nonEpicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganization: "TEST",
+      rootOrganization: "TEST",
     });
 
     const filteredOrgs = facilitiesWithEpicFilter(
@@ -26,11 +26,11 @@ describe("facilitiesWithEpicFilter", () => {
     const isEpicEnabled = false;
 
     const epicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganization: EPIC_ORG_NAME,
+      rootOrganization: EPIC_ORG_NAME,
     });
 
     const epicFacilityEntryTwo = makeCQDirectoryEntry({
-      managingOrganization: EPIC_ORG_NAME,
+      rootOrganization: EPIC_ORG_NAME,
     });
 
     const filteredOrgs = facilitiesWithEpicFilter(
@@ -46,11 +46,11 @@ describe("facilitiesWithEpicFilter", () => {
     const isEpicEnabled = false;
 
     const epicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganization: EPIC_ORG_NAME,
+      rootOrganization: EPIC_ORG_NAME,
     });
 
     const nonEpicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganization: "TEST",
+      rootOrganization: "TEST",
     });
 
     const filteredOrgs = facilitiesWithEpicFilter(

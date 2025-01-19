@@ -27,7 +27,7 @@ export async function getFacilityOrFail({ cxId, id }: GetFacilityQuery): Promise
   return facility;
 }
 
-export async function getFaciltiyByOidOrFail(
+export async function getFacilityByOidOrFail(
   filter: GetFacilityQuery & { oid: string }
 ): Promise<FacilityModel> {
   const facility = await getFacilityOrFail(filter);
