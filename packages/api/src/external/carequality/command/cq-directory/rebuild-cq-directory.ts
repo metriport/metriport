@@ -12,10 +12,10 @@ import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { getAdditionalOrgs } from "./additional-orgs";
 import {
-  cqDirectoryEntryTemp,
   createTempCqDirectoryTable,
   deleteCqDirectoryEntries,
   deleteTempCqDirectoryTable,
+  getCqDirectoryEntries,
   insertCqDirectoryEntries,
   updateCqDirectoryViewDefinition,
 } from "./rebuild-cq-directory-raw-sql";
@@ -56,26 +56,35 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           active: true,
         });
         if (orgs.length < BATCH_SIZE) isDone = true;
-        currentPosition = maxPosition;
         cache.populate(orgs);
         const parsedOrgs: CQDirectoryEntryData2[] = [];
-        await executeAsynchronously(
-          orgs,
-          async (org: Organization) => {
-            try {
-              const parsed = await parseCQOrganization(org, cache);
-              parsedOrgs.push(parsed);
-            } catch (error) {
-              parsingErrors.push(error as Error);
-            }
-          },
-          { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }
-        );
+        const [alreadyInsertedOrgs] = await Promise.all([
+          getCqDirectoryEntries(sequelize),
+          executeAsynchronously(
+            orgs,
+            async (org: Organization) => {
+              try {
+                const parsed = await parseCQOrganization(org, cache);
+                parsedOrgs.push(parsed);
+              } catch (error) {
+                parsingErrors.push(error as Error);
+              }
+            },
+            { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }
+          ),
+        ]);
         parsedOrgsCount += parsedOrgs.length;
-        const orgsToInsert = normalizeExternalOrgs(parsedOrgs);
-        log(`Adding ${orgsToInsert.length} CQ directory entries...`);
-        await insertCqDirectoryEntries(sequelize, orgsToInsert, cqDirectoryEntryTemp);
+        log(`Got ${parsedOrgs.length} entries from the CQ directory`);
+        const normalizedOrgs = normalizeExternalOrgs(parsedOrgs);
+        const orgsToInsert = normalizedOrgs.filter(
+          org => !alreadyInsertedOrgs.some(aio => aio.id === org.id)
+        );
+        log(`Adding ${orgsToInsert.length} entries in the DB...`);
+        const insertStartedAt = Date.now();
+        await insertCqDirectoryEntries(sequelize, orgsToInsert);
+        log(`Inserted ${orgsToInsert.length} entries in ${Date.now() - insertStartedAt}ms`);
         if (!isDone) await sleep(SLEEP_TIME.asMilliseconds());
+        currentPosition = maxPosition;
       } catch (error) {
         isDone = true;
         if (!failGracefully) {
@@ -148,10 +157,10 @@ async function processAdditionalOrgs(): Promise<void> {
     const additionalOrgIds = additionalOrgs.map(o => o.id);
 
     log(`Removing external CQ entries for ${additionalOrgs.length} additional Orgs...`);
-    await deleteCqDirectoryEntries(sequelize, additionalOrgIds, cqDirectoryEntryTemp);
+    await deleteCqDirectoryEntries(sequelize, additionalOrgIds);
 
     log(`Inserting static CQ entries for ${additionalOrgs.length} additional Orgs...`);
-    await insertCqDirectoryEntries(sequelize, additionalOrgs, cqDirectoryEntryTemp);
+    await insertCqDirectoryEntries(sequelize, additionalOrgs);
   } catch (error) {
     const msg = `Failed to process additional orgs`;
     log(`${msg}. Cause: ${errorToString(error)}`);
