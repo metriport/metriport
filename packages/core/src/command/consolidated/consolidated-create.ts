@@ -65,8 +65,6 @@ export async function createConsolidatedFromConversions({
   const deduped = deduplicate({ cxId, patientId, bundle: original });
   log(`...done, from ${original.entry?.length} to ${deduped.entry?.length} resources`);
 
-  const originalDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
-  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
   if (isAiBriefFeatureFlagEnabled) {
@@ -77,6 +75,8 @@ export async function createConsolidatedFromConversions({
     }
   }
 
+  const originalDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
+  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
   log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
   log(`Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${dedupDestFileName}`);
   await Promise.all([
