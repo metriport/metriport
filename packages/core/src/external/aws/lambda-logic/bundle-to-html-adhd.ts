@@ -22,10 +22,11 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
-import { Brief } from "./bundle-to-brief";
-import { createBrief } from "./bundle-to-html";
+import { Brief } from "../../../command/ai-brief/create";
 import {
   buildEncounterSections,
+  createBrief,
+  createSection,
   formatDateForDisplay,
   ISO_DATE,
   MISSING_DATE_KEY,
@@ -1144,7 +1145,7 @@ function createSectionInMedications(
   title: string
 ) {
   if (medicationStatements.length <= 0) {
-    const noMedFound = "No medication info found";
+    const noMedFound = "No structured medication info found in health information exchange";
     return ` <h4>${title}</h4><table><tbody><tr><td>${noMedFound}</td></tr></tbody></table>`;
   }
   const medicationStatementsSortedByDate = medicationStatements.sort((a, b) => {
@@ -1357,7 +1358,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
   `
       : `        <table>
-      <tbody><tr><td>No condition info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured condition info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Conditions", conditionTableContents);
@@ -1480,7 +1481,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
 
   `
       : `        <table>
-      <tbody><tr><td>No allergy info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured allergy info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Allergies", allergyTableContents);
@@ -1537,7 +1538,7 @@ function createProcedureSection(procedures: Procedure[]) {
 
   `
       : `        <table>
-      <tbody><tr><td>No procedure info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured procedure info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Procedures", procedureTableContents);
@@ -1639,7 +1640,7 @@ function createObservationSocialHistorySection(observations: Observation[]) {
 
   `
       : `        <table>
-      <tbody><tr><td>No observation info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured observation info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Social History", observationTableContents);
@@ -1691,7 +1692,7 @@ function createObservationVitalsSection(observations: Observation[]) {
     removeDuplicate.length > 0
       ? createVitalsByDate(removeDuplicate)
       : `        <table>
-      <tbody><tr><td>No observation info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured observation info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Vitals", observationTableContents);
@@ -1783,7 +1784,7 @@ function createObservationLaboratorySection(observations: Observation[]) {
     removeDuplicate.length > 0
       ? createObservationsByDate(removeDuplicate)
       : `        <table>
-      <tbody><tr><td>No laboratory info found</td></tr></tbody>        <table>
+      <tbody><tr><td>No structured laboratory info found in health information exchange</td></tr></tbody>        <table>
       `;
 
   return createSection("Laboratory", observationTableContents);
@@ -1930,7 +1931,7 @@ function createOtherObservationsSection(observations: Observation[]) {
     removeDuplicate.length > 0
       ? createOtherObservationsByDate(removeDuplicate)
       : `        <table>
-      <tbody><tr><td>No observation info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured observation info found in health information exchange</td></tr></tbody>        </table>
       `;
   return createSection("Other Observations", observationTableContents);
 }
@@ -2073,7 +2074,7 @@ function createImmunizationSection(immunizations: Immunization[]) {
 
   `
       : `        <table>
-      <tbody><tr><td>No immunization info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured immunization info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Immunizations", immunizationTableContents);
@@ -2135,8 +2136,8 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
 
   `
       : `        <table>
-      <tbody><tr><td>No family member history
-        info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured family member history
+        info found in health information exchange</td></tr></tbody>        </table>
         `;
 
   return createSection("Family Member History", familyMemberHistoryTableContents);
@@ -2212,7 +2213,7 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
 
   `
       : `        <table>
-      <tbody><tr><td>No related person info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured related person info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Related Persons", relatedPersonTableContents);
@@ -2286,7 +2287,7 @@ function createTaskSection(tasks: Task[]) {
 
   `
       : `        <table>
-      <tbody><tr><td>No task info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured task info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Tasks", taskTableContents);
@@ -2354,7 +2355,7 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
 
   `
       : `        <table>
-      <tbody><tr><td>No encounter info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured encounter info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Encounters", encounterTableContents);
@@ -2413,7 +2414,7 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
 
   `
       : `        <table>
-      <tbody><tr><td>No coverage info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No structured coverage info found in health information exchange</td></tr></tbody>        </table>
       `;
 
   return createSection("Coverage", coverageTableContents);
@@ -2462,20 +2463,6 @@ function getConditionDatesFromEncounters(
   });
 
   return conditionDates;
-}
-
-function createSection(title: string, tableContents: string) {
-  return `
-    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
-      <div class="section-title">
-        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-          ${tableContents}
-      </div>
-    </div>
-  `;
 }
 
 function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, ResourceType> {

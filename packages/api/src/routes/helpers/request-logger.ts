@@ -13,11 +13,15 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   asyncLocalStorage.run(reqId, () => {
     const method = req.method;
     const url = req.baseUrl + req.path;
-    const urlWithParams = replaceParamWithKey(url, req.params);
+    const urlWithParams = replaceParamWithKey(url, req.aggregatedParams);
+    const { client, path } = splitUrlToClientAndPath(urlWithParams);
 
     const cxId = getCxId(req);
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
-    const params = req.params && Object.keys(req.params).length ? req.params : undefined;
+    const params =
+      req.aggregatedParams && Object.keys(req.aggregatedParams).length
+        ? req.aggregatedParams
+        : undefined;
 
     console.log(
       "%s ..........Begins %s %s %s %s",
@@ -46,7 +50,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       analyzeRoute({
         req,
         method,
-        url: urlWithParams,
+        client,
+        url: path,
         params,
         query,
         duration: elapsedTimeInMs,
@@ -57,7 +62,25 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   });
 };
 
-function replaceParamWithKey(url: string, params: Record<string, string>): string {
+export function splitUrlToClientAndPath(url: string): { client?: string; path: string } {
+  const separator = "/medical/v1";
+  const separatorIndex = url.indexOf(separator);
+
+  if (separatorIndex === -1) {
+    return { path: url };
+  }
+
+  const clientSlice = url.slice(0, separatorIndex);
+  const pathSlice = url.slice(separatorIndex);
+
+  const client = clientSlice.length > 0 ? clientSlice.replace(/\//g, " ").trim() : undefined;
+
+  return { client, path: pathSlice };
+}
+
+function replaceParamWithKey(url: string, params: Record<string, string> | undefined): string {
+  if (!params) return url;
+
   return Object.keys(params).reduce((acc, key) => acc.replace(params[key], `:${key}`), url);
 }
 

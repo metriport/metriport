@@ -1,6 +1,5 @@
 import dayjs, { ConfigType } from "dayjs";
 import utc from "dayjs/plugin/utc";
-
 import { CustomErrorParams, z } from "zod";
 import { BadRequestError } from "../error/bad-request";
 
@@ -56,4 +55,14 @@ export function elapsedTimeFromNow(
 
 export function buildDayjs(date?: ConfigType, format?: string, strict?: boolean): dayjs.Dayjs {
   return dayjs.utc(date, format, strict);
+}
+
+export function sortDate(
+  date1: ConfigType,
+  date2: ConfigType,
+  sortingOrder: "asc" | "desc" = "asc"
+): number {
+  return sortingOrder === "desc"
+    ? buildDayjs(date1).diff(buildDayjs(date2))
+    : buildDayjs(date2).diff(buildDayjs(date1));
 }

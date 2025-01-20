@@ -1,0 +1,23 @@
+# https://docs.cursor.com/context/ignore-files
+# Files on .gitignore are automatically included
+packages/utils/runs
+*.json
+*.xml
+*.sql
+*.pdf
+*.tif*
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+*.csv
+*.tsv
+*.xlsx
+*.xls
+.env*
+
+# include these
+!package.json
+!package-lock.json
+!tsconfig.json

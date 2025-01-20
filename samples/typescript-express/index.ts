@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+// Keep dotenv import/setup before the other imports
 import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/shared";
 
@@ -48,10 +49,23 @@ async function main() {
     facilityId
   );
 
+  let page = 1;
+  // const { meta, patients } = await metriportClient.listPatients({ facilityId });
+  const { meta, patients } = await metriportClient.listPatients();
+  console.log(`Page ${page++} has ${patients.length} patients`);
+  // do something with the patients...
+  let nextPage = meta.nextPage;
+  while (nextPage) {
+    const { meta, patients } = await metriportClient.listPatientsPage(nextPage);
+    console.log(`Page ${page++} has ${patients.length} patients`);
+    // do something with the patients...
+    nextPage = meta.nextPage;
+  }
+  console.log(`Done in ${--page} pages`);
+
   // START A DOCUMENT QUERY
   // Expected response https://docs.metriport.com/medical-api/api-reference/document/start-document-query#response
   const resp = await metriportClient.startDocumentQuery(patient.id, facilityId);
-
   console.log(resp);
 }
 

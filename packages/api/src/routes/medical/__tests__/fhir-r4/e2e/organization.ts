@@ -1,6 +1,8 @@
+import { OIDNode } from "@metriport/core/domain/oid";
 import { nanoid } from "../../../../../__tests__/e2e/shared";
 
-const defaultId = "2.16.840.1.113883.3.9621.5." + nanoid();
+// TODO Check if this should be a function or really a static value across tests
+const defaultId = `2.16.840.1.113883.3.9621.${OIDNode.organizations}.` + nanoid();
 
 export const makeOrganization = (id = defaultId) => ({
   resourceType: "Organization",

@@ -30,6 +30,7 @@ import { DnsZones } from "../shared/dns";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
+import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 
 interface ApiProps extends StackProps {
@@ -87,7 +88,6 @@ export function createAPIService({
   alarmAction,
   dnsZones,
   fhirServerUrl,
-  fhirServerQueueUrl,
   fhirConverterQueueUrl,
   fhirConverterServiceUrl,
   cdaToVisualizationLambda,
@@ -103,6 +103,7 @@ export function createAPIService({
   fhirToBundleLambda,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
+  rateLimitTable,
   searchIngestionQueue,
   searchEndpoint,
   searchAuth,
@@ -120,7 +121,6 @@ export function createAPIService({
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
   fhirServerUrl: string;
-  fhirServerQueueUrl: string | undefined;
   fhirConverterQueueUrl: string | undefined;
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
@@ -136,6 +136,7 @@ export function createAPIService({
   fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
+  rateLimitTable: dynamodb.Table;
   searchIngestionQueue: IQueue;
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
@@ -260,15 +261,13 @@ export function createAPIService({
             FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
           }),
           FHIR_SERVER_URL: fhirServerUrl,
-          ...(fhirServerQueueUrl && {
-            FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
-          }),
           ...(fhirConverterQueueUrl && {
             FHIR_CONVERTER_QUEUE_URL: fhirConverterQueueUrl,
           }),
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
           }),
+          RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
           SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
@@ -278,6 +277,9 @@ export function createAPIService({
           }),
           ...(props.config.carequality?.envVars?.CQ_URLS_TO_EXCLUDE && {
             CQ_URLS_TO_EXCLUDE: props.config.carequality.envVars.CQ_URLS_TO_EXCLUDE,
+          }),
+          ...(props.config.carequality?.envVars?.CQ_ADDITIONAL_ORGS && {
+            CQ_ADDITIONAL_ORGS: JSON.stringify(props.config.carequality.envVars.CQ_ADDITIONAL_ORGS),
           }),
           ...(props.config.locationService && {
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
@@ -302,6 +304,10 @@ export function createAPIService({
             EHR_ATHENA_CLIENT_KEY_ARN: props.config.ehrIntegration.athenaHealth.athenaClientKeyArn,
             EHR_ATHENA_CLIENT_SECRET_ARN:
               props.config.ehrIntegration.athenaHealth.athenaClientSecretArn,
+            EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
+          }),
+          ...(!isSandbox(props.config) && {
+            DASH_URL: props.config.dashUrl,
           }),
         },
       },
@@ -345,15 +351,22 @@ export function createAPIService({
   nlbListener.addTargetGroups("ApiNetworkLoadBalancerTargetGroup", nlbTargetGroup);
 
   // Health checks
+  const targetGroup = fargateService.targetGroup;
   const healthcheck = {
     healthyThresholdCount: 2,
     unhealthyThresholdCount: 2,
     interval: Duration.seconds(10),
   };
-  fargateService.targetGroup.configureHealthCheck(healthcheck);
+  targetGroup.configureHealthCheck(healthcheck);
   nlbTargetGroup.configureHealthCheck({
     ...healthcheck,
     interval: healthcheck.interval.plus(Duration.seconds(3)),
+  });
+  addDefaultMetricsToTargetGroup({
+    targetGroup,
+    scope: stack,
+    id: "API",
+    alarmAction,
   });
 
   // Access grant for Aurora DB's secret
@@ -375,6 +388,7 @@ export function createAPIService({
   }
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);

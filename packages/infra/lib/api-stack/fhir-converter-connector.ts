@@ -98,9 +98,10 @@ export function createLambda({
   stack,
   vpc,
   sourceQueue,
-  fhirServerQueue,
   dlq,
   fhirConverterBucket,
+  medicalDocumentsBucket,
+  fhirServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
 }: {
@@ -109,9 +110,10 @@ export function createLambda({
   stack: Construct;
   vpc: IVpc;
   sourceQueue: IQueue;
-  fhirServerQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
+  medicalDocumentsBucket: s3.IBucket;
+  fhirServerUrl: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {
@@ -138,9 +140,10 @@ export function createLambda({
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
+      FHIR_SERVER_URL: fhirServerUrl,
+      MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
-      FHIR_SERVER_QUEUE_URL: fhirServerQueue.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
     timeout: lambdaTimeout,
@@ -148,6 +151,7 @@ export function createLambda({
   });
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
+  medicalDocumentsBucket.grantReadWrite(conversionLambda);
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {
@@ -159,7 +163,6 @@ export function createLambda({
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: fhirServerQueue, resource: conversionLambda });
 
   return conversionLambda;
 }

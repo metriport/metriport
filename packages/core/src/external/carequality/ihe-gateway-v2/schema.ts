@@ -2,6 +2,13 @@ import { z } from "zod";
 
 export const stringOrNumberSchema = z.union([z.string(), z.number()]);
 
+export const numericValue = z.preprocess(input => {
+  if (typeof input === "string") {
+    return parseInt(input);
+  }
+  return input;
+}, z.number());
+
 export const schemaOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.literal("")]);
 export const schemaOrArray = <T extends z.ZodTypeAny>(schema: T) =>

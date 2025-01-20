@@ -1,7 +1,7 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import NotFoundError from "../../errors/not-found";
-import { PatientMappingModel } from "../../models/patient-mapping";
+import { NotFoundError } from "@metriport/shared";
 import { PatientMapping, PatientMappingPerSource } from "../../domain/patient-mapping";
+import { PatientMappingModel } from "../../models/patient-mapping";
 
 export type PatientMappingParams = PatientMappingPerSource;
 
@@ -51,20 +51,6 @@ export async function getPatientMappingOrFail({
     throw new NotFoundError("PatientMapping not found", undefined, { cxId, externalId, source });
   }
   return mapping;
-}
-
-export async function deletePatientMapping({
-  cxId,
-  externalId,
-  source,
-}: PatientMappingLookUpParams): Promise<void> {
-  const existing = await PatientMappingModel.findOne({
-    where: { cxId, externalId, source },
-  });
-  if (!existing) {
-    throw new NotFoundError("Entry not found", undefined, { cxId, externalId, source });
-  }
-  await existing.destroy();
 }
 
 export async function deleteAllPatientMappings({

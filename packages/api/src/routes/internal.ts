@@ -1,4 +1,4 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
@@ -6,24 +6,26 @@ import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-fe
 import {
   deleteCxMapping,
   findOrCreateCxMapping,
-  getCxMappingsForCustomer,
+  getCxMappingsByCustomer,
+  setExternalIdOnCxMapping,
 } from "../command/mapping/cx";
 import {
   deleteFacilityMapping,
   findOrCreateFacilityMapping,
-  getFacilityMappingsForCustomer,
+  getFacilityMappingsByCustomer,
+  setExternalIdOnFacilityMapping,
 } from "../command/mapping/facility";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
-  populateFhirServer,
   PopulateFhirServerResponse,
+  populateFhirServer,
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
-import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
+import { isCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
+import { isFacilityMappingSource } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
@@ -313,13 +315,17 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
+    if (!isCxMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
+    }
     const externalId = getFromQueryOrFail("externalId", req);
-    const mappedSource = cxMappingsSourceMap.get(source as CxSources);
-    if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
-    const secondaryMappings = mappedSource.bodyParser.parse(req.body);
+    const secondaryMappingsSchema = secondaryMappingsSchemaMap[source];
+    const secondaryMappings = secondaryMappingsSchema
+      ? secondaryMappingsSchema.parse(req.body)
+      : null;
     await findOrCreateCxMapping({
       cxId,
-      source: source as CxSources,
+      source,
       externalId,
       secondaryMappings,
     });
@@ -341,7 +347,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
-    const result = await getCxMappingsForCustomer({
+    if (source !== undefined && !isCxMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
+    }
+    const result = await getCxMappingsByCustomer({
       cxId,
       ...(source && { source }),
     });
@@ -350,23 +359,45 @@ router.get(
 );
 
 /**
- * DELETE /internal/cx-mapping
+ * PUT /internal/cx-mapping/:id/external-id
+ *
+ * Update cx mapping external ID
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.put(
+  "/cx-mapping/:id/external-id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFrom("params").orFail("id", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await setExternalIdOnCxMapping({
+      cxId,
+      id,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * DELETE /internal/cx-mapping/:id
  *
  * Delete cx mapping
  *
  * @param req.query.cxId - The cutomer's ID.
- * @param req.query.source - Mapping source
- * @param req.query.externalId - Mapped external ID.
  */
 router.delete(
-  "/cx-mapping",
+  "/cx-mapping/:id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const source = getFromQueryOrFail("source", req);
-    const externalId = getFromQueryOrFail("externalId", req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFrom("params").orFail("id", req);
     await deleteCxMapping({
-      source: source as CxSources,
-      externalId,
+      cxId,
+      id,
     });
     return res.sendStatus(httpStatus.NO_CONTENT);
   })
@@ -390,14 +421,14 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     await getFacilityOrFail({ cxId, id: facilityId });
     const source = getFromQueryOrFail("source", req);
-    const externalId = getFromQueryOrFail("externalId", req);
-    if (!facilitysMappingsSourceList.includes(source)) {
-      throw new BadRequestError(`Source ${source} is not mapped.`);
+    if (!isFacilityMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for facility mapping`, undefined, { source });
     }
+    const externalId = getFromQueryOrFail("externalId", req);
     await findOrCreateFacilityMapping({
       cxId,
       facilityId,
-      source: source as FacilitySources,
+      source,
       externalId,
     });
     return res.sendStatus(httpStatus.OK);
@@ -418,7 +449,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
-    const result = await getFacilityMappingsForCustomer({
+    if (source !== undefined && !isFacilityMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for facility mapping`, undefined, { source });
+    }
+    const result = await getFacilityMappingsByCustomer({
       cxId,
       ...(source && { source }),
     });
@@ -427,25 +461,45 @@ router.get(
 );
 
 /**
- * DELETE /internal/facility-mapping
+ * PUT /internal/facility-mapping/:id/external-id
+ *
+ * Update facility mapping external ID
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.put(
+  "/facility-mapping/:id/external-id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFrom("params").orFail("id", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await setExternalIdOnFacilityMapping({
+      cxId,
+      id,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * DELETE /internal/facility-mapping/:id
  *
  * Delete facility mapping
  *
  * @param req.query.cxId - The cutomer's ID.
- * @param req.query.source - Mapping source
- * @param req.query.externalId - Mapped external ID.
  */
 router.delete(
-  "/facility-mapping",
+  "/facility-mapping/:id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const source = getFromQueryOrFail("source", req);
-    const externalId = getFromQueryOrFail("externalId", req);
+    const id = getFrom("params").orFail("id", req);
     await deleteFacilityMapping({
       cxId,
-      source: source as FacilitySources,
-      externalId,
+      id,
     });
     return res.sendStatus(httpStatus.NO_CONTENT);
   })

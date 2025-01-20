@@ -1,5 +1,6 @@
 import { Organization } from "@medplum/fhirtypes";
 
+// TODO move this to the shared/domain package
 export const metriportOrganization: Organization = {
   resourceType: "Organization",
   name: "Metriport",

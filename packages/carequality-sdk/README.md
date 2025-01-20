@@ -1,21 +1,19 @@
 # `carequality-sdk`
 
-SDK to interact with the [Carequality STU3 directory](https://carequality.org/healthcare-directory/index.html) - by Metriport Inc.
+SDK to interact with the
+[Carequality FHIR R4 directory](https://sequoiaproject.org/SequoiaProjectHealthcareDirectoryImplementationGuide/output/index.html) - by Metriport Inc.
 
 ## Usage
 
 ```
 import {
   APIMode,
-  Carequality
+  CarequalityManagementApiFhir
 } from "@metriport/carequality-sdk";
 
-const Carequality = new Carequality({
+const api = new CarequalityManagementApiFhir({
     apiKey: "API_KEY",
     apiMode: APIMode.dev,
-    orgCert: "ORG_CERTIFICATE",
-    rsaPrivateKey: "ORG_PRIVATE_KEY",
-    rsaPrivateKeyPassword: "ORG_PRIVATE_KEY_PASSWORD"
 });
 ```
 

@@ -2,13 +2,11 @@ import { Period, Range } from "@medplum/fhirtypes";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
-dayjs.extend(customParseFormat);
 
 export type DateRange = {
   dateFrom?: string | undefined;

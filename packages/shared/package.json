@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.14.1",
+  "version": "0.16.0",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -18,6 +18,7 @@
   ],
   "exports": {
     ".": "./dist/index.js",
+    "./api": "./dist/api/index.js",
     "./common/*": "./dist/common/*.js",
     "./interface/*": "./dist/interface/*.js",
     "./medical": "./dist/medical/index.js"
@@ -26,6 +27,12 @@
     "*": {
       "/": [
         "dist/index.d.ts"
+      ],
+      "api": [
+        "dist/api/index.d.ts"
+      ],
+      "api/*": [
+        "dist/api/*"
       ],
       "common/*": [
         "dist/common/*"
@@ -63,7 +70,27 @@
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
+  "dependencies": {
+    "@medplum/core": "^2.2.10",
+    "axios": "^1.4.0",
+    "dayjs": "^1.11.9",
+    "fast-xml-parser": "^4.4.1",
+    "http-status": "^1.7.0",
+    "lodash": "^4.17.21",
+    "zod": "^3.22.1"
+  },
   "devDependencies": {
-    "@faker-js/faker": "^8.0.2"
+    "@faker-js/faker": "^8.0.2",
+    "@medplum/fhirtypes": "^2.2.10",
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/jest": "29.5.3",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "prettier": "^2.8.3",
+    "ts-essentials": "^9.3.1",
+    "ts-jest": "29.1.1",
+    "typescript": "^4.9.5"
   }
 }

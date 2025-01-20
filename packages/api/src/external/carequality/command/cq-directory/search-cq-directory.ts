@@ -1,11 +1,10 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { out } from "@metriport/core/util/log";
-import { capture } from "@metriport/core/util/notifications";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
-import { CQDirectoryEntry } from "../../cq-directory";
 import { Config } from "../../../../shared/config";
+import { CQDirectoryEntry } from "../../cq-directory";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
@@ -40,7 +39,7 @@ export async function searchCQDirectoriesAroundPatientAddresses({
   radiusInMiles?: number;
   mustHaveXcpdLink?: boolean;
   _searchCQDirectoriesByRadius?: typeof searchCQDirectoriesByRadius;
-}): Promise<CQDirectoryEntryModel[]> {
+}): Promise<CQDirectoryEntry[]> {
   const { log } = out(`searchCQDirectoriesAroundPatientAddresses, patient ${patient.id}`);
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
@@ -48,7 +47,6 @@ export async function searchCQDirectoriesAroundPatientAddresses({
   if (!coordinates.length) {
     const msg = "Patient address doesn't contain coordinates";
     log(`${msg}, addresses: ${JSON.stringify(patient.data.address)}`);
-    capture.error(msg, { extra: { patient: patient.id, address: patient.data.address } });
     return [];
   }
 
@@ -76,8 +74,8 @@ export async function searchCQDirectoriesByRadius({
   coordinates: Coordinates[];
   radiusInMeters: number;
   mustHaveXcpdLink?: boolean;
-}): Promise<CQDirectoryEntryModel[]> {
-  const orgs: CQDirectoryEntryModel[] = [];
+}): Promise<CQDirectoryEntry[]> {
+  const orgs: CQDirectoryEntry[] = [];
 
   for (const coord of coordinates) {
     const replacements = {
@@ -108,7 +106,7 @@ export async function searchCQDirectoriesByRadius({
       order: Sequelize.literal("distance"),
     });
 
-    orgs.push(...orgsForAddress);
+    orgs.push(...orgsForAddress.map(org => org.dataValues));
   }
 
   return orgs;

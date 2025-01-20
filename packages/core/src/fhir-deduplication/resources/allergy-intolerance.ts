@@ -12,6 +12,7 @@ import {
   fillMaps,
   isUnknownCoding,
   unknownCode,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
@@ -166,8 +167,8 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
 function isKnownAllergy(coding: Coding, text?: string | undefined): boolean {
   if (isUnknownCoding(coding)) return false;
 
-  const code = coding.code?.trim().toLowerCase();
-  const display = coding.display?.trim().toLowerCase();
+  const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+  const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
 
   let isValid = false;
   if (code) isValid = true;
@@ -185,7 +186,12 @@ function isUnknownAllergy(substance: CodeableConcept | undefined): boolean {
     return true;
   }
 
-  if (coding?.some(coding => isUnknownAllergyText(coding.display))) {
+  if (
+    coding?.some(coding => {
+      const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
+      return isUnknownAllergyText(display);
+    })
+  ) {
     return true;
   }
 
@@ -193,7 +199,7 @@ function isUnknownAllergy(substance: CodeableConcept | undefined): boolean {
 }
 
 function isUnknownAllergyText(text: string | undefined) {
-  return text && blacklistedSubstanceDisplays.includes(text.toLowerCase().trim());
+  return text && blacklistedSubstanceDisplays.includes(text.trim().toLowerCase());
 }
 
 function isKnownManifestation(concept: CodeableConcept) {

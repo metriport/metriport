@@ -65,7 +65,7 @@ export const resourcesSearchableByPatient = [
 
 export const resourcesSearchableBySubject = ["AdverseEvent", "Task"] as const;
 
-export const generalResources = ["Practitioner"] as const;
+export const generalResources = ["Location", "Organization", "Patient", "Practitioner"] as const;
 
 export const resourceTypeForConsolidation = [
   ...resourcesSearchableByPatient,

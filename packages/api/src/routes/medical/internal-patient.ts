@@ -1,7 +1,7 @@
-import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -23,7 +23,6 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
   getConsolidated,
   getConsolidatedAndSendToCx,
@@ -86,6 +85,7 @@ import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { schemaCreateToPatientData } from "./schemas/patient";
+import { handleParams } from "../helpers/handle-params";
 
 dayjs.extend(duration);
 
@@ -199,6 +199,7 @@ router.post(
  */
 router.delete(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -230,6 +231,7 @@ router.delete(
  */
 router.post(
   "/:patientId/link/:source",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -268,6 +270,7 @@ router.post(
  */
 router.delete(
   "/:patientId/link/:source",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -297,6 +300,7 @@ router.delete(
  */
 router.get(
   "/:patientId/link",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -623,13 +627,9 @@ router.get(
       ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
       : undefined;
 
-    const [organization, patient] = await Promise.all([
-      getOrganizationOrFail({ cxId }),
-      getPatientOrFail({ id: patientId, cxId }),
-    ]);
+    const patient = await getPatientOrFail({ id: patientId, cxId });
     const data = await getConsolidated({
       patient,
-      organization,
       documentIds,
       resources,
       dateFrom,
@@ -738,6 +738,7 @@ router.get(
  */
 router.get(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -759,6 +760,7 @@ router.get(
  */
 router.post(
   "/:id/patient-discovery",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -852,23 +854,21 @@ router.get(
  */
 router.post(
   "/:id/consolidated",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
-    const [organization, patient] = await Promise.all([
-      getOrganizationOrFail({ cxId }),
-      getPatientOrFail({ id, cxId }),
-    ]);
+    const patient = await getPatientOrFail({ id, cxId });
     const {
       requestId,
       conversionType,
       resources,
-      generateAiBrief,
       dateFrom,
       dateTo,
       bundleLocation,
       bundleFilename,
+      fromDashboard,
     } = internalSendConsolidatedSchema.parse(req.body);
 
     const bundle = await getConsolidatedSnapshotFromS3({
@@ -878,14 +878,13 @@ router.post(
 
     getConsolidatedAndSendToCx({
       patient,
-      organization,
       bundle,
       requestId,
       conversionType,
-      generateAiBrief,
       resources,
       dateFrom,
       dateTo,
+      fromDashboard,
     }).catch(
       processAsyncError(
         "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"
@@ -941,9 +940,11 @@ router.post(
  *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
- * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.facilityId The facility ID for running the patient import.
  * @param req.query.jobId The job Id of the fle. TEMPORARY.
- * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
+ * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
+ * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
  * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
  *
  */
@@ -954,6 +955,8 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const jobId = getFrom("query").orFail("jobId", req);
+    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
+    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const dryrun = getFromQueryAsBoolean("dryrun", req);
 
@@ -965,6 +968,8 @@ router.post(
       facilityId,
       jobId,
       processPatientImportLambda: Config.getPatientImportLambdaName(),
+      triggerConsolidated,
+      disableWebhooks,
       rerunPdOnNewDemographics,
       dryrun,
     });

@@ -13,7 +13,6 @@ import {
 import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util";
@@ -29,7 +28,6 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSignedURL } from "../document/document-download";
-import { checkAiBriefEnabled } from "./check-ai-brief-enabled";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import {
   buildDocRefBundleWithAttachment,
@@ -44,7 +42,6 @@ dayjs.extend(duration);
 
 export type GetConsolidatedParams = {
   patient: Patient;
-  organization: Organization;
   bundle?: SearchSetBundle;
   requestId?: string;
   documentIds?: string[];
@@ -55,7 +52,6 @@ type GetConsolidatedPatientData = {
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  generateAiBrief?: boolean;
   fromDashboard?: boolean;
   // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
   forceDataFromFhir?: boolean;
@@ -84,11 +80,8 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-  generateAiBrief,
   fromDashboard,
 }: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
-  const isGenerateAiBrief = await checkAiBriefEnabled({ cxId, generateAiBrief });
-
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
@@ -149,7 +142,6 @@ export async function startConsolidatedQuery({
     dateTo,
     requestId,
     conversionType,
-    generateAiBrief: isGenerateAiBrief,
     fromDashboard,
   }).catch(emptyFunction);
 
@@ -221,8 +213,7 @@ export function getIsSameResources(
 export async function getConsolidatedAndSendToCx(
   params: GetConsolidatedSendToCxParams
 ): Promise<void> {
-  const { patient, requestId, resources, dateFrom, dateTo, conversionType, generateAiBrief } =
-    params;
+  const { patient, requestId, resources, dateFrom, dateTo, conversionType, fromDashboard } = params;
   try {
     const { bundle, filters } = await getConsolidated(params);
     // trigger WH call
@@ -232,18 +223,19 @@ export async function getConsolidatedAndSendToCx(
       status: "completed",
       bundle,
       filters,
+      isDisabled: fromDashboard,
     }).catch(emptyFunction);
   } catch (error) {
     processConsolidatedDataWebhook({
       patient,
       requestId,
       status: "failed",
+      isDisabled: fromDashboard,
       filters: {
         resources: resources ? resources.join(", ") : undefined,
         dateFrom,
         dateTo,
         conversionType,
-        generateAiBrief,
       },
     }).catch(emptyFunction);
   }
@@ -254,7 +246,6 @@ export async function getConsolidated({
   resources,
   dateFrom,
   dateTo,
-  generateAiBrief,
   requestId,
   conversionType,
   bundle,
@@ -264,7 +255,6 @@ export async function getConsolidated({
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
     dateTo,
-    generateAiBrief,
   };
   try {
     if (!bundle) {
@@ -273,7 +263,6 @@ export async function getConsolidated({
         resources,
         dateFrom,
         dateTo,
-        generateAiBrief,
       });
     }
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
@@ -307,7 +296,6 @@ export async function getConsolidated({
         dateFrom,
         dateTo,
         conversionType,
-        generateAiBrief,
       });
 
       analytics({
@@ -422,7 +410,6 @@ export async function getConsolidatedPatientData({
   resources,
   dateFrom,
   dateTo,
-  generateAiBrief,
   fromDashboard = false,
   forceDataFromFhir = false,
 }: GetConsolidatedPatientData): Promise<SearchSetBundle> {
@@ -431,7 +418,6 @@ export async function getConsolidatedPatientData({
     resources,
     dateFrom,
     dateTo,
-    generateAiBrief,
     isAsync: false,
     fromDashboard,
     forceDataFromFhir,
@@ -449,7 +435,6 @@ export async function getConsolidatedPatientDataAsync({
   dateTo,
   requestId,
   conversionType,
-  generateAiBrief,
   fromDashboard,
 }: GetConsolidatedPatientData & {
   requestId: string;
@@ -462,7 +447,6 @@ export async function getConsolidatedPatientDataAsync({
     resources,
     dateFrom,
     dateTo,
-    generateAiBrief,
     isAsync: true,
     fromDashboard,
   };

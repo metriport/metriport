@@ -14,6 +14,7 @@ import {
   extractDisplayFromConcept,
   fillMaps,
   hasBlacklistedText,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): DeduplicationResult<Medication> {
@@ -46,7 +47,7 @@ export function groupSameMedications(medications: Medication[]): {
   function removeOtherCodes(master: Medication): Medication {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
       return (
         system?.includes(SNOMED_CODE) ||
         system?.includes(SNOMED_OID) ||
@@ -113,8 +114,8 @@ function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(RXNORM_CODE) || system.includes(RXNORM_OID)) {
           rxnormCode = code;

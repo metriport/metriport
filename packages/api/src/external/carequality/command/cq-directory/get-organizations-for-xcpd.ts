@@ -1,11 +1,11 @@
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { CQDirectoryEntry } from "../../cq-directory";
 import {
   getRecordLocatorServiceOrganizations,
   getStandaloneOrganizations,
   getSublinkOrganizations,
 } from "./cq-gateways";
 
-function sortOrgsByNearbyOrder(orgs: CQDirectoryEntryModel[], orderMap: Map<string, number>) {
+function sortOrgsByNearbyOrder(orgs: CQDirectoryEntry[], orderMap: Map<string, number>) {
   return orgs.sort((a, b) => {
     const orderA = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
     const orderB = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
@@ -16,7 +16,7 @@ function sortOrgsByNearbyOrder(orgs: CQDirectoryEntryModel[], orderMap: Map<stri
 
 export async function getOrganizationsForXCPD(
   nearbyOrgOrderMap: Map<string, number>
-): Promise<CQDirectoryEntryModel[]> {
+): Promise<CQDirectoryEntry[]> {
   const [rlsAndEhex, sublinks, standalone] = await Promise.all([
     getRecordLocatorServiceOrganizations(),
     getSublinkOrganizations(),

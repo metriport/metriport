@@ -12,6 +12,9 @@ import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
+import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
+import { summarizeFilteredBundleWithAI } from "../ai-brief/create";
+import { generateAiBriefFhirResource } from "../ai-brief/shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
@@ -46,9 +49,10 @@ export async function createConsolidatedFromConversions({
   const fhirPatient = patientToFhir(patient);
   const patientEntry = buildBundleEntry(fhirPatient);
 
-  const [conversions, docRefs] = await Promise.all([
+  const [conversions, docRefs, isAiBriefFeatureFlagEnabled] = await Promise.all([
     getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
+    isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
   log(`Got ${conversions.length} resources from conversions`);
 
@@ -68,6 +72,16 @@ export async function createConsolidatedFromConversions({
   const originalDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId);
   const normalizedDestFileName = createConsolidatedDataFilePath(cxId, patientId, "normalized");
   const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, "deduped");
+  log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
+
+  if (isAiBriefFeatureFlagEnabled) {
+    const aiBriefContent = await summarizeFilteredBundleWithAI(deduped, cxId, patientId);
+    const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
+    if (aiBriefFhirResource) {
+      deduped.entry?.push(buildBundleEntry(aiBriefFhirResource));
+    }
+  }
+
   log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
   log(`Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${dedupDestFileName}`);
   await Promise.all([

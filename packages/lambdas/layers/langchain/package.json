@@ -1,0 +1,31 @@
+{
+  "name": "langchain-layer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "preinstall": "npm i -g rimraf",
+    "clean": "rimraf dist && rimraf node_modules",
+    "prep-deploy": "./scripts/prep-deploy.sh",
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-crypto/sha256-js": "5.0.0",
+    "@aws-sdk/credential-provider-node": "3.435.0",
+    "@langchain/core": "0.3.19",
+    "@smithy/eventstream-codec": "2.0.5",
+    "@smithy/protocol-http": "3.0.6",
+    "@smithy/signature-v4": "2.0.10",
+    "@smithy/util-utf8": "2.0.0",
+    "core-js": "^3.39.0",
+    "langchain": "0.3.6",
+    "node-fetch": "^3.3.2",
+    "web-streams-polyfill": "^4.0.0",
+    "zod-to-json-schema": "3.22.5"
+  }
+}

@@ -182,16 +182,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
     const b64 = xmlBodyTexts[0]?.textContent;
     if (!b64) {
-      const msg = `No b64 found in xml`;
-      log(msg);
-      this.config.capture &&
-        this.config.capture.message(msg, {
-          extra: {
-            context: `documentDownloaderLocal.parseXmlFile`,
-            fileInfo: requestedFileInfo,
-          },
-          level: "warning",
-        });
+      log(`No b64 found in xml. File info: ${JSON.stringify(requestedFileInfo)}`);
       return downloadedFile;
     }
 

@@ -38,3 +38,9 @@ export function schemaUpdateToPatientData(input: PatientUpdate): PatientData {
 export function schemaDemographicsToPatientData(input: Demographics): PatientData {
   return schemaCreateToPatientData(input);
 }
+
+export type PatientHieOptOutResponse = {
+  id: string;
+  hieOptOut: boolean;
+  message: string;
+};

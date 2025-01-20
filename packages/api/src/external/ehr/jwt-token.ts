@@ -1,5 +1,5 @@
 import z from "zod";
-import { JwtTokenSources, JwtTokenData } from "../../domain/jwt-token";
+import { JwtTokenSource, JwtTokenData } from "../../domain/jwt-token";
 import { getJwtToken, findOrCreateJwtToken } from "../../command/jwt-token";
 
 export const createJwtSchema = z.object({
@@ -13,19 +13,15 @@ export async function checkJwtToken({
   source,
 }: {
   token: string;
-  source: JwtTokenSources;
+  source: JwtTokenSource;
 }): Promise<{ active: boolean; expired?: boolean }> {
   const authInfo = await getJwtToken({
     token,
     source,
   });
-  if (authInfo) {
-    if (authInfo.exp >= new Date()) {
-      return { active: true };
-    }
-    return { active: false, expired: true };
-  }
-  return { active: false };
+  if (!authInfo) return { active: false };
+  if (authInfo.exp < new Date()) return { active: false, expired: true };
+  return { active: true };
 }
 
 export async function saveJwtToken({
@@ -34,7 +30,7 @@ export async function saveJwtToken({
   data,
 }: {
   token: string;
-  source: JwtTokenSources;
+  source: JwtTokenSource;
   data: CreateJwt;
 }): Promise<void> {
   await findOrCreateJwtToken({

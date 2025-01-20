@@ -33,9 +33,6 @@
       "path": "./packages/infra/tsconfig.ref.json"
     },
     {
-      "path": "./packages/react-native-sdk/tsconfig.ref.json"
-    },
-    {
       "path": "./packages/utils/tsconfig.ref.json"
     }
   ]
