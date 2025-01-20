@@ -13,6 +13,7 @@ import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
+import { isPatient } from "../../external/fhir/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture, out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
@@ -23,7 +24,6 @@ import {
   ConsolidatedSnapshotResponse,
 } from "./get-snapshot";
 import { uploadConsolidatedSnapshotToS3 } from "./snapshot-on-s3";
-import { isPatient } from "../../external/fhir/shared";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
