@@ -1,0 +1,94 @@
+#!/usr/bin/env node
+
+const { spawnSync } = require('child_process');
+const path = require('path');
+
+function debug(...args) {
+  console.log('[Version Check Debug]:', ...args);
+}
+
+function getCurrentBranch() {
+  const result = spawnSync('git', ['symbolic-ref', '--short', 'HEAD'], {
+    encoding: 'utf8'
+  });
+  
+  if (result.error) {
+    console.error('Git command failed:', result.error);
+    throw new Error('Failed to get current git branch');
+  }
+
+  return result.stdout.trim();
+}
+
+function getTagsToBePushed() {
+  const result = spawnSync('git', ['diff', '--name-only', '@{u}'], {
+    encoding: 'utf8'
+  });
+  
+  if (result.error) {
+    console.error('Failed to get pushed refs:', result.error);
+    throw new Error('Failed to get pushed refs');
+  }
+
+  // Get all tags being pushed
+  const tagResult = spawnSync('git', ['show-ref', '--tags'], {
+    encoding: 'utf8'
+  });
+  
+  if (tagResult.error) {
+    console.error('Failed to get tags:', tagResult.error);
+    throw new Error('Failed to get tags');
+  }
+
+  return tagResult.stdout
+    .split('\n')
+    .filter(Boolean)
+    .map(line => {
+      const [, ref] = line.split(' ');
+      return ref.replace('refs/tags/', '');
+    });
+}
+
+function validateVersion(version, packageName) {
+  const currentBranch = getCurrentBranch();
+  const isAlpha = version.includes('-alpha.');
+  const isDevelopBranch = currentBranch === 'develop';
+  
+  if (isAlpha && isDevelopBranch) {
+    throw new Error(
+      `Cannot push alpha version ${version} for package ${packageName} from develop branch.\n` +
+      'Alpha versions should only be published from feature branches.'
+    );
+  }
+  
+  if (!isAlpha && !isDevelopBranch) {
+    throw new Error(
+      `Cannot push non-alpha version ${version} for package ${packageName} from branch ${currentBranch}.\n` +
+      'Non-alpha versions should only be published from develop branch.'
+    );
+  }
+}
+
+// Main execution
+try {
+  const tags = getTagsToBePushed();
+
+  tags.forEach(tag => {
+    // Parse package name and version from tag format @my-package/X.Y.Z
+    const parts = tag.split('/');
+    if (parts.length === 2) {
+      const packageName = parts[0]; // @my-package
+      const version = parts[1];     // X.Y.Z
+      validateVersion(version, packageName);
+    }
+  });
+
+  process.exit(0);
+
+} catch (error) {
+  console.error('\x1b[31m%s\x1b[0m', '='.repeat(80));
+  console.error('\x1b[31m%s\x1b[0m', 'Version Check Error:');
+  console.error('\x1b[31m%s\x1b[0m', error.message);
+  console.error('\x1b[31m%s\x1b[0m', '='.repeat(80));
+  process.exit(1);
+}
