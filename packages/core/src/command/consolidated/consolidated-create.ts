@@ -69,7 +69,7 @@ export async function createConsolidatedFromConversions({
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
   if (isAiBriefFeatureFlagEnabled) {
-    const aiBriefContent = await summarizeFilteredBundleWithAI(withDups, cxId, patientId);
+    const aiBriefContent = await summarizeFilteredBundleWithAI(deduped, cxId, patientId);
     const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
     if (aiBriefFhirResource) {
       deduped.entry?.push(buildBundleEntry(aiBriefFhirResource));
