@@ -11,8 +11,6 @@ import axios from "axios";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
-import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
-import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { isPatient } from "../../external/fhir/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
@@ -49,20 +47,8 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       patientId
     );
 
-    const normalizedBundle = normalize({
-      cxId,
-      patientId,
-      bundle: originalBundleWithoutContainedPatients,
-    });
-
-    const dedupedBundle = deduplicate({
-      cxId,
-      patientId,
-      bundle: normalizedBundle,
-    });
-
     try {
-      checkBundle(dedupedBundle, cxId, patientId);
+      checkBundle(originalBundleWithoutContainedPatients, cxId, patientId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const msg = "Bundle contains invalid data";
@@ -73,7 +59,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         uploadConsolidatedSnapshotToS3({
           ...params,
           s3BucketName: this.bucketName,
-          bundle: dedupedBundle,
+          bundle: originalBundleWithoutContainedPatients,
           type: "invalid",
         });
       } catch (error) {
@@ -82,28 +68,16 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       throw new MetriportError(msg, error, additionalInfo);
     }
 
-    const [, dedupedS3Info] = await Promise.all([
+    const [consolidatedSnapshotS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
         bundle: originalBundleWithoutContainedPatients,
         type: "original",
       }),
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: normalizedBundle,
-        type: "normalized",
-      }),
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: dedupedBundle,
-        type: "deduped",
-      }),
     ]);
 
-    const { bucket, key } = dedupedS3Info;
+    const { bucket, key } = consolidatedSnapshotS3Info;
     const info = {
       bundleLocation: bucket,
       bundleFilename: key,

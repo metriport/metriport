@@ -11,9 +11,9 @@ import {
   valueQuantityTempF,
   valueQuantityWeightKg,
   valueQuantityWeightLb,
-} from "../../fhir-deduplication/__tests__/examples/observation-examples";
-import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
-import { normalizeObservations } from "../resources/observation";
+} from "../../../../../fhir-deduplication/__tests__/examples/observation-examples";
+import { makeObservation } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
+import { normalizeObservations } from "../observation";
 
 let observationId: string;
 let observation: Observation;

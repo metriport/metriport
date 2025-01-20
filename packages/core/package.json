@@ -26,8 +26,6 @@
     "./mpi/*": "./dist/mpi/*.js",
     "./fhir-deduplication": "./dist/fhir-deduplication/index.js",
     "./fhir-deduplication/*": "./dist/fhir-deduplication/*.js",
-    "./fhir-normalization": "./dist/fhir-normalization/index.js",
-    "./fhir-normalization/*": "./dist/fhir-normalization/*.js",
     "./fhir-to-cda": "./dist/fhir-to-cda/index.js",
     "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js",
     "./shareback": "./dist/shareback/index.js",
@@ -69,12 +67,6 @@
       ],
       "fhir-deduplication/*": [
         "dist/fhir-deduplication/*"
-      ],
-      "fhir-normalization": [
-        "dist/fhir-normalization/index.d.ts"
-      ],
-      "fhir-normalization/*": [
-        "dist/fhir-normalization/*"
       ],
       "fhir-to-cda": [
         "dist/fhir-to-cda/index.d.ts"

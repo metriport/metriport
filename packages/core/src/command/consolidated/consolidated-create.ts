@@ -3,18 +3,17 @@ import { parseFhirBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
+import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
-import { normalize } from "../../external/fhir/consolidated/normalize";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
-import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
-import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
 import { summarizeFilteredBundleWithAI } from "../ai-brief/create";
 import { generateAiBriefFhirResource } from "../ai-brief/shared";
+import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
@@ -63,15 +62,11 @@ export async function createConsolidatedFromConversions({
     `Added ${docRefs.length} docRefs and the Patient, to a total of ${original.entry.length} entries`
   );
 
-  log(`Normalizing consolidated bundle...`);
-  const normalized = normalize({ cxId, patientId, bundle: original });
-  log(`...done. Deduplicating consolidated bundle...`);
-  const deduped = deduplicate({ cxId, patientId, bundle: normalized });
-  log(`...done, from ${normalized.entry?.length} to ${deduped.entry?.length} resources`);
+  const deduped = deduplicate({ cxId, patientId, bundle: original });
+  log(`...done, from ${original.entry?.length} to ${deduped.entry?.length} resources`);
 
-  const originalDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId);
-  const normalizedDestFileName = createConsolidatedDataFilePath(cxId, patientId, "normalized");
-  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, "deduped");
+  const originalDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
+  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
   if (isAiBriefFeatureFlagEnabled) {
@@ -93,13 +88,7 @@ export async function createConsolidatedFromConversions({
     }),
     s3Utils.uploadFile({
       bucket: destinationBucketName,
-      key: normalizedDestFileName,
-      file: Buffer.from(JSON.stringify(normalized)),
-      contentType: "application/json",
-    }),
-    s3Utils.uploadFile({
-      bucket: destinationBucketName,
-      key: originalDupsDestFileName,
+      key: originalDestFileName,
       file: Buffer.from(JSON.stringify(original)),
       contentType: "application/json",
     }),
