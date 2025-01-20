@@ -53,10 +53,16 @@ export interface Organization extends BaseDomain, Required<OrganizationCreate> {
   organizationNumber: number;
 }
 
-export function isHealthcareItVendor(type: OrganizationBizType) {
+export function isHealthcareItVendor(type: OrganizationBizType): boolean;
+export function isHealthcareItVendor(type: Organization): boolean;
+export function isHealthcareItVendor(param: OrganizationBizType | Organization): boolean {
+  const type = typeof param === "string" ? param : param.type;
   return type === OrganizationBizType.healthcareITVendor;
 }
 
-export function isProvider(type: OrganizationBizType) {
+export function isProvider(type: OrganizationBizType): boolean;
+export function isProvider(type: Organization): boolean;
+export function isProvider(param: OrganizationBizType | Organization): boolean {
+  const type = typeof param === "string" ? param : param.type;
   return type === OrganizationBizType.healthcareProvider;
 }

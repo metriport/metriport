@@ -30,6 +30,10 @@ on:
         description: "the ID of a test patient for e2e tests"
         required: false
         type: string
+      CQ_API_MODE:
+        description: "the CQ API mode to use for e2e tests"
+        required: false
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -54,6 +58,10 @@ on:
       CW_MEMBER_OID:
         required: false
       CW_MEMBER_NAME:
+        required: false
+      CQ_MANAGEMENT_API_KEY:
+        required: false
+      CQ_TEST_ORG_OID:
         required: false
 
 jobs:
@@ -106,6 +114,9 @@ jobs:
           CW_MEMBER_PRIVATE_KEY: ${{ secrets.CW_MEMBER_PRIVATE_KEY }}
           CW_MEMBER_OID: ${{ secrets.CW_MEMBER_OID }}
           CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME }}
+          CQ_API_MODE: ${{ inputs.CQ_API_MODE }}
+          CQ_MANAGEMENT_API_KEY: ${{ secrets.CQ_MANAGEMENT_API_KEY }}
+          CQ_TEST_ORG_OID: ${{ secrets.CQ_TEST_ORG_OID }}
           API_URL: ${{ inputs.api_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
           CONVERSION_RESULT_BUCKET_NAME: ${{ inputs.CONVERSION_RESULT_BUCKET_NAME }}

@@ -1,23 +1,23 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { resourceTypeForConsolidation } from "@metriport/api-sdk";
+import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { downloadedFromHIEs } from "@metriport/core/external/fhir/shared/index";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { isMimeTypeXML } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
+import { formatNumber } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { groupBy } from "lodash";
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
-import { Patient } from "@metriport/core/domain/patient";
 import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
-import { getDocumentsFromFHIR as getDocumentsFromFHIRServer } from "../../../external/fhir/document/get-documents";
 import { countResources } from "../../../external/fhir/patient/count-resources";
-import { downloadedFromHIEs } from "@metriport/core/external/fhir/shared/index";
 import { Config } from "../../../shared/config";
 import { errorToString } from "../../../shared/log";
-import { formatNumber } from "@metriport/shared/common/numbers";
 import { getDocRefMappings } from "../docref-mapping/get-docref-mapping";
 import { deleteConsolidated as deleteConsolidatedOnFHIRServer } from "../patient/consolidated-delete";
 import { getPatientOrFail } from "../patient/get-patient";
@@ -130,7 +130,7 @@ async function getDocumentsFromFHIR({
   documentIds: string[];
   log: typeof console.log;
 }): Promise<DocRefWithS3Info[]> {
-  const documentsFromFHIR = await getDocumentsFromFHIRServer({ cxId, documentIds });
+  const documentsFromFHIR = await getDocuments({ cxId, documentIds });
 
   const documentsFromHIEs = documentsFromFHIR.filter(downloadedFromHIEs);
 

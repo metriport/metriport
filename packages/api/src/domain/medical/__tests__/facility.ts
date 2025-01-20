@@ -70,10 +70,10 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
 }
 
 export function makeFacilityModel(params?: Partial<FacilityModel>): FacilityModel {
-  const facility = makeFacility(params);
-  const model = new FacilityModel(facility);
-  model.cqType = facility.cqType;
-  model.cwType = facility.cwType;
-  model.data = facility.data;
-  return model;
+  const facility = makeFacility(params) as unknown as FacilityModel;
+  facility.dataValues = facility;
+  facility.save = jest.fn();
+  facility.update = jest.fn();
+  facility.destroy = jest.fn();
+  return facility;
 }

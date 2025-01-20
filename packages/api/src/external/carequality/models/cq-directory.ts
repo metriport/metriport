@@ -3,6 +3,15 @@ import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../../../models/_default";
 import { CQDirectoryEntry } from "../cq-directory";
 
+// TODO  2553 Rename this to root_organization on the second release
+export const rootOrgColumnName = "managing_organization";
+export const managingOrgIdColumnName = "managing_organization_id";
+export const urlXcpdColumnName = "url_xcpd";
+export const urlDqColumnName = "url_dq";
+export const urlDrColumnName = "url_dr";
+export const addressLineColumnName = "address_line";
+export const lastUpdatedAtCqColumnName = "last_updated_at_cq";
+
 export class CQDirectoryEntryModel
   extends BaseModel<CQDirectoryEntryModel>
   implements CQDirectoryEntry
@@ -21,7 +30,7 @@ export class CQDirectoryEntryModel
   declare state?: string;
   declare zip?: string;
   declare data?: Organization;
-  declare managingOrganization?: string;
+  declare rootOrganization?: string;
   declare managingOrganizationId?: string;
   declare active: boolean;
   declare lastUpdatedAtCQ: string;
@@ -35,16 +44,16 @@ export class CQDirectoryEntryModel
         },
         urlXCPD: {
           type: DataTypes.STRING,
-          field: "url_xcpd",
+          field: urlXcpdColumnName,
           allowNull: true,
         },
         urlDQ: {
           type: DataTypes.STRING,
-          field: "url_dq",
+          field: urlDqColumnName,
         },
         urlDR: {
           type: DataTypes.STRING,
-          field: "url_dr",
+          field: urlDrColumnName,
         },
         lat: {
           type: DataTypes.FLOAT,
@@ -54,7 +63,7 @@ export class CQDirectoryEntryModel
         },
         addressLine: {
           type: DataTypes.STRING,
-          field: "address_line",
+          field: addressLineColumnName,
         },
         city: {
           type: DataTypes.STRING,
@@ -71,20 +80,20 @@ export class CQDirectoryEntryModel
         point: {
           type: "CUBE",
         },
-        managingOrganization: {
+        rootOrganization: {
           type: DataTypes.STRING,
-          field: "managing_organization",
+          field: rootOrgColumnName,
         },
         managingOrganizationId: {
           type: DataTypes.STRING,
-          field: "managing_organization_id",
+          field: managingOrgIdColumnName,
         },
         active: {
           type: DataTypes.BOOLEAN,
         },
         lastUpdatedAtCQ: {
           type: DataTypes.STRING,
-          field: "last_updated_at_cq",
+          field: lastUpdatedAtCqColumnName,
         },
       },
       {
