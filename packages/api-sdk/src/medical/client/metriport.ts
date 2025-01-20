@@ -219,6 +219,8 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     console.log(resp.data);
+    console.log(resp.data);
+
     return organizationSchema.parse(resp.data);
   }
 
