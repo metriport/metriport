@@ -1,4 +1,4 @@
-import { Observation, Quantity, ObservationReferenceRange } from "@medplum/fhirtypes";
+import { Observation, ObservationReferenceRange, Quantity } from "@medplum/fhirtypes";
 import convert, { Unit } from "convert-units";
 
 type UnitComplex = {
@@ -78,12 +78,14 @@ function convertRangeValue(quantity: Quantity | undefined): Quantity | undefined
   if (!result) return;
 
   const { newValue, newUnit, code } = result;
+  const newCode = code ?? quantity.code;
 
-  quantity.value = newValue;
-  quantity.unit = newUnit;
-  if (code) quantity.code = code;
-
-  return quantity;
+  return {
+    ...quantity,
+    value: newValue,
+    unit: newUnit,
+    ...(newCode ? { code: newCode } : undefined),
+  };
 }
 
 function getConvertedValueAndUnit(quantity: Quantity):
