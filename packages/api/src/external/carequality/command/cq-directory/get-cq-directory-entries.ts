@@ -1,35 +1,41 @@
 import { QueryTypes } from "sequelize";
 import { Pagination, sortForPagination } from "../../../../command/pagination";
 import { CQDirectoryEntry2 } from "../../cq-directory";
-import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
+import { HIEDirectoryEntryViewModel } from "../../models/hie-directory-view";
 
-export async function getCQDirectoryEntriesByFilter(
+export async function getHieDirectoryEntriesByFilter(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   { filter, pagination }: { filter: string; pagination: Pagination }
 ): Promise<CQDirectoryEntry2[]> {
-  const sequelize = CQDirectoryEntryViewModel.sequelize;
+  const sequelize = HIEDirectoryEntryViewModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const querySelect = `SELECT * FROM ${CQDirectoryEntryViewModel.tableName} WHERE 1 = 1 `;
+  const querySelect = `SELECT * FROM ${HIEDirectoryEntryViewModel.tableName} WHERE 1 = 1 `;
 
   const { toItem, fromItem } = pagination ?? {};
   const toItemStr = toItem ? ` AND id >= :toItem` : "";
   const fromItemStr = fromItem ? ` AND id <= :fromItem` : "";
   const queryPagination = querySelect + " " + [toItemStr, fromItemStr].filter(Boolean).join("");
 
-  const queryOrder = queryPagination + " ORDER BY id " + (toItem ? "ASC" : "DESC");
+  const queryFTS =
+    queryPagination +
+    (filter
+      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
+      : "");
+
+  const queryOrder = queryFTS + " ORDER BY id " + (toItem ? "ASC" : "DESC");
 
   const { count } = pagination ?? {};
-  const queryLimits = queryOrder + (count ? ` LIMIT :count` : "");
+  const queryFinal = queryOrder + (count ? ` LIMIT :count` : "");
 
-  const queryFinal = queryLimits;
   const cqDirectoryEntries = await sequelize.query(queryFinal, {
-    model: CQDirectoryEntryViewModel,
+    model: HIEDirectoryEntryViewModel,
     mapToModel: true,
     replacements: {
       ...(toItem ? { toItem } : {}),
       ...(fromItem ? { fromItem } : {}),
       ...(count ? { count } : {}),
+      ...(filter ? { filter } : {}),
     },
     type: QueryTypes.SELECT,
   });
@@ -38,14 +44,14 @@ export async function getCQDirectoryEntriesByFilter(
   return sortedCqDirectoryEntries.map(entry => entry.dataValues);
 }
 
-export async function getCQDirectoryEntriesByFilterCount(
+export async function getHieDirectoryEntriesByFilterCount(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   { filter }: { filter: string }
 ): Promise<number> {
-  const sequelize = CQDirectoryEntryViewModel.sequelize;
+  const sequelize = HIEDirectoryEntryViewModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const querySelect = `SELECT COUNT(*) FROM ${CQDirectoryEntryViewModel.tableName} `;
+  const querySelect = `SELECT COUNT(*) FROM ${HIEDirectoryEntryViewModel.tableName} `;
 
   const result = await sequelize.query(querySelect, {
     type: QueryTypes.SELECT,
