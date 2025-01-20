@@ -251,7 +251,6 @@ export async function handler(event: SQSEvent) {
             bundle: hydratedBundle,
             bucketName: conversionResultBucketName,
             fileName: s3FileName,
-            message,
             context: lambdaName,
             lambdaParams,
             log,

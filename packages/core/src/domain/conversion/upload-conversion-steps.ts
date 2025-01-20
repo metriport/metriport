@@ -149,7 +149,6 @@ export async function storeHydratedConversionResult({
   bundle,
   bucketName,
   fileName,
-  message,
   context,
   lambdaParams,
   log,
@@ -158,7 +157,6 @@ export async function storeHydratedConversionResult({
   bundle: Bundle<Resource>;
   bucketName: string;
   fileName: string;
-  message: SQSRecord;
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
@@ -173,7 +171,6 @@ export async function storeHydratedConversionResult({
     log,
     errorConfig: {
       errorMessage: "Error uploading hydrated FHIR Bundle",
-      sqsMessage: message,
       context,
       captureParams: {
         conversionResultFilename: fileName,
