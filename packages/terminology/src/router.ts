@@ -43,9 +43,9 @@ fhirRouter.post(
   "/code-system/lookup/bulk",
   asyncHandler(async (req: Request, res: Response) => {
     const fhirRequest = parseIntoFhirRequest(req);
-    console.log("fhirRequest", JSON.stringify(fhirRequest, null, 2));
+    console.log("Received bulk request body:", JSON.stringify(fhirRequest.body));
     const response = await bulkCodeSystemLookupHandler(fhirRequest);
-    res.status(200).json(response);
+    return res.status(response.status).json(response.data);
   })
 );
 

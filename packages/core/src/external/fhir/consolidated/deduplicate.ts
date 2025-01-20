@@ -13,7 +13,7 @@ export function deduplicate({
   patientId: string;
   bundle: Bundle<Resource>;
 }): Bundle<Resource> {
-  const { log } = out(`Hydrating FHIR for cxId ${cxId}, patientId ${patientId}`);
+  const { log } = out(`Deduplicate. cx ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
   const dedupedBundle = deduplicateFhir(bundle, cxId, patientId);
 

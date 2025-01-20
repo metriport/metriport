@@ -13,7 +13,7 @@ export async function hydrate({
   patientId: string;
   bundle: Bundle<Resource>;
 }): Promise<Bundle<Resource>> {
-  const { log } = out(`Hydrating FHIR for cxId ${cxId}, patientId ${patientId}`);
+  const { log } = out(`Hydrate. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
   const metrics: EventMessageV1 = {

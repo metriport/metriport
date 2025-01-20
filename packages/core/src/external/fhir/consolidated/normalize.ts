@@ -13,7 +13,7 @@ export function normalize({
   patientId: string;
   bundle: Bundle<Resource>;
 }): Bundle<Resource> {
-  const { log } = out(`Normalizing FHIR for cxId ${cxId}, patientId ${patientId}`);
+  const { log } = out(`Normalize. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
   const normalizedBundle = normalizeFhir(bundle);

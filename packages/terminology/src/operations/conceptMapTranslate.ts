@@ -11,7 +11,7 @@ export async function conceptMapTranslateHandler(
   req: FhirRequest
 ): Promise<FhirResponse | ConceptMap> {
   try {
-    const params = parseInputParameters<ConceptMapTranslateParameters>(operation, req);
+    const params = parseInputParameters(operation, req);
     return await lookupConceptMap(params);
   } catch (error) {
     return [normalizeOperationOutcome(error)];
