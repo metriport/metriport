@@ -1,0 +1,123 @@
+#!/usr/bin/env node
+
+const { spawnSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+function debug(...args) {
+  console.log('[Version Check Debug]:', ...args);
+}
+
+function getCurrentBranch() {
+  const result = spawnSync('git', ['symbolic-ref', '--short', 'HEAD'], {
+    encoding: 'utf8'
+  });
+
+  if (result.error) {
+    console.error('Git command failed:', result.error);
+    throw new Error('Failed to get current git branch');
+  }
+
+  return result.stdout.trim();
+}
+
+function getTagsToBePushed() {
+  // Git's pre-push hook provides remote name and location as arguments
+  // Get them from stdin
+  const stdin = fs.readFileSync(0, 'utf-8').trim();
+  if (!stdin) {
+    debug('No stdin data - likely running script directly rather than as a hook');
+    return [];
+  }
+
+  const [remoteName, remoteLocation] = stdin.split(' ');
+  debug(`Remote: ${remoteName}, Location: ${remoteLocation}`);
+
+  // Get the range of commits being pushed
+  const localRef = process.env.LOCAL_REF || '';
+  const remoteRef = process.env.REMOTE_REF || '';
+  debug(`Local ref: ${localRef}, Remote ref: ${remoteRef}`);
+
+  // Get all tags that point to commits in the range being pushed
+  const tagResult = spawnSync('git', ['tag', '--points-at', localRef], {
+    encoding: 'utf8'
+  });
+
+  if (tagResult.error) {
+    console.error('Failed to get tags:', tagResult.error);
+    throw new Error('Failed to get tags');
+  }
+
+  const tags = tagResult.stdout.split('\n').filter(Boolean);
+  debug('Found tags:', tags);
+
+  return tags;
+}
+
+function parseTag(tag) {
+  const lastAtIndex = tag.lastIndexOf('@');
+  if (lastAtIndex === -1) {
+    debug(`Invalid tag format: ${tag}`);
+    return null;
+  }
+
+  const packageName = tag.slice(0, lastAtIndex);
+  const version = tag.slice(lastAtIndex + 1);
+  return { packageName, version };
+}
+
+function validateVersion(version, packageName) {
+  debug('Validating version:', version, 'for package:', packageName);
+
+  const currentBranch = getCurrentBranch();
+  const isAlpha = version.includes('-alpha.');
+  const isDevelopBranch = currentBranch === 'develop';
+
+  if (isAlpha && isDevelopBranch) {
+    throw new Error(
+      `Cannot push alpha version ${version} for package ${packageName} from develop branch.\n` +
+      'Alpha versions should only be published from feature branches.'
+    );
+  }
+
+  if (!isAlpha && !isDevelopBranch) {
+    throw new Error(
+      `Cannot push non-alpha version ${version} for package ${packageName} from branch ${currentBranch}.\n` +
+      'Non-alpha versions should only be published from develop branch.'
+    );
+  }
+}
+
+// Main execution
+try {
+  debug('Starting tag version check');
+
+  const tags = getTagsToBePushed();
+  debug('Tags to be pushed:', tags);
+
+  if (tags.length === 0) {
+    debug('No tags to validate, exiting successfully');
+    process.exit(0);
+  }
+
+  tags.forEach(tag => {
+    const parsed = parseTag(tag);
+    if (parsed) {
+      const { packageName, version } = parsed;
+      debug(`Parsed tag: package=${packageName}, version=${version}`);
+      validateVersion(version, packageName);
+    } else {
+      debug(`Skipping tag ${tag} - doesn't match expected format @org/package@version`);
+    }
+  });
+
+  debug('Version check completed successfully');
+  process.exit(0);
+
+} catch (error) {
+  console.error('\x1b[31m%s\x1b[0m', '='.repeat(80));
+  console.error('\x1b[31m%s\x1b[0m', 'Version Check Error:');
+  console.error('\x1b[31m%s\x1b[0m', error.message);
+  console.error('\x1b[31m%s\x1b[0m', '='.repeat(80));
+  process.exit(1);
+}
