@@ -15,7 +15,7 @@ import {
   createTempCqDirectoryTable,
   deleteCqDirectoryEntries,
   deleteTempCqDirectoryTable,
-  getCqDirectoryEntries,
+  getCqDirectoryIds,
   insertCqDirectoryEntries,
   updateCqDirectoryViewDefinition,
 } from "./rebuild-cq-directory-raw-sql";
@@ -50,16 +50,18 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
       try {
         const maxPosition = currentPosition + BATCH_SIZE;
         log(`Loading active CQ directory entries, from ${currentPosition} up to ${maxPosition}`);
+        const loadStartedAt = Date.now();
         const orgs = await cq.listOrganizations({
           start: currentPosition,
           count: BATCH_SIZE,
           active: true,
         });
+        log(`Loaded ${orgs.length} entries in ${Date.now() - loadStartedAt}ms`);
         if (orgs.length < BATCH_SIZE) isDone = true;
         cache.populate(orgs);
         const parsedOrgs: CQDirectoryEntryData2[] = [];
-        const [alreadyInsertedOrgs] = await Promise.all([
-          getCqDirectoryEntries(sequelize),
+        const [alreadyInsertedIds] = await Promise.all([
+          getCqDirectoryIds(sequelize),
           executeAsynchronously(
             orgs,
             async (org: Organization) => {
@@ -74,10 +76,10 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           ),
         ]);
         parsedOrgsCount += parsedOrgs.length;
-        log(`Got ${parsedOrgs.length} entries from the CQ directory`);
+        log(`Successfully parsed ${parsedOrgs.length} entries`);
         const normalizedOrgs = normalizeExternalOrgs(parsedOrgs);
         const orgsToInsert = normalizedOrgs.filter(
-          org => !alreadyInsertedOrgs.some(aio => aio.id === org.id)
+          org => !alreadyInsertedIds.some(id => id === org.id)
         );
         log(`Adding ${orgsToInsert.length} entries in the DB...`);
         const insertStartedAt = Date.now();
