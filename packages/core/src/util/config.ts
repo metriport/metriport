@@ -79,18 +79,16 @@ export class Config {
   static getCQOrgPrivateKey(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
   }
-
   static getCQOrgPrivateKeyPassword(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
   }
-
   static getCQOrgCertificate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
-
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }
+
   static getCqTrustBundleBucketName(): string {
     return getEnvVarOrFail("CQ_TRUST_BUNDLE_BUCKET_NAME");
   }

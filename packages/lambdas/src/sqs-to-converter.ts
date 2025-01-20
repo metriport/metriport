@@ -130,12 +130,9 @@ export async function handler(event: SQSEvent) {
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
         if (payloadRaw.includes("nonXMLBody")) {
-          const msg = "XML document is unstructured CDA with nonXMLBody";
-          log(`${msg}, skipping...`);
-          capture.message(msg, {
-            extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
-            level: "warning",
-          });
+          log(
+            `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
+          );
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
@@ -162,11 +159,7 @@ export async function handler(event: SQSEvent) {
         };
 
         if (!payloadClean.trim().length) {
-          console.log("XML document is empty, skipping...");
-          capture.message("XML document is empty", {
-            extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
-            level: "warning",
-          });
+          log(`XML document is empty, skipping... Filename: ${s3FileName}`);
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
@@ -194,7 +187,6 @@ export async function handler(event: SQSEvent) {
           payload: payloadClean,
           bucketName: conversionResultBucketName,
           fileName: cleanFileName,
-          message,
           context: lambdaName,
           lambdaParams,
           log,
@@ -216,7 +208,6 @@ export async function handler(event: SQSEvent) {
             partitionedPayloads,
             conversionResultBucketName,
             preConversionFilename,
-            message,
             context: lambdaName,
             lambdaParams,
             log,
@@ -233,7 +224,6 @@ export async function handler(event: SQSEvent) {
           conversionResult,
           conversionResultBucketName,
           conversionResultFilename,
-          message,
           context: lambdaName,
           lambdaParams,
           log,
@@ -288,7 +278,6 @@ export async function handler(event: SQSEvent) {
           bundle: normalizedBundle,
           bucketName: conversionResultBucketName,
           fileName: s3FileName,
-          message,
           context: lambdaName,
           lambdaParams,
           log,

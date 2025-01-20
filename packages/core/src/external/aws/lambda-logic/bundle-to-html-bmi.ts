@@ -24,7 +24,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { cloneDeep, uniqWith } from "lodash";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
-import { Brief } from "./bundle-to-brief";
+import { Brief } from "../../../command/ai-brief/create";
 import {
   createBrief,
   createSection,
@@ -48,7 +48,6 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
     conditions,
     procedures,
     observationMental,
-    observationVitals,
     observationLaboratory,
     encounters,
     medications,
@@ -59,7 +58,6 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
     throw new Error("No patient found in bundle");
   }
 
-  const { bmiSection } = createBmiFromObservationVitalsSection(observationVitals);
   const { hba1cSection, hba1cChartData } =
     createHba1cFromObservationVitalsSection(observationLaboratory);
 
@@ -292,13 +290,12 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
         ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${bmiSection}
+          ${createWeightComoborbidities(conditions, encounters)}
+          ${createRelatedConditions(conditions, encounters)}
           ${createObesitySection(conditions, encounters)}
           ${createMedicationSection(medications, medicationStatements)}
           ${createMentalObservationsSection(observationMental)}
           ${createGastricProceduresSection(conditions, procedures, encounters)}
-          ${createWeightComoborbidities(conditions, encounters)}
-          ${createRelatedConditions(conditions, encounters)}
           ${createObservationLaboratorySection(observationLaboratory)}
           ${hba1cSection}
         </div>
@@ -536,7 +533,10 @@ function createMRHeader(patient: Patient) {
           <ul id="nav">
             <div class='half'>
               <li>
-                <a href="#BMI History">BMI History</a>
+                <a href="#Weight-related Comorbidities">Weight-related Comorbidities</a>
+              </li>
+              <li>
+                <a href="#Other Related Conditions">Other Related Conditions</a>
               </li>
               <li>
                 <a href="#Diagnosis of Obesity Date">Diagnosis of Obesity Date</a>
@@ -551,16 +551,10 @@ function createMRHeader(patient: Patient) {
                 <a href="#Surgeries">Surgeries</a>
               </li>
               <li>
-                <a href="#Weight-related Comorbidities">Weight-related Comorbidities</a>
+              <a href="#laboratory">Laboratory</a>
               </li>
               <li>
-                <a href="#Other Related Conditions">Other Related Conditions</a>
-              </li>
-              <li>
-                <a href="#laboratory">Laboratory</a>
-              </li>
-              <li>
-                <a href="#hba1c-history">HbA1c History</a>
+              <a href="#hba1c-history">HbA1c History</a>
               </li>
             </div>
             </ul>
@@ -580,68 +574,6 @@ function createHeaderTableRow(label: string, value: string) {
         </span>
       </td>
     </tr>
-  `;
-}
-
-function createBmiFromObservationVitalsSection(observations: Observation[]): {
-  bmiSection: string;
-} {
-  if (!observations) {
-    return { bmiSection: "" };
-  }
-
-  const bmiObservations = observations.filter(observation => {
-    return observation.code?.coding?.some(
-      coding => coding.code === "39156-5" || coding.display?.toLowerCase().includes("bmi")
-    );
-  });
-
-  const observationsLast5Years = bmiObservations.filter(observation => {
-    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(5, "year"));
-  });
-
-  const observationsSortedByDate = observationsLast5Years.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
-
-  const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    const aText = a.code?.text;
-    const bText = b.code?.text;
-    if (aText === undefined || bText === undefined) {
-      return false;
-    }
-    return aDate === bDate && aText === bText;
-  });
-
-  if (removeDuplicate.length === 0) {
-    return {
-      bmiSection: createBmiSection(
-        "BMI History",
-        `<table><tbody><tr><td>No BMI readings found</td></tr></tbody></table>`
-      ),
-    };
-  }
-  const { tableContent } = createVitalsByDate(removeDuplicate);
-
-  return {
-    bmiSection: createBmiSection("BMI History", tableContent),
-  };
-}
-
-function createBmiSection(title: string, tableContents: string) {
-  return `
-    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
-      <div class="section-title">
-        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-
-      <div class="section-content">
-          ${tableContents}
-      </div>
-    </div>
   `;
 }
 

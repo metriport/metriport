@@ -22,6 +22,7 @@ export const analyzeRoute = ({
   req,
   method,
   url,
+  client,
   params,
   query,
   duration,
@@ -30,6 +31,7 @@ export const analyzeRoute = ({
   req: Request;
   method: string;
   url: string;
+  client: string | undefined;
   params: Record<string, string> | undefined;
   query: QueryString.ParsedQs | undefined;
   duration: number;
@@ -48,6 +50,7 @@ export const analyzeRoute = ({
       properties: {
         method,
         url,
+        client,
         duration,
         status,
         ...params,

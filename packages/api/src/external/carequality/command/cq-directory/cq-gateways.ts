@@ -1,5 +1,11 @@
 import { Op, Sequelize } from "sequelize";
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { CQDirectoryEntry } from "../../cq-directory";
+import {
+  CQDirectoryEntryModel,
+  managingOrgIdColumnName,
+  rootOrgColumnName,
+  urlXcpdColumnName,
+} from "../../models/cq-directory";
 
 /**
  * Returns the ID of CQ directory entries that are not managed by the organizations provided as
@@ -15,8 +21,8 @@ export async function getOrganizationIdsNotManagedBy(
     attributes: ["id"],
     where: {
       [Op.or]: [
-        { managingOrganization: { [Op.is]: undefined } },
-        { managingOrganization: { [Op.notIn]: managingOrgNames } },
+        { rootOrganization: { [Op.is]: undefined } },
+        { rootOrganization: { [Op.notIn]: managingOrgNames } },
       ],
     },
   });
@@ -24,7 +30,7 @@ export async function getOrganizationIdsNotManagedBy(
   return ids;
 }
 
-export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntryModel[]> {
+export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntry[]> {
   const rls: CQDirectoryEntryModel[] = await CQDirectoryEntryModel.findAll({
     where: {
       urlXCPD: {
@@ -44,22 +50,22 @@ export async function getRecordLocatorServiceOrganizations(): Promise<CQDirector
       urlXCPD: {
         [Op.ne]: "",
       },
-      managingOrganization: {
+      rootOrganization: {
         [Op.like]: "eHealth%",
       },
     },
   });
 
-  return [...rls, ...eHex];
+  return [...rls, ...eHex].map(org => org.dataValues);
 }
 
-export async function getSublinkOrganizations(): Promise<CQDirectoryEntryModel[]> {
-  return CQDirectoryEntryModel.findAll({
+export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
+  const records = await CQDirectoryEntryModel.findAll({
     where: {
       urlXCPD: {
         [Op.ne]: "",
       },
-      managingOrganization: {
+      rootOrganization: {
         [Op.notILike]: "commonwell",
       },
       managingOrganizationId: {
@@ -67,23 +73,24 @@ export async function getSublinkOrganizations(): Promise<CQDirectoryEntryModel[]
           { [Op.is]: undefined },
           {
             [Op.in]: Sequelize.literal(`(
-                SELECT id FROM cq_directory_entry
-                WHERE url_xcpd IS NULL
-                AND (managing_organization_id = id OR managing_organization = name)
+                SELECT id FROM ${CQDirectoryEntryModel.NAME}
+                WHERE ${urlXcpdColumnName} IS NULL
+                AND (${managingOrgIdColumnName} = id OR ${rootOrgColumnName} = name)
             )`),
           },
         ],
       },
     },
     order: [
-      Sequelize.literal("CASE WHEN LOWER(managing_organization) = 'epic' THEN 0 ELSE 1 END"),
-      "managing_organization",
+      Sequelize.literal(`CASE WHEN LOWER(${rootOrgColumnName}) = 'epic' THEN 0 ELSE 1 END`),
+      rootOrgColumnName,
     ],
   });
+  return records.map(org => org.dataValues);
 }
 
-export async function getStandaloneOrganizations(): Promise<CQDirectoryEntryModel[]> {
-  return CQDirectoryEntryModel.findAll({
+export async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> {
+  const records = await CQDirectoryEntryModel.findAll({
     where: {
       urlXCPD: {
         [Op.ne]: "",
@@ -92,19 +99,19 @@ export async function getStandaloneOrganizations(): Promise<CQDirectoryEntryMode
         [Op.and]: [
           {
             [Op.notIn]: Sequelize.literal(`(
-                SELECT id FROM cq_directory_entry
-                WHERE url_xcpd IS NOT NULL
-                AND (managing_organization_id IS NULL OR managing_organization_id = id)
+                SELECT id FROM ${CQDirectoryEntryModel.NAME}
+                WHERE ${urlXcpdColumnName} IS NOT NULL
+                AND (${managingOrgIdColumnName} IS NULL OR ${managingOrgIdColumnName} = id)
             )`),
           },
           {
             [Op.notIn]: Sequelize.literal(`(
-                SELECT id FROM cq_directory_entry
-                WHERE url_xcpd IS NOT NULL
-                AND managing_organization_id IN (
-                    SELECT id FROM cq_directory_entry
-                    WHERE url_xcpd IS NULL
-                    AND (managing_organization_id = id OR managing_organization = name)
+                SELECT id FROM ${CQDirectoryEntryModel.NAME}
+                WHERE ${urlXcpdColumnName} IS NOT NULL
+                AND ${managingOrgIdColumnName} IN (
+                    SELECT id FROM ${CQDirectoryEntryModel.NAME}
+                    WHERE ${urlXcpdColumnName} IS NULL
+                    AND (${managingOrgIdColumnName} = id OR ${rootOrgColumnName} = name)
                 )
             )`),
           },
@@ -112,4 +119,5 @@ export async function getStandaloneOrganizations(): Promise<CQDirectoryEntryMode
       },
     },
   });
+  return records.map(org => org.dataValues);
 }

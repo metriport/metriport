@@ -1,6 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
-import { SQSRecord } from "aws-lambda";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { capture } from "../../util";
 import { executeAsynchronously } from "../../util/concurrency";
@@ -17,7 +16,6 @@ export async function storePreProcessedConversionResult({
   conversionResult,
   conversionResultBucketName,
   conversionResultFilename,
-  message,
   context,
   lambdaParams,
   log,
@@ -26,7 +24,6 @@ export async function storePreProcessedConversionResult({
   conversionResult: Bundle<Resource>;
   conversionResultBucketName: string;
   conversionResultFilename: string;
-  message: SQSRecord;
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
@@ -40,12 +37,8 @@ export async function storePreProcessedConversionResult({
     log,
     errorConfig: {
       errorMessage: "Error uploading converted FHIR Bundle",
-      sqsMessage: message,
       context,
-      captureParams: {
-        message,
-        ...lambdaParams,
-      },
+      captureParams: lambdaParams,
       shouldCapture: true,
     },
   });
@@ -56,7 +49,6 @@ export async function storePartitionedPayloadsInS3({
   partitionedPayloads,
   conversionResultBucketName,
   preConversionFilename,
-  message,
   context,
   lambdaParams,
   log,
@@ -65,7 +57,6 @@ export async function storePartitionedPayloadsInS3({
   partitionedPayloads: string[];
   conversionResultBucketName: string;
   preConversionFilename: string;
-  message: SQSRecord;
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
@@ -88,10 +79,8 @@ export async function storePartitionedPayloadsInS3({
         log,
         errorConfig: {
           errorMessage: "Error uploading partitioned XML part",
-          sqsMessage: message,
           context,
           captureParams: {
-            message,
             ...lambdaParams,
             partIndex: index,
           },
@@ -113,7 +102,6 @@ export async function storePartitionedPayloadsInS3({
     log(`${msg} - ${failures.length} failures`);
     capture.error(msg, {
       extra: {
-        message,
         ...lambdaParams,
         context,
         fileNames,
@@ -128,7 +116,6 @@ export async function storePreprocessedPayloadInS3({
   payload,
   bucketName,
   fileName,
-  message,
   context,
   lambdaParams,
   log,
@@ -137,7 +124,6 @@ export async function storePreprocessedPayloadInS3({
   payload: string;
   bucketName: string;
   fileName: string;
-  message: SQSRecord;
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
@@ -151,12 +137,8 @@ export async function storePreprocessedPayloadInS3({
     log,
     errorConfig: {
       errorMessage: "Error uploading preprocessed XML",
-      sqsMessage: message,
       context,
-      captureParams: {
-        message,
-        ...lambdaParams,
-      },
+      captureParams: lambdaParams,
       shouldCapture: true,
     },
   });
@@ -207,7 +189,6 @@ export async function storeNormalizedConversionResult({
   bundle,
   bucketName,
   fileName,
-  message,
   context,
   lambdaParams,
   log,
@@ -216,7 +197,6 @@ export async function storeNormalizedConversionResult({
   bundle: Bundle<Resource>;
   bucketName: string;
   fileName: string;
-  message: SQSRecord;
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
@@ -231,7 +211,6 @@ export async function storeNormalizedConversionResult({
     log,
     errorConfig: {
       errorMessage: "Error uploading normalized FHIR Bundle",
-      sqsMessage: message,
       context,
       captureParams: {
         conversionResultFilename: fileName,
@@ -259,7 +238,6 @@ export async function storeInS3WithRetries({
   log: typeof console.log;
   errorConfig?: {
     errorMessage: string;
-    sqsMessage: SQSRecord;
     context: string;
     captureParams?: Record<string, unknown>;
     shouldCapture: boolean;
@@ -289,9 +267,10 @@ export async function storeInS3WithRetries({
       capture.error(msg, {
         extra: {
           fileName,
-          context: errorConfig?.context,
+          context: errorConfig.context,
           error,
-          ...errorConfig?.captureParams,
+          errorMessage: errorConfig.errorMessage,
+          ...errorConfig.captureParams,
         },
       });
     }

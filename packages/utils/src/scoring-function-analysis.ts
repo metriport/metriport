@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Patient, PatientData } from "@metriport/core/src/domain/patient";
+import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import {
   LinkDemographics,
   LinkDemographicsComparison,
-} from "@metriport/core/src/domain/patient-demographics";
+} from "@metriport/core/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk/src/models/patient-discovery/patient";
 import {
   patientToNormalizedCoreDemographics,

@@ -12,7 +12,7 @@ import {
   NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -176,7 +176,7 @@ export async function syncAthenaPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemos(patient: PatientResource): PatientDemoData[] {
+function createMetriportPatientDemos(patient: PatientResourceWithHomeAddress): PatientDemoData[] {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
   const names = createNames(patient);
@@ -193,7 +193,7 @@ function createMetriportPatientDemos(patient: PatientResource): PatientDemoData[
 }
 
 function createMetriportPatientCreateCmd(
-  patient: PatientResource
+  patient: PatientResourceWithHomeAddress
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);

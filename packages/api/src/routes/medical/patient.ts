@@ -1,10 +1,10 @@
-import { consolidationConversionType } from "@metriport/api-sdk";
+import { ConsolidatedQuery, consolidationConversionType } from "@metriport/api-sdk";
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
-import { isTrue, stringToBoolean } from "@metriport/shared";
+import { isTrue, stringToBoolean, NotFoundError, BadRequestError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -26,11 +26,8 @@ import { getConsolidatedWebhook } from "../../command/medical/patient/get-consol
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import BadRequestError from "../../errors/bad-request";
-import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
-import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
@@ -215,6 +212,30 @@ router.get(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/consolidated/query/:requestId
+ *
+ * Returns the status and information on a specific consolidated query for a given patient.
+ *
+ * @param req.param.id The ID of the patient whose consolidated query status is to be returned.
+ * @param req.param.requestId The ID of the query status to be returned.
+ * @returns the status and information on a specific consolidated query for a given patient.
+ */
+router.get(
+  "/consolidated/query/:requestId",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { patient } = getPatientInfoOrFail(req);
+    const requestId = getFrom("params").orFail("requestId", req);
+    const query = patient.data.consolidatedQueries?.find(
+      (q: ConsolidatedQuery) => q.requestId === requestId
+    );
+    if (!query) throw new NotFoundError("Consolidated query not found");
+
+    return res.status(status.OK).json(query);
+  })
+);
+
 const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
 const medicalRecordFormatSchema = z.enum(mrFormat);
 
@@ -236,7 +257,6 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
- * @param req.generateAiBrief Optional flag to include an AI-generated medical record brief into the medical record summary. Note, that you have to request access to this feature by contacting Metriport directly.
  * @return status for querying the Patient's consolidated data.
  */
 router.post(
@@ -250,9 +270,6 @@ router.post(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
     const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
-    const generateAiBrief = Config.isSandbox()
-      ? false
-      : getFromQueryAsBoolean("generateAiBrief", req);
 
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
@@ -265,7 +282,6 @@ router.post(
       dateTo,
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
-      generateAiBrief,
       fromDashboard,
     });
 

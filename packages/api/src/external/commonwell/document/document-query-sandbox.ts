@@ -3,6 +3,7 @@ import { conversionBundleSuffix } from "@metriport/core/command/consolidated/con
 import { createFilePath } from "@metriport/core/domain/filename";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { parseRawBundleForFhirServer } from "@metriport/core/external/fhir/parse-bundle";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util";
@@ -20,7 +21,6 @@ import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
 import { ContentMimeType, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
-import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { sandboxSleepTime } from "./shared";
 
@@ -85,7 +85,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
-  const existingFhirDocs = await getDocumentsFromFHIR({
+  const existingFhirDocs = await getDocuments({
     cxId,
     patientId,
   });

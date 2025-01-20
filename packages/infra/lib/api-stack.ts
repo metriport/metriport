@@ -302,6 +302,12 @@ export class APIStack extends Stack {
           bucketName: sandboxConfig.sandboxSeedDataBucketName,
           publicReadAccess: false,
           encryption: s3.BucketEncryption.S3_MANAGED,
+          cors: [
+            {
+              allowedOrigins: ["*"],
+              allowedMethods: [s3.HttpMethods.GET],
+            },
+          ],
         });
       }
     };
@@ -336,6 +342,7 @@ export class APIStack extends Stack {
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
+      bedrock: props.config.bedrock,
       appConfigEnvVars: {
         appId: appConfigAppId,
         configId: appConfigConfigId,
@@ -423,7 +430,6 @@ export class APIStack extends Stack {
           appId: appConfigAppId,
           configId: appConfigConfigId,
         },
-        bedrock: props.config.bedrock,
         ...props.config.fhirToMedicalLambda,
       });
     }
@@ -1312,7 +1318,6 @@ export class APIStack extends Stack {
       appId: string;
       configId: string;
     };
-    bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   }): Lambda {
     const {
       nodeRuntimeArn,
@@ -1324,7 +1329,6 @@ export class APIStack extends Stack {
       alarmAction,
       medicalDocumentsBucket,
       appConfigEnvVars,
-      bedrock,
     } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
@@ -1344,13 +1348,7 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
         APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-        ...(bedrock && {
-          // API_URL set on the api-stack after the OSS API is created
-          DASH_URL: dashUrl,
-          BEDROCK_REGION: bedrock?.region,
-          BEDROCK_VERSION: bedrock?.anthropicVersion,
-          AI_BRIEF_MODEL_ID: bedrock?.modelId,
-        }),
+        DASH_URL: dashUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [

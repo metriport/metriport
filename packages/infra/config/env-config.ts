@@ -3,6 +3,7 @@ import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
+import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -150,6 +151,7 @@ type EnvConfigBase = {
     envVars?: {
       CQ_ORG_URLS?: string;
       CQ_URLS_TO_EXCLUDE?: string;
+      CQ_ADDITIONAL_ORGS?: CqDirectorySimplifiedOrg[];
     };
   };
   commonwell: {
