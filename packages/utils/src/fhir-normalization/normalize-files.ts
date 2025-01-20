@@ -2,12 +2,11 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle } from "@medplum/fhirtypes";
-import { normalizeFhir } from "@metriport/core/fhir-normalization/normalize-fhir";
+import { normalizeFhir } from "@metriport/core/external/fhir/normalization/normalize-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import fs from "fs";
-import { v4 as uuidv4 } from "uuid";
 import { getFileContents, getFileNames, makeDir } from "../shared/fs";
 
 /**
@@ -40,9 +39,7 @@ async function main() {
 
     const startedAt = new Date();
 
-    const cxId = uuidv4();
-    const patientId = uuidv4();
-    const resultingBundle = normalizeFhir(initialBundle, cxId, patientId);
+    const resultingBundle = normalizeFhir(initialBundle);
 
     console.log(`normalized bundle in ${elapsedTimeFromNow(startedAt)} ms.`);
 
