@@ -43,7 +43,7 @@ export const codeSystemLookupHandler = async (
   } else if (params.code) {
     coding = { system: params.system ?? codeSystem.url, code: params.code };
   } else {
-    return [normalizeOperationOutcome(new Error("System parameter is required"))];
+    return [normalizeOperationOutcome(new Error("Coding is Required"))];
   }
 
   if (partial) {
@@ -115,9 +115,7 @@ export async function bulkCodeSystemLookupHandler(request: FhirRequest): Promise
 
   const successful = results
     .filter((result): result is PromiseFulfilledResult<CodeSystemLookupOutput> => {
-      return (
-        result.status === "fulfilled" && !("resourceType" in result.value) // Check that it's not an OperationOutcome
-      );
+      return result.status === "fulfilled" && !("resourceType" in result.value);
     })
     .map(result => result.value);
 
