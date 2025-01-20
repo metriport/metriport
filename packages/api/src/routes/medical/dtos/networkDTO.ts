@@ -5,7 +5,7 @@ import { BaseDTO } from "./baseDTO";
 
 export type NetworkDTO = BaseDTO & Network;
 
-export function dtoFromCQDirectoryEntry(network: CQDirectoryEntry2): NetworkDTO {
+export function dtoFromHieDirectoryEntry(network: CQDirectoryEntry2): NetworkDTO {
   return {
     id: network.id,
     eTag: "1",
