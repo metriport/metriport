@@ -11,6 +11,7 @@ import axios from "axios";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
+import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { isPatient } from "../../external/fhir/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
@@ -47,8 +48,14 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       patientId
     );
 
+    const dedupedBundle = deduplicate({
+      cxId,
+      patientId,
+      bundle: originalBundleWithoutContainedPatients,
+    });
+
     try {
-      checkBundle(originalBundleWithoutContainedPatients, cxId, patientId);
+      checkBundle(dedupedBundle, cxId, patientId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const msg = "Bundle contains invalid data";
@@ -59,7 +66,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         uploadConsolidatedSnapshotToS3({
           ...params,
           s3BucketName: this.bucketName,
-          bundle: originalBundleWithoutContainedPatients,
+          bundle: dedupedBundle,
           type: "invalid",
         });
       } catch (error) {
@@ -68,16 +75,22 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       throw new MetriportError(msg, error, additionalInfo);
     }
 
-    const [consolidatedSnapshotS3Info] = await Promise.all([
+    const [, dedupedS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
         bundle: originalBundleWithoutContainedPatients,
         type: "original",
       }),
+      uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: dedupedBundle,
+        type: "dedup",
+      }),
     ]);
 
-    const { bucket, key } = consolidatedSnapshotS3Info;
+    const { bucket, key } = dedupedS3Info;
     const info = {
       bundleLocation: bucket,
       bundleFilename: key,

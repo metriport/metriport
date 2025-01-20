@@ -30,7 +30,7 @@ function getSuffixForType(type?: ConsolidatedFileType): string {
   switch (type) {
     case "original":
       return "";
-    case "deduped":
+    case "dedup":
       return "_deduped";
     case "invalid":
       return "_invalid";
