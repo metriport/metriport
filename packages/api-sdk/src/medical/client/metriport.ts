@@ -574,6 +574,7 @@ export class MetriportMedicalApi {
 
   async listPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(url);
+    console.log(resp.data);
     return resp.data;
   }
 
