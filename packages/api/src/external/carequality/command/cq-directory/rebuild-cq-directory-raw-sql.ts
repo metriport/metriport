@@ -19,13 +19,14 @@ export const cqDirectoryEntryBackup1 = `cq_directory_entry_backup1`;
 export const cqDirectoryEntryBackup2 = `cq_directory_entry_backup2`;
 export const cqDirectoryEntryBackup3 = `cq_directory_entry_backup3`;
 
+const pkNamePrefix = "cq_directory_entry_pkey";
+
 const keys = createKeys();
 const number_of_keys = keys.split(",").length;
 
 export async function insertCqDirectoryEntries(
   sequelize: Sequelize,
-  orgDataArray: CQDirectoryEntryData2[],
-  tableName: string
+  orgDataArray: CQDirectoryEntryData2[]
 ): Promise<void> {
   if (orgDataArray.length === 0) return;
   const placeholders = orgDataArray
@@ -48,11 +49,11 @@ export async function insertCqDirectoryEntries(
     entry.data ? JSON.stringify(entry.data) : null,
     entry.rootOrganization ?? null,
     entry.managingOrganizationId ?? null,
-    entry.active ?? false,
-    entry.lastUpdatedAtCQ ?? null,
+    entry.active,
+    entry.lastUpdatedAtCQ,
   ]);
 
-  const query = `INSERT INTO ${tableName} (${keys}) VALUES ${placeholders};`;
+  const query = `INSERT INTO ${cqDirectoryEntryTemp} (${keys}) VALUES ${placeholders};`;
   await sequelize.query(query, {
     replacements: flattenedData,
     type: QueryTypes.INSERT,
@@ -87,19 +88,23 @@ function createKeys(): string {
   return Object.values(allKeys).join(", ");
 }
 
-export async function deleteCqDirectoryEntries(
-  sequelize: Sequelize,
-  ids: string[],
-  tableName: string
-): Promise<void> {
+export async function getCqDirectoryIds(sequelize: Sequelize): Promise<string[]> {
+  const query = `SELECT id FROM ${cqDirectoryEntryTemp};`;
+  const result = await sequelize.query<{ id: string }>(query, { type: QueryTypes.SELECT });
+  return result.map(row => row.id);
+}
+
+export async function deleteCqDirectoryEntries(sequelize: Sequelize, ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const query = `DELETE FROM ${tableName} WHERE id in ('${ids.join(`','`)}');`;
+  const query = `DELETE FROM ${cqDirectoryEntryTemp} WHERE id in ('${ids.join(`','`)}');`;
   await sequelize.query(query, { type: QueryTypes.DELETE });
 }
 
 export async function createTempCqDirectoryTable(sequelize: Sequelize): Promise<void> {
   await deleteTempCqDirectoryTable(sequelize);
-  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} INCLUDING ALL)`;
+  // The PK is added later, on `updateCqDirectoryViewDefinition`
+  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} 
+                 INCLUDING DEFAULTS INCLUDING STORAGE EXCLUDING CONSTRAINTS)`;
   await sequelize.query(query, { type: QueryTypes.RAW });
 }
 
@@ -110,19 +115,27 @@ export async function deleteTempCqDirectoryTable(sequelize: Sequelize): Promise<
 
 export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Promise<void> {
   await executeOnDBTx(CQDirectoryEntryViewModel.prototype, async transaction => {
-    const dropView = `DROP VIEW IF EXISTS ${cqDirectoryEntryView};`;
-    const createView = `CREATE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`;
-    const dropBackup3 = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup3};`;
-    const renameBackup2To3 = `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup2} RENAME TO ${cqDirectoryEntryBackup3};`;
-    const renameBackup1To2 = `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup1} RENAME TO ${cqDirectoryEntryBackup2};`;
-    const renameNewToBackup = `ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup1};`;
-    const renameTempToNew = `ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};`;
-    await sequelize.query(dropView, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(createView, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(dropBackup3, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(renameBackup2To3, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(renameBackup1To2, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(renameNewToBackup, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(renameTempToNew, { type: QueryTypes.RAW, transaction });
+    async function runSql(sql: string): Promise<void> {
+      await sequelize.query(sql, { type: QueryTypes.RAW, transaction });
+    }
+    await runSql(
+      `ALTER TABLE ${cqDirectoryEntryTemp} ADD CONSTRAINT ${buildPkName()} PRIMARY KEY (id);`
+    );
+    await runSql(`DROP VIEW IF EXISTS ${cqDirectoryEntryView};`);
+    await runSql(`CREATE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`);
+    await runSql(`DROP TABLE IF EXISTS ${cqDirectoryEntryBackup3};`);
+    await runSql(
+      `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup2} RENAME TO ${cqDirectoryEntryBackup3};`
+    );
+    await runSql(
+      `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup1} RENAME TO ${cqDirectoryEntryBackup2};`
+    );
+    await runSql(`ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup1};`);
+    await runSql(`ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};`);
   });
+}
+
+function buildPkName(): string {
+  const timestamp = new Date().getTime();
+  return `${pkNamePrefix}_${timestamp}`;
 }
