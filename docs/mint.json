@@ -119,7 +119,7 @@
         },
         {
           "group": "Network",
-          "icon": "chart-network",
+          "icon": "network-wired",
           "pages": [
             "medical-api/api-reference/network/list-networks"
           ]
