@@ -1,0 +1,74 @@
+---
+title: "List Networks"
+description: "Lists all networks available through Metriport"
+api: "GET /medical/v1/network"
+---
+
+This is a paginated endpoint. For more information see [pagination](/medical-api/handling-data/pagination).
+
+## Query Params
+
+<ParamField query="filters" type="string" Optional>
+  How to filter networks. It uses Metriport's [filter/search criteria](/medical-api/handling-data/filters)
+  based on the main properties of a Network: the organization's name, address, oid and root organization. Any search terms you use search across all of these fields.
+
+One can combine fields as needed, for example:
+
+- `metriport or sutter` will return all networks at least one of `metriport` or `sutter` in their data.
+- `metriport -market` will return all networks with `metriport` in their data but _without_ `market` in their data.
+- `metriport 150` will return all networks with `metriport` and the number `150` in their data, such as metriport with an address at `150 Market Street`.
+
+</ParamField>
+<Tip>
+  The filters are _not_ case sensitive, but do match only against full words. i.e.
+  `acme` will find `Acme Health Network`, while `Acm` will not.
+</Tip>
+
+## Response
+
+All Networks according to the provided filters and pagination params.
+
+<ResponseField name="networks" type="Network[]">
+  <Expandable title="Network properties">
+    <Snippet file="network-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const filter = "acme health";  // optional search term
+const { networks } = await metriport.listNetworks({ filter });
+```
+
+</ResponseExample>
+
+```json
+{
+  "meta": {
+    "itemsOnPage": 2
+  },
+  "networks": [
+    {
+      "id": "2.16.840.1.113883.3.9621.1",
+      "name": "Acme Health Network",
+      "rootOrganization": "Acme Healthcare Systems",
+      "managingOrgId": "2.16.840.1.113883.3.9621.0",
+      "state": "CA",
+      "zip": "94105"
+    },
+    {
+      "id": "2.16.840.1.113883.3.9621.2",
+      "name": "Acme Health Partners",
+      "rootOrganization": "Acme Healthcare Systems",
+      "managingOrgId": "2.16.840.1.113883.3.9621.0",
+      "state": "CA",
+      "zip": "94612"
+    }
+  ]
+}
+```

@@ -118,6 +118,13 @@
           ]
         },
         {
+          "group": "Network",
+          "icon": "chart-network",
+          "pages": [
+            "medical-api/api-reference/network/list-networks"
+          ]
+        },
+        {
           "group": "Settings",
           "icon": "gear",
           "pages": [

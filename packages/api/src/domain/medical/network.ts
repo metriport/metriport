@@ -5,6 +5,6 @@ export interface Network {
   oid?: string;
   zip?: string;
   state?: USState;
-  managingOrg?: string;
+  rootOrganization?: string;
   managingOrgOid?: string;
 }
