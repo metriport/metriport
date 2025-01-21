@@ -1357,7 +1357,7 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_16_X,
       // TODO https://github.com/metriport/metriport-internal/issues/1672
       runtimeManagementMode: lambda.RuntimeManagementMode.manual(nodeRuntimeArn),
-      entry: "fhir-to-medical-record-old",
+      entry: "fhir-to-medical-record",
       envType,
       envVars: {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
@@ -1398,7 +1398,7 @@ export class APIStack extends Stack {
       stack: this,
       name: "FhirToMedicalRecord2",
       runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "fhir-to-medical-record",
+      entry: "fhir-to-medical-record-new",
       envType,
       envVars: {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
