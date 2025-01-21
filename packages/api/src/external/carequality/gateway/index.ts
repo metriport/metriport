@@ -57,7 +57,7 @@ export function facilitiesWithEpicFilter(
   return isEpicEnabled
     ? cqDirectoryEntries
     : cqDirectoryEntries.filter(
-        entry => entry.managingOrganization?.trim().toLowerCase() !== EPIC_ORG_NAME.toLowerCase()
+        entry => entry.rootOrganization?.trim().toLowerCase() !== EPIC_ORG_NAME.toLowerCase()
       );
 }
 
