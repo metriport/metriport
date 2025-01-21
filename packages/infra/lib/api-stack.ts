@@ -417,8 +417,9 @@ export class APIStack extends Stack {
     }
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
+    let fhirToMedicalRecordLambdaNew: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
-      fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
+      const lambdas = this.setupFhirToMedicalRecordLambda({
         lambdaLayers,
         vpc: this.vpc,
         medicalDocumentsBucket,
@@ -432,6 +433,8 @@ export class APIStack extends Stack {
         },
         ...props.config.fhirToMedicalLambda,
       });
+      fhirToMedicalRecordLambda = lambdas.fhirToMedicalRecordLambda;
+      fhirToMedicalRecordLambdaNew = lambdas.fhirToMedicalRecordLambdaNew;
     }
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
@@ -573,6 +576,7 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    fhirToMedicalRecordLambdaNew?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
@@ -1334,7 +1338,7 @@ export class APIStack extends Stack {
       appId: string;
       configId: string;
     };
-  }): Lambda {
+  }): { fhirToMedicalRecordLambda: Lambda; fhirToMedicalRecordLambdaNew: Lambda } {
     const {
       nodeRuntimeArn,
       lambdaLayers,
@@ -1350,8 +1354,7 @@ export class APIStack extends Stack {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
 
-    // TODO 2510 Remove this after the first release of the lambda based on wkhtmltopdf
-    const fhirToMedicalRecordLambdaOld = createLambda({
+    const fhirToMedicalRecordLambda = createLambda({
       stack: this,
       name: "FhirToMedicalRecord",
       runtime: lambda.Runtime.NODEJS_16_X,
@@ -1371,7 +1374,6 @@ export class APIStack extends Stack {
       layers: [
         lambdaLayers.shared,
         lambdaLayers.langchain,
-        // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
         lambdaLayers.chromium,
         lambdaLayers.puppeteer,
       ],
@@ -1381,20 +1383,8 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
-    AppConfigUtils.allowReadConfig({
-      scope: this,
-      resourceName: "FhirToMrLambda",
-      resourceRole: fhirToMedicalRecordLambdaOld.role,
-      appConfigResources: ["*"],
-    });
-    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambdaOld);
-    const bedrockPolicyStatementOld = new iam.PolicyStatement({
-      actions: ["bedrock:InvokeModel"],
-      resources: ["*"],
-    });
-    fhirToMedicalRecordLambdaOld.addToRolePolicy(bedrockPolicyStatementOld);
 
-    const fhirToMedicalRecordLambda = createLambda({
+    const fhirToMedicalRecordLambdaNew = createLambda({
       stack: this,
       name: "FhirToMedicalRecord2",
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -1406,13 +1396,7 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
         APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-        ...(bedrock && {
-          // API_URL set on the api-stack after the OSS API is created
-          DASH_URL: dashUrl,
-          BEDROCK_REGION: bedrock?.region,
-          BEDROCK_VERSION: bedrock?.anthropicVersion,
-          AI_BRIEF_MODEL_ID: bedrock?.modelId,
-        }),
+        DASH_URL: dashUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.wkHtmlToPdf],
@@ -1429,16 +1413,17 @@ export class APIStack extends Stack {
       resourceRole: fhirToMedicalRecordLambda.role,
       appConfigResources: ["*"],
     });
-
-    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
-
-    const bedrockPolicyStatement = new iam.PolicyStatement({
-      actions: ["bedrock:InvokeModel"],
-      resources: ["*"],
+    AppConfigUtils.allowReadConfig({
+      scope: this,
+      resourceName: "FhirToMrLambdaNew",
+      resourceRole: fhirToMedicalRecordLambdaNew.role,
+      appConfigResources: ["*"],
     });
 
-    fhirToMedicalRecordLambda.addToRolePolicy(bedrockPolicyStatement);
-    return fhirToMedicalRecordLambda;
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambdaNew);
+
+    return { fhirToMedicalRecordLambda, fhirToMedicalRecordLambdaNew };
   }
 
   private setupCWDocContribution(ownProps: {
