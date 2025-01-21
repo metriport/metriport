@@ -161,10 +161,6 @@ const convertStoreAndReturnPdfUrl = async ({
 }) => {
   const tmpFileName = uuid.v4();
 
-  const htmlFilepath = `/tmp/${tmpFileName}`;
-
-  fs.writeFileSync(htmlFilepath, html);
-
   // Defines filename + path for downloaded HTML file
   const tmpPDFFileName = tmpFileName.concat(".pdf");
   const pdfFilepath = `/tmp/${tmpPDFFileName}`;
@@ -221,6 +217,8 @@ const convertStoreAndReturnPdfUrl = async ({
       await browser.close();
     }
   }
+
+  fs.rmSync(pdfFilepath, { force: true });
 
   // Logs "shutdown" statement
   console.log("generate-pdf -> shutdown");
