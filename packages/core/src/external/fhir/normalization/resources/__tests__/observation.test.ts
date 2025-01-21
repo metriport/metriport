@@ -34,7 +34,6 @@ describe("normalizeObservations", () => {
     const normalized = normalizeObservations([observation]);
     expect(normalized.length).toBe(1);
     const result = normalized[0];
-
     if (!result) throw new Error("Expected result undefined");
 
     expect(result.valueQuantity?.unit).toBe("F");

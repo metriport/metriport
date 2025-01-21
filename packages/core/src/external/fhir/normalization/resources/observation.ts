@@ -5,8 +5,9 @@ import {
   Quantity,
 } from "@medplum/fhirtypes";
 import convert, { Unit } from "convert-units";
+import { cloneDeep } from "lodash";
 
-type UnitComplex = {
+type UnitWithCode = {
   unit: string;
   code?: string;
 };
@@ -19,7 +20,7 @@ type ReferenceRange = {
 };
 
 /**
- * This map is used to normalize unconventional unit names to standard unit names. i.e cel -> C, millimeter to m, etc.
+ * This map is used to normalize unconventional unit names to standard unit names. i.e cel -> C, etc.
  */
 const unitNormalizationMap = new Map<string, string>([
   ["cel", "C"],
@@ -28,9 +29,9 @@ const unitNormalizationMap = new Map<string, string>([
 ]);
 
 /**
- * This map is used to convert standariozed units to preferred units. i.e C -> F, lb -> g, in -> cm, etc.
+ * This map is used to convert standardized units to preferred units. i.e C -> F, lb -> g, in -> cm, etc.
  */
-const unitConversionMap = new Map<string, UnitComplex>([
+const unitConversionAndNormalization = new Map<string, UnitWithCode>([
   ["C", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
   ["F", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
   ["kg", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
@@ -52,7 +53,7 @@ const interpretationMap = new Map<string, string>([
   [INTERPRETATION_ABNORMAL, "Abnormal"],
 ]);
 
-const hl7ObservationInterpretationSystem =
+const hl7ObservationInterpretationSystemUrl =
   "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation";
 
 const highInterpretations = ["high", "critical"];
@@ -61,94 +62,73 @@ const normalInterpretations = ["normal", "negative", "none seen", "not detected"
 const abnormalInterpretations = ["abnormal", "positive"];
 
 export function normalizeObservations(observations: Observation[]): Observation[] {
-  observations.map(obs => {
-    if (obs.valueQuantity) {
-      const initialValueUnit = processValueQuantity(obs.valueQuantity);
+  return observations.map(obs => {
+    const normalizedObs = cloneDeep(obs);
 
-      if (obs.referenceRange) {
-        processReferenceRanges(obs.referenceRange, initialValueUnit);
+    if (normalizedObs.valueQuantity) {
+      normalizedObs.valueQuantity = normalizeValueQuantity(normalizedObs.valueQuantity);
+
+      if (normalizedObs.referenceRange) {
+        normalizedObs.referenceRange = normalizeReferenceRanges(
+          normalizedObs.referenceRange,
+          normalizedObs.valueQuantity.unit
+        );
       }
     }
-    const interpretation = buildObservationInterpretation(obs);
-    if (interpretation) obs.interpretation = interpretation;
+    const interpretation = buildObservationInterpretation(normalizedObs);
+    if (interpretation) normalizedObs.interpretation = interpretation;
+
+    return normalizedObs;
   });
-
-  return observations;
 }
 
-function processValueQuantity(valueQuantity: Quantity): string | undefined {
-  const result = getConvertedValueAndUnit(valueQuantity);
-  const initialUnit = valueQuantity.unit;
-  if (!result) return initialUnit;
-
-  const { newValue, newUnit, code } = result;
-
-  valueQuantity.value = newValue;
-  valueQuantity.unit = newUnit;
-  if (code) valueQuantity.code = code;
-
-  return initialUnit;
-}
-
-function processReferenceRanges(
+function normalizeReferenceRanges(
   ranges: ObservationReferenceRange[],
   initialValueUnit?: string | undefined
-): void {
-  ranges?.forEach(r => {
+): ObservationReferenceRange[] {
+  return ranges.map(r => {
+    const newRange = cloneDeep(r);
+
     if (r.low) {
       if (!r.low.unit && initialValueUnit) r.low.unit = initialValueUnit;
-      const newLow = convertRangeValue(r.low);
-      if (newLow) r.low = newLow;
+      const newLow = normalizeValueQuantity(r.low);
+      if (newLow) newRange.low = newLow;
     }
+
     if (r.high) {
       if (!r.high.unit && initialValueUnit) r.high.unit = initialValueUnit;
-      const newHigh = convertRangeValue(r.high);
-      if (newHigh) r.high = newHigh;
+      const newHigh = normalizeValueQuantity(r.high);
+      if (newHigh) newRange.high = newHigh;
     }
+
+    return newRange;
   });
 }
 
-function convertRangeValue(quantity: Quantity | undefined): Quantity | undefined {
-  if (!quantity) return;
-
-  const result = getConvertedValueAndUnit(quantity);
-  if (!result) return;
-
-  const { newValue, newUnit, code } = result;
-
-  quantity.value = newValue;
-  quantity.unit = newUnit;
-  if (code) quantity.code = code;
-
-  return quantity;
-}
-
-function getConvertedValueAndUnit(quantity: Quantity):
-  | {
-      newValue: number;
-      newUnit: string;
-      code?: string | undefined;
-    }
-  | undefined {
+/**
+ * Normalizes the units and converts the value accordingly.
+ */
+function normalizeValueQuantity(quantity: Quantity): Quantity {
   const value = quantity.value;
-  if (!value) return;
+  if (value == undefined) return quantity;
 
   const unit = normalizeUnit(quantity.unit);
-  if (!unit) return;
+  if (!unit) return quantity;
 
-  const convertedUnit = unitConversionMap.get(unit);
-  if (!convertedUnit) return;
+  const convertedUnit = unitConversionAndNormalization.get(unit);
+  if (!convertedUnit) return quantity;
 
   const convertedValue = convert(value)
     .from(unit as Unit)
     .to(convertedUnit.unit as Unit);
 
-  if (!convertedValue) return;
+  if (!convertedValue) return quantity;
 
   return {
-    newValue: parseFloat(convertedValue.toFixed(2)),
-    newUnit: convertedUnit.unit,
-    code: convertedUnit.code,
+    ...quantity,
+    value: parseFloat(convertedValue.toFixed(2)),
+    unit: convertedUnit.unit,
+    ...(convertedUnit.code ? { code: convertedUnit.code } : undefined),
   };
 }
 
@@ -156,11 +136,11 @@ function normalizeUnit(unit?: string): string | undefined {
   if (!unit) return;
 
   const trimmedUnit = unit.trim();
-  return unitConversionMap.has(trimmedUnit)
+  return unitConversionAndNormalization.has(trimmedUnit)
     ? trimmedUnit
-    : unitConversionMap.has(trimmedUnit.toLowerCase())
+    : unitConversionAndNormalization.has(trimmedUnit.toLowerCase())
     ? trimmedUnit.toLowerCase()
-    : unitConversionMap.has(trimmedUnit.toUpperCase())
+    : unitConversionAndNormalization.has(trimmedUnit.toUpperCase())
     ? trimmedUnit.toUpperCase()
     : unitNormalizationMap.get(trimmedUnit.toLowerCase());
 }
@@ -183,7 +163,7 @@ export function buildObservationInterpretation(obs: Observation): CodeableConcep
     value,
     referenceRange
   );
-  console.log("interpretationString IS", interpretationString);
+
   return buildInterpretationFromString(interpretationString);
 }
 
@@ -224,7 +204,6 @@ export function calculateInterpretationCode(
     const low = referenceRange.low;
     const high = referenceRange.high;
 
-    console.log(low, high, "and value", value);
     if (low != undefined && high != undefined) {
       if (value >= low && value <= high) {
         return INTERPRETATION_NORMAL;
@@ -264,7 +243,7 @@ function buildInterpretationFromString(
       coding: [
         {
           code: interpretation,
-          system: hl7ObservationInterpretationSystem,
+          system: hl7ObservationInterpretationSystemUrl,
         },
       ],
     },
