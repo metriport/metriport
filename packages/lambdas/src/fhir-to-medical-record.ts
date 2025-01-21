@@ -1,8 +1,8 @@
-import { Brief } from "@metriport/core/command/ai-brief/create";
-import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
+import { Brief } from "@metriport/core/command/ai-brief/create";
+import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -161,10 +161,6 @@ const convertStoreAndReturnPdfUrl = async ({
 }) => {
   const tmpFileName = uuid.v4();
 
-  const htmlFilepath = `/tmp/${tmpFileName}`;
-
-  fs.writeFileSync(htmlFilepath, html);
-
   // Defines filename + path for downloaded HTML file
   const tmpPDFFileName = tmpFileName.concat(".pdf");
   const pdfFilepath = `/tmp/${tmpPDFFileName}`;
@@ -221,6 +217,8 @@ const convertStoreAndReturnPdfUrl = async ({
       await browser.close();
     }
   }
+
+  fs.rmSync(pdfFilepath, { force: true });
 
   // Logs "shutdown" statement
   console.log("generate-pdf -> shutdown");
