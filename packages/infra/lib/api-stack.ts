@@ -1356,7 +1356,7 @@ export class APIStack extends Stack {
         lambdaLayers.chromium,
         lambdaLayers.puppeteer,
       ],
-      memory: 4096,
+      memory: 8192,
       timeout: lambdaTimeout,
       isEnableInsights: true,
       vpc,
