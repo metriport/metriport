@@ -10,7 +10,7 @@ export function dtoFromHieDirectoryEntry(network: CQDirectoryEntry2): NetworkDTO
     oid: network.id,
     zip: network.zip,
     state: network.state ? normalizeState(network.state) : undefined,
-    managingOrg: network.data?.name,
+    rootOrganization: network.rootOrganization,
     managingOrgOid: network.managingOrganizationId,
   };
 }
