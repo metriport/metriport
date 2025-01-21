@@ -12,18 +12,18 @@ export async function getHieDirectoryEntriesByFilter(
 
   const querySelect = `SELECT * FROM ${HIEDirectoryEntryViewModel.tableName} WHERE 1 = 1 `;
 
-  const { toItem, fromItem } = pagination ?? {};
-  const toItemStr = toItem ? ` AND id >= :toItem` : "";
-  const fromItemStr = fromItem ? ` AND id <= :fromItem` : "";
-  const queryPagination = querySelect + " " + [toItemStr, fromItemStr].filter(Boolean).join("");
-
   const queryFTS =
-    queryPagination +
+    querySelect +
     (filter
       ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
       : "");
 
-  const queryOrder = queryFTS + " ORDER BY id " + (toItem ? "ASC" : "DESC");
+  const { toItem, fromItem } = pagination ?? {};
+  const toItemStr = toItem ? ` AND id >= :toItem` : "";
+  const fromItemStr = fromItem ? ` AND id <= :fromItem` : "";
+  const queryPagination = queryFTS + " " + [toItemStr, fromItemStr].filter(Boolean).join("");
+
+  const queryOrder = queryPagination + " ORDER BY id " + (toItem ? "ASC" : "DESC");
 
   const { count } = pagination ?? {};
   const queryFinal = queryOrder + (count ? ` LIMIT :count` : "");
@@ -44,16 +44,23 @@ export async function getHieDirectoryEntriesByFilter(
   return sortedCqDirectoryEntries.map(entry => entry.dataValues);
 }
 
-export async function getHieDirectoryEntriesByFilterCount(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  { filter }: { filter: string }
-): Promise<number> {
+export async function getHieDirectoryEntriesByFilterCount({
+  filter,
+}: {
+  filter: string;
+}): Promise<number> {
   const sequelize = HIEDirectoryEntryViewModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
   const querySelect = `SELECT COUNT(*) FROM ${HIEDirectoryEntryViewModel.tableName} `;
 
-  const result = await sequelize.query(querySelect, {
+  const queryFTS =
+    querySelect +
+    (filter
+      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
+      : "");
+
+  const result = await sequelize.query(queryFTS, {
     type: QueryTypes.SELECT,
   });
 
