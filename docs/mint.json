@@ -249,6 +249,7 @@
       "pages": [
         "medical-api/more-info/general-info",
         "medical-api/more-info/error-responses",
+        "medical-api/more-info/sso",
         "medical-api/more-info/user-roles",
         "medical-api/more-info/etag",
         "medical-api/more-info/limits"
