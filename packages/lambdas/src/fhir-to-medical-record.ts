@@ -222,6 +222,9 @@ const convertStoreAndReturnPdfUrl = async ({
     }
   }
 
+  fs.rmSync(htmlFilepath, { force: true });
+  fs.rmSync(pdfFilepath, { force: true });
+
   // Logs "shutdown" statement
   console.log("generate-pdf -> shutdown");
   const urlPdf = await getSignedUrl(fileName);
