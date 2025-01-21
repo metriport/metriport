@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
-import * as address from "../../../../domain/medical/address";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
-import * as cqCommands from "../../../../external/carequality";
+import * as address from "../../../../domain/medical/address";
 import * as cwCommands from "../../../../external/commonwell";
 import * as createTenant from "../../../../external/fhir/admin";
 import * as upsertOrgToFHIRServer from "../../../../external/fhir/organization/upsert-organization";
@@ -28,7 +27,6 @@ beforeAll(() => {
     .mockImplementation(async () => {});
   jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
   jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockResolvedValue();
-  jest.spyOn(cqCommands.default.organization, "createOrUpdate").mockResolvedValue("test");
   jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
 });
 beforeEach(() => {

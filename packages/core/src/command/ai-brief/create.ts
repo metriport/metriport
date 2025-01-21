@@ -101,7 +101,7 @@ export async function summarizeFilteredBundleWithAI(
     const llmSummary = new BedrockChat({
       model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
       temperature: 0,
-      region: "us-east-1",
+      region: "us-west-2",
       callbacks: [
         {
           handleLLMEnd: output => {

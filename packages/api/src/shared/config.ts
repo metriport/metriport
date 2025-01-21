@@ -100,21 +100,24 @@ export class Config {
   static getCQManagementApiKey(): string {
     return getEnvVarOrFail("CQ_MANAGEMENT_API_KEY");
   }
-
   static getCQOrgPrivateKey(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
   }
-
   static getCQOrgPrivateKeyPassword(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
   }
-
   static getCQOrgCertificate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
 
+  static getCQOrgUrls(): string | undefined {
+    return getEnvVar("CQ_ORG_URLS");
+  }
   static getCQUrlsToExclude(): string | undefined {
     return getEnvVar("CQ_URLS_TO_EXCLUDE");
+  }
+  static getCqAdditionalOrgs(): string | undefined {
+    return getEnvVar("CQ_ADDITIONAL_ORGS");
   }
 
   static getPlaceIndexName(): string {
@@ -314,10 +317,6 @@ export class Config {
   }
   static getSearchIndexName(): string {
     return getEnvVarOrFail("SEARCH_INDEX");
-  }
-
-  static getCQOrgUrls(): string | undefined {
-    return getEnvVar("CQ_ORG_URLS");
   }
 
   static getCWManagementUrl(): string | undefined {
