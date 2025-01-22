@@ -59,10 +59,21 @@ const interpretationTextMap = new Map<string, string>([
 const hl7ObservationInterpretationSystemUrl =
   "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation";
 
-const highInterpretations = ["high", "critical"];
-const lowInterpretations = ["low"];
-const normalInterpretations = ["normal", "negative", "none seen", "not detected", "neg"];
-const abnormalInterpretations = ["abnormal", "positive"];
+const highInterpretations = [INTERPRETATION_CODE_HIGH.toLowerCase(), "high", "critical"];
+const lowInterpretations = [INTERPRETATION_CODE_LOW.toLowerCase(), "low"];
+const normalInterpretations = [
+  INTERPRETATION_CODE_NORMAL.toLowerCase(),
+  "normal",
+  "negative",
+  "none seen",
+  "not detected",
+  "neg",
+];
+const abnormalInterpretations = [
+  INTERPRETATION_CODE_ABNORMAL.toLowerCase(),
+  "abnormal",
+  "positive",
+];
 
 export function normalizeObservations(observations: Observation[]): Observation[] {
   return observations.map(obs => {
