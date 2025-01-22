@@ -1,22 +1,25 @@
+import { TypedValue, append, normalizeOperationOutcome, notFound } from "@medplum/core";
 import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
-import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
-import { normalizeOperationOutcome, badRequest, TypedValue, notFound, append } from "@medplum/core";
-import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
-import { parseInputParameters } from "./utils/parameters";
-import { findCodeSystemResource } from "./utils/codeSystemLookup";
+import {
+  CodeSystem,
+  Coding,
+  OperationDefinition,
+  OperationOutcome,
+  Parameters,
+} from "@medplum/fhirtypes";
 import { getTermServerClient } from "../init-term-server";
+import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
+import { findCodeSystemResource } from "./utils/codeSystemLookup";
+import {
+  isValidParametersResource,
+  parseBulkInputParameters,
+  parseInputParameters,
+} from "./utils/parameters";
 
 const operation: OperationDefinition = codeLookupOperationDefinition;
 
-type CodeSystemLookupParameters = {
-  code?: string;
-  system?: string;
-  version?: string;
-  coding?: Coding;
-  property?: string[];
-};
-
 export type CodeSystemLookupOutput = {
+  id?: string | undefined;
   name: string;
   display: string;
   code: string;
@@ -27,10 +30,12 @@ export const codeSystemLookupHandler = async (
   request: FhirRequest,
   partial: boolean
 ): Promise<CodeSystemLookupOutput[] | FhirResponse> => {
-  const params = parseInputParameters<CodeSystemLookupParameters>(operation, request);
+  const params = parseInputParameters(operation, request);
+
   if (!params.system) {
-    return [normalizeOperationOutcome(new Error("System is Required"))];
+    return [normalizeOperationOutcome(new Error("System parameter is required"))];
   }
+
   const codeSystem = await findCodeSystemResource(params.system);
   let coding: Coding;
   if (params.coding) {
@@ -38,15 +43,90 @@ export const codeSystemLookupHandler = async (
   } else if (params.code) {
     coding = { system: params.system ?? codeSystem.url, code: params.code };
   } else {
-    return [badRequest("No coding specified")];
+    return [normalizeOperationOutcome(new Error("Coding is Required"))];
   }
 
   if (partial) {
     return await lookupPartialCoding(codeSystem, coding);
-  } else {
-    return await lookupCoding(codeSystem, coding);
   }
+
+  return await lookupCoding(codeSystem, coding);
 };
+
+export async function bulkCodeSystemLookupHandler(request: FhirRequest): Promise<{
+  status: 200 | 400;
+  // TODO: 2599 - See if we can define a more FHIR-friendly return for the successful responses
+  data: CodeSystemLookupOutput[] | OperationOutcome[];
+}> {
+  if (!Array.isArray(request.body)) {
+    return {
+      status: 400,
+      data: [
+        normalizeOperationOutcome(new Error("Input must be an array of Parameters resources")),
+      ],
+    };
+  }
+
+  const invalidParams = request.body.flatMap((param, index) => {
+    if (isValidParametersResource(param)) return [];
+    return normalizeOperationOutcome(new Error(`Invalid Parameters resource at index ${index}`));
+  });
+
+  if (invalidParams.length > 0) {
+    return {
+      status: 400,
+      data: invalidParams,
+    };
+  }
+
+  const inputParams = request.body as Parameters[];
+  const params = parseBulkInputParameters(operation, inputParams);
+
+  const startedAt = Date.now();
+  const results = await Promise.allSettled(
+    params.map(async param => {
+      if (!param.system) {
+        return normalizeOperationOutcome(new Error("System is Required"));
+      }
+      const codeSystem = await findCodeSystemResource(param.system);
+
+      let coding: Coding;
+      if (param.coding) {
+        coding = param.coding;
+      } else if (param.code) {
+        coding = { system: param.system ?? codeSystem.url, code: param.code };
+      } else {
+        return normalizeOperationOutcome(new Error("Coding is Required"));
+      }
+
+      const lookupResult = await lookupCoding(codeSystem, coding);
+
+      // TODO: 2599 - For cases like this, send back an OperationOutcome that would indicate an internal error and return status 500.
+      if (!Array.isArray(lookupResult) || lookupResult.length === 0) {
+        return normalizeOperationOutcome(new Error("Internal error during lookup"));
+      }
+
+      return {
+        ...lookupResult[0],
+        id: param.id,
+      } as CodeSystemLookupOutput;
+    })
+  );
+
+  const duration = Date.now() - startedAt;
+  console.log(`Done code lookup. Duration: ${duration} ms`);
+
+  const successful = results
+    .filter((result): result is PromiseFulfilledResult<CodeSystemLookupOutput> => {
+      return result.status === "fulfilled" && !("resourceType" in result.value);
+    })
+    .map(result => result.value);
+
+  return {
+    status: 200,
+    data: successful,
+  };
+}
 
 export async function lookupPartialCoding(
   codeSystem: CodeSystem,

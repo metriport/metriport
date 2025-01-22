@@ -114,6 +114,7 @@ type EnvConfigBase = {
   };
   usageReportUrl?: string;
   fhirServerUrl: string;
+  termServerUrl?: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
   systemRootOrgName: string;
