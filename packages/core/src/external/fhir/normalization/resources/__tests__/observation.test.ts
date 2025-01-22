@@ -239,4 +239,110 @@ describe("normalizeObservations", () => {
       expect(result).toEqual("H");
     });
   });
+
+  describe("normalizeReferenceRanges", () => {
+    it("correctly normalizes reference range units", () => {
+      const observation = makeObservation({
+        valueQuantity: { ...valueQuantityTempCel },
+        referenceRange: [
+          {
+            low: { value: 36.5, unit: "C" },
+            high: { value: 37.5, unit: "C" },
+          },
+        ],
+      });
+
+      const normalized = normalizeObservations([observation]);
+      expect(normalized.length).toBe(1);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      const rangeResult = result.referenceRange;
+      expect(rangeResult).toBeTruthy();
+      if (!rangeResult) throw new Error("Expected rangeResult to be defined");
+
+      expect(rangeResult[0]?.low?.unit).toBe("F");
+      expect(rangeResult[0]?.low?.value).toBe(97.7);
+      expect(rangeResult[0]?.high?.unit).toBe("F");
+      expect(rangeResult[0]?.high?.value).toBe(99.5);
+    });
+
+    it("correctly fills in missing units from valueQuantity", () => {
+      const observation = makeObservation({
+        valueQuantity: { ...valueQuantityTempF },
+        referenceRange: [
+          {
+            low: { value: 97.7 }, // no unit
+            high: { value: 99.5 }, // no unit
+          },
+        ],
+      });
+
+      const normalized = normalizeObservations([observation]);
+      expect(normalized.length).toBe(1);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      const rangeResult = result.referenceRange;
+      expect(rangeResult).toBeTruthy();
+      if (!rangeResult) throw new Error("Expected rangeResult to be defined");
+
+      expect(rangeResult[0]?.low?.unit).toBe("F");
+      expect(rangeResult[0]?.low?.value).toBe(97.7);
+      expect(rangeResult[0]?.high?.unit).toBe("F");
+      expect(rangeResult[0]?.high?.value).toBe(99.5);
+    });
+
+    it("handles reference ranges with only low value", () => {
+      const observation = makeObservation({
+        valueQuantity: { ...valueQuantityTempF },
+        referenceRange: [
+          {
+            low: { value: 97.7, unit: "F" },
+          },
+        ],
+      });
+
+      const normalized = normalizeObservations([observation]);
+      expect(normalized.length).toBe(1);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      const rangeResult = result.referenceRange;
+      expect(rangeResult).toBeTruthy();
+      if (!rangeResult) throw new Error("Expected rangeResult to be defined");
+
+      expect(rangeResult[0]?.low?.unit).toBe("F");
+      expect(rangeResult[0]?.low?.value).toBe(97.7);
+      expect(rangeResult[0]?.high).toBeUndefined();
+    });
+
+    it("handles reference ranges with only high value", () => {
+      const observation = makeObservation({
+        valueQuantity: { ...valueQuantityTempF },
+        referenceRange: [
+          {
+            high: { value: 99.5, unit: "F" },
+          },
+        ],
+      });
+
+      const normalized = normalizeObservations([observation]);
+      expect(normalized.length).toBe(1);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      const rangeResult = result.referenceRange;
+      expect(rangeResult).toBeTruthy();
+      if (!rangeResult) throw new Error("Expected rangeResult to be defined");
+
+      expect(rangeResult[0]?.low).toBeUndefined();
+      expect(rangeResult[0]?.high?.unit).toBe("F");
+      expect(rangeResult[0]?.high?.value).toBe(99.5);
+    });
+  });
 });

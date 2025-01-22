@@ -22,7 +22,7 @@ type ReferenceRange = {
 /**
  * This map is used to normalize unconventional unit names to standard unit names. i.e cel -> C, etc.
  */
-const unitNormalizationMap = new Map<string, string>([
+const nonStandardUnitNormalizationMap = new Map<string, string>([
   ["cel", "C"],
   ["degf", "F"],
   ["in_i", "in"],
@@ -31,7 +31,7 @@ const unitNormalizationMap = new Map<string, string>([
 /**
  * This map is used to convert standardized units to preferred units. i.e C -> F, lb -> g, in -> cm, etc.
  */
-const unitConversionAndNormalization = new Map<string, UnitWithCode>([
+const unitConversionAndNormalizationMap = new Map<string, UnitWithCode>([
   ["C", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
   ["F", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
   ["kg", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
@@ -88,20 +88,15 @@ function normalizeReferenceRanges(
 ): ObservationReferenceRange[] {
   return ranges.map(r => {
     const newRange = cloneDeep(r);
+    if (newRange.low && !newRange.low.unit && initialValueUnit)
+      newRange.low.unit = initialValueUnit;
+    if (newRange.high && !newRange.high.unit && initialValueUnit)
+      newRange.high.unit = initialValueUnit;
 
-    if (r.low) {
-      if (!r.low.unit && initialValueUnit) r.low.unit = initialValueUnit;
-      const newLow = normalizeValueQuantity(r.low);
-      if (newLow) newRange.low = newLow;
-    }
-
-    if (r.high) {
-      if (!r.high.unit && initialValueUnit) r.high.unit = initialValueUnit;
-      const newHigh = normalizeValueQuantity(r.high);
-      if (newHigh) newRange.high = newHigh;
-    }
-
-    return newRange;
+    return {
+      ...(newRange.low ? { low: normalizeValueQuantity(newRange.low) } : undefined),
+      ...(newRange.high ? { high: normalizeValueQuantity(newRange.high) } : undefined),
+    };
   });
 }
 
@@ -115,7 +110,7 @@ function normalizeValueQuantity(quantity: Quantity): Quantity {
   const unit = normalizeUnit(quantity.unit);
   if (!unit) return quantity;
 
-  const convertedUnit = unitConversionAndNormalization.get(unit);
+  const convertedUnit = unitConversionAndNormalizationMap.get(unit);
   if (!convertedUnit) return quantity;
 
   const convertedValue = convert(value)
@@ -133,16 +128,16 @@ function normalizeValueQuantity(quantity: Quantity): Quantity {
 }
 
 function normalizeUnit(unit?: string): string | undefined {
-  if (!unit) return;
+  if (!unit) return undefined;
 
   const trimmedUnit = unit.trim();
-  return unitConversionAndNormalization.has(trimmedUnit)
+  return unitConversionAndNormalizationMap.has(trimmedUnit)
     ? trimmedUnit
-    : unitConversionAndNormalization.has(trimmedUnit.toLowerCase())
+    : unitConversionAndNormalizationMap.has(trimmedUnit.toLowerCase())
     ? trimmedUnit.toLowerCase()
-    : unitConversionAndNormalization.has(trimmedUnit.toUpperCase())
+    : unitConversionAndNormalizationMap.has(trimmedUnit.toUpperCase())
     ? trimmedUnit.toUpperCase()
-    : unitNormalizationMap.get(trimmedUnit.toLowerCase());
+    : nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase());
 }
 
 export function buildObservationInterpretation(obs: Observation): CodeableConcept[] | undefined {
