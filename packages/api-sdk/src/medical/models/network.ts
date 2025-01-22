@@ -3,11 +3,9 @@ import { z } from "zod";
 export const networkSchema = z.object({
   name: z.string().optional(),
   oid: z.string().optional(),
-  address_line: z.string().optional(),
-  city: z.string().optional(),
   state: z.string().optional(),
   zip: z.string().optional(),
-  managingOrg: z.string().optional(),
+  rootOrganization: z.string().optional(),
   managingOrgOid: z.string().optional(),
 });
 

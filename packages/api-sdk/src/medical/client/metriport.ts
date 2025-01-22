@@ -311,7 +311,7 @@ export class MetriportMedicalApi {
    *                   See https://docs.metriport.com/medical-api/more-info/pagination
    * @return The list of patients.
    */
-  async listNetworks({
+  async listNetworkEntries({
     filters,
     pagination,
   }: {
