@@ -13,6 +13,7 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
+import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
@@ -232,36 +233,39 @@ export async function handler(event: SQSEvent) {
         await cloudWatchUtils.reportMemoryUsage();
 
         let hydratedBundle = conversionResult;
-        try {
-          const hydratedResult = await Promise.race<Bundle<Resource>>([
-            hydrate({
-              cxId,
-              patientId,
-              bundle: conversionResult,
-            }),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
-            ),
-          ]);
+        // TODO: 2563 - Remove this after prod testing is done
+        if (await isHydrationEnabledForCx(cxId)) {
+          try {
+            const hydratedResult = await Promise.race<Bundle<Resource>>([
+              hydrate({
+                cxId,
+                patientId,
+                bundle: conversionResult,
+              }),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
+              ),
+            ]);
 
-          hydratedBundle = hydratedResult;
+            hydratedBundle = hydratedResult;
 
-          await storeHydratedConversionResult({
-            s3Utils,
-            bundle: hydratedBundle,
-            bucketName: conversionResultBucketName,
-            fileName: s3FileName,
-            context: lambdaName,
-            lambdaParams,
-            log,
-          });
-        } catch (error) {
-          const msg = "Failed to hydrate the converted bundle";
-          log(`${msg}: ${errorToString(error)}`);
-          capture.message(msg, {
-            extra: { error, cxId, patientId, context: lambdaName },
-            level: "warning",
-          });
+            await storeHydratedConversionResult({
+              s3Utils,
+              bundle: hydratedBundle,
+              bucketName: conversionResultBucketName,
+              fileName: s3FileName,
+              context: lambdaName,
+              lambdaParams,
+              log,
+            });
+          } catch (error) {
+            const msg = "Failed to hydrate the converted bundle";
+            log(`${msg}: ${errorToString(error)}`);
+            capture.message(msg, {
+              extra: { error, cxId, patientId, context: lambdaName },
+              level: "warning",
+            });
+          }
         }
 
         await cloudWatchUtils.reportMemoryUsage();
