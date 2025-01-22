@@ -2,6 +2,7 @@ import { QueryTypes } from "sequelize";
 import { Pagination, sortForPagination } from "../../../../command/pagination";
 import { CQDirectoryEntry2 } from "../../cq-directory";
 import { HIEDirectoryEntryViewModel } from "../../models/hie-directory-view";
+import { paginationSqlExpressions } from "../../../../shared/sql";
 
 export async function getHieDirectoryEntriesByFilter(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -18,16 +19,9 @@ export async function getHieDirectoryEntriesByFilter(
       ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
       : "");
 
-  const { toItem, fromItem } = pagination ?? {};
-  const toItemStr = toItem ? ` AND id >= :toItem` : "";
-  const fromItemStr = fromItem ? ` AND id <= :fromItem` : "";
-  const queryPagination = queryFTS + " " + [toItemStr, fromItemStr].filter(Boolean).join("");
+  const queryFinal = queryFTS + paginationSqlExpressions(pagination);
 
-  const queryOrder = queryPagination + " ORDER BY id " + (toItem ? "ASC" : "DESC");
-
-  const { count } = pagination ?? {};
-  const queryFinal = queryOrder + (count ? ` LIMIT :count` : "");
-
+  const { toItem, fromItem, count } = pagination ?? {};
   const cqDirectoryEntries = await sequelize.query(queryFinal, {
     model: HIEDirectoryEntryViewModel,
     mapToModel: true,
