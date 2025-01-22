@@ -11,6 +11,7 @@ import {
   createSandboxMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
+import { isWkhtmltopdfEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util";
@@ -128,8 +129,13 @@ async function convertFHIRBundleToMedicalRecord({
   dateTo?: string;
   conversionType: MedicalRecordFormat;
 }): Promise<ConversionOutput> {
-  const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
+  const { log } = out(`convertFHIRBundleToMedicalRecord - pt ${patient.id}`);
+  const isWkhtmltopdfEnabled = await isWkhtmltopdfEnabledForCx(patient.cxId);
+  const lambdaName = isWkhtmltopdfEnabled
+    ? Config.getFHIRToMedicalRecordLambdaNameNew()
+    : Config.getFHIRToMedicalRecordLambdaName();
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+  log(`Using lambda name: ${lambdaName} - isWkhtmltopdfEnabled: ${isWkhtmltopdfEnabled}`);
 
   // Store the bundle on S3
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");

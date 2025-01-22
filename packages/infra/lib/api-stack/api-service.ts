@@ -102,6 +102,7 @@ export function createAPIService({
   ehrResponsesBucket,
   fhirToBundleLambda,
   fhirToMedicalRecordLambda,
+  fhirToMedicalRecordLambdaNew,
   fhirToCdaConverterLambda,
   rateLimitTable,
   searchIngestionQueue,
@@ -135,6 +136,7 @@ export function createAPIService({
   ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
+  fhirToMedicalRecordLambdaNew: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
   searchIngestionQueue: IQueue;
@@ -256,6 +258,9 @@ export function createAPIService({
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
+          }),
+          ...(fhirToMedicalRecordLambdaNew && {
+            FHIR_TO_MEDICAL_RECORD_LAMBDA_NEW_NAME: fhirToMedicalRecordLambdaNew.functionName,
           }),
           ...(fhirToCdaConverterLambda && {
             FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
@@ -408,7 +413,9 @@ export function createAPIService({
 
   if (fhirToMedicalRecordLambda) {
     fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-    cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
+  }
+  if (fhirToMedicalRecordLambdaNew) {
+    fhirToMedicalRecordLambdaNew.grantInvoke(fargateService.taskDefinition.taskRole);
   }
 
   if (cookieStore) {
