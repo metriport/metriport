@@ -1,3 +1,19 @@
+/**
+ * WARNING: This server setup is intended for **internal use only**.
+ *
+ * This file contains a minimal Express server configuration that is not hardened
+ * or optimized for external-facing requests (e.g., from customers or third-party applications).
+ *
+ * If you plan to use this server for public access, please ensure that:
+ * 1. The following are implemented:
+ *    - Robust error handling
+ *    - Authentication
+ *    - Rate limiting (?)
+ * 2. Performance optimizations and production best practices are applied.
+ *
+ * As it stands, this server should only be used for internal communication between services.
+ */
+
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
@@ -22,7 +38,8 @@ async function main() {
 
   app.use("/terminology/", fhirRouter);
 
-  const PORT = 8080;
+  const PORT = process.env.PORT || 8080;
+
   const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });

@@ -551,6 +551,7 @@ export class APIStack extends Stack {
       queue: fhirConverterQueue,
       resource: apiService.service.taskDefinition.taskRole,
     });
+
     const fhirConverterLambda = fhirConverterConnector.createLambda({
       envType: props.config.environmentType,
       stack: this,
@@ -561,8 +562,13 @@ export class APIStack extends Stack {
       fhirConverterBucket,
       medicalDocumentsBucket,
       fhirServerUrl: props.config.fhirServerUrl,
+      termServerUrl: props.config.termServerUrl,
       apiServiceDnsAddress: apiDirectUrl,
       alarmSnsAction: slackNotification?.alarmAction,
+      appConfigEnvVars: {
+        appId: appConfigAppId,
+        configId: appConfigConfigId,
+      },
     });
 
     // Add ENV after the API service is created
@@ -581,6 +587,13 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+
+    AppConfigUtils.allowReadConfig({
+      scope: this,
+      resourceName: "FhirConverterLambda",
+      resourceRole: fhirConverterLambda.role,
+      appConfigResources: ["*"],
+    });
 
     createDocQueryChecker({
       lambdaLayers,
