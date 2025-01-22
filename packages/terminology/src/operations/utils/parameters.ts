@@ -55,7 +55,7 @@ export function parseInputParameters(
   if (!operation.parameter) return {};
   const inputParameters = operation.parameter.filter(p => p.use === "in");
 
-  // TODO: we should be able to always send the data in the body and simplify this code
+  // TODO: 2599 - we should be able to always send the data in the body and simplify this code
   const input = req.method === "GET" ? parseQueryString(req.query, inputParameters) : req.body;
 
   if (input.resourceType === "Parameters") {

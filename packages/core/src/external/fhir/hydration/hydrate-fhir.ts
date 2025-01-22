@@ -1,8 +1,8 @@
 import { Bundle, Parameters, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import {
-  buildTermServerParameter,
-  buildTermServerParametersFromCodings,
+  buildFhirParametersFromCoding,
+  buildMultipleFhirParametersFromCodings,
   lookupMultipleCodes,
 } from "../../term-server";
 import { getCodesFromResource } from "../codeable-concept";
@@ -12,6 +12,7 @@ import { getCodesFromResource } from "../codeable-concept";
  * creates FHIR Parameters[] from them, sends it to the Term Server for interpretation,
  * then looks thru the array again to replace the codes with the results.
  *
+ * TODO: 2600 - Potential for code improvements
  * It uses UUID v3 for deterministic ID generation to allow us to cross-reference what we send to what we get back
  * from the Term Server. This approach has pros and cons:
  *
@@ -34,7 +35,7 @@ export async function hydrateFhir(
     const codes = getCodesFromResource(res);
 
     codes.forEach(code => {
-      const parameters = buildTermServerParametersFromCodings(code.coding);
+      const parameters = buildMultipleFhirParametersFromCodings(code.coding);
 
       parameters?.forEach(param => {
         if (param.id) lookupParametersMap.set(param.id, param);
@@ -59,7 +60,7 @@ export async function hydrateFhir(
       code.coding?.forEach(coding => {
         if (coding.code && coding.system) {
           numCodes++;
-          const param = buildTermServerParameter({ system: coding.system, code: coding.code });
+          const param = buildFhirParametersFromCoding({ system: coding.system, code: coding.code });
           if (param && param.id) {
             const newMapping = codesMap.get(param.id);
             if (newMapping && "display" in newMapping) {
@@ -71,7 +72,5 @@ export async function hydrateFhir(
     });
   });
 
-  const { metadata } = result;
-  if (metadata.properties) metadata.totalBundleCodes = numCodes;
-  return { metadata, data: hydratedBundle };
+  return { metadata: { ...result.metadata, totalBundleCodes: numCodes }, data: hydratedBundle };
 }

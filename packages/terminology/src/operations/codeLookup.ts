@@ -55,7 +55,7 @@ export const codeSystemLookupHandler = async (
 
 export async function bulkCodeSystemLookupHandler(request: FhirRequest): Promise<{
   status: 200 | 400;
-  // TODO: See if we can define a more FHIR-friendly return for the successful responses
+  // TODO: 2599 - See if we can define a more FHIR-friendly return for the successful responses
   data: CodeSystemLookupOutput[] | OperationOutcome[];
 }> {
   if (!Array.isArray(request.body)) {
@@ -101,7 +101,7 @@ export async function bulkCodeSystemLookupHandler(request: FhirRequest): Promise
 
       const lookupResult = await lookupCoding(codeSystem, coding);
 
-      // TODO: For cases like this, send back an OperationOutcome that would indicate an internal error and return status 500.
+      // TODO: 2599 - For cases like this, send back an OperationOutcome that would indicate an internal error and return status 500.
       if (!Array.isArray(lookupResult) || lookupResult.length === 0) {
         return normalizeOperationOutcome(new Error("Internal error during lookup"));
       }

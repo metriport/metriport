@@ -70,27 +70,17 @@ export async function lookupMultipleCodes(
   return { metadata, data };
 }
 
-export function buildTermServerParametersFromCodings(
+export function buildMultipleFhirParametersFromCodings(
   codings: Coding[] | undefined
 ): Parameters[] | undefined {
-  const params = codings?.flatMap(coding => {
-    const code = coding.code?.trim();
-    const system = coding.system?.trim();
-    if (!code || !system) return [];
-    const param = buildTermServerParameter({ system, code });
-    return param ?? [];
-  });
-
-  return params;
+  return codings?.flatMap(coding => buildFhirParametersFromCoding(coding) || []);
 }
 
-export function buildTermServerParameter({
-  system,
-  code,
-}: {
-  system: string;
-  code: string;
-}): Parameters | undefined {
+export function buildFhirParametersFromCoding(coding: Coding): Parameters | undefined {
+  const code = coding.code?.trim();
+  const system = coding.system?.trim();
+  if (!code || !system) return undefined;
+
   const isValidSystem = isSystemValid(system);
   if (!isValidSystem) return undefined;
 
