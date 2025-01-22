@@ -1388,7 +1388,7 @@ export class APIStack extends Stack {
 
     const fhirToMedicalRecordLambdaNew = createLambda({
       stack: this,
-      name: "FhirToMedicalRecord2",
+      name: "FhirToMedicalRecordNew",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fhir-to-medical-record-new",
       envType,

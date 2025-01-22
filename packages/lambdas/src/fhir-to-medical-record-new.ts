@@ -25,6 +25,7 @@ import { JSDOM } from "jsdom";
 import { Readable } from "stream";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
+import { apiClient } from "./shared/oss-api";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -35,17 +36,15 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-// const apiURL = getEnvOrFail("API_URL");
+const apiURL = getEnvOrFail("API_URL");
 const dashURL = getEnvOrFail("DASH_URL");
 const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
 const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
-// const ossApi = apiClient(apiURL);
+const ossApi = apiClient(apiURL);
 
-// TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
-// TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
 // TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
 
 const htmlOptions: BundleToHtmlOptions = {
@@ -107,14 +106,11 @@ export async function handler({
     log(`MR Summary has contents: ${hasContents}`);
     const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
-    // TODO 2510 to be reintroduced on the final version
     // TODO 2510 rename it w/o brief
-    // const mrS3Info = await storeMrSummaryAndBriefInS3({
-    await storeMrSummaryAndBriefInS3({
+    const mrS3Info = await storeMrSummaryAndBriefInS3({
       bucketName,
       htmlFileName,
       html,
-
       log,
     });
 
@@ -129,14 +125,13 @@ export async function handler({
 
     const [urlResp] = await Promise.allSettled([
       getSignedUrlPromise(),
-      // TODO 2510 to be reintroduced on the final version
-      // createFeedbackForBrief({
-      //   cxId,
-      //   patientId,
-      //   aiBrief,
-      //   mrVersion: mrS3Info.version,
-      //   mrLocation: mrS3Info.location,
-      // }),
+      createFeedbackForBrief({
+        cxId,
+        patientId,
+        aiBrief,
+        mrVersion: mrS3Info.version,
+        mrLocation: mrS3Info.location,
+      }),
     ]);
     if (urlResp.status === "rejected") throw new Error(urlResp.reason);
     const url = urlResp.value;
@@ -195,7 +190,7 @@ async function convertStoreAndReturnPdfUrl({
     },
     { log, withMinutes: false }
   );
-  log(`Done, storing on S3...`);
+  log(`Storing on S3...`);
 
   // Upload generated PDF to S3 bucket
   await s3Client
@@ -316,40 +311,39 @@ function prepareBriefToBundle({ aiBrief }: { aiBrief: string | undefined }): Bri
   };
 }
 
-// TODO 2510 to be reintroduced on the final version
-// async function createFeedbackForBrief({
-//   cxId,
-//   patientId,
-//   aiBrief,
-//   mrVersion,
-//   mrLocation,
-// }: {
-//   cxId: string;
-//   patientId: string;
-//   aiBrief: Brief | undefined;
-//   mrVersion: string | undefined;
-//   mrLocation: string | undefined;
-// }): Promise<void> {
-//   if (!aiBrief) return;
-//   try {
-//     await ossApi.internal.createFeedback({
-//       cxId,
-//       entityId: patientId,
-//       id: aiBrief.id,
-//       content: aiBrief.content,
-//       version: mrVersion,
-//       location: mrLocation,
-//     });
-//   } catch (error) {
-//     const msg = `Failed to create feedback for AI Brief`;
-//     const extra = { cxId, patientId, aiBriefId: aiBrief.id };
-//     const { log } = out("createFeedbackForBrief");
-//     log(`${msg} - error: ${errorToString(error)}, extra: ${JSON.stringify(extra)}`);
-//     capture.error(msg, {
-//       extra: {
-//         ...extra,
-//         error,
-//       },
-//     });
-//   }
-// }
+async function createFeedbackForBrief({
+  cxId,
+  patientId,
+  aiBrief,
+  mrVersion,
+  mrLocation,
+}: {
+  cxId: string;
+  patientId: string;
+  aiBrief: Brief | undefined;
+  mrVersion: string | undefined;
+  mrLocation: string | undefined;
+}): Promise<void> {
+  if (!aiBrief) return;
+  try {
+    await ossApi.internal.createFeedback({
+      cxId,
+      entityId: patientId,
+      id: aiBrief.id,
+      content: aiBrief.content,
+      version: mrVersion,
+      location: mrLocation,
+    });
+  } catch (error) {
+    const msg = `Failed to create feedback for AI Brief`;
+    const extra = { cxId, patientId, aiBriefId: aiBrief.id };
+    const { log } = out("createFeedbackForBrief");
+    log(`${msg} - error: ${errorToString(error)}, extra: ${JSON.stringify(extra)}`);
+    capture.error(msg, {
+      extra: {
+        ...extra,
+        error,
+      },
+    });
+  }
+}
