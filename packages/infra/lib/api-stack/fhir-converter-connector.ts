@@ -1,6 +1,8 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
+import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -105,6 +107,8 @@ export function createLambda({
   termServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
+  appConfigEnvVars,
+  fargateService,
 }: {
   lambdaLayers: LambdaLayers;
   envType: EnvType;
@@ -118,6 +122,11 @@ export function createLambda({
   termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
+  appConfigEnvVars: {
+    appId: string;
+    configId: string;
+  };
+  fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
 }): Lambda {
   const config = getConfig();
   const {
@@ -148,6 +157,8 @@ export function createLambda({
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
+      APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+      APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
@@ -166,6 +177,30 @@ export function createLambda({
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
+
+  // Setting permissions for AppConfig
+  fargateService.taskDefinition.taskRole.attachInlinePolicy(
+    new iam.Policy(stack, "OSSAPIPermissionsForAppConfig", {
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "appconfig:StartConfigurationSession",
+            "appconfig:GetLatestConfiguration",
+            "appconfig:GetConfiguration",
+            "appconfig:CreateHostedConfigurationVersion",
+            "appconfig:StartDeployment",
+            "apigateway:GET",
+          ],
+          resources: ["*"],
+        }),
+        new iam.PolicyStatement({
+          actions: ["geo:SearchPlaceIndexForText"],
+          resources: [`arn:aws:geo:*`],
+          effect: iam.Effect.ALLOW,
+        }),
+      ],
+    })
+  );
 
   return conversionLambda;
 }

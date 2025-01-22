@@ -551,6 +551,7 @@ export class APIStack extends Stack {
       queue: fhirConverterQueue,
       resource: apiService.service.taskDefinition.taskRole,
     });
+
     const fhirConverterLambda = fhirConverterConnector.createLambda({
       envType: props.config.environmentType,
       stack: this,
@@ -564,6 +565,11 @@ export class APIStack extends Stack {
       termServerUrl: props.config.termServerUrl,
       apiServiceDnsAddress: apiDirectUrl,
       alarmSnsAction: slackNotification?.alarmAction,
+      appConfigEnvVars: {
+        appId: appConfigAppId,
+        configId: appConfigConfigId,
+      },
+      fargateService: apiService,
     });
 
     // Add ENV after the API service is created
