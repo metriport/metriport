@@ -21,19 +21,20 @@ import {
   Task,
 } from "@medplum/fhirtypes";
 import { buildDayjs, sortDate } from "@metriport/shared/common/date";
-import { uniqWith, cloneDeep, camelCase } from "lodash";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
+import { camelCase, cloneDeep, uniqWith } from "lodash";
 import { Brief } from "../../../command/ai-brief/create";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import {
-  createBrief,
   buildEncounterSections,
+  BundleToHtmlOptions,
+  createBrief,
+  createSection,
   formatDateForDisplay,
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
-  createSection,
 } from "./bundle-to-html-shared";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
-import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -43,7 +44,11 @@ const LOINC_CODE = "loinc";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtmlDerm(
+  fhirBundle: Bundle,
+  brief?: Brief,
+  options: BundleToHtmlOptions = {}
+): string {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
 
   const {
@@ -62,6 +67,7 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
     immunizations,
     familyMemberHistories,
   } = fhirTypes;
+  const { customCssHeaderTables } = options;
 
   const isClinicallyRelevant = hasClinicalRelevantData(fhirTypes);
 
@@ -161,9 +167,13 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
             width: 100%;
           }
 
-          .header-tables {
-            display: flex;
-            flex: 1;
+          .header-tables ${
+            customCssHeaderTables
+              ? customCssHeaderTables
+              : `{
+                   display: flex;
+                   flex: 1;
+                 }`
           }
 
           .header-table {

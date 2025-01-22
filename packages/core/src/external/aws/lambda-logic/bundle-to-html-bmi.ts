@@ -21,17 +21,18 @@ import {
   Task,
 } from "@medplum/fhirtypes";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { cloneDeep, uniqWith } from "lodash";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import { Brief } from "../../../command/ai-brief/create";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import {
+  BundleToHtmlOptions,
   createBrief,
   createSection,
   formatDateForDisplay,
   ISO_DATE,
 } from "./bundle-to-html-shared";
-import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -43,7 +44,11 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtmlBmi(
+  fhirBundle: Bundle,
+  brief?: Brief,
+  options: BundleToHtmlOptions = {}
+): string {
   const {
     patient,
     conditions,
@@ -54,6 +59,7 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
     medications,
     medicationStatements,
   } = extractFhirTypesFromBundle(fhirBundle);
+  const { customCssHeaderTables } = options;
 
   if (!patient) {
     throw new Error("No patient found in bundle");
@@ -98,9 +104,13 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
             width: 100%;
           }
 
-          .header-tables {
-            display: flex;
-            flex: 1;
+          .header-tables ${
+            customCssHeaderTables
+              ? customCssHeaderTables
+              : `{
+                   display: flex;
+                   flex: 1;
+                 }`
           }
 
           .header-table {

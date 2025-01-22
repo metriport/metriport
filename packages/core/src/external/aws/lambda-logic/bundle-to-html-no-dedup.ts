@@ -20,11 +20,11 @@ import {
   Resource,
   Task,
 } from "@medplum/fhirtypes";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
 import { Brief } from "../../../command/ai-brief/create";
-import { createBrief, createSection } from "./bundle-to-html-shared";
-import { sortObservationsForDisplay } from "@metriport/shared/medical";
+import { BundleToHtmlOptions, createBrief, createSection } from "./bundle-to-html-shared";
 
 const ISO_DATE = "YYYY-MM-DD";
 
@@ -38,7 +38,11 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtml(
+  fhirBundle: Bundle,
+  brief?: Brief,
+  options: BundleToHtmlOptions = {}
+): string {
   const {
     patient,
     practitioners,
@@ -61,6 +65,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
     coverages,
     organizations,
   } = extractFhirTypesFromBundle(fhirBundle);
+  const { customCssHeaderTables } = options;
 
   if (!patient) {
     throw new Error("No patient found in bundle");
@@ -102,9 +107,13 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
             width: 100%;
           }
 
-          .header-tables {
-            display: flex;
-            flex: 1;
+          .header-tables ${
+            customCssHeaderTables
+              ? customCssHeaderTables
+              : `{
+                   display: flex;
+                   flex: 1;
+                 }`
           }
 
           .header-table {

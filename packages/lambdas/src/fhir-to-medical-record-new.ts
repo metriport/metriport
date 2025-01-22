@@ -65,7 +65,7 @@ const htmlOptions: BundleToHtmlOptions = {
 };
 
 const pdfOptions: WkOptions = {
-  orientation: "Landscape",
+  orientation: "Portrait",
   pageSize: "A4",
 };
 
@@ -97,11 +97,11 @@ export async function handler({
     const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
 
     const html = isADHDFeatureFlagEnabled
-      ? bundleToHtmlADHD(bundle, aiBrief)
+      ? bundleToHtmlADHD(bundle, aiBrief, htmlOptions)
       : isBmiFeatureFlagEnabled
-      ? bundleToHtmlBmi(bundle, aiBrief)
+      ? bundleToHtmlBmi(bundle, aiBrief, htmlOptions)
       : isDermFeatureFlagEnabled
-      ? bundleToHtmlDerm(bundle, aiBrief)
+      ? bundleToHtmlDerm(bundle, aiBrief, htmlOptions)
       : bundleToHtml(bundle, aiBrief, htmlOptions);
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);

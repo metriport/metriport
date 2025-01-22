@@ -20,11 +20,13 @@ import {
   Resource,
   Task,
 } from "@medplum/fhirtypes";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
 import { Brief } from "../../../command/ai-brief/create";
 import {
   buildEncounterSections,
+  BundleToHtmlOptions,
   createBrief,
   createSection,
   formatDateForDisplay,
@@ -32,7 +34,6 @@ import {
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
 } from "./bundle-to-html-shared";
-import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -44,7 +45,11 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtmlADHD(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtmlADHD(
+  fhirBundle: Bundle,
+  brief?: Brief,
+  options: BundleToHtmlOptions = {}
+): string {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
 
   const {
@@ -69,6 +74,7 @@ export function bundleToHtmlADHD(fhirBundle: Bundle, brief?: Brief): string {
     coverages,
     organizations,
   } = fhirTypes;
+  const { customCssHeaderTables } = options;
 
   const isClinicallyRelevant = hasClinicalRelevantData(fhirTypes);
 
@@ -129,9 +135,13 @@ export function bundleToHtmlADHD(fhirBundle: Bundle, brief?: Brief): string {
             width: 100%;
           }
 
-          .header-tables {
-            display: flex;
-            flex: 1;
+          .header-tables ${
+            customCssHeaderTables
+              ? customCssHeaderTables
+              : `{
+                   display: flex;
+                   flex: 1;
+                 }`
           }
 
           .header-table {
