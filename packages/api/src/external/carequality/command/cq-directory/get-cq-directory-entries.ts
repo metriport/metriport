@@ -46,7 +46,7 @@ export async function getHieDirectoryEntriesByFilterCount({
   const sequelize = HIEDirectoryEntryViewModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const querySelect = `SELECT COUNT(*) FROM ${HIEDirectoryEntryViewModel.tableName} `;
+  const querySelect = `SELECT COUNT(*) FROM ${HIEDirectoryEntryViewModel.tableName} WHERE 1 = 1`;
 
   const queryFTS =
     querySelect +
@@ -56,6 +56,9 @@ export async function getHieDirectoryEntriesByFilterCount({
 
   const result = await sequelize.query(queryFTS, {
     type: QueryTypes.SELECT,
+    replacements: {
+      ...(filter ? { filter } : {}),
+    },
   });
 
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
