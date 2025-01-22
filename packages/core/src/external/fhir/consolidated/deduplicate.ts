@@ -2,9 +2,9 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { deduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes, analytics } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
 
-export function deduplicate({
+export async function deduplicate({
   cxId,
   patientId,
   bundle,
@@ -12,7 +12,7 @@ export function deduplicate({
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
-}): Bundle<Resource> {
+}): Promise<Bundle<Resource>> {
   const { log } = out(`Deduplicate. cx ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
   const dedupedBundle = deduplicateFhir(bundle, cxId, patientId);
@@ -30,6 +30,6 @@ export function deduplicate({
   };
   log(`Finished deduplication in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
-  analytics(metrics);
+  await analyticsAsync(metrics);
   return dedupedBundle;
 }

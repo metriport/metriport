@@ -55,7 +55,7 @@ export function parseInputParameters(
   if (!operation.parameter) return {};
   const inputParameters = operation.parameter.filter(p => p.use === "in");
 
-  // If the request is a GET request, use the query parameters. Otherwise, use the body.
+  // TODO: we should be able to always send the data in the body and simplify this code
   const input = req.method === "GET" ? parseQueryString(req.query, inputParameters) : req.body;
 
   if (input.resourceType === "Parameters") {
@@ -314,7 +314,7 @@ export function clamp(n: number, min: number, max: number): number {
 }
 
 export function isValidParameter(parameter: unknown): boolean {
-  if (typeof parameter !== "object" || parameter === null) return false;
+  if (typeof parameter !== "object" || parameter === null || !("name" in parameter)) return false;
   const { name, valueUri, valueCode } = parameter as ParametersParameter;
   return (
     typeof name === "string" &&
@@ -324,7 +324,7 @@ export function isValidParameter(parameter: unknown): boolean {
 }
 
 export function isValidParametersResource(obj: unknown): boolean {
-  if (typeof obj !== "object" || obj === null) return false;
+  if (typeof obj !== "object" || obj === null || !("resourceType" in obj)) return false;
 
   const { id, resourceType, parameter } = obj as Parameters;
   if (typeof id !== "string" || resourceType !== "Parameters" || !Array.isArray(parameter)) {

@@ -11,7 +11,6 @@ import {
   RXNORM_URL,
   SNOMED_URL,
 } from "../../util/constants";
-import { EventMessageV1 } from "../analytics/posthog";
 
 export type CodeSystemLookupOutput = {
   name: string;
@@ -37,7 +36,7 @@ export function buildTermServerApi(): AxiosInstance | undefined {
 
   return axios.create({
     baseURL: termServerUrl,
-    timeout: 30_000,
+    timeout: 10_000,
     transitional: {
       clarifyTimeoutError: true,
     },
@@ -46,27 +45,29 @@ export function buildTermServerApi(): AxiosInstance | undefined {
 
 export async function lookupMultipleCodes(
   params: Parameters[],
-  metrics: EventMessageV1
-): Promise<CodeSystemLookupOutput[] | undefined> {
+  log: typeof console.log
+): Promise<
+  { metadata: Record<string, string | number>; data: CodeSystemLookupOutput[] } | undefined
+> {
   const termServer = buildTermServerApi();
   if (!termServer) return;
 
   const startedAt = Date.now();
   const result = await termServer.post(bulkLookupUrl, params);
   const duration = Date.now() - startedAt;
-  console.log(`Done code lookup. Duration: ${duration} ms`);
+  log(`Done code lookup. Duration: ${duration} ms`);
 
   const data = result.data.filter(
-    (d: { resourceType: string }) => d.resourceType !== "OperationOutcome"
+    (d: { resourceType?: string }) => d.resourceType !== "OperationOutcome"
   ) as CodeSystemLookupOutput[];
 
-  if (metrics.properties) {
-    metrics.properties.numParams = params.length;
-    metrics.properties.numFound = data.length;
-    metrics.properties.lookupDuration = duration;
-  }
+  const metadata = {
+    numParams: params.length,
+    numFound: data.length,
+    lookupDuration: duration,
+  };
 
-  return data;
+  return { metadata, data };
 }
 
 export function buildTermServerParametersFromCodings(

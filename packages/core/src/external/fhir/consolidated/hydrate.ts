@@ -1,7 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes, analytics } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
 import { hydrateFhir } from "../hydration/hydrate-fhir";
 
 export async function hydrate({
@@ -25,11 +25,17 @@ export async function hydrate({
     },
   };
 
-  const hydratedBundle = await hydrateFhir(bundle, metrics);
+  const { metadata, data: hydratedBundle } = await hydrateFhir(bundle, log);
   const duration = elapsedTimeFromNow(startedAt);
-  if (metrics.properties) metrics.properties.duration = duration;
+  if (metadata) {
+    metrics.properties = {
+      ...metrics.properties,
+      duration,
+      ...metadata,
+    };
+  }
 
   log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
-  analytics(metrics);
+  await analyticsAsync(metrics);
   return hydratedBundle;
 }
