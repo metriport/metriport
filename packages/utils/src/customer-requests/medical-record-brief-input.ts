@@ -15,6 +15,15 @@ import { uuidv7 } from "../shared/uuid-v7";
 
 /**
  * Script to trigger MR Summary generation on a FHIR payload locally, with the AI Brief included in it.
+ *
+ * To use it:
+ * 1. Set the variables:
+ *  - SOURCE_DIR: the directory where the FHIR bundle is located
+ *  - CX_ID: the customer ID
+ *  - SOURCE_PATIENT_ID: the patient ID
+ *  - SOURCE_BUNDLE_FILE: the name of the FHIR bundle file
+ * 2. Run the script with:
+ *  - `ts-node src/customer-requests/medical-record-brief-input.ts`
  */
 
 // Update this to staging or local URL if you want to test the brief link

@@ -481,7 +481,9 @@ export class APIStack extends Stack {
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
-      fhirToMedicalRecordLambda,
+      // TODO 2510 Send both and put a FF in place so we can switch
+      // fhirToMedicalRecordLambda,
+      fhirToMedicalRecordLambda: fhirToMedicalRecordLambdaNew,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
       rateLimitTable,
