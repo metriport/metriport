@@ -569,7 +569,6 @@ export class APIStack extends Stack {
         appId: appConfigAppId,
         configId: appConfigConfigId,
       },
-      fargateService: apiService,
     });
 
     // Add ENV after the API service is created
@@ -588,6 +587,13 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+
+    AppConfigUtils.allowReadConfig({
+      scope: this,
+      resourceName: "FhirToMrLambda",
+      resourceRole: fhirConverterLambda.role,
+      appConfigResources: ["*"],
+    });
 
     createDocQueryChecker({
       lambdaLayers,
