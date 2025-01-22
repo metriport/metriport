@@ -62,7 +62,7 @@ describe("normalizeObservations", () => {
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
     expect(result.valueQuantity?.unit).toBe("g");
-    expect(result.valueQuantity?.value).toBe(72574.72);
+    expect(result.valueQuantity?.value).toBe(72_574.72);
   });
 
   it("correctly handle weight g", () => {
@@ -273,8 +273,8 @@ describe("normalizeObservations", () => {
         valueQuantity: { ...valueQuantityTempF },
         referenceRange: [
           {
-            low: { value: 97.7 }, // no unit
-            high: { value: 99.5 }, // no unit
+            low: { value: 97.7 },
+            high: { value: 99.5 },
           },
         ],
       });
