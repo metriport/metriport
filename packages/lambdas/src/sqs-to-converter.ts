@@ -266,7 +266,7 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
-        const normalizedBundle = normalize({
+        const normalizedBundle = await normalize({
           cxId,
           patientId,
           bundle: hydratedBundle,

@@ -104,7 +104,7 @@ export async function convert(
     bundle: combinedBundle,
   });
 
-  const normalizedBundle = normalize({
+  const normalizedBundle = await normalize({
     cxId,
     patientId,
     bundle: hydratedBundle,
