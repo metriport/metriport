@@ -16,6 +16,18 @@ import { paginated } from "../pagination";
 
 const router = Router();
 
+/** ---------------------------------------------------------------------------
+ * GET /network
+ *
+ * Gets all HIE directory entries (AKA Networks) corresponding that Metriport has access to.
+ *
+ * @param   req.cxId              The customer ID.
+ * @param   req.query.filter      Full text search filters. See https://docs.metriport.com/medical-api/more-info/search-filters
+ * @param   req.query.fromItem    The minimum item to be included in the response, inclusive.
+ * @param   req.query.toItem      The maximum item to be included in the response, inclusive.
+ * @param   req.query.count       The number of items to be included in the response.
+ * @return  The customer's HIE directory entries (AKA Networks).
+ */
 router.get(
   "/",
   requestLogger,
