@@ -6,6 +6,10 @@ export const ISO_DATE = "YYYY-MM-DD";
 export const MISSING_DATE_KEY = "N/A";
 export const MISSING_DATE_TEXT = "not available";
 
+export type BundleToHtmlOptions = {
+  customCssHeaderTables?: string;
+};
+
 type EncounterTypes =
   | "labs"
   | "progressNotes"

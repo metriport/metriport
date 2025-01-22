@@ -20,11 +20,13 @@ import {
   Resource,
   Task,
 } from "@medplum/fhirtypes";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { intersection, uniqWith } from "lodash";
 import { Brief } from "../../../command/ai-brief/create";
 import {
   buildEncounterSections,
+  BundleToHtmlOptions,
   createBrief,
   createSection,
   EncounterSection,
@@ -33,7 +35,6 @@ import {
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
 } from "./bundle-to-html-shared";
-import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -45,7 +46,11 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtml(
+  fhirBundle: Bundle,
+  brief?: Brief,
+  options: BundleToHtmlOptions = {}
+): string {
   const {
     patient,
     practitioners,
@@ -68,6 +73,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
     coverages,
     organizations,
   } = extractFhirTypesFromBundle(fhirBundle);
+  const { customCssHeaderTables } = options;
 
   if (!patient) {
     throw new Error("No patient found in bundle");
@@ -109,18 +115,13 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
             width: 100%;
           }
 
-          .header-tables {
-            display: -webkit-box; /* wkhtmltopdf uses this one */
-            display: -webkit-flex;
-            display: flex;
-            -webkit-box-flex: 1;
-            -webkit-flex: 1;
-            flex: 1;
-            -webkit-align-self: flex-end;
-            align-self: flex-end;
-            -webkit-box-pack: center; /* wkhtmltopdf uses this one */
-            -webkit-justify-content: center;
-            justify-content: center;
+          .header-tables ${
+            customCssHeaderTables
+              ? customCssHeaderTables
+              : `{
+                   display: flex;
+                   flex: 1;
+                 }`
           }
 
           .header-table {

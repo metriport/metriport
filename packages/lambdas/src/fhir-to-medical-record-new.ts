@@ -7,6 +7,7 @@ import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-t
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
 import { bundleToHtmlDerm } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-derm";
+import { BundleToHtmlOptions } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-shared";
 import {
   getSignedUrl as coreGetSignedUrl,
   makeS3Client,
@@ -43,6 +44,31 @@ const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
 // const ossApi = apiClient(apiURL);
 
+// TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
+// TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
+// TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
+
+const htmlOptions: BundleToHtmlOptions = {
+  customCssHeaderTables: `{
+    display: -webkit-box; /* wkhtmltopdf uses this one */
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+    -webkit-align-self: flex-end;
+    align-self: flex-end;
+    -webkit-box-pack: center; /* wkhtmltopdf uses this one */
+    -webkit-justify-content: center;
+    justify-content: center;
+  }`,
+};
+
+const pdfOptions: WkOptions = {
+  orientation: "Landscape",
+  pageSize: "A4",
+};
+
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler({
   fileName: fhirFileName,
@@ -76,7 +102,7 @@ export async function handler({
       ? bundleToHtmlBmi(bundle, aiBrief)
       : isDermFeatureFlagEnabled
       ? bundleToHtmlDerm(bundle, aiBrief)
-      : bundleToHtml(bundle, aiBrief);
+      : bundleToHtml(bundle, aiBrief, htmlOptions);
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
     const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
@@ -163,12 +189,8 @@ async function convertStoreAndReturnPdfUrl({
   log(`Converting to PDF...`);
   const pdfData = await logDuration(
     async () => {
-      const options: WkOptions = {
-        orientation: "Landscape",
-        pageSize: "A3",
-      };
       const stream = Readable.from(Buffer.from(html));
-      const pdfData = await wkHtmlToPdf(options, stream);
+      const pdfData = await wkHtmlToPdf(pdfOptions, stream, log);
       return pdfData;
     },
     { log, withMinutes: false }
