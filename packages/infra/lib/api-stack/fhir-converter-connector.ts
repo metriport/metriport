@@ -105,6 +105,7 @@ export function createLambda({
   termServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
+  appConfigEnvVars,
 }: {
   lambdaLayers: LambdaLayers;
   envType: EnvType;
@@ -118,6 +119,10 @@ export function createLambda({
   termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
+  appConfigEnvVars: {
+    appId: string;
+    configId: string;
+  };
 }): Lambda {
   const config = getConfig();
   const {
@@ -148,6 +153,8 @@ export function createLambda({
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
+      APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+      APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
