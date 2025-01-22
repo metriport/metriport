@@ -38,7 +38,6 @@ const unitConversionAndNormalizationMap = new Map<string, UnitWithCode>([
   ["F", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
   ["kg", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
   ["lb", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-  ["g", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
   ["in", { unit: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
 ]);
 
@@ -169,13 +168,13 @@ export function buildObservationInterpretation(obs: Observation): CodeableConcep
     text: firstReference?.text?.toLowerCase().trim(),
   };
 
-  const interpretationString = calculateInterpretationCode(
+  const interpretationCode = calculateInterpretationCode(
     explicitInterpretation,
     value,
     referenceRange
   );
 
-  return buildInterpretationFromCode(interpretationString);
+  return buildInterpretationFromCode(interpretationCode);
 }
 
 function getValueFromObservation(obs: Observation): string | number | undefined {
@@ -255,7 +254,7 @@ function buildInterpretationFromCode(
   ];
 }
 
-export function normalizeInterpretationStringToCode(interpretation: string): string {
+export function normalizeInterpretationStringToCode(interpretation: string): string | undefined {
   const normalized = interpretation.toLowerCase().trim();
 
   if (highInterpretations.includes(normalized)) return INTERPRETATION_CODE_HIGH;
@@ -263,5 +262,5 @@ export function normalizeInterpretationStringToCode(interpretation: string): str
   if (normalInterpretations.includes(normalized)) return INTERPRETATION_CODE_NORMAL;
   if (abnormalInterpretations.includes(normalized)) return INTERPRETATION_CODE_ABNORMAL;
 
-  return interpretation;
+  return undefined;
 }
