@@ -590,7 +590,7 @@ export class APIStack extends Stack {
 
     AppConfigUtils.allowReadConfig({
       scope: this,
-      resourceName: "FhirToMrLambda",
+      resourceName: "FhirConverterLambda",
       resourceRole: fhirConverterLambda.role,
       appConfigResources: ["*"],
     });
