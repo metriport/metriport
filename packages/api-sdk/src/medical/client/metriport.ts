@@ -32,24 +32,24 @@ import {
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
+import { NetworkEntry } from "../models/network";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   GetConsolidatedQueryProgressResponse,
   GetSingleConsolidatedQueryProgressResponse,
   PatientCreate,
+  PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
-  PatientHieOptOutResponse,
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
-import { Network } from "../models/network";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
 const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
-const NETWORK_URL = `/network`;
+const NETWORK_ENTRY_URL = `/network-entry`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
 const REQUEST_ID_HEADER_NAME = "x-metriport-request-id";
@@ -300,31 +300,29 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Returns the patients associated with given facility.
+   * Returns the network entries supported by Metriport.
    *
-   * @param facilityId The ID of the facility, optional. If not provided, patients from all facilities
-   *                   will be returned.
-   * @param filters Full text search filters, optional. If not provided, all patients will be returned
+   * @param filter Full text search filters, optional. If not provided, all network entries will be returned
    *                (according to pagination settings).
    *                See https://docs.metriport.com/medical-api/more-info/filters
-   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   * @param pagination Pagination settings, optional. If not provided, we paginate with a default page size of 100 items, and the first page will be returned.
    *                   See https://docs.metriport.com/medical-api/more-info/pagination
-   * @return The list of patients.
+   * @return The list of network entries.
    */
   async listNetworkEntries({
-    filters,
+    filter,
     pagination,
   }: {
-    filters?: string | undefined;
+    filter?: string | undefined;
     pagination?: Pagination | undefined;
-  } = {}): Promise<PaginatedResponse<Network, "networks">> {
-    const resp = await this.api.get(`${NETWORK_URL}`, {
+  } = {}): Promise<PaginatedResponse<NetworkEntry, "networkEntries">> {
+    const resp = await this.api.get(`${NETWORK_ENTRY_URL}`, {
       params: {
-        filters,
+        filter,
         ...getPaginationParams(pagination),
       },
     });
-    if (!resp.data) return { meta: { itemsOnPage: 0 }, networks: [] };
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, networkEntries: [] };
     return resp.data;
   }
 
