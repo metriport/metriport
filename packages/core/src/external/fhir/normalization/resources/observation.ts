@@ -120,7 +120,6 @@ function normalizeReferenceRanges(
 function normalizeValueQuantity(quantity: Quantity): Quantity {
   const normalizedQuantity = cloneDeep(quantity);
 
-  const value = normalizedQuantity.value;
   if (!normalizedQuantity.unit) return normalizedQuantity;
   const unit = normalizeUnit(normalizedQuantity.unit);
   if (!unit) return normalizedQuantity;
@@ -129,6 +128,8 @@ function normalizeValueQuantity(quantity: Quantity): Quantity {
   const convertedUnit = unitConversionAndNormalizationMap.get(normalizedQuantity.unit);
   if (!convertedUnit) return normalizedQuantity;
 
+  const value = normalizedQuantity.value;
+  if (!value) return normalizedQuantity;
   const convertedValue = convert(value)
     .from(unit as Unit)
     .to(convertedUnit.unit);
@@ -194,11 +195,9 @@ function getValueFromObservation(obs: Observation): string | number | undefined 
 }
 
 function parseValueFromString(textValue: string): number | string | undefined {
-  let value: number | string | undefined;
-
   const parsedNumber = parseFloat(textValue);
-  value = isNaN(parsedNumber) ? textValue : parsedNumber;
-  if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
+  const value = isNaN(parsedNumber) ? textValue : parsedNumber;
+  if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) return undefined;
   return value;
 }
 
