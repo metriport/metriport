@@ -255,6 +255,13 @@ describe("normalizeObservations", () => {
       const result = calculateInterpretationCode(value, range);
       expect(result).toEqual("H");
     });
+
+    it("returns undefined when neither low nor high provided in the range", () => {
+      const value = 20;
+      const range = { low: undefined, high: undefined, unit: "units" };
+      const result = calculateInterpretationCode(value, range);
+      expect(result).toEqual(undefined);
+    });
   });
 
   describe("normalizeInterpretationStringToCode", () => {

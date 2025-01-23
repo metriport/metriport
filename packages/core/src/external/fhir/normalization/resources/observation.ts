@@ -121,11 +121,12 @@ function normalizeValueQuantity(quantity: Quantity): Quantity {
   const normalizedQuantity = cloneDeep(quantity);
 
   const value = normalizedQuantity.value;
+  if (!normalizedQuantity.unit) return normalizedQuantity;
   const unit = normalizeUnit(normalizedQuantity.unit);
   if (!unit) return normalizedQuantity;
   normalizedQuantity.unit = unit;
 
-  const convertedUnit = unitConversionAndNormalizationMap.get(unit);
+  const convertedUnit = unitConversionAndNormalizationMap.get(normalizedQuantity.unit);
   if (!convertedUnit) return normalizedQuantity;
 
   const convertedValue = convert(value)
@@ -141,9 +142,7 @@ function normalizeValueQuantity(quantity: Quantity): Quantity {
   };
 }
 
-function normalizeUnit(unit?: string): Unit | undefined {
-  if (!unit) return undefined;
-
+function normalizeUnit(unit: string): Unit | undefined {
   const trimmedUnit = unit.trim();
 
   return unitConversionAndNormalizationMap.has(trimmedUnit)
@@ -178,7 +177,8 @@ export function buildObservationInterpretation(obs: Observation): CodeableConcep
     return buildInterpretationFromCode(normalizedValueCode);
   }
 
-  return buildInterpretationFromCode(calculateInterpretationCode(value, referenceRange));
+  const interpretationCode = calculateInterpretationCode(value, referenceRange);
+  return buildInterpretationFromCode(interpretationCode);
 }
 
 function getValueFromObservation(obs: Observation): string | number | undefined {
@@ -186,16 +186,20 @@ function getValueFromObservation(obs: Observation): string | number | undefined 
   if (obs.valueQuantity) {
     value = obs.valueQuantity.value;
   } else if (obs.valueCodeableConcept?.text) {
-    const textValue = obs.valueCodeableConcept.text;
-    const parsedNumber = parseFloat(textValue);
-    value = isNaN(parsedNumber) ? textValue : parsedNumber;
-    if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
+    return parseValueFromString(obs.valueCodeableConcept.text);
   } else if (obs.valueString) {
-    const parsedNumber = parseFloat(obs.valueString);
-    value = isNaN(parsedNumber) ? obs.valueString : parsedNumber;
-    if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
+    return parseValueFromString(obs.valueString);
   }
 
+  return value;
+}
+
+function parseValueFromString(textValue: string): number | string | undefined {
+  let value: number | string | undefined;
+
+  const parsedNumber = parseFloat(textValue);
+  value = isNaN(parsedNumber) ? textValue : parsedNumber;
+  if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
   return value;
 }
 
@@ -224,7 +228,9 @@ export function calculateInterpretationCode(
     const low = referenceRange.low;
     const high = referenceRange.high;
 
-    if (low != undefined && high != undefined) {
+    if (low == undefined && high == undefined) {
+      return undefined;
+    } else if (low != undefined && high != undefined) {
       if (value < low) {
         return INTERPRETATION_CODE_LOW;
       } else if (value > high) {
@@ -232,7 +238,9 @@ export function calculateInterpretationCode(
       }
     } else if (low != undefined && value < low) {
       return INTERPRETATION_CODE_LOW;
-    } else if (high != undefined && value > high) return INTERPRETATION_CODE_HIGH;
+    } else if (high != undefined && value > high) {
+      return INTERPRETATION_CODE_HIGH;
+    }
     return INTERPRETATION_CODE_NORMAL;
   }
 
