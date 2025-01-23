@@ -131,7 +131,7 @@ function normalizeValueQuantity(quantity: Quantity): Quantity {
   const value = normalizedQuantity.value;
   if (!value) return normalizedQuantity;
   const convertedValue = convert(value)
-    .from(unit as Unit)
+    .from(normalizedQuantity.unit as Unit)
     .to(convertedUnit.unit);
 
   if (!convertedValue) return normalizedQuantity;
