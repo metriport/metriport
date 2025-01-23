@@ -398,6 +398,8 @@ that represents the resulting FHIR bundle.
 Inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
 an attachment with a `url` which can be used to download the rendered medical record.
 
+<Info>The URL will only be valid for 180 seconds (3 minutes).</Info>
+
 Example payload:
 
 ```json
@@ -447,6 +449,8 @@ Example payload:
 
 If you want to download all of a patient's documents, especially when they have a large volume of documents, you can start a [Bulk Get Document URL query](/medical-api/api-reference/document/download-url-bulk). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
 You can use the value of the `url` property in the returned `documents` objects to download the files.
+
+<Info>The URLs will only be valid for 600 seconds (10 minutes).</Info>
 
 Here is an example payload:
 
