@@ -1,52 +1,57 @@
+import { PaginatedResponse } from "@metriport/shared";
 import { Request, Response } from "express";
+import { z } from "zod";
 import Router from "express-promise-router";
 import status from "http-status";
+
+import { Pagination } from "../../command/pagination";
 import {
   getHieDirectoryEntriesByFilter,
   getHieDirectoryEntriesByFilterCount,
 } from "../../external/carequality/command/cq-directory/get-cq-directory-entries";
 import { requestLogger } from "../helpers/request-logger";
+import { paginated, queryMetaSchema } from "../pagination";
 import { asyncHandler } from "../util";
-import { dtoFromHieDirectoryEntry, NetworkDTO } from "./dtos/networkDTO";
-import { networkGetSchema } from "./schemas/network";
+import { dtoFromHieDirectoryEntry, NetworkEntryDTO } from "./dtos/network-entry-dto";
 
-import { PaginatedResponse } from "@metriport/shared";
-import { Pagination } from "../../command/pagination";
-import { paginated } from "../pagination";
+export const networkEntryGetSchema = z
+  .object({
+    filter: z.string().optional(),
+  })
+  .and(queryMetaSchema);
 
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * GET /network
+ * GET /network-entry
  *
- * Gets all HIE directory entries (AKA Networks) corresponding that Metriport has access to.
+ * Gets all HIE (AKA Network) directory entries that Metriport has access to.
  *
- * @param   req.cxId              The customer ID.
  * @param   req.query.filter      Full text search filters. See https://docs.metriport.com/medical-api/more-info/search-filters
  * @param   req.query.fromItem    The minimum item to be included in the response, inclusive.
  * @param   req.query.toItem      The maximum item to be included in the response, inclusive.
  * @param   req.query.count       The number of items to be included in the response.
- * @return  The customer's HIE directory entries (AKA Networks).
+ * @return  Metriport's supported HIE directory entries (AKA network entries).
  */
 router.get(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const params = networkGetSchema.parse(req.query);
+    const params = networkEntryGetSchema.parse(req.query);
     const additionalQueryParams = params.filter ? { filter: params.filter } : undefined;
 
     const { meta, items } = await paginated({
       request: req,
       additionalQueryParams,
       getItems: (pagination: Pagination) => {
-        return getHieDirectoryEntriesByFilter({ filter: params.filter || "", pagination });
+        return getHieDirectoryEntriesByFilter({ filter: params.filter, pagination });
       },
-      getTotalCount: () => getHieDirectoryEntriesByFilterCount({ filter: params.filter || "" }),
+      getTotalCount: () => getHieDirectoryEntriesByFilterCount({ filter: params.filter }),
     });
 
-    const response: PaginatedResponse<NetworkDTO, "networks"> = {
+    const response: PaginatedResponse<NetworkEntryDTO, "networkEntries"> = {
       meta,
-      networks: items.map(dtoFromHieDirectoryEntry),
+      networkEntries: items.map(dtoFromHieDirectoryEntry),
     };
 
     return res.status(status.OK).json(response);

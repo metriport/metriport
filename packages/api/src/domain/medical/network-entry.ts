@@ -1,6 +1,6 @@
 import { USState } from "@metriport/shared/dist/domain/address/state";
 
-export interface Network {
+export interface NetworkEntry {
   name?: string;
   oid?: string;
   zip?: string;

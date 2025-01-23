@@ -33,20 +33,18 @@ const createHieViewSql = `CREATE VIEW ${hieViewName} AS SELECT * from cq_directo
 // Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
-    await Promise.all(
-      [
-        createSearchCriteriaColumnSql,
-        createGinIndexSql,
-        dropCqViewSql,
-        createCqViewSql,
-        createHieViewSql,
-      ].map(sql =>
-        queryInterface.sequelize.query(sql, {
-          type: QueryTypes.RAW,
-          transaction,
-        })
-      )
-    );
+    [
+      createSearchCriteriaColumnSql,
+      createGinIndexSql,
+      dropCqViewSql,
+      createCqViewSql,
+      createHieViewSql,
+    ].forEach(async sql => {
+      await queryInterface.sequelize.query(sql, {
+        type: QueryTypes.RAW,
+        transaction,
+      });
+    });
   });
 };
 

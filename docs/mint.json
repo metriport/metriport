@@ -121,7 +121,7 @@
           "group": "Network",
           "icon": "network-wired",
           "pages": [
-            "medical-api/api-reference/network/list-networks"
+            "medical-api/api-reference/network/list-network-entries"
           ]
         },
         {

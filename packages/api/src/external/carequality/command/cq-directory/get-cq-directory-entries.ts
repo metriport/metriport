@@ -4,14 +4,19 @@ import { CQDirectoryEntry2 } from "../../cq-directory";
 import { HIEDirectoryEntryViewModel } from "../../models/hie-directory-view";
 import { paginationSqlExpressions } from "../../../../shared/sql";
 
-export async function getHieDirectoryEntriesByFilter(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  { filter, pagination }: { filter: string; pagination: Pagination }
-): Promise<CQDirectoryEntry2[]> {
+const defaultPageSize = 100;
+
+export async function getHieDirectoryEntriesByFilter({
+  filter,
+  pagination,
+}: {
+  filter: string | undefined;
+  pagination: Pagination;
+}): Promise<CQDirectoryEntry2[]> {
   const sequelize = HIEDirectoryEntryViewModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const querySelect = `SELECT * FROM ${HIEDirectoryEntryViewModel.tableName} WHERE 1 = 1 `;
+  const querySelect = `SELECT * FROM ${HIEDirectoryEntryViewModel.NAME} WHERE 1 = 1 `;
 
   const queryFTS =
     querySelect +
@@ -28,7 +33,7 @@ export async function getHieDirectoryEntriesByFilter(
     replacements: {
       ...(toItem ? { toItem } : {}),
       ...(fromItem ? { fromItem } : {}),
-      ...(count ? { count } : {}),
+      ...(count ? { count } : { count: defaultPageSize }),
       ...(filter ? { filter } : {}),
     },
     type: QueryTypes.SELECT,
@@ -41,12 +46,12 @@ export async function getHieDirectoryEntriesByFilter(
 export async function getHieDirectoryEntriesByFilterCount({
   filter,
 }: {
-  filter: string;
+  filter: string | undefined;
 }): Promise<number> {
   const sequelize = HIEDirectoryEntryViewModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const querySelect = `SELECT COUNT(*) FROM ${HIEDirectoryEntryViewModel.tableName} WHERE 1 = 1`;
+  const querySelect = `SELECT COUNT(*) FROM ${HIEDirectoryEntryViewModel.NAME} WHERE 1 = 1`;
 
   const queryFTS =
     querySelect +
