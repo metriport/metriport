@@ -3,13 +3,15 @@ import { CVX_CODE, CVX_OID, NDC_CODE, NDC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
   combineResources,
+  createKeysFromObjectArray,
+  createKeysFromObjectArrayAndBits,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  fetchCodingCodeOrDisplayOrSystem,
+  fillL1L2Maps,
   getDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
-  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const immunizationStatus = ["entered-in-error", "completed", "not-done"] as const;
@@ -25,16 +27,11 @@ export const statusRanking: Record<ImmunizationStatus, number> = {
 export function deduplicateImmunizations(
   immunizations: Immunization[]
 ): DeduplicationResult<Immunization> {
-  const {
-    immunizationsNdcMap,
-    immunizationsCvxMap,
-    displayMap,
-    refReplacementMap,
-    danglingReferences,
-  } = groupSameImmunizations(immunizations);
+  const { immunizationsMap, refReplacementMap, danglingReferences } =
+    groupSameImmunizations(immunizations);
   return {
     combinedResources: combineResources({
-      combinedMaps: [immunizationsNdcMap, immunizationsCvxMap, displayMap],
+      combinedMaps: [immunizationsMap],
     }),
     refReplacementMap,
     danglingReferences,
@@ -44,19 +41,17 @@ export function deduplicateImmunizations(
 /**
  * Approach:
  * 1 map, where the key is made of:
+ * - vaccineCode (ndcCode, cvxCode, display)
  * - date (occurenceDateTime or occurenceString)
- * - vaccineCode
  */
 export function groupSameImmunizations(immunizations: Immunization[]): {
-  immunizationsCvxMap: Map<string, Immunization>;
-  immunizationsNdcMap: Map<string, Immunization>;
-  displayMap: Map<string, Immunization>;
+  immunizationsMap: Map<string, Immunization>;
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const immunizationsCvxMap = new Map<string, Immunization>();
-  const immunizationsNdcMap = new Map<string, Immunization>();
-  const displayMap = new Map<string, Immunization>();
+  const l1ImmunizationsMap = new Map<string, string>();
+  const l2ImmunizationsMap = new Map<string, Immunization>();
+
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
@@ -76,53 +71,60 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
     }
 
     const date = getDateFromResource(immunization, "datetime");
-    if (date && date !== "unknown") {
-      // TODO: should we keep date a mandatory field for dedup? If yes, then should we also add a default date to the FHIR encounter?
-      const { cvxCode, ndcCode } = extractCodes(immunization.vaccineCode);
 
-      if (cvxCode) {
-        const key = JSON.stringify({ date, cvxCode });
-        fillMaps(
-          immunizationsCvxMap,
-          key,
-          immunization,
-          refReplacementMap,
-          undefined,
-          assignMostDescriptiveStatus
-        );
-      } else if (ndcCode) {
-        const key = JSON.stringify({ date, ndcCode });
-        fillMaps(
-          immunizationsNdcMap,
-          key,
-          immunization,
-          refReplacementMap,
-          undefined,
-          assignMostDescriptiveStatus
-        );
-      } else {
-        const displayCode = extractDisplayFromConcept(immunization.vaccineCode);
-        if (displayCode) {
-          const key = JSON.stringify({ date, displayCode });
-          fillMaps(
-            displayMap,
-            key,
-            immunization,
-            refReplacementMap,
-            undefined,
-            assignMostDescriptiveStatus
-          );
-        } else {
-          danglingReferences.add(createRef(immunization));
-        }
-      }
+    const { cvxCode, ndcCode } = extractCodes(immunization.vaccineCode);
+    const display = extractDisplayFromConcept(immunization.vaccineCode);
+
+    const identifiers = [
+      ...(cvxCode ? [{ cvxCode }] : []),
+      ...(ndcCode ? [{ ndcCode }] : []),
+      ...(display ? [{ displayCode: display }] : []),
+    ];
+    const hasIdentifier = identifiers.length > 0;
+
+    if (!hasIdentifier) {
+      danglingReferences.add(createRef(immunization));
+      continue;
+    }
+    const getterKeys: string[] = [];
+    const setterKeys: string[] = [];
+
+    if (date) {
+      // keys that match a code + date together
+      setterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+      getterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+
+      // flagging the vaccine to indicate having a date
+      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+
+      // can dedup with a vaccine that has no date, as long as an identifier matches
+      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+    } else {
+      // flagging the vaccine to indicate not having a date
+      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+
+      // can dedup with a vaccine that does or does not have a date
+      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+    }
+
+    if (setterKeys.length > 0) {
+      fillL1L2Maps({
+        map1: l1ImmunizationsMap,
+        map2: l2ImmunizationsMap,
+        getterKeys,
+        setterKeys,
+        targetResource: immunization,
+        refReplacementMap,
+        applySpecialModifications: assignMostDescriptiveStatus,
+      });
+    } else {
+      danglingReferences.add(createRef(immunization));
     }
   }
 
   return {
-    immunizationsCvxMap,
-    immunizationsNdcMap,
-    displayMap,
+    immunizationsMap: l2ImmunizationsMap,
     refReplacementMap,
     danglingReferences,
   };
