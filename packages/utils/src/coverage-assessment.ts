@@ -22,10 +22,14 @@ dayjs.extend(duration);
 /**
  * This script retrieves coverage data for Patients from the DB.
  * It doesn't trigger Document Queries - it assumes this has been already done.
+ * @see bulk-insert-patients.ts for creating the patients
  * @see bulk-query-patients.ts for Document Query
  *
  * Update the `patientIds` with the list of Patient IDs you want to get coverage data for,
  * otherwise it will do it for all Patients of the respective customer (expensive!).
+ *
+ * The results are saved in a CSV file in the `runs` folder, named with the customer's
+ * name and timestamp
  *
  * Execute this with:
  * $ npm run coverage-assessment
