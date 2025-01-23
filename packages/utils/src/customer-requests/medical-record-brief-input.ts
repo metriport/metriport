@@ -17,9 +17,14 @@ import { uuidv7 } from "../shared/uuid-v7";
 /**
  * Script to trigger MR Summary generation on a FHIR payload locally, with the AI Brief included in it.
  *
+ * To generate PDFs, it requires `wkhtmltopdf` to be installed in the system.
+ * See https://wkhtmltopdf.org/downloads.html
+ * You can skip the PDF generation by setting `SKIP_PDF` to `true`.
+ *
  * To use it:
  * 1. Set the variables:
  *  - SOURCE_BUNDLE_FILE: the full path to the consolidated (FHIR) bundle file
+ *  - SKIP_PDF: if true, it will skip the PDF generation
  * 2. Run the script with:
  *  - `ts-node src/customer-requests/medical-record-brief-input`
  */
@@ -28,6 +33,7 @@ import { uuidv7 } from "../shared/uuid-v7";
 const dashURL = "http://dash.metriport.com";
 
 const SOURCE_BUNDLE_FILE = ``;
+const SKIP_PDF = false;
 
 // TODO 2510 When we move the lambda logic to core, we can remove this
 // Copied from fhir-to-medical-record-new.ts
@@ -65,19 +71,26 @@ async function main() {
   console.log(`Converting to HTML...`);
   const htmlStartedAt = Date.now();
   const html = bundleToHtml(bundle, aiBrief, htmlOptions);
-  fs.writeFileSync(`${SOURCE_BUNDLE_FILE}_output.html`, html);
   const htmlDuration = Date.now() - htmlStartedAt;
+  fs.writeFileSync(`${SOURCE_BUNDLE_FILE}_output.html`, html);
   console.log(`Converting to PDF...`);
   const pdfStartedAt = Date.now();
 
-  const stream = Readable.from(Buffer.from(html));
-  const pdfData = await wkHtmlToPdf(pdfOptions, stream, console.log);
-  fs.writeFileSync(`${SOURCE_BUNDLE_FILE}_output.pdf`, pdfData);
-  const pdfDuration = Date.now() - pdfStartedAt;
-
-  console.log(
-    `>>> Done in ${elapsedTimeAsStr(startedAt)}, HTML in ${htmlDuration}ms, PDF in ${pdfDuration}ms`
-  );
+  if (!SKIP_PDF) {
+    const stream = Readable.from(Buffer.from(html));
+    const pdfData = await wkHtmlToPdf(pdfOptions, stream, console.log);
+    const pdfDuration = Date.now() - pdfStartedAt;
+    fs.writeFileSync(`${SOURCE_BUNDLE_FILE}_output.pdf`, pdfData);
+    console.log(
+      `>>> Done in ${elapsedTimeAsStr(
+        startedAt
+      )}, HTML in ${htmlDuration}ms, PDF in ${pdfDuration}ms`
+    );
+  } else {
+    console.log(
+      `>>> Done in ${elapsedTimeAsStr(startedAt)}, HTML in ${htmlDuration}ms, PDF skipped`
+    );
+  }
 }
 
 // Copied from fhir-to-medical-record.ts
