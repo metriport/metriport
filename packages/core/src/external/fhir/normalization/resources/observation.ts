@@ -158,7 +158,7 @@ function normalizeUnit(unit?: string): Unit | undefined {
 export function buildObservationInterpretation(obs: Observation): CodeableConcept[] | undefined {
   const firstReference = obs.referenceRange?.[0];
 
-  const explicitInterpretation = getExplicitInterpretation(obs);
+  const explicitInterpretation = getExplicitInterpretation(obs.interpretation);
   const value = getValueFromObservation(obs);
 
   const referenceRange: ReferenceRange = {
@@ -168,13 +168,17 @@ export function buildObservationInterpretation(obs: Observation): CodeableConcep
     text: firstReference?.text?.toLowerCase().trim(),
   };
 
-  const interpretationCode = calculateInterpretationCode(
-    explicitInterpretation,
-    value,
-    referenceRange
-  );
+  if (explicitInterpretation) {
+    const normalizedExplicitCode = normalizeInterpretationStringToCode(explicitInterpretation);
+    return buildInterpretationFromCode(normalizedExplicitCode);
+  }
 
-  return buildInterpretationFromCode(interpretationCode);
+  if (typeof value === "string") {
+    const normalizedValueCode = normalizeInterpretationStringToCode(value);
+    return buildInterpretationFromCode(normalizedValueCode);
+  }
+
+  return buildInterpretationFromCode(calculateInterpretationCode(value, referenceRange));
 }
 
 function getValueFromObservation(obs: Observation): string | number | undefined {
@@ -195,9 +199,12 @@ function getValueFromObservation(obs: Observation): string | number | undefined 
   return value;
 }
 
-export function getExplicitInterpretation(obs: Observation): string | undefined {
-  const primaryInterpretation = obs.interpretation?.[0];
-  if (!primaryInterpretation) return undefined;
+export function getExplicitInterpretation(
+  interpretations: CodeableConcept[] | undefined
+): string | undefined {
+  if (!interpretations || !interpretations[0]) return undefined;
+  // Ok to just get the first intepretation, as this has never been observed to have more than 1 element
+  const primaryInterpretation = interpretations[0];
 
   const primaryText = primaryInterpretation.text;
   const interpretationText = primaryText === "unknown" ? undefined : primaryText;
@@ -210,13 +217,9 @@ export function getExplicitInterpretation(obs: Observation): string | undefined 
 }
 
 export function calculateInterpretationCode(
-  explicitInterpretation: string | undefined,
-  value: number | string | undefined,
+  value: number | undefined,
   referenceRange: ReferenceRange | undefined
 ): string | undefined {
-  if (explicitInterpretation) return normalizeInterpretationStringToCode(explicitInterpretation);
-  if (typeof value === "string") return normalizeInterpretationStringToCode(value);
-
   if (typeof value === "number" && referenceRange) {
     const low = referenceRange.low;
     const high = referenceRange.high;

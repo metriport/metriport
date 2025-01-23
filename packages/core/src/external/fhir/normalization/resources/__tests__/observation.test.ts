@@ -11,7 +11,11 @@ import {
   valueQuantityWeightLb,
 } from "../../../../../fhir-deduplication/__tests__/examples/observation-examples";
 import { makeObservation } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
-import { calculateInterpretationCode, normalizeObservations } from "../observation";
+import {
+  calculateInterpretationCode,
+  normalizeInterpretationStringToCode,
+  normalizeObservations,
+} from "../observation";
 
 describe("normalizeObservations", () => {
   it("correctly handle temperature celsius", () => {
@@ -192,6 +196,29 @@ describe("normalizeObservations", () => {
     expect(obs.interpretation?.[0]?.coding?.[0]?.code).toEqual("H");
   });
 
+  it("correctly keeps existing interpretation", () => {
+    const observation = makeObservation({
+      valueQuantity: { ...valueQuantityHemoglobin, value: 0.001 },
+      referenceRange: referenceRangeHemoglobin,
+      interpretation: [
+        {
+          text: "critically low",
+        },
+      ],
+    });
+    console.log("observation before", JSON.stringify(observation, null, 2));
+
+    const normalized = normalizeObservations([observation]);
+    console.log("normalized before", JSON.stringify(normalized, null, 2));
+    expect(normalized.length).toBe(1);
+    const obs = normalized[0];
+    expect(obs).toBeTruthy();
+    if (!obs) throw new Error("Expected result undefined");
+
+    expect(obs.interpretation?.[0]?.coding?.[0]?.code).toBeUndefined();
+    expect(obs.interpretation?.[0]?.text).toEqual("critically low");
+  });
+
   it("creates a correct interpretation based on valueString", () => {
     const observation = makeObservation({
       valueString: "Normal",
@@ -208,34 +235,62 @@ describe("normalizeObservations", () => {
   });
 
   describe("calculateInterpretationCode", () => {
-    it("returns correct code for a value containing `normal`", () => {
-      const value = "normal";
-      const result = calculateInterpretationCode(undefined, value, undefined);
+    it("returns correct code for a numeric value within range", () => {
+      const value = 10;
+      const range = { low: 5, high: 15, unit: "units" };
+      const result = calculateInterpretationCode(value, range);
       expect(result).toEqual("N");
     });
-    it("returns correct code for a value containing `not detected`", () => {
-      const value = "not detected";
-      const result = calculateInterpretationCode(undefined, value, undefined);
-      expect(result).toEqual("N");
-    });
-    it("returns correct code for a value containing `negative`", () => {
-      const value = "negative";
-      const result = calculateInterpretationCode(undefined, value, undefined);
-      expect(result).toEqual("N");
-    });
-    it("returns correct code for a value containing `abnormal`", () => {
-      const value = "abnormal";
-      const result = calculateInterpretationCode(undefined, value, undefined);
-      expect(result).toEqual("A");
-    });
-    it("returns correct code for a value containing `low`", () => {
-      const value = "low";
-      const result = calculateInterpretationCode(undefined, value, undefined);
+
+    it("returns correct code for a numeric value below range", () => {
+      const value = 3;
+      const range = { low: 5, high: 15, unit: "units" };
+      const result = calculateInterpretationCode(value, range);
       expect(result).toEqual("L");
     });
+
+    it("returns correct code for a numeric value above range", () => {
+      const value = 20;
+      const range = { low: 5, high: 15, unit: "units" };
+      const result = calculateInterpretationCode(value, range);
+      expect(result).toEqual("H");
+    });
+  });
+
+  describe("normalizeInterpretationStringToCode", () => {
+    it("returns correct code for a value containing `normal`", () => {
+      const value = "normal";
+      const result = normalizeInterpretationStringToCode(value);
+      expect(result).toEqual("N");
+    });
+
+    it("returns correct code for a value containing `not detected`", () => {
+      const value = "not detected";
+      const result = normalizeInterpretationStringToCode(value);
+      expect(result).toEqual("N");
+    });
+
+    it("returns correct code for a value containing `negative`", () => {
+      const value = "negative";
+      const result = normalizeInterpretationStringToCode(value);
+      expect(result).toEqual("N");
+    });
+
+    it("returns correct code for a value containing `abnormal`", () => {
+      const value = "abnormal";
+      const result = normalizeInterpretationStringToCode(value);
+      expect(result).toEqual("A");
+    });
+
+    it("returns correct code for a value containing `low`", () => {
+      const value = "low";
+      const result = normalizeInterpretationStringToCode(value);
+      expect(result).toEqual("L");
+    });
+
     it("returns correct code for a value containing `high`", () => {
       const value = "high";
-      const result = calculateInterpretationCode(undefined, value, undefined);
+      const result = normalizeInterpretationStringToCode(value);
       expect(result).toEqual("H");
     });
   });
