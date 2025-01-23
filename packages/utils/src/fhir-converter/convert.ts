@@ -2,11 +2,13 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
+import { uuidv7 } from "../shared/uuid-v7";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
 
@@ -58,7 +60,9 @@ export async function convert(
   fileName: string,
   api: AxiosInstance
 ): Promise<Bundle<Resource>> {
+  const cxId = uuidv7();
   const patientId = getPatientIdFromFileName(fileName);
+
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
     throw new Error(`File has nonXMLBody`);
@@ -94,9 +98,16 @@ export async function convert(
     }
   }
 
-  const normalizedBundle = normalize({
+  const hydratedBundle = await hydrate({
+    cxId,
     patientId,
     bundle: combinedBundle,
+  });
+
+  const normalizedBundle = await normalize({
+    cxId,
+    patientId,
+    bundle: hydratedBundle,
   });
 
   const documentExtension = buildDocIdFhirExtension(fileName);

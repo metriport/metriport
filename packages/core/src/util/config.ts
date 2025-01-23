@@ -144,4 +144,8 @@ export class Config {
   static getPatientImportBucket(): string | undefined {
     return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
   }
+
+  static getTermServerUrl(): string | undefined {
+    return getEnvVar("TERM_SERVER_URL");
+  }
 }
