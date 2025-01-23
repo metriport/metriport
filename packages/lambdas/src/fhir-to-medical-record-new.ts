@@ -1,4 +1,5 @@
-import { Brief } from "@metriport/core/command/ai-brief/create";
+import { Brief } from "@metriport/core/command/ai-brief/brief";
+import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
@@ -16,7 +17,6 @@ import {
 import { wkHtmlToPdf, WkOptions } from "@metriport/core/external/wk-html-to-pdf/index";
 import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { logDuration } from "@metriport/shared/common/duration";
 import dayjs from "dayjs";
@@ -37,7 +37,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const apiURL = getEnvOrFail("API_URL");
-const dashURL = getEnvOrFail("DASH_URL");
+const dashUrl = getEnvOrFail("DASH_URL");
 const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
 const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 
@@ -93,7 +93,7 @@ export async function handler({
     const bundle = await getBundleFromS3(fhirFileName);
 
     const aiBriefContent = getAiBriefContentFromBundle(bundle);
-    const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
+    const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
 
     const html = isADHDFeatureFlagEnabled
       ? bundleToHtmlADHD(bundle, aiBrief, htmlOptions)
@@ -298,17 +298,6 @@ async function storeMrSummaryAndBriefInS3({
 
   const version = "VersionId" in mrResp ? (mrResp.VersionId as string) : undefined;
   return { location: mrResp.Location, version };
-}
-
-function prepareBriefToBundle({ aiBrief }: { aiBrief: string | undefined }): Brief | undefined {
-  if (!aiBrief) return undefined;
-  const feedbackId = uuidv7();
-  const feedbackLink = `${dashURL}/feedback/${feedbackId}`;
-  return {
-    id: feedbackId,
-    content: aiBrief,
-    link: feedbackLink,
-  };
 }
 
 async function createFeedbackForBrief({

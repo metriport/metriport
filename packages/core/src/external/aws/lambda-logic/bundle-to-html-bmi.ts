@@ -24,7 +24,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { cloneDeep, uniqWith } from "lodash";
-import { Brief } from "../../../command/ai-brief/create";
+import { Brief } from "../../../command/ai-brief/brief";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import {
   BundleToHtmlOptions,

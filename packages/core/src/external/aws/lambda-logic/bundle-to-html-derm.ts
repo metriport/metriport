@@ -23,7 +23,7 @@ import {
 import { buildDayjs, sortDate } from "@metriport/shared/common/date";
 import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import { camelCase, cloneDeep, uniqWith } from "lodash";
-import { Brief } from "../../../command/ai-brief/create";
+import { Brief } from "../../../command/ai-brief/brief";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import {
   buildEncounterSections,

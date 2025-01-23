@@ -1,8 +1,9 @@
+import { Brief } from "@metriport/core/command/ai-brief/brief";
+import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
+import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
-import { Brief } from "@metriport/core/command/ai-brief/create";
-import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -14,7 +15,6 @@ import {
 } from "@metriport/core/external/aws/s3";
 import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
 import chromium from "@sparticuz/chromium";
 import dayjs from "dayjs";
@@ -38,7 +38,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const apiURL = getEnvOrFail("API_URL");
-const dashURL = getEnvOrFail("DASH_URL");
+const dashUrl = getEnvOrFail("DASH_URL");
 // converter config
 const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
 const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
@@ -74,7 +74,7 @@ export async function handler({
     const bundle = await getBundleFromS3(fhirFileName);
 
     const aiBriefContent = getAiBriefContentFromBundle(bundle);
-    const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
+    const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
 
     const html = isADHDFeatureFlagEnabled
       ? bundleToHtmlADHD(bundle, aiBrief)
@@ -318,17 +318,6 @@ async function storeMrSummaryAndBriefInS3({
 
   const version = "VersionId" in mrResp ? (mrResp.VersionId as string) : undefined;
   return { location: mrResp.Location, version };
-}
-
-function prepareBriefToBundle({ aiBrief }: { aiBrief: string | undefined }): Brief | undefined {
-  if (!aiBrief) return undefined;
-  const feedbackId = uuidv7();
-  const feedbackLink = `${dashURL}/feedback/${feedbackId}`;
-  return {
-    id: feedbackId,
-    content: aiBrief,
-    link: feedbackLink,
-  };
 }
 
 async function createFeedbackForBrief({

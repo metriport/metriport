@@ -23,7 +23,7 @@ import {
 import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
-import { Brief } from "../../../command/ai-brief/create";
+import { Brief } from "../../../command/ai-brief/brief";
 import {
   buildEncounterSections,
   BundleToHtmlOptions,

@@ -3,7 +3,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { Brief } from "@metriport/core/command/ai-brief/create";
+import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { BundleToHtmlOptions } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-shared";
@@ -12,7 +12,6 @@ import { sleep } from "@metriport/shared";
 import fs from "fs";
 import { Readable } from "stream";
 import { elapsedTimeAsStr } from "../shared/duration";
-import { uuidv7 } from "../shared/uuid-v7";
 
 /**
  * Script to trigger MR Summary generation on a FHIR payload locally, with the AI Brief included in it.
@@ -30,7 +29,7 @@ import { uuidv7 } from "../shared/uuid-v7";
  */
 
 // Update this to staging or local URL if you want to test the brief link
-const dashURL = "http://dash.metriport.com";
+const dashUrl = "http://dash.metriport.com";
 
 const SOURCE_BUNDLE_FILE = ``;
 const SKIP_PDF = false;
@@ -66,7 +65,7 @@ async function main() {
   const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
 
   const aiBriefContent = getAiBriefContentFromBundle(bundle);
-  const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
+  const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
 
   console.log(`Converting to HTML...`);
   const htmlStartedAt = Date.now();
@@ -91,18 +90,6 @@ async function main() {
       `>>> Done in ${elapsedTimeAsStr(startedAt)}, HTML in ${htmlDuration}ms, PDF skipped`
     );
   }
-}
-
-// Copied from fhir-to-medical-record.ts
-function prepareBriefToBundle({ aiBrief }: { aiBrief: string | undefined }): Brief | undefined {
-  if (!aiBrief) return undefined;
-  const feedbackId = uuidv7();
-  const feedbackLink = `${dashURL}/feedback/${feedbackId}`;
-  return {
-    id: feedbackId,
-    content: aiBrief,
-    link: feedbackLink,
-  };
 }
 
 main();
