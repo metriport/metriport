@@ -155,11 +155,21 @@ function normalizeUnit(unit: string): Unit | undefined {
 }
 
 export function buildObservationInterpretation(obs: Observation): CodeableConcept[] | undefined {
-  const firstReference = obs.referenceRange?.[0];
-
   const explicitInterpretation = getExplicitInterpretation(obs.interpretation);
-  const value = getValueFromObservation(obs);
+  if (explicitInterpretation) {
+    const normalizedExplicitCode = normalizeInterpretationStringToCode(explicitInterpretation);
+    return buildInterpretationFromCode(normalizedExplicitCode);
+  }
 
+  const value = getValueFromObservation(obs);
+  if (!value) return undefined;
+
+  if (typeof value === "string") {
+    const normalizedValueCode = normalizeInterpretationStringToCode(value);
+    return buildInterpretationFromCode(normalizedValueCode);
+  }
+
+  const firstReference = obs.referenceRange?.[0];
   const referenceRange: ReferenceRange = {
     low: firstReference?.low?.value,
     high: firstReference?.high?.value,
@@ -167,31 +177,20 @@ export function buildObservationInterpretation(obs: Observation): CodeableConcep
     text: firstReference?.text?.toLowerCase().trim(),
   };
 
-  if (explicitInterpretation) {
-    const normalizedExplicitCode = normalizeInterpretationStringToCode(explicitInterpretation);
-    return buildInterpretationFromCode(normalizedExplicitCode);
-  }
-
-  if (typeof value === "string") {
-    const normalizedValueCode = normalizeInterpretationStringToCode(value);
-    return buildInterpretationFromCode(normalizedValueCode);
-  }
-
   const interpretationCode = calculateInterpretationCode(value, referenceRange);
   return buildInterpretationFromCode(interpretationCode);
 }
 
 function getValueFromObservation(obs: Observation): string | number | undefined {
-  let value: number | string | undefined;
   if (obs.valueQuantity) {
-    value = obs.valueQuantity.value;
+    return obs.valueQuantity.value;
   } else if (obs.valueCodeableConcept?.text) {
     return parseValueFromString(obs.valueCodeableConcept.text);
   } else if (obs.valueString) {
     return parseValueFromString(obs.valueString);
   }
 
-  return value;
+  return undefined;
 }
 
 function parseValueFromString(textValue: string): number | string | undefined {
@@ -221,10 +220,10 @@ export function getExplicitInterpretation(
 }
 
 export function calculateInterpretationCode(
-  value: number | undefined,
+  value: number,
   referenceRange: ReferenceRange | undefined
 ): string | undefined {
-  if (typeof value === "number" && referenceRange) {
+  if (referenceRange) {
     const low = referenceRange.low;
     const high = referenceRange.high;
 
