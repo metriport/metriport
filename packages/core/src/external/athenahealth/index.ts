@@ -45,6 +45,7 @@ import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
 
 const parallelRequests = 5;
 const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
@@ -701,7 +702,7 @@ class AthenaHealthApi {
         departmentId,
         observationId: observation.id,
       };
-      const code = this.getObservationCode(observation);
+      const code = getObservationCode(observation);
       if (!code) {
         throw new MetriportError("No code found for observation", undefined, additionalInfo);
       }
@@ -712,7 +713,7 @@ class AthenaHealthApi {
           code,
         });
       }
-      const units = this.getObservationUnits(observation);
+      const units = getObservationUnits(observation);
       if (!units) {
         throw new MetriportError("No units found for observation", undefined, {
           ...additionalInfo,
@@ -1321,14 +1322,6 @@ class AthenaHealthApi {
       condition.clinicalStatus?.coding?.[0]?.code === clinicalStatusActiveCode
       ? "Active"
       : condition.clinicalStatus?.coding?.[0]?.code;
-  }
-
-  private getObservationCode(observation: Observation): string | undefined {
-    return observation.code?.coding?.[0]?.code;
-  }
-
-  private getObservationUnits(observation: Observation): string | undefined {
-    return observation.valueQuantity?.unit?.replace(/[{()}]/g, "").toLowerCase();
   }
 
   private createVitalsData(

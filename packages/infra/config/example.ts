@@ -46,6 +46,7 @@ export const config: EnvConfigNonSandbox = {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
   fhirServerUrl: "http://localhost:8888",
+  termServerUrl: "http://localhost:8666",
   systemRootOID: "2.16.840.1.113883.3.999999",
   systemRootOrgName: "Name of the Organization",
   providerSecretNames: {

@@ -2,9 +2,9 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
 import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
-import { normalizeFhir } from "../normalization/normalize-fhir";
+import { hydrateFhir } from "../hydration/hydrate-fhir";
 
-export async function normalize({
+export async function hydrate({
   cxId,
   patientId,
   bundle,
@@ -13,23 +13,29 @@ export async function normalize({
   patientId: string;
   bundle: Bundle<Resource>;
 }): Promise<Bundle<Resource>> {
-  const { log } = out(`Normalize. cx: ${cxId}, pt: ${patientId}`);
+  const { log } = out(`Hydrate. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
-  const normalizedBundle = normalizeFhir(bundle);
-
-  const duration = elapsedTimeFromNow(startedAt);
   const metrics: EventMessageV1 = {
     distinctId: cxId,
     event: EventTypes.fhirNormalization,
     properties: {
       patientId: patientId,
-      bundleLength: normalizedBundle.entry?.length,
-      duration,
+      bundleLength: bundle.entry?.length,
     },
   };
-  log(`Finished normalization in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
+  const { metadata, data: hydratedBundle } = await hydrateFhir(bundle, log);
+  const duration = elapsedTimeFromNow(startedAt);
+  if (metadata) {
+    metrics.properties = {
+      ...metrics.properties,
+      duration,
+      ...metadata,
+    };
+  }
+
+  log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
   await analyticsAsync(metrics);
-  return normalizedBundle;
+  return hydratedBundle;
 }
