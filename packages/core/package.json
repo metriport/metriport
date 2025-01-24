@@ -121,6 +121,7 @@
     "@smithy/util-utf8": "2.0.0",
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1243.0",
+    "convert-units": "^2.3.4",
     "dayjs": "^1.11.9",
     "express-rate-limit": "^7.4.1",
     "formidable": "^3.5.1",

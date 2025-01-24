@@ -28,6 +28,7 @@ const nonStandardUnitNormalizationMap = new Map<string, Unit>([
   ["cel", "C"],
   ["degf", "F"],
   ["in_i", "in"],
+  ["ft_us", "ft"],
 ]);
 
 /**
@@ -39,6 +40,7 @@ const unitConversionAndNormalizationMap = new Map<string, UnitWithCode>([
   ["kg", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
   ["lb", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
   ["in", { unit: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+  ["ft", { unit: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
 ]);
 
 const blacklistedValues = ["see below", "see text", "see comments", "see note"];
