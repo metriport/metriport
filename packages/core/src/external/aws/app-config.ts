@@ -47,6 +47,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithEpicEnabled: ffStringValuesSchema,
   cxsWithDemoAugEnabled: ffStringValuesSchema,
   cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
+  cxsWithHydrationFeatureFlag: ffStringValuesSchema, // TODO: 2563 - Remove this after prod testing is done
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
@@ -263,4 +264,15 @@ export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<bo
 
 export async function isConsolidatedFromS3Enabled(): Promise<boolean> {
   return await isFeatureFlagEnabled("cxsWithConsolidatedFromS3");
+}
+
+// TODO: 2563 - Remove this after prod testing is done
+export async function isHydrationEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithHydrationEnabled = await getCxsWithHydrationFeatureFlag();
+  return cxIdsWithHydrationEnabled.some(i => i === cxId);
+}
+
+// TODO: 2563 - Remove this after prod testing is done
+export async function getCxsWithHydrationFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithHydrationFeatureFlag");
 }

@@ -1,36 +1,35 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
+import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
 import { normalizeFhir } from "../normalization/normalize-fhir";
-import { EventMessageV1, EventTypes, analytics } from "../../analytics/posthog";
 
-export function normalize({
+export async function normalize({
   cxId,
   patientId,
   bundle,
 }: {
-  cxId?: string;
+  cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
-}): Bundle<Resource> {
-  const { log } = out(`Normalizing FHIR for cxId ${cxId}, patientId ${patientId}`);
+}): Promise<Bundle<Resource>> {
+  const { log } = out(`Normalize. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
   const normalizedBundle = normalizeFhir(bundle);
 
-  if (cxId) {
-    const normalizationAnalyticsProps: EventMessageV1 = {
-      distinctId: cxId,
-      event: EventTypes.fhirNormalization,
-      properties: {
-        patientId: patientId,
-        bundleLength: normalizedBundle.entry?.length,
-        duration: elapsedTimeFromNow(startedAt),
-      },
-    };
-    analytics(normalizationAnalyticsProps);
-  }
+  const duration = elapsedTimeFromNow(startedAt);
+  const metrics: EventMessageV1 = {
+    distinctId: cxId,
+    event: EventTypes.fhirNormalization,
+    properties: {
+      patientId: patientId,
+      bundleLength: normalizedBundle.entry?.length,
+      duration,
+    },
+  };
+  log(`Finished normalization in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
-  log(`Finished normalization in ${elapsedTimeFromNow(startedAt)} ms...`);
+  await analyticsAsync(metrics);
   return normalizedBundle;
 }

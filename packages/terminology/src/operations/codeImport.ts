@@ -1,10 +1,10 @@
-import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
-import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
 import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from "@medplum/core";
+import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
+import { CodeSystem, Coding, OperationDefinition } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
 import { getTermServerClient } from "../init-term-server";
-import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource, parentProperty } from "./utils/codeSystemLookup";
+import { parseInputParameters } from "./utils/parameters";
 
 const operation: OperationDefinition = {
   resourceType: "OperationDefinition",
@@ -49,7 +49,7 @@ export type CodeSystemImportParameters = {
 
 export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirResponse> {
   try {
-    const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
+    const params = parseInputParameters(operation, req);
     if (!params.system) {
       return [normalizeOperationOutcome(new Error("System is Required"))];
     }
