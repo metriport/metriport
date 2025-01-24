@@ -24,3 +24,4 @@
 - max column length is 100 chars
 - multi-line comments use `/** */`
 - top-level comments go after the import (save pre-import to basic file header, like license)
+- move literals to constants declared after imports when possible
