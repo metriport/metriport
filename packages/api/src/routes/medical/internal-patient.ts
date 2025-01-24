@@ -64,6 +64,7 @@ import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import {
   nonEmptyStringListFromQuerySchema,
@@ -85,7 +86,6 @@ import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { schemaCreateToPatientData } from "./schemas/patient";
-import { handleParams } from "../helpers/handle-params";
 
 dayjs.extend(duration);
 
@@ -338,7 +338,7 @@ router.get(
   "/duplicates",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await findDuplicatedPersons(cxId);
     console.log(`Result: ${stringify(result)}`);
     return res.status(status.OK).json(result);
@@ -442,6 +442,8 @@ const initEnhancedCoverageSchema = z.object({
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage
  *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
+ *
  * Trigger the job to enhance coverage of provided patients. Before doing that,
  * it also checks/fixes any stale enhanced coverage process.
  *
@@ -507,6 +509,8 @@ const cqLinkStatusSchema = z.enum(cqLinkStatus);
 /**
  * POST /internal/patient/enhance-coverage/set-cq-link-statuses
  *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
+ *
  * Sets the CQ link statuses to complete the enhanced coverage flow for a list of patients.
  * @param req.query.cxId The customer ID.
  * @param req.query.patientIds The IDs of the patients to complete the process for.
@@ -535,6 +539,8 @@ const updateECAfterIncludeListSchema = z.object({
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage/after-include-list
+ *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
  *
  * Store the result of running Enhanced Coverage from the local environment.
  *
@@ -567,6 +573,8 @@ const updateECAfterDocQuerySchema = z.object({
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage/after-doc-query
+ *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
  *
  * Store the result of running Enhanced Coverage from the local environment.
  *
