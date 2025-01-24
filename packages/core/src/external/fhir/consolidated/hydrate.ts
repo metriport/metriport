@@ -18,7 +18,7 @@ export async function hydrate({
 
   const metrics: EventMessageV1 = {
     distinctId: cxId,
-    event: EventTypes.fhirNormalization,
+    event: EventTypes.fhirHydration,
     properties: {
       patientId: patientId,
       bundleLength: bundle.entry?.length,
