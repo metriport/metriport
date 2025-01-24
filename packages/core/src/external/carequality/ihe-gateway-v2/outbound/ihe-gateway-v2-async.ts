@@ -15,7 +15,7 @@ import { IHEGatewayV2 } from "./ihe-gateway-v2";
 dayjs.extend(duration);
 
 const SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS = dayjs.duration({ seconds: 1 });
-const MAX_GATEWAYS_BEFORE_CHUNK = 1000;
+const MAX_GATEWAYS_BEFORE_CHUNK = 500;
 const MAX_DOCUMENT_QUERY_REQUESTS_PER_INVOCATION = 20;
 const MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION = 10;
 

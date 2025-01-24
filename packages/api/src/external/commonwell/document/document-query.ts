@@ -7,17 +7,16 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { buildDayjs } from "@metriport/shared/common/date";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import NotFoundError from "@metriport/core/util/error/not-found";
-import { errorToString, processAsyncError } from "@metriport/core/util/error/shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { errorToString, MetriportError, NotFoundError, sleepRandom } from "@metriport/shared";
+import { buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
@@ -27,9 +26,9 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { Util } from "../../../shared/util";
 import {
   isCQDirectEnabledForCx,
   isEnhancedCoverageEnabledForCx,
@@ -55,7 +54,7 @@ import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getCWData, update } from "../patient";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
-import { getCwInitiator } from "../shared";
+import { getCwInitiator, validateCWEnabled } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
@@ -65,8 +64,6 @@ import {
   getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
-import { validateCWEnabled } from "../shared";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const staleLookbackHours = 24;
 
@@ -117,7 +114,7 @@ export async function queryAndProcessDocuments({
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
+  const { log } = out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
 
   if (Config.isSandbox()) {
     await sandboxGetDocRefsAndUpsert({ patient: patientParam, requestId });
@@ -296,7 +293,7 @@ export async function internalGetDocuments({
   initiator: HieInitiator;
 }): Promise<Document[]> {
   const context = "cw.queryDocument";
-  const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
+  const { log } = out(`CW internalGetDocuments - M patient ${patient.id}`);
 
   const cwData = patient.data.externalData.COMMONWELL;
 
@@ -381,7 +378,7 @@ function reportCWErrors({
 }: {
   errors: OperationOutcome[];
   context: Record<string, unknown>;
-  log: ReturnType<typeof Util.out>["log"];
+  log: typeof console.log;
 }): void {
   const errorsByCategory = groupCWErrors(errors);
   for (const [category, errors] of Object.entries(errorsByCategory)) {
@@ -498,7 +495,7 @@ async function downloadDocsAndUpsertFHIR({
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<DocumentReference[]> {
-  const { log } = Util.out(
+  const { log } = out(
     `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
   );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
@@ -835,11 +832,8 @@ async function triggerDownloadDocument({
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);
 
 async function sleepBetweenChunks(): Promise<void> {
-  return Util.sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
+  return sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
 }
 async function jitterSingleDownload(): Promise<void> {
-  return Util.sleepRandom(
-    DOC_DOWNLOAD_JITTER_DELAY_MAX_MS,
-    DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100
-  );
+  return sleepRandom(DOC_DOWNLOAD_JITTER_DELAY_MAX_MS, DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100);
 }

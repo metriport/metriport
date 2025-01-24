@@ -1,7 +1,7 @@
+import { capture } from "@metriport/core/util/notifications";
+import { sleep } from "@metriport/shared";
 import { processAsyncError } from "../../errors";
 import { WebhookRequest } from "../../models/webhook-request";
-import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { processRequest } from "./webhook";
 
@@ -31,7 +31,7 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
       for (const request of failed) {
         const success = await processRequest(request, settings);
         // give it some time to prevent flooding the customer
-        if (success) await Util.sleep(Math.random() * 200);
+        if (success) await sleep(Math.random() * 200);
       }
     } catch (error) {
       capture.error(error, { extra: { context: `webhook.retryFailedRequests`, error } });
