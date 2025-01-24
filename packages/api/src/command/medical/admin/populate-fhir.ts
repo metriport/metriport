@@ -1,5 +1,6 @@
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
+import { sleepRandom } from "@metriport/shared";
 import { chunk } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
 import { tenantExists } from "../../../external/fhir/admin";
@@ -105,9 +106,9 @@ export async function populateFhirServer({
 }
 
 async function jitterPerPatient(): Promise<void> {
-  return Util.sleepRandom(JITTER_DELAY_MAX_MS, JITTER_DELAY_MIN_PCT / 100);
+  return sleepRandom(JITTER_DELAY_MAX_MS, JITTER_DELAY_MIN_PCT / 100);
 }
 
 async function sleepBetweenChunks(): Promise<void> {
-  return Util.sleepRandom(CHUNK_DELAY_MAX_MS, CHUNK_DELAY_MIN_PCT / 100);
+  return sleepRandom(CHUNK_DELAY_MAX_MS, CHUNK_DELAY_MIN_PCT / 100);
 }
