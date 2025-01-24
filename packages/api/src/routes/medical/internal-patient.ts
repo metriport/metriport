@@ -81,7 +81,6 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -285,44 +284,6 @@ router.delete(
     }
 
     return res.sendStatus(status.NO_CONTENT);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /internal/patient/:patientId/link
- *
- * Builds and returns the current state of a patient's links across HIEs.
- *
- * @param req.params.patientId Patient ID for which to retrieve links.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to get links for patient.
- * @returns The patient's current and potential links.
- */
-router.get(
-  "/:patientId/link",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    const cwPersonLinks = await cwCommands.link.get(patientId, cxId, facilityId);
-    const cwConvertedLinks = dtoFromCW({
-      cwPotentialPersons: cwPersonLinks.potentialLinks,
-      cwCurrentPersons: cwPersonLinks.currentLinks,
-    });
-
-    const links: PatientLinksDTO & { networkLinks: unknown } = {
-      currentLinks: cwConvertedLinks.currentLinks,
-      potentialLinks: cwConvertedLinks.potentialLinks,
-      networkLinks: cwPersonLinks.networkLinks,
-    };
-
-    return res.status(status.OK).json(links);
   })
 );
 
