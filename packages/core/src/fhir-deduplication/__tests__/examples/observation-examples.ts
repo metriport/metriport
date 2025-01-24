@@ -48,7 +48,7 @@ export const valueQuantityHeightCm = {
 
 export const valueQuantityHeightIn = {
   value: 60,
-  unit: "in",
+  unit: "[in_us]",
   system: "http://unitsofmeasure.org",
 };
 
@@ -66,7 +66,7 @@ export const valueQuantityWeightG = {
 
 export const valueQuantityWeightLb = {
   value: 160,
-  unit: "lb",
+  unit: "[lb_av]",
   system: "http://unitsofmeasure.org",
 };
 
