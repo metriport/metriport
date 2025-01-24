@@ -27,8 +27,10 @@ type ReferenceRange = {
 const nonStandardUnitNormalizationMap = new Map<string, Unit>([
   ["cel", "C"],
   ["degf", "F"],
-  ["in_i", "in"],
-  ["ft_us", "ft"],
+  ["[in_i]", "in"],
+  ["[in_us]", "in"],
+  ["[lb_av]", "lb"],
+  ["[ft_us]", "ft"],
 ]);
 
 /**
