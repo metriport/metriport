@@ -3,7 +3,7 @@ import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
-import { v4 as uuidv4 } from "uuid";
+import { uuidv7 } from "../util/uuid-v7";
 import { capture, out } from "../util";
 
 dayjs.extend(utc);
@@ -214,7 +214,7 @@ export function fillL1L2Maps<T extends Resource>({
     }
   }
   if (!map2Key) {
-    map2Key = uuidv4();
+    map2Key = uuidv7();
     for (const key of setterKeys) {
       map1.set(key, map2Key);
     }
@@ -474,7 +474,7 @@ export function fetchCodeableConceptText(concept: CodeableConcept): string | und
  * `{{"loincCode":"abcd",required"}, {"date":"2024-10-01",optional}}` => `resource reference ID`
  * `{{"loincCode":"abcd",required"}, {"date":"-",optional}}` => `resource reference ID`
  *
- * dedupedResourcesMap contains resource refernece IDs pointing to deduplicated resources. i.e.:
+ * dedupedResourcesMap contains resource reference IDs pointing to deduplicated resources. i.e.:
  * `resource reference ID #1` => deduplicated master resource #1
  * `resource reference ID #2` => deduplicated master resource #2
  *
@@ -527,7 +527,7 @@ export function deduplicateAndTrackResource<T extends Resource>({
 
   // If no match found, create new entry
   if (!masterResourceId) {
-    masterResourceId = uuidv4();
+    masterResourceId = uuidv7();
     for (const identifier of identifierKeys) {
       resourceKeyMap.set(identifier, masterResourceId);
     }
@@ -542,19 +542,25 @@ export function deduplicateAndTrackResource<T extends Resource>({
   }
 }
 
-export function buildKeyFromValueAndMissingRequiredAttribute(value: object, attribute: string) {
+export function buildKeyFromValueAndMissingRequiredAttribute(
+  value: object,
+  attribute: string
+): string {
   return `${required({ ...value })},${required({ [attribute]: MISSING_ATTR })}`;
 }
 
-export function buildKeyFromValueAndRequiredAttribute(value: object, attribute: string) {
+export function buildKeyFromValueAndRequiredAttribute(value: object, attribute: string): string {
   return `${required({ ...value })},${required({ attribute })}`;
 }
 
-export function buildKeyFromValueAndMissingOptionalAttribute(value: object, attribute: string) {
+export function buildKeyFromValueAndMissingOptionalAttribute(
+  value: object,
+  attribute: string
+): string {
   return `${required({ ...value })},${optional({ [attribute]: MISSING_ATTR })}`;
 }
 
-export function buildKeyFromValueAndOptionalAttribute(value: object, attribute: string) {
+export function buildKeyFromValueAndOptionalAttribute(value: object, attribute: string): string {
   return `${required({ ...value })},${optional({ attribute })}`;
 }
 
@@ -562,7 +568,7 @@ export function buildKeyFromValueAndMissingDynamicAttribute(
   value: object,
   attribute: string,
   isRequired: boolean
-) {
+): string {
   if (isRequired) {
     return buildKeyFromValueAndMissingRequiredAttribute(value, attribute);
   }
