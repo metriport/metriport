@@ -25,15 +25,15 @@ dayjs.extend(duration);
  * > aws s3 sync s3://<bucket-name-and-path> ./ --exclude "*" --include "*_CONSOLIDATED_DATA.json"
  *
  * To run it:
- * - Update `folderName`
+ * - Update `folderName` and `targetPeriod`
  * - Run `ts-node src/customer-requests/resource-metrics`
  */
 
 const folderName = "";
+const targetPeriod = dayjs().subtract(90, "days");
 
 const maxPatientsToProcess = 0; // 0 means all patients
 const numberOfParallelExecutions = 10;
-const last90Days = dayjs().subtract(90, "days");
 const delayTime = dayjs.duration(5, "milliseconds");
 
 async function main() {
@@ -84,13 +84,13 @@ function getMetricsFromFile(fileName: string, log: typeof console.log): boolean 
     const vitalSigns = (bundle.entry ?? []).flatMap(entry =>
       isVitalSignsObservation(entry.resource) ? [entry.resource] : []
     );
-    const vitalSignsLast90Days = vitalSigns.filter(vitalSign =>
-      dayjs(vitalSign.effectiveDateTime).isAfter(last90Days)
+    const vitalSignsTargetPeriod = vitalSigns.filter(vitalSign =>
+      dayjs(vitalSign.effectiveDateTime).isAfter(targetPeriod)
     );
-    const bloodPressureVitalSigns = vitalSignsLast90Days.filter(vitalSign =>
-      vitalSign.code?.coding?.some(coding => isBloodPressure(coding) || isHeartRate(coding))
+    const targetObservations = vitalSignsTargetPeriod.filter(vitalSign =>
+      vitalSign.code?.coding?.some(c => isBloodPressure(c) || isHeartRate(c))
     );
-    return bloodPressureVitalSigns.length > 0;
+    return targetObservations.length > 0;
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     const msg = `ERROR processing file ${fileName}: `;
