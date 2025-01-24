@@ -12,7 +12,6 @@ import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util/log";
-
 import { getEnvOrFail } from "./shared/env";
 
 const apiUrl = getEnvVarOrFail("API_URL");
