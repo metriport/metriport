@@ -1,9 +1,9 @@
 import { DocumentQueryProgress, ProgressType } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
-import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 import { DocumentReferenceDTO, toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
