@@ -8,6 +8,9 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { sleep } from "@metriport/shared";
 import { log as getLog, out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { createAndSignBulkDQRequests, SignedDqRequest } from "./xca/create/iti38-envelope";
@@ -25,6 +28,8 @@ import { SamlCertsAndKeys } from "../saml/security/types";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
 import { createHivePartitionFilePath } from "../../../../domain/filename";
+
+dayjs.extend(duration);
 
 const region = Config.getAWSRegion();
 const parsedResponsesBucket = Config.getIheParsedResponsesBucketName();
@@ -180,6 +185,8 @@ export async function createSignSendProcessXCPDRequest({
       }
     }
     if (parsedResponsesBucket) {
+      const jitter = dayjs.duration({ seconds: Math.floor(Math.random() * 31) });
+      await sleep(jitter.asMilliseconds());
       try {
         const partitionDate = result.requestTimestamp
           ? new Date(Date.parse(result.requestTimestamp))
