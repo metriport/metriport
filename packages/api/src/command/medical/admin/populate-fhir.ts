@@ -1,11 +1,11 @@
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
+import { out } from "@metriport/core/util/log";
 import { sleepRandom } from "@metriport/shared";
 import { chunk } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
 import { tenantExists } from "../../../external/fhir/admin";
 import { makeFhirAdminApi, makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { Util } from "../../../shared/util";
 import { queryDocumentsAcrossHIEs } from "../document/document-query";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { getPatients } from "../patient/get-patient";
@@ -18,7 +18,7 @@ const JITTER_DELAY_MIN_PCT = 10; // 1-100% of max delay
 const CHUNK_DELAY_MAX_MS = 20_000; // in milliseconds
 const CHUNK_DELAY_MIN_PCT = 50; // 1-100% of max delay
 
-const { log } = Util.out("populateFhirServer");
+const { log } = out("populateFhirServer");
 
 export type PopulateFhirServerResponse = { patientsOK: number; patientsError: number };
 

@@ -378,7 +378,7 @@ function reportCWErrors({
 }: {
   errors: OperationOutcome[];
   context: Record<string, unknown>;
-  log: ReturnType<typeof out>["log"];
+  log: typeof console.log;
 }): void {
   const errorsByCategory = groupCWErrors(errors);
   for (const [category, errors] of Object.entries(errorsByCategory)) {
