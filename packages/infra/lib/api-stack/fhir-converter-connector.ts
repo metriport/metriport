@@ -7,7 +7,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { getConfig, METRICS_NAMESPACE } from "../shared/config";
+import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
@@ -143,7 +143,6 @@ export function createLambda({
     memory: lambdaMemory,
     envType,
     envVars: {
-      METRICS_NAMESPACE,
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,

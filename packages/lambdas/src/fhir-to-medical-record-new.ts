@@ -22,6 +22,7 @@ import duration from "dayjs/plugin/duration";
 import { JSDOM } from "jsdom";
 import { Readable } from "stream";
 import { capture } from "./shared/capture";
+import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { apiClient } from "./shared/oss-api";
 
@@ -38,16 +39,19 @@ const apiUrl = getEnvOrFail("API_URL");
 const dashUrl = getEnvOrFail("DASH_URL");
 const appConfigAppId = getEnvOrFail("APPCONFIG_APPLICATION_ID");
 const appConfigConfigId = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
+const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
 const ossApi = apiClient(apiUrl);
+const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
 // TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
 
 const pdfOptions: WkOptions = {
   orientation: "Portrait",
   pageSize: "A4",
+  background: false,
 };
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
@@ -60,6 +64,9 @@ export async function handler({
   conversionType,
 }: Input): Promise<Output> {
   const { log } = out(`cx ${cxId}, patient ${patientId}`);
+  const startedAt = Date.now();
+  const metrics: Metrics = {};
+  await cloudWatchUtils.reportMemoryUsage({ metricName: "memPreSetup" });
   log(
     `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
       `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
@@ -76,7 +83,13 @@ export async function handler({
 
     const aiBriefContent = getAiBriefContentFromBundle(bundle);
     const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
+    metrics.setup = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostSetup" });
 
+    const htmlStartedAt = Date.now();
     const html = isADHDFeatureFlagEnabled
       ? bundleToHtmlADHD(bundle, aiBrief)
       : isBmiFeatureFlagEnabled
@@ -84,6 +97,12 @@ export async function handler({
       : isDermFeatureFlagEnabled
       ? bundleToHtmlDerm(bundle, aiBrief)
       : bundleToHtml(bundle, aiBrief);
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostHtml" });
+    metrics.htmlConversion = {
+      duration: Date.now() - htmlStartedAt,
+      timestamp: new Date(),
+    };
+
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
     const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
@@ -96,27 +115,42 @@ export async function handler({
       log,
     });
 
-    const getSignedUrlPromise = async function () {
+    const getSignedUrlPromise = async () => {
       if (conversionType === "pdf") {
         const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
-        return await convertStoreAndReturnPdfUrl({ fileName: pdfFileName, html, bucketName, log });
-      } else {
-        return await getSignedUrl(htmlFileName);
+        await convertAndStorePdf({
+          fileName: pdfFileName,
+          html,
+          bucketName,
+          metrics,
+        });
+        return await getSignedUrl(pdfFileName);
       }
+      return await getSignedUrl(htmlFileName);
     };
 
-    const [urlResp] = await Promise.allSettled([
-      getSignedUrlPromise(),
-      createFeedbackForBrief({
+    const createFeedbackForBriefPromise = async () => {
+      await createFeedbackForBrief({
         cxId,
         patientId,
         aiBrief,
         mrVersion: mrS3Info.version,
         mrLocation: mrS3Info.location,
-      }),
+      });
+    };
+
+    const [urlResp] = await Promise.allSettled([
+      getSignedUrlPromise(),
+      createFeedbackForBriefPromise(),
     ]);
     if (urlResp.status === "rejected") throw new Error(urlResp.reason);
     const url = urlResp.value;
+
+    metrics.total = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+    await cloudWatchUtils.reportMetrics(metrics);
 
     return { url, hasContents };
   } catch (error) {
@@ -152,17 +186,20 @@ async function getBundleFromS3(fileName: string) {
   return JSON.parse(objectBody.toString());
 }
 
-async function convertStoreAndReturnPdfUrl({
+async function convertAndStorePdf({
   fileName,
   html,
   bucketName,
   log = console.log,
+  metrics,
 }: {
   fileName: string;
   html: string;
   bucketName: string;
   log?: typeof console.log;
-}) {
+  metrics: Metrics;
+}): Promise<void> {
+  const startedAt = Date.now();
   log(`Converting to PDF...`);
   const pdfData = await logDuration(
     async () => {
@@ -172,9 +209,15 @@ async function convertStoreAndReturnPdfUrl({
     },
     { log, withMinutes: false }
   );
+  await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostPdf" });
+  metrics.pdfConversion = {
+    duration: Date.now() - startedAt,
+    timestamp: new Date(),
+  };
   log(`Storing on S3...`);
 
   // Upload generated PDF to S3 bucket
+  const uploadStartedAt = Date.now();
   await s3Client
     .putObject({
       Bucket: bucketName,
@@ -183,10 +226,11 @@ async function convertStoreAndReturnPdfUrl({
       ContentType: "application/pdf",
     })
     .promise();
+  metrics.pdfUpload = {
+    duration: Date.now() - uploadStartedAt,
+    timestamp: new Date(),
+  };
   log(`Done storing on S3`);
-
-  const urlPdf = await getSignedUrl(fileName);
-  return urlPdf;
 }
 
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {

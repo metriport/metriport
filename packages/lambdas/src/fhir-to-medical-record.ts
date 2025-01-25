@@ -1,5 +1,4 @@
-import { Brief } from "@metriport/core/command/ai-brief/brief";
-import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
+import { Brief, convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
@@ -24,6 +23,7 @@ import { JSDOM } from "jsdom";
 import puppeteer from "puppeteer-core";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
+import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { apiClient } from "./shared/oss-api";
 import { sleep } from "./shared/sleep";
@@ -39,15 +39,17 @@ const region = getEnvOrFail("AWS_REGION");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const apiUrl = getEnvOrFail("API_URL");
 const dashUrl = getEnvOrFail("DASH_URL");
-// converter config
+const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
 const appConfigAppId = getEnvOrFail("APPCONFIG_APPLICATION_ID");
 const appConfigConfigId = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
+// converter config
 const GRACEFUL_SHUTDOWN_ALLOWANCE = dayjs.duration({ seconds: 3 });
 const PDF_CONTENT_LOAD_ALLOWANCE = dayjs.duration({ seconds: 2.5 });
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
 const ossApi = apiClient(apiUrl);
+const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler({
@@ -59,6 +61,9 @@ export async function handler({
   conversionType,
 }: Input): Promise<Output> {
   const { log } = out(`cx ${cxId}, patient ${patientId}`);
+  const startedAt = Date.now();
+  const metrics: Metrics = {};
+  await cloudWatchUtils.reportMemoryUsage({ metricName: "memPreSetup" });
   log(
     `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
       `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
@@ -75,7 +80,13 @@ export async function handler({
 
     const aiBriefContent = getAiBriefContentFromBundle(bundle);
     const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
+    metrics.setup = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostSetup" });
 
+    const htmlStartedAt = Date.now();
     const html = isADHDFeatureFlagEnabled
       ? bundleToHtmlADHD(bundle, aiBrief)
       : isBmiFeatureFlagEnabled
@@ -83,6 +94,12 @@ export async function handler({
       : isDermFeatureFlagEnabled
       ? bundleToHtmlDerm(bundle, aiBrief)
       : bundleToHtml(bundle, aiBrief);
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostHtml" });
+    metrics.htmlConversion = {
+      duration: Date.now() - htmlStartedAt,
+      timestamp: new Date(),
+    };
+
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
     const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
@@ -94,27 +111,42 @@ export async function handler({
       log,
     });
 
-    const getSignedUrlPromise = async function () {
+    const getSignedUrlPromise = async () => {
       if (conversionType === "pdf") {
         const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
-        return await convertStoreAndReturnPdfUrl({ fileName: pdfFileName, html, bucketName });
-      } else {
-        return await getSignedUrl(htmlFileName);
+        await convertAndStorePdf({
+          fileName: pdfFileName,
+          html,
+          bucketName,
+          metrics,
+        });
+        return await getSignedUrl(pdfFileName);
       }
+      return await getSignedUrl(htmlFileName);
     };
 
-    const [urlResp] = await Promise.allSettled([
-      getSignedUrlPromise(),
-      createFeedbackForBrief({
+    const createFeedbackForBriefPromise = async () => {
+      await createFeedbackForBrief({
         cxId,
         patientId,
         aiBrief,
         mrVersion: mrS3Info.version,
         mrLocation: mrS3Info.location,
-      }),
+      });
+    };
+
+    const [urlResp] = await Promise.allSettled([
+      getSignedUrlPromise(),
+      createFeedbackForBriefPromise(),
     ]);
     if (urlResp.status === "rejected") throw new Error(urlResp.reason);
     const url = urlResp.value;
+
+    metrics.total = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+    await cloudWatchUtils.reportMetrics(metrics);
 
     return { url, hasContents };
   } catch (error) {
@@ -150,15 +182,18 @@ async function getBundleFromS3(fileName: string) {
   return JSON.parse(objectBody.toString());
 }
 
-const convertStoreAndReturnPdfUrl = async ({
+async function convertAndStorePdf({
   fileName,
   html,
   bucketName,
+  metrics,
 }: {
   fileName: string;
   html: string;
   bucketName: string;
-}) => {
+  metrics: Metrics;
+}): Promise<void> {
+  const startedAt = Date.now();
   const tmpFileName = uuid.v4();
 
   // Defines filename + path for downloaded HTML file
@@ -202,6 +237,13 @@ const convertStoreAndReturnPdfUrl = async ({
       },
     });
 
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostPdf" });
+    metrics.pdfConversion = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+
+    const uploadStartedAt = Date.now();
     // Upload generated PDF to S3 bucket
     await s3Client
       .putObject({
@@ -211,21 +253,18 @@ const convertStoreAndReturnPdfUrl = async ({
         ContentType: "application/pdf",
       })
       .promise();
+    metrics.pdfUpload = {
+      duration: Date.now() - uploadStartedAt,
+      timestamp: new Date(),
+    };
   } finally {
     // Close the puppeteer browser
     if (browser !== null) {
       await browser.close();
     }
   }
-
-  fs.rmSync(pdfFilepath, { force: true });
-
-  // Logs "shutdown" statement
   console.log("generate-pdf -> shutdown");
-  const urlPdf = await getSignedUrl(fileName);
-
-  return urlPdf;
-};
+}
 
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(

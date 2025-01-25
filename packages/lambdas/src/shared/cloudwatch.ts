@@ -64,7 +64,13 @@ export class CloudWatchUtils {
     }
   }
 
-  async reportMemoryUsage(metricsNamespace?: string) {
+  async reportMemoryUsage({
+    metricsNamespace,
+    metricName,
+  }: {
+    metricsNamespace?: string;
+    metricName?: string;
+  } = {}) {
     const namespaceToUse = metricsNamespace ?? this.metricsNamespace;
     if (!namespaceToUse) throw new Error(`Missing metricsNamespace`);
     const mem = process.memoryUsage();
@@ -74,7 +80,7 @@ export class CloudWatchUtils {
         .putMetricData({
           MetricData: [
             {
-              MetricName: "Memory total",
+              MetricName: metricName ?? "Memory total",
               Value: kbToMb(mem.rss),
               Unit: "Megabytes",
               Timestamp: new Date(),
