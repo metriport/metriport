@@ -326,6 +326,13 @@ export class MetriportMedicalApi {
     return resp.data;
   }
 
+  async listNetworkEntriesPage(
+    url: string
+  ): Promise<PaginatedResponse<NetworkEntry, "networkEntries">> {
+    const resp = await this.api.get(url);
+    return resp.data;
+  }
+
   /**
    * Creates a new patient at Metriport and HIEs.
    *
