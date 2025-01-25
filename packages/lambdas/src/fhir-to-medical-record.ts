@@ -59,6 +59,7 @@ export async function handler({
   dateFrom,
   dateTo,
   conversionType,
+  resultFileNameSuffix,
 }: Input): Promise<Output> {
   const { log } = out(`cx ${cxId}, patient ${patientId}`);
   const startedAt = Date.now();
@@ -75,6 +76,10 @@ export async function handler({
     const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
     const cxsWithDermFeatureFlagValue = await getCxsWithDermFeatureFlagValue();
     const isDermFeatureFlagEnabled = cxsWithDermFeatureFlagValue.includes(cxId);
+    const fileNameSuffix =
+      resultFileNameSuffix && resultFileNameSuffix.trim().length > 0
+        ? resultFileNameSuffix.trim()
+        : undefined;
 
     const bundle = await getBundleFromS3(fhirFileName);
 
@@ -102,7 +107,8 @@ export async function handler({
 
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
-    const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
+    const tmpHtmlFileName = createMRSummaryFileName(cxId, patientId, "html");
+    const htmlFileName = fileNameSuffix ? `${tmpHtmlFileName}${fileNameSuffix}` : tmpHtmlFileName;
 
     const mrS3Info = await storeMrSummaryAndBriefInS3({
       bucketName,
@@ -113,7 +119,8 @@ export async function handler({
 
     const getSignedUrlPromise = async () => {
       if (conversionType === "pdf") {
-        const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
+        const tmpPdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
+        const pdfFileName = fileNameSuffix ? `${tmpPdfFileName}${fileNameSuffix}` : tmpPdfFileName;
         await convertAndStorePdf({
           fileName: pdfFileName,
           html,

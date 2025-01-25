@@ -130,12 +130,16 @@ async function convertFHIRBundleToMedicalRecord({
   conversionType: MedicalRecordFormat;
 }): Promise<ConversionOutput> {
   const { log } = out(`convertFHIRBundleToMedicalRecord - pt ${patient.id}`);
+  const lambdaNameOld = Config.getFHIRToMedicalRecordLambdaName();
+  const lambdaNameNew = Config.getFHIRToMedicalRecordLambdaNameNew();
   const isWkhtmltopdfEnabled = await isWkhtmltopdfEnabledForCx(patient.cxId);
-  const lambdaName = isWkhtmltopdfEnabled
-    ? Config.getFHIRToMedicalRecordLambdaNameNew()
-    : Config.getFHIRToMedicalRecordLambdaName();
-  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
-  log(`Using lambda name: ${lambdaName} - isWkhtmltopdfEnabled: ${isWkhtmltopdfEnabled}`);
+
+  const [activeLambdaName, inactiveLambdaName] = isWkhtmltopdfEnabled
+    ? [lambdaNameNew, lambdaNameOld]
+    : [lambdaNameOld, lambdaNameNew];
+
+  if (!activeLambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+  log(`Using lambda name: ${activeLambdaName} - isWkhtmltopdfEnabled: ${isWkhtmltopdfEnabled}`);
 
   // Store the bundle on S3
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
@@ -164,14 +168,24 @@ async function convertFHIRBundleToMedicalRecord({
     conversionType,
   };
 
-  const result = await lambdaClient
-    .invoke({
-      FunctionName: lambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise();
-  const resultPayload = getLambdaResultPayload({ result, lambdaName });
+  const [result] = await Promise.all([
+    lambdaClient
+      .invoke({
+        FunctionName: activeLambdaName,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify(payload),
+      })
+      .promise(),
+    inactiveLambdaName &&
+      lambdaClient
+        .invoke({
+          FunctionName: inactiveLambdaName,
+          InvocationType: "RequestResponse",
+          Payload: JSON.stringify(payload),
+        })
+        .promise(),
+  ]);
+  const resultPayload = getLambdaResultPayload({ result, lambdaName: activeLambdaName });
   return JSON.parse(resultPayload) as ConversionOutput;
 }
 
