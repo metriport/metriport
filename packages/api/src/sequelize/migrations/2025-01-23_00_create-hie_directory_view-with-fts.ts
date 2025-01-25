@@ -21,45 +21,37 @@ generated always as	(
 `;
 
 const createGinIndexSql = `
-CREATE INDEX IF NOT EXISTS ${tableName}_${columnName}_idx 
-ON ${tableName} 
+CREATE INDEX IF NOT EXISTS ${tableName}_${columnName}_idx
+ON ${tableName}
 USING gin(${columnName});
 `;
 
 const dropCqViewSql = `DROP VIEW IF EXISTS ${cqViewName};`;
 const createCqViewSql = `CREATE VIEW ${cqViewName} AS SELECT * from ${tableName};`;
-const createHieViewSql = `CREATE VIEW ${hieViewName} AS SELECT * from cq_directory_entry_view;`;
+const createHieViewSql = `CREATE VIEW ${hieViewName} AS SELECT * from ${cqViewName};`;
 
 // Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
-  await queryInterface.sequelize.transaction(async transaction => {
-    [
-      createSearchCriteriaColumnSql,
-      createGinIndexSql,
-      dropCqViewSql,
-      createCqViewSql,
-      createHieViewSql,
-    ].forEach(async sql => {
-      await queryInterface.sequelize.query(sql, {
-        type: QueryTypes.RAW,
-        transaction,
-      });
+  for (const sql of [
+    createSearchCriteriaColumnSql,
+    createGinIndexSql,
+    dropCqViewSql,
+    createCqViewSql,
+    createHieViewSql,
+  ]) {
+    await queryInterface.sequelize.query(sql, {
+      type: QueryTypes.RAW,
     });
-  });
+  }
 };
 
-const dropSearchCriteriaColumnSql = `ALTER TABLE ${tableName} DROP COLUMN ${columnName};`;
+const dropSearchCriteriaColumnSql = `ALTER TABLE ${tableName} DROP COLUMN IF EXISTS ${columnName};`;
 const dropHieViewSql = `DROP VIEW IF EXISTS ${hieViewName};`;
 
 export const down: Migration = async ({ context: queryInterface }) => {
-  return queryInterface.sequelize.transaction(async transaction => {
-    await Promise.all(
-      [dropHieViewSql, dropCqViewSql, dropSearchCriteriaColumnSql, createCqViewSql].map(sql =>
-        queryInterface.sequelize.query(sql, {
-          type: QueryTypes.RAW,
-          transaction,
-        })
-      )
-    );
-  });
+  for (const sql of [dropHieViewSql, dropCqViewSql, dropSearchCriteriaColumnSql, createCqViewSql]) {
+    await queryInterface.sequelize.query(sql, {
+      type: QueryTypes.RAW,
+    });
+  }
 };
