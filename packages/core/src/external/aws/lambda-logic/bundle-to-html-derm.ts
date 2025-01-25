@@ -27,7 +27,6 @@ import { Brief } from "../../../command/ai-brief/brief";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import {
   buildEncounterSections,
-  BundleToHtmlOptions,
   createBrief,
   createSection,
   formatDateForDisplay,
@@ -44,11 +43,7 @@ const LOINC_CODE = "loinc";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtmlDerm(
-  fhirBundle: Bundle,
-  brief?: Brief,
-  options: BundleToHtmlOptions = {}
-): string {
+export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
 
   const {
@@ -67,7 +62,6 @@ export function bundleToHtmlDerm(
     immunizations,
     familyMemberHistories,
   } = fhirTypes;
-  const { customCssHeaderTables } = options;
 
   const isClinicallyRelevant = hasClinicalRelevantData(fhirTypes);
 
@@ -152,7 +146,11 @@ export function bundleToHtmlDerm(
           }
 
           .logo-container {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
             justify-content: center;
             width: 100%;
           }
@@ -167,13 +165,13 @@ export function bundleToHtmlDerm(
             width: 100%;
           }
 
-          .header-tables ${
-            customCssHeaderTables
-              ? customCssHeaderTables
-              : `{
-                   display: flex;
-                   flex: 1;
-                 }`
+          .header-tables {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
+            flex: 1;
           }
 
           .header-table {
@@ -220,14 +218,24 @@ export function bundleToHtmlDerm(
           }
 
           .section-title {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
             align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
           .section-title a {
             text-decoration: none;
             color: black;
+          }
+
+          .section-title h3 {
+                white-space: nowrap;
           }
 
           .span_button {
@@ -248,7 +256,11 @@ export function bundleToHtmlDerm(
             padding: 20px;
             margin: 0;
             background-color: #f2f2f2;
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
@@ -275,7 +287,11 @@ export function bundleToHtmlDerm(
           }
 
           #report .header {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
@@ -317,8 +333,36 @@ export function bundleToHtmlDerm(
             z-index: 1;
           }
 
+          #ai-brief {
+            margin-top: 20px;
+          }
+
           .brief-section-content {
             position: relative;
+          }
+
+          .brief-warning {
+            border: 2px solid #FFCC00;
+            background-color: #FFF8E1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+          }
+          .brief-warning-icon {
+            margin-right: 10px;
+          }
+          .brief-warning-contents {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+          }
+          .brief-warning-message {
+            margin-left: 37px;
+            margin-right: 10px;
+            -webkit-box-orient: vertical;
           }
 
           @media print {

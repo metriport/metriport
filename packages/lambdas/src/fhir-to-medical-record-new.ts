@@ -1,5 +1,4 @@
-import { Brief } from "@metriport/core/command/ai-brief/brief";
-import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
+import { Brief, convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
@@ -8,7 +7,6 @@ import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-t
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
 import { bundleToHtmlDerm } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-derm";
-import { BundleToHtmlOptions } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-shared";
 import {
   getSignedUrl as coreGetSignedUrl,
   makeS3Client,
@@ -36,32 +34,16 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const apiURL = getEnvOrFail("API_URL");
+const apiUrl = getEnvOrFail("API_URL");
 const dashUrl = getEnvOrFail("DASH_URL");
-const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
-const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
+const appConfigAppId = getEnvOrFail("APPCONFIG_APPLICATION_ID");
+const appConfigConfigId = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
-const ossApi = apiClient(apiURL);
+const ossApi = apiClient(apiUrl);
 
 // TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
-
-const htmlOptions: BundleToHtmlOptions = {
-  customCssHeaderTables: `{
-    display: -webkit-box; /* wkhtmltopdf uses this one */
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-    flex: 1;
-    -webkit-align-self: flex-end;
-    align-self: flex-end;
-    -webkit-box-pack: center; /* wkhtmltopdf uses this one */
-    -webkit-justify-content: center;
-    justify-content: center;
-  }`,
-};
 
 const pdfOptions: WkOptions = {
   orientation: "Portrait",
@@ -96,12 +78,12 @@ export async function handler({
     const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
 
     const html = isADHDFeatureFlagEnabled
-      ? bundleToHtmlADHD(bundle, aiBrief, htmlOptions)
+      ? bundleToHtmlADHD(bundle, aiBrief)
       : isBmiFeatureFlagEnabled
-      ? bundleToHtmlBmi(bundle, aiBrief, htmlOptions)
+      ? bundleToHtmlBmi(bundle, aiBrief)
       : isDermFeatureFlagEnabled
-      ? bundleToHtmlDerm(bundle, aiBrief, htmlOptions)
-      : bundleToHtml(bundle, aiBrief, htmlOptions);
+      ? bundleToHtmlDerm(bundle, aiBrief)
+      : bundleToHtml(bundle, aiBrief);
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
     const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
@@ -210,8 +192,8 @@ async function convertStoreAndReturnPdfUrl({
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithADHDMRFeatureFlag"
   );
@@ -224,8 +206,8 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithBmiMrFeatureFlag"
   );
@@ -238,8 +220,8 @@ async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithDermFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithDermMrFeatureFlag"
   );

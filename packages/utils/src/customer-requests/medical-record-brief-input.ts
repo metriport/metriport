@@ -6,7 +6,6 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
-import { BundleToHtmlOptions } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-shared";
 import { wkHtmlToPdf, WkOptions } from "@metriport/core/external/wk-html-to-pdf/index";
 import { sleep } from "@metriport/shared";
 import fs from "fs";
@@ -34,23 +33,6 @@ const dashUrl = "http://dash.metriport.com";
 const SOURCE_BUNDLE_FILE = ``;
 const SKIP_PDF = false;
 
-// TODO 2510 When we move the lambda logic to core, we can remove this
-// Copied from fhir-to-medical-record-new.ts
-const htmlOptions: BundleToHtmlOptions = {
-  customCssHeaderTables: `{
-    display: -webkit-box; /* wkhtmltopdf uses this one */
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-flex: 1;
-    -webkit-flex: 1;
-    flex: 1;
-    -webkit-align-self: flex-end;
-    align-self: flex-end;
-    -webkit-box-pack: center; /* wkhtmltopdf uses this one */
-    -webkit-justify-content: center;
-    justify-content: center;
-  }`,
-};
 const pdfOptions: WkOptions = {
   orientation: "Portrait",
   pageSize: "A4",
@@ -69,13 +51,13 @@ async function main() {
 
   console.log(`Converting to HTML...`);
   const htmlStartedAt = Date.now();
-  const html = bundleToHtml(bundle, aiBrief, htmlOptions);
+  const html = bundleToHtml(bundle, aiBrief);
   const htmlDuration = Date.now() - htmlStartedAt;
   fs.writeFileSync(`${SOURCE_BUNDLE_FILE}_output.html`, html);
-  console.log(`Converting to PDF...`);
-  const pdfStartedAt = Date.now();
 
   if (!SKIP_PDF) {
+    console.log(`Converting to PDF...`);
+    const pdfStartedAt = Date.now();
     const stream = Readable.from(Buffer.from(html));
     const pdfData = await wkHtmlToPdf(pdfOptions, stream, console.log);
     const pdfDuration = Date.now() - pdfStartedAt;

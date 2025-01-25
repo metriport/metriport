@@ -16,7 +16,11 @@
           }
 
           .logo-container {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
             justify-content: center;
             width: 100%;
           }
@@ -32,7 +36,11 @@
           }
 
           .header-tables {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
             flex: 1;
           }
 
@@ -80,14 +88,24 @@
           }
 
           .section-title {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
             align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
           .section-title a {
             text-decoration: none;
             color: black;
+          }
+
+          .section-title h3 {
+                white-space: nowrap;
           }
 
           .span_button {
@@ -108,7 +126,11 @@
             padding: 20px;
             margin: 0;
             background-color: #f2f2f2;
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
@@ -135,7 +157,11 @@
           }
 
           #report .header {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
@@ -177,8 +203,36 @@
             z-index: 1;
           }
 
+          #ai-brief {
+            margin-top: 20px;
+          }
+
           .brief-section-content {
             position: relative;
+          }
+
+          .brief-warning {
+            border: 2px solid #FFCC00;
+            background-color: #FFF8E1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+          }
+          .brief-warning-icon {
+            margin-right: 10px;
+          }
+          .brief-warning-contents {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+          }
+          .brief-warning-message {
+            margin-left: 37px;
+            margin-right: 10px;
+            -webkit-box-orient: vertical;
           }
 
         </style>

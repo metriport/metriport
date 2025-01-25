@@ -10,6 +10,9 @@ import { WkOptions } from "./types";
  * Converts HTML to PDF using wkhtmltopdf installed in the system/OS.
  * See https://github.com/hkarask/html-to-pdf-lambda for reference.
  *
+ * NOTE: wkhtmltopdf uses an older version of webkit, so modern CSS might not get rendered as
+ * expected. Use http://www.cssdrive.com/cssautoprefixer/ to adjust your CSS to be compatible.
+ *
  * @param props - Options for wkhtmltopdf (see https://wkhtmltopdf.org/usage/wkhtmltopdf.txt)
  * @param input - HTML to convert to PDF, can be a string or a stream
  * @param log - Optional logger

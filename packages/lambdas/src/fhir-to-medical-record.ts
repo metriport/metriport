@@ -37,17 +37,17 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const apiURL = getEnvOrFail("API_URL");
+const apiUrl = getEnvOrFail("API_URL");
 const dashUrl = getEnvOrFail("DASH_URL");
 // converter config
 const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
-const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
-const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
+const appConfigAppId = getEnvOrFail("APPCONFIG_APPLICATION_ID");
+const appConfigConfigId = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 const GRACEFUL_SHUTDOWN_ALLOWANCE = dayjs.duration({ seconds: 3 });
 const PDF_CONTENT_LOAD_ALLOWANCE = dayjs.duration({ seconds: 2.5 });
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
-const ossApi = apiClient(apiURL);
+const ossApi = apiClient(apiUrl);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler({
@@ -230,8 +230,8 @@ const convertStoreAndReturnPdfUrl = async ({
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithADHDMRFeatureFlag"
   );
@@ -244,8 +244,8 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithBmiMrFeatureFlag"
   );
@@ -258,8 +258,8 @@ async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithDermFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithDermMrFeatureFlag"
   );
