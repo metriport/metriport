@@ -42,13 +42,21 @@ export type Request = {
   fileName: string;
 } & WkOptions;
 
+/**
+ * Options for the wkhtmltopdf library.
+ * From https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
+ */
 export interface WkOptions {
   /** Defaults to Portrait */
   orientation?: Orientation;
   /** Defaults to A4 */
   pageSize?: PageSize;
   marginTop?: number;
-  marginRight?: number;
   marginBottom?: number;
+  /** Defaults to 10mm */
+  marginRight?: number;
+  /** Defaults to 10mm */
   marginLeft?: number;
+  /** Defaults to true */
+  background?: boolean;
 }

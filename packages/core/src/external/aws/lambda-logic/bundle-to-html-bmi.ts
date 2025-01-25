@@ -188,17 +188,17 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #nav {
-            border: 1px solid;
-            border-radius: 5px;
-            padding: 20px;
-            margin: 0;
-            background-color: #f2f2f2;
             display: -webkit-box;
             display: -ms-flexbox;
             display: flex;
             -webkit-box-pack: justify;
             -ms-flex-pack: justify;
             justify-content: space-between;
+          }
+          table #nav {
+            padding: 10px;
+            margin: 0;
+            background-color: #f2f2f2;
           }
 
 
@@ -283,13 +283,19 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
             background-color: #FFF8E1;
             padding: 10px;
             border-radius: 5px;
-            text-align: center;
-            display: inline-block;
+            margin-top: 20px;
           }
           .brief-warning-icon {
             margin-right: 10px;
           }
-
+          .brief-warning-contents {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+          }
           .brief-warning-message {
             margin-left: 37px;
             margin-right: 10px;
@@ -574,39 +580,39 @@ function createMRHeader(patient: Patient) {
               </tbody>
             </table>
           </div>
-          <div>
-        </div>
         </div>
         <div class="header-table">
           <h4>Table of Contents</h4>
-          <ul id="nav">
-            <div class='half'>
-              <li>
-                <a href="#Weight-related Comorbidities">Weight-related Comorbidities</a>
-              </li>
-              <li>
-                <a href="#Other Related Conditions">Other Related Conditions</a>
-              </li>
-              <li>
-                <a href="#Diagnosis of Obesity Date">Diagnosis of Obesity Date</a>
-              </li>
-              <li>
-                <a href="#medications">Medications</a>
-              </li>
-              <li>
-                <a href="#Mental Health">Mental Health</a>
-              </li>
-              <li>
-                <a href="#Surgeries">Surgeries</a>
-              </li>
-              <li>
-              <a href="#laboratory">Laboratory</a>
-              </li>
-              <li>
-              <a href="#hba1c-history">HbA1c History</a>
-              </li>
-            </div>
+          <table><tbody><tr><td>
+            <ul id="nav">
+              <div class='half'>
+                <li>
+                  <a href="#Weight-related Comorbidities">Weight-related Comorbidities</a>
+                </li>
+                <li>
+                  <a href="#Other Related Conditions">Other Related Conditions</a>
+                </li>
+                <li>
+                  <a href="#Diagnosis of Obesity Date">Diagnosis of Obesity Date</a>
+                </li>
+                <li>
+                  <a href="#medications">Medications</a>
+                </li>
+                <li>
+                  <a href="#Mental Health">Mental Health</a>
+                </li>
+                <li>
+                  <a href="#Surgeries">Surgeries</a>
+                </li>
+                <li>
+                <a href="#laboratory">Laboratory</a>
+                </li>
+                <li>
+                <a href="#hba1c-history">HbA1c History</a>
+                </li>
+              </div>
             </ul>
+          </td></tr></tbody></table>
         </div>
       </div>
     </div>

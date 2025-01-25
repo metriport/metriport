@@ -219,17 +219,17 @@ export function bundleToHtmlADHD(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #nav {
-            border: 1px solid;
-            border-radius: 5px;
-            padding: 20px;
-            margin: 0;
-            background-color: #f2f2f2;
             display: -webkit-box;
             display: -ms-flexbox;
             display: flex;
             -webkit-box-pack: justify;
             -ms-flex-pack: justify;
             justify-content: space-between;
+          }
+          table #nav {
+            padding: 10px;
+            margin: 0;
+            background-color: #f2f2f2;
           }
 
 
@@ -554,70 +554,70 @@ function createMRHeader(patient: Patient) {
               </tbody>
             </table>
           </div>
-          <div>
-        </div>
         </div>
         <div class="header-table">
           <h4>Table of Contents</h4>
-          <ul id="nav">
-            <div class='half'>
-              <li>
-                <a href="#awe">Annual Wellness Exam Encounters</a>
-              </li>
-              <li>
-                <a href="#adhd">ADHD Encounters</a>
-              </li>
-              <li>
-                <a href="#reports">Visit Notes</a>
-              </li>
-              <li>
-                <a href="#medications">Medications</a>
-              </li>
-              <li>
-                <a href="#conditions">Conditions</a>
-              </li>
-              <li>
-                <a href="#allergies">Allergies</a>
-              </li>
-              <li>
-                <a href="#procedures"
-                  >Procedures</a
-                >
-              </li>
-              <li>
-                <a href="#social-history">Social History</a>
-              </li>
-              <li>
-                <a href="#vitals">Vitals</a>
-              </li>
-            </div>
-            <div class='half'>
-              <li>
-                <a href="#laboratory">Laboratory</a>
-              </li>
-              <li>
-                <a href="#other-observations">Other Observations</a>
-              </li>
-              <li>
-                <a href="#immunizations">Immunizations</a>
-              </li>
-              <li>
-                <a href="#family-member-history">Family Member History</a>
-              </li>
-              <li>
-                <a href="#related-persons">Related Persons</a>
-              </li>
-              <li>
-                <a href="#tasks">Tasks</a>
-              </li>
-              <li>
-                <a href="#coverage">Coverage</a>
-              </li>
-              <li>
-                <a href="#encounters">Encounters</a>
-              </li>
-            </div>
+          <table><tbody><tr><td>
+            <ul id="nav">
+              <div class='half'>
+                <li>
+                  <a href="#awe">Annual Wellness Exam Encounters</a>
+                </li>
+                <li>
+                  <a href="#adhd">ADHD Encounters</a>
+                </li>
+                <li>
+                  <a href="#reports">Visit Notes</a>
+                </li>
+                <li>
+                  <a href="#medications">Medications</a>
+                </li>
+                <li>
+                  <a href="#conditions">Conditions</a>
+                </li>
+                <li>
+                  <a href="#allergies">Allergies</a>
+                </li>
+                <li>
+                  <a href="#procedures"
+                    >Procedures</a
+                  >
+                </li>
+                <li>
+                  <a href="#social-history">Social History</a>
+                </li>
+                <li>
+                  <a href="#vitals">Vitals</a>
+                </li>
+              </div>
+              <div class='half'>
+                <li>
+                  <a href="#laboratory">Laboratory</a>
+                </li>
+                <li>
+                  <a href="#other-observations">Other Observations</a>
+                </li>
+                <li>
+                  <a href="#immunizations">Immunizations</a>
+                </li>
+                <li>
+                  <a href="#family-member-history">Family Member History</a>
+                </li>
+                <li>
+                  <a href="#related-persons">Related Persons</a>
+                </li>
+                <li>
+                  <a href="#tasks">Tasks</a>
+                </li>
+                <li>
+                  <a href="#coverage">Coverage</a>
+                </li>
+                <li>
+                  <a href="#encounters">Encounters</a>
+                </li>
+              </div>
             </ul>
+          </td></tr></tbody></table>
         </div>
       </div>
     </div>
