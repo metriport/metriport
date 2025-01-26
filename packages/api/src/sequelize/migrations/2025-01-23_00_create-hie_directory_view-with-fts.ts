@@ -20,21 +20,13 @@ generated always as	(
 ) stored;
 `;
 
-const createGinIndexSql = `
-CREATE INDEX IF NOT EXISTS ${tableName}_${columnName}_idx
-ON ${tableName}
-USING gin(${columnName});
-`;
-
 const dropCqViewSql = `DROP VIEW IF EXISTS ${cqViewName};`;
 const createCqViewSql = `CREATE VIEW ${cqViewName} AS SELECT * from ${tableName};`;
 const createHieViewSql = `CREATE VIEW ${hieViewName} AS SELECT * from ${cqViewName};`;
 
-// Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
   for (const sql of [
     createSearchCriteriaColumnSql,
-    createGinIndexSql,
     dropCqViewSql,
     createCqViewSql,
     createHieViewSql,
