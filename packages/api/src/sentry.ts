@@ -24,7 +24,7 @@ export function initSentry(app: Application): void {
     // Traces sample rate
     tracesSampler: samplingContext => {
       const tx = samplingContext.transactionContext;
-      if (isTracingDisabledForTx(tx)) return 0;
+      if (!isTracingEnabledForTx(tx)) return 0;
       const txName = tx.name;
       // Sample some OPTIONS for visibility
       if (txName.match(/^OPTIONS.*$/)) return 0.001;
@@ -37,14 +37,14 @@ export function initSentry(app: Application): void {
   }
 }
 
-function isTracingDisabledForTx(tx: TransactionContext): boolean {
+function isTracingEnabledForTx(tx: TransactionContext): boolean {
   const txName = tx.name;
 
   // Do not send health checks to Sentry
-  if (txName === "GET /") return true;
+  if (txName === "GET /") return false;
 
   // Do not trace responses from IHE GW endpoints
-  if (txName.startsWith("POST /internal/carequality") && txName.includes("response")) return true;
+  if (txName.startsWith("POST /internal/carequality") && txName.includes("response")) return false;
 
-  return false;
+  return true;
 }
