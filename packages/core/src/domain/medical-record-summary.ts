@@ -9,19 +9,16 @@ export const createMRSummaryFileName = (
   extension: ConsolidationConversionType,
   dedupEnabled?: boolean
 ): string => {
-  if (extension === "pdf") {
-    return createFilePath(
-      cxId,
-      patientId,
-      `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}.html.pdf`
-    );
-  }
-  return createFilePath(
-    cxId,
-    patientId,
-    `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}.${extension}`
-  );
+  const fileSuffixBeforeExtension = createFileSuffixBeforeExtension(dedupEnabled);
+  const fileSuffix = `${fileSuffixBeforeExtension}.${extension}`;
+  const filePath = createFilePath(cxId, patientId, fileSuffix);
+  if (extension === "pdf") return `${filePath}.pdf`;
+  return filePath;
 };
+
+function createFileSuffixBeforeExtension(dedupEnabled?: boolean): string {
+  return `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}`;
+}
 
 export function createSandboxMRSummaryFileName(
   firstName: string,
@@ -38,6 +35,6 @@ export const createMRSummaryBriefFileName = (
   return createFilePath(
     cxId,
     patientId,
-    `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}_brief.txt`
+    `${createFileSuffixBeforeExtension(dedupEnabled)}_brief.txt`
   );
 };

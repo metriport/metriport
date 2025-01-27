@@ -111,7 +111,9 @@ export async function handler({
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
     const tmpHtmlFileName = createMRSummaryFileName(cxId, patientId, "html");
-    const htmlFileName = fileNameSuffix ? `${tmpHtmlFileName}${fileNameSuffix}` : tmpHtmlFileName;
+    const htmlFileName = fileNameSuffix
+      ? `${tmpHtmlFileName}${fileNameSuffix}.html`
+      : tmpHtmlFileName;
 
     // TODO 2510 rename it w/o brief
     const mrS3Info = await storeMrSummaryAndBriefInS3({
@@ -124,7 +126,9 @@ export async function handler({
     const getSignedUrlPromise = async () => {
       if (conversionType === "pdf") {
         const tmpPdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
-        const pdfFileName = fileNameSuffix ? `${tmpPdfFileName}${fileNameSuffix}` : tmpPdfFileName;
+        const pdfFileName = fileNameSuffix
+          ? `${tmpPdfFileName}${fileNameSuffix}.pdf`
+          : tmpPdfFileName;
         await convertAndStorePdf({
           fileName: pdfFileName,
           html,
