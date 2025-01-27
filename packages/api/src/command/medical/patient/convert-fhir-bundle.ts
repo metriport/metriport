@@ -134,9 +134,9 @@ async function convertFHIRBundleToMedicalRecord({
   const lambdaNameNew = Config.getFHIRToMedicalRecordLambdaNameNew();
   const isWkhtmltopdfEnabled = await isWkhtmltopdfEnabledForCx(patient.cxId);
 
-  const [activeLambdaName, inactiveLambdaName] = isWkhtmltopdfEnabled
-    ? [lambdaNameNew, lambdaNameOld]
-    : [lambdaNameOld, lambdaNameNew];
+  const [activeLambdaName, inactiveLambdaName, inactiveSuffix] = isWkhtmltopdfEnabled
+    ? [lambdaNameNew, lambdaNameOld, "_puppeteer"]
+    : [lambdaNameOld, lambdaNameNew, "_wkhtmltopdf"];
 
   if (!activeLambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
   log(`Using lambda name: ${activeLambdaName} - isWkhtmltopdfEnabled: ${isWkhtmltopdfEnabled}`);
@@ -158,7 +158,7 @@ async function convertFHIRBundleToMedicalRecord({
     metadata,
   });
   // Send it to conversion
-  const payload: ConversionInput = {
+  const activeLambdaPayload: ConversionInput = {
     fileName,
     patientId: patient.id,
     firstName: patient.data.firstName,
@@ -167,13 +167,17 @@ async function convertFHIRBundleToMedicalRecord({
     dateTo,
     conversionType,
   };
+  const inactiveLambdaPayload: ConversionInput = {
+    ...activeLambdaPayload,
+    resultFileNameSuffix: inactiveSuffix,
+  };
 
   const [result] = await Promise.all([
     lambdaClient
       .invoke({
         FunctionName: activeLambdaName,
         InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
+        Payload: JSON.stringify(activeLambdaPayload),
       })
       .promise(),
     inactiveLambdaName &&
@@ -181,7 +185,7 @@ async function convertFHIRBundleToMedicalRecord({
         .invoke({
           FunctionName: inactiveLambdaName,
           InvocationType: "RequestResponse",
-          Payload: JSON.stringify(payload),
+          Payload: JSON.stringify(inactiveLambdaPayload),
         })
         .promise(),
   ]);
