@@ -131,7 +131,7 @@ async function convertFHIRBundleToMedicalRecord({
 }): Promise<ConversionOutput> {
   const { log } = out(`convertFHIRBundleToMedicalRecord - cx ${patient.cxId} pt ${patient.id}`);
   const lambdaNameOld = Config.getFHIRToMedicalRecordLambdaName();
-  const lambdaNameNew = Config.getFHIRToMedicalRecordLambdaNameNew();
+  const lambdaNameNew = Config.getFHIRToMedicalRecordLambda2Name();
   const isWkhtmltopdfEnabled = await isWkhtmltopdfEnabledForCx(patient.cxId);
 
   const [activeLambdaName, inactiveLambdaName, inactiveSuffix] = isWkhtmltopdfEnabled

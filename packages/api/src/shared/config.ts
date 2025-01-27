@@ -288,8 +288,8 @@ export class Config {
   static getFHIRToMedicalRecordLambdaName(): string | undefined {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
-  static getFHIRToMedicalRecordLambdaNameNew(): string | undefined {
-    return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NEW_NAME");
+  static getFHIRToMedicalRecordLambda2Name(): string | undefined {
+    return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME");
   }
 
   static getOutboundPatientDiscoveryLambdaName(): string | undefined {

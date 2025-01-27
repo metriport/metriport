@@ -46,7 +46,7 @@ const newS3Client = new S3Utils(region);
 const ossApi = apiClient(apiUrl);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
-// TODO 2510 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
+// TODO 1672 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
 
 const pdfOptions: WkOptions = {
   orientation: "Portrait",
@@ -114,7 +114,7 @@ export async function handler({
       ? `${tmpHtmlFileName}${fileNameSuffix}.html`
       : tmpHtmlFileName;
 
-    // TODO 2510 rename it w/o brief
+    // TODO 1672 rename it w/o brief
     const mrS3Info = await storeMrSummaryAndBriefInS3({
       bucketName,
       htmlFileName,

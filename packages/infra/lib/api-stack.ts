@@ -417,7 +417,7 @@ export class APIStack extends Stack {
     }
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
-    let fhirToMedicalRecordLambdaNew: Lambda | undefined = undefined;
+    let fhirToMedicalRecordLambda2: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
       const lambdas = this.setupFhirToMedicalRecordLambda({
         lambdaLayers,
@@ -434,7 +434,7 @@ export class APIStack extends Stack {
         ...props.config.fhirToMedicalLambda,
       });
       fhirToMedicalRecordLambda = lambdas.fhirToMedicalRecordLambda;
-      fhirToMedicalRecordLambdaNew = lambdas.fhirToMedicalRecordLambdaNew;
+      fhirToMedicalRecordLambda2 = lambdas.fhirToMedicalRecordLambda2;
     }
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
@@ -481,9 +481,9 @@ export class APIStack extends Stack {
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
-      // TODO 2510 Keep only one when ready to rollout to all customers
+      // TODO 1672 Keep only one when ready to rollout to all customers
       fhirToMedicalRecordLambda,
-      fhirToMedicalRecordLambdaNew,
+      fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
       rateLimitTable,
@@ -578,7 +578,7 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    fhirToMedicalRecordLambdaNew?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
@@ -1340,7 +1340,7 @@ export class APIStack extends Stack {
       appId: string;
       configId: string;
     };
-  }): { fhirToMedicalRecordLambda: Lambda; fhirToMedicalRecordLambdaNew: Lambda } {
+  }): { fhirToMedicalRecordLambda: Lambda; fhirToMedicalRecordLambda2: Lambda } {
     const {
       nodeRuntimeArn,
       lambdaLayers,
@@ -1386,11 +1386,11 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    const fhirToMedicalRecordLambdaNew = createLambda({
+    const fhirToMedicalRecordLambda2 = createLambda({
       stack: this,
-      name: "FhirToMedicalRecordNew",
+      name: "FhirToMedicalRecord2",
       runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "fhir-to-medical-record-new",
+      entry: "fhir-to-medical-record2",
       envType,
       envVars: {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
@@ -1417,15 +1417,15 @@ export class APIStack extends Stack {
     });
     AppConfigUtils.allowReadConfig({
       scope: this,
-      resourceName: "FhirToMrLambdaNew",
-      resourceRole: fhirToMedicalRecordLambdaNew.role,
+      resourceName: "FhirToMrLambda2",
+      resourceRole: fhirToMedicalRecordLambda2.role,
       appConfigResources: ["*"],
     });
 
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
-    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambdaNew);
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda2);
 
-    return { fhirToMedicalRecordLambda, fhirToMedicalRecordLambdaNew };
+    return { fhirToMedicalRecordLambda, fhirToMedicalRecordLambda2 };
   }
 
   private setupCWDocContribution(ownProps: {
