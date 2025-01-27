@@ -64,6 +64,15 @@ export class CloudWatchUtils {
     }
   }
 
+  /**
+   * Report memory usage to CloudWatch, under our custom namespace.
+   *
+   * NOTE: metricName should be defined, unless we're capturing the memory usage a single time
+   * per execution (e.g., lambda invocation).
+   *
+   * @param metricsNamespace - The namespace to use for the metrics.
+   * @param metricName - The name of the metric (e.g., "preSetup", "postSetup").
+   */
   async reportMemoryUsage({
     metricsNamespace,
     metricName,
