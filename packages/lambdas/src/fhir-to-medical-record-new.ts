@@ -51,7 +51,6 @@ const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace
 const pdfOptions: WkOptions = {
   orientation: "Portrait",
   pageSize: "A4",
-  background: false,
 };
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data

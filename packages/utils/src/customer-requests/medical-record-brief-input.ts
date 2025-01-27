@@ -36,7 +36,6 @@ const SKIP_PDF = false;
 const pdfOptions: WkOptions = {
   orientation: "Portrait",
   pageSize: "A4",
-  background: false,
 };
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's

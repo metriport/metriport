@@ -23,6 +23,7 @@ export function wkHtmlToPdf(
   input: string | Stream,
   log?: typeof console.log | undefined
 ): Promise<Buffer> {
+  const { removeBackground = true, grayscale = true } = props;
   return new Promise<Buffer>((resolve, reject) => {
     let wkhtmltopdfPath = "/opt/bin/wkhtmltopdf";
 
@@ -41,14 +42,16 @@ export function wkHtmlToPdf(
     // From https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
     const params = [
       `--orientation ${props.orientation ?? "Portrait"}`,
+      `--page-size ${props.pageSize ?? "A4"}`,
       ...(props.marginTop ? [`--margin-top ${props.marginTop ?? 0}`] : []),
       ...(props.marginRight ? [`--margin-right ${props.marginRight ?? 0}`] : []),
       ...(props.marginBottom ? [`--margin-bottom ${props.marginBottom ?? 0}`] : []),
       ...(props.marginLeft ? [`--margin-left ${props.marginLeft ?? 0}`] : []),
+      ...(grayscale ? ["--grayscale"] : []),
+      ...(removeBackground ? ["--no-background"] : []),
       "--disable-javascript",
       "--custom-header-propagation",
       "--log-level warn",
-      `--page-size ${props.pageSize ?? "A4"}`,
       "--enable-local-file-access",
     ];
 

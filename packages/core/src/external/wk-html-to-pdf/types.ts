@@ -58,5 +58,7 @@ export interface WkOptions {
   /** Defaults to 10mm */
   marginLeft?: number;
   /** Defaults to true */
-  background?: boolean;
+  grayscale?: boolean;
+  /** Defaults to true */
+  removeBackground?: boolean;
 }
