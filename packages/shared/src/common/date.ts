@@ -17,12 +17,16 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
 
 export function validateIsPastOrPresent(date: string): boolean {
   if (!validateIsPastOrPresentSafe(date)) {
-    throw new BadRequestError(`Date can't be in the future`, undefined, { date });
+    throw new BadRequestError(
+      `Please verify the date isn't set in the future or super distant past`,
+      undefined,
+      { date }
+    );
   }
   return true;
 }
 export function validateIsPastOrPresentSafe(date: string): boolean {
-  if (dayjs(date).isAfter(dayjs())) return false;
+  if (dayjs(date).isAfter(dayjs()) || dayjs(date).isBefore(dayjs("1900-01-01"))) return false;
   return true;
 }
 
