@@ -1,0 +1,17 @@
+config:
+  target: "{{ $processEnvironment.TERM_SERVER_URL }}"
+  phases:
+    - duration: 10
+      arrivalRate: 10
+      name: Warm up
+    - duration: 60
+      arrivalRate: 50
+      rampTo: 200
+      name: Ramp up load
+scenarios:
+  - name: "Healthcheck Term Server"
+    flow:
+      - loop:
+          - get:
+              url: "/"
+        count: 10
