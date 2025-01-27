@@ -274,6 +274,9 @@ async function convertAndStorePdf({
       await browser.close();
     }
   }
+
+  fs.rmSync(pdfFilepath, { force: true });
+
   console.log("generate-pdf -> shutdown");
 }
 
