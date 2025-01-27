@@ -6,8 +6,15 @@ import {
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  executeWithRetries,
+  sleepRandom,
+} from "@metriport/shared";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { log as getLog, out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { createAndSignBulkDQRequests, SignedDqRequest } from "./xca/create/iti38-envelope";
@@ -26,8 +33,12 @@ import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
 import { createHivePartitionFilePath } from "../../../../domain/filename";
 
+dayjs.extend(duration);
+
 const region = Config.getAWSRegion();
 const parsedResponsesBucket = Config.getIheParsedResponsesBucketName();
+
+const s3JitterMax = dayjs.duration({ seconds: 5 });
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -180,6 +191,7 @@ export async function createSignSendProcessXCPDRequest({
       }
     }
     if (parsedResponsesBucket) {
+      await sleepRandom(s3JitterMax.asMilliseconds());
       try {
         const partitionDate = result.requestTimestamp
           ? new Date(Date.parse(result.requestTimestamp))

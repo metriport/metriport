@@ -1,12 +1,12 @@
 import { PatientData } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util";
+import { capture } from "@metriport/core/util/notifications";
 import { WebhookMetadata } from "@metriport/shared/medical";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { patientEvents } from "../../../event/medical/patient-event";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
-import { capture } from "../../../shared/notifications";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
