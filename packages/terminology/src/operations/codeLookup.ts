@@ -222,10 +222,7 @@ export async function lookupCoding(
   const params = [codeSystem.id, coding.code];
   const result = await dbClient.select(query, params);
 
-  if (result.length === 0) {
-    console.log(`Code not found: system=${codeSystem.url}, code=${coding.code}`);
-    return [notFound];
-  }
+  if (result.length === 0) return [notFound];
 
   const resolved = result[0];
   const output: CodeSystemLookupOutput = {
