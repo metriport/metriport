@@ -15,6 +15,10 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
   return date ? isValidISODate(date) : true;
 }
 
+export function validateDateOfBirth(date: string): boolean {
+  return validateIsPastOrPresent(date) && validateDateIsAfter1900(date);
+}
+
 export function validateIsPastOrPresent(date: string): boolean {
   if (!validateIsPastOrPresentSafe(date)) {
     throw new BadRequestError(
@@ -26,8 +30,13 @@ export function validateIsPastOrPresent(date: string): boolean {
   return true;
 }
 export function validateIsPastOrPresentSafe(date: string): boolean {
-  if (dayjs(date).isAfter(dayjs()) || dayjs(date).isBefore(dayjs("1900-01-01"))) return false;
+  if (dayjs(date).isAfter(dayjs())) return false;
   return true;
+}
+
+export function validateDateIsAfter1900(date: string): boolean {
+  if (dayjs(date).isAfter(dayjs("1900-01-01"))) return true;
+  return false;
 }
 
 export function validateDateRange(start: string, end: string): boolean {
