@@ -28,8 +28,7 @@ import {
   createMetriportAddresses,
   createMetriportContacts,
   createNames,
-  getElationClientKeyAndSecret,
-  getElationEnv,
+  createElationClient,
 } from "../shared";
 
 export async function syncElationPatientIntoMetriport({
@@ -60,20 +59,8 @@ export async function syncElationPatientIntoMetriport({
     });
     return metriportPatient.id;
   }
-  let elationApi = api;
-  if (!elationApi) {
-    const environment = getElationEnv();
-    const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
-      cxId,
-      practiceId: elationPracticeId,
-    });
-    elationApi = await ElationApi.create({
-      practiceId: elationPracticeId,
-      environment,
-      clientKey,
-      clientSecret,
-    });
-  }
+
+  const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
   const elationPatient = await elationApi.getPatient({
     cxId,
     patientId: elationPatientId,

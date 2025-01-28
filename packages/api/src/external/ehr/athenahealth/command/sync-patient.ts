@@ -42,17 +42,13 @@ export async function syncAthenaPatientIntoMetriport({
   cxId,
   athenaPracticeId,
   athenaPatientId,
-  accessToken,
   api,
-  useSearch = false,
   triggerDq = false,
 }: {
   cxId: string;
   athenaPracticeId: string;
   athenaPatientId: string;
-  accessToken?: string;
   api?: AthenaHealthApi;
-  useSearch?: boolean;
   triggerDq?: boolean;
 }): Promise<string | undefined> {
   const { log } = out(
@@ -71,18 +67,10 @@ export async function syncAthenaPatientIntoMetriport({
     return metriportPatient.id;
   }
 
-  const athenaApi =
-    api ??
-    (await createAthenaClient({
-      cxId,
-      practiceId: athenaPracticeId,
-      threeLeggedAuthToken: accessToken,
-    }));
-  const athenaPatient = await getPatientFromAthena({
-    api: athenaApi,
+  const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+  const athenaPatient = await athenaApi.getPatientViaSearch({
     cxId,
     patientId: athenaPatientId,
-    useSearch,
   });
   if (athenaPatient === null) return undefined;
   if (athenaPatient === undefined) throw new NotFoundError("AthenaHealth patient not found");
@@ -196,27 +184,4 @@ function createMetriportPatientCreateCmd(
     address: addressArray,
     contact: contactArray,
   };
-}
-
-async function getPatientFromAthena({
-  api,
-  cxId,
-  patientId,
-  useSearch,
-}: {
-  api: AthenaHealthApi;
-  cxId: string;
-  patientId: string;
-  useSearch: boolean;
-}) {
-  if (useSearch) {
-    return await api.getPatientViaSearch({
-      cxId,
-      patientId,
-    });
-  }
-  return await api.getPatient({
-    cxId,
-    patientId,
-  });
 }

@@ -85,15 +85,10 @@ export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchU
     const practiceId = mapping.externalId;
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
-      throw new MetriportError(
-        `AthenaHealth cxMapping departmentIds exists but is malformed`,
-        undefined,
-        {
-          cxId,
-          practiceId,
-          departmentIds,
-        }
-      );
+      throw new MetriportError("cxMapping departmentIds is malformed @ AthenaHealth", undefined, {
+        cxId,
+        practiceId,
+      });
     }
     return {
       cxId,
@@ -122,14 +117,15 @@ export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchU
   );
 
   if (getAppointmentsErrors.length > 0) {
-    capture.error("Failed to get appointments from subscription @ AthenaHealth", {
+    capture.error("Failed to get appointments @ AthenaHealth", {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
         errors: getAppointmentsErrors
           .map(e => `cxId ${e.cxId} practiceId ${e.practiceId} Cause: ${errorToString(e.error)}`)
           .join(","),
-        context: "athenahealth.process-patients-from-appointments-sub",
+        context: "athenahealth.process-patients-from-appointments",
+        catchUpOrBackFill,
       },
     });
   }
@@ -182,7 +178,8 @@ export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchU
               } Cause: ${errorToString(e.error)}`
           )
           .join(","),
-        context: "athenahealth.process-patients-from-appointments-sub",
+        context: "athenahealth.process-patients-from-appointments",
+        catchUpOrBackFill,
       },
     });
   }
@@ -239,9 +236,13 @@ async function getAppointmentsFromApi({
   if (catchUpOrBackFill === "backFill") {
     if (!fromDate || !toDate) {
       throw new MetriportError(
-        "startAppointmentDate and endAppointmentDate are required for getAppointments @ AthenaHealth",
+        "fromDate and toDate are required for getAppointments @ AthenaHealth",
         undefined,
-        { cxId, practiceId, catchUpOrBackFill }
+        {
+          cxId,
+          practiceId,
+          catchUpOrBackFill,
+        }
       );
     }
     return await api.getAppointments({
@@ -284,7 +285,6 @@ async function syncPatients({
           athenaPracticeId: appointment.practiceId,
           athenaPatientId: appointment.patientId,
           api,
-          useSearch: true,
           triggerDq: true,
         });
       } catch (error) {

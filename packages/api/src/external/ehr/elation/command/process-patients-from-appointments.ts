@@ -1,4 +1,4 @@
-import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
+import ElationApi from "@metriport/core/external/elation/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -17,7 +17,7 @@ import {
   parallelPractices,
   parsePracticeMapKey,
 } from "../../shared";
-import { getElationClientKeyAndSecret, getElationEnv } from "../shared";
+import { getElationEnv } from "../shared";
 import { syncElationPatientIntoMetriport } from "./sync-patient";
 
 dayjs.extend(duration);
@@ -27,7 +27,6 @@ const lookForward = dayjs.duration(14, "days");
 type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
-  environment: ElationEnv;
   fromDate: Date;
   toDate: Date;
 };
@@ -35,13 +34,11 @@ type GetAppointmentsParams = {
 type SyncPatientsParams = {
   cxId: string;
   practiceId: string;
-  environment: ElationEnv;
   appointments: Appointment[];
 };
 
 export async function processPatientsFromAppointments(): Promise<void> {
   const { log } = out(`Elation processPatientsFromAppointments`);
-  const environment = getElationEnv();
 
   const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
   log(`Getting appointments from ${startRange} to ${endRange}`);
@@ -56,7 +53,6 @@ export async function processPatientsFromAppointments(): Promise<void> {
     return {
       cxId,
       practiceId,
-      environment,
       fromDate: startRange,
       toDate: endRange,
     };
@@ -103,7 +99,6 @@ export async function processPatientsFromAppointments(): Promise<void> {
       if (!appointments) return [];
       return {
         ...parsePracticeMapKey(key),
-        environment,
         appointments,
       };
     }
@@ -134,7 +129,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
               } Cause: ${errorToString(e.error)}`
           )
           .join(","),
-        context: "athenahealth.process-patients-from-appointments-sub",
+        context: "elation.process-patients-from-appointments",
       },
     });
   }
@@ -143,12 +138,11 @@ export async function processPatientsFromAppointments(): Promise<void> {
 async function getAppointments({
   cxId,
   practiceId,
-  environment,
   fromDate,
   toDate,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
+  const { environment, clientKey, clientSecret } = await getElationEnv({
     cxId,
     practiceId,
   });
@@ -178,11 +172,10 @@ async function getAppointments({
 async function syncPatients({
   cxId,
   practiceId,
-  environment,
   appointments,
 }: SyncPatientsParams): Promise<{ errors: { error: unknown; patientId: string }[] }> {
   const { log } = out(`Elation syncPatients - cxId ${cxId} practiceId ${practiceId}`);
-  const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
+  const { environment, clientKey, clientSecret } = await getElationEnv({
     cxId,
     practiceId,
   });

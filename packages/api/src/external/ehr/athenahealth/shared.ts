@@ -4,7 +4,6 @@ import AthenaHealthApi, {
   AthenaEnv,
   isAthenaEnv,
 } from "@metriport/core/external/athenahealth/index";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
   MetriportError,
   normalizeEmail,
@@ -22,8 +21,6 @@ import {
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../../command/jwt-token";
 import { Config } from "../../../shared/config";
-
-const region = Config.getAWSRegion();
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
@@ -121,13 +118,9 @@ export async function getAthenaEnv(): Promise<{
   if (!isAthenaEnv(environment)) {
     throw new MetriportError("Invalid AthenaHealth environment", undefined, { environment });
   }
-  const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
-  const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
-  if (!athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new MetriportError("AthenaHealth secrets not set");
-  }
-  const clientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-  const clientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+  const clientKey = Config.getAthenaHealthClientKey();
+  const clientSecret = Config.getAthenaHealthClientSecret();
+  if (!clientKey || !clientSecret) throw new MetriportError("AthenaHealth secrets not set");
   return {
     environment,
     clientKey,
