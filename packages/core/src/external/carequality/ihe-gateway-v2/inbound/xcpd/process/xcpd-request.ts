@@ -2,7 +2,6 @@ import { InboundPatientDiscoveryReq, PatientResource } from "@metriport/ihe-gate
 import { errorToString, isEmail, isPhoneNumber, toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import dayjs from "dayjs";
-import { capture } from "../../../../../../util";
 import { out } from "../../../../../../util/log";
 import { mapIheGenderToFhir } from "../../../../shared";
 import { storeXcpdRequest } from "../../../monitor/store";
@@ -100,12 +99,6 @@ export async function processInboundXcpdRequest(
         jsonObj
       )}, request: ${request}`
     );
-    capture.error(msg, {
-      extra: {
-        error,
-        request,
-      },
-    });
     throw new Error(`${msg}: ${error}`);
   }
 }
