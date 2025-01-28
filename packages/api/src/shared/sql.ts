@@ -8,7 +8,7 @@ export const paginationSqlExpressions = (pagination: Pagination | undefined) => 
   const fromItemStr = fromItem ? ` AND id <= :fromItem` : "";
   const queryPagination = " " + [toItemStr, fromItemStr].filter(Boolean).join("");
 
-  const queryOrder = queryPagination + " ORDER BY id " + (toItem ? "ASC" : "DESC");
+  const queryOrder = queryPagination + " ORDER BY " + orderBy + " " + (toItem ? "ASC" : "DESC");
 
   const { count } = pagination ?? {};
   const query = queryOrder + (count ? ` LIMIT :count` : "");

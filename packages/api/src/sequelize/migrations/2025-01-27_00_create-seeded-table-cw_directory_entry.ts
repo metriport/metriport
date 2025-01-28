@@ -93,12 +93,13 @@ managing_organization_id,
 FROM ${cqViewName}
 UNION ALL
 SELECT 
+
 organization_name as name,
 organization_id as oid,
 zip_code,
 state,
 'Commonwell' as root_organization,
-'0.0.0.0.0.0.0' as managing_organization_id,
+'2.16.840.1.113883.3.3330' as managing_organization_id,
 'COMMONWELL' as network
 FROM ${cwTableName}
 ;`;
