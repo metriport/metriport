@@ -5,6 +5,7 @@ export const layers = [
   "shared",
   "chromium",
   "dig",
+  "wkHtmlToPdf",
   "playwright",
   "puppeteer",
   "langchain",
@@ -32,6 +33,10 @@ export function setupLambdasLayers(stack: Stack, prefixStackName = false): Lambd
       compatibleRuntimes: [Runtime.NODEJS_16_X],
       code: Code.fromAsset("../lambdas/layers/dig-layer"),
       description: "Adds dig to the lambdas",
+    }),
+    wkHtmlToPdf: new LayerVersion(stack, `${prefix}WkHtmlToPdf-layer`, {
+      layerVersionName: `${prefix}WkHtmlToPdf-layer`,
+      code: Code.fromAsset("../lambdas/layers/wkhtmltopdf-0.12.6-4"),
     }),
     playwright: new LayerVersion(stack, `${prefix}PlaywrightLayer`, {
       layerVersionName: `${prefix}PlaywrightLayer`,

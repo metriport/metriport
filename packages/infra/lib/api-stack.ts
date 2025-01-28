@@ -417,8 +417,9 @@ export class APIStack extends Stack {
     }
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
+    let fhirToMedicalRecordLambda2: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
-      fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
+      const lambdas = this.setupFhirToMedicalRecordLambda({
         lambdaLayers,
         vpc: this.vpc,
         medicalDocumentsBucket,
@@ -432,6 +433,8 @@ export class APIStack extends Stack {
         },
         ...props.config.fhirToMedicalLambda,
       });
+      fhirToMedicalRecordLambda = lambdas.fhirToMedicalRecordLambda;
+      fhirToMedicalRecordLambda2 = lambdas.fhirToMedicalRecordLambda2;
     }
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
@@ -478,7 +481,9 @@ export class APIStack extends Stack {
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
+      // TODO 1672 Keep only one when ready to rollout to all customers
       fhirToMedicalRecordLambda,
+      fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
       rateLimitTable,
@@ -573,6 +578,7 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
@@ -716,6 +722,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       props.config.environmentType,
       apiDirectUrl,
+      generalBucket,
       props.config.lambdasSentryDSN
     );
 
@@ -1031,22 +1038,25 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers,
     envType: EnvType,
     apiAddress: string,
+    generalBucket: s3.IBucket,
     sentryDsn: string | undefined
   ) {
-    return createLambda({
+    const lambda = createLambda({
       stack: this,
       name: "Tester",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.wkHtmlToPdf],
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
       entry: "tester",
       envType,
       envVars: {
         API_URL: apiAddress,
+        GENERAL_BUCKET_NAME: generalBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      architecture: lambda.Architecture.ARM_64,
     });
+    generalBucket.grantReadWrite(lambda);
+    return lambda;
   }
 
   private setupGarminWebhookAuth(ownProps: {
@@ -1330,7 +1340,7 @@ export class APIStack extends Stack {
       appId: string;
       configId: string;
     };
-  }): Lambda {
+  }): { fhirToMedicalRecordLambda: Lambda; fhirToMedicalRecordLambda2: Lambda } {
     const {
       nodeRuntimeArn,
       lambdaLayers,
@@ -1376,22 +1386,46 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
+    const fhirToMedicalRecordLambda2 = createLambda({
+      stack: this,
+      name: "FhirToMedicalRecord2",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fhir-to-medical-record2",
+      envType,
+      envVars: {
+        AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
+        APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+        APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+        DASH_URL: dashUrl,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.wkHtmlToPdf],
+      memory: 4096,
+      timeout: lambdaTimeout,
+      isEnableInsights: true,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
     AppConfigUtils.allowReadConfig({
       scope: this,
       resourceName: "FhirToMrLambda",
       resourceRole: fhirToMedicalRecordLambda.role,
       appConfigResources: ["*"],
     });
-
-    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
-
-    const bedrockPolicyStatement = new iam.PolicyStatement({
-      actions: ["bedrock:InvokeModel"],
-      resources: ["*"],
+    AppConfigUtils.allowReadConfig({
+      scope: this,
+      resourceName: "FhirToMrLambda2",
+      resourceRole: fhirToMedicalRecordLambda2.role,
+      appConfigResources: ["*"],
     });
 
-    fhirToMedicalRecordLambda.addToRolePolicy(bedrockPolicyStatement);
-    return fhirToMedicalRecordLambda;
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda2);
+
+    return { fhirToMedicalRecordLambda, fhirToMedicalRecordLambda2 };
   }
 
   private setupCWDocContribution(ownProps: {
