@@ -1,4 +1,4 @@
-import { isValidISODate, validateIsPastOrPresentSafe } from "../date";
+import { isValidISODate, validateDateIsAfter1900, validateIsPastOrPresentSafe } from "../date";
 
 describe("shared date functions", () => {
   describe("isValidISODate", () => {
@@ -23,10 +23,17 @@ describe("shared date functions", () => {
       const futureDate = "2525-01-01";
       expect(validateIsPastOrPresentSafe(futureDate)).toBe(false);
     });
+  });
+});
 
-    it("returns false for dates before 1900", () => {
-      expect(validateIsPastOrPresentSafe("1899-12-31")).toBe(false);
-      expect(validateIsPastOrPresentSafe("970-01-31")).toBe(false);
-    });
+describe("validateDateIsAfter1900", () => {
+  it("returns true for dates after 1900", () => {
+    expect(validateDateIsAfter1900("1999-12-31")).toBe(true);
+    expect(validateDateIsAfter1900("1970-01-31")).toBe(true);
+  });
+
+  it("returns false for dates before 1900", () => {
+    expect(validateDateIsAfter1900("1899-12-31")).toBe(false);
+    expect(validateDateIsAfter1900("970-01-31")).toBe(false);
   });
 });
