@@ -1,6 +1,7 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
+    "typeRoots": ["./src/@types", "../../node_modules/@types", "./node_modules/@types"],
     // Using community best practices with 'extends'
     "outDir": "./dist",
     "resolveJsonModule": true

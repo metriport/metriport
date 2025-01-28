@@ -39,6 +39,7 @@
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1248.0",
     "axios": "^1.4.0",
+    "convert-units": "^2.3.4",
     "dayjs": "^1.11.10",
     "fast-xml-parser": "^4.4.1",
     "formidable": "^3.5.1",

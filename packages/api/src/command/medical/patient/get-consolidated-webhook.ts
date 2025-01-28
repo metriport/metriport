@@ -1,5 +1,5 @@
 import { ConsolidationConversionType, ConsolidatedQuery } from "@metriport/api-sdk";
-import { QueryStatus } from "@metriport/core/src/domain/query-status";
+import { QueryStatus } from "@metriport/core/domain/query-status";
 import { WebhookRequest } from "../../../models/webhook-request";
 
 type ConsolidatedWebhookQuery = {

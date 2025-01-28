@@ -9,6 +9,7 @@ import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shar
 import { out } from "@metriport/core/util";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { sleep } from "@metriport/shared";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -18,7 +19,6 @@ import { recreateConsolidated } from "../../../command/medical/patient/consolida
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
-import { Util } from "../../../shared/util";
 import { ContentMimeType, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
@@ -45,11 +45,11 @@ export async function sandboxGetDocRefsAndUpsert({
   patient: Patient;
   requestId: string;
 }): Promise<void> {
-  const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
+  const { log } = out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
   const { id: patientId, cxId } = patient;
 
   // Mimic Prod by waiting for docs to download
-  await Util.sleep(Math.random() * sandboxSleepTime.asMilliseconds());
+  await sleep(Math.random() * sandboxSleepTime.asMilliseconds());
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {

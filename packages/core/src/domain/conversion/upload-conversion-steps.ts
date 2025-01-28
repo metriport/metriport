@@ -27,7 +27,7 @@ export async function storePreProcessedConversionResult({
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
-}) {
+}): Promise<void> {
   await storeInS3WithRetries({
     s3Utils,
     payload: JSON.stringify(conversionResult),
@@ -60,7 +60,7 @@ export async function storePartitionedPayloadsInS3({
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
-}) {
+}): Promise<void> {
   const fileNames: string[] = [];
 
   const results = await executeAsynchronously(
@@ -127,7 +127,7 @@ export async function storePreprocessedPayloadInS3({
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
-}) {
+}): Promise<void> {
   await storeInS3WithRetries({
     s3Utils,
     payload,
@@ -139,6 +139,43 @@ export async function storePreprocessedPayloadInS3({
       errorMessage: "Error uploading preprocessed XML",
       context,
       captureParams: lambdaParams,
+      shouldCapture: true,
+    },
+  });
+}
+
+export async function storeHydratedConversionResult({
+  s3Utils,
+  bundle,
+  bucketName,
+  fileName,
+  context,
+  lambdaParams,
+  log,
+}: {
+  s3Utils: S3Utils;
+  bundle: Bundle<Resource>;
+  bucketName: string;
+  fileName: string;
+  context: string;
+  lambdaParams: Record<string, string | undefined>;
+  log: typeof console.log;
+}): Promise<void> {
+  const fileNameHydrated = `${fileName}_hydrated.json`;
+  await storeInS3WithRetries({
+    s3Utils,
+    payload: JSON.stringify(bundle),
+    bucketName,
+    fileName: fileNameHydrated,
+    contentType: FHIR_APP_MIME_TYPE,
+    log,
+    errorConfig: {
+      errorMessage: "Error uploading hydrated FHIR Bundle",
+      context,
+      captureParams: {
+        conversionResultFilename: fileName,
+        ...lambdaParams,
+      },
       shouldCapture: true,
     },
   });
@@ -160,13 +197,13 @@ export async function storeNormalizedConversionResult({
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
-}) {
-  const fileNamePreNormalization = `${fileName}_normalized.json`;
+}): Promise<void> {
+  const fileNameNormalization = `${fileName}_normalized.json`;
   await storeInS3WithRetries({
     s3Utils,
     payload: JSON.stringify(bundle),
     bucketName,
-    fileName: fileNamePreNormalization,
+    fileName: fileNameNormalization,
     contentType: FHIR_APP_MIME_TYPE,
     log,
     errorConfig: {
@@ -202,7 +239,7 @@ export async function storeInS3WithRetries({
     captureParams?: Record<string, unknown>;
     shouldCapture: boolean;
   };
-}) {
+}): Promise<void> {
   try {
     await executeWithRetriesS3(
       () =>

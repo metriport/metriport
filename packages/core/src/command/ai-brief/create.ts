@@ -5,18 +5,18 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Bundle, Medication, Observation, Patient, Resource } from "@medplum/fhirtypes";
 import { errorToString, toArray } from "@metriport/shared";
-import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { buildDayjs, elapsedTimeFromNow, ISO_DATE } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 import {
+  applyResourceSpecificFilters,
+  getSlimPatient,
   SlimCondition,
   SlimDiagnosticReport,
   SlimOrganization,
   SlimResource,
-  applyResourceSpecificFilters,
-  getSlimPatient,
 } from "../../domain/ai-brief/modify-resources";
-import { EventTypes, analytics } from "../../external/analytics/posthog";
+import { analytics, EventTypes } from "../../external/analytics/posthog";
 import {
   findDiagnosticReportResources,
   findPatientResource,
@@ -54,12 +54,6 @@ const relevantResources = [
 const referenceResources = ["Practitioner", "Organization", "Observation", "Location"];
 
 const documentVariableName = "text";
-
-export type Brief = {
-  id: string;
-  content: string;
-  link: string;
-};
 
 //--------------------------------
 // AI-based brief generation
@@ -101,7 +95,7 @@ export async function summarizeFilteredBundleWithAI(
     const llmSummary = new BedrockChat({
       model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
       temperature: 0,
-      region: "us-east-1",
+      region: "us-west-2",
       callbacks: [
         {
           handleLLMEnd: output => {

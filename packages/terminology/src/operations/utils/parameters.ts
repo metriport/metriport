@@ -9,13 +9,22 @@ import {
 } from "@medplum/core";
 import { FhirRequest } from "@medplum/fhir-router";
 import {
+  Coding,
   OperationDefinition,
   OperationDefinitionParameter,
   Parameters,
   ParametersParameter,
 } from "@medplum/fhirtypes";
 import { Request } from "express";
-/* eslint-disable */
+
+export type CodeSystemLookupParameters = {
+  code?: string;
+  id?: string;
+  system?: string;
+  version?: string;
+  coding?: Coding;
+  property?: string[];
+};
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (
@@ -24,7 +33,6 @@ export function parseParameters<T>(input: T | Parameters): T {
     "resourceType" in input &&
     input.resourceType === "Parameters"
   ) {
-    // Convert the parameters to input
     const parameters = (input as Parameters).parameter ?? [];
     return Object.fromEntries(parameters.map(p => [p.name, p.valueString])) as T;
   } else {
@@ -39,37 +47,53 @@ export function parseParameters<T>(input: T | Parameters): T {
  * @param req - The incoming request.
  * @returns A dictionary of parameter names to values.
  */
-export function parseInputParameters<T>(
+export function parseInputParameters(
   operation: OperationDefinition,
   req: Request | FhirRequest
-): T {
-  if (!operation.parameter) {
-    return {} as any;
-  }
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Record<string, any> {
+  if (!operation.parameter) return {};
   const inputParameters = operation.parameter.filter(p => p.use === "in");
 
-  // If the request is a GET request, use the query parameters
-  // Otherwise, use the body
+  // TODO: 2599 - we should be able to always send the data in the body and simplify this code
   const input = req.method === "GET" ? parseQueryString(req.query, inputParameters) : req.body;
 
   if (input.resourceType === "Parameters") {
     if (!input.parameter) {
-      return {} as any;
+      return {};
     }
-    return parseParams(inputParameters, input.parameter) as any;
+    return parseParams(inputParameters, input.parameter);
   } else {
     return Object.fromEntries(
       inputParameters.map(param => [
         param.name,
         validateInputParam(param, input[param.name as string]),
       ])
-    ) as any;
+    );
   }
 }
 
+export function parseBulkInputParameters(
+  operation: OperationDefinition,
+  parameters: Parameters[]
+): CodeSystemLookupParameters[] {
+  if (!operation.parameter) return [];
+
+  const inputParameters = operation.parameter.filter(p => p.use === "in");
+
+  const params: CodeSystemLookupParameters[] = [];
+  parameters.forEach(param => {
+    if (!param.parameter) return;
+    params.push(parseParams(inputParameters, param.parameter, param.id));
+  });
+  return params;
+}
+
 function parseQueryString(
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   query: Record<string, any>,
   inputParams: OperationDefinitionParameter[]
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Record<string, any> {
   const parsed = Object.create(null);
   for (const param of inputParams) {
@@ -130,6 +154,7 @@ function parseQueryString(
   return parsed;
 }
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 function validateInputParam(param: OperationDefinitionParameter, value: any): any {
   // Check parameter cardinality (min and max)
   const min = param.min ?? 0;
@@ -155,13 +180,19 @@ function validateInputParam(param: OperationDefinitionParameter, value: any): an
 
 function parseParams(
   params: OperationDefinitionParameter[],
-  inputParameters: ParametersParameter[]
+  inputParameters: ParametersParameter[],
+  id?: string
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Record<string, any> {
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parsed: Record<string, any> = Object.create(null);
+
   for (const param of params) {
     // FHIR spec-compliant case: Parameters resource e.g.
     // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
     const inParams = inputParameters.filter(p => p.name === param.name);
+
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     let value: any;
     if (param.part?.length) {
       value = inParams.map(input => parseParams(param.part as [], input.part ?? []));
@@ -172,11 +203,13 @@ function parseParams(
     }
 
     parsed[param.name as string] = validateInputParam(param, value);
+    if (id) parsed.id = id;
   }
 
   return parsed;
 }
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildOutputParameters(operation: OperationDefinition, output: any): Parameters {
   const outputParameters = operation.parameter?.filter(p => p.use === "out");
   const param1 = outputParameters?.[0];
@@ -238,6 +271,7 @@ export function buildOutputParameters(operation: OperationDefinition, output: an
 
 function makeParameter(
   param: OperationDefinitionParameter,
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any
 ): ParametersParameter | undefined {
   if (param.part) {
@@ -277,4 +311,30 @@ function makeParameter(
 
 export function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
+}
+
+export function isValidParameter(parameter: unknown): boolean {
+  if (typeof parameter !== "object" || parameter === null || !("name" in parameter)) return false;
+  const { name, valueUri, valueCode } = parameter as ParametersParameter;
+  return (
+    typeof name === "string" &&
+    ((name === "system" && typeof valueUri === "string") ||
+      (name === "code" && typeof valueCode === "string"))
+  );
+}
+
+export function isValidParametersResource(obj: unknown): boolean {
+  if (typeof obj !== "object" || obj === null || !("resourceType" in obj)) return false;
+
+  const { id, resourceType, parameter } = obj as Parameters;
+  if (typeof id !== "string" || resourceType !== "Parameters" || !Array.isArray(parameter)) {
+    return false;
+  }
+
+  const hasValidParameters =
+    parameter.length > 0 &&
+    parameter.some(p => isValidParameter(p) && p.name === "system") &&
+    parameter.some(p => isValidParameter(p) && p.name === "code");
+
+  return hasValidParameters;
 }

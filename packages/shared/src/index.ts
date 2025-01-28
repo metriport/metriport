@@ -10,7 +10,7 @@ export { isValidUrl } from "./common/net";
 export { normalizeOid } from "./common/normalize-oid";
 export { PurposeOfUse } from "./common/purpose-of-use";
 export * from "./common/retry";
-export { sleep } from "./common/sleep";
+export { sleep, sleepRandom } from "./common/sleep";
 export * from "./common/string";
 export { toTitleCase } from "./common/title-case";
 export { AtLeastOne, stringToBoolean } from "./common/types";

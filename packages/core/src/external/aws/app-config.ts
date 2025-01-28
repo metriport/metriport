@@ -47,6 +47,8 @@ export const cxBasedFFsSchema = z.object({
   cxsWithEpicEnabled: ffStringValuesSchema,
   cxsWithDemoAugEnabled: ffStringValuesSchema,
   cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
+  cxsWithHydrationFeatureFlag: ffStringValuesSchema, // TODO: 2563 - Remove this after prod testing is done
+  cxsUsingWkhtmltopdfInsteadOfPuppeteer: ffStringValuesSchema, // TODO: 2510 - Remove this when ready to rollout to all customers
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
@@ -263,4 +265,23 @@ export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<bo
 
 export async function isConsolidatedFromS3Enabled(): Promise<boolean> {
   return await isFeatureFlagEnabled("cxsWithConsolidatedFromS3");
+}
+
+// TODO: 2563 - Remove this after prod testing is done
+export async function isHydrationEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithHydrationEnabled = await getCxsWithHydrationFeatureFlag();
+  return cxIdsWithHydrationEnabled.some(i => i === cxId);
+}
+
+// TODO: 2563 - Remove this after prod testing is done
+export async function getCxsWithHydrationFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithHydrationFeatureFlag");
+}
+
+export async function isWkhtmltopdfEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithWkhtmltopdfEnabled = await getCxsUsingWkhtmltopdfInsteadOfPuppeteer();
+  return cxIdsWithWkhtmltopdfEnabled.some(i => i === cxId);
+}
+export async function getCxsUsingWkhtmltopdfInsteadOfPuppeteer(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsUsingWkhtmltopdfInsteadOfPuppeteer");
 }

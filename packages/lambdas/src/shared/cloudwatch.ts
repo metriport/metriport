@@ -64,7 +64,22 @@ export class CloudWatchUtils {
     }
   }
 
-  async reportMemoryUsage(metricsNamespace?: string) {
+  /**
+   * Report memory usage to CloudWatch, under our custom namespace.
+   *
+   * NOTE: metricName should be defined, unless we're capturing the memory usage a single time
+   * per execution (e.g., lambda invocation).
+   *
+   * @param metricsNamespace - The namespace to use for the metrics.
+   * @param metricName - The name of the metric (e.g., "preSetup", "postSetup").
+   */
+  async reportMemoryUsage({
+    metricsNamespace,
+    metricName,
+  }: {
+    metricsNamespace?: string;
+    metricName?: string;
+  } = {}) {
     const namespaceToUse = metricsNamespace ?? this.metricsNamespace;
     if (!namespaceToUse) throw new Error(`Missing metricsNamespace`);
     const mem = process.memoryUsage();
@@ -74,7 +89,7 @@ export class CloudWatchUtils {
         .putMetricData({
           MetricData: [
             {
-              MetricName: "Memory total",
+              MetricName: metricName ?? "Memory total",
               Value: kbToMb(mem.rss),
               Unit: "Megabytes",
               Timestamp: new Date(),

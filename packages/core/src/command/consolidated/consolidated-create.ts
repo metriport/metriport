@@ -63,13 +63,13 @@ export async function createConsolidatedFromConversions({
   );
 
   log(`Deduplicating consolidated bundle...`);
-  const deduped = deduplicate({ cxId, patientId, bundle: withDups });
+  const deduped = await deduplicate({ cxId, patientId, bundle: withDups });
   log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
   if (isAiBriefFeatureFlagEnabled) {
-    const aiBriefContent = await summarizeFilteredBundleWithAI(withDups, cxId, patientId);
+    const aiBriefContent = await summarizeFilteredBundleWithAI(deduped, cxId, patientId);
     const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
     if (aiBriefFhirResource) {
       deduped.entry?.push(buildBundleEntry(aiBriefFhirResource));

@@ -21,10 +21,11 @@ import {
   Task,
 } from "@medplum/fhirtypes";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { cloneDeep, uniqWith } from "lodash";
+import { Brief } from "../../../command/ai-brief/brief";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
-import { Brief } from "../../../command/ai-brief/create";
 import {
   createBrief,
   createSection,
@@ -82,7 +83,11 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .logo-container {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
             justify-content: center;
             width: 100%;
           }
@@ -98,7 +103,11 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .header-tables {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
             flex: 1;
           }
 
@@ -146,14 +155,24 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .section-title {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
             align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
           .section-title a {
             text-decoration: none;
             color: black;
+          }
+
+          .section-title h3 {
+                white-space: nowrap;
           }
 
           .span_button {
@@ -169,13 +188,17 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #nav {
-            border: 1px solid;
-            border-radius: 5px;
-            padding: 20px;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+          }
+          table #nav {
+            padding: 10px;
             margin: 0;
             background-color: #f2f2f2;
-            display: flex;
-            justify-content: space-between;
           }
 
 
@@ -201,7 +224,11 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #report .header {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
@@ -243,8 +270,36 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
             z-index: 1;
           }
 
+          #ai-brief {
+            margin-top: 20px;
+          }
+
           .brief-section-content {
             position: relative;
+          }
+
+          .brief-warning {
+            border: 2px solid #FFCC00;
+            background-color: #FFF8E1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+          }
+          .brief-warning-icon {
+            margin-right: 10px;
+          }
+          .brief-warning-contents {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+          }
+          .brief-warning-message {
+            margin-left: 37px;
+            margin-right: 10px;
+            -webkit-box-orient: vertical;
           }
 
           .rectangle {
@@ -525,39 +580,39 @@ function createMRHeader(patient: Patient) {
               </tbody>
             </table>
           </div>
-          <div>
-        </div>
         </div>
         <div class="header-table">
           <h4>Table of Contents</h4>
-          <ul id="nav">
-            <div class='half'>
-              <li>
-                <a href="#Weight-related Comorbidities">Weight-related Comorbidities</a>
-              </li>
-              <li>
-                <a href="#Other Related Conditions">Other Related Conditions</a>
-              </li>
-              <li>
-                <a href="#Diagnosis of Obesity Date">Diagnosis of Obesity Date</a>
-              </li>
-              <li>
-                <a href="#medications">Medications</a>
-              </li>
-              <li>
-                <a href="#Mental Health">Mental Health</a>
-              </li>
-              <li>
-                <a href="#Surgeries">Surgeries</a>
-              </li>
-              <li>
-              <a href="#laboratory">Laboratory</a>
-              </li>
-              <li>
-              <a href="#hba1c-history">HbA1c History</a>
-              </li>
-            </div>
+          <table><tbody><tr><td>
+            <ul id="nav">
+              <div class='half'>
+                <li>
+                  <a href="#Weight-related Comorbidities">Weight-related Comorbidities</a>
+                </li>
+                <li>
+                  <a href="#Other Related Conditions">Other Related Conditions</a>
+                </li>
+                <li>
+                  <a href="#Diagnosis of Obesity Date">Diagnosis of Obesity Date</a>
+                </li>
+                <li>
+                  <a href="#medications">Medications</a>
+                </li>
+                <li>
+                  <a href="#Mental Health">Mental Health</a>
+                </li>
+                <li>
+                  <a href="#Surgeries">Surgeries</a>
+                </li>
+                <li>
+                <a href="#laboratory">Laboratory</a>
+                </li>
+                <li>
+                <a href="#hba1c-history">HbA1c History</a>
+                </li>
+              </div>
             </ul>
+          </td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -669,7 +724,8 @@ function createVitalsByDate(observations: Observation[]): {
   tableContent: string;
   chartData: ChartData;
 } {
-  const filteredObservations = filterObservationsByDate(observations);
+  const orderedObservations = sortObservationsForDisplay(observations);
+  const filteredObservations = filterObservationsByDate(orderedObservations);
 
   const observationObjects: ObsSummary[] = filteredObservations
     .flatMap(tables => {

@@ -48,7 +48,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       patientId
     );
 
-    const dedupedBundle = deduplicate({
+    const dedupedBundle = await deduplicate({
       cxId,
       patientId,
       bundle: originalBundleWithoutContainedPatients,

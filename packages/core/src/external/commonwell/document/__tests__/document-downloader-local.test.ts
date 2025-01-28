@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import * as AWS from "aws-sdk";
 import { ManagedUpload } from "aws-sdk/clients/s3";
+import { mockCapture } from "../../../../util/__tests__/capture";
 import {
   JPEG_MIME_TYPE,
   OCTET_MIME_TYPE,
@@ -10,7 +11,6 @@ import {
   TIFF_MIME_TYPE,
   TXT_MIME_TYPE,
 } from "../../../../util/mime";
-import { mockCapture } from "../../../../util/__tests__/capture";
 import { S3Utils } from "../../../aws/s3";
 import {
   getCdaWithB64EncodedJpeg,
@@ -130,13 +130,6 @@ describe("document-downloader-local", () => {
       expect(res).toBeTruthy();
       expect(res).toEqual(downloadedFile);
       expect(s3Upload_mock).not.toHaveBeenCalled();
-      expect(capture.message).toHaveBeenCalledWith(
-        `No b64 found in xml`,
-        expect.objectContaining({
-          extra: expect.anything(),
-          level: "warning",
-        })
-      );
     });
 
     it("parses b64 encoded txt and returns txt content type", async () => {

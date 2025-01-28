@@ -7,7 +7,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { getConfig, METRICS_NAMESPACE } from "../shared/config";
+import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
@@ -102,8 +102,10 @@ export function createLambda({
   fhirConverterBucket,
   medicalDocumentsBucket,
   fhirServerUrl,
+  termServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
+  appConfigEnvVars,
 }: {
   lambdaLayers: LambdaLayers;
   envType: EnvType;
@@ -114,8 +116,13 @@ export function createLambda({
   fhirConverterBucket: s3.IBucket;
   medicalDocumentsBucket: s3.IBucket;
   fhirServerUrl: string;
+  termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
+  appConfigEnvVars: {
+    appId: string;
+    configId: string;
+  };
 }): Lambda {
   const config = getConfig();
   const {
@@ -136,15 +143,17 @@ export function createLambda({
     memory: lambdaMemory,
     envType,
     envVars: {
-      METRICS_NAMESPACE,
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
       FHIR_SERVER_URL: fhirServerUrl,
+      ...(termServerUrl && { TERM_SERVER_URL: termServerUrl }),
       MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
+      APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+      APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,

@@ -7,15 +7,18 @@ import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modi
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import {
   defaultS3RetriesConfig,
+  storeHydratedConversionResult,
   storeNormalizedConversionResult,
   storePartitionedPayloadsInS3,
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
+import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
 import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
@@ -35,7 +38,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
-const apiURL = getEnvOrFail("API_URL");
+const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
@@ -51,8 +54,10 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
-const ossApi = apiClient(apiURL);
+const ossApi = apiClient(apiUrl);
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
+
+const HYDRATION_TIMEOUT_MS = 5_000;
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -126,12 +131,9 @@ export async function handler(event: SQSEvent) {
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
         if (payloadRaw.includes("nonXMLBody")) {
-          const msg = "XML document is unstructured CDA with nonXMLBody";
-          log(`${msg}, skipping...`);
-          capture.message(msg, {
-            extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
-            level: "warning",
-          });
+          log(
+            `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
+          );
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
@@ -158,11 +160,7 @@ export async function handler(event: SQSEvent) {
         };
 
         if (!payloadClean.trim().length) {
-          console.log("XML document is empty, skipping...");
-          capture.message("XML document is empty", {
-            extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
-            level: "warning",
-          });
+          log(`XML document is empty, skipping... Filename: ${s3FileName}`);
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
@@ -234,10 +232,48 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
-        const normalizedBundle = normalize({
+        let hydratedBundle = conversionResult;
+        // TODO: 2563 - Remove this after prod testing is done
+        if (await isHydrationEnabledForCx(cxId)) {
+          try {
+            const hydratedResult = await Promise.race<Bundle<Resource>>([
+              hydrate({
+                cxId,
+                patientId,
+                bundle: conversionResult,
+              }),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
+              ),
+            ]);
+
+            hydratedBundle = hydratedResult;
+
+            await storeHydratedConversionResult({
+              s3Utils,
+              bundle: hydratedBundle,
+              bucketName: conversionResultBucketName,
+              fileName: s3FileName,
+              context: lambdaName,
+              lambdaParams,
+              log,
+            });
+          } catch (error) {
+            const msg = "Failed to hydrate the converted bundle";
+            log(`${msg}: ${errorToString(error)}`);
+            capture.message(msg, {
+              extra: { error, cxId, patientId, context: lambdaName },
+              level: "warning",
+            });
+          }
+        }
+
+        await cloudWatchUtils.reportMemoryUsage();
+
+        const normalizedBundle = await normalize({
           cxId,
           patientId,
-          bundle: conversionResult,
+          bundle: hydratedBundle,
         });
 
         await storeNormalizedConversionResult({

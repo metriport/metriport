@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.18.12",
+  "version": "1.20.1",
   "description": "",
   "main": "mock-webhook.js",
   "private": true,
@@ -62,6 +62,7 @@
     "dotenv": "^16.0.3",
     "express": "^4.19.2",
     "express-promise-router": "^4.1.1",
+    "fast-json-stable-stringify": "^2.1.0",
     "jsonschema": "^1.4.1",
     "langchain": "^0.3.6",
     "lodash": "^4.17.21",

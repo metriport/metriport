@@ -20,9 +20,10 @@ import {
   Resource,
   Task,
 } from "@medplum/fhirtypes";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { intersection, uniqWith } from "lodash";
-import { Brief } from "../../../command/ai-brief/create";
+import { Brief } from "../../../command/ai-brief/brief";
 import {
   buildEncounterSections,
   createBrief,
@@ -93,7 +94,11 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .logo-container {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
             justify-content: center;
             width: 100%;
           }
@@ -109,7 +114,11 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .header-tables {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
             flex: 1;
           }
 
@@ -157,14 +166,24 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .section-title {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
             align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
           .section-title a {
             text-decoration: none;
             color: black;
+          }
+
+          .section-title h3 {
+                white-space: nowrap;
           }
 
           .span_button {
@@ -180,13 +199,17 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #nav {
-            border: 1px solid;
-            border-radius: 5px;
-            padding: 20px;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+          }
+          table #nav {
+            padding: 10px;
             margin: 0;
             background-color: #f2f2f2;
-            display: flex;
-            justify-content: space-between;
           }
 
 
@@ -212,7 +235,11 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #report .header {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
@@ -254,8 +281,36 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
             z-index: 1;
           }
 
+          #ai-brief {
+            margin-top: 20px;
+          }
+
           .brief-section-content {
             position: relative;
+          }
+
+          .brief-warning {
+            border: 2px solid #FFCC00;
+            background-color: #FFF8E1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+          }
+          .brief-warning-icon {
+            margin-right: 10px;
+          }
+          .brief-warning-contents {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+          }
+          .brief-warning-message {
+            margin-left: 37px;
+            margin-right: 10px;
+            -webkit-box-orient: vertical;
           }
 
         </style>
@@ -458,67 +513,67 @@ function createMRHeader(patient: Patient) {
               </tbody>
             </table>
           </div>
-          <div>
-        </div>
         </div>
         <div class="header-table">
           <h4>Table of Contents</h4>
-          <ul id="nav">
-            <div class='half'>
-              <li>
-                <a href="#awe">Annual Wellness Exams</a>
-              </li>
-              <li>
-                <a href="#reports">Reports</a>
-              </li>
-              <li>
-                <a href="#medications">Medications</a>
-              </li>
-              <li>
-                <a href="#conditions">Conditions</a>
-              </li>
-              <li>
-                <a href="#allergies">Allergies</a>
-              </li>
-              <li>
-                <a href="#procedures"
-                  >Procedures</a
-                >
-              </li>
-              <li>
-                <a href="#social-history">Social History</a>
-              </li>
-              <li>
-                <a href="#vitals">Vitals</a>
-              </li>
-            </div>
-            <div class='half'>
-              <li>
-                <a href="#laboratory">Laboratory</a>
-              </li>
-              <li>
-                <a href="#other-observations">Other Observations</a>
-              </li>
-              <li>
-                <a href="#immunizations">Immunizations</a>
-              </li>
-              <li>
-                <a href="#family-member-history">Family Member History</a>
-              </li>
-              <li>
-                <a href="#related-persons">Related Persons</a>
-              </li>
-              <li>
-                <a href="#tasks">Tasks</a>
-              </li>
-              <li>
-                <a href="#coverage">Coverage</a>
-              </li>
-              <li>
-                <a href="#encounters">Encounters</a>
-              </li>
-            </div>
+          <table><tbody><tr><td>
+            <ul id="nav">
+              <div class='half'>
+                <li>
+                  <a href="#awe">Annual Wellness Exams</a>
+                </li>
+                <li>
+                  <a href="#reports">Reports</a>
+                </li>
+                <li>
+                  <a href="#medications">Medications</a>
+                </li>
+                <li>
+                  <a href="#conditions">Conditions</a>
+                </li>
+                <li>
+                  <a href="#allergies">Allergies</a>
+                </li>
+                <li>
+                  <a href="#procedures"
+                    >Procedures</a
+                  >
+                </li>
+                <li>
+                  <a href="#social-history">Social History</a>
+                </li>
+                <li>
+                  <a href="#vitals">Vitals</a>
+                </li>
+              </div>
+              <div class='half'>
+                <li>
+                  <a href="#laboratory">Laboratory</a>
+                </li>
+                <li>
+                  <a href="#other-observations">Other Observations</a>
+                </li>
+                <li>
+                  <a href="#immunizations">Immunizations</a>
+                </li>
+                <li>
+                  <a href="#family-member-history">Family Member History</a>
+                </li>
+                <li>
+                  <a href="#related-persons">Related Persons</a>
+                </li>
+                <li>
+                  <a href="#tasks">Tasks</a>
+                </li>
+                <li>
+                  <a href="#coverage">Coverage</a>
+                </li>
+                <li>
+                  <a href="#encounters">Encounters</a>
+                </li>
+              </div>
             </ul>
+          </td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -1471,7 +1526,8 @@ function createObservationVitalsSection(observations: Observation[]) {
 }
 
 function createVitalsByDate(observations: Observation[]): string {
-  const filteredObservations = filterObservationsByDate(observations);
+  const orderedObservations = sortObservationsForDisplay(observations);
+  const filteredObservations = filterObservationsByDate(orderedObservations);
 
   return filteredObservations
     .map(tables => {

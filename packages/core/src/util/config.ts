@@ -79,18 +79,16 @@ export class Config {
   static getCQOrgPrivateKey(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
   }
-
   static getCQOrgPrivateKeyPassword(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
   }
-
   static getCQOrgCertificate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
-
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }
+
   static getCqTrustBundleBucketName(): string {
     return getEnvVarOrFail("CQ_TRUST_BUNDLE_BUCKET_NAME");
   }
@@ -145,5 +143,9 @@ export class Config {
 
   static getPatientImportBucket(): string | undefined {
     return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
+  }
+
+  static getTermServerUrl(): string | undefined {
+    return getEnvVar("TERM_SERVER_URL");
   }
 }

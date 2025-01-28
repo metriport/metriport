@@ -3,6 +3,7 @@ import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
+import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -113,6 +114,7 @@ type EnvConfigBase = {
   };
   usageReportUrl?: string;
   fhirServerUrl: string;
+  termServerUrl?: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
   systemRootOrgName: string;
@@ -149,6 +151,7 @@ type EnvConfigBase = {
     envVars?: {
       CQ_ORG_URLS?: string;
       CQ_URLS_TO_EXCLUDE?: string;
+      CQ_ADDITIONAL_ORGS?: CqDirectorySimplifiedOrg[];
     };
   };
   commonwell: {
@@ -246,6 +249,7 @@ type EnvConfigBase = {
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
   dashUrl: string;
+  // TODO 1672 remove this when we remove the old lambda that relies on Puppeteer
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };
