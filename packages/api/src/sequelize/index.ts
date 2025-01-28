@@ -3,25 +3,45 @@ import { QueryInterface, Sequelize } from "sequelize";
 import { MigrationError, MigrationMeta, MigrationParams, SequelizeStorage, Umzug } from "umzug";
 import { Config } from "../shared/config";
 
-let umzug: Umzug<QueryInterface> | undefined = undefined;
+let umzugMigrater: Umzug<QueryInterface> | undefined = undefined;
+let umzugSeeder: Umzug<QueryInterface> | undefined = undefined;
 
 const migrationsPath = Config.isCloudEnv()
   ? "packages/api/dist/sequelize/migrations/*.js"
   : "src/sequelize/migrations/*.ts";
 
-export function getUmzug(sequelize: Sequelize): Umzug<QueryInterface> {
-  if (!umzug) {
-    umzug = new Umzug({
-      migrations: { glob: migrationsPath },
-      context: sequelize.getQueryInterface(),
-      storage: new SequelizeStorage({ sequelize }),
-      logger: console,
-    });
-  }
-  return umzug;
+const seedsPath = Config.isCloudEnv()
+  ? "packages/api/dist/sequelize/seeds/*.js"
+  : "src/sequelize/seeds/*.ts";
+
+function constructUmzugClient(sequelize: Sequelize, path: string): Umzug<QueryInterface> {
+  return new Umzug({
+    migrations: { glob: path },
+    context: sequelize.getQueryInterface(),
+    storage: new SequelizeStorage({ sequelize }),
+    logger: console,
+  });
 }
 
-export async function getUmzugWithMeta(sequelize: Sequelize): Promise<{
+export function getUmzug(sequelize: Sequelize, mode: string): Umzug<QueryInterface> {
+  if (mode === "migrate") {
+    if (!umzugMigrater) {
+      umzugMigrater = constructUmzugClient(sequelize, migrationsPath);
+    }
+    return umzugMigrater;
+  } else if (mode === "seed") {
+    if (!umzugSeeder) {
+      umzugSeeder = constructUmzugClient(sequelize, seedsPath);
+    }
+    return umzugSeeder;
+  }
+  throw new Error(`Invalid mode: ${mode}`);
+}
+
+export async function getUmzugWithMeta(
+  sequelize: Sequelize,
+  mode: string
+): Promise<{
   umzug: Umzug<QueryInterface>;
   migrations: number;
   executed: number;
@@ -30,7 +50,7 @@ export async function getUmzugWithMeta(sequelize: Sequelize): Promise<{
   rollbackTo: string | undefined;
 }> {
   const queryInterface = sequelize.getQueryInterface();
-  const umzug = getUmzug(sequelize);
+  const umzug = getUmzug(sequelize, mode);
   const migrations = await umzug.migrations(queryInterface);
   const executed = await umzug.executed();
   const pending = await umzug.pending();
@@ -47,10 +67,11 @@ export async function getUmzugWithMeta(sequelize: Sequelize): Promise<{
 // export the type helper exposed by umzug, which will have the `context` argument typed correctly
 export type Migration = (params: MigrationParams<QueryInterface>) => Promise<unknown>;
 
-async function updateDB(sequelize: Sequelize): Promise<MigrationMeta[]> {
-  const prefix = `[--- SEQUELIZE ---] `;
+async function updateDB(sequelize: Sequelize, mode: "migrate" | "seed"): Promise<MigrationMeta[]> {
+  const prefix = `[--- SEQUELIZE: ${mode.toLocaleUpperCase()} ---] `;
   const { umzug, migrations, executed, pending, lastExecuted, rollbackTo } = await getUmzugWithMeta(
-    sequelize
+    sequelize,
+    mode
   );
   console.log(
     `${prefix}Migrations: ${executed} executed, ${pending} pending, ` +
@@ -79,4 +100,10 @@ async function updateDB(sequelize: Sequelize): Promise<MigrationMeta[]> {
   }
 }
 
-export default updateDB;
+export async function migrateDB(sequelize: Sequelize): Promise<MigrationMeta[]> {
+  return updateDB(sequelize, "migrate");
+}
+
+export async function seedDB(sequelize: Sequelize): Promise<MigrationMeta[]> {
+  return updateDB(sequelize, "seed");
+}
