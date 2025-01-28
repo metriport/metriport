@@ -23,7 +23,7 @@ export function wkHtmlToPdf(
   input: string | Stream,
   log?: typeof console.log | undefined
 ): Promise<Buffer> {
-  const { removeBackground = true, grayscale = true } = props;
+  const { removeBackground = false, grayscale = true } = props;
   return new Promise<Buffer>((resolve, reject) => {
     let wkhtmltopdfPath = "/opt/bin/wkhtmltopdf";
 

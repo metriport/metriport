@@ -59,6 +59,6 @@ export interface WkOptions {
   marginLeft?: number;
   /** Defaults to true */
   grayscale?: boolean;
-  /** Defaults to true */
+  /** Defaults to fase */
   removeBackground?: boolean;
 }
