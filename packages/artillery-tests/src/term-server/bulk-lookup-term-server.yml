@@ -2,15 +2,15 @@ config:
   target: "{{ $processEnvironment.TERM_SERVER_URL }}"
   phases:
     - duration: 10
-      arrivalRate: 10
+      arrivalRate: 3
       name: Warm up
-    - name: Pause
-      pause: 10
-    - duration: 60
-      arrivalRate: 1
-      rampTo: 20
+    - duration: 10
+      arrivalRate: 4
+      rampTo: 16
       name: Ramp up load
   processor: "./term-server.js"
+  variables:
+    count: 250
 
 scenarios:
   - name: "Bulk Lookup Term Server"
@@ -20,4 +20,4 @@ scenarios:
           - post:
               url: "/terminology/code-system/lookup/bulk"
               json: "{{ params }}"
-        count: 5
+        count: 1
