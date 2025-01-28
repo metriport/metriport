@@ -8,7 +8,7 @@ import { Pagination } from "../../command/pagination";
 import {
   getHieDirectoryEntriesByFilter,
   getHieDirectoryEntriesByFilterCount,
-} from "../../external/carequality/command/cq-directory/get-cq-directory-entries";
+} from "../../external/hie/command/get-hie-directory-entries";
 import { requestLogger } from "../helpers/request-logger";
 import { paginated, queryMetaSchema } from "../pagination";
 import { asyncHandler } from "../util";
