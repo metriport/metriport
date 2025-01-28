@@ -2,7 +2,8 @@ import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealt
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { MetriportError, errorToString } from "@metriport/shared";
+import { CatchUpOrBackFill, MetriportError, errorToString } from "@metriport/shared";
+import { BookedAppointment } from "@metriport/shared/src/interface/external/athenahealth";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -13,6 +14,7 @@ import {
   createPracticeMap,
   delayBetweenPracticeBatches,
   getLookBackTimeRange,
+  getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
   parsePracticeMapKey,
@@ -23,6 +25,7 @@ import { syncAthenaPatientIntoMetriport } from "./sync-patient";
 dayjs.extend(duration);
 
 const catupUpLookBack = dayjs.duration(12, "hours");
+const backFillLookForward = dayjs.duration(2, "weeks");
 
 type GetAppointmentsParams = {
   cxId: string;
@@ -33,6 +36,7 @@ type GetAppointmentsParams = {
   toDate?: Date;
   clientKey: string;
   clientSecret: string;
+  catchUpOrBackFill?: CatchUpOrBackFill;
 };
 
 type SyncPatientsParams = {
@@ -44,16 +48,21 @@ type SyncPatientsParams = {
   clientSecret: string;
 };
 
-export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
-  const { log } = out(`AthenaHealth processPatientsFromAppointmentsSub - catchUp: ${catchUp}`);
+export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchUpOrBackFill) {
+  const { log } = out(
+    `AthenaHealth processPatientsFromAppointments - catchUpOrBackFill: ${catchUpOrBackFill}`
+  );
   const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
-  const { startRange, endRange } = catchUp
-    ? getLookBackTimeRange({ lookBack: catupUpLookBack })
-    : {
-        startRange: undefined,
-        endRange: undefined,
-      };
+  const { startRange, endRange } =
+    catchUpOrBackFill === "catchUp"
+      ? getLookBackTimeRange({ lookBack: catupUpLookBack })
+      : catchUpOrBackFill === "backFill"
+      ? getLookForwardTimeRange({ lookForward: backFillLookForward })
+      : {
+          startRange: undefined,
+          endRange: undefined,
+        };
   if (startRange || endRange) {
     log(`Getting appointments from ${startRange} to ${endRange}`);
   } else {
@@ -88,6 +97,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
       toDate: endRange,
       clientKey,
       clientSecret,
+      catchUpOrBackFill,
     };
   });
 
@@ -180,6 +190,7 @@ async function getAppointments({
   clientSecret,
   fromDate,
   toDate,
+  catchUpOrBackFill,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await AthenaHealthApi.create({
@@ -189,11 +200,14 @@ async function getAppointments({
     clientSecret,
   });
   try {
-    const appointmentsFromApi = await api.getAppointmentsFromSubscription({
+    const appointmentsFromApi = await getAppointmentsFromApi({
+      api,
       cxId,
+      practiceId,
       departmentIds,
-      startProcessedDate: fromDate,
-      endProcessedDate: toDate,
+      fromDate,
+      toDate,
+      catchUpOrBackFill,
     });
     return {
       appointments: appointmentsFromApi.map(appointment => {
@@ -204,6 +218,49 @@ async function getAppointments({
     log(`Failed to get appointments from subscription. Cause: ${errorToString(error)}`);
     return { error };
   }
+}
+
+async function getAppointmentsFromApi({
+  api,
+  cxId,
+  practiceId,
+  departmentIds,
+  fromDate,
+  toDate,
+  catchUpOrBackFill,
+}: {
+  api: AthenaHealthApi;
+  cxId: string;
+  practiceId: string;
+  departmentIds?: string[];
+  fromDate?: Date;
+  toDate?: Date;
+  catchUpOrBackFill?: CatchUpOrBackFill;
+}): Promise<BookedAppointment[]> {
+  if (catchUpOrBackFill === "backFill") {
+    if (!fromDate || !toDate) {
+      throw new MetriportError(
+        "startAppointmentDate and endAppointmentDate are required for getAppointments @ AthenaHealth",
+        undefined,
+        {
+          cxId,
+          practiceId,
+        }
+      );
+    }
+    return await api.getAppointments({
+      cxId,
+      departmentIds,
+      startAppointmentDate: fromDate,
+      endAppointmentDate: toDate,
+    });
+  }
+  return await api.getAppointmentsFromSubscription({
+    cxId,
+    departmentIds,
+    startProcessedDate: fromDate,
+    endProcessedDate: toDate,
+  });
 }
 
 async function syncPatients({
