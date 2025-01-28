@@ -10,9 +10,9 @@ export const createMRSummaryFileName = (
   dedupEnabled?: boolean
 ): string => {
   const fileSuffixBeforeExtension = createFileSuffixBeforeExtension(dedupEnabled);
-  const fileSuffix = `${fileSuffixBeforeExtension}.html`;
+  const fileExtension = extension === "pdf" ? "html.pdf" : extension;
+  const fileSuffix = `${fileSuffixBeforeExtension}.${fileExtension}`;
   const filePath = createFilePath(cxId, patientId, fileSuffix);
-  if (extension === "pdf") return `${filePath}.pdf`;
   return filePath;
 };
 
