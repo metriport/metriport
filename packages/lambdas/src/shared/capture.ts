@@ -48,8 +48,7 @@ export const capture = {
    * @param captureContext — Additional scope data to apply to exception event.
    * @returns — The generated eventId.
    */
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  error: (error: any, captureContext?: Partial<ScopeContext>): string => {
+  error: (error: unknown, captureContext?: Partial<ScopeContext>): string => {
     const extra = captureContext ? stringifyExtra(captureContext) : {};
     return Sentry.captureException(error, {
       ...captureContext,

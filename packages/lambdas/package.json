@@ -34,7 +34,7 @@
     "@metriport/api-sdk": "^7.12.7",
     "@metriport/commonwell-sdk": "^4.12.10",
     "@opensearch-project/opensearch": "^2.3.1",
-    "@sentry/serverless": "^7.46.0",
+    "@sentry/serverless": "^7.120.3",
     "@types/xmldom": "^0.1.32",
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1248.0",
