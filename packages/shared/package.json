@@ -75,7 +75,7 @@
     "axios": "^1.4.0",
     "dayjs": "^1.11.9",
     "fast-xml-parser": "^4.4.1",
-    "http-status": "^1.7.0",
+    "http-status": "~1.7.0",
     "lodash": "^4.17.21",
     "zod": "^3.22.1"
   },
