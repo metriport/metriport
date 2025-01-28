@@ -249,6 +249,7 @@ type EnvConfigBase = {
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
   dashUrl: string;
+  // TODO 1672 remove this when we remove the old lambda that relies on Puppeteer
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };

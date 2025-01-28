@@ -48,6 +48,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithDemoAugEnabled: ffStringValuesSchema,
   cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
   cxsWithHydrationFeatureFlag: ffStringValuesSchema, // TODO: 2563 - Remove this after prod testing is done
+  cxsUsingWkhtmltopdfInsteadOfPuppeteer: ffStringValuesSchema, // TODO: 2510 - Remove this when ready to rollout to all customers
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
@@ -275,4 +276,12 @@ export async function isHydrationEnabledForCx(cxId: string): Promise<boolean> {
 // TODO: 2563 - Remove this after prod testing is done
 export async function getCxsWithHydrationFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithHydrationFeatureFlag");
+}
+
+export async function isWkhtmltopdfEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithWkhtmltopdfEnabled = await getCxsUsingWkhtmltopdfInsteadOfPuppeteer();
+  return cxIdsWithWkhtmltopdfEnabled.some(i => i === cxId);
+}
+export async function getCxsUsingWkhtmltopdfInsteadOfPuppeteer(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsUsingWkhtmltopdfInsteadOfPuppeteer");
 }
