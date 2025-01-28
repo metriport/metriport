@@ -63,7 +63,7 @@ export async function uploadFhirBundleToS3({
     await s3Utils.uploadFile({
       bucket: Config.getMedicalDocumentsBucketName(),
       key: destinationKey,
-      file: Buffer.from(JSON.stringify(fhirBundle)),
+      content: Buffer.from(JSON.stringify(fhirBundle)),
       contentType: JSON_APP_MIME_TYPE,
     });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);

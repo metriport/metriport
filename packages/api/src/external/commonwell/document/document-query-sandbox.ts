@@ -246,7 +246,7 @@ async function copyPrecannedBundleToConversionBucket({
   await s3Utils.uploadFile({
     bucket: destinationBucketName,
     key: destinationFilePath,
-    file: Buffer.from(JSON.stringify(payload)),
+    content: Buffer.from(JSON.stringify(payload)),
     contentType: "application/json",
   });
 }

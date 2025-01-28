@@ -110,7 +110,7 @@ async function processDocumentReference({
       await s3Utils.uploadFile({
         bucket,
         key: filePath,
-        file: decodedBytes,
+        content: decodedBytes,
         contentType: mimeType,
       });
     }

@@ -42,12 +42,17 @@ export type GetSignedUrlWithLocation = {
   durationSeconds?: number;
 };
 
-export type UploadParams = {
+type UploadParamsBase = {
   bucket: string;
   key: string;
-  file: Buffer;
   contentType?: string;
   metadata?: Record<string, string>;
+};
+export type UploadParamsBuffer = UploadParamsBase & {
+  content: Buffer;
+};
+export type UploadParamsString = UploadParamsBase & {
+  content: string;
 };
 
 export async function executeWithRetriesS3<T>(
@@ -380,14 +385,29 @@ export class S3Utils {
   async uploadFile({
     bucket,
     key,
-    file,
+    content,
     contentType,
     metadata,
-  }: UploadParams): Promise<AWS.S3.ManagedUpload.SendData> {
+  }: UploadParamsString): Promise<AWS.S3.ManagedUpload.SendData>;
+  async uploadFile({
+    bucket,
+    key,
+    content,
+    contentType,
+    metadata,
+  }: UploadParamsBuffer): Promise<AWS.S3.ManagedUpload.SendData>;
+  async uploadFile({
+    bucket,
+    key,
+    content,
+    contentType,
+    metadata,
+  }: UploadParamsBuffer | UploadParamsString): Promise<AWS.S3.ManagedUpload.SendData> {
+    const body = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
-      Body: file,
+      Body: body,
       ...(metadata ? { Metadata: metadata } : undefined),
     };
     if (contentType) {

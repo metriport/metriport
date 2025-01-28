@@ -114,7 +114,7 @@ async function uploadToS3(filePath: string) {
   await s3.uploadFile({
     bucket: sourceBucketName,
     key: sourceKeyName,
-    file: Buffer.from(bundleAsNdjson),
+    content: Buffer.from(bundleAsNdjson),
   });
 }
 
