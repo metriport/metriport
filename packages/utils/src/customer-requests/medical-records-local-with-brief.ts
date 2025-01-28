@@ -90,7 +90,7 @@ async function storeMrSummaryAndBriefInS3({
     return s3Client.uploadFile({
       bucket: bucketName,
       key: htmlFileName,
-      file: Buffer.from(html),
+      content: Buffer.from(html),
       contentType: "application/html",
     });
   };
@@ -100,7 +100,7 @@ async function storeMrSummaryAndBriefInS3({
     return s3Client.uploadFile({
       bucket: bucketName,
       key: briefFileName,
-      file: Buffer.from(brief),
+      content: Buffer.from(brief),
       contentType: "text/plain",
     });
   };

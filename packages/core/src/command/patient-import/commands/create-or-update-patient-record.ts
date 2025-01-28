@@ -36,7 +36,7 @@ export async function creatOrUpdatePatientRecord({
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,
-      file: Buffer.from(JSON.stringify({ patientId, ...data }), "utf8"),
+      content: Buffer.from(JSON.stringify({ patientId, ...data }), "utf8"),
       contentType: "application/json",
     });
   } catch (error) {

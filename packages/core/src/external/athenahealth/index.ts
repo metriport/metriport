@@ -238,7 +238,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getDepartments"));
@@ -296,7 +296,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatient"));
@@ -397,7 +397,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatientViaSearch"));
@@ -537,7 +537,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createMedication"));
@@ -641,7 +641,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createProblem"));
@@ -804,7 +804,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(
+            content: Buffer.from(
               rawResponses.map(response => JSON.stringify(response)).join("\n"),
               "utf8"
             ),
@@ -944,7 +944,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(
+            content: Buffer.from(
               rawResponses.map(response => JSON.stringify(response)).join("\n"),
               "utf8"
             ),
@@ -1027,7 +1027,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - subscribeToEvent"));
@@ -1119,7 +1119,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getAppointments"));
@@ -1204,7 +1204,7 @@ class AthenaHealthApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(

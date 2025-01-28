@@ -129,7 +129,7 @@ class ElationApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ Elation - getPatient"));
@@ -212,7 +212,7 @@ class ElationApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ Elation - updatePatient"));
@@ -296,7 +296,7 @@ class ElationApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ Elation - subscribeToEvent"));
@@ -364,7 +364,7 @@ class ElationApi {
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            content: Buffer.from(JSON.stringify(response.data), "utf8"),
             contentType: "application/json",
           })
           .catch(processAsyncError("Error saving to s3 @ Elation - getAppointments"));

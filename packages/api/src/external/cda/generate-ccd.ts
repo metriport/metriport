@@ -105,7 +105,7 @@ async function uploadCcdFhirDataToS3(
     await s3Utils.uploadFile({
       bucket,
       key,
-      file: Buffer.from(JSON.stringify(data)),
+      content: Buffer.from(JSON.stringify(data)),
       contentType: JSON_APP_MIME_TYPE,
     });
   } catch (error) {

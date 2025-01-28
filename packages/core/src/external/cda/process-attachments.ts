@@ -10,7 +10,7 @@ import {
 } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries, toArray } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { MedicalDataSource, isMedicalDataSource } from "..";
+import { isMedicalDataSource, MedicalDataSource } from "..";
 import { createAttachmentUploadFilePath } from "../../domain/document/upload";
 import {
   CdaCodeCv,
@@ -27,7 +27,7 @@ import { Config } from "../../util/config";
 import { out } from "../../util/log";
 import { sizeInBytes } from "../../util/string";
 import { uuidv4 } from "../../util/uuid-v7";
-import { S3Utils, UploadParams } from "../aws/s3";
+import { S3Utils, UploadParamsBuffer } from "../aws/s3";
 import { cqExtension } from "../carequality/extension";
 import { cwExtension } from "../commonwell/extension";
 import { makeFhirApi } from "../fhir/api/api-factory";
@@ -72,7 +72,7 @@ export async function processAttachments({
     .filter(Boolean) as Extension[];
 
   const docRefs: DocumentReference[] = [];
-  const uploadDetails: UploadParams[] = [];
+  const uploadDetails: UploadParamsBuffer[] = [];
 
   b64Attachments.acts.map(act => {
     const fileDetails = getDetailsForAct(act.text);
@@ -164,12 +164,12 @@ async function handleFhirUpload(
 }
 
 async function handleS3Upload(
-  uploadDetails: UploadParams[],
+  uploadDetails: UploadParamsBuffer[],
   s3Utils: S3Utils,
   log: typeof console.log
 ): Promise<void> {
   log(`Upload details: ${JSON.stringify(uploadDetails)}`);
-  await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
+  await executeAsynchronously(uploadDetails, async (uploadParams: UploadParamsBuffer) => {
     await s3Utils.uploadFile(uploadParams);
   });
 }
@@ -289,11 +289,11 @@ function buildUploadParams(
   fileDetails: FileDetails,
   bucketName: string,
   fileKey: string
-): UploadParams {
+): UploadParamsBuffer {
   return {
     bucket: bucketName,
     key: fileKey,
-    file: Buffer.from(fileDetails.fileB64Contents, "base64"),
+    content: Buffer.from(fileDetails.fileB64Contents, "base64"),
     ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
   };
 }

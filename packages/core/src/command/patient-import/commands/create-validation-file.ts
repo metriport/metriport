@@ -35,7 +35,7 @@ export async function creatValidationFile({
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,
-      file: Buffer.from(rows.join("\n"), "utf8"),
+      content: Buffer.from(rows.join("\n"), "utf8"),
       contentType: "text/csv",
     });
   } catch (error) {
