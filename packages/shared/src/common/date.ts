@@ -21,11 +21,7 @@ export function validateDateOfBirth(date: string): boolean {
 
 export function validateIsPastOrPresent(date: string): boolean {
   if (!validateIsPastOrPresentSafe(date)) {
-    throw new BadRequestError(
-      `Please verify the date isn't set in the future or super distant past`,
-      undefined,
-      { date }
-    );
+    throw new BadRequestError(`Date can't be in the future`, undefined, { date });
   }
   return true;
 }
