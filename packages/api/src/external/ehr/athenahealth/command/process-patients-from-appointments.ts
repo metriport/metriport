@@ -39,6 +39,13 @@ type GetAppointmentsParams = {
   catchUpOrBackFill?: CatchUpOrBackFill;
 };
 
+type GetAppointmentsFromApiParams = Pick<
+  GetAppointmentsParams,
+  "cxId" | "practiceId" | "departmentIds" | "fromDate" | "toDate" | "catchUpOrBackFill"
+> & {
+  api: AthenaHealthApi;
+};
+
 type SyncPatientsParams = {
   cxId: string;
   practiceId: string;
@@ -228,24 +235,13 @@ async function getAppointmentsFromApi({
   fromDate,
   toDate,
   catchUpOrBackFill,
-}: {
-  api: AthenaHealthApi;
-  cxId: string;
-  practiceId: string;
-  departmentIds?: string[];
-  fromDate?: Date;
-  toDate?: Date;
-  catchUpOrBackFill?: CatchUpOrBackFill;
-}): Promise<BookedAppointment[]> {
+}: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
   if (catchUpOrBackFill === "backFill") {
     if (!fromDate || !toDate) {
       throw new MetriportError(
         "startAppointmentDate and endAppointmentDate are required for getAppointments @ AthenaHealth",
         undefined,
-        {
-          cxId,
-          practiceId,
-        }
+        { cxId, practiceId, catchUpOrBackFill }
       );
     }
     return await api.getAppointments({
