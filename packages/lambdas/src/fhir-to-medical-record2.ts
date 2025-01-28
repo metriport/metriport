@@ -128,10 +128,12 @@ export async function handler({
         const pdfFileName = fileNameSuffix
           ? `${tmpPdfFileName}${fileNameSuffix}.pdf`
           : tmpPdfFileName;
+        const includesAiBrief = !!aiBrief;
         await convertAndStorePdf({
           fileName: pdfFileName,
           html,
           bucketName,
+          includesAiBrief,
           metrics,
         });
         return await getSignedUrl(pdfFileName);
@@ -200,21 +202,27 @@ async function convertAndStorePdf({
   fileName,
   html,
   bucketName,
+  includesAiBrief,
   log = console.log,
   metrics,
 }: {
   fileName: string;
   html: string;
   bucketName: string;
+  includesAiBrief: boolean;
   log?: typeof console.log;
   metrics: Metrics;
 }): Promise<void> {
+  const actualPdfOptions: WkOptions = {
+    ...pdfOptions,
+    grayscale: !includesAiBrief,
+  };
   const startedAt = Date.now();
   log(`Converting to PDF...`);
   const pdfData = await logDuration(
     async () => {
       const stream = Readable.from(Buffer.from(html));
-      const pdfData = await wkHtmlToPdf(pdfOptions, stream, log);
+      const pdfData = await wkHtmlToPdf(actualPdfOptions, stream, log);
       return pdfData;
     },
     { log, withMinutes: false }
