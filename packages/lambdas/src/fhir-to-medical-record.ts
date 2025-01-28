@@ -1,8 +1,8 @@
+import { Brief, convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
+import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
-import { Brief } from "@metriport/core/command/ai-brief/create";
-import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -14,7 +14,6 @@ import {
 } from "@metriport/core/external/aws/s3";
 import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
 import chromium from "@sparticuz/chromium";
 import dayjs from "dayjs";
@@ -24,6 +23,7 @@ import { JSDOM } from "jsdom";
 import puppeteer from "puppeteer-core";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
+import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { apiClient } from "./shared/oss-api";
 import { sleep } from "./shared/sleep";
@@ -37,17 +37,19 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const apiURL = getEnvOrFail("API_URL");
-const dashURL = getEnvOrFail("DASH_URL");
-// converter config
+const apiUrl = getEnvOrFail("API_URL");
+const dashUrl = getEnvOrFail("DASH_URL");
+const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
-const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
-const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
+const appConfigAppId = getEnvOrFail("APPCONFIG_APPLICATION_ID");
+const appConfigConfigId = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
+// converter config
 const GRACEFUL_SHUTDOWN_ALLOWANCE = dayjs.duration({ seconds: 3 });
 const PDF_CONTENT_LOAD_ALLOWANCE = dayjs.duration({ seconds: 2.5 });
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
-const ossApi = apiClient(apiURL);
+const ossApi = apiClient(apiUrl);
+const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler({
@@ -57,8 +59,12 @@ export async function handler({
   dateFrom,
   dateTo,
   conversionType,
+  resultFileNameSuffix,
 }: Input): Promise<Output> {
   const { log } = out(`cx ${cxId}, patient ${patientId}`);
+  const startedAt = Date.now();
+  const metrics: Metrics = {};
+  await cloudWatchUtils.reportMemoryUsage({ metricName: "memPreSetup" });
   log(
     `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
       `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
@@ -70,12 +76,22 @@ export async function handler({
     const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
     const cxsWithDermFeatureFlagValue = await getCxsWithDermFeatureFlagValue();
     const isDermFeatureFlagEnabled = cxsWithDermFeatureFlagValue.includes(cxId);
+    const fileNameSuffix =
+      resultFileNameSuffix && resultFileNameSuffix.trim().length > 0
+        ? resultFileNameSuffix.trim()
+        : undefined;
 
     const bundle = await getBundleFromS3(fhirFileName);
 
     const aiBriefContent = getAiBriefContentFromBundle(bundle);
-    const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
+    const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
+    metrics.setup = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostSetup" });
 
+    const htmlStartedAt = Date.now();
     const html = isADHDFeatureFlagEnabled
       ? bundleToHtmlADHD(bundle, aiBrief)
       : isBmiFeatureFlagEnabled
@@ -83,9 +99,18 @@ export async function handler({
       : isDermFeatureFlagEnabled
       ? bundleToHtmlDerm(bundle, aiBrief)
       : bundleToHtml(bundle, aiBrief);
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostHtml" });
+    metrics.htmlConversion = {
+      duration: Date.now() - htmlStartedAt,
+      timestamp: new Date(),
+    };
+
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
-    const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
+    const tmpHtmlFileName = createMRSummaryFileName(cxId, patientId, "html");
+    const htmlFileName = fileNameSuffix
+      ? `${tmpHtmlFileName}${fileNameSuffix}.html`
+      : tmpHtmlFileName;
 
     const mrS3Info = await storeMrSummaryAndBriefInS3({
       bucketName,
@@ -94,27 +119,45 @@ export async function handler({
       log,
     });
 
-    const getSignedUrlPromise = async function () {
+    const getSignedUrlPromise = async () => {
       if (conversionType === "pdf") {
-        const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
-        return await convertStoreAndReturnPdfUrl({ fileName: pdfFileName, html, bucketName });
-      } else {
-        return await getSignedUrl(htmlFileName);
+        const tmpPdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
+        const pdfFileName = fileNameSuffix
+          ? `${tmpPdfFileName}${fileNameSuffix}.pdf`
+          : tmpPdfFileName;
+        await convertAndStorePdf({
+          fileName: pdfFileName,
+          html,
+          bucketName,
+          metrics,
+        });
+        return await getSignedUrl(pdfFileName);
       }
+      return await getSignedUrl(htmlFileName);
     };
 
-    const [urlResp] = await Promise.allSettled([
-      getSignedUrlPromise(),
-      createFeedbackForBrief({
+    const createFeedbackForBriefPromise = async () => {
+      await createFeedbackForBrief({
         cxId,
         patientId,
         aiBrief,
         mrVersion: mrS3Info.version,
         mrLocation: mrS3Info.location,
-      }),
+      });
+    };
+
+    const [urlResp] = await Promise.allSettled([
+      getSignedUrlPromise(),
+      createFeedbackForBriefPromise(),
     ]);
     if (urlResp.status === "rejected") throw new Error(urlResp.reason);
     const url = urlResp.value;
+
+    metrics.total = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+    await cloudWatchUtils.reportMetrics(metrics);
 
     return { url, hasContents };
   } catch (error) {
@@ -150,15 +193,18 @@ async function getBundleFromS3(fileName: string) {
   return JSON.parse(objectBody.toString());
 }
 
-const convertStoreAndReturnPdfUrl = async ({
+async function convertAndStorePdf({
   fileName,
   html,
   bucketName,
+  metrics,
 }: {
   fileName: string;
   html: string;
   bucketName: string;
-}) => {
+  metrics: Metrics;
+}): Promise<void> {
+  const startedAt = Date.now();
   const tmpFileName = uuid.v4();
 
   // Defines filename + path for downloaded HTML file
@@ -202,6 +248,13 @@ const convertStoreAndReturnPdfUrl = async ({
       },
     });
 
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostPdf" });
+    metrics.pdfConversion = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+
+    const uploadStartedAt = Date.now();
     // Upload generated PDF to S3 bucket
     await s3Client
       .putObject({
@@ -211,6 +264,10 @@ const convertStoreAndReturnPdfUrl = async ({
         ContentType: "application/pdf",
       })
       .promise();
+    metrics.pdfUpload = {
+      duration: Date.now() - uploadStartedAt,
+      timestamp: new Date(),
+    };
   } finally {
     // Close the puppeteer browser
     if (browser !== null) {
@@ -220,18 +277,14 @@ const convertStoreAndReturnPdfUrl = async ({
 
   fs.rmSync(pdfFilepath, { force: true });
 
-  // Logs "shutdown" statement
   console.log("generate-pdf -> shutdown");
-  const urlPdf = await getSignedUrl(fileName);
-
-  return urlPdf;
-};
+}
 
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithADHDMRFeatureFlag"
   );
@@ -244,8 +297,8 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithBmiMrFeatureFlag"
   );
@@ -258,8 +311,8 @@ async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithDermFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppID,
-    appConfigConfigID,
+    appConfigAppId,
+    appConfigConfigId,
     getEnvType(),
     "cxsWithDermMrFeatureFlag"
   );
@@ -318,17 +371,6 @@ async function storeMrSummaryAndBriefInS3({
 
   const version = "VersionId" in mrResp ? (mrResp.VersionId as string) : undefined;
   return { location: mrResp.Location, version };
-}
-
-function prepareBriefToBundle({ aiBrief }: { aiBrief: string | undefined }): Brief | undefined {
-  if (!aiBrief) return undefined;
-  const feedbackId = uuidv7();
-  const feedbackLink = `${dashURL}/feedback/${feedbackId}`;
-  return {
-    id: feedbackId,
-    content: aiBrief,
-    link: feedbackLink,
-  };
 }
 
 async function createFeedbackForBrief({

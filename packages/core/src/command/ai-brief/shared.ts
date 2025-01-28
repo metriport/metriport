@@ -1,10 +1,10 @@
 import { Binary, Bundle, Resource } from "@medplum/fhirtypes";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { stringToBase64, base64ToString } from "../../util/base64";
+import { getPatientFromBundle } from "../../external/fhir/patient/shared";
 import { isBinary } from "../../external/fhir/shared";
 import { capture, out } from "../../util";
+import { base64ToString, stringToBase64 } from "../../util/base64";
 import { uuidv7 } from "../../util/uuid-v7";
-import { getPatientFromBundle } from "../../external/fhir/patient/shared";
 const AI_BRIEF_SOURCE = "metriport:ai-generated-brief";
 
 export function generateAiBriefFhirResource(content: string | undefined): Binary | undefined {

@@ -21,19 +21,19 @@ import {
   Task,
 } from "@medplum/fhirtypes";
 import { buildDayjs, sortDate } from "@metriport/shared/common/date";
-import { uniqWith, cloneDeep, camelCase } from "lodash";
-import { Brief } from "../../../command/ai-brief/create";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
+import { camelCase, cloneDeep, uniqWith } from "lodash";
+import { Brief } from "../../../command/ai-brief/brief";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import {
-  createBrief,
   buildEncounterSections,
+  createBrief,
+  createSection,
   formatDateForDisplay,
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
-  createSection,
 } from "./bundle-to-html-shared";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
-import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -146,7 +146,11 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .logo-container {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
             justify-content: center;
             width: 100%;
           }
@@ -162,7 +166,11 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .header-tables {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
             flex: 1;
           }
 
@@ -210,14 +218,24 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .section-title {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
             align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
           .section-title a {
             text-decoration: none;
             color: black;
+          }
+
+          .section-title h3 {
+                white-space: nowrap;
           }
 
           .span_button {
@@ -233,13 +251,17 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #nav {
-            border: 1px solid;
-            border-radius: 5px;
-            padding: 20px;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+          }
+          table #nav {
+            padding: 10px;
             margin: 0;
             background-color: #f2f2f2;
-            display: flex;
-            justify-content: space-between;
           }
 
 
@@ -265,7 +287,11 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #report .header {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
@@ -307,8 +333,36 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
             z-index: 1;
           }
 
+          #ai-brief {
+            margin-top: 20px;
+          }
+
           .brief-section-content {
             position: relative;
+          }
+
+          .brief-warning {
+            border: 2px solid #FFCC00;
+            background-color: #FFF8E1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+          }
+          .brief-warning-icon {
+            margin-right: 10px;
+          }
+          .brief-warning-contents {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+          }
+          .brief-warning-message {
+            margin-left: 37px;
+            margin-right: 10px;
+            -webkit-box-orient: vertical;
           }
 
           @media print {
@@ -591,53 +645,53 @@ function createMRHeader(patient: Patient) {
               </tbody>
             </table>
           </div>
-          <div>
-        </div>
         </div>
         <div class="header-table">
           <h4>Table of Contents</h4>
-          <ul id="nav">
-            <div class='half'>
-              <li>
-                <a href="#derm">Dermatology Notes</a>
-              </li>
-              <li>
-                <a href="#rheumatoid">Rheumatology Notes</a>
-              </li>
-              <li>
-                <a href="#asthma">Asthma Notes</a>
-              </li>
-              <li>
-                <a href="#reports">Other Notes</a>
-              </li>
-              <li>
-                <a href="#conditions">Conditions</a>
-              </li>
-              <li>
-                <a href="#family-member-history">Family Member History</a>
-              </li>
-            </div>
-            <div class='half'>
-              <li>
-                <a href="#social-history">Social History</a>
-              </li>
-              <li>
-                <a href="#medications">Medications</a>
-              </li>
-              <li>
-                <a href="#allergies">Allergies</a>
-              </li>
-              <li>
-                <a href="#vitals">Vitals</a>
-              </li>
-              <li>
-                <a href="#laboratory">Laboratory</a>
-              </li>
-              <li>
-                <a href="#immunizations">Immunizations</a>
-              </li>
-            </div>
+          <table><tbody><tr><td>
+            <ul id="nav">
+              <div class='half'>
+                <li>
+                  <a href="#derm">Dermatology Notes</a>
+                </li>
+                <li>
+                  <a href="#rheumatoid">Rheumatology Notes</a>
+                </li>
+                <li>
+                  <a href="#asthma">Asthma Notes</a>
+                </li>
+                <li>
+                  <a href="#reports">Other Notes</a>
+                </li>
+                <li>
+                  <a href="#conditions">Conditions</a>
+                </li>
+                <li>
+                  <a href="#family-member-history">Family Member History</a>
+                </li>
+              </div>
+              <div class='half'>
+                <li>
+                  <a href="#social-history">Social History</a>
+                </li>
+                <li>
+                  <a href="#medications">Medications</a>
+                </li>
+                <li>
+                  <a href="#allergies">Allergies</a>
+                </li>
+                <li>
+                  <a href="#vitals">Vitals</a>
+                </li>
+                <li>
+                  <a href="#laboratory">Laboratory</a>
+                </li>
+                <li>
+                  <a href="#immunizations">Immunizations</a>
+                </li>
+              </div>
             </ul>
+          </td></tr></tbody></table>
         </div>
       </div>
     </div>

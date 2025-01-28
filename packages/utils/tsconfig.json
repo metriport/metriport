@@ -1,8 +1,5 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "ts-node": {
-    "files": true, // Load files, include and exclude from tsconfig.json on startup. This may avoid certain typechecking failures.
-  },
   "compilerOptions": {
     "typeRoots": ["./src/@types", "../../node_modules/@types", "./node_modules/@types"],
     // Using community best practices with 'extends'

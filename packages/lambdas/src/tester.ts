@@ -6,14 +6,18 @@ import { capture } from "./shared/capture";
 // Keep this as early on the file as possible
 capture.init();
 
+const apiUrl = getEnvVarOrFail("API_URL");
+// OSS API
+const url = "http://" + apiUrl;
 const api = axios.create({ timeout: 10_000 });
 
-// Test lambda, to validate/test stuff on the cloud env
+/**
+ * Test lambda, to validate/test stuff on the cloud env
+ *
+ * Update this code as needed to perform the test you want.
+ */
 export const handler = Sentry.AWSLambda.wrapHandler(async () => {
   console.log(`Running...`);
-
-  // OSS API
-  const url = "http://" + getEnvVarOrFail("API_URL");
 
   console.log(`Calling ${url}...`);
   const res = await api.get(url);

@@ -38,7 +38,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
-const apiURL = getEnvOrFail("API_URL");
+const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
@@ -54,7 +54,7 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
-const ossApi = apiClient(apiURL);
+const ossApi = apiClient(apiUrl);
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 const HYDRATION_TIMEOUT_MS = 5_000;
