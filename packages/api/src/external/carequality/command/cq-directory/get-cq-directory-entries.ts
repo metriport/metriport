@@ -24,15 +24,16 @@ export async function getHieDirectoryEntriesByFilter({
       ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
       : "");
 
-  const queryFinal = queryFTS + paginationSqlExpressions(pagination);
+  const { query: paginationQueryExpression, replacements: paginationReplacements } =
+    paginationSqlExpressions(pagination);
+  const count = paginationReplacements.count;
+  const queryFinal = queryFTS + paginationQueryExpression;
 
-  const { toItem, fromItem, count } = pagination ?? {};
   const cqDirectoryEntries = await sequelize.query(queryFinal, {
     model: HIEDirectoryEntryViewModel,
     mapToModel: true,
     replacements: {
-      ...(toItem ? { toItem } : {}),
-      ...(fromItem ? { fromItem } : {}),
+      ...paginationReplacements,
       ...(count ? { count } : { count: defaultPageSize }),
       ...(filter ? { filter } : {}),
     },

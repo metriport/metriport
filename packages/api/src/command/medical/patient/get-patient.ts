@@ -63,18 +63,17 @@ export async function getPatients({
     fullTextSearchFilters
   );
 
-  const queryFinal = queryFTS + paginationSqlExpressions(pagination);
+  const { query: paginationQueryExpression, replacements: paginationReplacements } =
+    paginationSqlExpressions(pagination);
+  const queryFinal = queryFTS + paginationQueryExpression;
 
-  const { toItem, fromItem, count } = pagination ?? {};
   const patients = await sequelize.query(queryFinal, {
     model: PatientModel,
     mapToModel: true,
     replacements: {
       cxId,
       ...getPatientsSharedReplacements(facilityId, patientIds, fullTextSearchFilters),
-      ...(toItem ? { toItem } : {}),
-      ...(fromItem ? { fromItem } : {}),
-      ...(count ? { count } : {}),
+      ...paginationReplacements,
     },
     type: QueryTypes.SELECT,
   });

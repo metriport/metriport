@@ -9,5 +9,11 @@ export const paginationSqlExpressions = (pagination: Pagination | undefined) => 
   const queryOrder = queryPagination + " ORDER BY id " + (toItem ? "ASC" : "DESC");
 
   const { count } = pagination ?? {};
-  return queryOrder + (count ? ` LIMIT :count` : "");
+  const query = queryOrder + (count ? ` LIMIT :count` : "");
+  const replacements = {
+    ...(toItem ? { toItem } : {}),
+    ...(fromItem ? { fromItem } : {}),
+    ...(count ? { count } : {}),
+  };
+  return { query, replacements };
 };

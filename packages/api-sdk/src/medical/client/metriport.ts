@@ -307,7 +307,9 @@ export class MetriportMedicalApi {
    *                See https://docs.metriport.com/medical-api/more-info/filters
    * @param pagination Pagination settings, optional. If not provided, we paginate with a default page size of 100 items, and the first page will be returned.
    *                   See https://docs.metriport.com/medical-api/more-info/pagination
-   * @return The list of network entries.
+   * @returns An object containing:
+   * - `networkEntries` - The network entries in the current page.
+   * - `meta` - Pagination information, including how to get to the next page.
    */
   async listNetworkEntries({
     filter,

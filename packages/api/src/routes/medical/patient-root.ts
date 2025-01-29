@@ -86,7 +86,9 @@ router.post(
  * @param   req.query.fromItem    The minimum item to be included in the response, inclusive.
  * @param   req.query.toItem      The maximum item to be included in the response, inclusive.
  * @param   req.query.count       The number of items to be included in the response.
- * @return  The customer's patients associated with the given facility.
+ * @returns An object containing:
+ * - `patients` - A single page containing the patients corresponding to the given facility.
+ * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
   "/",
