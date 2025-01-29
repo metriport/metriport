@@ -1,4 +1,5 @@
 export interface HieDirectoryEntry {
+  id: string;
   oid: string;
   name?: string;
   active: boolean;

@@ -18,6 +18,11 @@ export class HIEDirectoryEntryViewModel extends BaseModel<HIEDirectoryEntryViewM
     HIEDirectoryEntryViewModel.init(
       {
         ...BaseModel.attributes(),
+        id: {
+          type: DataTypes.STRING,
+          field: "oid",
+          primaryKey: true,
+        },
         oid: {
           type: DataTypes.STRING,
           field: "oid",

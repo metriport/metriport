@@ -20,9 +20,7 @@ export async function getHieDirectoryEntriesByFilter({
 
   const queryFTS =
     querySelect +
-    (filter
-      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
-      : "");
+    (filter ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter))` : "");
 
   const queryFinal = queryFTS + paginationSqlExpressions(pagination, "oid");
 
@@ -55,9 +53,7 @@ export async function getHieDirectoryEntriesByFilterCount({
 
   const queryFTS =
     querySelect +
-    (filter
-      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
-      : "");
+    (filter ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter))` : "");
 
   const result = await sequelize.query(queryFTS, {
     type: QueryTypes.SELECT,

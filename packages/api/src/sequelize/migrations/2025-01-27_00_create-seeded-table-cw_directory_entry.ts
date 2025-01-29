@@ -84,22 +84,25 @@ generated always as	(
 const createHieViewSql = `CREATE VIEW ${hieViewName}
 AS SELECT 
 name,
+id,
 id as oid,
 zip as zip_code,
 state,
 root_organization,
 managing_organization_id,
+search_criteria,
 'CAREQUALITY' as network
 FROM ${cqViewName}
 UNION ALL
 SELECT 
-
 organization_name as name,
+organization_id as id,
 organization_id as oid,
 zip_code,
 state,
 'Commonwell' as root_organization,
 '2.16.840.1.113883.3.3330' as managing_organization_id,
+search_criteria,
 'COMMONWELL' as network
 FROM ${cwTableName}
 ;`;
