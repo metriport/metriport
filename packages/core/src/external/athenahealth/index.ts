@@ -82,9 +82,9 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-const problemStatusesMapAthena = new Map<string, string>();
-problemStatusesMapAthena.set("relapse", "CHRONIC");
-problemStatusesMapAthena.set("recurrence", "CHRONIC");
+const problemStatusesMap = new Map<string, string>();
+problemStatusesMap.set("relapse", "CHRONIC");
+problemStatusesMap.set("recurrence", "CHRONIC");
 const clinicalStatusActiveCode = "55561003";
 const vitalSignCodesMapAthena = new Map<string, string>();
 vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
@@ -218,9 +218,9 @@ class AthenaHealthApi {
     });
   }
 
-  async getDepartments(cxId: string): Promise<string[]> {
+  async getDepartmentIds(cxId: string): Promise<string[]> {
     const { debug } = out(
-      `AthenaHealth getDepartments - cxId ${cxId} practiceId ${this.practiceId}`
+      `AthenaHealth getDepartmentIds - cxId ${cxId} practiceId ${this.practiceId}`
     );
     const departmentsUrl = `/departments`;
     const additionalInfo = { cxId, practiceId: this.practiceId };
@@ -282,7 +282,7 @@ class AthenaHealthApi {
       _id: this.createPatientId(patientId),
       "ah-practice": this.createPracticetId(this.practiceId),
     };
-    const searchSet = await this.makeRequest<PatientSearch>({
+    const patientSearch = await this.makeRequest<PatientSearch>({
       cxId,
       patientId,
       method: "POST",
@@ -292,7 +292,7 @@ class AthenaHealthApi {
       additionalInfo,
       debug,
     });
-    const entry = searchSet.entry;
+    const entry = patientSearch.entry;
     if (entry.length > 1) {
       throw new MetriportError("More than one patient found in search", undefined, additionalInfo);
     }
@@ -395,15 +395,15 @@ class AthenaHealthApi {
       throw new MetriportError("No start date found for condition", undefined, additionalInfo);
     }
     const conditionStatus = this.getConditionStatus(condition);
-    const athenaStatus = conditionStatus
-      ? problemStatusesMapAthena.get(conditionStatus.toLowerCase())
+    const problemStatus = conditionStatus
+      ? problemStatusesMap.get(conditionStatus.toLowerCase())
       : undefined;
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       note: "Added via Metriport App",
       snomedcode: snomedCode,
       startdate: this.formatDate(startDate),
-      status: athenaStatus,
+      status: problemStatus,
       THIRDPARTYUSERNAME: undefined,
       PATIENTFACINGCALL: undefined,
     };
@@ -428,10 +428,11 @@ class AthenaHealthApi {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 400) {
-        throw new MetriportError("Problem creation not successful - duplicate problem", undefined, {
-          ...additionalInfo,
-          error,
-        });
+        throw new MetriportError(
+          "Problem creation not successful - duplicate problem",
+          undefined,
+          additionalInfo
+        );
       }
       throw error;
     }
@@ -761,10 +762,8 @@ class AthenaHealthApi {
     if (departmentIds && departmentIds.length > 0) {
       departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
     } else {
-      const fetchedDepartmentIds = await this.getDepartments(cxId);
-      fetchedDepartmentIds.map(dpId =>
-        urlParams.append("departmentid", this.stripDepartmentId(dpId))
-      );
+      const allDepartmentIds = await this.getDepartmentIds(cxId);
+      allDepartmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
     }
     const appointmentUrl = `/appointments/booked/multipledepartment?${urlParams.toString()}`;
     const additionalInfo = {
@@ -849,7 +848,7 @@ class AthenaHealthApi {
     url: string;
     method: "GET" | "POST";
     data?: RequestData;
-    schema: z.Schema;
+    schema: z.Schema<T>;
     additionalInfo: AdditionalInfo;
     debug: typeof console.log;
     useFhir?: boolean;
@@ -858,7 +857,7 @@ class AthenaHealthApi {
     const response = await axiosInstance.request({
       method,
       url,
-      data: this.createDataParams(data ?? {}),
+      data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
     });
     if (!response.data) {
       throw new MetriportError(`No body returned from ${method} ${url}`, undefined, additionalInfo);
