@@ -1,18 +1,13 @@
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils, UploadParamsBuffer, UploadParamsString } from "@metriport/core/external/aws/s3";
 
 export class MockS3Utils extends S3Utils {
+  override async uploadFile(params: UploadParamsString): Promise<AWS.S3.ManagedUpload.SendData>;
+  override async uploadFile(params: UploadParamsBuffer): Promise<AWS.S3.ManagedUpload.SendData>;
   override async uploadFile({
     bucket,
     key,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    file,
     contentType,
-  }: {
-    bucket: string;
-    key: string;
-    file: Buffer;
-    contentType?: string;
-  }): Promise<AWS.S3.ManagedUpload.SendData> {
+  }: UploadParamsBuffer | UploadParamsString): Promise<AWS.S3.ManagedUpload.SendData> {
     console.log(
       `Mock uploadFile called for ${bucket} and ${key} and with content type ${contentType}`
     );

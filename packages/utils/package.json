@@ -32,6 +32,7 @@
     "compare-total-resource-count-post-fhir-insert": "bash src/fhir-converter/scripts/compare_total_resource_count_post_fhir_insert.sh",
     "generate-patient-csv": "ts-node src/generate-patient-csv",
     "uuidv7": "ts-node src/make-uuidv7",
+    "cda-to-html": "ts-node --files src/customer-requests/cda-to-html.ts",
     "saml-server": "ts-node src/saml/saml-server",
     "load-test": "artillery run ./src/terminology/load-test.yml"
   },
@@ -87,6 +88,7 @@
     "eslint-config-prettier": "^8.6.0",
     "jsondiffpatch": "^0.6.0",
     "prettier": "^2.8.3",
+    "saxon-js": "^2.5.0",
     "ts-essentials": "^9.3.1",
     "ts-jest": "29.1.1",
     "ts-node": "^10.9.1",

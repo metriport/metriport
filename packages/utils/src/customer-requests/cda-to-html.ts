@@ -2,18 +2,18 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Bundle, Resource } from "@medplum/fhirtypes";
-import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
-import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
-import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { wkHtmlToPdf, WkOptions } from "@metriport/core/external/wk-html-to-pdf/index";
 import { sleep } from "@metriport/shared";
 import fs from "fs";
+import SaxonJS from "saxon-js";
 import { Readable } from "stream";
 import { elapsedTimeAsStr } from "../shared/duration";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const styleSheetText = require("../../../lambdas/src/cda-to-visualization/stylesheet.js");
+
 /**
- * Script to trigger MR Summary generation on a FHIR payload locally, with the AI Brief included in it.
+ * Script to convert a CDA bundle to HTML and PDF.
  *
  * To generate PDFs, it requires `wkhtmltopdf` to be installed in the system.
  * See https://wkhtmltopdf.org/downloads.html
@@ -21,14 +21,11 @@ import { elapsedTimeAsStr } from "../shared/duration";
  *
  * To use it:
  * 1. Set the variables:
- *  - SOURCE_BUNDLE_FILE: the full path to the consolidated (FHIR) bundle file
+ *  - SOURCE_BUNDLE_FILE: the full path to the CDA/XML file
  *  - SKIP_PDF: if true, it will skip the PDF generation
  * 2. Run the script with:
- *  - `ts-node src/customer-requests/medical-record-brief-input`
+ *  - `npm run cda-to-html`
  */
-
-// Update this to staging or local URL if you want to test the brief link
-const dashUrl = "http://dash.metriport.com";
 
 const SOURCE_BUNDLE_FILE = ``;
 const SKIP_PDF = false;
@@ -38,20 +35,20 @@ const pdfOptions: WkOptions = {
   pageSize: "A4",
 };
 
+let cda10: unknown;
+let narrative: unknown;
+const styleSheetTextStringified = JSON.stringify(styleSheetText);
+
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
   const bundleStr = fs.readFileSync(SOURCE_BUNDLE_FILE, { encoding: "utf8" });
-  const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
-
-  const aiBriefContent = getAiBriefContentFromBundle(bundle);
-  const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
 
   console.log(`Converting to HTML...`);
   const htmlStartedAt = Date.now();
-  const html = bundleToHtml(bundle, aiBrief);
+  const html = await convertToHtml(bundleStr, console.log);
   const htmlDuration = Date.now() - htmlStartedAt;
   fs.writeFileSync(`${SOURCE_BUNDLE_FILE}_output.html`, html);
 
@@ -72,6 +69,56 @@ async function main() {
       `>>> Done in ${elapsedTimeAsStr(startedAt)}, HTML in ${htmlDuration}ms, PDF skipped`
     );
   }
+}
+
+// TODO #2619 Move this to core and point the lambda to it too
+// Based on packages/lambdas/src/cda-to-visualization.ts
+async function convertToHtml(document: string, log: typeof console.log): Promise<string> {
+  const cda10 = await getCda10();
+  const narrative = await getNarrative();
+
+  const result = await SaxonJS.transform(
+    {
+      stylesheetText: styleSheetTextStringified,
+      stylesheetParams: {
+        vocFile: cda10,
+        narrative: narrative,
+      },
+      sourceText: document,
+      destination: "serialized",
+    },
+    "async"
+  );
+
+  return result.principalResult.toString();
+}
+// Copied from packages/lambdas/src/cda-to-visualization.ts
+async function getCda10() {
+  if (!cda10) {
+    cda10 = await SaxonJS.getResource(
+      {
+        location:
+          "https://raw.githubusercontent.com/metriport/metriport/master/packages/lambdas/static/cda_l10n.xml",
+        type: "xml",
+      },
+      "async"
+    );
+  }
+  return cda10;
+}
+// Copied from packages/lambdas/src/cda-to-visualization.ts
+async function getNarrative() {
+  if (!narrative) {
+    narrative = await SaxonJS.getResource(
+      {
+        location:
+          "https://raw.githubusercontent.com/metriport/metriport/master/packages/lambdas/static/cda_narrativeblock.xml",
+        type: "xml",
+      },
+      "async"
+    );
+  }
+  return narrative;
 }
 
 main();

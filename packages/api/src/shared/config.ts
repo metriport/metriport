@@ -276,6 +276,9 @@ export class Config {
   static getConvertDocLambdaName(): string | undefined {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
+  static getConvertDocLambda3Name(): string | undefined {
+    return getEnvVar("CONVERT_DOC_LAMBDA3_NAME");
+  }
 
   static getFhirToCdaConverterLambdaName(): string | undefined {
     return getEnvVar("FHIR_TO_CDA_CONVERTER_LAMBDA_NAME");
