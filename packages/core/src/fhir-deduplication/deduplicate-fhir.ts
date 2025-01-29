@@ -41,6 +41,16 @@ export function deduplicateFhir(
   patientId: string
 ): Bundle<Resource> {
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
+
+  const resourceMap = new Map<string, Resource>();
+  deduplicatedBundle.entry?.filter(entry => {
+    if (!entry.resource?.id) return false;
+    const existing = resourceMap.get(entry.resource.id);
+    if (existing) return false;
+    resourceMap.set(entry.resource.id, entry.resource);
+    return true;
+  });
+
   let resourceArrays = extractFhirTypesFromBundle(deduplicatedBundle);
 
   const compositionsResult = deduplicateCompositions(resourceArrays.compositions);
