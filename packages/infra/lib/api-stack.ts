@@ -322,6 +322,7 @@ export class APIStack extends Stack {
     const {
       lambdaLayers,
       cdaToVisualizationLambda,
+      cdaToVisualizationLambda3,
       documentDownloaderLambda,
       fhirToCdaConverterLambda,
       outboundPatientDiscoveryLambda,
@@ -473,6 +474,7 @@ export class APIStack extends Stack {
       fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
+      cdaToVisualizationLambda3,
       documentDownloaderLambda,
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,

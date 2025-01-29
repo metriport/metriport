@@ -91,6 +91,7 @@ export function createAPIService({
   fhirConverterQueueUrl,
   fhirConverterServiceUrl,
   cdaToVisualizationLambda,
+  cdaToVisualizationLambda3,
   documentDownloaderLambda,
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
@@ -126,6 +127,7 @@ export function createAPIService({
   fhirConverterQueueUrl: string | undefined;
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
+  cdaToVisualizationLambda3: ILambda;
   documentDownloaderLambda: ILambda;
   outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
@@ -252,6 +254,7 @@ export function createAPIService({
           PROPELAUTH_AUTH_URL: props.config.propelAuth.authUrl,
           PROPELAUTH_PUBLIC_KEY: props.config.propelAuth.publicKey,
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
+          CONVERT_DOC_LAMBDA3_NAME: cdaToVisualizationLambda3.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
@@ -381,6 +384,7 @@ export function createAPIService({
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  cdaToVisualizationLambda3.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);

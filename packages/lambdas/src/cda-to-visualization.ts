@@ -1,6 +1,7 @@
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { out } from "@metriport/core/util/log";
+import { errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
 import AWS from "aws-sdk";
@@ -9,8 +10,9 @@ import puppeteer from "puppeteer-core";
 import SaxonJS from "saxon-js";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
-import { getEnv, getEnvOrFail } from "./shared/env";
+import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { sleep } from "./shared/sleep";
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const styleSheetText = require("./cda-to-visualization/stylesheet.js");
 
@@ -18,9 +20,11 @@ const styleSheetText = require("./cda-to-visualization/stylesheet.js");
 capture.init();
 
 // Automatically set by AWS
-const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
+const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
+const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
-const cdaToVisTimeoutInMillis = getEnvOrFail("CDA_TO_VIS_TIMEOUT_MS");
+const metricsNamespace = getEnvVarOrFail("METRICS_NAMESPACE");
+const cdaToVisTimeoutInMillis = getEnvVarOrFail("CDA_TO_VIS_TIMEOUT_MS");
 const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
 const SIGNED_URL_DURATION_SECONDS = 60;
 
@@ -31,36 +35,80 @@ const styleSheetTextStringified = JSON.stringify(styleSheetText);
 const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
+const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
+// TODO #2619 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async ({ fileName, conversionType, bucketName }: Input): Promise<Output> => {
-    console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);
+  async ({
+    cxId,
+    fileName: inputFileName,
+    conversionType,
+    bucketName,
+    resultFileNameSuffix,
+  }: Input): Promise<Output> => {
+    const { log } = out(``);
+    log(
+      `Running with conversionType: ${conversionType}, fileName: ${inputFileName}, ` +
+        `bucketName: ${bucketName}, resultFileNameSuffix: ${resultFileNameSuffix}`
+    );
+    const metrics: Metrics = {};
+    const startedAt = Date.now();
+    try {
+      const fileNameSuffix =
+        resultFileNameSuffix && resultFileNameSuffix.trim().length > 0
+          ? resultFileNameSuffix.trim()
+          : undefined;
+      const outputFileName = fileNameSuffix ? `${inputFileName}${fileNameSuffix}` : inputFileName;
 
-    const originalDocument = await downloadDocumentFromS3({ fileName, bucketName });
-    if (!originalDocument) {
-      throw new MetriportError(`Document not found in S3`, undefined, {
-        fileName,
+      const originalDocument = await downloadDocumentFromS3({
+        fileName: inputFileName,
+        bucketName,
       });
+
+      if (!originalDocument) {
+        throw new MetriportError(`Document not found in S3`, undefined, {
+          fileName: inputFileName,
+        });
+      }
+
+      const document = cleanUpPayload(originalDocument);
+
+      if (conversionType === "html") {
+        const url = await convertStoreAndReturnHtmlDocUrl({
+          fileName: outputFileName,
+          document,
+          bucketName,
+          metrics,
+          log,
+        });
+        log("html", url);
+        return { url };
+      }
+
+      if (conversionType === "pdf") {
+        const url = await convertStoreAndReturnPdfDocUrl({
+          fileName: outputFileName,
+          document,
+          bucketName,
+          metrics,
+          log,
+        });
+        log("pdf", url);
+        return { url };
+      }
+
+      throw new MetriportError(`Unsupported conversion type`, undefined, {
+        cxId,
+        fileName: inputFileName,
+        conversionType,
+      });
+    } finally {
+      metrics.total = {
+        duration: Date.now() - startedAt,
+        timestamp: new Date(),
+      };
+      await cloudWatchUtils.reportMetrics(metrics);
     }
-
-    const document = cleanUpPayload(originalDocument);
-
-    if (conversionType === "html") {
-      const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
-      console.log("html", url);
-      return { url };
-    }
-
-    if (conversionType === "pdf") {
-      const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
-      console.log("pdf", url);
-      return { url };
-    }
-
-    throw new MetriportError(`Unsupported conversion type`, undefined, {
-      fileName,
-      conversionType,
-    });
   }
 );
 
@@ -85,23 +133,32 @@ const convertStoreAndReturnHtmlDocUrl = async ({
   fileName,
   document,
   bucketName,
+  metrics,
+  log,
 }: {
   fileName: string;
   document: string;
   bucketName: string;
+  metrics: Metrics;
+  log: typeof console.log;
 }) => {
-  const convertDoc = await convertToHtml(document);
+  const convertDoc = await convertToHtml(document, metrics, log);
 
   const newFileName = fileName.concat(".html");
 
+  const uploadStartedAt = Date.now();
   await s3client
     .putObject({
       Bucket: bucketName,
       Key: newFileName,
-      Body: convertDoc.toString(),
+      Body: convertDoc,
       ContentType: "text/html",
     })
     .promise();
+  metrics.htmlUpload = {
+    duration: Date.now() - uploadStartedAt,
+    timestamp: new Date(),
+  };
 
   const urlHtml = await getSignedUrl({ fileName: newFileName, bucketName });
 
@@ -112,12 +169,20 @@ const convertStoreAndReturnPdfDocUrl = async ({
   fileName,
   document,
   bucketName,
+  metrics,
+  log,
 }: {
   fileName: string;
   document: string;
   bucketName: string;
+  metrics: Metrics;
+  log: typeof console.log;
 }) => {
-  const convertDoc = await convertToHtml(document);
+  const convertDoc = await convertToHtml(document, metrics, log);
+
+  const startedAt = Date.now();
+  log(`Converting to PDF...`);
+
   const tmpFileName = uuid.v4();
 
   const htmlFilepath = `/tmp/${tmpFileName}`;
@@ -169,9 +234,15 @@ const convertStoreAndReturnPdfDocUrl = async ({
         bottom: "20px",
       },
     });
-    console.log(`Finished generating the PDF, took ${Date.now() - before}ms`);
+    log(`Finished generating the PDF, took ${Date.now() - before}ms`);
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostPdf" });
+    metrics.pdfConversion = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
 
     // Upload generated PDF to S3 bucket
+    const uploadStartedAt = Date.now();
     await s3client
       .putObject({
         Bucket: bucketName,
@@ -180,8 +251,13 @@ const convertStoreAndReturnPdfDocUrl = async ({
         ContentType: "application/pdf",
       })
       .promise();
+    metrics.pdfUpload = {
+      duration: Date.now() - uploadStartedAt,
+      timestamp: new Date(),
+    };
+    log(`Done storing on S3`);
   } catch (error) {
-    console.log(`Error while converting to pdf: `, error);
+    log(`Error while converting to pdf: `, error);
 
     capture.error(error, {
       extra: { context: "convertStoreAndReturnPdfDocUrl", lambdaName, error },
@@ -195,14 +271,21 @@ const convertStoreAndReturnPdfDocUrl = async ({
   }
 
   // Logs "shutdown" statement
-  console.log("generate-pdf -> shutdown");
+  log("generate-pdf -> shutdown");
   const urlPdf = await getSignedUrl({ fileName: pdfFilename, bucketName });
 
   return urlPdf;
 };
 
-async function convertToHtml(document: string): Promise<string> {
+async function convertToHtml(
+  document: string,
+  metrics: Metrics,
+  log: typeof console.log
+): Promise<string> {
   try {
+    const startedAt = Date.now();
+    log(`Converting to HTML...`);
+
     const cda10 = await getCda10();
     const narrative = await getNarrative();
 
@@ -219,10 +302,17 @@ async function convertToHtml(document: string): Promise<string> {
       "async"
     );
 
-    return result.principalResult;
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostHtml" });
+    metrics.htmlConversion = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+
+    return result.principalResult.toString();
   } catch (error) {
-    console.log(`Error while converting to html: `, error);
-    capture.error(error, {
+    const msg = `Error while converting to html`;
+    log(`${msg}: ${errorToString(error)}`);
+    capture.error(msg, {
       extra: { context: "convertToHtml", lambdaName, error },
     });
     throw error;
