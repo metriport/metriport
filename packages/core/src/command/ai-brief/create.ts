@@ -1,39 +1,40 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { PromptTemplate } from "@langchain/core/prompts";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+// import { PromptTemplate } from "@langchain/core/prompts";
+// import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Bundle, Medication, Observation, Patient, Resource } from "@medplum/fhirtypes";
 import { errorToString, toArray } from "@metriport/shared";
-import { buildDayjs, elapsedTimeFromNow, ISO_DATE } from "@metriport/shared/common/date";
-import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
+import { ISO_DATE, buildDayjs } from "@metriport/shared/common/date";
+// import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
+// import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 import {
-  applyResourceSpecificFilters,
-  getSlimPatient,
   SlimCondition,
   SlimDiagnosticReport,
   SlimOrganization,
   SlimResource,
+  applyResourceSpecificFilters,
+  getSlimPatient,
 } from "../../domain/ai-brief/modify-resources";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
+// import { EventTypes, analytics } from "../../external/analytics/posthog";
 import {
   findDiagnosticReportResources,
   findPatientResource,
 } from "../../external/fhir/shared/index";
-import { BedrockChat } from "../../external/langchain/bedrock";
+// import { BedrockChat } from "../../external/langchain/bedrock";
 import { capture, out } from "../../util";
 import { uuidv7 } from "../../util/uuid-v7";
 import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date";
 import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
 
-const CHUNK_SIZE = 100_000;
-const CHUNK_OVERLAP = 1000;
+// const CHUNK_SIZE = 100_000;
+// const CHUNK_OVERLAP = 1000;
 
 const NUM_HISTORICAL_YEARS = 1;
 const MAX_REPORTS_PER_GROUP = 3;
-const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
-const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
+// const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
+// const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
 
 const relevantResources = [
   "AllergyIntolerance",
@@ -53,8 +54,10 @@ const relevantResources = [
 
 const referenceResources = ["Practitioner", "Organization", "Observation", "Location"];
 
-const documentVariableName = "text";
+// const documentVariableName = "text";
 
+import fs from "fs";
+import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
@@ -64,7 +67,7 @@ export async function summarizeFilteredBundleWithAI(
   patientId: string
 ): Promise<string | undefined> {
   const requestId = uuidv7();
-  const startedAt = new Date();
+  // const startedAt = new Date();
   const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
   // filter out historical data
   log(`Starting with requestId ${requestId}, and bundle length ${bundle.entry?.length}`);
@@ -79,127 +82,128 @@ export async function summarizeFilteredBundleWithAI(
     const dateFrom = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
     const filteredBundle = filterBundleByDate(bundle, dateFrom);
     const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
-    const inputString = JSON.stringify(slimPayloadBundle);
-
+    // const inputString = JSON.stringify(slimPayloadBundle);
+    fs.writeFileSync("slimBundle.json", JSON.stringify(slimPayloadBundle, null, 2));
     // TODO: #2510 - experiment with different splitters
-    const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: CHUNK_SIZE,
-      chunkOverlap: CHUNK_OVERLAP,
-    });
-    const docs = await textSplitter.createDocuments([inputString ?? ""]);
-    const totalTokensUsed = {
-      input: 0,
-      output: 0,
-    };
+    // const textSplitter = new RecursiveCharacterTextSplitter({
+    //   chunkSize: CHUNK_SIZE,
+    //   chunkOverlap: CHUNK_OVERLAP,
+    // });
+    // const docs = await textSplitter.createDocuments([inputString ?? ""]);
+    // const totalTokensUsed = {
+    //   input: 0,
+    //   output: 0,
+    // };
 
-    const llmSummary = new BedrockChat({
-      model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-      temperature: 0,
-      region: "us-west-2",
-      callbacks: [
-        {
-          handleLLMEnd: output => {
-            const usage = output.llmOutput?.usage;
-            if (usage) {
-              totalTokensUsed.input += usage.input_tokens;
-              totalTokensUsed.output += usage.output_tokens;
-            }
-          },
-        },
-      ],
-    });
+    // const llmSummary = new BedrockChat({
+    //   model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+    //   temperature: 0,
+    //   region: "us-west-2",
+    //   callbacks: [
+    //     {
+    //       handleLLMEnd: output => {
+    //         const usage = output.llmOutput?.usage;
+    //         if (usage) {
+    //           totalTokensUsed.input += usage.input_tokens;
+    //           totalTokensUsed.output += usage.output_tokens;
+    //         }
+    //       },
+    //     },
+    //   ],
+    // });
 
-    const todaysDate = new Date().toISOString().split("T")[0];
-    const systemPrompt = "You are an expert primary care doctor.";
+    // const todaysDate = new Date().toISOString().split("T")[0];
+    // const systemPrompt = "You are an expert primary care doctor.";
 
-    const summaryTemplate = `
-    ${systemPrompt}
+    // const summaryTemplate = `
+    // ${systemPrompt}
 
-    Today's date is ${todaysDate}.
-    Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-    Here is a portion of the patient's medical history:
-    --------
-    {${documentVariableName}}
-    --------
+    // Today's date is ${todaysDate}.
+    // Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+    // Here is a portion of the patient's medical history:
+    // --------
+    // {${documentVariableName}}
+    // --------
 
-    Write a summary of the patient's most recent medical history, considering the following goals:
-    1. Specify whether a DNR or POLST form has been completed.
-    2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
-    3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
-    4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
-    5. Include any other relevant information about the patient's health.
+    // Write a summary of the patient's most recent medical history, considering the following goals:
+    // 1. Specify whether a DNR or POLST form has been completed.
+    // 2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+    // 3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+    // 4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+    // 5. Include any other relevant information about the patient's health.
 
-    If any of the above information is not present, do not include it in the summary.
-    Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+    // If any of the above information is not present, do not include it in the summary.
+    // Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-    SUMMARY:
-    `;
-    const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
-    const summaryChain = new LLMChain({
-      llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-      prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    });
+    // SUMMARY:
+    // `;
+    // const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
+    // const summaryChain = new LLMChain({
+    //   llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    //   prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    // });
 
-    const summaryTemplateRefined = `
-    ${systemPrompt}
+    // const summaryTemplateRefined = `
+    // ${systemPrompt}
 
-    Today's date is ${todaysDate}.
-    Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-    Here are the previous summaries written by you of sections of the patient's medical history:
-    --------
-    {${documentVariableName}}
-    --------
+    // Today's date is ${todaysDate}.
+    // Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+    // Here are the previous summaries written by you of sections of the patient's medical history:
+    // --------
+    // {${documentVariableName}}
+    // --------
 
-    Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
+    // Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
 
-    Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+    // Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-    SUMMARY:
-    `;
-    const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
-    const summaryChainRefined = new StuffDocumentsChain({
-      llmChain: new LLMChain({
-        llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-        prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-      }),
-      documentVariableName,
-    });
+    // SUMMARY:
+    // `;
+    // const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
+    // const summaryChainRefined = new StuffDocumentsChain({
+    //   llmChain: new LLMChain({
+    //     llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    //     prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    //   }),
+    //   documentVariableName,
+    // });
 
-    const mapReduce = new MapReduceDocumentsChain({
-      llmChain: summaryChain,
-      combineDocumentChain: summaryChainRefined,
-      documentVariableName,
-      verbose: false,
-    });
+    // const mapReduce = new MapReduceDocumentsChain({
+    //   llmChain: summaryChain,
+    //   combineDocumentChain: summaryChainRefined,
+    //   documentVariableName,
+    //   verbose: false,
+    // });
 
-    const summary = (await mapReduce.invoke({
-      input_documents: docs,
-    })) as { text: string };
+    // const summary = (await mapReduce.invoke({
+    //   input_documents: docs,
+    // })) as { text: string };
 
-    const costs = calculateCostsBasedOnTokens(totalTokensUsed);
+    // const costs = calculateCostsBasedOnTokens(totalTokensUsed);
 
-    const duration = elapsedTimeFromNow(startedAt);
-    log(
-      `Done. Finished in ${duration} ms. Total tokens used: ${JSON.stringify(
-        totalTokensUsed
-      )}. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
-    );
+    // const duration = elapsedTimeFromNow(startedAt);
+    // log(
+    //   `Done. Finished in ${duration} ms. Total tokens used: ${JSON.stringify(
+    //     totalTokensUsed
+    //   )}. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
+    // );
 
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.aiBriefGeneration,
-      properties: {
-        requestId,
-        patientId,
-        startBundleSize: bundle.entry?.length,
-        endBundleSize: slimPayloadBundle?.length,
-        duration,
-        totalTokensUsed,
-        costs,
-      },
-    });
-    if (!summary.text) return undefined;
-    return summary.text;
+    // analytics({
+    //   distinctId: cxId,
+    //   event: EventTypes.aiBriefGeneration,
+    //   properties: {
+    //     requestId,
+    //     patientId,
+    //     startBundleSize: bundle.entry?.length,
+    //     endBundleSize: slimPayloadBundle?.length,
+    //     duration,
+    //     totalTokensUsed,
+    //     costs,
+    //   },
+    // });
+    // if (!summary.text) return undefined;
+    // return summary.text;
+    return "asd";
   } catch (err) {
     const msg = `AI brief generation failure`;
     log(`${msg} - ${errorToString(err)}`);
@@ -252,7 +256,14 @@ function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
     return [];
   });
 
-  return applyFinalFilters(withFilteredReports, containedResourceIds, patient);
+  const slimBundle = removeReferencesAndLeftOverResources(
+    withFilteredReports,
+    containedResourceIds,
+    patient
+  );
+
+  const dedupedBundle = condenseBundle(slimBundle);
+  return dedupedBundle;
 }
 
 function buildSlimmerBundle(originalBundle: Bundle<Resource>) {
@@ -514,7 +525,10 @@ function replaceReferencesWithData(
     }
   }
 
-  if (Object.keys(updRes.reference).length === 0) delete updRes.reference;
+  const refArray = toArray(updRes.reference);
+  if (refArray.length === 0 || (refArray[0] && Object.keys(refArray[0]).length === 0)) {
+    delete updRes.reference;
+  }
   return { updRes, ids: Array.from(referencedIds) };
 }
 
@@ -640,7 +654,7 @@ function filterOutDuplicateReports(reports: SlimDiagnosticReport[]): SlimDiagnos
  * Removes resources that don't provide any useful information unless they are referenced by another resource.
  * Adds the SlimPatient into the bundle.
  */
-function applyFinalFilters(
+function removeReferencesAndLeftOverResources(
   resources: SlimResource[],
   containedResourceIds: string[],
   patient: Patient
@@ -661,14 +675,14 @@ function applyFinalFilters(
   return cleanPayload;
 }
 
-function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
-  input: number;
-  output: number;
-  total: number;
-} {
-  const input = totalTokens.input * SONNET_COST_PER_INPUT_TOKEN;
-  const output = totalTokens.output * SONNET_COST_PER_OUTPUT_TOKEN;
-  const total = input + output;
+// function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
+//   input: number;
+//   output: number;
+//   total: number;
+// } {
+//   const input = totalTokens.input * SONNET_COST_PER_INPUT_TOKEN;
+//   const output = totalTokens.output * SONNET_COST_PER_OUTPUT_TOKEN;
+//   const total = input + output;
 
-  return { input, output, total };
-}
+//   return { input, output, total };
+// }
