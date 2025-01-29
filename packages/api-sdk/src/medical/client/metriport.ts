@@ -588,7 +588,9 @@ export class MetriportMedicalApi {
    *                See https://docs.metriport.com/medical-api/more-info/filters
    * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
    *                   See https://docs.metriport.com/medical-api/more-info/pagination
-   * @return The list of patients.
+   * @returns An object containing:
+   * - `patients` - A single page containing the patients corresponding to the given facility.
+   * - `meta` - Pagination information, including how to get to the next page.
    */
   async listPatients({
     facilityId,

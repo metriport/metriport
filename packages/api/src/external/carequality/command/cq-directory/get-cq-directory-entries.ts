@@ -4,8 +4,6 @@ import { CQDirectoryEntry2 } from "../../cq-directory";
 import { HIEDirectoryEntryViewModel } from "../../models/hie-directory-view";
 import { paginationSqlExpressions } from "../../../../shared/sql";
 
-const defaultPageSize = 100;
-
 export async function getHieDirectoryEntriesByFilter({
   filter,
   pagination,
@@ -26,7 +24,6 @@ export async function getHieDirectoryEntriesByFilter({
 
   const { query: paginationQueryExpression, replacements: paginationReplacements } =
     paginationSqlExpressions(pagination);
-  const count = paginationReplacements.count;
   const queryFinal = queryFTS + paginationQueryExpression;
 
   const cqDirectoryEntries = await sequelize.query(queryFinal, {
@@ -34,7 +31,6 @@ export async function getHieDirectoryEntriesByFilter({
     mapToModel: true,
     replacements: {
       ...paginationReplacements,
-      ...(count ? { count } : { count: defaultPageSize }),
       ...(filter ? { filter } : {}),
     },
     type: QueryTypes.SELECT,

@@ -1,5 +1,7 @@
 import { Pagination } from "../command/pagination";
 
+const defaultPageSize = 50;
+
 export const paginationSqlExpressions = (pagination: Pagination | undefined) => {
   const { toItem, fromItem } = pagination ?? {};
   const toItemStr = toItem ? ` AND id >= :toItem` : "";
@@ -13,7 +15,7 @@ export const paginationSqlExpressions = (pagination: Pagination | undefined) => 
   const replacements = {
     ...(toItem ? { toItem } : {}),
     ...(fromItem ? { fromItem } : {}),
-    ...(count ? { count } : {}),
+    ...(count ? { count } : { count: defaultPageSize }),
   };
   return { query, replacements };
 };

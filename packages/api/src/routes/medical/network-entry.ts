@@ -31,7 +31,9 @@ const router = Router();
  * @param   req.query.fromItem    The minimum item to be included in the response, inclusive.
  * @param   req.query.toItem      The maximum item to be included in the response, inclusive.
  * @param   req.query.count       The number of items to be included in the response.
- * @return  Metriport's supported HIE directory entries (AKA network entries).
+ * @returns An object containing:
+ * - `networkEntries` - The network entries in the current page.
+ * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
   "/",
