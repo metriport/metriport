@@ -82,7 +82,7 @@ export type SlimProcedure = Omit<
   name?: string | undefined;
   status?: string | undefined;
   bodySite?: string | undefined;
-  reference?: Record<string, string | object>;
+  reference?: Record<string, string | object>[];
   instances?: Array<{
     performedDateTime?: string | undefined;
     performedPeriod?: Period | undefined;
@@ -458,15 +458,19 @@ function getSlimMedicationRequest(res: MedicationRequest): SlimMedicationRequest
   };
 }
 
+type Dosage = {
+  dose: string | undefined;
+  route: string | undefined;
+};
+
 export type SlimMedicationStatement = Omit<MedicationStatement, "dosage" | "status"> & {
   dosages?: Dosage[] | undefined;
   reference?: Record<string, Partial<SlimMedication>>;
   status?: string | undefined;
-};
-
-type Dosage = {
-  dose: string | undefined;
-  route: string | undefined;
+  instances?: Array<{
+    date?: Period | undefined;
+    dosages?: Dosage[] | undefined;
+  }>;
 };
 
 function getSlimMedicationStatement(res: MedicationStatement): SlimMedicationStatement {

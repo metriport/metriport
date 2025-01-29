@@ -417,8 +417,8 @@ function replaceReferencesWithData(
           return [];
         })
         .join(", ");
-
-      updRes.reference = { ...updRes.reference, practitioner };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      updRes.reference = { ...updRes.reference, practitioner } as any;
     }
   }
 
@@ -477,7 +477,8 @@ function replaceReferencesWithData(
     updRes.reference = {
       ...updRes.reference,
       reasons: Array.from(reasonsSet).join(", "),
-    };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
     delete updRes.reasonReference;
   }
 
