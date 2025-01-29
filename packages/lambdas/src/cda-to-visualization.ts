@@ -2,7 +2,6 @@ import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
 import AWS from "aws-sdk";
 import fs from "fs";
@@ -38,79 +37,77 @@ const s3client = new AWS.S3({
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
 // TODO #2619 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
-export const handler = Sentry.AWSLambda.wrapHandler(
-  async ({
-    cxId,
-    fileName: inputFileName,
-    conversionType,
-    bucketName,
-    resultFileNameSuffix,
-  }: Input): Promise<Output> => {
-    const { log } = out(``);
-    log(
-      `Running with conversionType: ${conversionType}, fileName: ${inputFileName}, ` +
-        `bucketName: ${bucketName}, resultFileNameSuffix: ${resultFileNameSuffix}`
-    );
-    const metrics: Metrics = {};
-    const startedAt = Date.now();
-    try {
-      const fileNameSuffix =
-        resultFileNameSuffix && resultFileNameSuffix.trim().length > 0
-          ? resultFileNameSuffix.trim()
-          : undefined;
-      const outputFileName = fileNameSuffix ? `${inputFileName}${fileNameSuffix}` : inputFileName;
+export async function handler({
+  cxId,
+  fileName: inputFileName,
+  conversionType,
+  bucketName,
+  resultFileNameSuffix,
+}: Input): Promise<Output> {
+  const { log } = out(``);
+  log(
+    `Running with conversionType: ${conversionType}, fileName: ${inputFileName}, ` +
+      `bucketName: ${bucketName}, resultFileNameSuffix: ${resultFileNameSuffix}`
+  );
+  const metrics: Metrics = {};
+  const startedAt = Date.now();
+  try {
+    const fileNameSuffix =
+      resultFileNameSuffix && resultFileNameSuffix.trim().length > 0
+        ? resultFileNameSuffix.trim()
+        : undefined;
+    const outputFileName = fileNameSuffix ? `${inputFileName}${fileNameSuffix}` : inputFileName;
 
-      const originalDocument = await downloadDocumentFromS3({
+    const originalDocument = await downloadDocumentFromS3({
+      fileName: inputFileName,
+      bucketName,
+    });
+
+    if (!originalDocument) {
+      throw new MetriportError(`Document not found in S3`, undefined, {
         fileName: inputFileName,
-        bucketName,
       });
-
-      if (!originalDocument) {
-        throw new MetriportError(`Document not found in S3`, undefined, {
-          fileName: inputFileName,
-        });
-      }
-
-      const document = cleanUpPayload(originalDocument);
-
-      if (conversionType === "html") {
-        const url = await convertStoreAndReturnHtmlDocUrl({
-          fileName: outputFileName,
-          document,
-          bucketName,
-          metrics,
-          log,
-        });
-        log("html", url);
-        return { url };
-      }
-
-      if (conversionType === "pdf") {
-        const url = await convertStoreAndReturnPdfDocUrl({
-          fileName: outputFileName,
-          document,
-          bucketName,
-          metrics,
-          log,
-        });
-        log("pdf", url);
-        return { url };
-      }
-
-      throw new MetriportError(`Unsupported conversion type`, undefined, {
-        cxId,
-        fileName: inputFileName,
-        conversionType,
-      });
-    } finally {
-      metrics.total = {
-        duration: Date.now() - startedAt,
-        timestamp: new Date(),
-      };
-      await cloudWatchUtils.reportMetrics(metrics);
     }
+
+    const document = cleanUpPayload(originalDocument);
+
+    if (conversionType === "html") {
+      const url = await convertStoreAndReturnHtmlDocUrl({
+        fileName: outputFileName,
+        document,
+        bucketName,
+        metrics,
+        log,
+      });
+      log("html", url);
+      return { url };
+    }
+
+    if (conversionType === "pdf") {
+      const url = await convertStoreAndReturnPdfDocUrl({
+        fileName: outputFileName,
+        document,
+        bucketName,
+        metrics,
+        log,
+      });
+      log("pdf", url);
+      return { url };
+    }
+
+    throw new MetriportError(`Unsupported conversion type`, undefined, {
+      cxId,
+      fileName: inputFileName,
+      conversionType,
+    });
+  } finally {
+    metrics.total = {
+      duration: Date.now() - startedAt,
+      timestamp: new Date(),
+    };
+    await cloudWatchUtils.reportMetrics(metrics);
   }
-);
+}
 
 const downloadDocumentFromS3 = async ({
   fileName,
@@ -277,7 +274,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
   return urlPdf;
 };
 
-async function convertToHtml(
+export async function convertToHtml(
   document: string,
   metrics: Metrics,
   log: typeof console.log
