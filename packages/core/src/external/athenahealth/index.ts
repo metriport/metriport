@@ -250,23 +250,17 @@ class AthenaHealthApi {
     );
     const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    try {
-      const patient = await this.makeRequest<Patient>({
-        cxId,
-        patientId,
-        method: "GET",
-        url: patientUrl,
-        schema: patientSchema,
-        additionalInfo,
-        debug,
-        useFhir: true,
-      });
-      return this.parsePatient({ patient, additionalInfo });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.response?.status === 404) return undefined;
-      throw error;
-    }
+    const patient = await this.makeRequest<Patient>({
+      cxId,
+      patientId,
+      method: "GET",
+      url: patientUrl,
+      schema: patientSchema,
+      additionalInfo,
+      debug,
+      useFhir: true,
+    });
+    return this.parsePatient({ patient, additionalInfo });
   }
 
   async searchPatient({
