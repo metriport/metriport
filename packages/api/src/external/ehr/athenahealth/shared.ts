@@ -42,10 +42,20 @@ export function createMetriportAddresses(patient: PatientWithValidHomeAddress): 
     if (address.line.length === 0) {
       throw new Error("AthenaHealth patient missing at least one line in address");
     }
+    const addressLine1 = (address.line[0] as string).trim();
+    if (addressLine1 === "") throw new Error("AthenaHealth patient address first line is empty");
+    const addressLines2plus = address.line
+      .slice(1)
+      .map(l => l.trim())
+      .filter(l => l !== "");
+    const city = address.city.trim();
+    if (city === "") throw new Error("AthenaHealth patient address city is empty");
+    const country = address.country.trim();
+    if (country === "") throw new Error("AthenaHealth patient address country is empty");
     return {
-      addressLine1: address.line[0] as string,
-      addressLine2: address.line.length > 1 ? address.line.slice(1).join(" ") : undefined,
-      city: address.city,
+      addressLine1,
+      addressLine2: addressLines2plus.length > 0 ? addressLines2plus.join(" ") : undefined,
+      city,
       state: normalizeUSStateForAddress(address.state),
       zip: normalizeZipCodeNew(address.postalCode),
       country: address.country,
@@ -66,6 +76,9 @@ export function createNames(
       names.push({ firstName, lastName });
     });
   });
+  if (names.length === 0) {
+    throw new Error("AthenaHealth patient has only empty first or last names");
+  }
   return names;
 }
 
