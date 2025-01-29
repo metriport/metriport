@@ -5,16 +5,14 @@ import AthenaHealthApi, {
   isAthenaEnv,
 } from "@metriport/core/external/athenahealth/index";
 import {
+  JwtTokenInfo,
   MetriportError,
   normalizeEmail,
   normalizePhoneNumber,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
 } from "@metriport/shared";
-import {
-  AthenaClientJwtTokenData,
-  AthenaClientJwtTokenInfo,
-} from "@metriport/shared/interface/external/athenahealth/jwt-token";
+import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
 import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
@@ -131,7 +129,7 @@ async function getLatestAthenaClientJwtTokenInfo({
 }: {
   cxId: string;
   practiceId: string;
-}): Promise<AthenaClientJwtTokenInfo | undefined> {
+}): Promise<JwtTokenInfo | undefined> {
   const data: AthenaClientJwtTokenData = {
     cxId,
     practiceId,

@@ -28,7 +28,18 @@ export const patientResourceSchema = z.object({
   ssn: z.string().nullable(),
 });
 
+export const patientResourceSchemaWithAddress = patientResourceSchema
+  .omit({
+    address: true,
+  })
+  .merge(
+    z.object({
+      address,
+    })
+  );
+
 export type PatientResource = z.infer<typeof patientResourceSchema>;
+export type PatientResourceWithAddress = z.infer<typeof patientResourceSchemaWithAddress>;
 
 const metadata = z.object({
   object_id: z.string(),
