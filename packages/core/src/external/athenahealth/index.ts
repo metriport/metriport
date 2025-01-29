@@ -85,6 +85,11 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+export type AthenaEnv = "api" | "api.preview";
+export function isAthenaEnv(env: string): env is AthenaEnv {
+  return env === "api" || env === "api.preview";
+}
+
 const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("relapse", "CHRONIC");
 problemStatusesMap.set("recurrence", "CHRONIC");
@@ -105,11 +110,6 @@ const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VIT
 const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
-
-export type AthenaEnv = "api" | "api.preview";
-export function isAthenaEnv(env: string): env is AthenaEnv {
-  return env === "api" || env === "api.preview";
-}
 
 type RequestData = { [key: string]: string | boolean | object | undefined };
 
