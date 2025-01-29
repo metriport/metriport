@@ -140,7 +140,7 @@ async function getAppointments({
   practiceId,
   fromDate,
   toDate,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const { environment, clientKey, clientSecret } = await getElationEnv({
     cxId,
@@ -153,15 +153,16 @@ async function getAppointments({
     clientSecret,
   });
   try {
-    const appointmentsFromApi = await api.getAppointments({
+    const appointments = await api.getAppointments({
       cxId,
       fromDate,
       toDate,
     });
     return {
-      appointments: appointmentsFromApi.map(appointment => {
+      appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: appointment.patient };
       }),
+      error: undefined,
     };
   } catch (error) {
     log(`Failed to get appointments. Cause: ${errorToString(error)}`);
@@ -185,7 +186,6 @@ async function syncPatients({
     clientKey,
     clientSecret,
   });
-
   const syncPatientErrors: { error: unknown; patientId: string }[] = [];
   await executeAsynchronously(
     appointments,

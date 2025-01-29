@@ -15,7 +15,7 @@ import {
   AthenaClientJwtTokenData,
   AthenaClientJwtTokenInfo,
 } from "@metriport/shared/interface/external/athenahealth/jwt-token";
-import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
@@ -24,7 +24,7 @@ import { Config } from "../../../shared/config";
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createMetriportContacts(patient: PatientResourceWithHomeAddress): Contact[] {
+export function createMetriportContacts(patient: PatientWithValidHomeAddress): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       return {
@@ -39,7 +39,7 @@ export function createMetriportContacts(patient: PatientResourceWithHomeAddress)
   });
 }
 
-export function createMetriportAddresses(patient: PatientResourceWithHomeAddress): Address[] {
+export function createMetriportAddresses(patient: PatientWithValidHomeAddress): Address[] {
   return patient.address.map(address => {
     if (address.line.length === 0) {
       throw new Error("AthenaHealth patient missing at least one line in address");
@@ -56,7 +56,7 @@ export function createMetriportAddresses(patient: PatientResourceWithHomeAddress
 }
 
 export function createNames(
-  patient: PatientResourceWithHomeAddress
+  patient: PatientWithValidHomeAddress
 ): { firstName: string; lastName: string }[] {
   const names: { firstName: string; lastName: string }[] = [];
   patient.name.map(name => {
@@ -74,11 +74,9 @@ export function createNames(
 export async function createAthenaClient({
   cxId,
   practiceId,
-  threeLeggedAuthToken,
 }: {
   cxId: string;
   practiceId: string;
-  threeLeggedAuthToken?: string;
 }): Promise<AthenaHealthApi> {
   const [athenaEnv, twoLeggedAuthTokenInfo] = await Promise.all([
     getAthenaEnv(),
@@ -86,7 +84,6 @@ export async function createAthenaClient({
   ]);
   const athenaApi = await AthenaHealthApi.create({
     twoLeggedAuthTokenInfo,
-    threeLeggedAuthToken,
     practiceId,
     environment: athenaEnv.environment,
     clientKey: athenaEnv.clientKey,
