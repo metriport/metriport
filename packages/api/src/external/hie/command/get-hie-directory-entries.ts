@@ -22,7 +22,7 @@ export async function getHieDirectoryEntriesByFilter({
     querySelect +
     (filter ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter))` : "");
 
-  const queryFinal = queryFTS + paginationSqlExpressions(pagination, "oid");
+  const queryFinal = queryFTS + paginationSqlExpressions(pagination);
 
   const { toItem, fromItem, count } = pagination ?? {};
   const cqDirectoryEntries = await sequelize.query(queryFinal, {
