@@ -3,7 +3,7 @@ import {
   DeduplicationResult,
   combineResources,
   createRef,
-  fillMaps,
+  deduplicateWithinMap,
   getDateFromString,
   pickMostDescriptiveStatus,
 } from "../shared";
@@ -77,7 +77,7 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
       const datetime = getDateFromString(date, "datetime");
       // TODO: Include medRequest.dosage into the key when we start mapping it on the FHIR converter
       const key = JSON.stringify({ medRef, datetime });
-      fillMaps(
+      deduplicateWithinMap(
         medRequestsMap,
         key,
         medRequest,

@@ -6,7 +6,7 @@ import {
   combineResources,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  deduplicateWithinMap,
   isUnknownCoding,
   pickMostDescriptiveStatus,
 } from "../shared";
@@ -90,12 +90,19 @@ export function groupSameObservationsSocial(observations: Observation[]): {
 
     if (keyCode) {
       const key = JSON.stringify({ value, keyCode });
-      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+      deduplicateWithinMap(
+        observationsMap,
+        key,
+        observation,
+        refReplacementMap,
+        undefined,
+        postProcess
+      );
     } else {
       const display = extractDisplayFromConcept(observation.code);
       if (display) {
         const key = JSON.stringify({ value, display });
-        fillMaps(
+        deduplicateWithinMap(
           observationsMap,
           key,
           observation,

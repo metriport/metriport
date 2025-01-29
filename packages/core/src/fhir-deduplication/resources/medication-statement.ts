@@ -3,7 +3,7 @@ import {
   DeduplicationResult,
   combineResources,
   createRef,
-  fillMaps,
+  deduplicateWithinMap,
   getDateFromResource,
   pickMostDescriptiveStatus,
 } from "../shared";
@@ -76,7 +76,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
     const dosage = medStatement.dosage;
     if (medRef && datetime && dosage) {
       const key = JSON.stringify({ medRef, datetime, dosage });
-      fillMaps(
+      deduplicateWithinMap(
         medStatementsMap,
         key,
         medStatement,
@@ -86,7 +86,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
       );
     } else if (medRef && datetime) {
       const key = JSON.stringify({ medRef, datetime });
-      fillMaps(
+      deduplicateWithinMap(
         medStatementsMap,
         key,
         medStatement,
@@ -96,7 +96,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
       );
     } else if (medRef) {
       const key = JSON.stringify({ medRef });
-      fillMaps(
+      deduplicateWithinMap(
         medStatementsMap,
         key,
         medStatement,

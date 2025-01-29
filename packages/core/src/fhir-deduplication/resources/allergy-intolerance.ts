@@ -9,7 +9,7 @@ import {
   DeduplicationResult,
   combineResources,
   createRef,
-  fillMaps,
+  deduplicateWithinMap,
   isUnknownCoding,
   unknownCode,
   fetchCodingCodeOrDisplayOrSystem,
@@ -64,7 +64,14 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
       const { allergy: newAllergy, substance } = preProcess(allergy);
       if (substance) {
         const key = JSON.stringify({ substance });
-        fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
+        deduplicateWithinMap(
+          allergiesMap,
+          key,
+          newAllergy,
+          refReplacementMap,
+          undefined,
+          postProcess
+        );
       } else {
         danglingReferences.add(createRef(allergy));
       }
@@ -78,7 +85,7 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
     if (allergy) {
       const key = JSON.stringify({ allergy });
       // no post processing so we dont remove the unknown allergy
-      fillMaps(allergiesMap, key, allergy, refReplacementMap, undefined);
+      deduplicateWithinMap(allergiesMap, key, allergy, refReplacementMap, undefined);
 
       const index = blacklistedAllergies.indexOf(allergy);
       if (index !== -1) {

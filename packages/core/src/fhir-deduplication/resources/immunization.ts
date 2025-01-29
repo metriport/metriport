@@ -5,7 +5,7 @@ import {
   combineResources,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  deduplicateWithinMap,
   getDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
@@ -82,7 +82,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
 
       if (cvxCode) {
         const key = JSON.stringify({ date, cvxCode });
-        fillMaps(
+        deduplicateWithinMap(
           immunizationsCvxMap,
           key,
           immunization,
@@ -92,7 +92,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
         );
       } else if (ndcCode) {
         const key = JSON.stringify({ date, ndcCode });
-        fillMaps(
+        deduplicateWithinMap(
           immunizationsNdcMap,
           key,
           immunization,
@@ -104,7 +104,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
         const displayCode = extractDisplayFromConcept(immunization.vaccineCode);
         if (displayCode) {
           const key = JSON.stringify({ date, displayCode });
-          fillMaps(
+          deduplicateWithinMap(
             displayMap,
             key,
             immunization,

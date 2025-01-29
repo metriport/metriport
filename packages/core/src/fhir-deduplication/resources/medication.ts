@@ -12,7 +12,7 @@ import {
   combineResources,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  deduplicateWithinMap,
   hasBlacklistedText,
   fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
@@ -76,16 +76,30 @@ export function groupSameMedications(medications: Medication[]): {
     const { rxnormCode, ndcCode, snomedCode } = extractCodes(medication.code);
 
     if (rxnormCode) {
-      fillMaps(rxnormMap, rxnormCode, medication, refReplacementMap, false, removeOtherCodes);
+      deduplicateWithinMap(
+        rxnormMap,
+        rxnormCode,
+        medication,
+        refReplacementMap,
+        false,
+        removeOtherCodes
+      );
     } else if (ndcCode) {
-      fillMaps(ndcMap, ndcCode, medication, refReplacementMap, false, removeOtherCodes);
+      deduplicateWithinMap(ndcMap, ndcCode, medication, refReplacementMap, false, removeOtherCodes);
     } else if (snomedCode) {
-      fillMaps(snomedMap, snomedCode, medication, refReplacementMap, false, removeOtherCodes);
+      deduplicateWithinMap(
+        snomedMap,
+        snomedCode,
+        medication,
+        refReplacementMap,
+        false,
+        removeOtherCodes
+      );
     } else {
       const display = extractDisplayFromConcept(medication.code);
       if (display) {
         const compKey = JSON.stringify({ display });
-        fillMaps(displayMap, compKey, medication, refReplacementMap, undefined);
+        deduplicateWithinMap(displayMap, compKey, medication, refReplacementMap, undefined);
       } else {
         danglingReferences.add(createRef(medication));
       }

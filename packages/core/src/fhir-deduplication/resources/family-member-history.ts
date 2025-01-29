@@ -3,7 +3,7 @@ import {
   DeduplicationResult,
   combineResources,
   createRef,
-  fillMaps,
+  deduplicateWithinMap,
   fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
@@ -60,7 +60,7 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
     // const date = getDateFromResource(famMemberHist, "date"); // We're currently not mapping the date for FamilyMemberHistory.hbs
     if (relationship) {
       const key = JSON.stringify({ relationship, dob });
-      fillMaps(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
+      deduplicateWithinMap(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
     } else {
       danglingReferences.add(createRef(famMemberHist));
     }

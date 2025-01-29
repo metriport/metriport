@@ -12,7 +12,7 @@ import {
   combineResources,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  deduplicateWithinMap,
   getPerformedDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
@@ -129,7 +129,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
     else if (snomedCode) key = JSON.stringify({ datetime, snomedCode });
 
     if (key) {
-      fillMaps(
+      deduplicateWithinMap(
         proceduresMap,
         key,
         procedure,
@@ -141,7 +141,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
       const display = extractDisplayFromConcept(procedure.code);
       if (display) {
         const key = JSON.stringify({ datetime, display });
-        fillMaps(
+        deduplicateWithinMap(
           proceduresMap,
           key,
           procedure,

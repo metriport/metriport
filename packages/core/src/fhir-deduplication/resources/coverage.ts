@@ -1,5 +1,5 @@
 import { Coverage } from "@medplum/fhirtypes";
-import { DeduplicationResult, combineResources, createRef, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, deduplicateWithinMap } from "../shared";
 
 export function deduplicateCoverages(coverages: Coverage[]): DeduplicationResult<Coverage> {
   const { coveragesMap, refReplacementMap, danglingReferences } = groupSameCoverages(coverages);
@@ -35,7 +35,7 @@ export function groupSameCoverages(coverages: Coverage[]): {
 
     if (payor) {
       const key = JSON.stringify({ payor, status, period });
-      fillMaps(coveragesMap, key, coverage, refReplacementMap);
+      deduplicateWithinMap(coveragesMap, key, coverage, refReplacementMap);
     } else {
       danglingReferences.add(createRef(coverage));
     }
