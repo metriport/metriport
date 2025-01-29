@@ -371,7 +371,7 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
     condition: Condition;
-  }): Promise<CreatedProblemSuccess | undefined> {
+  }): Promise<CreatedProblemSuccess> {
     const { debug } = out(
       `AthenaHealth createProblem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
