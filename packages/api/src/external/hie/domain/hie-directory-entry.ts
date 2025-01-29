@@ -1,7 +1,7 @@
 export interface HieDirectoryEntry {
   id: string;
   oid: string;
-  name?: string;
+  name: string;
   active: boolean;
   rootOrganization?: string;
   managingOrganizationId?: string;

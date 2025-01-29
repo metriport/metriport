@@ -65,11 +65,6 @@ export const STATE_MAPPINGS: { [key: string]: USState } = {
   "urn:oid:2.16.840.1.113883.4.3.55": USState.WI, // Wisconsin Driver's License
   "urn:oid:2.16.840.1.113883.4.3.54": USState.WV, // West Virginia Driver's License
   "urn:oid:2.16.840.1.113883.4.3.56": USState.WY, // Wyoming Driver's License
-  /**
-   * Puerto Rico DLN - doesn't seem to have a real OID, but it shows up as a state in some data
-   * and we should be able to normalize it to and from a 2 letter state code.
-   */
-  "urn:oid:2.16.840.1.113883.4.3.100": USState.PR, // Puerto Rico Driver's License
 };
 
 export function createPatientUniqueId(cxId: string, patientId: string): string {
