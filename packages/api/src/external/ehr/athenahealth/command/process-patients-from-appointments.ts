@@ -112,7 +112,7 @@ export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchU
   );
 
   if (getAppointmentsErrors.length > 0) {
-    capture.error("Failed to get appointments @ AthenaHealth", {
+    capture.message("Failed to get some appointments @ AthenaHealth", {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
@@ -122,6 +122,7 @@ export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchU
         context: "athenahealth.process-patients-from-appointments",
         catchUpOrBackFill,
       },
+      level: "warning",
     });
   }
 
@@ -158,7 +159,7 @@ export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchU
   );
 
   if (syncPatientsErrors.length > 0) {
-    capture.error("Failed to sync patients @ AthenaHealth", {
+    capture.message("Failed to sync some patients @ AthenaHealth", {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
@@ -173,6 +174,7 @@ export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchU
         context: "athenahealth.process-patients-from-appointments",
         catchUpOrBackFill,
       },
+      level: "warning",
     });
   }
 }

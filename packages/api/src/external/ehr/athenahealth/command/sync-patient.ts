@@ -65,7 +65,6 @@ export async function syncAthenaPatientIntoMetriport({
 
   const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
   const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
-  if (!athenaPatient) return undefined;
 
   const demos = createMetriportPatientDemos(athenaPatient);
 
@@ -90,7 +89,7 @@ export async function syncAthenaPatientIntoMetriport({
   );
 
   if (getPatientByDemoErrors.length > 0) {
-    capture.error("Failed to get patient by demos @ AthenaHealth", {
+    capture.message("Failed to get patient by some demos @ AthenaHealth", {
       extra: {
         cxId,
         athenaPracticeId,
@@ -100,6 +99,7 @@ export async function syncAthenaPatientIntoMetriport({
         errors: getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(","),
         context: "athenahealth.sync-patient",
       },
+      level: "warning",
     });
   }
 

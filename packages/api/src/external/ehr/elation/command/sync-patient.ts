@@ -1,7 +1,7 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
+import { MetriportError, normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
@@ -51,7 +51,12 @@ export async function syncElationPatientIntoMetriport({
 
   const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
   const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
-  if (!elationPatient) return undefined;
+  if (!elationPatient) {
+    throw new MetriportError("Elation patient not found", undefined, {
+      cxId,
+      patientId: elationPatientId,
+    });
+  }
 
   const demo = createMetriportPatientDemo(elationPatient);
 

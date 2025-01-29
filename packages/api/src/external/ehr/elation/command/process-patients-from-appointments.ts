@@ -72,7 +72,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (getAppointmentsErrors.length > 0) {
-    capture.error("Failed to get appointments @ Elation", {
+    capture.message("Failed to get some appointments @ Elation", {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
@@ -81,6 +81,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
           .join(","),
         context: "elation.process-patients-from-appointments",
       },
+      level: "warning",
     });
   }
 
@@ -117,7 +118,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (syncPatientsErrors.length > 0) {
-    capture.error("Failed to sync patients @ Elation", {
+    capture.message("Failed to sync some patients @ Elation", {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
@@ -131,6 +132,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
           .join(","),
         context: "elation.process-patients-from-appointments",
       },
+      level: "warning",
     });
   }
 }

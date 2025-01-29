@@ -244,7 +244,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientWithValidHomeAddress | undefined> {
+  }): Promise<PatientWithValidHomeAddress> {
     const { debug } = out(
       `AthenaHealth getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -269,7 +269,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientWithValidHomeAddress | undefined> {
+  }): Promise<PatientWithValidHomeAddress> {
     const { debug } = out(
       `AthenaHealth searchPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -294,7 +294,7 @@ class AthenaHealthApi {
       throw new MetriportError("More than one patient found in search", undefined, additionalInfo);
     }
     const patient = entry[0]?.resource;
-    if (!patient) return undefined;
+    if (!patient) throw new MetriportError("No patient found in search", undefined, additionalInfo);
     return this.parsePatient({ patient, additionalInfo });
   }
 
