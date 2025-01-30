@@ -18,8 +18,8 @@ import {
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
-  PopulateFhirServerResponse,
   populateFhirServer,
+  PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
@@ -28,7 +28,6 @@ import { isCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapp
 import { isFacilityMappingSource } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
-import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import { requestLogger } from "./helpers/request-logger";
@@ -163,21 +162,6 @@ router.post(
       });
       result[org.cxId] = orgRes;
     }
-    return res.json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /internal/count-fhir-resources
- *
- * Count all resources for this customer in the FHIR server.
- */
-router.get(
-  "/count-fhir-resources",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const result = await countResourcesOnFhir({ patient: { cxId } });
     return res.json(result);
   })
 );
