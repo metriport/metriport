@@ -8,7 +8,6 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
-import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
@@ -117,7 +116,7 @@ async function getBundle(
 ): Promise<SearchSetBundle> {
   const { forceDataFromFhir } = !params.isAsync ? params : { forceDataFromFhir: false };
   const { cxId } = params.patient;
-  const isGetFromS3 = !forceDataFromFhir && (await isConsolidatedFromS3Enabled());
+  const isGetFromS3 = !forceDataFromFhir;
   const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
   log(`forceDataFromFhir: ${forceDataFromFhir}`);
   if (isGetFromS3) {
@@ -129,6 +128,7 @@ async function getBundle(
     }
     log(`(from S3) Not found/created`);
   }
+  // Used for contributed data (shareback)
   const startedAt = new Date();
   const originalBundle = await getConsolidatedFromFhirServer(params);
   log(`(from FHIR) Took ${elapsedTimeFromNow(startedAt)}ms`);
