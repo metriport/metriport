@@ -42,7 +42,7 @@ dayjs.extend(duration);
  *   - `ts-node utils/commonwell/delete-link --dryrun`
  *   - `ts-node utils/commonwell/delete-link`
  */
-const cwApiMode = APIMode.production;
+const cwApiMode = APIMode.integration;
 /**
  * List of patients to downgrade the network links.
  */
