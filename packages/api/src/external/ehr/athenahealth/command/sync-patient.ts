@@ -27,7 +27,7 @@ import {
 
 const parallelPatientMatches = 5;
 
-export type SyncPatientParams = {
+export type SyncAthenaPatientParams = {
   cxId: string;
   athenaPracticeId: string;
   athenaPatientId: string;
@@ -46,7 +46,7 @@ export async function syncAthenaPatientIntoMetriport({
   athenaPatientId,
   api,
   triggerDq = false,
-}: SyncPatientParams): Promise<string | undefined> {
+}: SyncAthenaPatientParams): Promise<string | undefined> {
   const { log } = out(
     `AthenaHealth syncAthenaPatientIntoMetriport - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );

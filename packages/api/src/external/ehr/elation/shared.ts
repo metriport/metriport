@@ -9,10 +9,13 @@ import {
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
 } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
+import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
+import { createEhrClient, EhrEnvAndClientCredentials } from "../shared";
 
-export function createMetriportContacts(patient: PatientResource): Contact[] {
+export const elationClientJwtTokenSource = "elation-client";
+
+export function createMetriportContacts(patient: PatientWithAddress): Contact[] {
   return [
     ...patient.phones.map(p => {
       return {
@@ -27,7 +30,7 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
   ];
 }
 
-export function createMetriportAddresses(patient: PatientResource): Address[] {
+export function createMetriportAddresses(patient: PatientWithAddress): Address[] {
   const addressLine1 = patient.address.address_line1.trim();
   if (addressLine1 === "") throw new Error("Elation patient address first line is empty");
   const addressLine2 = patient.address.address_line2?.trim();
@@ -45,7 +48,7 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
   ];
 }
 
-export function createNames(patient: PatientResource): { firstName: string; lastName: string } {
+export function createNames(patient: PatientWithAddress): { firstName: string; lastName: string } {
   const firstName = patient.first_name.trim();
   const lastName = patient.last_name.trim();
   const middleName = patient.middle_name.trim();
@@ -58,36 +61,9 @@ export function createNames(patient: PatientResource): { firstName: string; last
   };
 }
 
-export async function createElationClient({
-  cxId,
-  practiceId,
-}: {
-  cxId: string;
-  practiceId: string;
-}): Promise<ElationApi> {
-  const { environment, clientKey, clientSecret } = await getElationEnv({
-    cxId,
-    practiceId,
-  });
-  return await ElationApi.create({
-    practiceId,
-    environment,
-    clientKey,
-    clientSecret,
-  });
-}
+type GetEnvParams = { cxId: string; practiceId: string };
 
-export async function getElationEnv({
-  cxId,
-  practiceId,
-}: {
-  cxId: string;
-  practiceId: string;
-}): Promise<{
-  environment: ElationEnv;
-  clientKey: string;
-  clientSecret: string;
-}> {
+function getElationEnv({ cxId, practiceId }: GetEnvParams): EhrEnvAndClientCredentials<ElationEnv> {
   const environment = Config.getElationEnv();
   if (!environment) throw new MetriportError("Elation environment not set");
   if (!isElationEnv(environment)) {
@@ -107,4 +83,21 @@ export async function getElationEnv({
     clientKey: cxKeyEntry,
     clientSecret: cxSecretEntry,
   };
+}
+
+export async function createElationClient({
+  cxId,
+  practiceId,
+}: {
+  cxId: string;
+  practiceId: string;
+}): Promise<ElationApi> {
+  return await createEhrClient<GetEnvParams, ElationEnv, ElationApi>({
+    cxId,
+    practiceId,
+    source: elationClientJwtTokenSource,
+    getEnv: getElationEnv,
+    getEnvParams: { cxId, practiceId },
+    getClient: ElationApi.create,
+  });
 }
