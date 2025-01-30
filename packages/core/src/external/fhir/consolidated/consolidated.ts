@@ -39,7 +39,6 @@ export async function getConsolidatedFhirBundle({
   const {
     resourcesByPatient,
     resourcesBySubject,
-    generalResourcesNoFilter,
     dateFilter: fullDateQuery,
   } = getPatientFilter({
     resources,
@@ -48,7 +47,6 @@ export async function getConsolidatedFhirBundle({
   });
   log(`Getting consolidated data with resources by patient: ${resourcesByPatient.join(", ")}...`);
   log(`...and by subject: ${resourcesBySubject.join(", ")}`);
-  log(`...and general resources with no specific filter: ${generalResourcesNoFilter.join(", ")}`);
 
   const fhirUrl = Config.getFHIRServerUrl();
   const fhir = makeFhirApi(cxId, fhirUrl);
@@ -71,9 +69,6 @@ export async function getConsolidatedFhirBundle({
         errorsToReport
       );
     }),
-    // ...generalResourcesNoFilter.map(async resource => {
-    //   return searchResources(resource, () => fhir.searchResourcePages(resource), errorsToReport);
-    // }),
   ]);
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
