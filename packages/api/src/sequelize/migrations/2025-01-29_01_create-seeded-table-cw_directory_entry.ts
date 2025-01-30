@@ -93,7 +93,7 @@ SELECT
   managing_organization_id,
   search_criteria,
   'CAREQUALITY' as network
-FROM ${cqViewName}
+FROM ${cqViewName} cq
 
 UNION ALL
 
@@ -107,7 +107,13 @@ SELECT
   '2.16.840.1.113883.3.3330' as managing_organization_id,
   search_criteria,
   'COMMONWELL' as network
-FROM ${cwTableName}
+FROM ${cwTableName} cw
+-- No duplicates! Exclude orgs that already exist in the CareQuality view
+WHERE NOT EXISTS (
+  SELECT 1 
+  FROM ${cqViewName} cq 
+  WHERE cq.id = cw.organization_id
+)
 ;`;
 
 const dropHieViewSql = `DROP VIEW IF EXISTS ${hieViewName};`;
@@ -118,6 +124,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
       transaction,
       addVersion: true,
     });
+
+    await queryInterface.addIndex(cwTableName, ["organization_id"], { transaction });
 
     await queryInterface.sequelize.query(createSearchCriteriaColumnSql, {
       type: QueryTypes.RAW,
