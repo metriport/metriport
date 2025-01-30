@@ -5,24 +5,24 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Bundle, Medication, Observation, Patient, Resource } from "@medplum/fhirtypes";
 import { errorToString, toArray } from "@metriport/shared";
-import { buildDayjs, elapsedTimeFromNow, ISO_DATE } from "@metriport/shared/common/date";
+import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 import {
-  applyResourceSpecificFilters,
-  getSlimPatient,
   SlimCondition,
   SlimDiagnosticReport,
   SlimOrganization,
   SlimResource,
+  applyResourceSpecificFilters,
+  getSlimPatient,
 } from "../../domain/ai-brief/modify-resources";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { EventTypes, analytics } from "../../external/analytics/posthog";
 import {
   findDiagnosticReportResources,
   findPatientResource,
 } from "../../external/fhir/shared/index";
 import { BedrockChat } from "../../external/langchain/bedrock";
-import { capture, out } from "../../util";
+import { out } from "../../util";
 import { uuidv7 } from "../../util/uuid-v7";
 import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date";
 import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
@@ -203,13 +203,6 @@ export async function summarizeFilteredBundleWithAI(
   } catch (err) {
     const msg = `AI brief generation failure`;
     log(`${msg} - ${errorToString(err)}`);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        patientId,
-        error: err,
-      },
-    });
     // Intentionally not throwing the error to avoid breaking the MR Summary generation flow
     return undefined;
   }
