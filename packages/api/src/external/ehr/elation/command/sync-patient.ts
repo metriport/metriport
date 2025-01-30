@@ -2,7 +2,7 @@ import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { MetriportError, normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
+import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -23,19 +23,21 @@ import {
   createNames,
 } from "../shared";
 
+export type SyncElationPatientParams = {
+  cxId: string;
+  elationPracticeId: string;
+  elationPatientId: string;
+  api?: ElationApi;
+  triggerDq?: boolean;
+};
+
 export async function syncElationPatientIntoMetriport({
   cxId,
   elationPracticeId,
   elationPatientId,
   api,
   triggerDq = false,
-}: {
-  cxId: string;
-  elationPracticeId: string;
-  elationPatientId: string;
-  api?: ElationApi;
-  triggerDq?: boolean;
-}): Promise<string | undefined> {
+}: SyncElationPatientParams): Promise<string | undefined> {
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: elationPatientId,
@@ -103,7 +105,7 @@ export async function syncElationPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
+function createMetriportPatientDemo(patient: PatientWithAddress): PatientDemoData {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
   const names = createNames(patient);
@@ -117,7 +119,7 @@ function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
 }
 
 function createMetriportPatientCreateCmd(
-  patient: PatientResource
+  patient: PatientWithAddress
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
