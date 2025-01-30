@@ -34,12 +34,7 @@ type GetAppointmentsParams = {
   catchUpOrBackFill?: CatchUpOrBackFill;
 };
 
-type GetAppointmentsFromApiParams = Pick<
-  GetAppointmentsParams,
-  "cxId" | "practiceId" | "departmentIds" | "fromDate" | "toDate" | "catchUpOrBackFill"
-> & {
-  api: AthenaHealthApi;
-};
+type GetAppointmentsFromApiParams = GetAppointmentsParams & { api: AthenaHealthApi };
 
 export async function processPatientsFromAppointments(catchUpOrBackFill?: CatchUpOrBackFill) {
   const { log } = out(
