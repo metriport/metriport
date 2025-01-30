@@ -68,33 +68,6 @@ export function getLookForwardTimeRange({ lookForward }: { lookForward: Duration
   };
 }
 
-const MAP_KEY_SEPARATOR = "|||";
-
-export function createPracticeMapKey(cxId: string, practiceId: string): string {
-  return `${cxId}${MAP_KEY_SEPARATOR}${practiceId}`;
-}
-
-export function parsePracticeMapKey(key: string): { cxId: string; practiceId: string } {
-  const [cxId, practiceId] = key.split(MAP_KEY_SEPARATOR);
-  if (!cxId || !practiceId) throw new MetriportError(`Invalid map key ${key}`, undefined, { key });
-  return { cxId, practiceId };
-}
-
-export function createPracticeMap(appointments: Appointment[]): {
-  [k: string]: Appointment[];
-} {
-  const appointmentsByPractice: { [k: string]: Appointment[] } = {};
-  appointments.map(appointment => {
-    const key = createPracticeMapKey(appointment.cxId, appointment.practiceId);
-    if (appointmentsByPractice[key]) {
-      appointmentsByPractice[key].push(appointment);
-    } else {
-      appointmentsByPractice[key] = [appointment];
-    }
-  });
-  return appointmentsByPractice;
-}
-
 /**
  * Expiration checks are handled by the clients themselves.
  */
