@@ -16,6 +16,7 @@ import { initFile } from "./shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 import { logErrorToFile } from "./shared/log";
+import { cloneDeep } from "lodash";
 
 dayjs.extend(duration);
 
@@ -44,7 +45,7 @@ const sdk = new MetriportMedicalApi(apiKey, {
 const api = axios.create({ baseURL: apiUrl });
 
 // query stuff
-const delayTime = dayjs.duration(3, "seconds");
+const delayTime = dayjs.duration(5, "seconds");
 const numberOfParallelExecutions = 10;
 const confirmationTime = dayjs.duration(10, "seconds");
 
@@ -84,11 +85,12 @@ async function main() {
 
   log(`>>> Running it...`);
 
+  let ptIndex = 0;
   await executeAsynchronously(
     patientIdsToQuery,
-    async (patientId, itemIdx) => {
+    async patientId => {
       await getCoverageForPatient(patientId, outputFileName, errorFileName, log);
-      log(`>>> Progress: ${itemIdx + 1}/${patientIdsToQuery.length} patients complete`);
+      log(`>>> Progress: ${++ptIndex}/${patientIdsToQuery.length} patients complete`);
       await sleep(delayTime.asMilliseconds());
     },
     { numberOfParallelExecutions }
@@ -144,8 +146,11 @@ async function getCoverageForPatient(
     const docCount = download?.successful;
     const convertStatus = convert?.status;
 
-    const fhirCount = fhir.total;
-    const fhirDetails = JSON.stringify(fhir.resources).replaceAll(",", " ");
+    const resources = cloneDeep(fhir.resources);
+    // Remove the Patient resource from the result
+    const fhirCount = Math.max(fhir.total - 1, 0);
+    delete resources.Patient;
+    const fhirDetails = JSON.stringify(resources).replaceAll(",", " ");
 
     // "patientId,firstName,lastName,state,downloadStatus,docCount,convertStatus,fhirResourceCount,fhirResourceDetails\n";
     const csvRow = `${id},${firstName},${lastName},${state},${downloadStatus},${docCount},${convertStatus},${fhirCount},${fhirDetails}\n`;
