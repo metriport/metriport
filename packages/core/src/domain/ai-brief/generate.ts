@@ -10,8 +10,9 @@ import { capture } from "../../util";
 dayjs.extend(duration);
 
 const maxAttempts = 3;
-const waitTimeBetweenAttemptsInMs = dayjs.duration({ seconds: 0.2 }).asMilliseconds();
+const waitTimeBetweenAttempts = dayjs.duration({ seconds: 0.2 });
 
+// TODO: 2526 - Refactor the retry with networks to only be used on the call to Bedrock
 export async function generateAiBriefBundleEntry(
   bundle: Bundle<Resource>,
   cxId: string,
@@ -31,7 +32,7 @@ export async function generateAiBriefBundleEntry(
       },
       {
         maxAttempts,
-        initialDelay: waitTimeBetweenAttemptsInMs,
+        initialDelay: waitTimeBetweenAttempts.asMilliseconds(),
         log,
       }
     );
