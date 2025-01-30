@@ -12,6 +12,7 @@ import { Pagination, sortForPagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { sanitize, validate } from "./shared";
+import { paginationSqlExpressions } from "../../../shared/sql";
 
 export type PatientMatchCmd = PatientDemoData & { cxId: string };
 
@@ -62,26 +63,17 @@ export async function getPatients({
     fullTextSearchFilters
   );
 
-  const { toItem, fromItem } = pagination ?? {};
-  const toItemStr = toItem ? ` AND id >= :toItem` : "";
-  const fromItemStr = fromItem ? ` AND id <= :fromItem` : "";
-  const queryPagination = queryFTS + " " + [toItemStr, fromItemStr].filter(Boolean).join("");
+  const { query: paginationQueryExpression, replacements: paginationReplacements } =
+    paginationSqlExpressions(pagination);
+  const queryFinal = queryFTS + paginationQueryExpression;
 
-  const queryOrder = queryPagination + " ORDER BY id " + (toItem ? "ASC" : "DESC");
-
-  const { count } = pagination ?? {};
-  const queryLimits = queryOrder + (count ? ` LIMIT :count` : "");
-
-  const queryFinal = queryLimits;
   const patients = await sequelize.query(queryFinal, {
     model: PatientModel,
     mapToModel: true,
     replacements: {
       cxId,
       ...getPatientsSharedReplacements(facilityId, patientIds, fullTextSearchFilters),
-      ...(toItem ? { toItem } : {}),
-      ...(fromItem ? { fromItem } : {}),
-      ...(count ? { count } : {}),
+      ...paginationReplacements,
     },
     type: QueryTypes.SELECT,
   });
