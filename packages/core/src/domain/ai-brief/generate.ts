@@ -1,12 +1,16 @@
 import { Binary, Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { summarizeFilteredBundleWithAI } from "../../command/ai-brief/create";
 import { generateAiBriefFhirResource } from "../../command/ai-brief/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture } from "../../util";
 
+dayjs.extend(duration);
+
 const maxAttempts = 3;
-const waitTimeBetweenAttemptsInMillis = 200;
+const waitTimeBetweenAttemptsInMs = dayjs.duration({ seconds: 0.2 }).asMilliseconds();
 
 export async function generateAiBriefBundleEntry(
   bundle: Bundle<Resource>,
@@ -27,7 +31,7 @@ export async function generateAiBriefBundleEntry(
       },
       {
         maxAttempts,
-        initialDelay: waitTimeBetweenAttemptsInMillis,
+        initialDelay: waitTimeBetweenAttemptsInMs,
         log,
       }
     );
