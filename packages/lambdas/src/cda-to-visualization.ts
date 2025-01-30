@@ -35,13 +35,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ fileName, conversionType, bucketName }: Input): Promise<Output> => {
     console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);
 
-    const document = await downloadDocumentFromS3({ fileName, bucketName });
-
-    if (!document) {
+    const originalDocument = await downloadDocumentFromS3({ fileName, bucketName });
+    if (!originalDocument) {
       throw new MetriportError(`Document not found in S3`, undefined, {
         fileName,
       });
     }
+
+    const document = normalizeDocument(originalDocument);
+
     if (conversionType === "html") {
       const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
       console.log("html", url);
@@ -60,6 +62,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     });
   }
 );
+
+function normalizeDocument(document: string): string {
+  const normalizedDocument = document.replace(/\s&\s/g, " &amp; ");
+  return normalizedDocument;
+}
 
 const downloadDocumentFromS3 = async ({
   fileName,
