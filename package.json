@@ -4,7 +4,7 @@
   "bin": {},
   "scripts": {
     "prepare-dev": "is-ci || husky install",
-    "preinstall": "npm i -g rimraf@5.0.10 --no-fund && npm run prepare-dev",
+    "preinstall": "npm i -g rimraf@5.0.10 is-ci@3.0.1 --no-fund && npm run prepare-dev",
     "preci": "npm run preinstall",
     "preinstall-deps": "npm run preci",
     "init": "npm i && SCRIPT='i' npm run lambdas:no-run",
@@ -64,9 +64,6 @@
     "commitizen": {
       "path": "@commitlint/cz-commitlint"
     }
-  },
-  "dependencies": {
-    "is-ci": "^3.0.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
