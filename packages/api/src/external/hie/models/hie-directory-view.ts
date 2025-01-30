@@ -5,7 +5,7 @@ export class HIEDirectoryEntryViewModel extends BaseModel<HIEDirectoryEntryViewM
   static NAME = "hie_directory_view";
 
   declare oid: string;
-  declare name?: string;
+  declare name: string;
   declare active: boolean;
   declare rootOrganization?: string;
   declare managingOrganizationId?: string;
