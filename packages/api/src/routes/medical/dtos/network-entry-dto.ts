@@ -1,3 +1,4 @@
+import { normalizeUSStateForAddress } from "@metriport/shared";
 import { NetworkEntry } from "../../../domain/medical/network-entry";
 import { HieDirectoryEntry } from "../../../external/hie/domain/hie-directory-entry";
 
@@ -8,7 +9,7 @@ export function dtoFromHieDirectoryEntry(networkEntry: HieDirectoryEntry): Netwo
     name: networkEntry.name,
     oid: networkEntry.oid,
     zipCode: networkEntry.zipCode,
-    state: networkEntry.state,
+    state: normalizeUSStateForAddress(networkEntry.state ?? ""),
     rootOrganization: networkEntry.rootOrganization,
     managingOrgOid: networkEntry.managingOrganizationId,
   };
