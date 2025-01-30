@@ -121,8 +121,9 @@ export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Pro
     await runSql(
       `ALTER TABLE ${cqDirectoryEntryTemp} ADD CONSTRAINT ${buildPkName()} PRIMARY KEY (id);`
     );
-    await runSql(`DROP VIEW IF EXISTS ${cqDirectoryEntryView};`);
-    await runSql(`CREATE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`);
+    await runSql(
+      `CREATE OR REPLACE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`
+    );
     await runSql(`DROP TABLE IF EXISTS ${cqDirectoryEntryBackup3};`);
     await runSql(
       `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup2} RENAME TO ${cqDirectoryEntryBackup3};`
