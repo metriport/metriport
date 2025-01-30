@@ -43,6 +43,19 @@ describe("normalizeCodeableConcept", () => {
     expect(normalized.text).toBe("Cpt Term");
   });
 
+  it("should remove the coding from a known system if its code is UNK", () => {
+    const concept: CodeableConcept = {
+      coding: [
+        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: CPT_URL, code: "UNK" },
+      ],
+    };
+
+    const normalized = normalizeCodeableConcept(concept);
+    expect(normalized.coding?.length).toEqual(1);
+    expect(normalized.text).toBe("Snomed Term");
+  });
+
   it("should not set text if highest priority coding has no display", () => {
     const concept: CodeableConcept = {
       coding: [
