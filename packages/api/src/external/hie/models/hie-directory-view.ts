@@ -4,20 +4,30 @@ import { BaseModel, ModelSetup } from "../../../models/_default";
 export class HIEDirectoryEntryViewModel extends BaseModel<HIEDirectoryEntryViewModel> {
   static NAME = "hie_directory_view";
 
-  declare id: string; // Organization's OID
-  declare name?: string;
+  declare oid: string;
+  declare name: string;
   declare active: boolean;
   declare rootOrganization?: string;
   declare managingOrganizationId?: string;
   declare addressLine?: string;
   declare city?: string;
   declare state?: string;
-  declare zip?: string;
+  declare zipCode?: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     HIEDirectoryEntryViewModel.init(
       {
         ...BaseModel.attributes(),
+        id: {
+          type: DataTypes.STRING,
+          field: "id",
+          primaryKey: true,
+        },
+        oid: {
+          type: DataTypes.STRING,
+          field: "oid",
+          primaryKey: true,
+        },
         name: {
           type: DataTypes.STRING,
         },
@@ -32,18 +42,12 @@ export class HIEDirectoryEntryViewModel extends BaseModel<HIEDirectoryEntryViewM
           type: DataTypes.STRING,
           field: "managing_organization_id",
         },
-        addressLine: {
-          type: DataTypes.STRING,
-          field: "address_line",
-        },
-        city: {
-          type: DataTypes.STRING,
-        },
         state: {
           type: DataTypes.STRING,
         },
-        zip: {
+        zipCode: {
           type: DataTypes.STRING,
+          field: "zip_code",
         },
       },
       {

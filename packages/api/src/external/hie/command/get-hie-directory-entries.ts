@@ -1,8 +1,8 @@
 import { QueryTypes } from "sequelize";
-import { Pagination, sortForPagination } from "../../../../command/pagination";
-import { CQDirectoryEntry2 } from "../../cq-directory";
-import { HIEDirectoryEntryViewModel } from "../../models/hie-directory-view";
-import { paginationSqlExpressions } from "../../../../shared/sql";
+import { Pagination, sortForPagination } from "../../../command/pagination";
+import { paginationSqlExpressions } from "../../../shared/sql";
+import { HieDirectoryEntry } from "../domain/hie-directory-entry";
+import { HIEDirectoryEntryViewModel } from "../models/hie-directory-view";
 
 export async function getHieDirectoryEntriesByFilter({
   filter,
@@ -10,7 +10,7 @@ export async function getHieDirectoryEntriesByFilter({
 }: {
   filter: string | undefined;
   pagination: Pagination;
-}): Promise<CQDirectoryEntry2[]> {
+}): Promise<HieDirectoryEntry[]> {
   const sequelize = HIEDirectoryEntryViewModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
@@ -22,15 +22,14 @@ export async function getHieDirectoryEntriesByFilter({
       ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
       : "");
 
-  const { query: paginationQueryExpression, replacements: paginationReplacements } =
-    paginationSqlExpressions(pagination);
-  const queryFinal = queryFTS + paginationQueryExpression;
+  const { query, replacements } = paginationSqlExpressions(pagination);
+  const queryFinal = queryFTS + query;
 
   const cqDirectoryEntries = await sequelize.query(queryFinal, {
     model: HIEDirectoryEntryViewModel,
     mapToModel: true,
     replacements: {
-      ...paginationReplacements,
+      ...replacements,
       ...(filter ? { filter } : {}),
     },
     type: QueryTypes.SELECT,

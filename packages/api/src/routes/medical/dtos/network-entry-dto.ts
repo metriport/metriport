@@ -1,15 +1,14 @@
-import { normalizeState } from "@metriport/shared";
 import { NetworkEntry } from "../../../domain/medical/network-entry";
-import { CQDirectoryEntry2 } from "../../../external/carequality/cq-directory";
+import { HieDirectoryEntry } from "../../../external/hie/domain/hie-directory-entry";
 
-export type NetworkEntryDTO = NetworkEntry;
+export type NetworkEntryDTO = Omit<NetworkEntry, "id">;
 
-export function dtoFromHieDirectoryEntry(networkEntry: CQDirectoryEntry2): NetworkEntryDTO {
+export function dtoFromHieDirectoryEntry(networkEntry: HieDirectoryEntry): NetworkEntryDTO {
   return {
     name: networkEntry.name,
-    oid: networkEntry.id,
-    zip: networkEntry.zip,
-    state: networkEntry.state ? normalizeState(networkEntry.state) : undefined,
+    oid: networkEntry.oid,
+    zipCode: networkEntry.zipCode,
+    state: networkEntry.state,
     rootOrganization: networkEntry.rootOrganization,
     managingOrgOid: networkEntry.managingOrganizationId,
   };

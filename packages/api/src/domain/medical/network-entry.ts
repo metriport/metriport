@@ -1,10 +1,9 @@
-import { USState } from "@metriport/shared/dist/domain/address/state";
-
 export interface NetworkEntry {
-  name?: string;
-  oid?: string;
-  zip?: string;
-  state?: USState;
-  rootOrganization?: string;
+  id: string;
+  oid: string;
+  name: string;
+  zipCode?: string;
+  state?: string;
   managingOrgOid?: string;
+  rootOrganization?: string;
 }
