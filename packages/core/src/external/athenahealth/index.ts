@@ -6,14 +6,14 @@ import {
   MedicationStatement,
   Observation,
 } from "@medplum/fhirtypes";
-import { AdditionalInfo, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import {
   AppointmentEvents,
   appointmentEventsSchema,
   athenaClientJwtTokenResponseSchema,
   BookedAppointment,
   BookedAppointments,
+  bookedAppointmentSchema,
   bookedAppointmentsSchema,
   CreatedMedication,
   createdMedicationSchema,
@@ -50,27 +50,27 @@ import { getObservationCode, getObservationUnits } from "@metriport/shared/medic
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import { uniqBy } from "lodash";
-import { z } from "zod";
-import { processAsyncError } from "../..//util/error/shared";
-import { createHivePartitionFilePath } from "../../domain/filename";
+import {
+  ApiConfig,
+  createDataParams,
+  formatDate,
+  formatDateTime,
+  makeRequest,
+  MakeRequestParamsFromMethod,
+} from "../../domain/ehr";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { SNOMED_CODE } from "../../util/constants";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
-import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
 const parallelRequests = 5;
 const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
 
-interface ApiConfig {
-  twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
-  practiceId: string;
+interface AthenaHealthApiConfig extends ApiConfig {
   environment: AthenaEnv;
-  clientKey: string;
-  clientSecret: string;
 }
 
 const region = Config.getAWSRegion();
@@ -111,8 +111,6 @@ const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
 
-type RequestData = { [key: string]: string | boolean | object | undefined };
-
 // TYPES FROM DASHBOARD
 export type MedicationWithRefs = {
   medication: Medication;
@@ -146,7 +144,7 @@ class AthenaHealthApi {
   private practiceId: string;
   private s3Utils: S3Utils;
 
-  private constructor(private config: ApiConfig) {
+  private constructor(private config: AthenaHealthApiConfig) {
     this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
     this.practiceId = this.stripPracticeId(config.practiceId);
     this.s3Utils = getS3UtilsInstance();
@@ -155,7 +153,7 @@ class AthenaHealthApi {
     this.baseUrl = `https://${config.environment}.platform.athenahealth.com`;
   }
 
-  public static async create(config: ApiConfig): Promise<AthenaHealthApi> {
+  public static async create(config: AthenaHealthApiConfig): Promise<AthenaHealthApi> {
     const instance = new AthenaHealthApi(config);
     await instance.initialize();
     return instance;
@@ -173,7 +171,7 @@ class AthenaHealthApi {
     };
 
     try {
-      const response = await axios.post(url, this.createDataParams(data), {
+      const response = await axios.post(url, createDataParams(data), {
         headers: { "content-type": "application/x-www-form-urlencoded" },
         auth: {
           username: this.config.clientKey,
@@ -760,8 +758,8 @@ class AthenaHealthApi {
     });
     const bookedAppointments = appointmentEvents.appointments.filter(
       app => app.patientid !== undefined && app.appointmentstatus === "f"
-    ) as BookedAppointment[];
-    return bookedAppointments;
+    );
+    return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
   }
 
   private async makeRequest<T>({
@@ -774,61 +772,30 @@ class AthenaHealthApi {
     additionalInfo,
     debug,
     useFhir = false,
-  }: {
-    cxId: string;
-    patientId?: string;
-    url: string;
-    method: "GET" | "POST";
-    data?: RequestData;
-    schema: z.Schema<T>;
-    additionalInfo: AdditionalInfo;
-    debug: typeof console.log;
-    useFhir?: boolean;
-  }): Promise<T> {
+  }: MakeRequestParamsFromMethod<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhir : this.axiosInstanceProprietary;
-    const response = await axiosInstance.request({
-      method,
+    return await makeRequest<T>({
+      ehr: "athenahealth",
+      cxId,
+      patientId,
+      axiosInstance,
       url,
-      data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
+      method,
+      data,
+      schema,
+      additionalInfo,
+      responsesBucket,
+      s3Utils: this.s3Utils,
+      debug,
     });
-    if (!response.data) {
-      throw new MetriportError(`No body returned from ${method} ${url}`, undefined, additionalInfo);
-    }
-    const body = response.data;
-    debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
-    if (responsesBucket) {
-      const filePath = createHivePartitionFilePath({
-        cxId,
-        patientId: patientId ?? "global",
-        date: new Date(),
-      });
-      const key = this.buildS3Path(method, filePath);
-      this.s3Utils
-        .uploadFile({
-          bucket: responsesBucket,
-          key,
-          file: Buffer.from(JSON.stringify(response.data), "utf8"),
-          contentType: "application/json",
-        })
-        .catch(processAsyncError(`Error saving to s3 @ AthenaHealth - ${method} ${url}`));
-    }
-    const outcome = schema.safeParse(body);
-    if (!outcome.success) {
-      throw new MetriportError(`${method} ${url} response not parsed`, undefined, {
-        ...additionalInfo,
-        error: errorToString(outcome.error),
-      });
-    }
-    return outcome.data;
   }
 
-  private createDataParams(data: RequestData): string {
-    const dataParams = new URLSearchParams();
-    Object.entries(data).forEach(([k, v]) => {
-      if (v === undefined) return;
-      dataParams.append(k, typeof v === "object" ? JSON.stringify(v) : v.toString());
-    });
-    return dataParams.toString();
+  private formatDate(date: string | undefined): string | undefined {
+    return formatDate(date, athenaDateFormat);
+  }
+
+  private formatDateTime(date: string | undefined): string | undefined {
+    return formatDateTime(date, athenaDateTimeFormat);
   }
 
   stripPracticeId(id: string) {
@@ -853,26 +820,6 @@ class AthenaHealthApi {
 
   stripDepartmentId(id: string) {
     return id.replace(`a-${this.practiceId}.${athenaDepartmentPrefix}-`, "");
-  }
-
-  private buildS3Path(method: string, key: string): string {
-    return `athenahealth/${method}/${key}/${uuidv7()}.json`;
-  }
-
-  private formatDate(date: string | undefined): string | undefined {
-    if (!date) return undefined;
-    const trimmedDate = date.trim();
-    const parsedDate = buildDayjs(trimmedDate);
-    if (!parsedDate.isValid()) return undefined;
-    return parsedDate.format(athenaDateFormat);
-  }
-
-  private formatDateTime(date: string | undefined): string | undefined {
-    if (!date) return undefined;
-    const trimmedDate = date.trim();
-    const parsedDate = buildDayjs(trimmedDate);
-    if (!parsedDate.isValid()) return undefined;
-    return parsedDate.format(athenaDateTimeFormat);
   }
 
   private parsePatient({
