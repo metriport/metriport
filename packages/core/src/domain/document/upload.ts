@@ -27,7 +27,7 @@ export function createAttachmentUploadFilePath({
 }: {
   filePath: string;
   attachmentId: string;
-  mimeType: string | undefined;
+  mimeType: string;
 }): string {
   const extension = getFileExtension(mimeType);
   return `${filePath}_${attachmentId}${extension}`;

@@ -34,7 +34,8 @@ import { makeFhirApi } from "../fhir/api/api-factory";
 import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/convert-to-transaction-bundle";
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 import { B64Attachments } from "./remove-b64";
-import { groupObservations } from "./shared";
+import { groupObservations, getMimeType } from "./shared";
+import { metriportDataSourceExtension } from "../fhir/shared/extensions/metriport";
 
 const region = Config.getAWSRegion();
 
@@ -44,7 +45,7 @@ function getS3UtilsInstance(): S3Utils {
 
 type FileDetails = {
   fileB64Contents: string;
-  mimeType: string | undefined;
+  mimeType: string;
 };
 
 export async function processAttachments({
@@ -91,7 +92,7 @@ export async function processAttachments({
     const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
 
     if (docRef.date) attachment.creation = docRef.date;
-    docRef.content = [{ attachment }];
+    docRef.content = [{ attachment, extension: [metriportDataSourceExtension] }];
     const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
 
     uploadDetails.push(uploadParams);
@@ -122,7 +123,7 @@ export async function processAttachments({
       const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
 
       const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
-      docRef.content = [{ attachment }];
+      docRef.content = [{ attachment, extension: [metriportDataSourceExtension] }];
       const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
       uploadDetails.push(uploadParams);
       docRefs.push(docRef);
@@ -194,10 +195,9 @@ function getDetailsForAct(document: CdaOriginalText | undefined): FileDetails | 
   const fileB64Contents = document?.["#text"];
   if (!fileB64Contents) return undefined;
 
-  const mimeType = document?._mediaType;
   return {
     fileB64Contents,
-    mimeType,
+    mimeType: getMimeType(document?._mediaType),
   };
 }
 
@@ -302,10 +302,9 @@ function getDetailsForMediaObs(value: CdaValueEd | undefined): FileDetails | und
   const fileB64Contents = value?.reference?._value;
   if (!fileB64Contents) return undefined;
 
-  const mimeType = value?._mediaType;
   return {
     fileB64Contents,
-    mimeType,
+    mimeType: getMimeType(value?._mediaType),
   };
 }
 
