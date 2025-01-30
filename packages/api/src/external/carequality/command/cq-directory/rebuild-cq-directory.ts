@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementApiOrFail } from "../../api";
-import { CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntryData } from "../../cq-directory";
 import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { getAdditionalOrgs } from "./additional-orgs";
@@ -59,7 +59,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         log(`Loaded ${orgs.length} entries in ${Date.now() - loadStartedAt}ms`);
         if (orgs.length < BATCH_SIZE) isDone = true;
         cache.populate(orgs);
-        const parsedOrgs: CQDirectoryEntryData2[] = [];
+        const parsedOrgs: CQDirectoryEntryData[] = [];
         const [alreadyInsertedIds] = await Promise.all([
           getCqDirectoryIds(sequelize),
           executeAsynchronously(
@@ -136,7 +136,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
  * and very likely won't have any patient that matches our test's demographics, so we might
  * as well keep them inactive to minimize cost/scale issues on pre-prod envs.
  */
-function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData2[]): CQDirectoryEntryData2[] {
+function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData[]): CQDirectoryEntryData[] {
   if (Config.isStaging() || Config.isDev()) {
     return parsedOrgs.map(org => ({
       ...org,

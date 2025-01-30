@@ -1,7 +1,7 @@
 import { Organization } from "@metriport/core/domain/organization";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { metriportEmail as metriportEmailForCq } from "../constants";
-import { CQDirectoryEntryData2 } from "../cq-directory";
+import { CQDirectoryEntryData } from "../cq-directory";
 import {
   createOrUpdateCqOrganization,
   CreateOrUpdateCqOrganizationCmd,
@@ -16,7 +16,7 @@ export type CreateOrUpdateOrganizationCmd = {
  */
 export async function createOrUpdateOrganization(
   cmd: CreateOrUpdateOrganizationCmd
-): Promise<CQDirectoryEntryData2> {
+): Promise<CQDirectoryEntryData> {
   const cqCmd = getCqCommand(cmd);
   return await createOrUpdateCqOrganization(cqCmd);
 }
