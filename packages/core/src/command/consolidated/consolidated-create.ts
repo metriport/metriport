@@ -1,21 +1,25 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
+import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
-import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
-import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
 import { summarizeFilteredBundleWithAI } from "../ai-brief/create";
 import { generateAiBriefFhirResource } from "../ai-brief/shared";
+import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
+
+const maxAttempts = 3;
+const waitTimeBetweenAttemptsInMillis = 200;
 
 export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
@@ -69,11 +73,20 @@ export async function createConsolidatedFromConversions({
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
   if (isAiBriefFeatureFlagEnabled) {
-    const aiBriefContent = await summarizeFilteredBundleWithAI(deduped, cxId, patientId);
-    const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
-    if (aiBriefFhirResource) {
-      deduped.entry?.push(buildBundleEntry(aiBriefFhirResource));
-    }
+    await executeWithNetworkRetries(
+      async () => {
+        const aiBriefContent = await summarizeFilteredBundleWithAI(deduped, cxId, patientId);
+        const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
+        if (aiBriefFhirResource) {
+          deduped.entry?.push(buildBundleEntry(aiBriefFhirResource));
+        }
+      },
+      {
+        maxAttempts,
+        initialDelay: waitTimeBetweenAttemptsInMillis,
+        log,
+      }
+    );
   }
 
   const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
