@@ -12,7 +12,9 @@ import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
+import { isPatient } from "../../external/fhir/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture, out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
@@ -23,7 +25,6 @@ import {
   ConsolidatedSnapshotResponse,
 } from "./get-snapshot";
 import { uploadConsolidatedSnapshotToS3 } from "./snapshot-on-s3";
-import { isPatient } from "../../external/fhir/shared";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
@@ -54,8 +55,14 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       bundle: originalBundleWithoutContainedPatients,
     });
 
+    const normalizedBundle = await normalize({
+      cxId,
+      patientId,
+      bundle: dedupedBundle,
+    });
+
     try {
-      checkBundle(dedupedBundle, cxId, patientId);
+      checkBundle(normalizedBundle, cxId, patientId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const msg = "Bundle contains invalid data";
@@ -87,6 +94,12 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         s3BucketName: this.bucketName,
         bundle: dedupedBundle,
         type: "dedup",
+      }),
+      uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: normalizedBundle,
+        type: "normalized",
       }),
     ]);
 
