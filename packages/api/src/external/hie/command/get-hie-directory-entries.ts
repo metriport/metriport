@@ -4,8 +4,6 @@ import { paginationSqlExpressions } from "../../../shared/sql";
 import { HieDirectoryEntry } from "../domain/hie-directory-entry";
 import { HIEDirectoryEntryViewModel } from "../models/hie-directory-view";
 
-const defaultPageSize = 100;
-
 export async function getHieDirectoryEntriesByFilter({
   filter,
   pagination,
@@ -20,18 +18,18 @@ export async function getHieDirectoryEntriesByFilter({
 
   const queryFTS =
     querySelect +
-    (filter ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter))` : "");
+    (filter
+      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
+      : "");
 
-  const queryFinal = queryFTS + paginationSqlExpressions(pagination);
+  const { query, replacements } = paginationSqlExpressions(pagination);
+  const queryFinal = queryFTS + query;
 
-  const { toItem, fromItem, count } = pagination ?? {};
   const cqDirectoryEntries = await sequelize.query(queryFinal, {
     model: HIEDirectoryEntryViewModel,
     mapToModel: true,
     replacements: {
-      ...(toItem ? { toItem } : {}),
-      ...(fromItem ? { fromItem } : {}),
-      ...(count ? { count } : { count: defaultPageSize }),
+      ...replacements,
       ...(filter ? { filter } : {}),
     },
     type: QueryTypes.SELECT,
@@ -53,7 +51,9 @@ export async function getHieDirectoryEntriesByFilterCount({
 
   const queryFTS =
     querySelect +
-    (filter ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter))` : "");
+    (filter
+      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
+      : "");
 
   const result = await sequelize.query(queryFTS, {
     type: QueryTypes.SELECT,
