@@ -54,6 +54,9 @@ export function composeDocumentReference({
   const extension = getExtensions(inputDocRef);
   const subject = toFHIRSubject(patientId);
   const content = getContent(s3Key, s3BucketName);
+  // TODO #2608 if dev, find a way to create it as we expect it to be after the upload lambda does it job,
+  // since we don't have the upload lambda in dev/local. Try to use the same logic as the upload
+  // lambda, though, to prevent bugs (`upload-doc.ts.updateDocumentReference()`).
   return {
     resourceType: "DocumentReference",
     id: docRefId,

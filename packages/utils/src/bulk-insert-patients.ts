@@ -61,13 +61,14 @@ dayjs.extend(duration);
 // Full path to the file
 const inputFileName = "";
 
+const delayTime = dayjs.duration(5, "seconds").asMilliseconds();
+
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const facilityIdEnvVar = getEnvVar("FACILITY_ID");
 const facilityId =
   facilityIdEnvVar && facilityIdEnvVar.trim().length > 1 ? facilityIdEnvVar?.trim() : undefined;
-const delayTime = dayjs.duration(5, "seconds").asMilliseconds();
 const confirmationTime = dayjs.duration(10, "seconds");
 
 const getFolderName = buildGetDirPathInside(`bulk-insert`);
