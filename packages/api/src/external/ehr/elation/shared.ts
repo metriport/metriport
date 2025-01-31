@@ -2,40 +2,44 @@ import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { ElationEnv, isElationEnv } from "@metriport/core/external/elation/index";
 import {
+  BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
   MetriportError,
-  normalizeEmail,
-  normalizePhoneNumber,
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
+  toTitleCase,
 } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
+import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
 
-export function createMetriportContacts(patient: PatientResource): Contact[] {
+export function createContacts(patient: PatientWithAddress): Contact[] {
   return [
-    ...patient.phones.map(p => {
-      return {
-        phone: normalizePhoneNumber(p.phone),
-      };
+    ...patient.emails.flatMap(e => {
+      const email = normalizeEmailNewSafe(e.email);
+      if (!email) return [];
+      return { email };
     }),
-    ...patient.emails.map(e => {
-      return {
-        email: normalizeEmail(e.email),
-      };
+    ...patient.phones.flatMap(p => {
+      const phone = normalizePhoneNumberSafe(p.phone);
+      if (!phone) return [];
+      return { phone };
     }),
   ];
 }
 
-export function createMetriportAddresses(patient: PatientResource): Address[] {
+export function createAddresses(patient: PatientWithAddress): Address[] {
+  const addressLine1 = patient.address.address_line1.trim();
+  if (addressLine1 === "") throw new BadRequestError("Patient address address_line1 is empty");
+  const addressLine2 = patient.address.address_line2?.trim();
+  const city = patient.address.city.trim();
+  if (city === "") throw new BadRequestError("Patient address city is empty");
   return [
     {
-      addressLine1: patient.address.address_line1,
-      addressLine2:
-        patient.address.address_line2 === null || patient.address.address_line2.trim() === ""
-          ? undefined
-          : patient.address.address_line2,
-      city: patient.address.city,
+      addressLine1,
+      addressLine2: !addressLine2 || addressLine2 === "" ? undefined : addressLine2,
+      city,
       state: normalizeUSStateForAddress(patient.address.state),
       zip: normalizeZipCodeNew(patient.address.zip),
       country: "USA",
@@ -43,12 +47,16 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
   ];
 }
 
-export function createNames(patient: PatientResource): { firstName: string; lastName: string } {
+export function createNames(patient: PatientWithAddress): { firstName: string; lastName: string } {
+  const firstName = toTitleCase(patient.first_name.trim());
+  const lastName = toTitleCase(patient.last_name.trim());
+  const middleName = toTitleCase(patient.middle_name.trim());
+  if (firstName === "" || lastName === "") {
+    throw new BadRequestError("Patient first or last name is empty");
+  }
   return {
-    firstName: `${patient.first_name}${
-      patient.middle_name !== "" ? ` ${patient.middle_name}` : ""
-    }`,
-    lastName: patient.last_name,
+    firstName: `${firstName}${middleName !== "" ? ` ${middleName}` : ""}`,
+    lastName,
   };
 }
 

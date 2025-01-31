@@ -1,5 +1,5 @@
 import { MedicationWithRefs } from "@metriport/core/external/athenahealth/index";
-import { MedicationCreateResponse } from "@metriport/shared/interface/external/athenahealth/medication";
+import { CreatedMedicationSuccess } from "@metriport/shared/interface/external/athenahealth/medication";
 import { createAthenaClient } from "../shared";
 
 export async function writeMedicationToChart({
@@ -14,7 +14,7 @@ export async function writeMedicationToChart({
   athenaPracticeId: string;
   athenaDepartmentId: string;
   medication: MedicationWithRefs;
-}): Promise<MedicationCreateResponse> {
+}): Promise<CreatedMedicationSuccess> {
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createMedication({
     cxId,

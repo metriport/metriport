@@ -69,15 +69,10 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     const practiceId = mapping.externalId;
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
-      throw new MetriportError(
-        `AthenaHealth cxMapping departmentIds exists but is malformed`,
-        undefined,
-        {
-          cxId,
-          practiceId,
-          departmentIds,
-        }
-      );
+      throw new MetriportError("cxMapping departmentIds is malformed @ AthenaHealth", undefined, {
+        cxId,
+        practiceId,
+      });
     }
     return {
       cxId,
@@ -105,15 +100,19 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (getAppointmentsErrors.length > 0) {
-    capture.error("Failed to get appointments from subscription", {
+    const errorsToString = getAppointmentsErrors
+      .map(e => `cxId ${e.cxId} practiceId ${e.practiceId}. Cause: ${errorToString(e.error)}`)
+      .join(",");
+    const msg = "Failed to get some appointments from subscription @ AthenaHealth";
+    log(`${msg}. ${errorsToString}`);
+    capture.message(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
-        errors: getAppointmentsErrors
-          .map(e => `cxId ${e.cxId} practiceId ${e.practiceId} Cause: ${errorToString(e.error)}`)
-          .join(","),
+        errors: getAppointmentsErrors,
         context: "athenahealth.process-patients-from-appointments-sub",
       },
+      level: "warning",
     });
   }
 
@@ -153,20 +152,24 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (syncPatientsErrors.length > 0) {
-    capture.error("Failed to sync patients", {
+    const errorsToString = syncPatientsErrors
+      .map(
+        e =>
+          `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${
+            e.patientId
+          }. Cause: ${errorToString(e.error)}`
+      )
+      .join(",");
+    const msg = "Failed to sync some patients @ AthenaHealth";
+    log(`${msg}. ${errorsToString}`);
+    capture.message(msg, {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
-        errors: syncPatientsErrors
-          .map(
-            e =>
-              `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${
-                e.patientId
-              } Cause: ${errorToString(e.error)}`
-          )
-          .join(","),
+        errors: syncPatientsErrors,
         context: "athenahealth.process-patients-from-appointments-sub",
       },
+      level: "warning",
     });
   }
 }
@@ -181,7 +184,9 @@ async function getAppointments({
   fromDate,
   toDate,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
-  const { log } = out(`AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId}`);
+  const { log } = out(
+    `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}`
+  );
   const api = await AthenaHealthApi.create({
     practiceId,
     environment,
@@ -201,19 +206,20 @@ async function getAppointments({
       }),
     };
   } catch (error) {
-    log(`Failed to get appointments from subscription. Cause: ${errorToString(error)}`);
+    log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
     return { error };
   }
 }
 
 async function syncPatients({
+  cxId,
   practiceId,
   environment,
   appointments,
   clientKey,
   clientSecret,
 }: SyncPatientsParams): Promise<{ errors: { error: unknown; patientId: string }[] }> {
-  const { log } = out(`AthenaHealth syncPatients - practiceId ${practiceId}`);
+  const { log } = out(`AthenaHealth syncPatients - cxId ${cxId} practiceId ${practiceId}`);
   const api = await AthenaHealthApi.create({
     practiceId,
     environment,

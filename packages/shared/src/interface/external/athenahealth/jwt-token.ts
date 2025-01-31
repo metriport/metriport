@@ -17,8 +17,3 @@ export const athenaClientJwtTokenResponseSchema = z.object({
   access_token: z.string(),
   expires_in: z.string(),
 });
-
-export type AthenaClientJwtTokenInfo = {
-  access_token: string;
-  exp: Date;
-};
