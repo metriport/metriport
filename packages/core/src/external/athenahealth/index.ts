@@ -6,7 +6,13 @@ import {
   MedicationStatement,
   Observation,
 } from "@medplum/fhirtypes";
-import { AdditionalInfo, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import {
+  AdditionalInfo,
+  BadRequestError,
+  errorToString,
+  JwtTokenInfo,
+  MetriportError,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   AppointmentEvents,
@@ -14,6 +20,7 @@ import {
   athenaClientJwtTokenResponseSchema,
   BookedAppointment,
   BookedAppointments,
+  bookedAppointmentSchema,
   bookedAppointmentsSchema,
   CreatedMedication,
   createdMedicationSchema,
@@ -86,6 +93,8 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+type RequestData = { [key: string]: string | boolean | object | undefined };
+
 const athenaEnv = ["api", "api.preview"] as const;
 export type AthenaEnv = (typeof athenaEnv)[number];
 export function isAthenaEnv(env: string): env is AthenaEnv {
@@ -112,8 +121,6 @@ const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VIT
 const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
-
-type RequestData = { [key: string]: string | boolean | object | undefined };
 
 // TYPES FROM DASHBOARD
 export type MedicationWithRefs = {
@@ -798,8 +805,8 @@ class AthenaHealthApi {
     });
     const bookedAppointments = appointmentEvents.appointments.filter(
       app => app.patientid !== undefined && app.appointmentstatus === "f"
-    ) as BookedAppointment[];
-    return bookedAppointments;
+    );
+    return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
   }
 
   private async makeRequest<T>({
@@ -914,13 +921,10 @@ class AthenaHealthApi {
   }
 
   private parsePatient(patient: Patient): PatientWithValidHomeAddress {
-    if (!patient.address) {
-      throw new MetriportError("No addresses found");
-    }
+    if (!patient.address) throw new BadRequestError("No addresses found");
     patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
-    if (patient.address.length === 0) {
-      throw new MetriportError("No home address with valid zip found");
-    }
+    if (patient.address.length === 0)
+      throw new BadRequestError("No home address with valid zip found");
     return patientSchemaWithValidHomeAddress.parse(patient);
   }
 

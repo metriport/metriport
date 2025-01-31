@@ -16,19 +16,28 @@ const email = z.object({
   email: z.string(),
 });
 
-export const patientResourceSchema = z.object({
+export const patientSchema = z.object({
   first_name: z.string(),
   last_name: z.string(),
   middle_name: z.string(),
   sex: z.string(),
-  address,
+  address: address.nullable(),
   dob: z.string(),
   phones: phone.array(),
   emails: email.array(),
   ssn: z.string().nullable(),
 });
 
-export type PatientResource = z.infer<typeof patientResourceSchema>;
+export const patientSchemaWithValidAddress = patientSchema
+  .omit({
+    address: true,
+  })
+  .extend({
+    address,
+  });
+
+export type Patient = z.infer<typeof patientSchema>;
+export type PatientWithAddress = z.infer<typeof patientSchemaWithValidAddress>;
 
 const metadata = z.object({
   object_id: z.string(),
