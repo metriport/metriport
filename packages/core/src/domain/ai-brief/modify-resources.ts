@@ -345,7 +345,7 @@ function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | 
     return undefined;
   }
 
-  const category = updRes.category
+  const category = toArray(updRes.category)
     ?.map(cat => cat.coding?.flatMap(coding => coding.display || []))
     .join(", ");
 

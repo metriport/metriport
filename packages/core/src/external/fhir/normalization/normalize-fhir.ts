@@ -3,6 +3,7 @@ import { cloneDeep } from "lodash";
 import { buildCompleteBundleEntry, extractFhirTypesFromBundle } from "../shared/bundle";
 import { normalizeCoverages } from "./resources/coverage";
 import { normalizeObservations } from "./resources/observation";
+import { sortCodings } from "./coding";
 
 export function normalizeFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const normalizedBundle: Bundle = cloneDeep(fhirBundle);
@@ -18,5 +19,5 @@ export function normalizeFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
     return entriesArray.flatMap(v => buildCompleteBundleEntry(v, normalizedBundle.type) || []);
   });
 
-  return normalizedBundle;
+  return sortCodings(normalizedBundle);
 }
