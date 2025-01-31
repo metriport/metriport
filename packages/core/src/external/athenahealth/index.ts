@@ -86,9 +86,10 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export type AthenaEnv = "api" | "api.preview";
+const athenaEnv = ["api", "api.preview"] as const;
+export type AthenaEnv = (typeof athenaEnv)[number];
 export function isAthenaEnv(env: string): env is AthenaEnv {
-  return env === "api" || env === "api.preview";
+  return athenaEnv.includes(env as AthenaEnv);
 }
 
 const problemStatusesMap = new Map<string, string>();
@@ -267,7 +268,14 @@ class AthenaHealthApi {
       debug,
       useFhir: true,
     });
-    return this.parsePatient({ patient, additionalInfo });
+    try {
+      return this.parsePatient(patient);
+    } catch (error) {
+      throw new MetriportError("Failed to parse patient", undefined, {
+        ...additionalInfo,
+        error: errorToString(error),
+      });
+    }
   }
 
   async searchPatient({
@@ -280,7 +288,7 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth searchPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
-    const searchUrl = "/Patient/_search";
+    const patientSearchUrl = "/Patient/_search";
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
     const data = {
       _id: this.createPatientId(patientId),
@@ -291,7 +299,7 @@ class AthenaHealthApi {
       patientId,
       method: "POST",
       data,
-      url: searchUrl,
+      url: patientSearchUrl,
       schema: patientSearchSchema,
       additionalInfo,
       debug,
@@ -302,7 +310,14 @@ class AthenaHealthApi {
     }
     const patient = entry[0]?.resource;
     if (!patient) throw new MetriportError("No patient found in search", undefined, additionalInfo);
-    return this.parsePatient({ patient, additionalInfo });
+    try {
+      return this.parsePatient(patient);
+    } catch (error) {
+      throw new MetriportError("Failed to parse patient", undefined, {
+        ...additionalInfo,
+        error: errorToString(error),
+      });
+    }
   }
 
   async createMedication({
@@ -882,19 +897,13 @@ class AthenaHealthApi {
     return parsedDate.format(athenaDateTimeFormat);
   }
 
-  private parsePatient({
-    patient,
-    additionalInfo,
-  }: {
-    patient: Patient;
-    additionalInfo: Record<string, string>;
-  }): PatientWithValidHomeAddress {
+  private parsePatient(patient: Patient): PatientWithValidHomeAddress {
     if (!patient.address) {
-      throw new MetriportError("No addresses found", undefined, additionalInfo);
+      throw new MetriportError("No addresses found");
     }
     patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
     if (patient.address.length === 0) {
-      throw new MetriportError("No home address with valid zip found", undefined, additionalInfo);
+      throw new MetriportError("No home address with valid zip found");
     }
     return patientSchemaWithValidHomeAddress.parse(patient);
   }
