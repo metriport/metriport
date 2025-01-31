@@ -162,15 +162,17 @@ export async function syncAthenaPatientIntoMetriport({
 }
 
 function createMetriportPatientDemos(patient: PatientWithValidHomeAddress): PatientDemoData[] {
+  const dob = normalizeDate(patient.birthDate);
+  const genderAtBirth = normalizeGender(patient.gender);
   const addressArray = createAddresses(patient);
   const contactArray = createContacts(patient);
-  const names = createNames(patient);
-  return names.map(n => {
+  const namesArray = createNames(patient);
+  return namesArray.map(n => {
     return {
       firstName: n.firstName,
       lastName: n.lastName,
-      dob: normalizeDate(patient.birthDate),
-      genderAtBirth: normalizeGender(patient.gender),
+      dob,
+      genderAtBirth,
       address: addressArray,
       contact: contactArray,
     };
