@@ -4,7 +4,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, normalizeDate, normalizeGender } from "@metriport/shared";
+import { errorToString, MetriportError, normalizeDate, normalizeGender } from "@metriport/shared";
 import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
@@ -174,7 +174,7 @@ function createMetriportPatientDemos(patient: PatientWithValidHomeAddress): Pati
 
 function collapsePatientDemos(demos: PatientDemoData[]): PatientDemoData {
   const firstDemo = demos[0];
-  if (!firstDemo) throw new Error("No patient demos to collapse");
+  if (!firstDemo) throw new MetriportError("No patient demos to collapse");
   return demos.reduce((acc: PatientDemoData, demo) => {
     return {
       ...acc,

@@ -244,6 +244,7 @@ class AthenaHealthApi {
     const additionalInfo = { cxId, practiceId: this.practiceId };
     const departments = await this.makeRequest<Departments>({
       cxId,
+      s3Path: "departments",
       method: "GET",
       url: departmentsUrl,
       schema: departmentsSchema,
@@ -268,6 +269,7 @@ class AthenaHealthApi {
     const patient = await this.makeRequest<Patient>({
       cxId,
       patientId,
+      s3Path: "patient",
       method: "GET",
       url: patientUrl,
       schema: patientSchema,
@@ -304,6 +306,7 @@ class AthenaHealthApi {
     const patientSearch = await this.makeRequest<PatientSearch>({
       cxId,
       patientId,
+      s3Path: "patient-search",
       method: "POST",
       data,
       url: patientSearchUrl,
@@ -374,6 +377,7 @@ class AthenaHealthApi {
     const createdMedication = await this.makeRequest<CreatedMedication>({
       cxId,
       patientId,
+      s3Path: "chart/medication",
       method: "POST",
       data,
       url: chartMedicationUrl,
@@ -437,6 +441,7 @@ class AthenaHealthApi {
       const createdProblem = await this.makeRequest<CreatedProblem>({
         cxId,
         patientId,
+        s3Path: "chart/problem",
         method: "POST",
         data,
         url: chartProblemUrl,
@@ -542,6 +547,7 @@ class AthenaHealthApi {
           const createdVitals = await this.makeRequest<CreatedVitals>({
             cxId,
             patientId,
+            s3Path: `chart/vitals/${observation.id ?? "unknown"}`,
             method: "POST",
             data: params,
             url: chartVitalsUrl,
@@ -644,6 +650,7 @@ class AthenaHealthApi {
           const medicationReferencese = await this.makeRequest<MedicationReferences>({
             cxId,
             patientId,
+            s3Path: `reference/medications/${searchValue}`,
             method: "GET",
             url: `${referenceUrl}?searchvalue=${searchValue}`,
             schema: medicationReferencesSchema,
@@ -704,6 +711,7 @@ class AthenaHealthApi {
     };
     const createdSubscription = await this.makeRequest<CreatedSubscription>({
       cxId,
+      s3Path: "subscribe",
       method: "POST",
       data: eventType ? { eventname: eventType } : {},
       url: subscribeUrl,
@@ -752,6 +760,7 @@ class AthenaHealthApi {
     };
     const bookedAppointments = await this.makeRequest<BookedAppointments>({
       cxId,
+      s3Path: "appointments",
       method: "GET",
       url: appointmentUrl,
       schema: bookedAppointmentsSchema,
@@ -798,6 +807,7 @@ class AthenaHealthApi {
     try {
       const appointmentEvents = await this.makeRequest<AppointmentEvents>({
         cxId,
+        s3Path: "appointments-changed",
         method: "GET",
         url: appointmentUrl,
         schema: appointmentEventsSchema,
@@ -827,6 +837,7 @@ class AthenaHealthApi {
   private async makeRequest<T>({
     cxId,
     patientId,
+    s3Path,
     url,
     method,
     data,
@@ -837,6 +848,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId?: string;
+    s3Path: string;
     url: string;
     method: "GET" | "POST";
     data?: RequestData;
@@ -862,7 +874,7 @@ class AthenaHealthApi {
         patientId: patientId ?? "global",
         date: new Date(),
       });
-      const key = this.buildS3Path(method, filePath);
+      const key = this.buildS3Path(s3Path, filePath);
       this.s3Utils
         .uploadFile({
           bucket: responsesBucket,
