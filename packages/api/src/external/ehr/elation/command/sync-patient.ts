@@ -17,8 +17,8 @@ import {
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
 import {
-  createMetriportAddresses,
-  createMetriportContacts,
+  createAddresses,
+  createContacts,
   createNames,
   getElationClientKeyAndSecret,
   getElationEnv,
@@ -115,8 +115,8 @@ export async function syncElationPatientIntoMetriport({
 }
 
 function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return {
     ...names,
@@ -130,8 +130,8 @@ function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
 function createMetriportPatientCreateCmd(
   patient: PatientResource
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return {
     firstName: toTitleCase(names.firstName),

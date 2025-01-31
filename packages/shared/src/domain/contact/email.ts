@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BadRequestError } from "../../error/bad-request";
 
 export const exampleEmail = "test@test.com";
 
@@ -19,8 +20,30 @@ export function normalizeEmail(email: string): string {
   return trimmedEmail.toLowerCase();
 }
 
+function noramlizeEmailBase(email: string): string {
+  return removeMailto(email.trim().toLowerCase());
+}
+
+function removeMailto(email: string): string {
+  if (email.startsWith("mailto:")) {
+    return email.slice(7);
+  }
+  return email;
+}
+
+export function normalizeEmailSafe(
+  email: string,
+  normalizeBase: (email: string) => string = noramlizeEmailBase
+): string | undefined {
+  const baseEmail = normalizeBase(email);
+  if (!isEmailValid(baseEmail)) return undefined;
+  return baseEmail;
+}
+
 export function normalizeEmailStrict(email: string): string {
-  const normalEmail = normalizeEmail(email);
-  if (!isEmailValid(normalEmail)) throw new Error("Invalid email.");
-  return normalEmail;
+  const emailOrUndefined = normalizeEmailSafe(email);
+  if (!emailOrUndefined) {
+    throw new BadRequestError("Invalid email", undefined, { email });
+  }
+  return emailOrUndefined;
 }

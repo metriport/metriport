@@ -18,12 +18,7 @@ import {
   getPatientOrFail,
 } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
-import {
-  createAthenaClient,
-  createMetriportAddresses,
-  createMetriportContacts,
-  createNames,
-} from "../shared";
+import { createAddresses, createAthenaClient, createContacts, createNames } from "../shared";
 
 const parallelPatientMatches = 5;
 
@@ -170,8 +165,8 @@ export async function syncAthenaPatientIntoMetriport({
 }
 
 function createMetriportPatientDemos(patient: PatientWithValidHomeAddress): PatientDemoData[] {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return names.map(n => {
     return {
@@ -188,8 +183,8 @@ function createMetriportPatientDemos(patient: PatientWithValidHomeAddress): Pati
 function createMetriportPatientCreateCmd(
   patient: PatientWithValidHomeAddress
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return {
     firstName: [...new Set(names.map(n => toTitleCase(n.firstName)))].join(" "),

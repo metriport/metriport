@@ -6,13 +6,14 @@ import AthenaHealthApi, {
 } from "@metriport/core/external/athenahealth/index";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
+  BadRequestError,
   JwtTokenInfo,
   MetriportError,
-  normalizeEmail,
-  normalizePhoneNumber,
-  normalizeUSStateForAddress,
-  normalizeZipCodeNew,
-  BadRequestError,
+  normalizeEmailSafe,
+  normalizePhoneNumberSafe,
+  normalizeUSStateForAddressSafe,
+  normalizeZipCodeNewSafe,
+  toTitleCase,
 } from "@metriport/shared";
 import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
 import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
@@ -26,62 +27,64 @@ const region = Config.getAWSRegion();
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createMetriportContacts(patient: PatientWithValidHomeAddress): Contact[] {
+export function createContacts(patient: PatientWithValidHomeAddress): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
-      return {
-        email: normalizeEmail(telecom.value),
-      };
+      const email = normalizeEmailSafe(telecom.value);
+      if (!email) return [];
+      return { email };
     } else if (telecom.system === "phone") {
-      return {
-        phone: normalizePhoneNumber(telecom.value),
-      };
+      const phone = normalizePhoneNumberSafe(telecom.value);
+      if (!phone) return [];
+      return { phone };
     }
     return [];
   });
 }
 
-export function createMetriportAddresses(patient: PatientWithValidHomeAddress): Address[] {
-  return patient.address.map(address => {
-    if (address.line.length === 0)
-      throw new BadRequestError("Patient missing at least one line in address");
+export function createAddresses(patient: PatientWithValidHomeAddress): Address[] {
+  const addresses = patient.address.flatMap(address => {
+    if (address.line.length === 0) return [];
     const addressLine1 = (address.line[0] as string).trim();
-    if (addressLine1 === "") throw new BadRequestError("Patient address first line is empty");
+    if (addressLine1 === "") return [];
     const addressLines2plus = address.line
       .slice(1)
       .map(l => l.trim())
       .filter(l => l !== "");
     const city = address.city.trim();
-    if (city === "") throw new BadRequestError("Patient address city is empty");
+    if (city === "") return [];
     const country = address.country.trim();
-    if (country === "") throw new BadRequestError("Patient address country is empty");
+    if (country === "") return [];
+    const state = normalizeUSStateForAddressSafe(address.state);
+    if (!state) return [];
+    const zip = normalizeZipCodeNewSafe(address.postalCode);
+    if (!zip) return [];
     return {
       addressLine1,
-      addressLine2: addressLines2plus.length > 0 ? addressLines2plus.join(" ") : undefined,
+      addressLine2: addressLines2plus.length === 0 ? undefined : addressLines2plus.join(" "),
       city,
-      state: normalizeUSStateForAddress(address.state),
-      zip: normalizeZipCodeNew(address.postalCode),
+      state,
+      zip,
       country,
     };
   });
+  if (addresses.length === 0) throw new BadRequestError("Patient has no valid addresses");
+  return addresses;
 }
 
 export function createNames(
   patient: PatientWithValidHomeAddress
 ): { firstName: string; lastName: string }[] {
-  const names: { firstName: string; lastName: string }[] = [];
-  patient.name.map(name => {
+  const names = patient.name.flatMap(name => {
     const lastName = name.family.trim();
-    if (lastName === "") return;
-    name.given.map(gName => {
+    if (lastName === "") return [];
+    return name.given.flatMap(gName => {
       const firstName = gName.trim();
-      if (firstName === "") return;
-      names.push({ firstName, lastName });
+      if (firstName === "") return [];
+      return [{ firstName: toTitleCase(firstName), lastName: toTitleCase(lastName) }];
     });
   });
-  if (names.length === 0) {
-    throw new BadRequestError("Patient has only empty first or last names");
-  }
+  if (names.length === 0) throw new BadRequestError("Patient has no valid names");
   return names;
 }
 
