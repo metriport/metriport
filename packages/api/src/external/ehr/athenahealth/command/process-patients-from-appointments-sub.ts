@@ -1,4 +1,3 @@
-import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -15,8 +14,11 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared";
-import { getAthenaEnv } from "../shared";
-import { SyncPatientParams, syncAthenaPatientIntoMetriport } from "./sync-patient";
+import { createAthenaClient } from "../shared";
+import {
+  SyncAthenaPatientIntoMetriportParams,
+  syncAthenaPatientIntoMetriport,
+} from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -28,20 +30,10 @@ type GetAppointmentsParams = {
   departmentIds?: string[];
   fromDate?: Date;
   toDate?: Date;
-  environment: AthenaEnv;
-  clientKey: string;
-  clientSecret: string;
-};
-
-type SyncPatientParamsWithEnv = SyncPatientParams & {
-  environment: AthenaEnv;
-  clientKey: string;
-  clientSecret: string;
 };
 
 export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
   const { log } = out(`AthenaHealth processPatientsFromAppointmentsSub - catchUp: ${catchUp}`);
-  const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
   const { startRange, endRange } = catchUp
     ? getLookBackTimeRange({ lookBack: catupUpLookBack })
@@ -78,11 +70,8 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
       cxId,
       practiceId,
       departmentIds,
-      environment,
       fromDate: startRange,
       toDate: endRange,
-      clientKey,
-      clientSecret,
     };
   });
 
@@ -124,22 +113,21 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     athenaPracticeId: string;
     athenaPatientId: string;
   }[] = [];
-  const syncPatientsArgs: SyncPatientParamsWithEnv[] = uniqueAppointments.map(appointment => {
-    return {
-      cxId: appointment.cxId,
-      athenaPracticeId: appointment.practiceId,
-      athenaPatientId: appointment.patientId,
-      triggerDq: true,
-      environment,
-      clientKey,
-      clientSecret,
-    };
-  });
+  const syncPatientsArgs: SyncAthenaPatientIntoMetriportParams[] = uniqueAppointments.map(
+    appointment => {
+      return {
+        cxId: appointment.cxId,
+        athenaPracticeId: appointment.practiceId,
+        athenaPatientId: appointment.patientId,
+        triggerDq: true,
+      };
+    }
+  );
 
   await executeAsynchronously(
     syncPatientsArgs,
-    async (params: SyncPatientParamsWithEnv) => {
-      const { error } = await syncPatients(params);
+    async (params: SyncAthenaPatientIntoMetriportParams) => {
+      const { error } = await syncPatient(params);
       if (error) syncPatientsErrors.push({ ...params, error });
     },
     {
@@ -175,30 +163,22 @@ async function getAppointments({
   cxId,
   practiceId,
   departmentIds,
-  environment,
-  clientKey,
-  clientSecret,
   fromDate,
   toDate,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}`
   );
-  const api = await AthenaHealthApi.create({
-    practiceId,
-    environment,
-    clientKey,
-    clientSecret,
-  });
+  const api = await createAthenaClient({ cxId, practiceId });
   try {
-    const appointmentsFromApi = await api.getAppointmentsFromSubscription({
+    const appointments = await api.getAppointmentsFromSubscription({
       cxId,
       departmentIds,
       startProcessedDate: fromDate,
       endProcessedDate: toDate,
     });
     return {
-      appointments: appointmentsFromApi.map(appointment => {
+      appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
       }),
     };
@@ -208,24 +188,16 @@ async function getAppointments({
   }
 }
 
-async function syncPatients({
+async function syncPatient({
   cxId,
   athenaPracticeId,
   athenaPatientId,
   triggerDq,
-  environment,
-  clientKey,
-  clientSecret,
-}: SyncPatientParamsWithEnv): Promise<{ error: unknown }> {
+}: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
   const { log } = out(
-    `AthenaHealth syncPatients - cxId ${cxId} practiceId ${athenaPracticeId} patientId ${athenaPatientId}`
+    `AthenaHealth syncPatient - cxId ${cxId} practiceId ${athenaPracticeId} patientId ${athenaPatientId}`
   );
-  const api = await AthenaHealthApi.create({
-    practiceId: athenaPracticeId,
-    environment,
-    clientKey,
-    clientSecret,
-  });
+  const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   try {
     await syncAthenaPatientIntoMetriport({
       cxId,

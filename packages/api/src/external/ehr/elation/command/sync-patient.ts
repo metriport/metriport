@@ -1,8 +1,8 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { normalizeDate, normalizeGender, NotFoundError } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
+import { normalizeDate, normalizeGender } from "@metriport/shared";
+import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -15,19 +15,21 @@ import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
 
+export type SyncElationPatientIntoMetriportParams = {
+  cxId: string;
+  elationPracticeId: string;
+  elationPatientId: string;
+  api?: ElationApi;
+  triggerDq?: boolean;
+};
+
 export async function syncElationPatientIntoMetriport({
   cxId,
   elationPracticeId,
   elationPatientId,
   api,
   triggerDq = false,
-}: {
-  cxId: string;
-  elationPracticeId: string;
-  elationPatientId: string;
-  api?: ElationApi;
-  triggerDq?: boolean;
-}): Promise<string> {
+}: SyncElationPatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: elationPatientId,
@@ -40,12 +42,9 @@ export async function syncElationPatientIntoMetriport({
     });
     return metriportPatient.id;
   }
+
   const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
-  const elationPatient = await elationApi.getPatient({
-    cxId,
-    patientId: elationPatientId,
-  });
-  if (!elationPatient) throw new NotFoundError("Patient not found");
+  const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
 
   const demo = createMetriportPatientDemo(elationPatient);
 
@@ -92,7 +91,7 @@ export async function syncElationPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
+function createMetriportPatientDemo(patient: PatientWithAddress): PatientDemoData {
   const dob = normalizeDate(patient.dob);
   const genderAtBirth = normalizeGender(patient.sex);
   const addressArray = createAddresses(patient);
