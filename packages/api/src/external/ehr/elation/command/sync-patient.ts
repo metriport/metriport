@@ -1,27 +1,19 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { normalizeDate, normalizeGender, NotFoundError, toTitleCase } from "@metriport/shared";
+import { normalizeDate, normalizeGender, NotFoundError } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
-import {
-  createPatient as createMetriportPatient,
-  PatientCreateCmd,
-} from "../../../../command/medical/patient/create-patient";
+import { createPatient as createMetriportPatient } from "../../../../command/medical/patient/create-patient";
 import {
   getPatientByDemo,
   getPatientOrFail,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
-import {
-  createElationClient,
-  createMetriportAddresses,
-  createMetriportContacts,
-  createNames,
-} from "../shared";
+import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
 
 export async function syncElationPatientIntoMetriport({
   cxId,
@@ -68,8 +60,8 @@ export async function syncElationPatientIntoMetriport({
       patient: {
         cxId,
         facilityId: defaultFacility.facilityId,
-        ...createMetriportPatientCreateCmd(elationPatient),
         externalId: elationPatientId,
+        ...demo,
       },
     });
     if (triggerDq) {
@@ -101,29 +93,15 @@ export async function syncElationPatientIntoMetriport({
 }
 
 function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+  const dob = normalizeDate(patient.dob);
+  const genderAtBirth = normalizeGender(patient.sex);
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return {
     ...names,
-    dob: normalizeDate(patient.dob),
-    genderAtBirth: normalizeGender(patient.sex),
-    address: addressArray,
-    contact: contactArray,
-  };
-}
-
-function createMetriportPatientCreateCmd(
-  patient: PatientResource
-): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
-  const names = createNames(patient);
-  return {
-    firstName: toTitleCase(names.firstName),
-    lastName: toTitleCase(names.lastName),
-    dob: normalizeDate(patient.dob),
-    genderAtBirth: normalizeGender(patient.sex),
+    dob,
+    genderAtBirth,
     address: addressArray,
     contact: contactArray,
   };

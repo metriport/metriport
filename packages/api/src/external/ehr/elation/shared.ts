@@ -5,32 +5,33 @@ import {
   BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
   MetriportError,
-  normalizeEmail,
-  normalizePhoneNumber,
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
+  toTitleCase,
 } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
 
-export function createMetriportContacts(patient: PatientResource): Contact[] {
+export function createContacts(patient: PatientResource): Contact[] {
   return [
-    ...patient.phones.map(p => {
-      return {
-        phone: normalizePhoneNumber(p.phone),
-      };
+    ...patient.emails.flatMap(e => {
+      const email = normalizeEmailNewSafe(e.email);
+      if (!email) return [];
+      return { email };
     }),
-    ...patient.emails.map(e => {
-      return {
-        email: normalizeEmail(e.email),
-      };
+    ...patient.phones.flatMap(p => {
+      const phone = normalizePhoneNumberSafe(p.phone);
+      if (!phone) return [];
+      return { phone };
     }),
   ];
 }
 
-export function createMetriportAddresses(patient: PatientResource): Address[] {
+export function createAddresses(patient: PatientResource): Address[] {
   const addressLine1 = patient.address.address_line1.trim();
-  if (addressLine1 === "") throw new BadRequestError("Patient address first line is empty");
+  if (addressLine1 === "") throw new BadRequestError("Patient address address_line1 is empty");
   const addressLine2 = patient.address.address_line2?.trim();
   const city = patient.address.city.trim();
   if (city === "") throw new BadRequestError("Patient address city is empty");
@@ -47,11 +48,11 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
 }
 
 export function createNames(patient: PatientResource): { firstName: string; lastName: string } {
-  const firstName = patient.first_name.trim();
-  const lastName = patient.last_name.trim();
-  const middleName = patient.middle_name.trim();
+  const firstName = toTitleCase(patient.first_name.trim());
+  const lastName = toTitleCase(patient.last_name.trim());
+  const middleName = toTitleCase(patient.middle_name.trim());
   if (firstName === "" || lastName === "") {
-    throw new BadRequestError("Patient has empty first or last name");
+    throw new BadRequestError("Patient first or last name is empty");
   }
   return {
     firstName: `${firstName}${middleName !== "" ? ` ${middleName}` : ""}`,

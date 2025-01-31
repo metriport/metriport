@@ -100,16 +100,16 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (getAppointmentsErrors.length > 0) {
-    const errors = getAppointmentsErrors
+    const errorsToString = getAppointmentsErrors
       .map(e => `cxId ${e.cxId} practiceId ${e.practiceId}. Cause: ${errorToString(e.error)}`)
       .join(",");
     const msg = "Failed to get some appointments from subscription @ AthenaHealth";
-    log(`${msg}. Cause: ${errors}`);
+    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
-        errors,
+        errors: getAppointmentsErrors,
         context: "athenahealth.process-patients-from-appointments-sub",
       },
       level: "warning",
@@ -149,7 +149,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (syncPatientsErrors.length > 0) {
-    const errors = syncPatientsErrors
+    const errorsToString = syncPatientsErrors
       .map(
         e =>
           `cxId ${e.cxId} athenaPracticeId ${e.athenaPracticeId} athenaPatientId ${
@@ -158,12 +158,12 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
       )
       .join(",");
     const msg = "Failed to sync some patients @ AthenaHealth";
-    log(`${msg}. Cause: ${errors}`);
+    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
-        errors,
+        errors: syncPatientsErrors,
         context: "athenahealth.process-patients-from-appointments-sub",
       },
       level: "warning",
@@ -182,7 +182,7 @@ async function getAppointments({
   toDate,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(
-    `AthenaHealth getAppointments - practiceId ${practiceId} departmentIds ${departmentIds}`
+    `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}`
   );
   const api = await AthenaHealthApi.create({
     practiceId,
@@ -203,11 +203,7 @@ async function getAppointments({
       }),
     };
   } catch (error) {
-    log(
-      `Failed to get appointments from subscription from ${fromDate} to ${toDate}. Cause: ${errorToString(
-        error
-      )}`
-    );
+    log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
     return { error };
   }
 }
