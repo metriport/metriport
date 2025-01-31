@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
 import { v4 as uuidv4 } from "uuid";
+import { unknownValues } from "../external/fhir/codeable-concept";
 import { capture, out } from "../util";
 
 dayjs.extend(utc);
@@ -67,7 +68,6 @@ export function combineTwoResources<T extends Resource>(
 
 // TODO: Might be a good idea to include a check to see if all resources refer to the same patient
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
-const unknownValues = ["unknown", "unk", "no known"];
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
@@ -390,6 +390,11 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
       (!text || text === unknownCode.text.toLowerCase() || text.includes("no data"))
     );
   }
+}
+
+export function isUselessDisplay(text: string) {
+  const normalizedText = text.toLowerCase().trim();
+  return unknownValues.includes(normalizedText) || normalizedText.includes("no data available");
 }
 
 export type DeduplicationResult<T extends Resource> = {
