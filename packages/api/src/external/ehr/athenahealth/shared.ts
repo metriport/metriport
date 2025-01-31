@@ -6,17 +6,15 @@ import AthenaHealthApi, {
 } from "@metriport/core/external/athenahealth/index";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
+  JwtTokenInfo,
   MetriportError,
   normalizeEmail,
   normalizePhoneNumber,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
 } from "@metriport/shared";
-import {
-  AthenaClientJwtTokenData,
-  AthenaClientJwtTokenInfo,
-} from "@metriport/shared/interface/external/athenahealth/jwt-token";
-import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
+import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
@@ -27,7 +25,7 @@ const region = Config.getAWSRegion();
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createMetriportContacts(patient: PatientResourceWithHomeAddress): Contact[] {
+export function createMetriportContacts(patient: PatientWithValidHomeAddress): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       return {
@@ -42,7 +40,7 @@ export function createMetriportContacts(patient: PatientResourceWithHomeAddress)
   });
 }
 
-export function createMetriportAddresses(patient: PatientResourceWithHomeAddress): Address[] {
+export function createMetriportAddresses(patient: PatientWithValidHomeAddress): Address[] {
   return patient.address.map(address => {
     if (address.line.length === 0) {
       throw new Error("AthenaHealth patient missing at least one line in address");
@@ -59,7 +57,7 @@ export function createMetriportAddresses(patient: PatientResourceWithHomeAddress
 }
 
 export function createNames(
-  patient: PatientResourceWithHomeAddress
+  patient: PatientWithValidHomeAddress
 ): { firstName: string; lastName: string }[] {
   const names: { firstName: string; lastName: string }[] = [];
   patient.name.map(name => {
@@ -141,7 +139,7 @@ async function getLatestAthenaClientJwtTokenInfo({
 }: {
   cxId: string;
   practiceId: string;
-}): Promise<AthenaClientJwtTokenInfo | undefined> {
+}): Promise<JwtTokenInfo | undefined> {
   const data: AthenaClientJwtTokenData = {
     cxId,
     practiceId,

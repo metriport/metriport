@@ -1,11 +1,16 @@
 import { z } from "zod";
 
-export const vitalsCreateResponseSchema = z.object({
+export const createdVitalsSchema = z.object({
   success: z.boolean(),
   errormessage: z.string().optional(),
   vitalsid: z.string().array().optional(),
 });
-export type VitalsCreateResponse = z.infer<typeof vitalsCreateResponseSchema>;
+export type CreatedVitals = z.infer<typeof createdVitalsSchema>;
+export const createdVitalsSuccessSchema = createdVitalsSchema.extend({
+  success: z.literal(true),
+  vitalsid: z.string().array(),
+});
+export type CreatedVitalsSuccess = z.infer<typeof createdVitalsSuccessSchema>;
 
 export type VitalsCreateParams = {
   departmentid: string;

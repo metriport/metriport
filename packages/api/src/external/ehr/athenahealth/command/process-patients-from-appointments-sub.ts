@@ -105,13 +105,16 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (getAppointmentsErrors.length > 0) {
-    capture.error("Failed to get appointments from subscription", {
+    const errors = getAppointmentsErrors
+      .map(e => `cxId ${e.cxId} practiceId ${e.practiceId} Cause: ${errorToString(e.error)}`)
+      .join(",");
+    const msg = "Failed to get appointments form subscription @ AthenaHealth";
+    log(`${msg}. Cause: ${errors}`);
+    capture.error(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
-        errors: getAppointmentsErrors
-          .map(e => `cxId ${e.cxId} practiceId ${e.practiceId} Cause: ${errorToString(e.error)}`)
-          .join(","),
+        errors,
         context: "athenahealth.process-patients-from-appointments-sub",
       },
     });
@@ -153,20 +156,24 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (syncPatientsErrors.length > 0) {
-    capture.error("Failed to sync patients", {
+    const errors = syncPatientsErrors
+      .map(
+        e =>
+          `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${
+            e.patientId
+          } Cause: ${errorToString(e.error)}`
+      )
+      .join(",");
+    const msg = "Failed to sync some patients @ AthenaHealth";
+    log(`${msg}. Cause: ${errors}`);
+    capture.message(msg, {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
-        errors: syncPatientsErrors
-          .map(
-            e =>
-              `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${
-                e.patientId
-              } Cause: ${errorToString(e.error)}`
-          )
-          .join(","),
+        errors,
         context: "athenahealth.process-patients-from-appointments-sub",
       },
+      level: "warning",
     });
   }
 }

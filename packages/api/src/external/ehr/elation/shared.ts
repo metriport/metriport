@@ -28,14 +28,16 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
 }
 
 export function createMetriportAddresses(patient: PatientResource): Address[] {
+  const addressLine1 = patient.address.address_line1.trim();
+  if (addressLine1 === "") throw new Error("Patient address first line is empty");
+  const addressLine2 = patient.address.address_line2?.trim();
+  const city = patient.address.city.trim();
+  if (city === "") throw new Error("Patient address city is empty");
   return [
     {
-      addressLine1: patient.address.address_line1,
-      addressLine2:
-        patient.address.address_line2 === null || patient.address.address_line2.trim() === ""
-          ? undefined
-          : patient.address.address_line2,
-      city: patient.address.city,
+      addressLine1,
+      addressLine2: !addressLine2 || addressLine2 === "" ? undefined : addressLine2,
+      city,
       state: normalizeUSStateForAddress(patient.address.state),
       zip: normalizeZipCodeNew(patient.address.zip),
       country: "USA",
@@ -44,11 +46,13 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
 }
 
 export function createNames(patient: PatientResource): { firstName: string; lastName: string } {
+  const firstName = patient.first_name.trim();
+  const lastName = patient.last_name.trim();
+  const middleName = patient.middle_name.trim();
+  if (firstName === "" || lastName === "") throw new Error("Patient has empty first or last name");
   return {
-    firstName: `${patient.first_name}${
-      patient.middle_name !== "" ? ` ${patient.middle_name}` : ""
-    }`,
-    lastName: patient.last_name,
+    firstName: `${firstName}${middleName !== "" ? ` ${middleName}` : ""}`,
+    lastName,
   };
 }
 

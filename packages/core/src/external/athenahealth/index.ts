@@ -6,35 +6,51 @@ import {
   MedicationStatement,
   Observation,
 } from "@medplum/fhirtypes";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { AdditionalInfo, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  appointmentEventGetResponseSchema,
+  AppointmentEvents,
+  appointmentEventsSchema,
+  athenaClientJwtTokenResponseSchema,
   BookedAppointment,
-  bookedAppointmentsGetResponseSchema,
-  departmentsGetResponseSchema,
+  BookedAppointments,
+  bookedAppointmentsSchema,
+  CreatedMedication,
+  createdMedicationSchema,
+  CreatedMedicationSuccess,
+  createdMedicationSuccessSchema,
+  CreatedProblem,
+  createdProblemSchema,
+  CreatedProblemSuccess,
+  createdProblemSuccessSchema,
+  CreatedSubscription,
+  createdSubscriptionSchema,
+  CreatedSubscriptionSuccess,
+  createdSubscriptionSuccessSchema,
+  CreatedVitals,
+  createdVitalsSchema,
+  CreatedVitalsSuccess,
+  createdVitalsSuccessSchema,
+  Departments,
+  departmentsSchema,
   EventType,
   FeedType,
-  MedicationCreateResponse,
-  medicationCreateResponseSchema,
   MedicationReference,
-  medicationReferencesGetResponseSchema,
-  PatientResourceWithHomeAddress,
-  patientResourceSchema,
-  patientResourceSchemaWithHomeAddress,
-  patientSearchResourceSchema,
-  ProblemCreateResponse,
-  problemCreateResponseSchema,
-  subscriptionCreateResponseSchema,
-  athenaClientJwtTokenResponseSchema,
-  AthenaClientJwtTokenInfo,
+  MedicationReferences,
+  medicationReferencesSchema,
+  Patient,
+  patientSchema,
+  patientSchemaWithValidHomeAddress,
+  PatientSearch,
+  patientSearchSchema,
+  PatientWithValidHomeAddress,
   VitalsCreateParams,
-  VitalsCreateResponse,
-  vitalsCreateResponseSchema,
 } from "@metriport/shared/interface/external/athenahealth/index";
+import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import { uniqBy } from "lodash";
+import { z } from "zod";
 import { processAsyncError } from "../..//util/error/shared";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
@@ -45,13 +61,12 @@ import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
-import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
 
 const parallelRequests = 5;
 const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
 
 interface ApiConfig {
-  twoLeggedAuthTokenInfo?: AthenaClientJwtTokenInfo | undefined;
+  twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
   threeLeggedAuthToken?: string | undefined;
   practiceId: string;
   environment: AthenaEnv;
@@ -71,9 +86,14 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-const problemStatusesMapAthena = new Map<string, string>();
-problemStatusesMapAthena.set("relapse", "CHRONIC");
-problemStatusesMapAthena.set("recurrence", "CHRONIC");
+export type AthenaEnv = "api" | "api.preview";
+export function isAthenaEnv(env: string): env is AthenaEnv {
+  return env === "api" || env === "api.preview";
+}
+
+const problemStatusesMap = new Map<string, string>();
+problemStatusesMap.set("relapse", "CHRONIC");
+problemStatusesMap.set("recurrence", "CHRONIC");
 const clinicalStatusActiveCode = "55561003";
 const vitalSignCodesMapAthena = new Map<string, string>();
 vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
@@ -92,10 +112,7 @@ const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
 
-export type AthenaEnv = "api" | "api.preview";
-export function isAthenaEnv(env: string): env is AthenaEnv {
-  return env === "api" || env === "api.preview";
-}
+type RequestData = { [key: string]: string | boolean | object | undefined };
 
 // TYPES FROM DASHBOARD
 export type MedicationWithRefs = {
@@ -103,6 +120,11 @@ export type MedicationWithRefs = {
   administration?: MedicationAdministration;
   dispense?: MedicationDispense;
   statement?: MedicationStatement;
+};
+
+export type GroupedVitals = {
+  mostRecentObservation: Observation;
+  sortedPoints?: DataPoint[];
 };
 
 type BloodPressure = {
@@ -117,16 +139,11 @@ type DataPoint = {
   bp?: BloodPressure | undefined;
 };
 
-export type GroupedVitals = {
-  mostRecentObservation: Observation;
-  sortedPoints?: DataPoint[];
-};
-
 class AthenaHealthApi {
-  private axiosInstanceFhirApi: AxiosInstance;
+  private axiosInstanceFhir: AxiosInstance;
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
-  private twoLeggedAuthTokenInfo: AthenaClientJwtTokenInfo | undefined;
+  private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   private threeLeggedAuthToken: string | undefined;
   private practiceId: string;
   private s3Utils: S3Utils;
@@ -136,7 +153,7 @@ class AthenaHealthApi {
     this.threeLeggedAuthToken = config.threeLeggedAuthToken;
     this.practiceId = this.stripPracticeId(config.practiceId);
     this.s3Utils = getS3UtilsInstance();
-    this.axiosInstanceFhirApi = axios.create({});
+    this.axiosInstanceFhir = axios.create({});
     this.axiosInstanceProprietary = axios.create({});
     this.baseUrl = `https://${config.environment}.platform.athenahealth.com`;
   }
@@ -147,11 +164,11 @@ class AthenaHealthApi {
     return instance;
   }
 
-  getTwoLeggedAuthTokenInfo(): AthenaClientJwtTokenInfo | undefined {
+  getTwoLeggedAuthTokenInfo(): JwtTokenInfo | undefined {
     return this.twoLeggedAuthTokenInfo;
   }
 
-  private async fetchTwoLeggedAuthToken(): Promise<AthenaClientJwtTokenInfo> {
+  private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
     const url = `${this.baseUrl}/oauth2/v1/token`;
     const data = {
       grant_type: "client_credentials",
@@ -191,7 +208,7 @@ class AthenaHealthApi {
       log(`Two Legged Auth token found @ AthenaHealth - using existing token`);
     }
 
-    this.axiosInstanceFhirApi = axios.create({
+    this.axiosInstanceFhir = axios.create({
       baseURL: `${this.baseUrl}/fhir/r4`,
       headers: {
         accept: "application/json",
@@ -211,60 +228,21 @@ class AthenaHealthApi {
     });
   }
 
-  async getDepartments({ cxId }: { cxId: string }): Promise<string[]> {
-    const { log, debug } = out(
-      `AthenaHealth get departments - cxId ${cxId} practiceId ${this.practiceId}`
+  async getDepartmentIds(cxId: string): Promise<string[]> {
+    const { debug } = out(
+      `AthenaHealth getDepartmentIds - cxId ${cxId} practiceId ${this.practiceId}`
     );
-    const departmentUrl = `/departments`;
-    try {
-      const additionalInfo = { cxId, practiceId: this.practiceId };
-      const response = await this.axiosInstanceProprietary.get(departmentUrl);
-      if (!response.data) {
-        throw new MetriportError(
-          `No body returned from ${departmentUrl}`,
-          undefined,
-          additionalInfo
-        );
-      }
-      debug(`${departmentUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId: "global",
-          date: new Date(),
-        });
-        const key = this.buildS3Path("departments", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getDepartments"));
-      }
-      const outcome = departmentsGetResponseSchema.safeParse(response.data);
-      if (!outcome.success) {
-        throw new MetriportError("Departments not parsed", undefined, {
-          ...additionalInfo,
-          error: errorToString(outcome.error),
-        });
-      }
-      return outcome.data.departments.map(d => d.departmentid);
-    } catch (error) {
-      const msg = `Failure while getting departments @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: departmentUrl,
-          cxId,
-          practiceId: this.practiceId,
-          context: "athenahealth.get-departments",
-          error,
-        },
-      });
-      throw error;
-    }
+    const departmentsUrl = `/departments`;
+    const additionalInfo = { cxId, practiceId: this.practiceId };
+    const departments = await this.makeRequest<Departments>({
+      cxId,
+      method: "GET",
+      url: departmentsUrl,
+      schema: departmentsSchema,
+      additionalInfo,
+      debug,
+    });
+    return departments.departments.map(d => d.departmentid);
   }
 
   async getPatient({
@@ -273,196 +251,58 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResourceWithHomeAddress | undefined> {
-    const { log, debug } = out(
-      `AthenaHealth get patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+  }): Promise<PatientWithValidHomeAddress> {
+    const { debug } = out(
+      `AthenaHealth getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
-    try {
-      const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-      const response = await this.axiosInstanceFhirApi.get(patientUrl);
-      if (!response.data) {
-        throw new MetriportError(`No body returned from ${patientUrl}`, undefined, additionalInfo);
-      }
-      debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = this.buildS3Path("patient", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatient"));
-      }
-      const patient = patientResourceSchema.safeParse(response.data);
-      if (!patient.success) {
-        const error = patient.error;
-        const msg = "Patient from AthenaHealth could not be parsed";
-        log(`${msg} - error ${errorToString(error)}`);
-        capture.message(msg, {
-          extra: {
-            url: patientUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            error,
-            context: "athenahealth.get-patient",
-          },
-          level: "info",
-        });
-        return undefined;
-      }
-      const patientData = patient.data;
-      patientData.address = patientData.address.filter(
-        a => a.postalCode !== undefined && a.use === "home"
-      );
-      if (patientData.address.length === 0) {
-        const msg = "No home address with valid zip found for patient";
-        capture.message(msg, {
-          extra: {
-            url: patientUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            context: "athenahealth.get-patient",
-          },
-          level: "info",
-        });
-        return undefined;
-      }
-      return patientResourceSchemaWithHomeAddress.parse(patientData);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.response?.status === 404) return undefined;
-      const msg = `Failure while getting patient @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: patientUrl,
-          cxId,
-          practiceId: this.practiceId,
-          patientId,
-          context: "athenahealth.get-patient",
-          error,
-        },
-      });
-      throw error;
-    }
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const patient = await this.makeRequest<Patient>({
+      cxId,
+      patientId,
+      method: "GET",
+      url: patientUrl,
+      schema: patientSchema,
+      additionalInfo,
+      debug,
+      useFhir: true,
+    });
+    return this.parsePatient({ patient, additionalInfo });
   }
 
-  async getPatientViaSearch({
+  async searchPatient({
     cxId,
     patientId,
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResourceWithHomeAddress | undefined> {
-    const { log, debug } = out(
-      `AthenaHealth search patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+  }): Promise<PatientWithValidHomeAddress> {
+    const { debug } = out(
+      `AthenaHealth searchPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
-    const patientSearchUrl = "/Patient/_search";
-    try {
-      const data = {
-        _id: this.createPatientId(patientId),
-        "ah-practice": this.createPracticetId(this.practiceId),
-      };
-      const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-      const response = await this.axiosInstanceFhirApi.post(
-        patientSearchUrl,
-        this.createDataParams(data)
-      );
-      if (!response.data) {
-        throw new MetriportError(
-          `No body returned from ${patientSearchUrl}`,
-          undefined,
-          additionalInfo
-        );
-      }
-      debug(`${patientSearchUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = this.buildS3Path("patient-search", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatientViaSearch"));
-      }
-      const searchSet = patientSearchResourceSchema.safeParse(response.data);
-      if (!searchSet.success) {
-        const error = searchSet.error;
-        const msg = "Patient search set from AthenaHealth could not be parsed";
-        log(`${msg} - error ${errorToString(error)}`);
-        capture.message(msg, {
-          extra: {
-            url: patientSearchUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            error,
-            context: "athenahealth.get-patient",
-          },
-          level: "info",
-        });
-        return undefined;
-      }
-      const entry = searchSet.data.entry;
-      if (entry.length > 1) {
-        throw new MetriportError(
-          "More than one AthenaHealth patient found",
-          undefined,
-          additionalInfo
-        );
-      }
-      const patientData = entry[0]?.resource;
-      if (!patientData) return undefined;
-      patientData.address = patientData.address.filter(
-        a => a.postalCode !== undefined && a.use === "home"
-      );
-      if (patientData.address.length === 0) {
-        const msg = "No home address with valid zip found for patient from search set";
-        capture.message(msg, {
-          extra: {
-            url: patientSearchUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            context: "athenahealth.get-patient",
-          },
-          level: "info",
-        });
-        return undefined;
-      }
-      return patientResourceSchemaWithHomeAddress.parse(patientData);
-    } catch (error) {
-      const msg = `Failure while searching patient @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: patientSearchUrl,
-          cxId,
-          practiceId: this.practiceId,
-          patientId,
-          context: "athenahealth.get-patient",
-          error,
-        },
-      });
-      throw error;
+    const searchUrl = "/Patient/_search";
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const data = {
+      _id: this.createPatientId(patientId),
+      "ah-practice": this.createPracticetId(this.practiceId),
+    };
+    const patientSearch = await this.makeRequest<PatientSearch>({
+      cxId,
+      patientId,
+      method: "POST",
+      data,
+      url: searchUrl,
+      schema: patientSearchSchema,
+      additionalInfo,
+      debug,
+    });
+    const entry = patientSearch.entry;
+    if (entry.length > 1) {
+      throw new MetriportError("More than one patient found in search", undefined, additionalInfo);
     }
+    const patient = entry[0]?.resource;
+    if (!patient) throw new MetriportError("No patient found in search", undefined, additionalInfo);
+    return this.parsePatient({ patient, additionalInfo });
   }
 
   async createMedication({
@@ -475,103 +315,57 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
     medication: MedicationWithRefs;
-  }): Promise<MedicationCreateResponse> {
-    const { log, debug } = out(
-      `AthenaHealth create medication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+  }): Promise<CreatedMedicationSuccess> {
+    const { debug } = out(
+      `AthenaHealth createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
     const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
-    try {
-      const additionalInfo = {
-        cxId,
-        practiceId: this.practiceId,
-        patientId,
-        departmentId,
-        medicationId: medication.medication.id,
-      };
-      const medicationOptions = await this.searchForMedication({
-        cxId,
-        patientId,
-        medication: medication.medication,
-      });
-      const firstOption = medicationOptions[0];
-      if (!firstOption) {
-        throw new MetriportError(
-          "No medication options found via search",
-          undefined,
-          additionalInfo
-        );
-      }
-      const data = {
-        departmentid: this.stripDepartmentId(departmentId),
-        providernote: "Added via Metriport App",
-        unstructuredsig: "Metriport",
-        medicationid: `${firstOption.medicationid}`,
-        hidden: false,
-        startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
-        stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
-        stopreason: undefined,
-        patientnote: undefined,
-        THIRDPARTYUSERNAME: undefined,
-        PATIENTFACINGCALL: undefined,
-      };
-      const response = await this.axiosInstanceProprietary.post(
-        chartMedicationUrl,
-        this.createDataParams(data)
-      );
-      if (!response.data) {
-        throw new MetriportError(
-          `No body returned from ${chartMedicationUrl}`,
-          undefined,
-          additionalInfo
-        );
-      }
-      debug(`${chartMedicationUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = this.buildS3Path("chart/medication", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createMedication"));
-      }
-      const outcome = medicationCreateResponseSchema.safeParse(response.data);
-      if (!outcome.success) {
-        throw new MetriportError("Medication not parsed", undefined, {
-          ...additionalInfo,
-          error: errorToString(outcome.error),
-        });
-      }
-      if (!outcome.data.success) {
-        throw new MetriportError("Medication creation not successful", undefined, {
-          ...additionalInfo,
-          error: outcome.data.errormessage,
-        });
-      }
-      return outcome.data;
-    } catch (error) {
-      const msg = `Failure while creating medication @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: chartMedicationUrl,
-          cxId,
-          practiceId: this.practiceId,
-          patientId,
-          departmentId,
-          context: "athenahealth.create-medication",
-          error,
-        },
-      });
-      throw error;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+      medicationId: medication.medication.id,
+    };
+    const medicationOptions = await this.searchForMedication({
+      cxId,
+      patientId,
+      medication: medication.medication,
+    });
+    const firstOption = medicationOptions[0];
+    if (!firstOption) {
+      throw new MetriportError("No medication options found via search", undefined, additionalInfo);
     }
+    const data = {
+      departmentid: this.stripDepartmentId(departmentId),
+      providernote: "Added via Metriport App",
+      unstructuredsig: "Metriport",
+      medicationid: `${firstOption.medicationid}`,
+      hidden: false,
+      startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
+      stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
+      stopreason: undefined,
+      patientnote: undefined,
+      THIRDPARTYUSERNAME: undefined,
+      PATIENTFACINGCALL: undefined,
+    };
+    const createdMedication = await this.makeRequest<CreatedMedication>({
+      cxId,
+      patientId,
+      method: "POST",
+      data,
+      url: chartMedicationUrl,
+      schema: createdMedicationSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!createdMedication.success) {
+      throw new MetriportError("Medication creation not successful", undefined, {
+        ...additionalInfo,
+        error: createdMedication.errormessage,
+      });
+    }
+    return createdMedicationSuccessSchema.parse(createdMedication);
   }
 
   async createProblem({
@@ -584,96 +378,66 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
     condition: Condition;
-  }): Promise<ProblemCreateResponse> {
-    const { log, debug } = out(
-      `AthenaHealth create problem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+  }): Promise<CreatedProblemSuccess> {
+    const { debug } = out(
+      `AthenaHealth createProblem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
     const chartProblemUrl = `/chart/${this.stripPatientId(patientId)}/problems`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+      conditionId: condition.id,
+    };
+    const snomedCode = this.getConditionSnomedCode(condition);
+    if (!snomedCode) {
+      throw new MetriportError("No SNOMED code found for condition", undefined, additionalInfo);
+    }
+    const startDate = this.getConditionStartDate(condition);
+    if (!startDate) {
+      throw new MetriportError("No start date found for condition", undefined, additionalInfo);
+    }
+    const conditionStatus = this.getConditionStatus(condition);
+    const problemStatus = conditionStatus
+      ? problemStatusesMap.get(conditionStatus.toLowerCase())
+      : undefined;
+    const data = {
+      departmentid: this.stripDepartmentId(departmentId),
+      note: "Added via Metriport App",
+      snomedcode: snomedCode,
+      startdate: this.formatDate(startDate),
+      status: problemStatus,
+      THIRDPARTYUSERNAME: undefined,
+      PATIENTFACINGCALL: undefined,
+    };
     try {
-      const additionalInfo = {
+      const createdProblem = await this.makeRequest<CreatedProblem>({
         cxId,
-        practiceId: this.practiceId,
         patientId,
-        departmentId,
-        conditionId: condition.id,
-      };
-      const snomedCode = this.getConditionSnomedCode(condition);
-      if (!snomedCode) {
-        throw new MetriportError("No SNOMED code found for condition", undefined, additionalInfo);
+        method: "POST",
+        data,
+        url: chartProblemUrl,
+        schema: createdProblemSchema,
+        additionalInfo,
+        debug,
+      });
+      if (!createdProblem.success) {
+        throw new MetriportError("Problem creation not successful", undefined, {
+          ...additionalInfo,
+          error: createdProblem.errormessage,
+        });
       }
-      const startDate = this.getConditionStartDate(condition);
-      if (!startDate) {
-        throw new MetriportError("No start date found for condition", undefined, additionalInfo);
-      }
-      const conditionStatus = this.getConditionStatus(condition);
-      const athenaStatus = conditionStatus
-        ? problemStatusesMapAthena.get(conditionStatus.toLowerCase())
-        : undefined;
-      const data = {
-        departmentid: this.stripDepartmentId(departmentId),
-        note: "Added via Metriport App",
-        snomedcode: snomedCode,
-        startdate: this.formatDate(startDate),
-        status: athenaStatus,
-        THIRDPARTYUSERNAME: undefined,
-        PATIENTFACINGCALL: undefined,
-      };
-      const response = await this.axiosInstanceProprietary.post(
-        chartProblemUrl,
-        this.createDataParams(data)
-      );
-      if (!response.data) {
+      return createdProblemSuccessSchema.parse(createdProblem);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.response?.status === 400) {
         throw new MetriportError(
-          `No body returned from ${chartProblemUrl}`,
+          "Problem creation not successful - duplicate problem",
           undefined,
           additionalInfo
         );
       }
-      debug(`${chartProblemUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = this.buildS3Path("chart/problem", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createProblem"));
-      }
-      const outcome = problemCreateResponseSchema.safeParse(response.data);
-      if (!outcome.success) {
-        throw new MetriportError("Problem not parsed", undefined, {
-          ...additionalInfo,
-          error: errorToString(outcome.error),
-        });
-      }
-      if (!outcome.data.success) {
-        throw new MetriportError("Problem creation not successful", undefined, {
-          ...additionalInfo,
-          error: outcome.data.errormessage,
-        });
-      }
-      return outcome.data;
-    } catch (error) {
-      const msg = `Failure while creating problem @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: chartProblemUrl,
-          cxId,
-          practiceId: this.practiceId,
-          patientId,
-          departmentId,
-          context: "athenahealth.create-problem",
-          error,
-        },
-      });
       throw error;
     }
   }
@@ -688,166 +452,113 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
     vitals: GroupedVitals;
-  }): Promise<VitalsCreateResponse[]> {
+  }): Promise<CreatedVitalsSuccess[]> {
     const { log, debug } = out(
-      `AthenaHealth create vitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+      `AthenaHealth createVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
     const chartVitalsUrl = `/chart/${this.stripPatientId(patientId)}/vitals`;
-    try {
-      const observation = vitals.mostRecentObservation;
-      const additionalInfo = {
-        cxId,
-        practiceId: this.practiceId,
-        patientId,
-        departmentId,
-        observationId: observation.id,
-      };
-      const code = getObservationCode(observation);
-      if (!code) {
-        throw new MetriportError("No code found for observation", undefined, additionalInfo);
-      }
-      const clinicalElementId = vitalSignCodesMapAthena.get(code);
-      if (!clinicalElementId) {
-        throw new MetriportError("No clinical element id found for observation", undefined, {
-          ...additionalInfo,
-          code,
-        });
-      }
-      const units = getObservationUnits(observation);
-      if (!units) {
-        throw new MetriportError("No units found for observation", undefined, {
-          ...additionalInfo,
-          code,
-          clinicalElementId,
-        });
-      }
-      if (!vitals.sortedPoints || vitals.sortedPoints.length === 0) {
-        throw new MetriportError("No points found for vitals", undefined, additionalInfo);
-      }
-      if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
-        throw new MetriportError("Duplicate reading taken for vitals", undefined, {
-          ...additionalInfo,
-          dates: vitals.sortedPoints.map(v => v.date).join(", "),
-        });
-      }
-
-      const responses: VitalsCreateResponse[] = [];
-      const rawResponses: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-      const createVitalsErrors: {
-        error: unknown;
-        cxId: string;
-        practiceId: string;
-        patientId: string;
-        departmentId: string;
-        observationId: string | undefined;
-      }[] = [];
-      const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
-        const vitalsData = this.createVitalsData(v, clinicalElementId, units);
-        return {
-          departmentid: this.stripDepartmentId(departmentId),
-          returnvitalsid: true,
-          source: "DEVICEGENERATED",
-          vitals: [vitalsData],
-          THIRDPARTYUSERNAME: undefined,
-          PATIENTFACINGCALL: undefined,
-        };
-      });
-
-      await executeAsynchronously(
-        createVitalsArgs,
-        async (params: VitalsCreateParams) => {
-          try {
-            const response = await this.axiosInstanceProprietary.post(
-              chartVitalsUrl,
-              this.createDataParams(params)
-            );
-            if (!response.data) {
-              throw new MetriportError(
-                `No body returned from ${chartVitalsUrl}`,
-                undefined,
-                additionalInfo
-              );
-            }
-            debug(`${chartVitalsUrl} resp: `, () => JSON.stringify(response.data));
-            rawResponses.push(response.data);
-            const outcome = vitalsCreateResponseSchema.safeParse(response.data);
-            if (!outcome.success) {
-              throw new MetriportError("Vitals not parsed", undefined, {
-                ...additionalInfo,
-                error: errorToString(outcome.error),
-              });
-            }
-            if (!outcome.data.success) {
-              throw new MetriportError("Vitals creation not successful", undefined, {
-                ...additionalInfo,
-                error: outcome.data.errormessage,
-              });
-            }
-            responses.push(outcome.data);
-          } catch (error) {
-            createVitalsErrors.push({ error, ...additionalInfo });
-          }
-        },
-        {
-          numberOfParallelExecutions: parallelRequests,
-          delay: delayBetweenRequestBatches.asMilliseconds(),
-        }
-      );
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = this.buildS3Path("chart/vitals", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(
-              rawResponses.map(response => JSON.stringify(response)).join("\n"),
-              "utf8"
-            ),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createVitals"));
-      }
-      if (createVitalsErrors.length > 0) {
-        const msg = `Failure while creating some vitals @ AthenaHealth`;
-        log(`${msg}. Cause: ${createVitalsErrors.map(error => errorToString(error)).join(", ")}`);
-        capture.error(msg, {
-          extra: {
-            url: chartVitalsUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            departmentId,
-            observationId: observation.id,
-            context: "athenahealth.create-vitals",
-            errors: createVitalsErrors,
-          },
-        });
-      }
-      if (responses.length === 0) {
-        throw new MetriportError("No vitals created", undefined, additionalInfo);
-      }
-      return responses;
-    } catch (error) {
-      const msg = `Failure while creating some vitals @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: chartVitalsUrl,
-          cxId,
-          practiceId: this.practiceId,
-          patientId,
-          departmentId,
-          context: "athenahealth.create-vitals",
-          error,
-        },
-      });
-      throw error;
+    const observation = vitals.mostRecentObservation;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+      observationId: observation.id,
+    };
+    const code = getObservationCode(observation);
+    if (!code) {
+      throw new MetriportError("No code found for observation", undefined, additionalInfo);
     }
+    const clinicalElementId = vitalSignCodesMapAthena.get(code);
+    if (!clinicalElementId) {
+      throw new MetriportError("No clinical element id found for observation", undefined, {
+        ...additionalInfo,
+        code,
+      });
+    }
+    const units = getObservationUnits(observation);
+    if (!units) {
+      throw new MetriportError("No units found for observation", undefined, {
+        ...additionalInfo,
+        code,
+        clinicalElementId,
+      });
+    }
+    if (!vitals.sortedPoints || vitals.sortedPoints.length === 0) {
+      throw new MetriportError("No points found for vitals", undefined, additionalInfo);
+    }
+    if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
+      throw new MetriportError("Duplicate reading taken for vitals", undefined, {
+        ...additionalInfo,
+        dates: vitals.sortedPoints.map(v => v.date).join(", "),
+      });
+    }
+    const allCreatedVitals: CreatedVitalsSuccess[] = [];
+    const createVitalsErrors: {
+      error: unknown;
+      cxId: string;
+      practiceId: string;
+      patientId: string;
+      departmentId: string;
+      observationId: string | undefined;
+    }[] = [];
+    const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
+      const vitalsData = this.createVitalsData(v, clinicalElementId, units);
+      return {
+        departmentid: this.stripDepartmentId(departmentId),
+        returnvitalsid: true,
+        source: "DEVICEGENERATED",
+        vitals: [vitalsData],
+        THIRDPARTYUSERNAME: undefined,
+        PATIENTFACINGCALL: undefined,
+      };
+    });
+    await executeAsynchronously(
+      createVitalsArgs,
+      async (params: VitalsCreateParams) => {
+        try {
+          const createdVitals = await this.makeRequest<CreatedVitals>({
+            cxId,
+            patientId,
+            method: "POST",
+            data: params,
+            url: chartVitalsUrl,
+            schema: createdVitalsSchema,
+            additionalInfo,
+            debug,
+          });
+          if (!createdVitals.success) {
+            throw new MetriportError("Vitals creation not successful", undefined, {
+              ...additionalInfo,
+              error: createdVitals.errormessage,
+            });
+          }
+          allCreatedVitals.push(createdVitalsSuccessSchema.parse(createdVitals));
+        } catch (error) {
+          createVitalsErrors.push({ error, ...additionalInfo });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
+      }
+    );
+    if (createVitalsErrors.length > 0) {
+      const msg = `Failure while creating some vitals @ AthenaHealth`;
+      log(`${msg}. Cause: ${createVitalsErrors.map(error => errorToString(error)).join(", ")}`);
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          context: "athenahealth.create-vitals",
+          errors: createVitalsErrors,
+        },
+        level: "warning",
+      });
+    }
+    if (allCreatedVitals.length === 0) {
+      throw new MetriportError("No vitals created", undefined, additionalInfo);
+    }
+    return allCreatedVitals;
   }
 
   async searchForMedication({
@@ -860,128 +571,78 @@ class AthenaHealthApi {
     medication: Medication;
   }): Promise<MedicationReference[]> {
     const { log, debug } = out(
-      `AthenaHealth search for medication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `AthenaHealth searchForMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const referenceUrl = "/reference/medications";
-    try {
-      const additionalInfo = {
-        cxId,
-        practiceId: this.practiceId,
-        patientId,
-        medicationId: medication.id,
-      };
-      const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
-      if (!searchValues || searchValues.length === 0) {
-        throw new MetriportError(
-          "No code display values for searching medication references",
-          undefined,
-          additionalInfo
-        );
-      }
-      const searchValuesWithAtLeastTwoParts = searchValues.filter(
-        searchValue => searchValue.length >= 2
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      medicationId: medication.id,
+    };
+    const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
+    if (!searchValues || searchValues.length === 0) {
+      throw new MetriportError(
+        "No search values for searching medication references",
+        undefined,
+        additionalInfo
       );
-      if (searchValuesWithAtLeastTwoParts.length === 0) {
-        throw new MetriportError(
-          "No search values with at least two parts",
-          undefined,
-          additionalInfo
-        );
-      }
-
-      const responses: MedicationReference[] = [];
-      const rawResponses: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-      const searchMedicationErrors: {
-        error: unknown;
-        cxId: string;
-        practiceId: string;
-        patientId: string;
-        medicationId: string | undefined;
-      }[] = [];
-      const searchMedicationArgs: string[] = searchValuesWithAtLeastTwoParts;
-
-      await executeAsynchronously(
-        searchMedicationArgs,
-        async (searchValue: string) => {
-          try {
-            const response = await this.axiosInstanceProprietary.get(
-              `${referenceUrl}?searchvalue=${searchValue}`
-            );
-            if (!response.data) {
-              throw new MetriportError(
-                `No body returned from ${referenceUrl}`,
-                undefined,
-                additionalInfo
-              );
-            }
-            debug(`${referenceUrl} resp: `, () => JSON.stringify(response.data));
-            rawResponses.push(response.data);
-            const outcome = medicationReferencesGetResponseSchema.safeParse(response.data);
-            if (!outcome.success) {
-              throw new MetriportError("Medication references not parsed", undefined, {
-                ...additionalInfo,
-                error: errorToString(outcome.error),
-              });
-            }
-            responses.push(...outcome.data);
-          } catch (error) {
-            searchMedicationErrors.push({ error, ...additionalInfo });
-          }
-        },
-        {
-          numberOfParallelExecutions: parallelRequests,
-          delay: delayBetweenRequestBatches.asMilliseconds(),
-        }
-      );
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = this.buildS3Path("reference/medications", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(
-              rawResponses.map(response => JSON.stringify(response)).join("\n"),
-              "utf8"
-            ),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - searchForMedication"));
-      }
-      if (searchMedicationErrors.length > 0) {
-        const msg = `Failure while searching for medications @ AthenaHealth`;
-        log(
-          `${msg}. Cause: ${searchMedicationErrors.map(error => errorToString(error)).join(", ")}`
-        );
-        capture.error(msg, {
-          extra: {
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            context: "athenahealth.search-for-medication",
-            errors: searchMedicationErrors,
-          },
-        });
-      }
-      return responses;
-    } catch (error) {
-      const msg = `Failure while searching for medications @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          practiceId: this.practiceId,
-          patientId,
-          context: "athenahealth.search-for-medication",
-          error,
-        },
-      });
-      throw error;
     }
+    const searchValuesWithAtLeastTwoParts = searchValues.filter(
+      searchValue => searchValue.length >= 2
+    );
+    if (searchValuesWithAtLeastTwoParts.length === 0) {
+      throw new MetriportError(
+        "No search values with at least two parts",
+        undefined,
+        additionalInfo
+      );
+    }
+    const allMedicationReferences: MedicationReference[] = [];
+    const searchMedicationErrors: {
+      error: unknown;
+      cxId: string;
+      practiceId: string;
+      patientId: string;
+      medicationId: string | undefined;
+    }[] = [];
+    const searchMedicationArgs: string[] = searchValuesWithAtLeastTwoParts;
+    await executeAsynchronously(
+      searchMedicationArgs,
+      async (searchValue: string) => {
+        try {
+          const medicationReferencese = await this.makeRequest<MedicationReferences>({
+            cxId,
+            patientId,
+            method: "GET",
+            url: `${referenceUrl}?searchvalue=${searchValue}`,
+            schema: medicationReferencesSchema,
+            additionalInfo,
+            debug,
+          });
+          allMedicationReferences.push(...medicationReferencese);
+        } catch (error) {
+          searchMedicationErrors.push({ error, ...additionalInfo });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
+      }
+    );
+    if (searchMedicationErrors.length > 0) {
+      const msg = `Failure while searching for some search values @ AthenaHealth`;
+      log(`${msg}. Cause: ${searchMedicationErrors.map(error => errorToString(error)).join(", ")}`);
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          context: "athenahealth.search-for-medication",
+          errors: searchMedicationErrors,
+        },
+        level: "warning",
+      });
+    }
+    return allMedicationReferences;
   }
 
   async subscribeToEvent({
@@ -992,75 +653,30 @@ class AthenaHealthApi {
     cxId: string;
     feedtype: FeedType;
     eventType?: EventType;
-  }): Promise<void> {
-    const { log, debug } = out(
-      `AthenaHealth subscribe to event - cxId ${cxId} practiceId ${this.practiceId} feedtype ${feedtype}`
+  }): Promise<CreatedSubscriptionSuccess> {
+    const { debug } = out(
+      `AthenaHealth subscribeToEvent - cxId ${cxId} practiceId ${this.practiceId} feedtype ${feedtype}`
     );
     const subscribeUrl = `/${feedtype}/changed/subscription`;
-    try {
-      const response = await this.axiosInstanceProprietary.post(
-        subscribeUrl,
-        eventType ? this.createDataParams({ eventname: eventType }) : {}
-      );
-      const additionalInfo = {
-        cxId,
-        practiceId: this.practiceId,
-        feedtype,
-        eventType,
-      };
-      if (!response.data) {
-        throw new MetriportError(
-          `No body returned from ${subscribeUrl}`,
-          undefined,
-          additionalInfo
-        );
-      }
-      debug(`${subscribeUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId: "global",
-          date: new Date(),
-        });
-        const key = this.buildS3Path("subscribe", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - subscribeToEvent"));
-      }
-      const outcome = subscriptionCreateResponseSchema.safeParse(response.data);
-      if (!outcome.success) {
-        throw new MetriportError("Subscription not parsed", undefined, {
-          ...additionalInfo,
-          error: errorToString(outcome.error),
-        });
-      }
-      if (!outcome.data.success) {
-        throw new MetriportError(
-          `Subscription for ${feedtype} not successful`,
-          undefined,
-          additionalInfo
-        );
-      }
-    } catch (error) {
-      const msg = `Failure while subscribing to event @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: subscribeUrl,
-          cxId,
-          practiceId: this.practiceId,
-          feedtype,
-          context: "athenahealth.subscribe-to-event",
-          error,
-        },
-      });
-      throw error;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      feedtype,
+      eventType,
+    };
+    const createdSubscription = await this.makeRequest<CreatedSubscription>({
+      cxId,
+      method: "POST",
+      data: eventType ? { eventname: eventType } : {},
+      url: subscribeUrl,
+      schema: createdSubscriptionSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!createdSubscription.success) {
+      throw new MetriportError(`Subscription not successful`, undefined, additionalInfo);
     }
+    return createdSubscriptionSuccessSchema.parse(createdSubscription);
   }
 
   async getAppointments({
@@ -1074,8 +690,8 @@ class AthenaHealthApi {
     startAppointmentDate: Date;
     endAppointmentDate: Date;
   }): Promise<BookedAppointment[]> {
-    const { log, debug } = out(
-      `AthenaHealth get appointments - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
+    const { debug } = out(
+      `AthenaHealth getAppointments - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
@@ -1085,68 +701,26 @@ class AthenaHealthApi {
     if (departmentIds && departmentIds.length > 0) {
       departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
     } else {
-      const fetchedDepartmentIds = await this.getDepartments({ cxId });
-      fetchedDepartmentIds.map(dpId =>
-        urlParams.append("departmentid", this.stripDepartmentId(dpId))
-      );
+      const allDepartmentIds = await this.getDepartmentIds(cxId);
+      allDepartmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
     }
     const appointmentUrl = `/appointments/booked/multipledepartment?${urlParams.toString()}`;
-    try {
-      const additionalInfo = {
-        cxId,
-        practiceId: this.practiceId,
-        departmentIds: departmentIds?.join(","),
-        startAppointmentDate: startAppointmentDate.toISOString(),
-        endAppointmentDate: endAppointmentDate.toISOString(),
-      };
-      const response = await this.axiosInstanceProprietary.get(appointmentUrl);
-      if (!response.data) {
-        throw new MetriportError(
-          `No body returned from ${appointmentUrl}`,
-          undefined,
-          additionalInfo
-        );
-      }
-      debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId: "global",
-          date: new Date(),
-        });
-        const key = this.buildS3Path("appointments", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getAppointments"));
-      }
-      const outcome = bookedAppointmentsGetResponseSchema.safeParse(response.data);
-      if (!outcome.success) {
-        throw new MetriportError("Appointments not parsed", undefined, {
-          ...additionalInfo,
-          error: errorToString(outcome.error),
-        });
-      }
-      return outcome.data.appointments;
-    } catch (error) {
-      const msg = `Failure while getting appointments @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: appointmentUrl,
-          cxId,
-          practiceId: this.practiceId,
-          departmentIds,
-          context: "athenahealth.get-appointments",
-          error,
-        },
-      });
-      throw error;
-    }
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      departmentIds: departmentIds?.join(","),
+      startAppointmentDate: startAppointmentDate.toISOString(),
+      endAppointmentDate: endAppointmentDate.toISOString(),
+    };
+    const bookedAppointments = await this.makeRequest<BookedAppointments>({
+      cxId,
+      method: "GET",
+      url: appointmentUrl,
+      schema: bookedAppointmentsSchema,
+      additionalInfo,
+      debug,
+    });
+    return bookedAppointments.appointments;
   }
 
   async getAppointmentsFromSubscription({
@@ -1160,8 +734,8 @@ class AthenaHealthApi {
     startProcessedDate?: Date;
     endProcessedDate?: Date;
   }): Promise<BookedAppointment[]> {
-    const { log, debug } = out(
-      `AthenaHealth get appointments from sub - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
+    const { debug } = out(
+      `AthenaHealth getAppointmentsFromSubscription - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
       showprocessedstartdatetime: startProcessedDate
@@ -1176,80 +750,86 @@ class AthenaHealthApi {
       departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
     }
     const appointmentUrl = `/appointments/changed?${urlParams.toString()}`;
-    try {
-      const additionalInfo = {
-        cxId,
-        practiceId: this.practiceId,
-        departmentIds: departmentIds?.join(","),
-        startProcessedDate: startProcessedDate?.toISOString(),
-        endProcessedDate: endProcessedDate?.toISOString(),
-      };
-      const response = await this.axiosInstanceProprietary.get(appointmentUrl);
-      if (!response.data) {
-        throw new MetriportError(
-          `No body returned from ${appointmentUrl}`,
-          undefined,
-          additionalInfo
-        );
-      }
-      debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId: "global",
-          date: new Date(),
-        });
-        const key = this.buildS3Path("appointments-changed", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(
-            processAsyncError("Error saving to s3 @ AthenaHealth - getAppointmentsFromSubscription")
-          );
-      }
-      const outcome = appointmentEventGetResponseSchema.safeParse(response.data);
-      if (!outcome.success) {
-        throw new MetriportError("Appointments from subscription not parsed", undefined, {
-          ...additionalInfo,
-          error: errorToString(outcome.error),
-        });
-      }
-      return outcome.data.appointments.filter(
-        app => app.patientid !== undefined && app.appointmentstatus === "f"
-      ) as BookedAppointment[];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.response?.status === 403) {
-        // 403 indicates no existing subscription so we create one
-        log(`Subscribing to appointment event for cxId ${cxId}`);
-        await this.subscribeToEvent({
-          cxId,
-          feedtype: "appointments",
-          eventType: "ScheduleAppointment",
-        });
-        return [];
-      }
-      const msg = `Failure while getting appointments from subscription @ AthenaHealth`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: appointmentUrl,
-          cxId,
-          practiceId: this.practiceId,
-          departmentIds,
-          context: "athenahealth.get-appointments",
-          error,
-        },
-      });
-      throw error;
-    }
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      departmentIds: departmentIds?.join(","),
+      startProcessedDate: startProcessedDate?.toISOString(),
+      endProcessedDate: endProcessedDate?.toISOString(),
+    };
+    const appointmentEvents = await this.makeRequest<AppointmentEvents>({
+      cxId,
+      method: "GET",
+      url: appointmentUrl,
+      schema: appointmentEventsSchema,
+      additionalInfo,
+      debug,
+    });
+    const bookedAppointments = appointmentEvents.appointments.filter(
+      app => app.patientid !== undefined && app.appointmentstatus === "f"
+    ) as BookedAppointment[];
+    return bookedAppointments;
   }
 
-  private createDataParams(data: { [key: string]: string | boolean | object | undefined }): string {
+  private async makeRequest<T>({
+    cxId,
+    patientId,
+    url,
+    method,
+    data,
+    schema,
+    additionalInfo,
+    debug,
+    useFhir = false,
+  }: {
+    cxId: string;
+    patientId?: string;
+    url: string;
+    method: "GET" | "POST";
+    data?: RequestData;
+    schema: z.Schema<T>;
+    additionalInfo: AdditionalInfo;
+    debug: typeof console.log;
+    useFhir?: boolean;
+  }): Promise<T> {
+    const axiosInstance = useFhir ? this.axiosInstanceFhir : this.axiosInstanceProprietary;
+    const response = await axiosInstance.request({
+      method,
+      url,
+      data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
+    });
+    if (!response.data) {
+      throw new MetriportError(`No body returned from ${method} ${url}`, undefined, additionalInfo);
+    }
+    const body = response.data;
+    debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
+    if (responsesBucket) {
+      const filePath = createHivePartitionFilePath({
+        cxId,
+        patientId: patientId ?? "global",
+        date: new Date(),
+      });
+      const key = this.buildS3Path(method, filePath);
+      this.s3Utils
+        .uploadFile({
+          bucket: responsesBucket,
+          key,
+          file: Buffer.from(JSON.stringify(response.data), "utf8"),
+          contentType: "application/json",
+        })
+        .catch(processAsyncError(`Error saving to s3 @ AthenaHealth - ${method} ${url}`));
+    }
+    const outcome = schema.safeParse(body);
+    if (!outcome.success) {
+      throw new MetriportError(`${method} ${url} response not parsed`, undefined, {
+        ...additionalInfo,
+        error: errorToString(outcome.error),
+      });
+    }
+    return outcome.data;
+  }
+
+  private createDataParams(data: RequestData): string {
     const dataParams = new URLSearchParams();
     Object.entries(data).forEach(([k, v]) => {
       if (v === undefined) return;
@@ -1300,6 +880,23 @@ class AthenaHealthApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(athenaDateTimeFormat);
+  }
+
+  private parsePatient({
+    patient,
+    additionalInfo,
+  }: {
+    patient: Patient;
+    additionalInfo: Record<string, string>;
+  }): PatientWithValidHomeAddress {
+    if (!patient.address) {
+      throw new MetriportError("No addresses found", undefined, additionalInfo);
+    }
+    patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
+    if (patient.address.length === 0) {
+      throw new MetriportError("No home address with valid zip found", undefined, additionalInfo);
+    }
+    return patientSchemaWithValidHomeAddress.parse(patient);
   }
 
   private getConditionSnomedCode(condition: Condition): string | undefined {

@@ -12,7 +12,7 @@ import {
   NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
-import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -120,16 +120,20 @@ export async function syncAthenaPatientIntoMetriport({
   );
 
   if (getPatientByDemoErrors.length > 0) {
-    capture.error("Failed to get patient by demos", {
+    const errors = getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(",");
+    const msg = "Failed to get patient by some demos @ AthenaHealth";
+    log(`${msg}. Cause: ${errors}`);
+    capture.message(msg, {
       extra: {
         cxId,
         athenaPracticeId,
         athenaPatientId,
         getPatientByDemoArgsCount: getPatientByDemoArgs.length,
         errorCount: getPatientByDemoErrors.length,
-        errors: getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(","),
+        errors,
         context: "athenahealth.sync-patient",
       },
+      level: "warning",
     });
   }
 
@@ -176,7 +180,7 @@ export async function syncAthenaPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemos(patient: PatientResourceWithHomeAddress): PatientDemoData[] {
+function createMetriportPatientDemos(patient: PatientWithValidHomeAddress): PatientDemoData[] {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
   const names = createNames(patient);
@@ -193,7 +197,7 @@ function createMetriportPatientDemos(patient: PatientResourceWithHomeAddress): P
 }
 
 function createMetriportPatientCreateCmd(
-  patient: PatientResourceWithHomeAddress
+  patient: PatientWithValidHomeAddress
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
@@ -220,7 +224,7 @@ async function getPatientFromAthena({
   useSearch: boolean;
 }) {
   if (useSearch) {
-    return await api.getPatientViaSearch({
+    return await api.searchPatient({
       cxId,
       patientId,
     });
