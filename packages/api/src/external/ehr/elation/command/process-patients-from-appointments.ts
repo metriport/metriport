@@ -77,7 +77,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   if (getAppointmentsErrors.length > 0) {
     const errors = getAppointmentsErrors
-      .map(e => `cxId ${e.cxId} practiceId ${e.practiceId} Cause: ${errorToString(e.error)}`)
+      .map(e => `cxId ${e.cxId} practiceId ${e.practiceId}. Cause: ${errorToString(e.error)}`)
       .join(",");
     const msg = "Failed to get some appointments @ Elation";
     log(`${msg}. Cause: ${errors}`);
@@ -131,7 +131,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
         e =>
           `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${
             e.patientId
-          } Cause: ${errorToString(e.error)}`
+          }. Cause: ${errorToString(e.error)}`
       )
       .join(",");
     const msg = "Failed to sync some patients @ Elation";
