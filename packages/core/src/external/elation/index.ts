@@ -32,9 +32,10 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export type ElationEnv = "app" | "sandbox";
+const elationEnv = ["app", "sandbox"] as const;
+export type ElationEnv = (typeof elationEnv)[number];
 export function isElationEnv(env: string): env is ElationEnv {
-  return env === "app" || env === "sandbox";
+  return elationEnv.includes(env as ElationEnv);
 }
 
 type BookedAppointment = {
