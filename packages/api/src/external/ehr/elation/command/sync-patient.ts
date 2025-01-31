@@ -112,13 +112,15 @@ export async function syncElationPatientIntoMetriport({
 }
 
 function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
+  const dob = normalizeDate(patient.dob);
+  const genderAtBirth = normalizeGender(patient.sex);
   const addressArray = createAddresses(patient);
   const contactArray = createContacts(patient);
   const names = createNames(patient);
   return {
     ...names,
-    dob: normalizeDate(patient.dob),
-    genderAtBirth: normalizeGender(patient.sex),
+    dob,
+    genderAtBirth,
     address: addressArray,
     contact: contactArray,
   };
