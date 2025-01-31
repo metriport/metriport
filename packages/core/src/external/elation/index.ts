@@ -1,17 +1,10 @@
-import {
-  AdditionalInfo,
-  BadRequestError,
-  errorToString,
-  JwtTokenInfo,
-  MetriportError,
-} from "@metriport/shared";
+import { AdditionalInfo, BadRequestError, errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointments,
   appointmentsSchema,
   BookedAppointment,
   bookedAppointmentSchema,
-  elationClientJwtTokenResponseSchema,
   Metadata,
   Patient,
   patientSchema,
@@ -28,7 +21,7 @@ import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
 interface ApiConfig {
-  twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
+  twoLeggedAuthToken?: string | undefined;
   practiceId: string;
   environment: ElationEnv;
   clientKey: string;
@@ -54,12 +47,12 @@ export function isElationEnv(env: string): env is ElationEnv {
 class ElationApi {
   private axiosInstance: AxiosInstance;
   private baseUrl: string;
-  private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  private twoLeggedAuthToken: string | undefined;
   private practiceId: string;
   private s3Utils: S3Utils;
 
   private constructor(private config: ApiConfig) {
-    this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
+    this.twoLeggedAuthToken = config.twoLeggedAuthToken;
     this.practiceId = config.practiceId;
     this.s3Utils = getS3UtilsInstance();
     this.axiosInstance = axios.create({});
@@ -72,11 +65,7 @@ class ElationApi {
     return instance;
   }
 
-  getTwoLeggedAuthTokenInfo(): JwtTokenInfo | undefined {
-    return this.twoLeggedAuthTokenInfo;
-  }
-
-  private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
+  private async fetchTwoLeggedAuthToken(): Promise<string> {
     const url = `${this.baseUrl}/oauth2/token/`;
     const data = {
       grant_type: "client_credentials",
@@ -88,12 +77,7 @@ class ElationApi {
       const response = await axios.post(url, this.createDataParams(data), {
         headers: { "content-type": "application/x-www-form-urlencoded" },
       });
-      if (!response.data) throw new MetriportError("No body returned from token endpoint");
-      const tokenData = elationClientJwtTokenResponseSchema.parse(response.data);
-      return {
-        access_token: tokenData.access_token,
-        exp: new Date(Date.now() + +tokenData.expires_in * 1000),
-      };
+      return response.data.access_token;
     } catch (error) {
       throw new MetriportError("Failed to fetch Two Legged Auth token @ Elation", undefined, {
         error: errorToString(error),
@@ -103,12 +87,9 @@ class ElationApi {
 
   async initialize(): Promise<void> {
     const { log } = out(`Elation initialize - practiceId ${this.practiceId}`);
-    if (!this.twoLeggedAuthTokenInfo) {
+    if (!this.twoLeggedAuthToken) {
       log(`Two Legged Auth token not found @ Elation - fetching new token`);
-      this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
-    } else if (this.twoLeggedAuthTokenInfo.exp < new Date()) {
-      log(`Two Legged Auth token expired @ Elation - fetching new token`);
-      this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
+      this.twoLeggedAuthToken = await this.fetchTwoLeggedAuthToken();
     } else {
       log(`Two Legged Auth token found @ Elation - using existing token`);
     }
@@ -116,7 +97,7 @@ class ElationApi {
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
       headers: {
-        Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
+        Authorization: `Bearer ${this.twoLeggedAuthToken}`,
         "content-type": "application/x-www-form-urlencoded",
       },
     });
