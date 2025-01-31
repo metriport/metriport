@@ -178,7 +178,7 @@ async function getAppointments({
       }),
     };
   } catch (error) {
-    log(`Failed to get appointments. Cause: ${errorToString(error)}`);
+    log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
     return { error };
   }
 }
