@@ -94,14 +94,7 @@ export async function syncAthenaPatientIntoMetriport({
   );
 
   if (getPatientByDemoErrors.length > 0) {
-    const errorsToString = getPatientByDemoErrors
-      .map(
-        e =>
-          `cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
-            e
-          )}`
-      )
-      .join(",");
+    const errorsToString = getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(",");
     const msg = "Failed to get patient by some demos @ AthenaHealth";
     log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
