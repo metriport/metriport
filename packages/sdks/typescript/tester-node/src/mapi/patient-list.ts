@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { MetriportMedicalApi, PatientDTO } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 /**
@@ -23,9 +23,21 @@ async function main() {
     const singlePatient = await metriport.getPatient(patientId);
     console.log(`Single patient: ${JSON.stringify(singlePatient, null, 2)}`);
 
-    console.log(`Calling listPatients...`);
-    const allPatients = await metriport.listPatients(facilityId);
-    console.log(`All patients in a given facility: ${JSON.stringify(allPatients, null, 2)}`);
+    let page = 1;
+    const allPatients: PatientDTO[] = [];
+    const { meta, patients } = await metriport.listPatients({ facilityId });
+    console.log(`Page ${page++} has ${patients.length} patients (next page? ${!!meta.nextPage})`);
+    allPatients.push(...patients);
+    let nextPage = meta.nextPage;
+    while (nextPage) {
+      const { meta, patients } = await metriport.listPatientsPage(nextPage);
+      console.log(`Page ${page++} has ${patients.length} patients (next page? ${!!meta.nextPage})`);
+      allPatients.push(...patients);
+      nextPage = meta.nextPage;
+    }
+    console.log(
+      `All patients in a given facility: ${JSON.stringify({ patients: allPatients }, null, 2)}`
+    );
   } catch (error) {
     console.log(`error: `, error);
   }

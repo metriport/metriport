@@ -118,6 +118,13 @@
           ]
         },
         {
+          "group": "Network",
+          "icon": "network-wired",
+          "pages": [
+            "medical-api/api-reference/network/list-network-entries"
+          ]
+        },
+        {
           "group": "Settings",
           "icon": "gear",
           "pages": [

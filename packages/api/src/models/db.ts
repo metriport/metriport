@@ -7,10 +7,12 @@ import { OutboundDocumentQueryRespModel } from "../external/carequality/models/o
 import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
 import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
 import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-data";
+import { HIEDirectoryEntryViewModel } from "../external/hie/models/hie-directory-view";
 import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
+import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { CxMappingModel } from "./cx-mapping";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
@@ -25,7 +27,6 @@ import { PatientModel } from "./medical/patient";
 import { PatientMappingModel } from "./patient-mapping";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -39,6 +40,7 @@ const models: ModelSetup[] = [
   CwPatientDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
+  HIEDirectoryEntryViewModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,
   OutboundPatientDiscoveryRespModel.setup,
