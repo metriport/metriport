@@ -108,7 +108,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     const errors = getAppointmentsErrors
       .map(e => `cxId ${e.cxId} practiceId ${e.practiceId} Cause: ${errorToString(e.error)}`)
       .join(",");
-    const msg = "Failed to get appointments form subscription @ AthenaHealth";
+    const msg = "Failed to get appointments from subscription @ AthenaHealth";
     log(`${msg}. Cause: ${errors}`);
     capture.error(msg, {
       extra: {
