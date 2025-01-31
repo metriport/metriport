@@ -9,6 +9,8 @@ const fs = require('fs');
  * You need to update the file paths in the file manually
  */
 
+const BATCH_SIZE = 1000; // Number of records per INSERT statement
+
 function parseCSVLine(line) {
   const result = [];
   let inQuotes = false;
@@ -35,9 +37,13 @@ function parseCSVLine(line) {
   return result.map(val => val.trim());
 }
 
-function convertCsvWithSelectedColumns(csvText) {
-  const lines = csvText.trim().split(/\r?\n/);
+function escapeSQL(str) {
+  if (!str) return null;
+  return str.replace(/'/g, "''").trim();
+}
 
+function convertCsvToSQL(csvText) {
+  const lines = csvText.trim().split(/\r?\n/);
   const originalHeaders = parseCSVLine(lines[0]);
 
   const desiredColumns = {
@@ -58,37 +64,40 @@ function convertCsvWithSelectedColumns(csvText) {
     originalHeaders.indexOf(header)
   );
 
-  const newRows = lines.map((line, lineIndex) => {
-    if (lineIndex === 0) {
-      return Object.values(desiredColumns)
-        .map(header => `"${header}"`)
-        .join(',');
-    }
+  const headerSQL = `INSERT INTO cw_directory_entry (
+    ${Object.values(desiredColumns).join(',\n    ')}
+  )\nVALUES\n`;
 
-    const values = parseCSVLine(line);
+  let sqlStatements = [];
+  let currentBatch = [];
+
+  // Skip header row
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
     const selectedValues = columnIndices.map(index => {
-      const value = values[index] || '';
-      return `"${value}"`;
+      const value = values[index];
+      return value ? `'${escapeSQL(value)}'` : 'NULL';
     });
 
-    return selectedValues.join(',');
-  });
+    currentBatch.push(`(${selectedValues.join(', ')})`);
 
-  return newRows.join('\n');
+    if (currentBatch.length === BATCH_SIZE || i === lines.length - 1) {
+      sqlStatements.push(headerSQL + currentBatch.join(',\n') + ';');
+      currentBatch = [];
+    }
+  }
+
+  return sqlStatements.join('\n\n');
 }
 
 const today = new Date();
 const year = today.getFullYear();
 const month = String(today.getMonth() + 1).padStart(2, '0');
 const day = String(today.getDate()).padStart(2, '0');
-const outputFilename = `cw-export_${year}-${month}-${day}.csv`;
+const outputFilename = `cw-export_${year}-${month}-${day}.sql`;
 
 const csvText = fs.readFileSync('cw-export.csv', 'utf8');
-const newCsvContent = convertCsvWithSelectedColumns(csvText);
+const sqlContent = convertCsvToSQL(csvText);
 
-fs.writeFileSync(outputFilename, newCsvContent);
+fs.writeFileSync(outputFilename, sqlContent);
 console.log(`Conversion complete! Check ${outputFilename}`);
-
-const newHeaders = newCsvContent.split('\n')[0];
-console.log('\nNew PostgreSQL-style headers:');
-console.log(newHeaders);
