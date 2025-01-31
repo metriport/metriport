@@ -67,7 +67,6 @@ const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
 
 interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
-  threeLeggedAuthToken?: string | undefined;
   practiceId: string;
   environment: AthenaEnv;
   clientKey: string;
@@ -145,13 +144,11 @@ class AthenaHealthApi {
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
-  private threeLeggedAuthToken: string | undefined;
   private practiceId: string;
   private s3Utils: S3Utils;
 
   private constructor(private config: ApiConfig) {
     this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
-    this.threeLeggedAuthToken = config.threeLeggedAuthToken;
     this.practiceId = this.stripPracticeId(config.practiceId);
     this.s3Utils = getS3UtilsInstance();
     this.axiosInstanceFhir = axios.create({});
@@ -209,23 +206,19 @@ class AthenaHealthApi {
       log(`Two Legged Auth token found @ AthenaHealth - using existing token`);
     }
 
+    const headers = {
+      Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
+      "content-type": "application/x-www-form-urlencoded",
+    };
+
     this.axiosInstanceFhir = axios.create({
       baseURL: `${this.baseUrl}/fhir/r4`,
-      headers: {
-        accept: "application/json",
-        Authorization: `Bearer ${
-          this.threeLeggedAuthToken ?? this.twoLeggedAuthTokenInfo.access_token
-        }`,
-        "content-type": "application/x-www-form-urlencoded",
-      },
+      headers: { ...headers, accept: "application/json" },
     });
 
     this.axiosInstanceProprietary = axios.create({
       baseURL: `${this.baseUrl}/v1/${this.practiceId}`,
-      headers: {
-        Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
-        "content-type": "application/x-www-form-urlencoded",
-      },
+      headers,
     });
   }
 

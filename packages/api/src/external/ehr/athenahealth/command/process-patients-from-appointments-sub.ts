@@ -10,15 +10,13 @@ import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
   EhrSources,
-  createPracticeMap,
   delayBetweenPracticeBatches,
   getLookBackTimeRange,
   parallelPatients,
   parallelPractices,
-  parsePracticeMapKey,
 } from "../../shared";
 import { getAthenaEnv } from "../shared";
-import { syncAthenaPatientIntoMetriport } from "./sync-patient";
+import { SyncPatientParams, syncAthenaPatientIntoMetriport } from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -28,18 +26,15 @@ type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
   departmentIds?: string[];
-  environment: AthenaEnv;
   fromDate?: Date;
   toDate?: Date;
+  environment: AthenaEnv;
   clientKey: string;
   clientSecret: string;
 };
 
-type SyncPatientsParams = {
-  cxId: string;
-  practiceId: string;
+type SyncPatientParamsWithEnv = SyncPatientParams & {
   environment: AthenaEnv;
-  appointments: Appointment[];
   clientKey: string;
   clientSecret: string;
 };
@@ -122,36 +117,33 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   }
 
   const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
-  const uniqueAppointmentsByPractice = createPracticeMap(uniqueAppointments);
 
   const syncPatientsErrors: {
     error: unknown;
     cxId: string;
-    practiceId: string;
-    patientId: string;
+    athenaPracticeId: string;
+    athenaPatientId: string;
   }[] = [];
-  const syncPatientsArgs: SyncPatientsParams[] = Object.keys(uniqueAppointmentsByPractice).flatMap(
-    key => {
-      const appointments = uniqueAppointmentsByPractice[key];
-      if (!appointments) return [];
-      return {
-        ...parsePracticeMapKey(key),
-        environment,
-        appointments,
-        clientKey,
-        clientSecret,
-      };
-    }
-  );
+  const syncPatientsArgs: SyncPatientParamsWithEnv[] = uniqueAppointments.map(appointment => {
+    return {
+      cxId: appointment.cxId,
+      athenaPracticeId: appointment.practiceId,
+      athenaPatientId: appointment.patientId,
+      triggerDq: true,
+      environment,
+      clientKey,
+      clientSecret,
+    };
+  });
 
   await executeAsynchronously(
     syncPatientsArgs,
-    async (params: SyncPatientsParams) => {
-      const { errors } = await syncPatients(params);
-      syncPatientsErrors.push(...errors.map(error => ({ ...error, ...params })));
+    async (params: SyncPatientParamsWithEnv) => {
+      const { error } = await syncPatients(params);
+      if (error) syncPatientsErrors.push({ ...params, error });
     },
     {
-      numberOfParallelExecutions: parallelPractices,
+      numberOfParallelExecutions: parallelPatients,
       delay: delayBetweenPracticeBatches.asMilliseconds(),
     }
   );
@@ -160,9 +152,9 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     const errors = syncPatientsErrors
       .map(
         e =>
-          `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${
-            e.patientId
-          }. Cause: ${errorToString(e.error)}`
+          `cxId ${e.cxId} athenaPracticeId ${e.athenaPracticeId} athenaPatientId ${
+            e.athenaPatientId
+          } Cause: ${errorToString(e.error)}`
       )
       .join(",");
     const msg = "Failed to sync some patients @ AthenaHealth";
@@ -221,43 +213,34 @@ async function getAppointments({
 }
 
 async function syncPatients({
-  practiceId,
+  cxId,
+  athenaPracticeId,
+  athenaPatientId,
+  triggerDq,
   environment,
-  appointments,
   clientKey,
   clientSecret,
-}: SyncPatientsParams): Promise<{ errors: { error: unknown; patientId: string }[] }> {
-  const { log } = out(`AthenaHealth syncPatients - practiceId ${practiceId}`);
+}: SyncPatientParamsWithEnv): Promise<{ error: unknown }> {
+  const { log } = out(
+    `AthenaHealth syncPatients - cxId ${cxId} practiceId ${athenaPracticeId} patientId ${athenaPatientId}`
+  );
   const api = await AthenaHealthApi.create({
-    practiceId,
+    practiceId: athenaPracticeId,
     environment,
     clientKey,
     clientSecret,
   });
-
-  const syncPatientErrors: { error: unknown; patientId: string }[] = [];
-  await executeAsynchronously(
-    appointments,
-    async (appointment: Appointment) => {
-      try {
-        await syncAthenaPatientIntoMetriport({
-          cxId: appointment.cxId,
-          athenaPracticeId: appointment.practiceId,
-          athenaPatientId: appointment.patientId,
-          api,
-          useSearch: true,
-          triggerDq: true,
-        });
-      } catch (error) {
-        log(`Failed to sync patient ${appointment.patientId}. Cause: ${errorToString(error)}`);
-        syncPatientErrors.push({ error, patientId: appointment.patientId });
-      }
-    },
-    {
-      numberOfParallelExecutions: parallelPatients,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
-    }
-  );
-
-  return { errors: syncPatientErrors };
+  try {
+    await syncAthenaPatientIntoMetriport({
+      cxId,
+      athenaPracticeId,
+      athenaPatientId,
+      api,
+      triggerDq,
+    });
+    return { error: undefined };
+  } catch (error) {
+    log(`Failed to sync patient. Cause: ${errorToString(error)}`);
+    return { error };
+  }
 }
