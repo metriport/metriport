@@ -20,6 +20,12 @@ export function normalizeEmail(email: string): string {
   return trimmedEmail.toLowerCase();
 }
 
+export function normalizeEmailStrict(email: string): string {
+  const normalEmail = normalizeEmail(email);
+  if (!isEmailValid(normalEmail)) throw new Error("Invalid email.");
+  return normalEmail;
+}
+
 function noramlizeEmailBase(email: string): string {
   return removeMailto(email.trim().toLowerCase());
 }
@@ -31,7 +37,7 @@ function removeMailto(email: string): string {
   return email;
 }
 
-export function normalizeEmailSafe(
+export function normalizeEmailNewSafe(
   email: string,
   normalizeBase: (email: string) => string = noramlizeEmailBase
 ): string | undefined {
@@ -40,8 +46,8 @@ export function normalizeEmailSafe(
   return baseEmail;
 }
 
-export function normalizeEmailStrict(email: string): string {
-  const emailOrUndefined = normalizeEmailSafe(email);
+export function normalizeEmailNew(email: string): string {
+  const emailOrUndefined = normalizeEmailNewSafe(email);
   if (!emailOrUndefined) {
     throw new BadRequestError("Invalid email", undefined, { email });
   }

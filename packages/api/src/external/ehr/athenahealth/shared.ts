@@ -9,7 +9,7 @@ import {
   BadRequestError,
   JwtTokenInfo,
   MetriportError,
-  normalizeEmailSafe,
+  normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
@@ -30,7 +30,7 @@ export const athenaClientJwtTokenSource = "athenahealth-client";
 export function createContacts(patient: PatientWithValidHomeAddress): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
-      const email = normalizeEmailSafe(telecom.value);
+      const email = normalizeEmailNewSafe(telecom.value);
       if (!email) return [];
       return { email };
     } else if (telecom.system === "phone") {

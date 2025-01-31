@@ -5,7 +5,7 @@ import {
   BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
   MetriportError,
-  normalizeEmailSafe,
+  normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
@@ -17,7 +17,7 @@ import { Config } from "../../../shared/config";
 export function createContacts(patient: PatientResource): Contact[] {
   return [
     ...patient.emails.flatMap(e => {
-      const email = normalizeEmailSafe(e.email);
+      const email = normalizeEmailNewSafe(e.email);
       if (!email) return [];
       return { email };
     }),
