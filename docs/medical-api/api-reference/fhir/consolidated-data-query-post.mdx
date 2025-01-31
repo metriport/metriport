@@ -45,7 +45,8 @@ that will contain a URL to retrieve the data from.
 <ParamField query="resources" type="string" optional>
   A comma separated, case sensitive list of resources to be returned. If none are provided all
   resources will be included. Metriport will automatically hydrate the initially filtered resources
-  with referenced ones to create bundle consistency.
+  with referenced ones to create bundle consistency. The list of accepted resources can be accessed
+  [here](/medical-api/api-reference/fhir/consolidated-data-query-post#available-fhir-resources).
 </ParamField>
 
 <ParamField query="dateFrom" type="string" optional>
@@ -68,11 +69,6 @@ Otherwise, the data will be returned in JSON format in the Webhook payload (defa
   <Info>Providing `pdf` or `html` results in a
   [Medical Record Summary](/medical-api/handling-data/webhooks#medical-record) being sent.</Info>
 </ParamField>
-
-<Info>
-  You can scroll to the bottom of the page to view all [available
-  resources](/medical-api/api-reference/fhir/get-patient-consolidated#available-fhir-resources).
-</Info>
 
 ## Body
 
@@ -113,6 +109,7 @@ See [limits and throttling](/medical-api/more-info/limits#rate-limits)
 This is the list of all available [FHIR resources](/medical-api/fhir/resources) you can query for:
 
 - [AllergyIntolerance](/medical-api/fhir/resources/allergyintolerance)
+- [Binary](/medical-api/fhir/resources/binary)
 - [Communication](/medical-api/fhir/resources/communication)
 - [Composition](/medical-api/fhir/resources/composition)
 - [Condition](/medical-api/fhir/resources/condition)
