@@ -165,7 +165,7 @@ async function getAppointments({
   departmentIds,
   fromDate,
   toDate,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}`
   );
@@ -181,6 +181,7 @@ async function getAppointments({
       appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
       }),
+      error: undefined,
     };
   } catch (error) {
     log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
@@ -195,7 +196,7 @@ async function syncPatient({
   triggerDq,
 }: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
   const { log } = out(
-    `AthenaHealth syncPatient - cxId ${cxId} practiceId ${athenaPracticeId} patientId ${athenaPatientId}`
+    `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} patientId ${athenaPatientId}`
   );
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   try {

@@ -140,7 +140,7 @@ async function getAppointments({
   practiceId,
   fromDate,
   toDate,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createElationClient({ cxId, practiceId });
   try {
@@ -153,6 +153,7 @@ async function getAppointments({
       appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: appointment.patient };
       }),
+      error: undefined,
     };
   } catch (error) {
     log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
@@ -167,7 +168,7 @@ async function syncPatient({
   triggerDq,
 }: Omit<SyncElationPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
   const { log } = out(
-    `Elation syncPatient - cxId ${cxId} practiceId ${elationPracticeId} elationPatientId ${elationPatientId}`
+    `Elation syncPatient - cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}`
   );
   const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   try {

@@ -12,14 +12,13 @@ import {
   normalizeZipCodeNew,
   toTitleCase,
 } from "@metriport/shared";
-import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
-import { Config } from "../../../shared/config";
 import { ElationClientJwtTokenData } from "@metriport/shared/interface/external/elation/jwt-token";
-import { athenaClientJwtTokenSource } from "../athenahealth/shared";
+import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../../command/jwt-token";
+import { Config } from "../../../shared/config";
 
 export const elationClientJwtTokenSource = "elation-client";
 
@@ -148,7 +147,7 @@ async function getLatestElationClientJwtTokenInfo({
     source: elationClientJwtTokenSource,
   };
   const token = await getLatestExpiringJwtTokenBySourceAndData({
-    source: athenaClientJwtTokenSource,
+    source: elationClientJwtTokenSource,
     data,
   });
   if (!token) return undefined;
