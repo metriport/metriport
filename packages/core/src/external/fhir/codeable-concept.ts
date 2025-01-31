@@ -2,7 +2,7 @@ import { CodeableConcept, Coding, Resource } from "@medplum/fhirtypes";
 import { isUnknownCoding } from "../../fhir-deduplication/shared";
 import { knownSystemUrls } from "../../util/constants";
 
-export const unknownValues = ["unknown", "unk", "no known"];
+export const unknownValues = ["unknown", "unk"];
 
 /**
  * Returns the code attribute from each resource based on its spec
