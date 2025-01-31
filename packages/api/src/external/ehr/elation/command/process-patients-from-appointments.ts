@@ -103,7 +103,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   await executeAsynchronously(
     syncPatientsArgs,
     async (params: SyncElationPatientIntoMetriportParams) => {
-      const { error } = await syncPatients(params);
+      const { error } = await syncPatient(params);
       if (error) syncPatientsErrors.push({ ...params, error });
     },
     {
@@ -160,14 +160,14 @@ async function getAppointments({
   }
 }
 
-async function syncPatients({
+async function syncPatient({
   cxId,
   elationPracticeId,
   elationPatientId,
   triggerDq,
 }: Omit<SyncElationPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
   const { log } = out(
-    `Elation syncPatients - cxId ${cxId} practiceId ${elationPracticeId} elationPatientId ${elationPatientId}`
+    `Elation syncPatient - cxId ${cxId} practiceId ${elationPracticeId} elationPatientId ${elationPatientId}`
   );
   const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   try {
