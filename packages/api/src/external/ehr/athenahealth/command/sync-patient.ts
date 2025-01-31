@@ -4,14 +4,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import {
-  errorToString,
-  MetriportError,
-  normalizeDate,
-  normalizeGender,
-  NotFoundError,
-  toTitleCase,
-} from "@metriport/shared";
+import { errorToString, normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
 import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
@@ -85,17 +78,6 @@ export async function syncAthenaPatientIntoMetriport({
     patientId: athenaPatientId,
     useSearch,
   });
-  if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
-  if (athenaPatient.name.length === 0) {
-    throw new MetriportError("AthenaHealth patient missing at least one name", undefined, {
-      name: athenaPatient.name.map(name => JSON.stringify(name)).join(", "),
-    });
-  }
-  if (athenaPatient.address.length === 0) {
-    throw new MetriportError("AthenaHealth patient missing at least one address", undefined, {
-      address: athenaPatient.address.map(address => JSON.stringify(address)).join(", "),
-    });
-  }
 
   const demos = createMetriportPatientDemos(athenaPatient);
 
@@ -229,7 +211,7 @@ async function getPatientFromAthena({
   cxId: string;
   patientId: string;
   useSearch: boolean;
-}) {
+}): Promise<PatientWithValidHomeAddress> {
   if (useSearch) {
     return await api.searchPatient({
       cxId,

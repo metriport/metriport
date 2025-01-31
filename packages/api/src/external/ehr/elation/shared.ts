@@ -8,6 +8,7 @@ import {
   normalizePhoneNumber,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
+  BadRequestError,
 } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
@@ -29,10 +30,10 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
 
 export function createMetriportAddresses(patient: PatientResource): Address[] {
   const addressLine1 = patient.address.address_line1.trim();
-  if (addressLine1 === "") throw new Error("Patient address first line is empty");
+  if (addressLine1 === "") throw new BadRequestError("Patient address first line is empty");
   const addressLine2 = patient.address.address_line2?.trim();
   const city = patient.address.city.trim();
-  if (city === "") throw new Error("Patient address city is empty");
+  if (city === "") throw new BadRequestError("Patient address city is empty");
   return [
     {
       addressLine1,
@@ -49,7 +50,9 @@ export function createNames(patient: PatientResource): { firstName: string; last
   const firstName = patient.first_name.trim();
   const lastName = patient.last_name.trim();
   const middleName = patient.middle_name.trim();
-  if (firstName === "" || lastName === "") throw new Error("Patient has empty first or last name");
+  if (firstName === "" || lastName === "") {
+    throw new BadRequestError("Patient has empty first or last name");
+  }
   return {
     firstName: `${firstName}${middleName !== "" ? ` ${middleName}` : ""}`,
     lastName,
