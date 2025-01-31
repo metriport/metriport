@@ -1,9 +1,9 @@
 import {
   AdditionalInfo,
+  BadRequestError,
   errorToString,
   JwtTokenInfo,
   MetriportError,
-  BadRequestError,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -22,10 +22,10 @@ import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { Config } from "../../util/config";
+import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
-import { processAsyncError } from "../../util/error/shared";
 
 interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
@@ -146,7 +146,7 @@ class ElationApi {
     try {
       return this.parsePatient(patient);
     } catch (error) {
-      throw new MetriportError("Failed to parse patient", undefined, {
+      throw new BadRequestError("Failed to parse patient", undefined, {
         ...additionalInfo,
         error: errorToString(error),
       });
@@ -181,7 +181,7 @@ class ElationApi {
     try {
       return this.parsePatient(patient);
     } catch (error) {
-      throw new MetriportError("Failed to parse patient", undefined, {
+      throw new BadRequestError("Failed to parse patient", undefined, {
         ...additionalInfo,
         error: errorToString(error),
       });

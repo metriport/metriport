@@ -278,7 +278,7 @@ class AthenaHealthApi {
     try {
       return this.parsePatient(patient);
     } catch (error) {
-      throw new MetriportError("Failed to parse patient", undefined, {
+      throw new BadRequestError("Failed to parse patient", undefined, {
         ...additionalInfo,
         error: errorToString(error),
       });
@@ -320,7 +320,7 @@ class AthenaHealthApi {
     try {
       return this.parsePatient(patient);
     } catch (error) {
-      throw new MetriportError("Failed to parse patient", undefined, {
+      throw new BadRequestError("Failed to parse patient", undefined, {
         ...additionalInfo,
         error: errorToString(error),
       });
@@ -454,7 +454,7 @@ class AthenaHealthApi {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 400) {
-        throw new MetriportError(
+        throw new BadRequestError(
           "Problem creation not successful - duplicate problem",
           undefined,
           additionalInfo
@@ -772,7 +772,7 @@ class AthenaHealthApi {
     startProcessedDate?: Date;
     endProcessedDate?: Date;
   }): Promise<BookedAppointment[]> {
-    const { debug } = out(
+    const { log, debug } = out(
       `AthenaHealth getAppointmentsFromSubscription - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
@@ -795,18 +795,33 @@ class AthenaHealthApi {
       startProcessedDate: startProcessedDate?.toISOString(),
       endProcessedDate: endProcessedDate?.toISOString(),
     };
-    const appointmentEvents = await this.makeRequest<AppointmentEvents>({
-      cxId,
-      method: "GET",
-      url: appointmentUrl,
-      schema: appointmentEventsSchema,
-      additionalInfo,
-      debug,
-    });
-    const bookedAppointments = appointmentEvents.appointments.filter(
-      app => app.patientid !== undefined && app.appointmentstatus === "f"
-    );
-    return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
+    try {
+      const appointmentEvents = await this.makeRequest<AppointmentEvents>({
+        cxId,
+        method: "GET",
+        url: appointmentUrl,
+        schema: appointmentEventsSchema,
+        additionalInfo,
+        debug,
+      });
+      const bookedAppointments = appointmentEvents.appointments.filter(
+        app => app.patientid !== undefined && app.appointmentstatus === "f"
+      );
+      return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        // 403 indicates no existing subscription so we create one
+        log(`Subscribing to appointment event for cxId ${cxId}`);
+        await this.subscribeToEvent({
+          cxId,
+          feedtype: "appointments",
+          eventType: "ScheduleAppointment",
+        });
+        return [];
+      }
+      throw error;
+    }
   }
 
   private async makeRequest<T>({

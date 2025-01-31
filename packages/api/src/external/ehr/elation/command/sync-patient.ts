@@ -2,7 +2,7 @@ import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { normalizeDate, normalizeGender, NotFoundError } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
+import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -111,7 +111,7 @@ export async function syncElationPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
+function createMetriportPatientDemo(patient: PatientWithAddress): PatientDemoData {
   const dob = normalizeDate(patient.dob);
   const genderAtBirth = normalizeGender(patient.sex);
   const addressArray = createAddresses(patient);
