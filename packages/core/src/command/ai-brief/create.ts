@@ -55,6 +55,7 @@ const referenceResources = ["Practitioner", "Organization", "Observation", "Loca
 
 const documentVariableName = "text";
 
+import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
@@ -245,7 +246,13 @@ function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
     return [];
   });
 
-  return applyFinalFilters(withFilteredReports, containedResourceIds, patient);
+  const slimBundle = removeReferencesAndLeftOverResources(
+    withFilteredReports,
+    containedResourceIds,
+    patient
+  );
+
+  return condenseBundle(slimBundle);
 }
 
 function buildSlimmerBundle(originalBundle: Bundle<Resource>) {
@@ -399,7 +406,6 @@ function replaceReferencesWithData(
           return [];
         })
         .join(", ");
-
       updRes.reference = { ...updRes.reference, practitioner };
     }
   }
@@ -507,7 +513,10 @@ function replaceReferencesWithData(
     }
   }
 
-  if (Object.keys(updRes.reference).length === 0) delete updRes.reference;
+  const refArray = toArray(updRes.reference);
+  if (refArray.length === 0 || (refArray[0] && Object.keys(refArray[0]).length === 0)) {
+    delete updRes.reference;
+  }
   return { updRes, ids: Array.from(referencedIds) };
 }
 
@@ -633,7 +642,7 @@ function filterOutDuplicateReports(reports: SlimDiagnosticReport[]): SlimDiagnos
  * Removes resources that don't provide any useful information unless they are referenced by another resource.
  * Adds the SlimPatient into the bundle.
  */
-function applyFinalFilters(
+function removeReferencesAndLeftOverResources(
   resources: SlimResource[],
   containedResourceIds: string[],
   patient: Patient

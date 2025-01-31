@@ -6,14 +6,15 @@ import {
   DiagnosticReport,
   HumanName,
   Immunization,
+  Location,
   Medication,
   MedicationAdministration,
   MedicationRequest,
   MedicationStatement,
   Observation,
   Organization,
-  Location,
   Patient,
+  Period,
   Practitioner,
   Procedure,
   Quantity,
@@ -73,6 +74,20 @@ export type SlimResource =
   | SlimCondition
   | SlimOrganization
   | SlimLocation;
+
+export type SlimProcedure = Omit<
+  Procedure,
+  "name" | "status" | "bodySite" | "performedDateTime" | "performedPeriod"
+> & {
+  name?: string | undefined;
+  status?: string | undefined;
+  bodySite?: string | undefined;
+  reference?: Record<string, string | object>[];
+  instances?: Array<{
+    performedDateTime?: string | undefined;
+    performedPeriod?: Period | undefined;
+  }>;
+};
 
 /**
  * This function applies filters to the resource based on its resourceType, and overwrites and/or creates new specific attributes,
@@ -204,7 +219,7 @@ export type SlimImmunization = Omit<Immunization, "vaccineCode" | "site" | "rout
   vaccineCode?: string | undefined;
   site?: string | undefined;
   route?: string | undefined;
-  reference?: Record<string, Partial<SlimOrganization>>;
+  reference?: Record<string, string | Partial<SlimOrganization>>;
 };
 
 function getSlimImmunization(res: Immunization): SlimImmunization | undefined {
@@ -255,30 +270,32 @@ function getSlimPractitioner(res: Practitioner): SlimPractitioner {
   };
 }
 
-export type SlimProcedure = Omit<Procedure, "name" | "status" | "bodySite"> & {
-  name?: string | undefined;
-  status?: string | undefined;
-  reference?: Record<string, string>;
-  bodySite?: string | undefined;
-};
-
 function getSlimProcedure(res: Procedure): SlimProcedure | undefined {
   const updRes = cloneDeep(res);
   const name = getUniqueDisplaysString(updRes.code);
   if (name?.includes("no data")) return undefined;
   const status = isUselessStatus(updRes.status) ? undefined : updRes.status;
-
   const bodySite = getUniqueDisplaysString(updRes.bodySite) ?? undefined;
+
+  // Create initial instance from the procedure's dates
+  const instance = {
+    performedDateTime: updRes.performedDateTime,
+    performedPeriod: updRes.performedPeriod,
+  };
+
   delete updRes.code;
-  delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
+  delete updRes.reasonCode;
   delete updRes.report;
   delete updRes.note;
+  delete updRes.performedDateTime;
+  delete updRes.performedPeriod;
 
   return {
     ...updRes,
     name,
     status,
     bodySite,
+    instances: [instance],
   };
 }
 
@@ -412,6 +429,8 @@ function getSlimObservation(res: Observation): SlimObservation {
 export type SlimMedication = Omit<Medication, "name"> & {
   name?: string | undefined;
   reference?: Record<string, string>;
+  sideNote?: string;
+  names?: string[];
 };
 
 function getSlimMedication(res: Medication): SlimMedication {
@@ -441,15 +460,19 @@ function getSlimMedicationRequest(res: MedicationRequest): SlimMedicationRequest
   };
 }
 
+type Dosage = {
+  dose: string | undefined;
+  route: string | undefined;
+};
+
 export type SlimMedicationStatement = Omit<MedicationStatement, "dosage" | "status"> & {
   dosages?: Dosage[] | undefined;
   reference?: Record<string, Partial<SlimMedication>>;
   status?: string | undefined;
-};
-
-type Dosage = {
-  dose: string | undefined;
-  route: string | undefined;
+  instances?: Array<{
+    date?: Period | undefined;
+    dosages?: Dosage[] | undefined;
+  }>;
 };
 
 function getSlimMedicationStatement(res: MedicationStatement): SlimMedicationStatement {
@@ -504,6 +527,9 @@ export type SlimCondition = Omit<Condition, "name" | "category" | "clinicalStatu
   category?: string | undefined;
   clinicalStatus?: string | undefined;
   reference?: Record<string, string | Partial<SlimPractitioner>>;
+  instances?: {
+    onsetPeriod?: Period | undefined;
+  }[];
 };
 
 function getSlimCondition(res: Condition): SlimCondition {
