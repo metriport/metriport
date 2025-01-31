@@ -219,7 +219,7 @@ export type SlimImmunization = Omit<Immunization, "vaccineCode" | "site" | "rout
   vaccineCode?: string | undefined;
   site?: string | undefined;
   route?: string | undefined;
-  reference?: Record<string, Partial<SlimOrganization>>;
+  reference?: Record<string, string | Partial<SlimOrganization>>;
 };
 
 function getSlimImmunization(res: Immunization): SlimImmunization | undefined {
@@ -362,7 +362,7 @@ function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | 
     return undefined;
   }
 
-  const category = updRes.category
+  const category = toArray(updRes.category)
     ?.map(cat => cat.coding?.flatMap(coding => coding.display || []))
     .join(", ");
 
@@ -429,6 +429,8 @@ function getSlimObservation(res: Observation): SlimObservation {
 export type SlimMedication = Omit<Medication, "name"> & {
   name?: string | undefined;
   reference?: Record<string, string>;
+  sideNote?: string;
+  names?: string[];
 };
 
 function getSlimMedication(res: Medication): SlimMedication {

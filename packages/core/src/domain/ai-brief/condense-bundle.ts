@@ -1,33 +1,35 @@
 import { Period } from "@medplum/fhirtypes";
-import fs from "fs";
 import { isEqual, uniqWith } from "lodash";
 import {
   SlimCondition,
+  SlimMedication,
   SlimMedicationStatement,
   SlimProcedure,
   SlimResource,
 } from "./modify-resources";
 
 export function condenseBundle(bundle: SlimResource[]): SlimResource[] {
-  // Split bundle into conditions, procedures, medications, and remaining resources
-  const [conditions, procedures, medStatements, remainingBundle] = bundle.reduce(
+  const [conditions, procedures, medStatements, medications, remainingBundle] = bundle.reduce(
     (acc, resource) => {
-      const [conditions, procedures, medStatements, remaining] = acc;
+      const [conditions, procedures, medStatements, medications, remaining] = acc;
       if (resource.resourceType === "Condition") {
         conditions.push(resource);
       } else if (resource.resourceType === "Procedure") {
         procedures.push(resource);
       } else if (resource.resourceType === "MedicationStatement") {
         medStatements.push(resource);
+      } else if (resource.resourceType === "Medication") {
+        medications.push(resource);
       } else {
         remaining.push(resource);
       }
       return acc;
     },
-    [[], [], [], []] as [
+    [[], [], [], [], []] as [
       SlimCondition[],
       SlimProcedure[],
       SlimMedicationStatement[],
+      SlimMedication[],
       SlimResource[]
     ]
   );
@@ -39,16 +41,18 @@ export function condenseBundle(bundle: SlimResource[]): SlimResource[] {
     s => JSON.stringify(s.reference),
     reconstructMedStatement
   );
-
-  fs.writeFileSync("condensedConditions.json", JSON.stringify(condensedConditions, null, 2));
-  fs.writeFileSync("condensedProcedures.json", JSON.stringify(condensedProcedures, null, 2));
-  fs.writeFileSync("condensedMedStmnts.json", JSON.stringify(condensedMedStmnts, null, 2));
+  const condensedMedications: SlimMedication = {
+    resourceType: "Medication",
+    sideNote: "This is a list of all previously-used medications",
+    names: medications.flatMap(m => m.name ?? []),
+  };
 
   return [
     ...remainingBundle,
     ...condensedConditions,
     ...condensedProcedures,
     ...condensedMedStmnts,
+    condensedMedications,
   ];
 }
 
