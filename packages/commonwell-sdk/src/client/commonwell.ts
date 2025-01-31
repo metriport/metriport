@@ -1,8 +1,8 @@
+import { PurposeOfUse } from "@metriport/shared";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
 import * as stream from "stream";
-import { PurposeOfUse } from "@metriport/shared";
 import { CommonWellAPI } from "..";
 import { makeJwt } from "../common/make-jwt";
 import MetriportError from "../common/metriport-error";
@@ -930,11 +930,7 @@ export class CommonWell implements CommonWellAPI {
    */
   async deletePatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
-
-    await this.api.delete(patientLinkUri, {
-      headers,
-    });
-
+    await this.api.post(patientLinkUri, {}, { headers });
     return;
   }
 

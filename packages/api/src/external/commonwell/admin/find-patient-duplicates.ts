@@ -59,16 +59,14 @@ export type DuplicatedPersons = {
 /**
  * Checks for duplicated persons in CommonWell.
  */
-export async function findDuplicatedPersons(cxId?: string): Promise<DuplicatedPersons> {
+export async function findDuplicatedPersons(cxId: string): Promise<DuplicatedPersons> {
   const { log } = out(`findDuplicatedPersons`);
-  log(cxId ? `Querying patients of cxId ${cxId}...` : `Querying all patients...`);
+  log(`Querying patients of cxId ${cxId}...`);
 
   // TODO paginate this
   // Don't move this to a command as we shouldn't easily allow to search Patients for all cxs
   const patients = await PatientModel.findAll({
-    where: {
-      ...(cxId ? { cxId } : undefined),
-    },
+    where: { cxId },
   });
   const patientsByCustomer = groupBy(patients, "cxId");
 
