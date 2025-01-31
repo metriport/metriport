@@ -559,8 +559,16 @@ class AthenaHealthApi {
       }
     );
     if (createVitalsErrors.length > 0) {
+      const errorsToString = createVitalsErrors
+        .map(
+          e =>
+            `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${e.patientId} departmentId ${
+              e.departmentId
+            } observationId ${e.observationId}. Cause: ${errorToString(e.error)}`
+        )
+        .join(", ");
       const msg = `Failure while creating some vitals @ AthenaHealth`;
-      log(`${msg}. Cause: ${createVitalsErrors.map(error => errorToString(error)).join(", ")}`);
+      log(`${msg}. ${errorsToString}`);
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -646,8 +654,16 @@ class AthenaHealthApi {
       }
     );
     if (searchMedicationErrors.length > 0) {
+      const errorsToString = searchMedicationErrors
+        .map(
+          e =>
+            `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${e.patientId} medicationId ${
+              e.medicationId
+            }. Cause: ${errorToString(e.error)}`
+        )
+        .join(", ");
       const msg = `Failure while searching for some search values @ AthenaHealth`;
-      log(`${msg}. Cause: ${searchMedicationErrors.map(error => errorToString(error)).join(", ")}`);
+      log(`${msg}. ${errorsToString}`);
       capture.message(msg, {
         extra: {
           ...additionalInfo,

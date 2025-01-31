@@ -76,16 +76,16 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (getAppointmentsErrors.length > 0) {
-    const errors = getAppointmentsErrors
+    const errorsToString = getAppointmentsErrors
       .map(e => `cxId ${e.cxId} practiceId ${e.practiceId}. Cause: ${errorToString(e.error)}`)
       .join(",");
     const msg = "Failed to get some appointments @ Elation";
-    log(`${msg}. Cause: ${errors}`);
+    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
-        errors,
+        errors: getAppointmentsErrors,
         context: "elation.process-patients-from-appointments",
       },
       level: "warning",
@@ -126,7 +126,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (syncPatientsErrors.length > 0) {
-    const errors = syncPatientsErrors
+    const errorsToString = syncPatientsErrors
       .map(
         e =>
           `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${
@@ -135,19 +135,12 @@ export async function processPatientsFromAppointments(): Promise<void> {
       )
       .join(",");
     const msg = "Failed to sync some patients @ Elation";
-    log(`${msg}. Cause: ${errors}`);
+    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
-        errors: syncPatientsErrors
-          .map(
-            e =>
-              `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${
-                e.patientId
-              } Cause: ${errorToString(e.error)}`
-          )
-          .join(","),
+        errors: syncPatientsErrors,
         context: "elation.process-patients-from-appointments",
       },
       level: "warning",
