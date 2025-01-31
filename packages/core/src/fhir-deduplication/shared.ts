@@ -11,6 +11,7 @@ dayjs.extend(utc);
 const NO_KNOWN_SUBSTRING = "no known";
 
 const dateFormats = ["datetime", "date"] as const;
+const unknownValues = ["unknown", "unk", "no known"];
 
 export const UNK_CODE = "UNK";
 export const UNKNOWN_DISPLAY = "unknown";
@@ -67,7 +68,6 @@ export function combineTwoResources<T extends Resource>(
 
 // TODO: Might be a good idea to include a check to see if all resources refer to the same patient
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
-const unknownValues = ["unknown", "unk", "no known"];
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
@@ -390,6 +390,11 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
       (!text || text === unknownCode.text.toLowerCase() || text.includes("no data"))
     );
   }
+}
+
+export function isUselessDisplay(text: string) {
+  const normalizedText = text.toLowerCase().trim();
+  return unknownValues.includes(normalizedText) || normalizedText.includes("no data available");
 }
 
 export type DeduplicationResult<T extends Resource> = {
