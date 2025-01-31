@@ -11,10 +11,10 @@ import {
   normalizeZipCodeNew,
   toTitleCase,
 } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
+import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
 
-export function createContacts(patient: PatientResource): Contact[] {
+export function createContacts(patient: PatientWithAddress): Contact[] {
   return [
     ...patient.emails.flatMap(e => {
       const email = normalizeEmailNewSafe(e.email);
@@ -29,7 +29,7 @@ export function createContacts(patient: PatientResource): Contact[] {
   ];
 }
 
-export function createAddresses(patient: PatientResource): Address[] {
+export function createAddresses(patient: PatientWithAddress): Address[] {
   const addressLine1 = patient.address.address_line1.trim();
   if (addressLine1 === "") throw new BadRequestError("Patient address address_line1 is empty");
   const addressLine2 = patient.address.address_line2?.trim();
@@ -47,7 +47,7 @@ export function createAddresses(patient: PatientResource): Address[] {
   ];
 }
 
-export function createNames(patient: PatientResource): { firstName: string; lastName: string } {
+export function createNames(patient: PatientWithAddress): { firstName: string; lastName: string } {
   const firstName = toTitleCase(patient.first_name.trim());
   const lastName = toTitleCase(patient.last_name.trim());
   const middleName = toTitleCase(patient.middle_name.trim());
