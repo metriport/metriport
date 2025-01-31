@@ -1,15 +1,12 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { normalizeDate, normalizeGender, NotFoundError, toTitleCase } from "@metriport/shared";
+import { normalizeDate, normalizeGender, NotFoundError } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
-import {
-  createPatient as createMetriportPatient,
-  PatientCreateCmd,
-} from "../../../../command/medical/patient/create-patient";
+import { createPatient as createMetriportPatient } from "../../../../command/medical/patient/create-patient";
 import {
   getPatientByDemo,
   getPatientOrFail,
@@ -82,8 +79,8 @@ export async function syncElationPatientIntoMetriport({
       patient: {
         cxId,
         facilityId: defaultFacility.facilityId,
-        ...createMetriportPatientCreateCmd(elationPatient),
         externalId: elationPatientId,
+        ...demo,
       },
     });
     if (triggerDq) {
@@ -120,22 +117,6 @@ function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
   const names = createNames(patient);
   return {
     ...names,
-    dob: normalizeDate(patient.dob),
-    genderAtBirth: normalizeGender(patient.sex),
-    address: addressArray,
-    contact: contactArray,
-  };
-}
-
-function createMetriportPatientCreateCmd(
-  patient: PatientResource
-): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
-  const addressArray = createAddresses(patient);
-  const contactArray = createContacts(patient);
-  const names = createNames(patient);
-  return {
-    firstName: toTitleCase(names.firstName),
-    lastName: toTitleCase(names.lastName),
     dob: normalizeDate(patient.dob),
     genderAtBirth: normalizeGender(patient.sex),
     address: addressArray,
