@@ -41,30 +41,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
   }
 };
 
-export const down: Migration = async ({ context: queryInterface }) => {
-  const restorePreviousDefinitionSql = `
-  ALTER TABLE ${tableName} 
-  DROP COLUMN ${columnName},
-  ADD COLUMN ${columnName} tsvector
-  GENERATED ALWAYS AS (
-    to_tsvector('english', id::text) || ' ' ||
-    to_tsvector('english', coalesce(organization_id, '')) || ' ' ||
-    to_tsvector('english', coalesce(organization_name, '')) || ' ' ||
-    to_tsvector('english', 'Commonwell') || ' ' ||
-    to_tsvector('english', coalesce(state, '')) || ' ' ||
-    to_tsvector('english', coalesce(zip_code, ''))
-  ) STORED;
-  `;
-
-  for (const sql of [
-    dropHieViewSql,
-    dropCqViewSql,
-    restorePreviousDefinitionSql,
-    createCqViewSql,
-    createHieViewSql,
-  ]) {
-    await queryInterface.sequelize.query(sql, {
-      type: QueryTypes.RAW,
-    });
-  }
+export const down: Migration = async () => {
+  console.log(
+    "No down migration for 2025-02-01_00_alter-cq-directory-entry-new_recreate-search-criteria"
+  );
 };
