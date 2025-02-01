@@ -19,6 +19,14 @@ import { createAddresses, createAthenaClient, createContacts, createNames } from
 
 const parallelPatientMatches = 5;
 
+export type SyncAthenaPatientIntoMetriportParams = {
+  cxId: string;
+  athenaPracticeId: string;
+  athenaPatientId: string;
+  api?: AthenaHealthApi;
+  triggerDq?: boolean;
+};
+
 type GetPatientByDemoParams = {
   cxId: string;
   demo: PatientDemoData;
@@ -28,19 +36,9 @@ export async function syncAthenaPatientIntoMetriport({
   cxId,
   athenaPracticeId,
   athenaPatientId,
-  accessToken,
   api,
-  useSearch = false,
   triggerDq = false,
-}: {
-  cxId: string;
-  athenaPracticeId: string;
-  athenaPatientId: string;
-  accessToken?: string;
-  api?: AthenaHealthApi;
-  useSearch?: boolean;
-  triggerDq?: boolean;
-}): Promise<string> {
+}: SyncAthenaPatientIntoMetriportParams): Promise<string> {
   const { log } = out(
     `AthenaHealth syncAthenaPatientIntoMetriport - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
@@ -57,19 +55,8 @@ export async function syncAthenaPatientIntoMetriport({
     return metriportPatient.id;
   }
 
-  const athenaApi =
-    api ??
-    (await createAthenaClient({
-      cxId,
-      practiceId: athenaPracticeId,
-      threeLeggedAuthToken: accessToken,
-    }));
-  const athenaPatient = await getPatientFromAthena({
-    api: athenaApi,
-    cxId,
-    patientId: athenaPatientId,
-    useSearch,
-  });
+  const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+  const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
 
   const demos = createMetriportPatientDemos(athenaPatient);
 
@@ -186,27 +173,4 @@ function collapsePatientDemos(demos: PatientDemoData[]): PatientDemoData {
         : `${acc.lastName} ${demo.lastName}`,
     };
   }, firstDemo);
-}
-
-async function getPatientFromAthena({
-  api,
-  cxId,
-  patientId,
-  useSearch,
-}: {
-  api: AthenaHealthApi;
-  cxId: string;
-  patientId: string;
-  useSearch: boolean;
-}): Promise<PatientWithValidHomeAddress> {
-  if (useSearch) {
-    return await api.searchPatient({
-      cxId,
-      patientId,
-    });
-  }
-  return await api.getPatient({
-    cxId,
-    patientId,
-  });
 }

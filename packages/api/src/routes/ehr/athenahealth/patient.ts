@@ -4,7 +4,6 @@ import { Request, Response } from "express";
 import { syncAthenaPatientIntoMetriport } from "../../../external/ehr/athenahealth/command/sync-patient";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
-import { getAuthorizationToken } from "../../util";
 import { handleParams } from "../../helpers/handle-params";
 
 const router = Router();
@@ -21,7 +20,6 @@ router.get(
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const accessToken = getAuthorizationToken(req);
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
@@ -29,7 +27,6 @@ router.get(
       cxId,
       athenaPracticeId,
       athenaPatientId,
-      accessToken,
     });
     return res.status(httpStatus.OK).json(patientId);
   })
