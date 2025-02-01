@@ -4,15 +4,8 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import {
-  errorToString,
-  MetriportError,
-  normalizeDate,
-  normalizeGender,
-  NotFoundError,
-  toTitleCase,
-} from "@metriport/shared";
-import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { errorToString, normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
+import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -34,6 +27,14 @@ import {
 
 const parallelPatientMatches = 5;
 
+export type SyncPatientParams = {
+  cxId: string;
+  athenaPracticeId: string;
+  athenaPatientId: string;
+  api?: AthenaHealthApi;
+  triggerDq?: boolean;
+};
+
 type GetPatientByDemoParams = {
   cxId: string;
   demo: PatientDemoData;
@@ -43,19 +44,9 @@ export async function syncAthenaPatientIntoMetriport({
   cxId,
   athenaPracticeId,
   athenaPatientId,
-  accessToken,
   api,
-  useSearch = false,
   triggerDq = false,
-}: {
-  cxId: string;
-  athenaPracticeId: string;
-  athenaPatientId: string;
-  accessToken?: string;
-  api?: AthenaHealthApi;
-  useSearch?: boolean;
-  triggerDq?: boolean;
-}): Promise<string> {
+}: SyncPatientParams): Promise<string | undefined> {
   const { log } = out(
     `AthenaHealth syncAthenaPatientIntoMetriport - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
@@ -72,30 +63,8 @@ export async function syncAthenaPatientIntoMetriport({
     return metriportPatient.id;
   }
 
-  const athenaApi =
-    api ??
-    (await createAthenaClient({
-      cxId,
-      practiceId: athenaPracticeId,
-      threeLeggedAuthToken: accessToken,
-    }));
-  const athenaPatient = await getPatientFromAthena({
-    api: athenaApi,
-    cxId,
-    patientId: athenaPatientId,
-    useSearch,
-  });
-  if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
-  if (athenaPatient.name.length === 0) {
-    throw new MetriportError("AthenaHealth patient missing at least one name", undefined, {
-      name: athenaPatient.name.map(name => JSON.stringify(name)).join(", "),
-    });
-  }
-  if (athenaPatient.address.length === 0) {
-    throw new MetriportError("AthenaHealth patient missing at least one address", undefined, {
-      address: athenaPatient.address.map(address => JSON.stringify(address)).join(", "),
-    });
-  }
+  const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+  const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
 
   const demos = createMetriportPatientDemos(athenaPatient);
 
@@ -120,7 +89,7 @@ export async function syncAthenaPatientIntoMetriport({
   );
 
   if (getPatientByDemoErrors.length > 0) {
-    capture.error("Failed to get patient by demos", {
+    capture.message("Failed to get patient by some demos @ AthenaHealth", {
       extra: {
         cxId,
         athenaPracticeId,
@@ -130,6 +99,7 @@ export async function syncAthenaPatientIntoMetriport({
         errors: getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(","),
         context: "athenahealth.sync-patient",
       },
+      level: "warning",
     });
   }
 
@@ -176,7 +146,7 @@ export async function syncAthenaPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemos(patient: PatientResourceWithHomeAddress): PatientDemoData[] {
+function createMetriportPatientDemos(patient: PatientWithValidHomeAddress): PatientDemoData[] {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
   const names = createNames(patient);
@@ -193,7 +163,7 @@ function createMetriportPatientDemos(patient: PatientResourceWithHomeAddress): P
 }
 
 function createMetriportPatientCreateCmd(
-  patient: PatientResourceWithHomeAddress
+  patient: PatientWithValidHomeAddress
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
@@ -206,27 +176,4 @@ function createMetriportPatientCreateCmd(
     address: addressArray,
     contact: contactArray,
   };
-}
-
-async function getPatientFromAthena({
-  api,
-  cxId,
-  patientId,
-  useSearch,
-}: {
-  api: AthenaHealthApi;
-  cxId: string;
-  patientId: string;
-  useSearch: boolean;
-}) {
-  if (useSearch) {
-    return await api.getPatientViaSearch({
-      cxId,
-      patientId,
-    });
-  }
-  return await api.getPatient({
-    cxId,
-    patientId,
-  });
 }

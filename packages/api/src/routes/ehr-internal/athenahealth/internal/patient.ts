@@ -1,12 +1,14 @@
-import Router from "express-promise-router";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import httpStatus from "http-status";
+import { catchUpOrBackFillSchema } from "@metriport/shared";
 import { Request, Response } from "express";
-import { processPatientsFromAppointmentsSub } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments-sub";
+import Router from "express-promise-router";
+import httpStatus from "http-status";
+import { processPatientsFromAppointments } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments";
 import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
+import { asyncHandler, getFromQuery, getFromQueryAsBoolean } from "../../../util";
 const router = Router();
 
+/* TODO Remove as part of 2188 Canvas PR
 /**
  * POST /internal/ehr/athenahealth/patient/from-appointments-subscription
  *
@@ -17,8 +19,21 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
-    processPatientsFromAppointmentsSub({ catchUp }).catch(
-      processAsyncError("AthenaHealth processPatientsFromAppointmentsSub")
+    processPatientsFromAppointments(catchUp ? "catchUp" : undefined).catch(
+      processAsyncError("AthenaHealth processPatientsFromAppointments")
+    );
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+router.post(
+  "/from-appointments",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const catchUpOrBackfillQuery = getFromQuery("catchUpOrBackfill", req);
+    const catchUpOrBackFill = catchUpOrBackFillSchema.parse(catchUpOrBackfillQuery);
+    processPatientsFromAppointments(catchUpOrBackFill).catch(
+      processAsyncError("AthenaHealth processPatientsFromAppointments")
     );
     return res.sendStatus(httpStatus.OK);
   })

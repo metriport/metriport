@@ -122,7 +122,7 @@ function _formatContent(content: MessageContent) {
   if (typeof content === "string") {
     return content;
   } else {
-    const contentBlocks = content.flatMap((contentPart) => {
+    const contentBlocks = content.flatMap(contentPart => {
       if (contentPart.type === "image_url") {
         let source;
         if (typeof contentPart.image_url === "string") {
@@ -134,10 +134,7 @@ function _formatContent(content: MessageContent) {
           type: "image" as const, // Explicitly setting the type as "image"
           source,
         };
-      } else if (
-        contentPart.type === "text" ||
-        contentPart.type === "text_delta"
-      ) {
+      } else if (contentPart.type === "text" || contentPart.type === "text_delta") {
         if (contentPart.text === "") {
           return [];
         }
@@ -146,10 +143,7 @@ function _formatContent(content: MessageContent) {
           type: "text" as const, // Explicitly setting the type as "text"
           text: contentPart.text,
         };
-      } else if (
-        contentPart.type === "tool_use" ||
-        contentPart.type === "tool_result"
-      ) {
+      } else if (contentPart.type === "tool_use" || contentPart.type === "tool_result") {
         // TODO: Fix when SDK types are fixed
         return {
           ...contentPart,
@@ -177,9 +171,8 @@ export function formatMessagesForAnthropic(messages: BaseMessage[]): {
     }
     system = messages[0]!.content;
   }
-  const conversationMessages =
-    system !== undefined ? mergedMessages.slice(1) : mergedMessages;
-  const formattedMessages = conversationMessages.map((message) => {
+  const conversationMessages = system !== undefined ? mergedMessages.slice(1) : mergedMessages;
+  const formattedMessages = conversationMessages.map(message => {
     let role;
     if (message._getType() === "human") {
       role = "user" as const;
@@ -188,9 +181,7 @@ export function formatMessagesForAnthropic(messages: BaseMessage[]): {
     } else if (message._getType() === "tool") {
       role = "user" as const;
     } else if (message._getType() === "system") {
-      throw new Error(
-        "System messages are only permitted as the first passed message."
-      );
+      throw new Error("System messages are only permitted as the first passed message.");
     } else {
       throw new Error(`Message type "${message._getType()}" is not supported.`);
     }
@@ -199,9 +190,7 @@ export function formatMessagesForAnthropic(messages: BaseMessage[]): {
         if (message.content === "") {
           return {
             role,
-            content: message.tool_calls.map(
-              _convertLangChainToolCallToAnthropic
-            ),
+            content: message.tool_calls.map(_convertLangChainToolCallToAnthropic),
           };
         } else {
           return {
@@ -242,9 +231,7 @@ export function formatMessagesForAnthropic(messages: BaseMessage[]): {
   };
 }
 
-export function isAnthropicTool(
-  tool: unknown
-): tool is Record<string, unknown> {
+export function isAnthropicTool(tool: unknown): tool is Record<string, unknown> {
   if (typeof tool !== "object" || !tool) return false;
   return "input_schema" in tool;
 }
@@ -277,10 +264,7 @@ export function _makeMessageChunkFromAnthropicEvent(
       additional_kwargs: { ...data.delta },
       ...(usageMetadata !== undefined ? { usage_metadata: usageMetadata } : {}),
     });
-  } else if (
-    data.type === "content_block_start" &&
-    data.content_block.type === "tool_use"
-  ) {
+  } else if (data.type === "content_block_start" && data.content_block.type === "tool_use") {
     return new AIMessageChunk({
       content: fields.coerceContentToString
         ? ""
@@ -293,10 +277,7 @@ export function _makeMessageChunkFromAnthropicEvent(
           ],
       additional_kwargs: {},
     });
-  } else if (
-    data.type === "content_block_delta" &&
-    data.delta.type === "text_delta"
-  ) {
+  } else if (data.type === "content_block_delta" && data.delta.type === "text_delta") {
     const content = data.delta?.text;
     if (content !== undefined) {
       return new AIMessageChunk({
@@ -311,10 +292,7 @@ export function _makeMessageChunkFromAnthropicEvent(
         additional_kwargs: {},
       });
     }
-  } else if (
-    data.type === "content_block_delta" &&
-    data.delta.type === "input_json_delta"
-  ) {
+  } else if (data.type === "content_block_delta" && data.delta.type === "input_json_delta") {
     return new AIMessageChunk({
       content: fields.coerceContentToString
         ? ""
@@ -334,13 +312,11 @@ export function _makeMessageChunkFromAnthropicEvent(
     return new AIMessageChunk({
       content: "",
       response_metadata: {
-        "amazon-bedrock-invocationMetrics":
-          data["amazon-bedrock-invocationMetrics"],
+        "amazon-bedrock-invocationMetrics": data["amazon-bedrock-invocationMetrics"],
       },
       usage_metadata: {
         input_tokens: data["amazon-bedrock-invocationMetrics"].inputTokenCount,
-        output_tokens:
-          data["amazon-bedrock-invocationMetrics"].outputTokenCount,
+        output_tokens: data["amazon-bedrock-invocationMetrics"].outputTokenCount,
         total_tokens:
           data["amazon-bedrock-invocationMetrics"].inputTokenCount +
           data["amazon-bedrock-invocationMetrics"].outputTokenCount,
@@ -351,15 +327,13 @@ export function _makeMessageChunkFromAnthropicEvent(
   return null;
 }
 
-export function extractToolCallChunk(
-  chunk: AIMessageChunk
-): ToolCallChunk | undefined {
+export function extractToolCallChunk(chunk: AIMessageChunk): ToolCallChunk | undefined {
   let newToolCallChunk: ToolCallChunk | undefined;
 
   // Initial chunk for tool calls from anthropic contains identifying information like ID and name.
   // This chunk does not contain any input JSON.
   const toolUseChunks = Array.isArray(chunk.content)
-    ? chunk.content.find((c) => c.type === "tool_use")
+    ? chunk.content.find(c => c.type === "tool_use")
     : undefined;
   if (
     toolUseChunks &&
@@ -378,13 +352,9 @@ export function extractToolCallChunk(
 
   // Chunks after the initial chunk only contain the index and partial JSON.
   const inputJsonDeltaChunks = Array.isArray(chunk.content)
-    ? chunk.content.find((c) => c.type === "input_json_delta")
+    ? chunk.content.find(c => c.type === "input_json_delta")
     : undefined;
-  if (
-    inputJsonDeltaChunks &&
-    "index" in inputJsonDeltaChunks &&
-    "input" in inputJsonDeltaChunks
-  ) {
+  if (inputJsonDeltaChunks && "index" in inputJsonDeltaChunks && "input" in inputJsonDeltaChunks) {
     if (typeof inputJsonDeltaChunks.input === "string") {
       newToolCallChunk = {
         args: inputJsonDeltaChunks.input,
@@ -404,9 +374,7 @@ export function extractToolCallChunk(
 }
 
 export function extractToken(chunk: AIMessageChunk): string | undefined {
-  return typeof chunk.content === "string" && chunk.content !== ""
-    ? chunk.content
-    : undefined;
+  return typeof chunk.content === "string" && chunk.content !== "" ? chunk.content : undefined;
 }
 
 export function extractToolUseContent(
@@ -430,16 +398,11 @@ export function extractToolUseContent(
   }
   if (
     Array.isArray(newConcatenatedChunks.content) &&
-    newConcatenatedChunks.content.find((c) => c.type === "tool_use")
+    newConcatenatedChunks.content.find(c => c.type === "tool_use")
   ) {
     try {
-      const toolUseMsg = newConcatenatedChunks.content.find(
-        (c) => c.type === "tool_use"
-      );
-      if (
-        !toolUseMsg ||
-        !("input" in toolUseMsg || "name" in toolUseMsg || "id" in toolUseMsg)
-      )
+      const toolUseMsg = newConcatenatedChunks.content.find(c => c.type === "tool_use");
+      if (!toolUseMsg || !("input" in toolUseMsg || "name" in toolUseMsg || "id" in toolUseMsg))
         return;
       const parsedArgs = JSON.parse(toolUseMsg.input);
       if (parsedArgs) {

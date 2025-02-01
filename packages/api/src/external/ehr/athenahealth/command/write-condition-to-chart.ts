@@ -1,5 +1,5 @@
 import { Condition } from "@medplum/fhirtypes";
-import { ProblemCreateResponse } from "@metriport/shared/interface/external/athenahealth/problem";
+import { CreatedProblemSuccess } from "@metriport/shared/interface/external/athenahealth/problem";
 import { createAthenaClient } from "../shared";
 
 export async function writeConditionToChart({
@@ -14,7 +14,7 @@ export async function writeConditionToChart({
   athenaPracticeId: string;
   athenaDepartmentId: string;
   condition: Condition;
-}): Promise<ProblemCreateResponse> {
+}): Promise<CreatedProblemSuccess> {
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createProblem({
     cxId,

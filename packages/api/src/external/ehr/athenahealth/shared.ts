@@ -4,30 +4,25 @@ import AthenaHealthApi, {
   AthenaEnv,
   isAthenaEnv,
 } from "@metriport/core/external/athenahealth/index";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
+  JwtTokenInfo,
   MetriportError,
   normalizeEmail,
   normalizePhoneNumber,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
 } from "@metriport/shared";
-import {
-  AthenaClientJwtTokenData,
-  AthenaClientJwtTokenInfo,
-} from "@metriport/shared/interface/external/athenahealth/jwt-token";
-import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
+import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../../command/jwt-token";
 import { Config } from "../../../shared/config";
 
-const region = Config.getAWSRegion();
-
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createMetriportContacts(patient: PatientResourceWithHomeAddress): Contact[] {
+export function createMetriportContacts(patient: PatientWithValidHomeAddress): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       return {
@@ -42,15 +37,25 @@ export function createMetriportContacts(patient: PatientResourceWithHomeAddress)
   });
 }
 
-export function createMetriportAddresses(patient: PatientResourceWithHomeAddress): Address[] {
+export function createMetriportAddresses(patient: PatientWithValidHomeAddress): Address[] {
   return patient.address.map(address => {
     if (address.line.length === 0) {
       throw new Error("AthenaHealth patient missing at least one line in address");
     }
+    const addressLine1 = (address.line[0] as string).trim();
+    if (addressLine1 === "") throw new Error("AthenaHealth patient address first line is empty");
+    const addressLines2plus = address.line
+      .slice(1)
+      .map(l => l.trim())
+      .filter(l => l !== "");
+    const city = address.city.trim();
+    if (city === "") throw new Error("AthenaHealth patient address city is empty");
+    const country = address.country.trim();
+    if (country === "") throw new Error("AthenaHealth patient address country is empty");
     return {
-      addressLine1: address.line[0] as string,
-      addressLine2: address.line.length > 1 ? address.line.slice(1).join(" ") : undefined,
-      city: address.city,
+      addressLine1,
+      addressLine2: addressLines2plus.length > 0 ? addressLines2plus.join(" ") : undefined,
+      city,
       state: normalizeUSStateForAddress(address.state),
       zip: normalizeZipCodeNew(address.postalCode),
       country: address.country,
@@ -59,7 +64,7 @@ export function createMetriportAddresses(patient: PatientResourceWithHomeAddress
 }
 
 export function createNames(
-  patient: PatientResourceWithHomeAddress
+  patient: PatientWithValidHomeAddress
 ): { firstName: string; lastName: string }[] {
   const names: { firstName: string; lastName: string }[] = [];
   patient.name.map(name => {
@@ -71,17 +76,18 @@ export function createNames(
       names.push({ firstName, lastName });
     });
   });
+  if (names.length === 0) {
+    throw new Error("AthenaHealth patient has only empty first or last names");
+  }
   return names;
 }
 
 export async function createAthenaClient({
   cxId,
   practiceId,
-  threeLeggedAuthToken,
 }: {
   cxId: string;
   practiceId: string;
-  threeLeggedAuthToken?: string;
 }): Promise<AthenaHealthApi> {
   const [athenaEnv, twoLeggedAuthTokenInfo] = await Promise.all([
     getAthenaEnv(),
@@ -89,7 +95,6 @@ export async function createAthenaClient({
   ]);
   const athenaApi = await AthenaHealthApi.create({
     twoLeggedAuthTokenInfo,
-    threeLeggedAuthToken,
     practiceId,
     environment: athenaEnv.environment,
     clientKey: athenaEnv.clientKey,
@@ -121,13 +126,9 @@ export async function getAthenaEnv(): Promise<{
   if (!isAthenaEnv(environment)) {
     throw new MetriportError("Invalid AthenaHealth environment", undefined, { environment });
   }
-  const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
-  const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
-  if (!athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new MetriportError("AthenaHealth secrets not set");
-  }
-  const clientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-  const clientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+  const clientKey = Config.getAthenaHealthClientKey();
+  const clientSecret = Config.getAthenaHealthClientSecret();
+  if (!clientKey || !clientSecret) throw new MetriportError("AthenaHealth secrets not set");
   return {
     environment,
     clientKey,
@@ -141,7 +142,7 @@ async function getLatestAthenaClientJwtTokenInfo({
 }: {
   cxId: string;
   practiceId: string;
-}): Promise<AthenaClientJwtTokenInfo | undefined> {
+}): Promise<JwtTokenInfo | undefined> {
   const data: AthenaClientJwtTokenData = {
     cxId,
     practiceId,

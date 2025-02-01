@@ -1,4 +1,4 @@
-import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
+import ElationApi from "@metriport/core/external/elation/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -17,7 +17,7 @@ import {
   parallelPractices,
   parsePracticeMapKey,
 } from "../../shared";
-import { getElationClientKeyAndSecret, getElationEnv } from "../shared";
+import { getElationEnv } from "../shared";
 import { syncElationPatientIntoMetriport } from "./sync-patient";
 
 dayjs.extend(duration);
@@ -27,7 +27,6 @@ const lookForward = dayjs.duration(14, "days");
 type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
-  environment: ElationEnv;
   fromDate: Date;
   toDate: Date;
 };
@@ -35,13 +34,11 @@ type GetAppointmentsParams = {
 type SyncPatientsParams = {
   cxId: string;
   practiceId: string;
-  environment: ElationEnv;
   appointments: Appointment[];
 };
 
 export async function processPatientsFromAppointments(): Promise<void> {
   const { log } = out(`Elation processPatientsFromAppointments`);
-  const environment = getElationEnv();
 
   const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
   log(`Getting appointments from ${startRange} to ${endRange}`);
@@ -56,7 +53,6 @@ export async function processPatientsFromAppointments(): Promise<void> {
     return {
       cxId,
       practiceId,
-      environment,
       fromDate: startRange,
       toDate: endRange,
     };
@@ -76,7 +72,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (getAppointmentsErrors.length > 0) {
-    capture.error("Failed to get appointments", {
+    capture.message("Failed to get some appointments @ Elation", {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
@@ -85,6 +81,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
           .join(","),
         context: "elation.process-patients-from-appointments",
       },
+      level: "warning",
     });
   }
 
@@ -103,7 +100,6 @@ export async function processPatientsFromAppointments(): Promise<void> {
       if (!appointments) return [];
       return {
         ...parsePracticeMapKey(key),
-        environment,
         appointments,
       };
     }
@@ -122,7 +118,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (syncPatientsErrors.length > 0) {
-    capture.error("Failed to sync patients", {
+    capture.message("Failed to sync some patients @ Elation", {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
@@ -134,8 +130,9 @@ export async function processPatientsFromAppointments(): Promise<void> {
               } Cause: ${errorToString(e.error)}`
           )
           .join(","),
-        context: "athenahealth.process-patients-from-appointments-sub",
+        context: "elation.process-patients-from-appointments",
       },
+      level: "warning",
     });
   }
 }
@@ -143,12 +140,11 @@ export async function processPatientsFromAppointments(): Promise<void> {
 async function getAppointments({
   cxId,
   practiceId,
-  environment,
   fromDate,
   toDate,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
+  const { environment, clientKey, clientSecret } = await getElationEnv({
     cxId,
     practiceId,
   });
@@ -159,15 +155,16 @@ async function getAppointments({
     clientSecret,
   });
   try {
-    const appointmentsFromApi = await api.getAppointments({
+    const appointments = await api.getAppointments({
       cxId,
       fromDate,
       toDate,
     });
     return {
-      appointments: appointmentsFromApi.map(appointment => {
+      appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: appointment.patient };
       }),
+      error: undefined,
     };
   } catch (error) {
     log(`Failed to get appointments. Cause: ${errorToString(error)}`);
@@ -178,11 +175,10 @@ async function getAppointments({
 async function syncPatients({
   cxId,
   practiceId,
-  environment,
   appointments,
 }: SyncPatientsParams): Promise<{ errors: { error: unknown; patientId: string }[] }> {
   const { log } = out(`Elation syncPatients - cxId ${cxId} practiceId ${practiceId}`);
-  const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
+  const { environment, clientKey, clientSecret } = await getElationEnv({
     cxId,
     practiceId,
   });
@@ -192,7 +188,6 @@ async function syncPatients({
     clientKey,
     clientSecret,
   });
-
   const syncPatientErrors: { error: unknown; patientId: string }[] = [];
   await executeAsynchronously(
     appointments,
