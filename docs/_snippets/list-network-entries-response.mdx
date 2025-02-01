@@ -6,19 +6,19 @@
   The name of this Network Entry.
 </ResponseField>
 
-<ResponseField name="zip" type="string">
+<ResponseField name="zip" type="string | undefined">
   The zipcode this Network Entry resides in.
 </ResponseField>
 
-<ResponseField name="state" type="string">
-  The 2 letter state acronym, for example: `CA`.
+<ResponseField name="state" type="string | undefined">
+  The 2 letter state or territory acronym, for example: `CA`.
 </ResponseField>
 
-<ResponseField name="rootOrganization" type="string">
+<ResponseField name="rootOrganization" type="string | undefined">
   The name of the top level organization responsible for
   both this entry and the managing organization.
 </ResponseField>
 
-<ResponseField name="managingOrgId" type="string">
+<ResponseField name="managingOrgId" type="string | undefined">
   The ID of the organization that is the direct parent.
 </ResponseField>

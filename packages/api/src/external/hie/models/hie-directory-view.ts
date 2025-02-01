@@ -42,6 +42,10 @@ export class HIEDirectoryEntryViewModel extends BaseModel<HIEDirectoryEntryViewM
           type: DataTypes.STRING,
           field: "managing_organization_id",
         },
+        addressLine: {
+          type: DataTypes.STRING,
+          field: "address_line",
+        },
         state: {
           type: DataTypes.STRING,
         },
