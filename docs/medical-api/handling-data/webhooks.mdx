@@ -23,8 +23,9 @@ To enable this integration approach with Metriport, and for some prerequesite re
 how the Webhook flow works, see [our Webhooks guide](/medical-api/getting-started/webhooks).
 
 <Warning>
-  When you receive a webhook message, you should respond with a `200` status code within 4 seconds.
-  We recommend processing the webhook request asynchronously.
+  When you receive a webhook message, you should respond
+  with a `200` status code within 4 seconds. We recommend
+  processing the webhook request asynchronously.
 </Warning>
 
 ### Types of Messages
@@ -124,8 +125,8 @@ These are messages you can expect to receive in the following scenarios:
    in FHIR-compliant format.
 
 <Tip>
-  Note that the webhooks will only contain updates for new data fetched in the current document
-  query.
+  Note that the webhooks will only contain updates for new
+  data fetched in the current document query.
 </Tip>
 
 ```json
@@ -397,6 +398,12 @@ that represents the resulting FHIR bundle.
 
 Inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
 an attachment with a `url` which can be used to download the rendered medical record.
+
+<Info>
+  If the Medical Record doesn't contain any information, the
+  `Bundle` will be empty (the `entry` array will have no
+  elements).
+</Info>
 
 Example payload:
 

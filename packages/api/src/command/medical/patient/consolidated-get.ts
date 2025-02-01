@@ -255,6 +255,7 @@ export async function getConsolidated({
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
     dateTo,
+    conversionType,
   };
   try {
     if (!bundle) {
