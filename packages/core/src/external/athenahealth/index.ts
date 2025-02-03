@@ -63,7 +63,7 @@ import {
   formatDate,
   makeRequest,
   MakeRequestParamsFromMethod,
-} from "../util/ehr";
+} from "../shared/ehr";
 
 const parallelRequests = 5;
 const delayBetweenRequestBatches = dayjs.duration(2, "seconds");

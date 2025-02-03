@@ -3,7 +3,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { AxiosInstance } from "axios";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
-import { S3Utils } from "../../external/aws/s3";
+import { S3Utils } from "../aws/s3";
 import { processAsyncError } from "../../util/error/shared";
 import { uuidv7 } from "../../util/uuid-v7";
 
@@ -21,14 +21,6 @@ function buildS3Path(ehr: string, path: string, key: string): string {
 }
 
 export function formatDate(date: string | undefined, format: string): string | undefined {
-  if (!date) return undefined;
-  const trimmedDate = date.trim();
-  const parsedDate = buildDayjs(trimmedDate);
-  if (!parsedDate.isValid()) return undefined;
-  return parsedDate.format(format);
-}
-
-export function formatDateTime(date: string | undefined, format: string): string | undefined {
   if (!date) return undefined;
   const trimmedDate = date.trim();
   const parsedDate = buildDayjs(trimmedDate);

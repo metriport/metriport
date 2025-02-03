@@ -21,7 +21,7 @@ import {
   formatDate,
   makeRequest,
   MakeRequestParamsFromMethod,
-} from "../util/ehr";
+} from "../shared/ehr";
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
