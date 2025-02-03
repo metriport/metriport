@@ -479,16 +479,14 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   };
 }
 
+const metriportLogo = `<div class='logo-container'>
+<img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
+</div>`;
+
 function createMRHeader(patient: Patient, isLogoDisabled: boolean) {
   return `
     <div id="mr-header">
-    ${
-      isLogoDisabled
-        ? ""
-        : ` <div class='logo-container'>
-        <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
-      </div>`
-    }
+    ${isLogoDisabled ? "" : metriportLogo}
       <h1 class="title">
         Medical Record Summary (${formatDateForDisplay(new Date())})
       </h1>

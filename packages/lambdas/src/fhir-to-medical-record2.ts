@@ -75,7 +75,7 @@ export async function handler({
     const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
     const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
     const cxsWithNoMrLogoFeatureFlagValue = await getCxsWithNoMrLogoFeatureFlagValue();
-    const isNoLogoFeatureFlagEnabled = cxsWithNoMrLogoFeatureFlagValue.includes(cxId);
+    const isNoMrLogoFeatureFlagEnabled = cxsWithNoMrLogoFeatureFlagValue.includes(cxId);
     const cxsWithBmiFeatureFlagValue = await getCxsWithBmiFeatureFlagValue();
     const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
     const cxsWithDermFeatureFlagValue = await getCxsWithDermFeatureFlagValue();
@@ -102,7 +102,7 @@ export async function handler({
       ? bundleToHtmlBmi(bundle, aiBrief)
       : isDermFeatureFlagEnabled
       ? bundleToHtmlDerm(bundle, aiBrief)
-      : bundleToHtml(bundle, aiBrief, isNoLogoFeatureFlagEnabled);
+      : bundleToHtml(bundle, aiBrief, isNoMrLogoFeatureFlagEnabled);
     await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostHtml" });
     metrics.htmlConversion = {
       duration: Date.now() - htmlStartedAt,
