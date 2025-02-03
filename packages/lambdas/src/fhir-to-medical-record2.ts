@@ -74,8 +74,8 @@ export async function handler({
   try {
     const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
     const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
-    const cxsWithNoLogoFeatureFlagValue = await getCxsWithNoLogoFeatureFlagValue();
-    const isNoLogoFeatureFlagEnabled = cxsWithNoLogoFeatureFlagValue.includes(cxId);
+    const cxsWithNoMrLogoFeatureFlagValue = await getCxsWithNoMrLogoFeatureFlagValue();
+    const isNoLogoFeatureFlagEnabled = cxsWithNoMrLogoFeatureFlagValue.includes(cxId);
     const cxsWithBmiFeatureFlagValue = await getCxsWithBmiFeatureFlagValue();
     const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
     const cxsWithDermFeatureFlagValue = await getCxsWithDermFeatureFlagValue();
@@ -273,13 +273,13 @@ async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
   return [];
 }
 
-async function getCxsWithNoLogoFeatureFlagValue(): Promise<string[]> {
+async function getCxsWithNoMrLogoFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
     appConfigAppId,
     appConfigConfigId,
     getEnvType(),
-    "cxsWithNoLogoMrFeatureFlag"
+    "cxsWithNoMrLogoFeatureFlag"
   );
 
   if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
