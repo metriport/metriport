@@ -11,7 +11,7 @@ export function makeSearchServiceIngest(): OpenSearchFileIngestor {
   const indexName = Config.getSearchIndexName();
   const username = Config.getSearchUsername();
   const password = Config.getSearchPassword();
-  if (Config.isDev()) {
+  if (!Config.isCloudEnv()) {
     return new OpenSearchFileIngestorDirect({
       region,
       endpoint,

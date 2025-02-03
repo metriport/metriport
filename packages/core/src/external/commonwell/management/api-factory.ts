@@ -11,7 +11,7 @@ export function makeApi({
   cookieManager: CookieManager;
   baseUrl: string;
 }): CommonWellManagementAPI {
-  return Config.isDev()
+  return !Config.isCloudEnv()
     ? new CommonWellManagementAPIMock({ baseUrl })
     : new CommonWellManagementAPIImpl({ cookieManager, baseUrl });
 }
