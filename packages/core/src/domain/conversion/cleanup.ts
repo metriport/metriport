@@ -1,7 +1,8 @@
 export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoCdUnk = replaceCdUnkString(payloadRaw);
   const payloadNoNullFlavor = replaceNullFlavor(payloadNoCdUnk);
-  return payloadNoNullFlavor;
+  const payloadCleanedCode = cleanUpTranslationCode(payloadNoNullFlavor);
+  return payloadCleanedCode;
 }
 
 function replaceCdUnkString(payloadRaw: string): string {
@@ -14,4 +15,12 @@ function replaceNullFlavor(payloadRaw: string): string {
   const stringToReplace = /<id\s*nullFlavor\s*=\s*".*?"\s*\/>/g;
   const replacement = `<id extension="1" root="1"/>`;
   return payloadRaw.replace(stringToReplace, replacement);
+}
+
+export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g;
+export function cleanUpTranslationCode(payloadRaw: string): string {
+  return payloadRaw.replace(xmlTranslationCodeRegex, (_, prefix, code, suffix) => {
+    const cleanedCode = code.split("\\")[0].trim();
+    return `${prefix}${cleanedCode}${suffix}`;
+  });
 }
