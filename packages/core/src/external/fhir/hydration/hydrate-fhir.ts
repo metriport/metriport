@@ -79,7 +79,7 @@ export async function hydrateFhir(
       ...result.metadata,
       totalBundleCodes: numCodes,
       numReplaced,
-      percentReplaced: (numCodes / numReplaced) * 100,
+      percentReplaced: (numReplaced / numCodes) * 100,
     },
     data: hydratedBundle,
   };
