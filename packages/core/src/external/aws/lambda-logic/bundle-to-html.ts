@@ -45,7 +45,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoDisabled = false): string {
   const {
     patient,
     practitioners,
@@ -317,7 +317,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
       </head>
 
       <body>
-        ${createMRHeader(patient)}
+        ${createMRHeader(patient, isLogoDisabled)}
         ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
@@ -479,12 +479,16 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   };
 }
 
-function createMRHeader(patient: Patient) {
+function createMRHeader(patient: Patient, isLogoDisabled: boolean) {
   return `
     <div id="mr-header">
-      <div class='logo-container'>
+    ${
+      isLogoDisabled
+        ? ""
+        : ` <div class='logo-container'>
         <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
-      </div>
+      </div>`
+    }
       <h1 class="title">
         Medical Record Summary (${formatDateForDisplay(new Date())})
       </h1>
