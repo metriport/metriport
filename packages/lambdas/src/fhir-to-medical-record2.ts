@@ -74,6 +74,8 @@ export async function handler({
   try {
     const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
     const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
+    const cxsWithNoMrLogoFeatureFlagValue = await getCxsWithNoMrLogoFeatureFlagValue();
+    const isLogoEnabled = !cxsWithNoMrLogoFeatureFlagValue.includes(cxId);
     const cxsWithBmiFeatureFlagValue = await getCxsWithBmiFeatureFlagValue();
     const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
     const cxsWithDermFeatureFlagValue = await getCxsWithDermFeatureFlagValue();
@@ -100,7 +102,7 @@ export async function handler({
       ? bundleToHtmlBmi(bundle, aiBrief)
       : isDermFeatureFlagEnabled
       ? bundleToHtmlDerm(bundle, aiBrief)
-      : bundleToHtml(bundle, aiBrief);
+      : bundleToHtml(bundle, aiBrief, isLogoEnabled);
     await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostHtml" });
     metrics.htmlConversion = {
       duration: Date.now() - htmlStartedAt,
@@ -264,6 +266,20 @@ async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
     appConfigConfigId,
     getEnvType(),
     "cxsWithBmiMrFeatureFlag"
+  );
+
+  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
+
+  return [];
+}
+
+async function getCxsWithNoMrLogoFeatureFlagValue(): Promise<string[]> {
+  const featureFlag = await getFeatureFlagValueStringArray(
+    region,
+    appConfigAppId,
+    appConfigConfigId,
+    getEnvType(),
+    "cxsWithNoMrLogoFeatureFlag"
   );
 
   if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
