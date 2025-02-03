@@ -64,6 +64,7 @@ import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import {
   nonEmptyStringListFromQuerySchema,
@@ -80,12 +81,10 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { schemaCreateToPatientData } from "./schemas/patient";
-import { handleParams } from "../helpers/handle-params";
 
 dayjs.extend(duration);
 
@@ -289,44 +288,6 @@ router.delete(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /internal/patient/:patientId/link
- *
- * Builds and returns the current state of a patient's links across HIEs.
- *
- * @param req.params.patientId Patient ID for which to retrieve links.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to get links for patient.
- * @returns The patient's current and potential links.
- */
-router.get(
-  "/:patientId/link",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    const cwPersonLinks = await cwCommands.link.get(patientId, cxId, facilityId);
-    const cwConvertedLinks = dtoFromCW({
-      cwPotentialPersons: cwPersonLinks.potentialLinks,
-      cwCurrentPersons: cwPersonLinks.currentLinks,
-    });
-
-    const links: PatientLinksDTO & { networkLinks: unknown } = {
-      currentLinks: cwConvertedLinks.currentLinks,
-      potentialLinks: cwConvertedLinks.potentialLinks,
-      networkLinks: cwPersonLinks.networkLinks,
-    };
-
-    return res.status(status.OK).json(links);
-  })
-);
-
-/** ---------------------------------------------------------------------------
  * GET /internal/patient/duplicates
  * *
  * @param req.query.cxId The customer ID (optional, defaults to all customers).
@@ -338,7 +299,7 @@ router.get(
   "/duplicates",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await findDuplicatedPersons(cxId);
     console.log(`Result: ${stringify(result)}`);
     return res.status(status.OK).json(result);
@@ -442,6 +403,8 @@ const initEnhancedCoverageSchema = z.object({
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage
  *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
+ *
  * Trigger the job to enhance coverage of provided patients. Before doing that,
  * it also checks/fixes any stale enhanced coverage process.
  *
@@ -507,6 +470,8 @@ const cqLinkStatusSchema = z.enum(cqLinkStatus);
 /**
  * POST /internal/patient/enhance-coverage/set-cq-link-statuses
  *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
+ *
  * Sets the CQ link statuses to complete the enhanced coverage flow for a list of patients.
  * @param req.query.cxId The customer ID.
  * @param req.query.patientIds The IDs of the patients to complete the process for.
@@ -535,6 +500,8 @@ const updateECAfterIncludeListSchema = z.object({
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage/after-include-list
+ *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
  *
  * Store the result of running Enhanced Coverage from the local environment.
  *
@@ -567,6 +534,8 @@ const updateECAfterDocQuerySchema = z.object({
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage/after-doc-query
+ *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
  *
  * Store the result of running Enhanced Coverage from the local environment.
  *

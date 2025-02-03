@@ -2,7 +2,7 @@ import { CodeableConcept, Coding, Resource } from "@medplum/fhirtypes";
 import { isUnknownCoding } from "../../fhir-deduplication/shared";
 import { knownSystemUrls } from "../../util/constants";
 
-export const unknownValues = ["unknown", "unk", "no known"];
+export const unknownValues = ["unknown", "unk"];
 
 /**
  * Returns the code attribute from each resource based on its spec
@@ -31,17 +31,16 @@ export function getCodesFromResource(res: Resource): CodeableConcept[] {
 }
 
 export function isValidCoding(coding: Coding): boolean {
-  if (coding.display && !isUselessDisplay(coding.display)) return true;
+  if (coding.display && isUsefulDisplay(coding.display)) return true;
   if (isUnknownCoding(coding)) return false;
   if (coding.system && knownSystemUrls.includes(coding.system)) return true;
   return false;
 }
 
-export function isUselessDisplay(text: string) {
+export function isUsefulDisplay(text: string) {
   const normalizedText = text.toLowerCase().trim();
   return (
-    normalizedText.length === 0 ||
-    unknownValues.includes(normalizedText) ||
-    normalizedText.includes("no data available")
+    normalizedText.length > 0 &&
+    !(unknownValues.includes(normalizedText) || normalizedText.includes("no data available"))
   );
 }

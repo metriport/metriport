@@ -5,10 +5,7 @@
     "dark": "/logo/dark.png"
   },
   "api": {
-    "baseUrl": [
-      "https://api.sandbox.metriport.com",
-      "https://api.metriport.com"
-    ],
+    "baseUrl": ["https://api.sandbox.metriport.com", "https://api.metriport.com"],
     "auth": {
       "method": "key",
       "name": "x-api-key"
@@ -120,9 +117,7 @@
         {
           "group": "Network",
           "icon": "network-wired",
-          "pages": [
-            "medical-api/api-reference/network/list-network-entries"
-          ]
+          "pages": ["medical-api/api-reference/network/list-network-entries"]
         },
         {
           "group": "Settings",
@@ -237,9 +232,7 @@
         {
           "group": "Extensions",
           "icon": "asterisk",
-          "pages": [
-            "medical-api/fhir/extensions/doc-id"
-          ]
+          "pages": ["medical-api/fhir/extensions/doc-id"]
         }
       ]
     },
@@ -264,34 +257,33 @@
     },
     {
       "group": "Getting Started",
-      "pages": [
-        "converter-api/getting-started/quickstart"
-      ]
+      "pages": ["converter-api/getting-started/quickstart"]
     },
     {
       "group": "API Reference",
       "pages": [
         {
           "group": "C-CDA",
-          "pages": [
-            "converter-api/api-reference/ccda/ccda-to-fhir"
-          ]
+          "pages": ["converter-api/api-reference/ccda/ccda-to-fhir"]
         }
       ]
     },
     {
       "group": "EHR Apps",
-      "pages": [
-        "ehr-apps/overview",
-        "ehr-apps/athena",
-        "ehr-apps/canvas",
-        "ehr-apps/elation"
-      ]
+      "pages": ["ehr-apps/overview", "ehr-apps/athena", "ehr-apps/canvas", "ehr-apps/elation"]
     }
   ],
   "footerSocials": {
     "twitter": "https://twitter.com/metriport?lang=en",
     "linkedin": "https://www.linkedin.com/company/metriport/",
     "github": "https://github.com/metriport/metriport"
+  },
+  "analytics": {
+    "koala": {
+      "publicApiKey": "pk_44e88c16775418837d2f3e62e3c5515ba4fb"
+    },
+    "posthog": {
+      "apiKey": "phc_GZPdeCb8Sqff8gdIZkQr7G0SxZwt6QZwiQ1PeBuPLqC"
+    }
   }
 }
