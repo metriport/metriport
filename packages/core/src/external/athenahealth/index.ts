@@ -52,11 +52,9 @@ import dayjs from "dayjs";
 import { uniqBy } from "lodash";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../util/concurrency";
-import { Config } from "../../util/config";
 import { SNOMED_CODE } from "../../util/constants";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
-import { S3Utils } from "../aws/s3";
 import {
   ApiConfig,
   createDataParams,
@@ -72,17 +70,11 @@ interface AthenaHealthApiConfig extends ApiConfig {
   environment: AthenaEnv;
 }
 
-const region = Config.getAWSRegion();
-const responsesBucket = Config.getEhrResponsesBucketName();
 const athenaPracticePrefix = "Practice";
 const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
 const athenaDateFormat = "MM/DD/YYYY";
 const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
 
 const athenaEnv = ["api", "api.preview"] as const;
 export type AthenaEnv = (typeof athenaEnv)[number];
@@ -142,12 +134,10 @@ class AthenaHealthApi {
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   private practiceId: string;
-  private s3Utils: S3Utils;
 
   private constructor(private config: AthenaHealthApiConfig) {
     this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
     this.practiceId = this.stripPracticeId(config.practiceId);
-    this.s3Utils = getS3UtilsInstance();
     this.axiosInstanceFhir = axios.create({});
     this.axiosInstanceProprietary = axios.create({});
     this.baseUrl = `https://${config.environment}.platform.athenahealth.com`;
@@ -841,10 +831,25 @@ class AthenaHealthApi {
       data,
       schema,
       additionalInfo,
-      responsesBucket,
-      s3Utils: this.s3Utils,
       debug,
     });
+  }
+
+  private formatDate(date: string | undefined): string | undefined {
+    return formatDate(date, athenaDateFormat);
+  }
+
+  private formatDateTime(date: string | undefined): string | undefined {
+    return formatDate(date, athenaDateTimeFormat);
+  }
+
+  private parsePatient(patient: Patient): PatientWithValidHomeAddress {
+    if (!patient.address) throw new BadRequestError("No addresses found");
+    patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
+    if (patient.address.length === 0) {
+      throw new BadRequestError("No home address with valid zip found");
+    }
+    return patientSchemaWithValidHomeAddress.parse(patient);
   }
 
   stripPracticeId(id: string) {
@@ -869,22 +874,6 @@ class AthenaHealthApi {
 
   stripDepartmentId(id: string) {
     return id.replace(`a-${this.practiceId}.${athenaDepartmentPrefix}-`, "");
-  }
-
-  private formatDate(date: string | undefined): string | undefined {
-    return formatDate(date, athenaDateFormat);
-  }
-
-  private formatDateTime(date: string | undefined): string | undefined {
-    return formatDate(date, athenaDateTimeFormat);
-  }
-
-  private parsePatient(patient: Patient): PatientWithValidHomeAddress {
-    if (!patient.address) throw new BadRequestError("No addresses found");
-    patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
-    if (patient.address.length === 0)
-      throw new BadRequestError("No home address with valid zip found");
-    return patientSchemaWithValidHomeAddress.parse(patient);
   }
 
   private getConditionSnomedCode(condition: Condition): string | undefined {

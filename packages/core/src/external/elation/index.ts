@@ -12,9 +12,7 @@ import {
   PatientWithAddress,
 } from "@metriport/shared/interface/external/elation/index";
 import axios, { AxiosInstance } from "axios";
-import { Config } from "../../util/config";
 import { out } from "../../util/log";
-import { S3Utils } from "../aws/s3";
 import {
   ApiConfig,
   createDataParams,
@@ -27,13 +25,7 @@ interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
 }
 
-const region = Config.getAWSRegion();
-const responsesBucket = Config.getEhrResponsesBucketName();
 const elationDateFormat = "YYYY-MM-DD";
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
 
 const elationEnv = ["app", "sandbox"] as const;
 export type ElationEnv = (typeof elationEnv)[number];
@@ -46,12 +38,10 @@ class ElationApi {
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   private practiceId: string;
-  private s3Utils: S3Utils;
 
   private constructor(private config: ElationApiConfig) {
     this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
     this.practiceId = config.practiceId;
-    this.s3Utils = getS3UtilsInstance();
     this.axiosInstance = axios.create({});
     this.baseUrl = `https://${config.environment}.elationemr.com/api/2.0`;
   }
@@ -241,8 +231,6 @@ class ElationApi {
       headers,
       schema,
       additionalInfo,
-      responsesBucket,
-      s3Utils: this.s3Utils,
       debug,
     });
   }

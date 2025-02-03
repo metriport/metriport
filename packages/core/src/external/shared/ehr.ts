@@ -3,9 +3,17 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { AxiosInstance } from "axios";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
-import { S3Utils } from "../aws/s3";
+import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
 import { uuidv7 } from "../../util/uuid-v7";
+import { S3Utils } from "../aws/s3";
+
+const region = Config.getAWSRegion();
+const responsesBucket = Config.getEhrResponsesBucketName();
+
+function getS3UtilsInstance(): S3Utils {
+  return new S3Utils(region);
+}
 
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
@@ -40,8 +48,6 @@ export type MakeRequestParams<T> = {
   headers?: Record<string, string> | undefined;
   schema: z.Schema<T>;
   additionalInfo: AdditionalInfo;
-  responsesBucket?: string | undefined;
-  s3Utils?: S3Utils | undefined;
   debug: typeof console.log;
 };
 
@@ -62,8 +68,6 @@ export async function makeRequest<T>({
   headers,
   schema,
   additionalInfo,
-  responsesBucket,
-  s3Utils,
   debug,
 }: MakeRequestParams<T>): Promise<T> {
   const response = await axiosInstance.request({
@@ -80,13 +84,14 @@ export async function makeRequest<T>({
   }
   const body = response.data;
   debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
-  if (responsesBucket && s3Utils) {
+  if (responsesBucket) {
     const filePath = createHivePartitionFilePath({
       cxId,
       patientId: patientId ?? "global",
       date: new Date(),
     });
     const key = buildS3Path(ehr, s3Path, filePath);
+    const s3Utils = getS3UtilsInstance();
     s3Utils
       .uploadFile({
         bucket: responsesBucket,
