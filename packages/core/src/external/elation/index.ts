@@ -1,11 +1,4 @@
-import {
-  AdditionalInfo,
-  BadRequestError,
-  errorToString,
-  JwtTokenInfo,
-  MetriportError,
-} from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import {
   Appointments,
   appointmentsSchema,
@@ -19,20 +12,19 @@ import {
   PatientWithAddress,
 } from "@metriport/shared/interface/external/elation/index";
 import axios, { AxiosInstance } from "axios";
-import { z } from "zod";
-import { createHivePartitionFilePath } from "../../domain/filename";
 import { Config } from "../../util/config";
-import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
-import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import {
+  ApiConfig,
+  createDataParams,
+  formatDate,
+  makeRequest,
+  MakeRequestParamsFromMethod,
+} from "../util/ehr";
 
-interface ApiConfig {
-  twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
-  practiceId: string;
+interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
-  clientKey: string;
-  clientSecret: string;
 }
 
 const region = Config.getAWSRegion();
@@ -42,8 +34,6 @@ const elationDateFormat = "YYYY-MM-DD";
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
-
-type RequestData = { [key: string]: string | boolean | object | undefined };
 
 const elationEnv = ["app", "sandbox"] as const;
 export type ElationEnv = (typeof elationEnv)[number];
@@ -58,7 +48,7 @@ class ElationApi {
   private practiceId: string;
   private s3Utils: S3Utils;
 
-  private constructor(private config: ApiConfig) {
+  private constructor(private config: ElationApiConfig) {
     this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
     this.practiceId = config.practiceId;
     this.s3Utils = getS3UtilsInstance();
@@ -66,7 +56,7 @@ class ElationApi {
     this.baseUrl = `https://${config.environment}.elationemr.com/api/2.0`;
   }
 
-  public static async create(config: ApiConfig): Promise<ElationApi> {
+  public static async create(config: ElationApiConfig): Promise<ElationApi> {
     const instance = new ElationApi(config);
     await instance.initialize();
     return instance;
@@ -85,7 +75,7 @@ class ElationApi {
     };
 
     try {
-      const response = await axios.post(url, this.createDataParams(data), {
+      const response = await axios.post(url, createDataParams(data), {
         headers: { "content-type": "application/x-www-form-urlencoded" },
       });
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
@@ -233,82 +223,32 @@ class ElationApi {
     s3Path,
     url,
     method,
-    headers,
     data,
+    headers,
     schema,
     additionalInfo,
     debug,
-  }: {
-    cxId: string;
-    patientId?: string;
-    s3Path: string;
-    url: string;
-    method: "GET" | "POST" | "PATCH";
-    headers?: Record<string, string>;
-    data?: RequestData;
-    schema: z.Schema<T>;
-    additionalInfo: AdditionalInfo;
-    debug: typeof console.log;
-  }): Promise<T> {
-    const response = await this.axiosInstance.request({
-      method,
+  }: MakeRequestParamsFromMethod<T>): Promise<T> {
+    return await makeRequest<T>({
+      ehr: "elation",
+      cxId,
+      patientId,
+      s3Path,
+      axiosInstance: this.axiosInstance,
       url,
-      data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
-      headers: {
-        ...this.axiosInstance.defaults.headers.common,
-        ...headers,
-      },
+      method,
+      data,
+      headers,
+      schema,
+      additionalInfo,
+      responsesBucket,
+      s3Utils: this.s3Utils,
+      debug,
     });
-    if (!response.data) {
-      throw new MetriportError(`No body returned from ${method} ${url}`, undefined, additionalInfo);
-    }
-    const body = response.data;
-    debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
-    if (responsesBucket) {
-      const filePath = createHivePartitionFilePath({
-        cxId,
-        patientId: patientId ?? "global",
-        date: new Date(),
-      });
-      const key = this.buildS3Path(s3Path, filePath);
-      this.s3Utils
-        .uploadFile({
-          bucket: responsesBucket,
-          key,
-          file: Buffer.from(JSON.stringify(response.data), "utf8"),
-          contentType: "application/json",
-        })
-        .catch(processAsyncError(`Error saving to s3 @ Elation - ${method} ${url}`));
-    }
-    const outcome = schema.safeParse(body);
-    if (!outcome.success) {
-      throw new MetriportError(`${method} ${url} response not parsed`, undefined, {
-        ...additionalInfo,
-        error: errorToString(outcome.error),
-      });
-    }
-    return outcome.data;
-  }
-
-  private createDataParams(data: RequestData): string {
-    const dataParams = new URLSearchParams();
-    Object.entries(data).forEach(([k, v]) => {
-      if (v === undefined) return;
-      dataParams.append(k, typeof v === "object" ? JSON.stringify(v) : v.toString());
-    });
-    return dataParams.toString();
-  }
-
-  private buildS3Path(method: string, key: string): string {
-    return `elation/${method}/${key}/${uuidv7()}.json`;
   }
 
   private formatDate(date: string | undefined): string | undefined {
-    if (!date) return undefined;
-    const trimmedDate = date.trim();
-    const parsedDate = buildDayjs(trimmedDate);
-    if (!parsedDate.isValid()) return undefined;
-    return parsedDate.format(elationDateFormat);
+    return formatDate(date, elationDateFormat);
   }
 
   private parsePatient(patient: Patient): PatientWithAddress {
