@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
 import { v4 as uuidv4 } from "uuid";
-import { unknownValues } from "../external/fhir/codeable-concept";
 import { capture, out } from "../util";
 
 dayjs.extend(utc);
@@ -12,6 +11,7 @@ dayjs.extend(utc);
 const NO_KNOWN_SUBSTRING = "no known";
 
 const dateFormats = ["datetime", "date"] as const;
+const unknownValues = ["unknown", "unk", "no known"];
 
 export const UNK_CODE = "UNK";
 export const UNKNOWN_DISPLAY = "unknown";

@@ -1,23 +1,23 @@
-import { isUselessDisplay } from "../../codeable-concept";
+import { isUsefulDisplay } from "../../codeable-concept";
 
 describe("isUselessDisplay", () => {
   it("correctly recognizes unknown as a useless display", () => {
-    const result = isUselessDisplay("Unknown");
-    expect(result).toEqual(true);
+    const result = isUsefulDisplay("Unknown");
+    expect(result).toEqual(false);
   });
 
   it("correctly recognizes unknown as a useless display", () => {
-    const result = isUselessDisplay("No data available for this section");
-    expect(result).toEqual(true);
-  });
-
-  it("correctly recognizes a useful description as something useful", () => {
-    const result = isUselessDisplay("Some useful description");
+    const result = isUsefulDisplay("No data available for this section");
     expect(result).toEqual(false);
   });
 
   it("correctly recognizes a useful description as something useful", () => {
-    const result = isUselessDisplay("");
+    const result = isUsefulDisplay("Some useful description");
     expect(result).toEqual(true);
+  });
+
+  it("correctly recognizes a useful description as something useful", () => {
+    const result = isUsefulDisplay("");
+    expect(result).toEqual(false);
   });
 });

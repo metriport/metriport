@@ -255,6 +255,7 @@ export async function getConsolidated({
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
     dateTo,
+    conversionType,
   };
   try {
     if (!bundle) {
@@ -383,6 +384,8 @@ async function uploadConsolidatedJsonAndReturnUrl({
       },
     });
 
+    // TODO This should use the same function as the one used in handleBundleToMedicalRecord(),
+    // `S3Utils.getSignedUrl()` - prob with the same expiration time for simplicity?
     const signedUrl = await getSignedURL({
       bucketName: Config.getMedicalDocumentsBucketName(),
       fileName,

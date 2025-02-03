@@ -10,7 +10,7 @@ import {
   RXNORM_URL,
   SNOMED_URL,
 } from "../../../util/constants";
-import { isUselessDisplay, isValidCoding } from "../codeable-concept";
+import { isUsefulDisplay, isValidCoding } from "../codeable-concept";
 
 export function sortCodings(bundle: Bundle<Resource>): Bundle<Resource> {
   const updatedBundle = cloneDeep(bundle);
@@ -50,13 +50,11 @@ export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConc
   const codings = concept.coding;
   const filteredCodings = codings.length > 1 ? codings.filter(isValidCoding) : codings;
   const sortedCodings = [...filteredCodings].sort((a, b) => rankCoding(a) - rankCoding(b));
-  const replacementText = sortedCodings.find(
-    c => c.display && !isUselessDisplay(c.display)
-  )?.display;
+  const replacementText = sortedCodings.find(c => c.display && isUsefulDisplay(c.display))?.display;
 
   return {
     ...concept,
-    ...(replacementText && !isUselessDisplay(replacementText)
+    ...(replacementText && isUsefulDisplay(replacementText)
       ? { text: replacementText }
       : undefined),
     coding: sortedCodings,

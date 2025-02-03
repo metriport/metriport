@@ -5,7 +5,7 @@ export interface NetworkEntry {
   oid: string;
   name: string;
   zipCode?: string;
-  state?: USStateForAddress;
+  state?: USStateForAddress | undefined;
   managingOrgOid?: string;
   rootOrganization?: string;
 }
