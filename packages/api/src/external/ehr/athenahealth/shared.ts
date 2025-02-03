@@ -6,7 +6,6 @@ import AthenaHealthApi, {
 } from "@metriport/core/external/athenahealth/index";
 import {
   BadRequestError,
-  JwtTokenInfo,
   MetriportError,
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
@@ -14,13 +13,9 @@ import {
   normalizeZipCodeNewSafe,
   toTitleCase,
 } from "@metriport/shared";
-import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
 import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
-import {
-  findOrCreateJwtToken,
-  getLatestExpiringJwtTokenBySourceAndData,
-} from "../../../command/jwt-token";
 import { Config } from "../../../shared/config";
+import { createEhrClient, EhrEnvAndClientCredentials, EhrClienUniqueClientParams } from "../shared";
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
@@ -85,45 +80,7 @@ export function createNames(
   return names;
 }
 
-export async function createAthenaClient({
-  cxId,
-  practiceId,
-}: {
-  cxId: string;
-  practiceId: string;
-}): Promise<AthenaHealthApi> {
-  const [athenaEnv, twoLeggedAuthTokenInfo] = await Promise.all([
-    getAthenaEnv(),
-    getLatestAthenaClientJwtTokenInfo({ cxId, practiceId }),
-  ]);
-  const athenaApi = await AthenaHealthApi.create({
-    twoLeggedAuthTokenInfo,
-    practiceId,
-    environment: athenaEnv.environment,
-    clientKey: athenaEnv.clientKey,
-    clientSecret: athenaEnv.clientSecret,
-  });
-  const newAuthInfo = athenaApi.getTwoLeggedAuthTokenInfo();
-  if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
-  const data: AthenaClientJwtTokenData = {
-    cxId,
-    practiceId,
-    source: athenaClientJwtTokenSource,
-  };
-  await findOrCreateJwtToken({
-    token: newAuthInfo.access_token,
-    exp: newAuthInfo.exp,
-    source: athenaClientJwtTokenSource,
-    data,
-  });
-  return athenaApi;
-}
-
-export async function getAthenaEnv(): Promise<{
-  environment: AthenaEnv;
-  clientKey: string;
-  clientSecret: string;
-}> {
+function getAthenaEnv(): EhrEnvAndClientCredentials<AthenaEnv> {
   const environment = Config.getAthenaHealthEnv();
   if (!environment) throw new MetriportError("AthenaHealth environment not set");
   if (!isAthenaEnv(environment)) {
@@ -139,25 +96,14 @@ export async function getAthenaEnv(): Promise<{
   };
 }
 
-async function getLatestAthenaClientJwtTokenInfo({
-  cxId,
-  practiceId,
-}: {
-  cxId: string;
-  practiceId: string;
-}): Promise<JwtTokenInfo | undefined> {
-  const data: AthenaClientJwtTokenData = {
-    cxId,
-    practiceId,
+export async function createAthenaClient(
+  unqiueParams: EhrClienUniqueClientParams
+): Promise<AthenaHealthApi> {
+  return await createEhrClient<undefined, AthenaEnv, AthenaHealthApi>({
+    ...unqiueParams,
     source: athenaClientJwtTokenSource,
-  };
-  const token = await getLatestExpiringJwtTokenBySourceAndData({
-    source: athenaClientJwtTokenSource,
-    data,
+    getEnv: getAthenaEnv,
+    getEnvParams: undefined,
+    getClient: AthenaHealthApi.create,
   });
-  if (!token) return undefined;
-  return {
-    access_token: token.token,
-    exp: token.exp,
-  };
 }

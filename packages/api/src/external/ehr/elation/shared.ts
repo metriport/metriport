@@ -4,7 +4,6 @@ import ElationApi, { ElationEnv, isElationEnv } from "@metriport/core/external/e
 import {
   BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
-  JwtTokenInfo,
   MetriportError,
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
@@ -12,13 +11,9 @@ import {
   normalizeZipCodeNew,
   toTitleCase,
 } from "@metriport/shared";
-import { ElationClientJwtTokenData } from "@metriport/shared/interface/external/elation/jwt-token";
 import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
-import {
-  findOrCreateJwtToken,
-  getLatestExpiringJwtTokenBySourceAndData,
-} from "../../../command/jwt-token";
 import { Config } from "../../../shared/config";
+import { createEhrClient, EhrClienUniqueClientParams, EhrEnvAndClientCredentials } from "../shared";
 
 export const elationClientJwtTokenSource = "elation-client";
 
@@ -68,51 +63,10 @@ export function createNames(patient: PatientWithAddress): { firstName: string; l
   };
 }
 
-export async function createElationClient({
+function getElationEnv({
   cxId,
   practiceId,
-}: {
-  cxId: string;
-  practiceId: string;
-}): Promise<ElationApi> {
-  const [elationEnv, twoLeggedAuthTokenInfo] = await Promise.all([
-    getElationEnv({ cxId, practiceId }),
-    getLatestElationClientJwtTokenInfo({ cxId, practiceId }),
-  ]);
-  const elationApi = await ElationApi.create({
-    twoLeggedAuthTokenInfo,
-    practiceId,
-    environment: elationEnv.environment,
-    clientKey: elationEnv.clientKey,
-    clientSecret: elationEnv.clientSecret,
-  });
-  const newAuthInfo = elationApi.getTwoLeggedAuthTokenInfo();
-  if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
-  const data: ElationClientJwtTokenData = {
-    cxId,
-    practiceId,
-    source: elationClientJwtTokenSource,
-  };
-  await findOrCreateJwtToken({
-    token: newAuthInfo.access_token,
-    exp: newAuthInfo.exp,
-    source: elationClientJwtTokenSource,
-    data,
-  });
-  return elationApi;
-}
-
-export async function getElationEnv({
-  cxId,
-  practiceId,
-}: {
-  cxId: string;
-  practiceId: string;
-}): Promise<{
-  environment: ElationEnv;
-  clientKey: string;
-  clientSecret: string;
-}> {
+}: EhrClienUniqueClientParams): EhrEnvAndClientCredentials<ElationEnv> {
   const environment = Config.getElationEnv();
   if (!environment) throw new MetriportError("Elation environment not set");
   if (!isElationEnv(environment)) {
@@ -134,25 +88,14 @@ export async function getElationEnv({
   };
 }
 
-async function getLatestElationClientJwtTokenInfo({
-  cxId,
-  practiceId,
-}: {
-  cxId: string;
-  practiceId: string;
-}): Promise<JwtTokenInfo | undefined> {
-  const data: ElationClientJwtTokenData = {
-    cxId,
-    practiceId,
+export async function createElationClient(
+  unqiueParams: EhrClienUniqueClientParams
+): Promise<ElationApi> {
+  return await createEhrClient<EhrClienUniqueClientParams, ElationEnv, ElationApi>({
+    ...unqiueParams,
     source: elationClientJwtTokenSource,
-  };
-  const token = await getLatestExpiringJwtTokenBySourceAndData({
-    source: elationClientJwtTokenSource,
-    data,
+    getEnv: getElationEnv,
+    getEnvParams: unqiueParams,
+    getClient: ElationApi.create,
   });
-  if (!token) return undefined;
-  return {
-    access_token: token.token,
-    exp: token.exp,
-  };
 }
