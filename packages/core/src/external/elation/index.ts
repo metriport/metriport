@@ -137,6 +137,7 @@ class ElationApi {
     const patient = await this.makeRequest<Patient>({
       cxId,
       patientId,
+      s3Path: "patient",
       method: "GET",
       url: patientUrl,
       schema: patientSchema,
@@ -170,6 +171,7 @@ class ElationApi {
     const patient = await this.makeRequest<Patient>({
       cxId,
       patientId,
+      s3Path: "patient-update-metadata",
       method: "PATCH",
       url: patientUrl,
       data: { metadata },
@@ -212,6 +214,7 @@ class ElationApi {
     };
     const appointments = await this.makeRequest<Appointments>({
       cxId,
+      s3Path: "appointments",
       method: "GET",
       url: appointmentUrl,
       schema: appointmentsSchema,
@@ -227,6 +230,7 @@ class ElationApi {
   private async makeRequest<T>({
     cxId,
     patientId,
+    s3Path,
     url,
     method,
     headers,
@@ -237,6 +241,7 @@ class ElationApi {
   }: {
     cxId: string;
     patientId?: string;
+    s3Path: string;
     url: string;
     method: "GET" | "POST" | "PATCH";
     headers?: Record<string, string>;
@@ -265,7 +270,7 @@ class ElationApi {
         patientId: patientId ?? "global",
         date: new Date(),
       });
-      const key = this.buildS3Path(method, filePath);
+      const key = this.buildS3Path(s3Path, filePath);
       this.s3Utils
         .uploadFile({
           bucket: responsesBucket,
@@ -273,7 +278,7 @@ class ElationApi {
           file: Buffer.from(JSON.stringify(response.data), "utf8"),
           contentType: "application/json",
         })
-        .catch(processAsyncError(`Error saving to s3 @ AthenaHealth - ${method} ${url}`));
+        .catch(processAsyncError(`Error saving to s3 @ Elation - ${method} ${url}`));
     }
     const outcome = schema.safeParse(body);
     if (!outcome.success) {
