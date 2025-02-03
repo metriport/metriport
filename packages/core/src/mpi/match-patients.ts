@@ -4,10 +4,10 @@ import { Contact } from "../domain/contact";
 import { PatientData, PersonalIdentifier } from "../domain/patient";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI } from "./shared";
-import { out } from "../util/log";
+// import { out } from "../util/log";
 import { splitName } from "./normalize-patient";
 
-const { log } = out(`Patient Matching`);
+// const { log } = out(`Patient Matching`);
 
 // Define a type for the similarity function
 type SimilarityFunction = (
@@ -111,9 +111,11 @@ export function jaroWinklerSimilarity(
   const similarityScores: { [key: string]: [number, string?, string?] } = {};
 
   const addScore = (field: string, value1: string, value2: string) => {
-    const similarity = jaroWinkler(value1, value2);
-    similarityScores[field] = [similarity, value1, value2];
-    score += similarity;
+    if (value1 && value2) {
+      const similarity = jaroWinkler(value1, value2);
+      similarityScores[field] = [similarity, value1, value2];
+      score += similarity;
+    }
     fieldCount += 1;
   };
 
@@ -232,17 +234,17 @@ export function epicMatchingAlgorithm(
     scores.names = 5;
   }
 
-  const addressMatch = patient1.address.some(addr1 =>
-    patient2.address.some(addr2 => JSON.stringify(addr1) === JSON.stringify(addr2))
+  const addressMatch = patient1.address?.some(addr1 =>
+    patient2.address?.some(addr2 => JSON.stringify(addr1) === JSON.stringify(addr2))
   );
   if (addressMatch) {
     scores.address = 2;
   } else {
-    const cityMatch = patient1.address.some(addr1 =>
-      patient2.address.some(addr2 => addr1.city === addr2.city)
+    const cityMatch = patient1.address?.some(addr1 =>
+      patient2.address?.some(addr2 => addr1?.city === addr2?.city)
     );
-    const zipMatch = patient1.address.some(addr1 =>
-      patient2.address.some(addr2 => addr1.zip === addr2.zip)
+    const zipMatch = patient1.address?.some(addr1 =>
+      patient2.address?.some(addr2 => addr1?.zip === addr2?.zip)
     );
     if (cityMatch) scores.address += 0.5;
     if (zipMatch) scores.address += 0.5;
@@ -276,24 +278,24 @@ export function epicMatchingAlgorithm(
   if (ssn1?.length && ssn2?.length) {
     const newThreshold = threshold + 1;
     const match = totalScore >= newThreshold;
-    if (match) {
-      log(
-        `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Total Scores: ${JSON.stringify(
-          scores
-        )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
-      );
-    }
+    // if (match) {
+    //   log(
+    //     `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Total Scores: ${JSON.stringify(
+    //       scores
+    //     )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
+    //   );
+    // }
     return match;
   }
 
   const match = totalScore >= threshold;
-  if (match) {
-    log(
-      `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Total Scores: ${JSON.stringify(
-        scores
-      )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
-    );
-  }
+  // if (match) {
+  //   log(
+  //     `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Total Scores: ${JSON.stringify(
+  //       scores
+  //     )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
+  //   );
+  // }
   return match;
 }
 

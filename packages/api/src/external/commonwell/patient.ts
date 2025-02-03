@@ -199,6 +199,8 @@ async function registerAndLinkPatientInCW({
 
     let cwLinks: CwLink[] = [];
     if (networkLinks) {
+      // HERE RUN LINKS AGAINST ALGORITHM
+      // NEED TO DOWNGRADE LINK IF NOT A MATCH
       cwLinks = await createCwLinks(patient, networkLinks);
     }
 
