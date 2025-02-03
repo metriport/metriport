@@ -3,6 +3,7 @@
 ## Overview
 
 This project provides a term server for lookups in SNOMED, ICD, LOINC, and RXNORM, CPT, and CVX and crosswalks between SNOMED and ICD.
+Currently, this is mostly intended for internal use.
 
 ## Download Metathesaurus
 
@@ -14,7 +15,12 @@ You can download the Metathesaurus from the following link:
 
 ### Start the Term Server Locally
 
-To start the term server, run the following command:
+Set up the `.env` with the following variables:
+
+- AWS_REGION=<staging-region>
+- TERMINOLOGY_BUCKET=<umls-bucket>
+
+To download the terminology database to your local environment and initiate the service, run this command:
 
 ```bash
 npm run start
