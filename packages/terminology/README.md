@@ -42,6 +42,54 @@ docker-compose build
 docker-compose up -d
 ```
 
+## Supported Systems
+
+Currently, the Term Server supports the following systems:
+
+| System     | URL                                         |
+| ---------- | ------------------------------------------- |
+| SNOMED     | http://snomed.info/sct                      |
+| LOINC      | http://loinc.org                            |
+| RXNORM     | http://www.nlm.nih.gov/research/umls/rxnorm |
+| CPT        | http://www.ama-assn.org/go/cpt              |
+| CVX        | http://hl7.org/fhir/sid/cvx                 |
+| ICD-10-PCS | http://hl7.org/fhir/sid/icd-10-pcs          |
+| ICD-10-CM  | http://hl7.org/fhir/sid/icd-10-cm           |
+
+## APIs
+
+### POST /code-system/lookup/bulk
+
+Send a `POST` request to this route to look up an array of codes from the supported systems, and receive results containing displays for those codes.
+
+#### Body
+
+A JSON payload, containing an array of FHIR Parameters objects with required `id` and `parameter` fields.
+
+```
+[
+  {
+    "resourceType": "Parameters",
+    "id": "abcd1234-abcd-1234-efgh-abcd1234efgh",
+    "parameter": [
+      {
+        "name": "system",
+        "valueUri": "http://hl7.org/fhir/sid/icd-10-cm"
+      },
+      {
+        "name": "code",
+        "valueCode": "T21.30"
+      }
+    ]
+  }
+]
+
+```
+
+### More routes coming soon 🚀
+
+In the near future, we are planning to add a route to do bulk crosswalks between systems. Stay tuned!
+
 ```
             ,▄,
           ▄▓███▌
