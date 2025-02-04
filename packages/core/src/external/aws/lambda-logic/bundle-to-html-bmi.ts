@@ -975,17 +975,19 @@ function getPractitionerFromRecorderId(
       npi: string;
     }
   | undefined {
-  if (!recorderId) return;
+  if (!recorderId) return undefined;
 
   const practitioner = practitioners.find(practitioner => practitioner.id === recorderId);
 
-  if (!practitioner) return;
+  if (!practitioner) return undefined;
 
   const npi = practitioner.identifier?.find(id => id.system?.includes(NPI_CODE));
 
+  const practitionerName = practitioner.name?.[0];
+
   return {
-    name: `${practitioner.name?.[0]?.given?.[0] ?? ""} ${practitioner.name?.[0]?.family ?? ""}${
-      practitioner.name?.[0]?.suffix?.[0] ? `, ${practitioner.name?.[0]?.suffix?.[0]}` : ""
+    name: `${practitionerName?.given?.[0] ?? ""} ${practitionerName?.family ?? ""}${
+      practitionerName?.suffix?.[0] ? `, ${practitionerName?.suffix?.[0]}` : ""
     }`,
     npi: npi?.value ?? "",
   };
