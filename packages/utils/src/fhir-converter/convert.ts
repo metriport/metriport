@@ -1,5 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
@@ -68,7 +69,8 @@ export async function convert(
     throw new Error(`File has nonXMLBody`);
   }
 
-  const { documentContents: noB64FileContents } = removeBase64PdfEntries(fileContents);
+  const payloadClean = cleanUpPayload(fileContents);
+  const { documentContents: noB64FileContents } = removeBase64PdfEntries(payloadClean);
   const payloads = partitionPayload(noB64FileContents);
 
   const unusedSegments = false;
@@ -85,7 +87,6 @@ export async function convert(
   const params = { patientId, fileName, unusedSegments, invalidAccess };
   for (let index = 0; index < payloads.length; index++) {
     const payload = payloads[index];
-
     const res = await api.post(url, payload, {
       params,
       headers: { "Content-Type": "text/plain" },
