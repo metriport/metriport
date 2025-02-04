@@ -51,6 +51,7 @@ export async function hydrateFhir(
   result.data.forEach(d => codesMap.set(d.id, d));
 
   let numCodes = 0;
+  let numReplaced = 0;
   hydratedBundle.entry?.forEach(entry => {
     const res = entry.resource;
     if (!res) return;
@@ -63,7 +64,8 @@ export async function hydrateFhir(
           const param = buildFhirParametersFromCoding({ system: coding.system, code: coding.code });
           if (param && param.id) {
             const newMapping = codesMap.get(param.id);
-            if (newMapping && "display" in newMapping) {
+            if (newMapping && "display" in newMapping && coding.display != newMapping.display) {
+              numReplaced++;
               coding.display = newMapping.display as string;
             }
           }
@@ -72,5 +74,13 @@ export async function hydrateFhir(
     });
   });
 
-  return { metadata: { ...result.metadata, totalBundleCodes: numCodes }, data: hydratedBundle };
+  return {
+    metadata: {
+      ...result.metadata,
+      totalBundleCodes: numCodes,
+      numReplaced,
+      percentReplaced: (numReplaced / numCodes) * 100,
+    },
+    data: hydratedBundle,
+  };
 }
