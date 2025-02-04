@@ -1,6 +1,9 @@
+export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g;
+
 export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoCdUnk = replaceCdUnkString(payloadRaw);
-  const payloadNoNullFlavor = replaceNullFlavor(payloadNoCdUnk);
+  const payloadNoAmpersand = replaceAmpersand(payloadNoCdUnk);
+  const payloadNoNullFlavor = replaceNullFlavor(payloadNoAmpersand);
   const payloadCleanedCode = cleanUpTranslationCode(payloadNoNullFlavor);
   return payloadCleanedCode;
 }
@@ -17,7 +20,12 @@ function replaceNullFlavor(payloadRaw: string): string {
   return payloadRaw.replace(stringToReplace, replacement);
 }
 
-export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g;
+function replaceAmpersand(payloadRaw: string): string {
+  const stringToReplace = /\s&\s/g;
+  const replacement = " &amp; ";
+  return payloadRaw.replace(stringToReplace, replacement);
+}
+
 export function cleanUpTranslationCode(payloadRaw: string): string {
   return payloadRaw.replace(xmlTranslationCodeRegex, (_, prefix, code, suffix) => {
     const cleanedCode = code.split("\\")[0].trim();
