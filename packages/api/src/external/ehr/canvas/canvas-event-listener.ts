@@ -1,4 +1,4 @@
-import CanvasSDK from "@metriport/core/external/canvas/index";
+import CanvasApi from "@metriport/core/external/canvas/index";
 import { createFullNote } from "@metriport/core/external/canvas/note";
 import { out } from "@metriport/core/util/log";
 import { getEnvVarOrFail } from "@metriport/shared";
@@ -74,7 +74,7 @@ export default function () {
         return;
       }
 
-      const canvas = await CanvasSDK.create({
+      const canvas = await CanvasApi.create({
         environment: canvasEnvironment,
         clientKey: canvasClientId,
         clientSecret: canvasClientSecret,

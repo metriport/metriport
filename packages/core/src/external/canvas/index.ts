@@ -43,7 +43,7 @@ const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
 
-class CanvasSDK {
+class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceCustomApi: AxiosInstance;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
@@ -58,8 +58,8 @@ class CanvasSDK {
     this.axiosInstanceCustomApi = axios.create({});
   }
 
-  public static async create(config: CanvasApiConfig): Promise<CanvasSDK> {
-    const instance = new CanvasSDK(config);
+  public static async create(config: CanvasApiConfig): Promise<CanvasApi> {
+    const instance = new CanvasApi(config);
     await instance.initialize();
     return instance;
   }
@@ -103,7 +103,7 @@ class CanvasSDK {
     }
 
     this.axiosInstanceFhirApi = axios.create({
-      baseURL: `https://fumage-${this.environment}/`,
+      baseURL: `https://fumage-${this.environment}`,
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
@@ -112,7 +112,7 @@ class CanvasSDK {
     });
 
     this.axiosInstanceCustomApi = axios.create({
-      baseURL: `https://${this.environment}/core/api/`,
+      baseURL: `https://${this.environment}/core/api`,
       headers: {
         Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
         "Content-Type": "application/json",
@@ -439,4 +439,4 @@ class CanvasSDK {
   }
 }
 
-export default CanvasSDK;
+export default CanvasApi;

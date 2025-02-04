@@ -1,5 +1,5 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
-import CanvasSDK, { CanvasEnv } from "@metriport/core/external/canvas/index";
+import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -24,7 +24,7 @@ export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   clientSecret: string;
 };
 
-type EhrClient = AthenaHealthApi | ElationApi | CanvasSDK;
+type EhrClient = AthenaHealthApi | ElationApi | CanvasApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   practiceId: string;

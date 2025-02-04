@@ -1,4 +1,4 @@
-import CanvasSDK, { CanvasEnv } from "@metriport/core/external/canvas/index";
+import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
 import { cxClientKeyAndSecretMapSecretSchema, MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrClienUniqueClientParams, EhrEnvAndClientCredentials } from "../shared";
@@ -34,12 +34,12 @@ export function getCanvasEnv({
 
 export async function createCanvasClient(
   unqiueParams: EhrClienUniqueClientParams
-): Promise<CanvasSDK> {
-  return await createEhrClient<EhrClienUniqueClientParams, CanvasEnv, CanvasSDK>({
+): Promise<CanvasApi> {
+  return await createEhrClient<EhrClienUniqueClientParams, CanvasEnv, CanvasApi>({
     ...unqiueParams,
     source: canvasClientJwtTokenSource,
     getEnv: getCanvasEnv,
     getEnvParams: unqiueParams,
-    getClient: CanvasSDK.create,
+    getClient: CanvasApi.create,
   });
 }

@@ -1,5 +1,5 @@
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import CanvasSDK from "@metriport/core/external/canvas/index";
+import CanvasApi from "@metriport/core/external/canvas/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -23,7 +23,7 @@ export type SyncCanvasPatientIntoMetriportParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
-  api?: CanvasSDK;
+  api?: CanvasApi;
   triggerDq?: boolean;
 };
 

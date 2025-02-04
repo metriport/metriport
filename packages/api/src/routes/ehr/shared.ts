@@ -28,7 +28,6 @@ export async function processCxIdAsync(
     token: accessToken,
     source,
   });
-  console.log("authInfo", authInfo);
   if (!authInfo) throw new ForbiddenError();
   const { externalId, queryParams } = parseExternalId(authInfo.data);
   const customer = await getCxMappingOrFail({
