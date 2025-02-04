@@ -1158,7 +1158,7 @@ function removeDuplicateConditions(
       end: string;
     }
   >
-) {
+): RenderCondition[] {
   return uniqWith(conditions, (a, b) => {
     const aText = a.code?.text;
     const bText = b.code?.text;
