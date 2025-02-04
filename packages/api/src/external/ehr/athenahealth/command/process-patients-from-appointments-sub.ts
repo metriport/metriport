@@ -1,7 +1,7 @@
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { MetriportError, errorToString } from "@metriport/shared";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -54,13 +54,11 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
     const cxId = mapping.cxId;
     const practiceId = mapping.externalId;
-    const departmentIds = mapping.secondaryMappings?.departmentIds;
-    if (departmentIds && !Array.isArray(departmentIds)) {
-      throw new MetriportError("cxMapping departmentIds is malformed @ AthenaHealth", undefined, {
-        cxId,
-        practiceId,
-      });
-    }
+    const departmentIds = !mapping.secondaryMappings
+      ? undefined
+      : "departmentIds" in mapping.secondaryMappings
+      ? mapping.secondaryMappings.departmentIds
+      : undefined;
     return {
       cxId,
       practiceId,

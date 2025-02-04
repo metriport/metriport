@@ -371,9 +371,12 @@ export class Config {
   static getElationEnv(): string | undefined {
     return getEnvVar("EHR_ELATION_ENVIRONMENT");
   }
-
   static getElationClientKeyAndSecretMap(): string | undefined {
     return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getCanvasClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
   }
 
   static getRateLimitTableName(): string | undefined {

@@ -38,14 +38,15 @@ import {
   MedicationReference,
   MedicationReferences,
   medicationReferencesSchema,
-  Patient,
-  patientSchema,
-  patientSchemaWithValidHomeAddress,
-  PatientSearch,
-  patientSearchSchema,
-  PatientWithValidHomeAddress,
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/athenahealth/index";
+import {
+  Patient,
+  patientFhirSchema,
+  PatientSearch,
+  patientSearchFhirSchema,
+  PatientWithValidHomeAddress,
+} from "@metriport/shared/interface/external/shared/ehr/patient";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
@@ -61,6 +62,7 @@ import {
   formatDate,
   makeRequest,
   MakeRequestParamsFromMethod,
+  parsePatientFhir,
 } from "../shared/ehr";
 
 const parallelRequests = 5;
@@ -245,13 +247,13 @@ class AthenaHealthApi {
       s3Path: "patient",
       method: "GET",
       url: patientUrl,
-      schema: patientSchema,
+      schema: patientFhirSchema,
       additionalInfo,
       debug,
       useFhir: true,
     });
     try {
-      return this.parsePatient(patient);
+      return parsePatientFhir(patient);
     } catch (error) {
       throw new BadRequestError("Failed to parse patient", undefined, {
         ...additionalInfo,
@@ -283,7 +285,7 @@ class AthenaHealthApi {
       method: "POST",
       data,
       url: patientSearchUrl,
-      schema: patientSearchSchema,
+      schema: patientSearchFhirSchema,
       additionalInfo,
       debug,
     });
@@ -294,7 +296,7 @@ class AthenaHealthApi {
     const patient = entry[0]?.resource;
     if (!patient) throw new MetriportError("No patient found in search", undefined, additionalInfo);
     try {
-      return this.parsePatient(patient);
+      return parsePatientFhir(patient);
     } catch (error) {
       throw new BadRequestError("Failed to parse patient", undefined, {
         ...additionalInfo,
@@ -841,15 +843,6 @@ class AthenaHealthApi {
 
   private formatDateTime(date: string | undefined): string | undefined {
     return formatDate(date, athenaDateTimeFormat);
-  }
-
-  private parsePatient(patient: Patient): PatientWithValidHomeAddress {
-    if (!patient.address) throw new BadRequestError("No addresses found");
-    patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
-    if (patient.address.length === 0) {
-      throw new BadRequestError("No home address with valid zip found");
-    }
-    return patientSchemaWithValidHomeAddress.parse(patient);
   }
 
   stripPracticeId(id: string) {

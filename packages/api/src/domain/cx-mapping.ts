@@ -6,15 +6,18 @@ import {
 import { z } from "zod";
 import { EhrSources } from "../external/ehr/shared";
 
-export type CxMappingSource = EhrSources.athena | EhrSources.elation;
+export type CxMappingSource = EhrSources.athena | EhrSources.elation | EhrSources.canvas;
 export function isCxMappingSource(source: string): source is CxMappingSource {
-  return source === EhrSources.athena || source === EhrSources.elation;
+  return (
+    source === EhrSources.athena || source === EhrSources.elation || source === EhrSources.canvas
+  );
 }
 
 export type CxMappingSecondaryMappings = AthenaSecondaryMappings | null;
 export const secondaryMappingsSchemaMap: { [key in CxMappingSource]: z.Schema | undefined } = {
   [EhrSources.athena]: athenaSecondaryMappingsSchema,
   [EhrSources.elation]: undefined,
+  [EhrSources.canvas]: undefined,
 };
 
 export type CxMappingPerSource = {

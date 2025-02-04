@@ -1,5 +1,5 @@
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
+import CanvasSDK from "@metriport/core/external/canvas/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -15,15 +15,15 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
 import { collapsePatientDemosFhir, createMetriportPatientDemosFhir } from "../../shared-fhir";
-import { createAthenaClient } from "../shared";
+import { createCanvasClient } from "../shared";
 
 const parallelPatientMatches = 5;
 
-export type SyncAthenaPatientIntoMetriportParams = {
+export type SyncCanvasPatientIntoMetriportParams = {
   cxId: string;
-  athenaPracticeId: string;
-  athenaPatientId: string;
-  api?: AthenaHealthApi;
+  canvasPracticeId: string;
+  canvasPatientId: string;
+  api?: CanvasSDK;
   triggerDq?: boolean;
 };
 
@@ -32,20 +32,20 @@ type GetPatientByDemoParams = {
   demo: PatientDemoData;
 };
 
-export async function syncAthenaPatientIntoMetriport({
+export async function syncCanvasPatientIntoMetriport({
   cxId,
-  athenaPracticeId,
-  athenaPatientId,
+  canvasPracticeId,
+  canvasPatientId,
   api,
   triggerDq = false,
-}: SyncAthenaPatientIntoMetriportParams): Promise<string> {
+}: SyncCanvasPatientIntoMetriportParams): Promise<string> {
   const { log } = out(
-    `AthenaHealth syncAthenaPatientIntoMetriport - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
+    `Canvas syncCanvasPatientIntoMetriport - cxId ${cxId} canvasPracticeId ${canvasPracticeId} canvasPatientId ${canvasPatientId}`
   );
   const existingPatient = await getPatientMapping({
     cxId,
-    externalId: athenaPatientId,
-    source: EhrSources.athena,
+    externalId: canvasPatientId,
+    source: EhrSources.canvas,
   });
   if (existingPatient) {
     const metriportPatient = await getPatientOrFail({
@@ -55,10 +55,10 @@ export async function syncAthenaPatientIntoMetriport({
     return metriportPatient.id;
   }
 
-  const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
-  const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
+  const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
+  const canvasPatient = await canvasApi.getPatient({ cxId, patientId: canvasPatientId });
 
-  const demos = createMetriportPatientDemosFhir(athenaPatient);
+  const demos = createMetriportPatientDemosFhir(canvasPatient);
 
   const patients: Patient[] = [];
   const getPatientByDemoErrors: unknown[] = [];
@@ -82,17 +82,17 @@ export async function syncAthenaPatientIntoMetriport({
 
   if (getPatientByDemoErrors.length > 0) {
     const errorsToString = getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(",");
-    const msg = "Failed to get patient by some demos @ AthenaHealth";
+    const msg = "Failed to get patient by some demos @ Canvas";
     log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         cxId,
-        athenaPracticeId,
-        athenaPatientId,
+        canvasPracticeId,
+        canvasPatientId,
         getPatientByDemoArgsCount: getPatientByDemoArgs.length,
         errorCount: getPatientByDemoErrors.length,
         errors: getPatientByDemoErrors,
-        context: "athenahealth.sync-patient",
+        context: "canvas.sync-patient",
       },
       level: "warning",
     });
@@ -102,11 +102,11 @@ export async function syncAthenaPatientIntoMetriport({
   if (metriportPatient) {
     const uniquePatientIds = new Set(patients.map(patient => patient.id));
     if (uniquePatientIds.size > 1) {
-      capture.message("AthenaHealth patient mapping to more than one Metriport patient", {
+      capture.message("Canvas patient mapping to more than one Metriport patient", {
         extra: {
           cxId,
           patientIds: uniquePatientIds,
-          context: "athenahealth.sync-patient",
+          context: "canvas.sync-patient",
         },
         level: "warning",
       });
@@ -114,14 +114,14 @@ export async function syncAthenaPatientIntoMetriport({
   } else {
     const defaultFacility = await getFacilityMappingOrFail({
       cxId,
-      externalId: athenaPracticeId,
-      source: EhrSources.athena,
+      externalId: canvasPracticeId,
+      source: EhrSources.canvas,
     });
     metriportPatient = await createMetriportPatient({
       patient: {
         cxId,
         facilityId: defaultFacility.facilityId,
-        externalId: athenaApi.stripPatientId(athenaPatientId),
+        externalId: canvasPatientId,
         ...collapsePatientDemosFhir(demos),
       },
     });
@@ -129,14 +129,14 @@ export async function syncAthenaPatientIntoMetriport({
       queryDocumentsAcrossHIEs({
         cxId,
         patientId: metriportPatient.id,
-      }).catch(processAsyncError("AthenaHealth queryDocumentsAcrossHIEs"));
+      }).catch(processAsyncError("Canvas queryDocumentsAcrossHIEs"));
     }
   }
   await findOrCreatePatientMapping({
     cxId,
     patientId: metriportPatient.id,
-    externalId: athenaPatientId,
-    source: EhrSources.athena,
+    externalId: canvasPatientId,
+    source: EhrSources.canvas,
   });
   return metriportPatient.id;
 }

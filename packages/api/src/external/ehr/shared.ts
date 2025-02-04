@@ -1,4 +1,5 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
+import CanvasSDK, { CanvasEnv } from "@metriport/core/external/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -9,19 +10,21 @@ import {
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
 import { athenaClientJwtTokenSource } from "./athenahealth/shared";
+import { canvasClientJwtTokenSource } from "./canvas/shared";
 import { elationClientJwtTokenSource } from "./elation/shared";
+
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const parallelPractices = 10;
 export const parallelPatients = 2;
 
-type EhrEnv = AthenaEnv | ElationEnv;
+type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv;
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   environment: Env;
   clientKey: string;
   clientSecret: string;
 };
 
-type EhrClient = AthenaHealthApi | ElationApi;
+type EhrClient = AthenaHealthApi | ElationApi | CanvasSDK;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   practiceId: string;
@@ -29,11 +32,13 @@ export type EhrClientParams<Env extends EhrEnv> = {
 
 type EhrClientJwtTokenSource =
   | typeof athenaClientJwtTokenSource
-  | typeof elationClientJwtTokenSource;
+  | typeof elationClientJwtTokenSource
+  | typeof canvasClientJwtTokenSource;
 
 export enum EhrSources {
   athena = "athenahealth",
   elation = "elation",
+  canvas = "canvas",
 }
 
 export type Appointment = {

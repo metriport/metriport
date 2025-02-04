@@ -20,7 +20,7 @@ export type ParseResponse = {
 
 export async function processCxIdAsync(
   req: Request,
-  source: EhrSources.athena,
+  source: EhrSources.athena | EhrSources.canvas,
   parseExternalId: (tokenData: JwtTokenData) => ParseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
@@ -28,6 +28,7 @@ export async function processCxIdAsync(
     token: accessToken,
     source,
   });
+  console.log("authInfo", authInfo);
   if (!authInfo) throw new ForbiddenError();
   const { externalId, queryParams } = parseExternalId(authInfo.data);
   const customer = await getCxMappingOrFail({

@@ -6,10 +6,10 @@ import {
   PatientEvents,
   patientEvents,
   CanvasIntegrationEvent,
-} from "../../event/medical/patient-event";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { CONVERSION_WEBHOOK_TYPE } from "../../command/medical/document/process-doc-query-webhook";
-import { Config } from "../../shared/config";
+} from "../../../event/medical/patient-event";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { CONVERSION_WEBHOOK_TYPE } from "../../../command/medical/document/process-doc-query-webhook";
+import { Config } from "../../../shared/config";
 
 const { log } = out("CANVAS EVENT LISTENER");
 
@@ -44,6 +44,7 @@ export default function () {
       const canvasClientId = getEnvVarOrFail(`CANVAS_CLIENT_ID`);
       const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
       const canvasEnvironment = getEnvVarOrFail(`CANVAS_ENVIRONMENT`);
+      const canvasPracticeId = getEnvVarOrFail(`CANVAS_PRACTICE_ID`);
 
       const { id, cxId } = event;
       const patient = await getPatientOrFail({ id, cxId });
@@ -75,8 +76,9 @@ export default function () {
 
       const canvas = await CanvasSDK.create({
         environment: canvasEnvironment,
-        clientId: canvasClientId,
+        clientKey: canvasClientId,
         clientSecret: canvasClientSecret,
+        practiceId: canvasPracticeId,
       });
 
       await createFullNote({ canvas, canvasPatientId, patientA, patientB, providerLastName });

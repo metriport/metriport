@@ -1,4 +1,15 @@
-import { AdditionalInfo, JwtTokenInfo, MetriportError, errorToString } from "@metriport/shared";
+import {
+  AdditionalInfo,
+  BadRequestError,
+  JwtTokenInfo,
+  MetriportError,
+  errorToString,
+} from "@metriport/shared";
+import {
+  Patient,
+  PatientWithValidHomeAddress,
+  patientWithValidHomeAddressFhirSchema,
+} from "@metriport/shared/interface/external/shared/ehr/patient";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { AxiosInstance } from "axios";
 import { z } from "zod";
@@ -118,4 +129,13 @@ export function createDataParams(data: RequestData): string {
     dataParams.append(k, typeof v === "object" ? JSON.stringify(v) : v.toString());
   });
   return dataParams.toString();
+}
+
+export function parsePatientFhir(patient: Patient): PatientWithValidHomeAddress {
+  if (!patient.address) throw new BadRequestError("No addresses found");
+  patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
+  if (patient.address.length === 0) {
+    throw new BadRequestError("No home address with valid zip found");
+  }
+  return patientWithValidHomeAddressFhirSchema.parse(patient);
 }
