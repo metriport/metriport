@@ -27,7 +27,7 @@ export async function creatValidationFile({
   s3BucketName: string;
 }): Promise<void> {
   const { log } = out(
-    `PatientImport create validation file - cxId ${cxId} jobId ${jobId} stage ${stage}`
+    `PatientImport ccreatValidationFile - cxId ${cxId} jobId ${jobId} stage ${stage}`
   );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyFiles(cxId, jobStartedAt, jobId, stage);

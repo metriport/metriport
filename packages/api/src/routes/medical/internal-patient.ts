@@ -1,6 +1,6 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/parse/patient-import-parse-factory";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -13,6 +13,7 @@ import {
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -61,7 +62,6 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
-import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
@@ -904,6 +904,11 @@ router.post(
   })
 );
 
+// TODO 2330 Rework this so it becomes an internal way to create a new bulk import job, maybe with
+// some custom/internal params (e.g., to avoid sending WHs, etc.), returning the upload URL and
+// removing the trigger of the actual import from here.
+// We prob want to have a LOCAL/dev way to trigger the import here by uploading the file in the
+// body, so we can skip the S3 trigger and have the process running local.
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/import
  *
@@ -927,20 +932,20 @@ router.post(
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    const dryrun = getFromQueryAsBoolean("dryrun", req);
+    const dryRun = getFromQueryAsBoolean("dryrun", req);
 
     await getFacilityOrFail({ cxId, id: facilityId });
 
-    const patientImportConnector = makePatientImportHandler();
+    const patientImportConnector = buildPatientImportParseHandler();
     await patientImportConnector.startPatientImport({
       cxId,
       facilityId,
       jobId,
-      processPatientImportLambda: Config.getPatientImportLambdaName(),
+      jobStartedAt: buildDayjs().toISOString(),
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,
-      dryrun,
+      dryRun,
     });
 
     return res.sendStatus(status.OK);

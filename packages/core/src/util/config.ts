@@ -141,8 +141,18 @@ export class Config {
     return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
   }
 
-  static getPatientImportBucket(): string | undefined {
-    return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
+  static getPatientImportBucket(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_BUCKET_NAME");
+  }
+  // TODO 2330 remove this, it will be triggered by S3
+  static getPatientImportLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
+  }
+  static getPatientImportCreateQueueUrl(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_CREATE_QUEUE_URL");
+  }
+  static getPatientImportQueryQueueUrl(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_QUERY_QUEUE_URL");
   }
 
   static getTermServerUrl(): string | undefined {

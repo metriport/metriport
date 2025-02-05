@@ -356,6 +356,7 @@ export class APIStack extends Stack {
       importFileLambda: patientImportLambda,
       patientCreateLambda,
       patientQueryLambda,
+      bucket: patientImportBucket,
     } = new PatientImportNestedStack(this, "PatientImportNestedStack", {
       config: props.config,
       lambdaLayers,
@@ -477,6 +478,7 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       patientImportLambda,
+      patientImportBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,

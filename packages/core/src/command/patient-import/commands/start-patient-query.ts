@@ -14,7 +14,7 @@ export async function startPatientQuery({
   rerunPdOnNewDemographics: boolean;
 }): Promise<void> {
   const { log, debug } = out(
-    `PatientImport start patient query - cxId ${cxId} patientId ${patientId}`
+    `PatientImport startPatientQuery - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const patientUrl = `/internal/patient/${patientId}/patient-discovery?cxId=${cxId}&rerunPdOnNewDemographics=${rerunPdOnNewDemographics}`;

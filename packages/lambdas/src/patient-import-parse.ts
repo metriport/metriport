@@ -1,17 +1,17 @@
+import { StartPatientImportRequest } from "@metriport/core/command/patient-import/parse/patient-import-parse";
+import { PatientImportParseLocal } from "@metriport/core/command/patient-import/parse/patient-import-parse-local";
 import { errorToString, MetriportError } from "@metriport/shared";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
-import { ProcessPatientImportEvemtPayload } from "@metriport/core/command/patient-import/patient-import-cloud";
-import { ProcessPatientImportRequest } from "@metriport/core/command/patient-import/patient-import";
-import {
-  parseCxIdAndJob,
-  parseFacilityId,
-  parseTriggerConsolidated,
-  parseDisableWebhooks,
-  parseRerunPdOnNewDemos,
-} from "./shared/patient-import";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import {
+  parseCxIdAndJob,
+  parseDisableWebhooks,
+  parseFacilityId,
+  parseJobStartedAt,
+  parseRerunPdOnNewDemos,
+  parseTriggerConsolidated,
+} from "./shared/patient-import";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -20,10 +20,9 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
-const processPatientCreateQueue = getEnvOrFail("PATIENT_CREATE_QUEUE_URL");
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler(event: ProcessPatientImportEvemtPayload) {
+export async function handler(event: StartPatientImportRequest) {
   let errorHandled = false;
   const errorMsg = "Error processing event on " + lambdaName;
   const startedAt = new Date().getTime();
@@ -37,7 +36,7 @@ export async function handler(event: ProcessPatientImportEvemtPayload) {
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,
-      dryrun,
+      dryRun,
     } = parsedBody;
 
     const jobStartedAt = new Date().toISOString();
@@ -47,24 +46,22 @@ export async function handler(event: ProcessPatientImportEvemtPayload) {
       log(
         `Parsed: ${JSON.stringify(
           parsedBody
-        )}, jobStartedAt ${jobStartedAt}, patientImportBucket ${patientImportBucket}, processPatientCreateQueue ${processPatientCreateQueue}`
+        )}, jobStartedAt ${jobStartedAt}, patientImportBucket ${patientImportBucket}, processPatientCreateQueue}`
       );
 
-      const processPatientImportRequest: ProcessPatientImportRequest = {
+      const processPatientImportRequest: StartPatientImportRequest = {
         cxId,
         facilityId,
         jobId,
         jobStartedAt,
-        s3BucketName: patientImportBucket,
-        processPatientCreateQueue,
         triggerConsolidated,
         disableWebhooks,
         rerunPdOnNewDemographics,
-        dryrun,
+        dryRun,
       };
+      const patientImportHandler = new PatientImportParseLocal(patientImportBucket);
 
-      const patientImportHandler = makePatientImportHandler();
-      await patientImportHandler.processPatientImport(processPatientImportRequest);
+      await patientImportHandler.startPatientImport(processPatientImportRequest);
 
       const finishedAt = new Date().getTime();
       console.log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -86,36 +83,39 @@ export async function handler(event: ProcessPatientImportEvemtPayload) {
   }
 }
 
-function parseBody(body?: unknown): ProcessPatientImportEvemtPayload {
+function parseBody(body?: unknown): StartPatientImportRequest {
   if (!body) throw new Error(`Missing message body`);
 
   const bodyAsJson = typeof body === "string" ? JSON.parse(body) : body;
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
+  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
   const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
-  const dryrunRaw = bodyAsJson.dryrun;
-  if (dryrunRaw === undefined) throw new Error(`Missing dryrun`);
-  if (typeof dryrunRaw !== "boolean") throw new Error(`Invalid dryrun`);
+  const dryRunRaw = bodyAsJson.dryRun;
+  if (dryRunRaw === undefined) throw new Error(`Missing dryRun`);
+  if (typeof dryRunRaw !== "boolean") throw new Error(`Invalid dryRun`);
 
   const cxId = cxIdRaw as string;
   const facilityId = facilityIdRaw as string;
   const jobId = jobIdRaw as string;
+  const jobStartedAt = jobStartedAtRaw as string;
   const triggerConsolidated = triggerConsolidatedRaw as boolean;
   const disableWebhooks = disableWebhooksRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
-  const dryrun = dryrunRaw as boolean;
+  const dryRun = dryRunRaw as boolean;
 
   return {
     cxId,
     facilityId,
     jobId,
+    jobStartedAt,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,
-    dryrun,
+    dryRun,
   };
 }

@@ -104,6 +104,7 @@ interface PatientImportNestedStackProps extends NestedStackProps {
 
 export class PatientImportNestedStack extends NestedStack {
   readonly bucket: IBucket;
+  // TODO 2330 rename so it contains "parse" to represent the respective step
   readonly importFileLambda: Lambda;
   readonly patientCreateLambda: Lambda;
   readonly patientCreateQueue: Queue;
@@ -184,7 +185,7 @@ export class PatientImportNestedStack extends NestedStack {
       envType,
       envVars: {
         PATIENT_IMPORT_BUCKET_NAME: bucket.bucketName,
-        PATIENT_CREATE_QUEUE_URL: patientCreateQueue.queueUrl,
+        PATIENT_IMPORT_CREATE_QUEUE_URL: patientCreateQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -249,7 +250,7 @@ export class PatientImportNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         PATIENT_IMPORT_BUCKET_NAME: bucket.bucketName,
-        PATIENT_QUERY_QUEUE_URL: patientQueryQueue.queueUrl,
+        PATIENT_IMPORT_QUERY_QUEUE_URL: patientQueryQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],

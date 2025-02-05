@@ -1,22 +1,21 @@
-import { SQSEvent } from "aws-lambda";
-import { errorToString, MetriportError } from "@metriport/shared";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
-import { ProcessPatientCreateEvemtPayload } from "@metriport/core/command/patient-import/patient-import-cloud";
 import {
-  ProcessPatientCreateRequest,
   PatientPayload,
-} from "@metriport/core/command/patient-import/patient-import";
-import {
-  parseCxIdAndJob,
-  parseJobStartedAt,
-  parseFacilityId,
-  parseTriggerConsolidated,
-  parseDisableWebhooks,
-  parseRerunPdOnNewDemos,
-} from "./shared/patient-import";
+  ProcessPatientCreateRequest,
+} from "@metriport/core/command/patient-import/create/patient-import-create";
+import { PatientImportCreateHandlerLocal } from "@metriport/core/command/patient-import/create/patient-import-create-local";
+import { errorToString, MetriportError } from "@metriport/shared";
+import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import {
+  parseCxIdAndJob,
+  parseDisableWebhooks,
+  parseFacilityId,
+  parseJobStartedAt,
+  parseRerunPdOnNewDemos,
+  parseTriggerConsolidated,
+} from "./shared/patient-import";
 import { getSingleMessageOrFail } from "./shared/sqs";
 
 // Keep this as early on the file as possible
@@ -26,7 +25,6 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
-const processPatientQueryQueue = getEnvOrFail("PATIENT_QUERY_QUEUE_URL");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
@@ -57,7 +55,7 @@ export async function handler(event: SQSEvent) {
       log(
         `Parsed: ${JSON.stringify(
           parsedBody
-        )}, patientImportBucket ${patientImportBucket}, processPatientQueryQueue ${processPatientQueryQueue}, waitTimeInMillis ${waitTimeInMillis}`
+        )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
       );
 
       const processPatientCreateRequest: ProcessPatientCreateRequest = {
@@ -65,23 +63,23 @@ export async function handler(event: SQSEvent) {
         facilityId,
         jobId,
         jobStartedAt,
-        s3BucketName: patientImportBucket,
         patientPayload,
-        processPatientQueryQueue,
         triggerConsolidated,
         disableWebhooks,
         rerunPdOnNewDemographics,
-        waitTimeInMillis,
       };
+      const patientImportHandler = new PatientImportCreateHandlerLocal(
+        patientImportBucket,
+        waitTimeInMillis
+      );
 
-      const patientImportHandler = makePatientImportHandler();
       await patientImportHandler.processPatientCreate(processPatientCreateRequest);
 
       const finishedAt = new Date().getTime();
-      console.log(`Done local duration: ${finishedAt - startedAt}ms`);
+      log(`Done local duration: ${finishedAt - startedAt}ms`);
     } catch (error) {
       errorHandled = true;
-      console.log(`${errorMsg}: ${errorToString(error)}`);
+      log(`${errorMsg}: ${errorToString(error)}`);
       capture.error(errorMsg, {
         extra: { event, context: lambdaName, error },
       });
@@ -99,7 +97,7 @@ export async function handler(event: SQSEvent) {
   }
 }
 
-function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
+function parseBody(body?: unknown): ProcessPatientCreateRequest {
   if (!body) throw new Error(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
