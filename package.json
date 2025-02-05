@@ -15,7 +15,7 @@
     "prep-deploy-staging": "npm run install-deps && npm run build:staging && npm run test && npm run prep-lambdas",
     "package": "npm run prep-deploy",
     "install-deps": "npm ci --ignore-scripts --no-fund && SCRIPT='ci --ignore-scripts --no-fund' npm run lambdas:no-run",
-    "build": "npm run build --workspaces && SCRIPT='build' npm run lambdas",
+    "build": "if npm run build --workspaces && SCRIPT='build' npm run lambdas; then echo '\n\\033[1;32mBuild successful\\033[0m'; else echo '\n\\033[1;31m>>> Build failed <<<\\033[0m' && exit 1; fi",
     "build:cloud": "npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
     "build:staging": "ENV_TYPE='staging' npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
     "typecheck": "npm run typecheck --workspaces --if-present && SCRIPT='typecheck' npm run lambdas",
