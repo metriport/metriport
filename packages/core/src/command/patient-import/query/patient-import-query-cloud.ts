@@ -22,7 +22,7 @@ export class PatientImportQueryHandlerCloud implements PatientImportQueryHandler
         messageGroupId: cxId,
       });
     } catch (error) {
-      const msg = `Failure while processing patient create @ PatientImport`;
+      const msg = `Failure while processing patient query @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
