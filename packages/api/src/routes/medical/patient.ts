@@ -89,7 +89,7 @@ router.put(
       forceCarequality,
     });
 
-    return res.status(status.OK).json(dtoFromModel(updatedPatient));
+    return res.status(status.OK).json(await dtoFromModel(updatedPatient));
   })
 );
 
@@ -112,7 +112,7 @@ router.get(
     const output = getOutputFormatFromRequest(req);
 
     if (output === "fhir") return res.status(status.OK).json(toFHIR(patient));
-    return res.status(status.OK).json(dtoFromModel(patient));
+    return res.status(status.OK).json(await dtoFromModel(patient));
   })
 );
 

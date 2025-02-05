@@ -1,8 +1,12 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
-import { PatientMapping, PatientMappingPerSource } from "../../domain/patient-mapping";
+import {
+  PatientMapping,
+  PatientMappingPerSource,
+  PatientSourceMap,
+} from "../../domain/patient-mapping";
 import { PatientMappingModel } from "../../models/patient-mapping";
-
+import { Op } from "sequelize";
 export type PatientMappingParams = PatientMappingPerSource;
 
 export type PatientMappingLookUpParams = Omit<PatientMappingParams, "patientId">;
@@ -63,4 +67,24 @@ export async function deleteAllPatientMappings({
   await PatientMappingModel.destroy({
     where: { cxId, patientId },
   });
+}
+
+export async function getPatientExternalIdsFromSources({
+  cxId,
+  patientId,
+  sources,
+}: {
+  cxId: string;
+  patientId: string;
+  sources: string[];
+}): Promise<PatientSourceMap | undefined> {
+  const mappings = await PatientMappingModel.findAll({
+    where: { cxId, patientId, source: { [Op.in]: sources } },
+  });
+  const ehrIds = mappings.reduce((acc, mapping) => {
+    const { source, externalId } = mapping.dataValues;
+    acc[source] = externalId;
+    return acc;
+  }, {} as PatientSourceMap);
+  return Object.keys(ehrIds).length > 0 ? ehrIds : undefined;
 }

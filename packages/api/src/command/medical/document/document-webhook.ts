@@ -14,6 +14,8 @@ import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
+import { getPatientExternalIdsFromSources } from "../../mapping/patient";
+import { EhrSourcesList } from "../../../external/ehr/shared";
 
 export enum MAPIWebhookStatus {
   completed = "completed",
@@ -27,6 +29,7 @@ type WebhookDocumentDataPayload = {
 type WebhookPatientPayload = {
   patientId: string;
   externalId?: string;
+  ehrIds?: Record<string, string>;
 } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadata;
@@ -52,9 +55,10 @@ export const processPatientDocumentRequest = async (
 ): Promise<void> => {
   const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
-    const [settings, patient] = await Promise.all([
+    const [settings, patient, ehrIds] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
       getPatientOrFail({ id: patientId, cxId }),
+      getPatientExternalIdsFromSources({ cxId, patientId, sources: EhrSourcesList }),
     ]);
 
     // create a representation of this request and store on the DB
@@ -63,6 +67,7 @@ export const processPatientDocumentRequest = async (
         {
           patientId,
           ...(patient.externalId ? { externalId: patient.externalId } : {}),
+          ...(ehrIds ? { ehrIds } : {}),
           documents,
           status,
         },
