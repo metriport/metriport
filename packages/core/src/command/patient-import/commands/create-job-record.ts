@@ -24,7 +24,7 @@ export async function createJobRecord({
   jobStartedAt: string;
   data: JobRecord;
   s3BucketName: string;
-}): Promise<void> {
+}): Promise<{ key: string; bucket: string }> {
   const { log } = out(`PatientImport createJobRecord - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyJob(cxId, jobStartedAt, jobId);
@@ -36,6 +36,7 @@ export async function createJobRecord({
       file: Buffer.from(JSON.stringify(data), "utf8"),
       contentType: "application/json",
     });
+    return { key, bucket: s3BucketName };
   } catch (error) {
     const msg = `Failure while creating job record @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);

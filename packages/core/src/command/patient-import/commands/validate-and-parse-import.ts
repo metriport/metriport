@@ -5,7 +5,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   compareCsvHeaders,
-  createFileKeyFiles,
+  createFileKeyRaw,
   createObjectFromCsv,
   normalizeHeaders,
   patientImportCsvHeaders,
@@ -38,7 +38,7 @@ export async function validateAndParsePatientImportCsvFromS3({
     `PatientImport validateAndParsePatientImportCsvFromS3 - cxId ${cxId} jobId ${jobId}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyFiles(cxId, jobStartedAt, jobId, "raw");
+  const key = createFileKeyRaw(cxId, jobStartedAt, jobId);
   try {
     const csvAsString = await s3Utils.getFileContentsAsString(s3BucketName, key);
 

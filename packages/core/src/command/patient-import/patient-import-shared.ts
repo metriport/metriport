@@ -44,6 +44,9 @@ function createFilePathFiles(
 export function createFileKeyJob(cxId: string, jobStartedAt: string, jobId: string): string {
   return `${globalPrefix}/${createCxJobPrefix(cxId, jobStartedAt, jobId)}/status.json`;
 }
+export function createFileKeyRaw(cxId: string, jobStartedAt: string, jobId: string): string {
+  return createFileKeyFiles(cxId, jobStartedAt, jobId, "raw");
+}
 
 export function createFileKeyPatient(
   cxId: string,

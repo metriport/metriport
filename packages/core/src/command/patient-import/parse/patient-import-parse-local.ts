@@ -43,7 +43,7 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
         cxId,
         jobId,
         jobStartedAt,
-        data: { jobStartedAt },
+        data: { cxId, facilityId, jobStartedAt, dryRun, status: "processing" },
         s3BucketName,
       });
       const patients = await validateAndParsePatientImportCsvFromS3({
