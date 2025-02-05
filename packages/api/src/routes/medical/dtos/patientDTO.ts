@@ -2,7 +2,7 @@ import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { DemographicsDTO } from "./demographicsDTO";
-import { getPatientExternalIdsFromSources } from "../../../command/mapping/patient";
+import { getSourceMapForPatient } from "../../../command/mapping/patient";
 import { EhrSourcesList } from "../../../external/ehr/shared";
 
 export type PatientDTO = {
@@ -22,7 +22,7 @@ export type InternalPatientDTO = BaseDTO &
 export async function dtoFromModel(patient: Patient): Promise<PatientDTO> {
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     patient.data;
-  const ehrIds = await getPatientExternalIdsFromSources({
+  const ehrIds = await getSourceMapForPatient({
     cxId: patient.cxId,
     patientId: patient.id,
     sources: EhrSourcesList,
@@ -55,7 +55,7 @@ export async function internalDtoFromModel(patient: Patient): Promise<InternalPa
     externalData,
     documentQueryProgress,
   } = patient.data;
-  const ehrIds = await getPatientExternalIdsFromSources({
+  const ehrIds = await getSourceMapForPatient({
     cxId: patient.cxId,
     patientId: patient.id,
     sources: EhrSourcesList,

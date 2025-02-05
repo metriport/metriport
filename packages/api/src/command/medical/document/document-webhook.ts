@@ -14,7 +14,7 @@ import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
-import { getPatientExternalIdsFromSources } from "../../mapping/patient";
+import { getSourceMapForPatient } from "../../mapping/patient";
 import { EhrSourcesList } from "../../../external/ehr/shared";
 
 export enum MAPIWebhookStatus {
@@ -58,7 +58,7 @@ export const processPatientDocumentRequest = async (
     const [settings, patient, ehrIds] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
       getPatientOrFail({ id: patientId, cxId }),
-      getPatientExternalIdsFromSources({ cxId, patientId, sources: EhrSourcesList }),
+      getSourceMapForPatient({ cxId, patientId, sources: EhrSourcesList }),
     ]);
 
     // create a representation of this request and store on the DB

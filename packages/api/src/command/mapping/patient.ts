@@ -69,7 +69,7 @@ export async function deleteAllPatientMappings({
   });
 }
 
-export async function getPatientExternalIdsFromSources({
+export async function getSourceMapForPatient({
   cxId,
   patientId,
   sources,

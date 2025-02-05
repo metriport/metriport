@@ -9,7 +9,7 @@ import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { getPatientOrFail } from "./get-patient";
-import { getPatientExternalIdsFromSources } from "../../mapping/patient";
+import { getSourceMapForPatient } from "../../mapping/patient";
 import { EhrSourcesList } from "../../../external/ehr/shared";
 
 const log = Util.log(`Consolidated Webhook`);
@@ -49,7 +49,7 @@ export async function processConsolidatedDataWebhook({
     const [settings, currentPatient, ehrIds] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
       getPatientOrFail({ id: patientId, cxId }),
-      getPatientExternalIdsFromSources({ cxId, patientId, sources: EhrSourcesList }),
+      getSourceMapForPatient({ cxId, patientId, sources: EhrSourcesList }),
     ]);
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
