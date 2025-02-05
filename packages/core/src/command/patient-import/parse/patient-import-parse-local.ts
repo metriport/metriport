@@ -15,8 +15,8 @@ import { PatientImportParseHandler, StartPatientImportRequest } from "./patient-
 
 dayjs.extend(duration);
 
-// CURRENT: 5 chunks every 250ms is 20 patients per second -> 18000 in 15min (the lambda timeout)
-const sleepBetweenPatientCreateChunks = dayjs.duration(250, "milliseconds");
+// CURRENT: a chunk w/ 5 patients every 20ms is 250 patients per second -> 225,000 in 15min (the lambda timeout)
+const sleepBetweenPatientCreateChunks = dayjs.duration(20, "milliseconds");
 const patientCreateChunk = 5;
 
 export class PatientImportParseLocal implements PatientImportParseHandler {
