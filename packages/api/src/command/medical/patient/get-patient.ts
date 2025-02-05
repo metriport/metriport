@@ -6,13 +6,14 @@ import { uniq } from "lodash";
 import { Op, QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
+import { EhrSourcesList } from "../../../external/ehr/shared";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
+import { paginationSqlExpressions } from "../../../shared/sql";
 import { Pagination, sortForPagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { sanitize, validate } from "./shared";
-import { paginationSqlExpressions } from "../../../shared/sql";
 
 export type PatientMatchCmd = PatientDemoData & { cxId: string };
 
@@ -131,7 +132,14 @@ function getPatientsSharedQueryUntilFTS(
   const queryFTS =
     queryPatientIds +
     (fullTextSearchFilters
-      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filters) OR external_id = :filters OR id = :filters)`
+      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filters) 
+        OR external_id = :filters 
+        OR id = :filters 
+        OR id IN (
+          SELECT patient_id FROM patient_mapping WHERE external_id = :filters AND source in (${EhrSourcesList.map(
+            source => `'${source}'`
+          ).join(",")}))
+        `
       : "");
 
   return queryFTS;
