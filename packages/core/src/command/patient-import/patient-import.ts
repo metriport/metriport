@@ -18,5 +18,3 @@ export type JobRecord = {
 };
 
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
-
-export {};
