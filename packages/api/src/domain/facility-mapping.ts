@@ -1,10 +1,9 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
 import { EhrSources } from "../external/ehr/shared";
 
-const facilityMappingSources = [EhrSources.athena, EhrSources.elation] as const;
-export type FacilityMappingSource = (typeof facilityMappingSources)[number];
+export type FacilityMappingSource = EhrSources.athena | EhrSources.elation;
 export function isFacilityMappingSource(source: string): source is FacilityMappingSource {
-  return facilityMappingSources.includes(source as FacilityMappingSource);
+  return source === EhrSources.athena || source === EhrSources.elation;
 }
 
 export type FacilityMappingPerSource = {

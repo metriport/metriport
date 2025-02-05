@@ -1,9 +1,9 @@
-import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { BaseDTO, toBaseDTO } from "./baseDTO";
-import { DemographicsDTO } from "./demographicsDTO";
+import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { getSourceMapForPatient } from "../../../command/mapping/patient";
 import { EhrSourcesList } from "../../../external/ehr/shared";
+import { BaseDTO, toBaseDTO } from "./baseDTO";
+import { DemographicsDTO } from "./demographicsDTO";
 
 export type PatientDTO = {
   facilityIds: string[];

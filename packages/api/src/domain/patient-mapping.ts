@@ -3,10 +3,9 @@ import { EhrSources } from "../external/ehr/shared";
 
 export type PatientSourceMap = Record<string, string>;
 
-const patientMappingSources = [EhrSources.athena, EhrSources.elation] as const;
-export type PatientMappingSource = (typeof patientMappingSources)[number];
+export type PatientMappingSource = EhrSources.athena | EhrSources.elation;
 export function isPatientMappingSource(source: string): source is PatientMappingSource {
-  return patientMappingSources.includes(source as PatientMappingSource);
+  return source === EhrSources.athena || source === EhrSources.elation;
 }
 
 export type PatientMappingPerSource = {

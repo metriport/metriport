@@ -6,10 +6,9 @@ import {
 import { athenaClientJwtTokenSource } from "../external/ehr/athenahealth/shared";
 import { EhrSources } from "../external/ehr/shared";
 
-const jwtTokenSources = [EhrSources.athena, athenaClientJwtTokenSource] as const;
-export type JwtTokenSource = (typeof jwtTokenSources)[number];
+export type JwtTokenSource = EhrSources.athena | typeof athenaClientJwtTokenSource;
 export function isJwtTokenSource(source: string): source is JwtTokenSource {
-  return jwtTokenSources.includes(source as JwtTokenSource);
+  return source === EhrSources.athena || source === athenaClientJwtTokenSource;
 }
 
 export type JwtTokenData = AthenaJwtTokenData | AthenaClientJwtTokenData;
