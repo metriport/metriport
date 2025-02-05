@@ -1,12 +1,13 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
+import { Op } from "sequelize";
 import {
   PatientMapping,
   PatientMappingPerSource,
   PatientSourceMap,
 } from "../../domain/patient-mapping";
 import { PatientMappingModel } from "../../models/patient-mapping";
-import { Op } from "sequelize";
+
 export type PatientMappingParams = PatientMappingPerSource;
 
 export type PatientMappingLookUpParams = Omit<PatientMappingParams, "patientId">;
