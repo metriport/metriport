@@ -16,7 +16,7 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 import { getSourceMapForPatient } from "../../mapping/patient";
 import { EhrSourcesList } from "../../../external/ehr/shared";
-
+import { PatientSourceMap } from "../../../domain/patient-mapping";
 export enum MAPIWebhookStatus {
   completed = "completed",
   failed = "failed",
@@ -29,7 +29,7 @@ type WebhookDocumentDataPayload = {
 type WebhookPatientPayload = {
   patientId: string;
   externalId?: string;
-  ehrIds?: Record<string, string>;
+  ehrIds?: PatientSourceMap;
 } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadata;

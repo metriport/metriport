@@ -11,6 +11,7 @@ import { updateConsolidatedQueryProgress } from "./append-consolidated-query-pro
 import { getPatientOrFail } from "./get-patient";
 import { getSourceMapForPatient } from "../../mapping/patient";
 import { EhrSourcesList } from "../../../external/ehr/shared";
+import { PatientSourceMap } from "../../../domain/patient-mapping";
 
 const log = Util.log(`Consolidated Webhook`);
 
@@ -19,7 +20,7 @@ export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[numbe
 
 type Filters = Record<string, string | boolean | undefined>;
 
-type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta">;
+type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta"> & { ehrIds?: PatientSourceMap };
 
 /**
  * Sends a FHIR bundle with a Patient's consolidated data to the customer's
