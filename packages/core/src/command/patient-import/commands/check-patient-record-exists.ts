@@ -25,7 +25,7 @@ export async function checkPatientRecordExists({
   s3BucketName: string;
 }): Promise<boolean> {
   const { log } = out(
-    `PatientImport check patient record exists - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+    `PatientImport checkPatientRecordExists - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyPatient(cxId, jobStartedAt, jobId, patientId);

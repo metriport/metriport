@@ -26,7 +26,7 @@ export async function fetchPatientRecord({
   s3BucketName: string;
 }): Promise<PatientRecord> {
   const { log } = out(
-    `PatientImport fetch patient record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+    `PatientImport fetchPatientRecord - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyPatient(cxId, jobStartedAt, jobId, patientId);

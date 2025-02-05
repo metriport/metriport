@@ -34,7 +34,9 @@ export async function validateAndParsePatientImportCsvFromS3({
   jobStartedAt: string;
   s3BucketName: string;
 }): Promise<PatientImportPatient[]> {
-  const { log } = out(`PatientImport validate and parse import - cxId ${cxId} jobId ${jobId}`);
+  const { log } = out(
+    `PatientImport validateAndParsePatientImportCsvFromS3 - cxId ${cxId} jobId ${jobId}`
+  );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyFiles(cxId, jobStartedAt, jobId, "raw");
   try {

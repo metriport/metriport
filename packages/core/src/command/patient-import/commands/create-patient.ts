@@ -14,7 +14,7 @@ export async function createPatient({
   facilityId: string;
   patientPayload: PatientPayload;
 }): Promise<string> {
-  const { log, debug } = out(`PatientImport create patient - cxId ${cxId}`);
+  const { log, debug } = out(`PatientImport createPatient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const patientUrl = `/internal/patient?cxId=${cxId}&facilityId=${facilityId}`;
   try {

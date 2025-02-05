@@ -1,8 +1,8 @@
 import { errorToString } from "@metriport/shared";
 import { S3Utils } from "../../../external/aws/s3";
+import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { Config } from "../../../util/config";
 import { JobRecord } from "../patient-import";
 import { createFileKeyJob } from "../patient-import-shared";
 
@@ -25,10 +25,11 @@ export async function createJobRecord({
   data: JobRecord;
   s3BucketName: string;
 }): Promise<void> {
-  const { log } = out(`PatientImport create job record - cxId ${cxId} jobId ${jobId}`);
+  const { log } = out(`PatientImport createJobRecord - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyJob(cxId, jobStartedAt, jobId);
   try {
+    // TODO 2330 insert it into the DB as well
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,

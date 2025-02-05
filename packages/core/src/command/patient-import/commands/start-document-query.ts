@@ -16,7 +16,7 @@ export async function startDocumentQuery({
   disableWebhooks: boolean;
 }): Promise<void> {
   const { log, debug } = out(
-    `PatientImport start document query - cxId ${cxId} patientId ${patientId}`
+    `PatientImport startDocumentQuery - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const patientUrl = `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&triggerConsolidated=${triggerConsolidated}&forceQuery=false`;
