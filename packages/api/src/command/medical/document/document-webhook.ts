@@ -2,11 +2,14 @@ import { PatientData } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
 import { WebhookMetadata } from "@metriport/shared/medical";
+import { PatientSourceMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { patientEvents } from "../../../event/medical/patient-event";
+import { EhrSourcesList } from "../../../external/ehr/shared";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
+import { getSourceMapForPatient } from "../../mapping/patient";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
@@ -14,9 +17,7 @@ import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
-import { getSourceMapForPatient } from "../../mapping/patient";
-import { EhrSourcesList } from "../../../external/ehr/shared";
-import { PatientSourceMap } from "../../../domain/patient-mapping";
+
 export enum MAPIWebhookStatus {
   completed = "completed",
   failed = "failed",

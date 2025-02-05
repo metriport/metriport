@@ -1,17 +1,17 @@
 import { Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
 import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
+import { PatientSourceMap } from "../../../domain/patient-mapping";
+import { EhrSourcesList } from "../../../external/ehr/shared";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
+import { getSourceMapForPatient } from "../../mapping/patient";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { getPatientOrFail } from "./get-patient";
-import { getSourceMapForPatient } from "../../mapping/patient";
-import { EhrSourcesList } from "../../../external/ehr/shared";
-import { PatientSourceMap } from "../../../domain/patient-mapping";
 
 const log = Util.log(`Consolidated Webhook`);
 
