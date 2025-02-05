@@ -33,6 +33,7 @@ import {
   ISO_DATE,
 } from "./bundle-to-html-shared";
 
+const NPI_CODE = "us-npi";
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
 const SNOMED_CODE = "snomed";
@@ -46,6 +47,7 @@ const UNKNOWN_DISPLAY = "unknown";
 export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
   const {
     patient,
+    practitioners,
     conditions,
     procedures,
     observationMental,
@@ -345,7 +347,7 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
         ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${createWeightComoborbidities(conditions, encounters)}
+          ${createWeightComoborbidities(conditions, encounters, practitioners)}
           ${createRelatedConditions(conditions, encounters)}
           ${createObesitySection(conditions, encounters)}
           ${createMedicationSection(medications, medicationStatements)}
@@ -798,6 +800,7 @@ type RenderCondition = {
   firstSeen: string | undefined;
   lastSeen: string | undefined;
   clinicalStatus: string;
+  recorderId: string | undefined;
 };
 
 const listOfConditionCodes = [
@@ -899,7 +902,11 @@ const matchesText = (codeText: string | undefined, listOfNames: string[]): boole
   );
 };
 
-function createWeightComoborbidities(conditions: Condition[], encounter: Encounter[]) {
+function createWeightComoborbidities(
+  conditions: Condition[],
+  encounter: Encounter[],
+  practitioners: Practitioner[]
+) {
   if (!conditions) {
     return "";
   }
@@ -924,21 +931,26 @@ function createWeightComoborbidities(conditions: Condition[], encounter: Encount
 
     <thead>
       <tr>
-        <th style="width: 40%">Condition</th>
-        <th style="width: 20%">Code</th>
-        <th style="width: 20%">First seen</th>
-        <th style="width: 20%">Last seen</th>
+        <th style="width: 35%">Condition</th>
+        <th style="width: 15%">Code</th>
+        <th style="width: 10%">First seen</th>
+        <th style="width: 10%">Last seen</th>
+        <th style="width: 20%">Provider Name</th>
+        <th style="width: 10%">Provider NPI</th>
       </tr>
     </thead>
     <tbody>
       ${removeDuplicate
         .map(condition => {
+          const recorder = getPractitionerFromRecorderId(condition.recorderId, practitioners);
           return `
             <tr>
               <td>${condition.name}</td>
               <td>${condition.code ?? ""}</td>
               <td>${formatDateForDisplay(condition.firstSeen)}</td>
               <td>${formatDateForDisplay(condition.lastSeen)}</td>
+              <td>${recorder?.name ?? ""}</td>
+              <td>${recorder?.npi}</td>
             </tr>
           `;
         })
@@ -952,6 +964,33 @@ function createWeightComoborbidities(conditions: Condition[], encounter: Encount
       `;
 
   return createSection("Weight-related Comorbidities", conditionTableContents);
+}
+
+function getPractitionerFromRecorderId(
+  recorderId: string | undefined,
+  practitioners: Practitioner[]
+):
+  | {
+      name: string;
+      npi: string;
+    }
+  | undefined {
+  if (!recorderId) return undefined;
+
+  const practitioner = practitioners.find(practitioner => practitioner.id === recorderId);
+
+  if (!practitioner) return undefined;
+
+  const npi = practitioner.identifier?.find(id => id.system?.includes(NPI_CODE));
+
+  const practitionerName = practitioner.name?.[0];
+
+  return {
+    name: `${practitionerName?.given?.[0] ?? ""} ${practitionerName?.family ?? ""}${
+      practitionerName?.suffix?.[0] ? `, ${practitionerName?.suffix?.[0]}` : ""
+    }`,
+    npi: npi?.value ?? "",
+  };
 }
 
 const listOfRelatedCodes = [
@@ -1119,7 +1158,7 @@ function removeDuplicateConditions(
       end: string;
     }
   >
-) {
+): RenderCondition[] {
   return uniqWith(conditions, (a, b) => {
     const aText = a.code?.text;
     const bText = b.code?.text;
@@ -1164,6 +1203,8 @@ function removeDuplicateConditions(
         onsetEndTime = conditionDateDict[condition.id]?.end;
       }
 
+      const recorderId = condition.recorder?.reference?.split("/")[1];
+
       const newCondition: RenderCondition = {
         id: condition.id,
         code: codeName,
@@ -1171,6 +1212,7 @@ function removeDuplicateConditions(
         firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
         lastSeen: onsetEndTime && onsetEndTime.length ? onsetEndTime : onsetDateTime,
         clinicalStatus,
+        recorderId,
       };
 
       const existingCondition = acc.find(
