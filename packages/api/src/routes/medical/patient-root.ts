@@ -38,6 +38,7 @@ import {
 import { PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
+import { getFacilityFromOptionalParam } from "./shared";
 
 dayjs.extend(duration);
 
@@ -231,6 +232,7 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const facilityIdParam = getFromQuery("facilityId", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
+    const facility = await getFacilityFromOptionalParam(req);
 
     const patientImportResponse = await createPatientImportJob({
       cxId,
