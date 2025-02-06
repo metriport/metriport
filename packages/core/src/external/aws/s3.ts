@@ -137,7 +137,8 @@ export class S3Utils {
       {
         bucket: s3BucketName,
         key: s3FileName,
-      }
+      },
+      `getFileContentsAsString`
     );
   }
 
@@ -463,7 +464,8 @@ export async function returnUndefinedOn404<T>(fn: () => Promise<T>): Promise<T |
 
 export async function hydrateErrors<T>(
   fn: () => Promise<T>,
-  fileInfo: { bucket: string; key: string }
+  fileInfo: { bucket: string; key: string },
+  functionName: string
 ): Promise<T> {
   try {
     return await fn();
@@ -472,13 +474,18 @@ export async function hydrateErrors<T>(
     if (isNotFoundError(error)) {
       throw new NotFoundError("Key not found", error, fileInfo);
     }
-    throw new MetriportError("Error on getFileContentsAsString", error, fileInfo);
+    throw new MetriportError(`Error on ${functionName}`, error, fileInfo);
   }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isNotFoundError(error: any): boolean {
-  return error.Code === "NoSuchKey" || error.code === "NoSuchKey" || error.statusCode === 404;
+  return (
+    error.Code === "NoSuchKey" ||
+    error.code === "NoSuchKey" ||
+    error.statusCode === 404 ||
+    error instanceof NotFoundError
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
