@@ -1,15 +1,7 @@
 import { errorToString } from "@metriport/shared";
-import { S3Utils } from "../../../external/aws/s3";
-import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { createFileKeyPatient } from "../patient-import-shared";
-
-const region = Config.getAWSRegion();
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
+import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shared";
 
 // TODO 2330 add TSDoc
 export async function checkPatientRecordExists({

@@ -1,22 +1,15 @@
 import { errorToString, PatientImportPatient, patientImportPatientSchema } from "@metriport/shared";
-import { S3Utils } from "../../../external/aws/s3";
-import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   compareCsvHeaders,
   createFileKeyRaw,
   createObjectFromCsv,
+  getS3UtilsInstance,
   normalizeHeaders,
   patientImportCsvHeaders,
 } from "../patient-import-shared";
 import { creatValidationFile } from "./create-validation-file";
-
-const region = Config.getAWSRegion();
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
 
 export type RowError = { rowColumns: string[]; error: string };
 

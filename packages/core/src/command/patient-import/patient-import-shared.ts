@@ -9,9 +9,12 @@ import {
   PatientImportPatient,
   toTitleCase,
 } from "@metriport/shared";
+import { S3Utils } from "../../external/aws/s3";
+import { Config } from "../../util/config";
 import { PatientPayload } from "./patient-import";
 
 const globalPrefix = "patient-import";
+const region = Config.getAWSRegion();
 
 export type FileStages = "raw" | "valid" | "invalid";
 
@@ -127,4 +130,8 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
     ],
     contact,
   };
+}
+
+export function getS3UtilsInstance(): S3Utils {
+  return new S3Utils(region);
 }
