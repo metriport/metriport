@@ -3,6 +3,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
+import { BookedAppointment } from "@metriport/shared/src/interface/external/athenahealth";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -24,15 +25,16 @@ dayjs.extend(duration);
 
 const catupUpLookBack = dayjs.duration(12, "hours");
 
+export type LookupMode = "from-subscription" | "from-subscription-backfill" | "appointments";
+
 type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
   departmentIds?: string[];
   environment: AthenaEnv;
-  fromDate?: Date;
-  toDate?: Date;
   clientKey: string;
   clientSecret: string;
+  lookupMode: LookupMode;
 };
 
 type SyncPatientsParams = {
@@ -44,21 +46,8 @@ type SyncPatientsParams = {
   clientSecret: string;
 };
 
-export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
-  const { log } = out(`AthenaHealth processPatientsFromAppointmentsSub - catchUp: ${catchUp}`);
+export async function processPatientsFromAppointmentsSub(lookupMode: LookupMode) {
   const { environment, clientKey, clientSecret } = await getAthenaEnv();
-
-  const { startRange, endRange } = catchUp
-    ? getLookBackTimeRange({ lookBack: catupUpLookBack })
-    : {
-        startRange: undefined,
-        endRange: undefined,
-      };
-  if (startRange || endRange) {
-    log(`Getting appointments from ${startRange} to ${endRange}`);
-  } else {
-    log(`Getting appointments with no range`);
-  }
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
@@ -84,10 +73,9 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
       practiceId,
       departmentIds,
       environment,
-      fromDate: startRange,
-      toDate: endRange,
       clientKey,
       clientSecret,
+      lookupMode,
     };
   });
 
@@ -178,8 +166,7 @@ async function getAppointments({
   environment,
   clientKey,
   clientSecret,
-  fromDate,
-  toDate,
+  lookupMode,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await AthenaHealthApi.create({
@@ -189,11 +176,11 @@ async function getAppointments({
     clientSecret,
   });
   try {
-    const appointmentsFromApi = await api.getAppointmentsFromSubscription({
+    const appointmentsFromApi = await getAppointmentsFromApi({
+      api,
       cxId,
       departmentIds,
-      startProcessedDate: fromDate,
-      endProcessedDate: toDate,
+      lookupMode,
     });
     return {
       appointments: appointmentsFromApi.map(appointment => {
@@ -204,6 +191,38 @@ async function getAppointments({
     log(`Failed to get appointments from subscription. Cause: ${errorToString(error)}`);
     return { error };
   }
+}
+
+type GetAppointmentsFromApiParams = Omit<
+  GetAppointmentsParams,
+  "practiceId" | "environment" | "clientKey" | "clientSecret"
+> & { api: AthenaHealthApi };
+
+async function getAppointmentsFromApi({
+  api,
+  cxId,
+  departmentIds,
+  lookupMode,
+}: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
+  if (lookupMode === "appointments") {
+    const { startRange, endRange } = getLookBackTimeRange({ lookBack: catupUpLookBack });
+    return await api.getAppointments({
+      cxId,
+      departmentIds,
+      startAppointmentDate: startRange,
+      endAppointmentDate: endRange,
+    });
+  }
+  const { startRange, endRange } =
+    lookupMode === "from-subscription"
+      ? { startRange: undefined, endRange: undefined }
+      : getLookBackTimeRange({ lookBack: catupUpLookBack });
+  return await api.getAppointmentsFromSubscription({
+    cxId,
+    departmentIds,
+    startProcessedDate: startRange,
+    endProcessedDate: endRange,
+  });
 }
 
 async function syncPatients({

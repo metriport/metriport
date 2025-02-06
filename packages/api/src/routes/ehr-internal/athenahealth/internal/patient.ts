@@ -17,8 +17,58 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
-    processPatientsFromAppointmentsSub({ catchUp }).catch(
-      processAsyncError("AthenaHealth processPatientsFromAppointmentsSub")
+    processPatientsFromAppointmentsSub(
+      catchUp ? "from-subscription-backfill" : "from-subscription"
+    ).catch(processAsyncError("AthenaHealth processPatientsFromAppointmentsSub"));
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/athenahealth/patient/appointments-from-subscription
+ *
+ * Fetches appointments since last call creates all patients not already existing
+ */
+router.post(
+  "/appointments-from-subscription",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    processPatientsFromAppointmentsSub("from-subscription").catch(
+      processAsyncError("AthenaHealth processPatientsFromAppointmentsSub from-subscription")
+    );
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/athenahealth/patient/appointments-from-subscription-backfill
+ *
+ * Fetches appointments since last call creates all patients not already existing
+ */
+router.post(
+  "/appointments-from-subscription-backfill",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    processPatientsFromAppointmentsSub("from-subscription-backfill").catch(
+      processAsyncError(
+        "AthenaHealth processPatientsFromAppointmentsSub from-subscription-backfill"
+      )
+    );
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/athenahealth/patient/appointments
+ *
+ * Fetches appointments since last call creates all patients not already existing
+ */
+router.post(
+  "/appointments",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    processPatientsFromAppointmentsSub("appointments").catch(
+      processAsyncError("AthenaHealth processPatientsFromAppointmentsSub appointments")
     );
     return res.sendStatus(httpStatus.OK);
   })
