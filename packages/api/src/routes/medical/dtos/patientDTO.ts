@@ -1,8 +1,7 @@
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
-import { getSourceMapForPatient } from "../../../command/mapping/patient";
+import { PatientExternalData } from "@metriport/core/domain/patient";
+import { PatientWithExternalIds } from "../../../command/medical/patient/get-patient";
 import { PatientSourceMap } from "../../../domain/patient-mapping";
-import { EhrSourcesList } from "../../../external/ehr/shared";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { DemographicsDTO } from "./demographicsDTO";
 
@@ -20,19 +19,14 @@ export type InternalPatientDTO = BaseDTO &
   };
 
 // the getDomainFromDTO function is in core in patient-loader-metriport-api.ts
-export async function dtoFromModel(patient: Patient): Promise<PatientDTO> {
+export function dtoFromModel(patient: PatientWithExternalIds): PatientDTO {
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     patient.data;
-  const ehrIds = await getSourceMapForPatient({
-    cxId: patient.cxId,
-    patientId: patient.id,
-    sources: EhrSourcesList,
-  });
   return {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
-    ...(ehrIds ? { ehrIds } : {}),
+    ehrIds: patient.ehrIds,
     dateCreated: patient.createdAt,
     firstName,
     lastName,
@@ -44,7 +38,7 @@ export async function dtoFromModel(patient: Patient): Promise<PatientDTO> {
   };
 }
 
-export async function internalDtoFromModel(patient: Patient): Promise<InternalPatientDTO> {
+export function internalDtoFromModel(patient: PatientWithExternalIds): InternalPatientDTO {
   const {
     firstName,
     lastName,
@@ -56,16 +50,11 @@ export async function internalDtoFromModel(patient: Patient): Promise<InternalPa
     externalData,
     documentQueryProgress,
   } = patient.data;
-  const ehrIds = await getSourceMapForPatient({
-    cxId: patient.cxId,
-    patientId: patient.id,
-    sources: EhrSourcesList,
-  });
   return {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
-    ...(ehrIds ? { ehrIds } : {}),
+    ehrIds: patient.ehrIds,
     dateCreated: patient.createdAt,
     firstName,
     lastName,

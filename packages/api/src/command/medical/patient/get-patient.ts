@@ -5,11 +5,13 @@ import { USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
 import { Op, QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
+import { PatientSourceMap } from "../../../domain/patient-mapping";
 import NotFoundError from "../../../errors/not-found";
 import { EhrSourcesList } from "../../../external/ehr/shared";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
 import { paginationSqlExpressions } from "../../../shared/sql";
+import { getSourceMapForPatient } from "../../mapping/patient";
 import { Pagination, sortForPagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
@@ -17,7 +19,11 @@ import { sanitize, validate } from "./shared";
 
 export type PatientMatchCmd = PatientDemoData & { cxId: string };
 
-export async function matchPatient(patient: PatientMatchCmd): Promise<Patient | undefined> {
+export type PatientWithExternalIds = Patient & { ehrIds?: PatientSourceMap };
+
+export async function matchPatient(
+  patient: PatientMatchCmd
+): Promise<PatientWithExternalIds | undefined> {
   const { cxId } = patient;
 
   const sanitized = sanitize(patient);
@@ -49,7 +55,7 @@ export async function getPatients({
   facilityId?: string;
   fullTextSearchFilters?: string | undefined;
   pagination?: Pagination;
-}): Promise<PatientModel[]> {
+}): Promise<PatientWithExternalIds[]> {
   const sequelize = PatientModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
@@ -79,7 +85,10 @@ export async function getPatients({
     type: QueryTypes.SELECT,
   });
 
-  const sortedPatients = sortForPagination(patients, pagination);
+  const patientsWithEhrIds = await Promise.all(
+    patients.map(patient => attatchPatientEhrIds(patient))
+  );
+  const sortedPatients = sortForPagination(patientsWithEhrIds, pagination);
   return sortedPatients;
 }
 
@@ -193,9 +202,10 @@ export async function getPatientByDemo({
 }: {
   cxId: string;
   demo: PatientDemoData;
-}): Promise<Patient | undefined> {
+}): Promise<PatientWithExternalIds | undefined> {
   const patientLoader = new PatientLoaderLocal();
-  return getPatientByDemoMPI({ cxId, demo, patientLoader });
+  const patient = await getPatientByDemoMPI({ cxId, demo, patientLoader });
+  return patient ? await attatchPatientEhrIds(patient) : undefined;
 }
 
 export type GetPatient = {
@@ -226,19 +236,19 @@ export async function getPatient({
   cxId,
   transaction,
   lock,
-}: GetPatient): Promise<PatientModel | undefined> {
+}: GetPatient): Promise<PatientWithExternalIds | undefined> {
   const patient = await PatientModel.findOne({
     where: { cxId, id },
     transaction,
     lock,
   });
-  return patient ?? undefined;
+  return patient ? await attatchPatientEhrIds(patient) : undefined;
 }
 
 /**
  * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
  */
-export async function getPatientOrFail(params: GetPatient): Promise<PatientModel> {
+export async function getPatientOrFail(params: GetPatient): Promise<PatientWithExternalIds> {
   const patient = await getPatient(params);
   if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
   return patient;
@@ -251,14 +261,15 @@ export async function getPatientWithDependencies({
   id: string;
   cxId: string;
 }): Promise<{
-  patient: PatientModel;
+  patient: PatientWithExternalIds;
   facilities: Facility[];
   organization: Organization;
 }> {
   const patient = await getPatientOrFail({ id, cxId });
+  const patientWithEhrIds = await attatchPatientEhrIds(patient);
   const facilities = await getFacilities({ cxId, ids: patient.facilityIds });
   const organization = await getOrganizationOrFail({ cxId });
-  return { patient, facilities, organization };
+  return { patient: patientWithEhrIds, facilities, organization };
 }
 
 export async function getPatientStates({
@@ -272,4 +283,16 @@ export async function getPatientStates({
   const patients = await getPatients({ cxId, patientIds });
   const nonUniqueStates = patients.flatMap(getStatesFromAddresses).filter(s => s);
   return uniq(nonUniqueStates);
+}
+
+async function attatchPatientEhrIds(patient: Patient): Promise<PatientWithExternalIds> {
+  const ehrIds = await getSourceMapForPatient({
+    cxId: patient.cxId,
+    patientId: patient.id,
+    sources: EhrSourcesList,
+  });
+  return {
+    ...patient,
+    ehrIds,
+  };
 }

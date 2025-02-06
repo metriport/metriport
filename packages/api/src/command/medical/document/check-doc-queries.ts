@@ -154,7 +154,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
           : undefined;
       }
       const updatedPatient = {
-        ...patient.dataValues,
+        ...patient,
         data: {
           ...patient.data,
           documentQueryProgress: docProgress,

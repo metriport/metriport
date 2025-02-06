@@ -2,11 +2,9 @@ import { Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
 import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
 import { PatientSourceMap } from "../../../domain/patient-mapping";
-import { EhrSourcesList } from "../../../external/ehr/shared";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import { getSourceMapForPatient } from "../../mapping/patient";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
@@ -45,20 +43,19 @@ export async function processConsolidatedDataWebhook({
   filters?: Filters;
   isDisabled?: boolean;
 }): Promise<void> {
-  const { id: patientId, cxId, externalId } = patient;
+  const { id: patientId, cxId } = patient;
   try {
-    const [settings, currentPatient, ehrIds] = await Promise.all([
+    const [settings, currentPatient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
       getPatientOrFail({ id: patientId, cxId }),
-      getSourceMapForPatient({ cxId, patientId, sources: EhrSourcesList }),
     ]);
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
       patients: [
         {
           patientId,
-          ...(externalId ? { externalId } : {}),
-          ...(ehrIds ? { ehrIds } : {}),
+          ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
+          ...(currentPatient.ehrIds ? { ehrIds: currentPatient.ehrIds } : {}),
           status,
           bundle,
           filters,

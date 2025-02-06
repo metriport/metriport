@@ -6,10 +6,8 @@ import { PatientSourceMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { patientEvents } from "../../../event/medical/patient-event";
-import { EhrSourcesList } from "../../../external/ehr/shared";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
-import { getSourceMapForPatient } from "../../mapping/patient";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
@@ -56,10 +54,9 @@ export const processPatientDocumentRequest = async (
 ): Promise<void> => {
   const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
-    const [settings, patient, ehrIds] = await Promise.all([
+    const [settings, patient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
       getPatientOrFail({ id: patientId, cxId }),
-      getSourceMapForPatient({ cxId, patientId, sources: EhrSourcesList }),
     ]);
 
     // create a representation of this request and store on the DB
@@ -68,7 +65,7 @@ export const processPatientDocumentRequest = async (
         {
           patientId,
           ...(patient.externalId ? { externalId: patient.externalId } : {}),
-          ...(ehrIds ? { ehrIds } : {}),
+          ...(patient.ehrIds ? { ehrIds: patient.ehrIds } : {}),
           documents,
           status,
         },

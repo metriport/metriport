@@ -91,7 +91,7 @@ router.post(
       forceCarequality,
     });
 
-    return res.status(status.CREATED).json(await dtoFromModel(patient));
+    return res.status(status.CREATED).json(dtoFromModel(patient));
   })
 );
 
@@ -121,7 +121,7 @@ router.get(
     // TODO 483 remove this (and respected conditional) once pagination is fully rolled out
     if (!isPaginated(req)) {
       const patients = await getPatients({ cxId, facilityId: facilityId, fullTextSearchFilters });
-      const patientsData = await Promise.all(patients.map(dtoFromModel));
+      const patientsData = patients.map(dtoFromModel);
       return res.status(status.OK).json({ patients: patientsData });
     }
 
@@ -139,7 +139,7 @@ router.get(
     });
     const response: PaginatedResponse<PatientDTO, "patients"> = {
       meta,
-      patients: await Promise.all(items.map(dtoFromModel)),
+      patients: items.map(dtoFromModel),
     };
     return res.status(status.OK).json(response);
   })
@@ -167,7 +167,7 @@ router.post(
     if (patient) {
       // Authorization
       await getPatientOrFail({ cxId, id: patient.id });
-      return res.status(status.OK).json(await dtoFromModel(patient));
+      return res.status(status.OK).json(dtoFromModel(patient));
     }
     throw new NotFoundError("Cannot find patient");
   })
