@@ -33,7 +33,7 @@ export async function fetchPatientRecord({
         jobId,
         patientId,
         key,
-        context: "patient-import.fetch-patient-record",
+        context: "patient-import.fetchPatientRecord",
         error,
       },
     });

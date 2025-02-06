@@ -31,7 +31,7 @@ export async function createPatient({
         url: patientUrl,
         cxId,
         facilityId,
-        context: "patient-import.create-patient",
+        context: "patient-import.createPatient",
         error,
       },
     });

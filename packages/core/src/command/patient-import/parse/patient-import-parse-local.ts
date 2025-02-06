@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { capture, out } from "../../../util";
-import { checkJobRecordExists } from "../commands/check-job-record-exits";
+import { checkJobRecordExists } from "../commands/check-job-record-exists";
 import { validateAndParsePatientImportCsvFromS3 } from "../commands/validate-and-parse-import";
 import {
   PatientImportCreateHandler,

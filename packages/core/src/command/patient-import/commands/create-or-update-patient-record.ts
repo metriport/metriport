@@ -39,7 +39,7 @@ export async function creatOrUpdatePatientRecord({
         jobId,
         patientId,
         key,
-        context: "patient-import.create-or-update-patient-record",
+        context: "patient-import.creatOrUpdatePatientRecord",
         error,
       },
     });

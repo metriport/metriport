@@ -42,7 +42,7 @@ export async function startDocumentQuery({
         url: patientUrl,
         cxId,
         patientId,
-        context: "patient-import.start-document-query",
+        context: "patient-import.startDocumentQuery",
         error,
       },
     });

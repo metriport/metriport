@@ -32,7 +32,7 @@ export async function checkPatientRecordExists({
         jobId,
         patientId,
         key,
-        context: "patient-import.check-patient-record-exists",
+        context: "patient-import.checkPatientRecordExists",
         error,
       },
     });

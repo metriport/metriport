@@ -32,7 +32,7 @@ export async function startPatientQuery({
         cxId,
         patientId,
         rerunPdOnNewDemographics,
-        context: "patient-import.start-patient-query",
+        context: "patient-import.startPatientQuery",
         error,
       },
     });
