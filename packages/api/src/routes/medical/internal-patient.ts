@@ -1,6 +1,6 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/parse/patient-import-parse-factory";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -61,7 +61,6 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
-import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
@@ -904,17 +903,22 @@ router.post(
   })
 );
 
+// TODO 2330 Rework this so it becomes an internal way to create a new bulk import job, maybe with
+// some custom/internal params (e.g., to avoid sending WHs, etc.), returning the upload URL and
+// removing the trigger of the actual import from here.
+// We prob want to have a LOCAL/dev way to trigger the import here by uploading the file in the
+// body, so we can skip the S3 trigger and have the process running local.
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/import
  *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @param req.query.facilityId The facility ID for running the patient import.
- * @param req.query.jobId The job Id of the fle. TEMPORARY.
+ * @param req.query.jobId The job Id of the fle.
  * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
  * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
  * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
- * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
+ * @param req.query.dryRun Whether to simply validate or run the assessment (optional, defaults to false).
  *
  */
 router.post(
@@ -927,20 +931,19 @@ router.post(
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    const dryrun = getFromQueryAsBoolean("dryrun", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
 
     await getFacilityOrFail({ cxId, id: facilityId });
 
-    const patientImportConnector = makePatientImportHandler();
+    const patientImportConnector = buildPatientImportParseHandler();
     await patientImportConnector.startPatientImport({
       cxId,
       facilityId,
       jobId,
-      processPatientImportLambda: Config.getPatientImportLambdaName(),
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,
-      dryrun,
+      dryRun,
     });
 
     return res.sendStatus(status.OK);

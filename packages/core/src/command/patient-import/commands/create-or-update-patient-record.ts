@@ -1,37 +1,28 @@
 import { errorToString } from "@metriport/shared";
-import { S3Utils } from "../../../external/aws/s3";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { Config } from "../../../util/config";
 import { PatientRecordUpdate } from "../patient-import";
-import { createFileKeyPatient } from "../patient-import-shared";
+import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shared";
 
-const region = Config.getAWSRegion();
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
-
+// TODO 2330 add TSDoc
 export async function creatOrUpdatePatientRecord({
   cxId,
   jobId,
-  jobStartedAt,
   patientId,
   data = {},
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  jobStartedAt: string;
   patientId: string;
   data?: PatientRecordUpdate;
   s3BucketName: string;
 }): Promise<void> {
   const { log } = out(
-    `PatientImport check or patient record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+    `PatientImport creatOrUpdatePatientRecord - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyPatient(cxId, jobStartedAt, jobId, patientId);
+  const key = createFileKeyPatient(cxId, jobId, patientId);
   try {
     await s3Utils.uploadFile({
       bucket: s3BucketName,
@@ -48,7 +39,7 @@ export async function creatOrUpdatePatientRecord({
         jobId,
         patientId,
         key,
-        context: "patient-import.create-or-update-patient-record",
+        context: "patient-import.creatOrUpdatePatientRecord",
         error,
       },
     });
