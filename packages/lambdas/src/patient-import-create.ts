@@ -12,7 +12,6 @@ import {
   parseCxIdAndJob,
   parseDisableWebhooks,
   parseFacilityId,
-  parseJobStartedAt,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidated,
 } from "./shared/patient-import";
@@ -43,7 +42,6 @@ export async function handler(event: SQSEvent) {
       cxId,
       facilityId,
       jobId,
-      jobStartedAt,
       patientPayload,
       triggerConsolidated,
       disableWebhooks,
@@ -62,7 +60,6 @@ export async function handler(event: SQSEvent) {
         cxId,
         facilityId,
         jobId,
-        jobStartedAt,
         patientPayload,
         triggerConsolidated,
         disableWebhooks,
@@ -106,7 +103,6 @@ function parseBody(body?: unknown): ProcessPatientCreateRequest {
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
   const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
@@ -119,7 +115,6 @@ function parseBody(body?: unknown): ProcessPatientCreateRequest {
   const cxId = cxIdRaw as string;
   const facilityId = facilityIdRaw as string;
   const jobId = jobIdRaw as string;
-  const jobStartedAt = jobStartedAtRaw as string;
   const patientPayload = patientPayloadRaw as PatientPayload;
   const triggerConsolidated = triggerConsolidatedRaw as boolean;
   const disableWebhooks = disableWebhooksRaw as boolean;
@@ -129,7 +124,6 @@ function parseBody(body?: unknown): ProcessPatientCreateRequest {
     cxId,
     facilityId,
     jobId,
-    jobStartedAt,
     patientPayload,
     triggerConsolidated,
     disableWebhooks,

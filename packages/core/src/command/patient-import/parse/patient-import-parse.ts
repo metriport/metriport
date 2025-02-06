@@ -2,7 +2,6 @@ export type StartPatientImportRequest = {
   cxId: string;
   facilityId: string;
   jobId: string;
-  jobStartedAt: string;
   triggerConsolidated?: boolean;
   disableWebhooks?: boolean;
   rerunPdOnNewDemographics?: boolean;

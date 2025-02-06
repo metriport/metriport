@@ -19,7 +19,6 @@ export class PatientImportCreateHandlerLocal implements PatientImportCreateHandl
     cxId,
     facilityId,
     jobId,
-    jobStartedAt,
     patientPayload,
     triggerConsolidated,
     disableWebhooks,
@@ -35,7 +34,6 @@ export class PatientImportCreateHandlerLocal implements PatientImportCreateHandl
       const recordExists = await checkPatientRecordExists({
         cxId,
         jobId,
-        jobStartedAt,
         patientId,
         s3BucketName: this.patientImportBucket,
       });
@@ -46,14 +44,12 @@ export class PatientImportCreateHandlerLocal implements PatientImportCreateHandl
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
-        jobStartedAt,
         patientId,
         s3BucketName: this.patientImportBucket,
       });
       const processPatientQueryRequest: ProcessPatientQueryRequest = {
         cxId,
         jobId,
-        jobStartedAt,
         patientId,
         triggerConsolidated,
         disableWebhooks,

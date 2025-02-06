@@ -1,41 +1,38 @@
 import { errorToString } from "@metriport/shared";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { JobRecord } from "../patient-import";
 import { createFileKeyJob, getS3UtilsInstance } from "../patient-import-shared";
 
-// TODO 2330 add TSDoc
-export async function createJobRecord({
+/**
+ * Verify that the job record exists in S3.
+ *
+ * @returns true if the job record exists, throws otherwise.
+ * @throws Error if the job record does not exist.
+ */
+export async function checkJobRecordExists({
   cxId,
   jobId,
-  data,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  data: JobRecord;
   s3BucketName: string;
-}): Promise<{ key: string; bucket: string }> {
+}): Promise<boolean> {
   const { log } = out(`PatientImport createJobRecord - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyJob(cxId, jobId);
   try {
-    await s3Utils.uploadFile({
-      bucket: s3BucketName,
-      key,
-      file: Buffer.from(JSON.stringify(data), "utf8"),
-      contentType: "application/json",
-    });
-    return { key, bucket: s3BucketName };
+    await s3Utils.getFileInfoFromS3(s3BucketName, key);
+    return true;
   } catch (error) {
-    const msg = `Failure while creating job record @ PatientImport`;
+    const msg = `Job record not found @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
         jobId,
         key,
-        context: "patient-import.createJobRecord",
+        context: "patient-import.checkJobRecordExists",
         error,
       },
     });

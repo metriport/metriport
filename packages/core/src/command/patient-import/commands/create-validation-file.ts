@@ -1,27 +1,18 @@
 import { errorToString } from "@metriport/shared";
-import { S3Utils } from "../../../external/aws/s3";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { Config } from "../../../util/config";
-import { FileStages, createFileKeyFiles } from "../patient-import-shared";
+import { createFileKeyFiles, FileStages, getS3UtilsInstance } from "../patient-import-shared";
 
-const region = Config.getAWSRegion();
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
-
+// TODO 2330 add TSDoc
 export async function creatValidationFile({
   cxId,
   jobId,
-  jobStartedAt,
   stage,
   rows,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  jobStartedAt: string;
   stage: FileStages;
   rows: string[];
   s3BucketName: string;
@@ -30,7 +21,7 @@ export async function creatValidationFile({
     `PatientImport ccreatValidationFile - cxId ${cxId} jobId ${jobId} stage ${stage}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyFiles(cxId, jobStartedAt, jobId, stage);
+  const key = createFileKeyFiles(cxId, jobId, stage);
   try {
     await s3Utils.uploadFile({
       bucket: s3BucketName,
@@ -47,7 +38,7 @@ export async function creatValidationFile({
         jobId,
         stage,
         key,
-        context: "patient-import.create-validation-file",
+        context: "patient-import.creatValidationFile",
         error,
       },
     });
