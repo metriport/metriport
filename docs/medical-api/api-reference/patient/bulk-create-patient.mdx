@@ -1,24 +1,27 @@
 ---
 title: "Bulk Patient Create"
-description: "Creates multiple Patients in Metriport at once."
+description: "Creates a batch of patients in Metriport, and initiates Document Queries for all of them."
 api: "POST /medical/v1/patient/bulk"
 ---
 
-The Bulk Patient Create flow allows you to insert up to 100,000 patients at Metriport in a
-single request/job. We'll also populate the medical data for those patients automatically.
+The Bulk Patient Create endpoint allows you create, and kick off Document Queries for, a batch of
+Patients in a single request.
 
-This feature avoids the complexity to work within the boundaries of
-[rate limits](/medical-api/more-info/limits#rate-limits) and to coordinate the data
-query for large groups of patients.
+<Tip>
+  Currently, a max of 100,000 patients in a batch is
+  supported.
+</Tip>
 
 <Info>
   This is an asynchronous endpoint: you upload a file with
-  patient demographics and we will notify you when the
-  process is completed, through a [webhook
+  patient demographics and we notify you when the process is
+  completed, through a [webhook
   message](#webhook-with-the-result).
 </Info>
 
 <img src="/images/bulk-import-overview.png" />
+
+[comment]: # "source for the image above: ..."
 
 The response to this endpoint contains a URL that you should use to upload a file containing the
 Patient demographics that will be used to create individual Patients. More on this
@@ -99,11 +102,11 @@ just index each column with `-N` at the end of the column name, where `N` is the
   </ParamField>
   
   <ParamField body="ssn" type="string">
-    The 9 digits SSN number.
+    The 9 digit SSN number.
   </ParamField>
   
   <ParamField body="driversLicenceNo" type="string">
-    The ID number. For type `ssn`, should be 9 digits.
+    The driver's license number.
   </ParamField>
   
   <ParamField body="driversLicenceState" type="string">
@@ -124,7 +127,7 @@ third Patient has three email addresses:
 | ... | 99887 | lawyer@job.com   | personal@domain.com | family@domain.com | ... |
 
 For address fields, they work as a group: if you provide `addressLine1-2`, then all address fields
-with index `2` will be required (otherwise, the respective row/Patient will be marked as invalid).
+with index `2` are required (otherwise, the respective row/Patient will be marked as invalid).
 Following this logic, if you don't provide any address field for index `3` through `10`, all the
 address fields for those indexes are disconsidered, and the Patient is considered valid (assuming
 other non-address fields are valid too).
@@ -146,7 +149,7 @@ It will return a `404` if the facility can't be found or `400` if there's more t
 and the ID was not provided.
 
 Once the CSV is uploaded, the Metriport API will also validate the file is in the expected format
-(CSV). It migh set the status of the job to `failed` and send a corresponding webhook message.
+(CSV). It might set the status of the job to `failed` and send a corresponding webhook message.
 
 If those previous validations are successful, each row will be validated individually and it's
 respective status will be stored so it can be reviewed in the
@@ -167,29 +170,23 @@ curl --location --request PUT '<UPLOAD-URL>' \
 
 #### Webhook with the result
 
-Once the CSV file is uploaded, the Metriport API will start processing it and will send
-[webhook messages](/medical-api/handling-data/webhooks#bulk-patient-create) to your App
-indicating the status of the processing, including the resulting CSV file containing the
-newly created Metriport IDs for the successfully created Patients.
+Once the CSV file is uploaded, the Metriport API starts processing it and sends a
+[webhook message](/medical-api/handling-data/webhooks#bulk-patient-create) to your App
+indicating the status is `processing`. Once the patiets are created and their medical
+data is available, we send a new webhook message indicating the job is done, including
+a link to the resulting CSV file that contains the newly created Metriport IDs for the
+successfully created Patients.
 
 #### Bulk Patient Create Status
 
 During the processing of a bulk patient create, the job can change status following the logic
 below:
 
+[comment]: # (replace the image w/ the Mermaid diagram)
+
 <img src="/images/bulk-import-status.png" />
 
-```mermaid
----
-config:
-  theme: mc
-  look: handDrawn
-  layout: dagre
----
-flowchart LR
-    A["waiting"] --> B["processing"] & C["failed"] & D["expired"]
-    B --> E["completed"]
-```
+[comment]: # (mermaid --- flowchart LR     A["waiting"] --> B["processing"] & C["failed"] & D["expired"]      B --> E["completed"] )
 
 - `waiting`: initial state, waiting for the CSV file;
 - `processing`: the CSV file has been uploaded and is being processed;
