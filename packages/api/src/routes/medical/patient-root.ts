@@ -38,6 +38,7 @@ import {
 } from "../util";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
+import { getFacilityFromOptionalParam } from "./shared";
 
 dayjs.extend(duration);
 
@@ -177,9 +178,9 @@ router.post(
  *
  * Initiates a bulk patient import.
  *
- * ...WIP
- *
- * @param req.query.facilityId The ID of the Facility the Patients should be associated with.
+ * @param req.query.facilityId The ID of the Facility the Patients should be associated with
+ *        (optional if there's only one facility for the customer, fails if not provided and
+ *        there's more than one facility for the customer).
  * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
  *        defaults to false).
  * @returns the bulk import job ID and the URL to upload the CSV file.
@@ -191,8 +192,8 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
+    const facility = await getFacilityFromOptionalParam(req);
 
     // TODO 2330 move this to a command #########################################
     const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -205,7 +206,13 @@ router.post(
     const { bucket } = await createJobRecord({
       cxId,
       jobId,
-      data: { cxId, facilityId, jobStartedAt, dryRun: dryRun ?? false, status: jobStatus },
+      data: {
+        cxId,
+        facilityId: facility.id,
+        jobStartedAt,
+        dryRun: dryRun ?? false,
+        status: jobStatus,
+      },
       s3BucketName,
     });
 
@@ -214,7 +221,7 @@ router.post(
     const s3Url = await s3Utils.getPresignedUploadUrl({
       bucket,
       key: uploadFileKey,
-      durationSeconds: dayjs.duration(15, "minutes").asSeconds(),
+      durationSeconds: dayjs.duration(10, "minutes").asSeconds(),
     });
 
     const respPayload: JobResponseCreate = {
