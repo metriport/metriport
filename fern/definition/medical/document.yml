@@ -1,0 +1,306 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+imports:
+  fhir: ../fhir/__package__.yml
+
+service:
+  base-path: /medical/v1/document
+  auth: true
+  endpoints:
+    startQuery:
+      display-name: Start Document Query
+      docs: |
+        Triggers a document query for the specified patient across HIEs.
+        When executed, this endpoint triggers an asynchronous document query across HIEs. 
+        This is a two step process where the documents will first be downloaded from 
+        the respective HIE and, if they are C-CDA/XML, then converted to FHIR.
+        Each process (download, conversion) will contain its own `total` and `status` 
+        as well as the count for `successful` operations and `errors`.
+        When the asynchronous document query finishes, it stores new/updated document 
+        references for future requests and updates the status of download to `completed`. 
+        Meanwhile, in the background, files will be converted and the convert count will be 
+        incremented. Once all documents have been converted it too will be marked as `completed`.
+        If there's no document to be converted, the total will be set to zero and 
+        the status to `completed`.
+      method: POST
+      path: /query
+      request:
+        name: StartDocumentQueryRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the Patient for which to list available Documents.
+            type: string
+          facilityId:
+            docs: The ID of the Facility where the patient is receiving care.
+            type: string
+        body:
+          docs: |
+            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+            This metadata will be returned in the webhook response.
+          type: optional<map<string, string>>
+      response: DocumentQuery
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "018a80c4-292a-7486-a1234-76yuhe23yu14"
+            facilityId: "018a80c4-292a-7486-a1234-9uiu76yhe234"
+          request: {"youCan": "putAny", "stringKeyValue": "pairsHere"}
+          response:
+            body: $DocumentQuery.Example1
+
+    getQueryStatus:  
+      display-name: Get Document Query Status
+      docs: |
+        Returns the document query status for the specified patient.
+        Can be used in to check the progress when the final status 
+        of the document query is taking longer than expected.
+        See more on [Start Document Query](/medical-api/api-reference/document/start-document-query).
+      method: POST
+      path: /query
+      request:
+        name: GetDocumentQueryStatusRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the Patient for which to list available Documents.
+            type: string
+      response: DocumentQuery
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "018a80c4-292a-7486-a1234-76yuhe23yu14"
+          response:
+            body: $DocumentQuery.Example1
+
+    list:
+      display-name: List Documents
+      docs: |
+        Lists all Documents that can be retrieved for a Patient.
+        This endpoint returns the document references available 
+        at Metriport which are associated with the given Patient.
+        To start a new document query, see the [Start Document Query endpoint](/api-reference/medical/document/start-query).
+      method: GET
+      path: ""
+      request:
+        name: ListDocumentsRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the Patient for which to list available Documents.
+            type: string
+          dateFrom:
+            docs: The start date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.
+            type: optional<string>
+          dateTo:
+            docs: The end date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no end date filter will be applied.
+            type: optional<string>
+          content:
+            docs: |
+              Value to search within the document reference and the actual contents of the document (minimum 3 chars).
+            type: optional<string>
+      response:
+        type: ListDocumentReferences
+
+    getURL:
+      display-name: Get Document URL
+      docs: |
+        Gets a downloadable URL for downloading the specified document.
+        This endpoint returns a URL which you can use to download 
+        the specified document and/or convert using the file name 
+        provided from the [List Documents](/api-reference/medical/document/list) endpoint.
+      method: GET
+      path: /download-url
+      request:
+        name: GetDocumentUrlRequest
+        query-parameters:
+          fileName:
+            type: string
+            docs: The file name of the document
+          conversionType:
+            type: optional<ConversionType>
+            docs: |
+              The doc type to convert to. Either `html` or `pdf`.
+              This parameter should only be used for converting XML/CDA files.
+      response:
+        type: DocumentUrl
+        docs: A json object containing the URL will be returned.
+      examples:
+        - name: Example1
+          query-parameters:
+            fileName: "x-ray"
+            conversionType: "pdf"
+          response:
+            body: $DocumentUrl.Example1
+    
+    createDocumentReference:
+      display-name: Upload Document
+      docs: |
+        Creates a DocumentReference and returns its ID and a URL to use for a medical document upload to our servers.
+      method: POST
+      path: /upload
+      request:
+        name: UploadDocumentRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the Patient for which to list available Documents.
+            type: string
+        body:
+          docs: |
+            A FHIR DocumentReference.
+          type: fhir.DocumentReference
+      response: 
+        type: UploadDocumentResponse
+        docs: The DocumentReference ID and a URL to be used for file upload.  
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "018a80c4-292a-7486-a1234-76yuhe23yu14"
+          request:
+            resourceType: "DocumentReference"
+            content:
+              - attachment:
+                  title: "Burn management Hospital Progress note"
+            contained: 
+              - resourceType: "ExampleResource"
+                id: "exampleId1"
+              - resourceType: "ExampleResource"
+                id: "exampleId2"
+            description: "Third degree wrist burn treatment"
+            type:
+              text: "Burn management Hospital Progress note"
+              coding:
+                - code: "100556-0"
+                  system: "http://loinc.org"
+                  display: "Burn management Hospital Progress note"
+            context:
+              period:
+                start: "2023-10-10T14:14:17Z"
+                end: "2023-10-10T15:30:30Z"
+              facilityType:
+                text: "John Snow Clinic - Acute Care Centre"
+          response:
+            body: $UploadDocumentResponse.Example1 
+
+    startBulkGetDocumentUrl:
+      display-name: Start Bulk Get Document URL
+      docs: |
+        Triggers a process to generate a list of download URLs for all of the patient's documents.
+        The status of the process is returned in the response. Initially, it will be `processing`, 
+        and when the process is finished, the status will be updated to `completed` or `failed`.
+        If you trigger this endpoint again while the process is still running, you will get a response 
+        that reflects the current progress.
+      method: POST
+      path: /download-url/bulk
+      request:
+        name: StartBulkGetDocumentUrlRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the patient for which to initiate the bulk URL generation.
+            type: string
+        body:
+          docs: |
+            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+            This metadata will be returned in the webhook response.
+          type: optional<map<string, string>>
+      response:
+        type: BulkGetDocumentUrlQuery
+        docs: The status of the URL generation process and the request ID.
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "018a80c4-292a-7486-a1234-76yuhe23yu14"
+          request: {"youCan": "putAny", "stringKeyValue": "pairsHere"}
+          response:
+            body: $BulkGetDocumentUrlQuery.Example1
+
+types:
+  DocumentQuery:
+    properties:
+      download: optional<Progress>
+      convert: optional<Progress>
+      requestId:
+        type: optional<string>
+        docs: The ID of the Document Query.
+    examples:
+      - name: Example1
+        value:
+          download: $Progress.Example2
+          convert: $Progress.Example1
+
+  Progress:
+    properties:
+      status:
+        type: DocumentQueryStatus
+        docs: The status of querying document references across HIEs.
+      total:
+        type: optional<integer>
+        docs: The total number of documents to be queried.
+      successful:
+        type: optional<integer>
+        docs: The number of documents successfully downloaded.
+      errors:
+        type: optional<integer>
+        docs: The number of documents that failed to download.
+    examples:
+      - name: Example1
+        value:
+          status: processing
+      - name: Example2
+        value:
+          status: completed
+          total: 100
+          successful: 98
+          errors: 2
+
+  DocumentQueryStatus:
+    enum:
+      - processing
+      - completed
+      - failed
+
+  ConversionType:
+    enum:
+      - html
+      - pdf
+
+  ListDocumentReferences:
+    properties:
+      documents:
+        type: list<fhir.DocumentReference>
+        docs: An array of objects describing the Documents that can be retrieved for the Patient.
+
+  UploadDocumentResponse:
+    properties:
+      documentReferenceId:
+        type: string
+        docs: The ID of the DocumentReference.
+      uploadUrl:
+        type: string
+        docs: The URL to use for uploading the document.
+    examples:
+      - name: Example1
+        value:
+          documentReferenceId: "<DocumentReference-ID-string>"
+          uploadUrl: "<url-string>"
+
+  DocumentUrl:
+    docs: A json object containing the URL will be returned.
+    properties:
+      url:
+        type: optional<string>
+        docs: The presigned URL.
+    examples:
+      - name: Example1
+        value:
+          url: abc123-def456
+
+  BulkGetDocumentUrlQuery:
+    properties:
+      status:
+        type: DocumentQueryStatus
+        docs: The status of the URL generation process.
+      requestId:
+        type: optional<string>
+        docs: The ID of the request.
+    examples:
+      - name: Example1
+        value:
+          status: processing
+          requestId: "018c1e9d-dfce-70cb-8c0e-edfbbd2a7f5f"

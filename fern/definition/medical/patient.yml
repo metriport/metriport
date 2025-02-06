@@ -1,0 +1,302 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+imports:
+  commons: ../commons.yml
+  fhir: ../fhir/__package__.yml
+
+service:
+  base-path: /medical/v1/patient
+  auth: true
+  endpoints:
+    create:
+      display-name: Create Patient
+      docs: |
+        Creates a Patient in Metriport for the specified Facility where the patient is receiving care.
+        The more demographic info you can provide about a Patient, 
+        the higher chances Metriport will be able to find a match. 
+        For example, nicknames, old addresses, multiple phone numbers, 
+        a pre-marital last name, etc.
+      method: POST
+      path: ""
+      request:
+        name: PatientCreate
+        query-parameters:
+          facilityId:
+            type: string
+            docs: The ID of the Facility where the Patient is receiving care.
+        body: BasePatient
+      response: Patient
+      examples:
+        - query-parameters:
+            facilityId: $FacilityId.Example1
+          request:
+            firstName: Karen
+            lastName: Lynch
+            dob: 1963-12-30
+            genderAtBirth: F
+            personalIdentifiers:
+              - $PersonalIdentifier.Example1
+            address: 
+              - $commons.Address.Example1
+          response:
+            body: $Patient.Example1
+
+    get:
+      display-name: Get Patient
+      docs: Get a Patient
+      method: GET
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient.
+      response: Patient
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
+          response:
+            body: $Patient.Example1
+
+    update:
+      display-name: Update Patient
+      docs: Updates the specified Patient.
+      method: PUT
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient to update.
+      request:
+        name: PatientUpdate
+        query-parameters:
+          facilityId:
+            type: string
+            docs: The ID of the Facility where the patient is receiving care.
+        body: BasePatient
+      response: Patient
+
+    list:
+      display-name: List Patients at Facility
+      docs: Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.
+      method: GET
+      path: ""
+      request:
+        name: PatientList
+        query-parameters:
+          facilityId:
+            type: optional<string>
+            docs: The ID of the Facility where the patient is receiving care.
+      response: ListPatientsResponse
+
+    delete:
+      display-name: Delete Patient
+      docs: Removes the specified Patient.
+      method: DELETE
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient to delete.
+      request:
+        name: PatientDelete
+        query-parameters:
+          facilityId:
+            type: optional<string>
+            docs: The ID of the Facility where the patient is receiving care.
+
+    getMedicalRecordSummary:
+      display-name: Get Medical Record Summary
+      docs: |
+        Returns the URL for a medical record summary
+      method: GET
+      path: /{patientId}/medical-record
+      path-parameters:
+        patientId:
+          type: string
+          docs: The ID of the Patient.
+      request:
+        name: MedicalRecordSummaryRequest
+        query-parameters:
+          conversionType:
+            type: string
+            docs: The type of conversion to perform. `html` or `pdf`
+      response: 
+        type: string
+        docs: The URL for the medical record summary
+
+    getMedicalRecordSummaryStatus:
+      display-name: Get Medical Record Summary Status
+      docs: |
+        Returns the status of a medical record summary
+      method: GET
+      path: /{patientId}/medical-record-status
+      path-parameters:
+        patientId:
+          type: string
+          docs: The ID of the Patient.
+      response: 
+        type: MedicalRecordStatus
+        docs: the status of the medical record summary
+
+    match:
+      display-name: Match Patient
+      docs: |
+        Searches for a Patient previously created in Metriport, based on demographic data.
+      method: POST
+      path: "/match"
+      request:
+        body: Demographics
+      response: Patient
+      examples:
+        - request:
+            firstName: Karen
+            lastName: Lynch
+            dob: 1963-12-30
+            genderAtBirth: F
+            personalIdentifiers:
+              - $PersonalIdentifier.Example1
+            address: 
+              - $commons.Address.Example1
+          response:
+            body: $Patient.Example1
+
+types:
+  MedicalRecordStatus:
+    properties:
+      html: 
+        type: RecordStatus
+        docs: The status of the html conversion
+      pdf:
+        type: RecordStatus
+        docs: The status of the pdf conversion
+    
+  RecordStatus:
+    properties:
+      exists:
+        type: boolean
+        docs: Whether or not the record exists 
+      createdAt:
+        type: optional<string>
+        docs: The date the record was created
+
+  PersonalIdentifier:
+    union:
+      driversLicense: DriversLicense
+      ssn: SSN
+    examples:
+      - name: Example1
+        value:
+          type: driversLicense
+          state: CA
+          value: "51227265"
+      - name: Example2
+        value:
+          type: ssn
+          value: "123456789"
+
+  DriversLicense:
+    properties:
+      state:
+        type: commons.USState
+        docs: The 2 letter state acronym where this ID was issued, for example `CA`.
+      value:
+        type: string
+        docs: The ID number.
+      assigner: optional<string>
+      period: optional<fhir.Period>
+
+  SSN:
+    properties:
+      value:
+        type: string
+        docs: The 9 digit ID number, for example `123456789`.
+      assigner: optional<string>
+      period: optional<fhir.Period>
+
+  Contact:
+    properties:
+      phone:
+        type: optional<string>
+        docs: The Patient's 10 digit phone number, formatted `1234567899`.
+      email:
+        type: optional<string>
+        docs: The Patient's email address.
+    examples:
+      - name: Example1
+        value:
+          phone: "1234567899"
+          email: karen@cvspharmacy.com
+
+  FacilityId:
+    type: string
+    examples:
+      - name: Example1
+        value: "2.16.840.1.113883.3.666.5.2004.4.2005"
+      - name: Example2
+        value: "2.16.840.1.113883.3.666.123"
+
+  Demographics:
+    properties:
+      firstName:
+        type: string
+        docs: |
+          The Patient's first name(s). 
+          You may provide a comma/space delimited string to specify 
+          multiple first and last names. For example, the following inputs 
+          would be equivalent: "John,Jonathan" & "John Jonathan"
+      lastName:
+        type: string
+        docs: The Patient's last name(s).
+      dob:
+        type: string
+        docs: The Patient's date of birth (DOB), formatted `YYYY-MM-DD` as per ISO 8601.
+      genderAtBirth:
+        type: string
+        docs: The Patient's gender at birth, can be one of `M` or `F` or `O` or `U`. Use `O` (other) when the patient's gender is known but it is not `M` or `F`, i.e intersex or hermaphroditic. Use U (unknown) when the patient's gender is not known.
+      personalIdentifiers:
+        type: optional<list<PersonalIdentifier>>
+        docs: |
+          An array of the Patient's personal IDs, such as a driver's license. 
+          May be empty.
+      address:
+        type: list<commons.Address>
+      contact:
+        type: optional<list<Contact>>
+
+  BasePatient:
+    extends: Demographics
+    properties:
+      externalId:
+        type: optional<string>
+        docs: An external Patient ID to associate to a Patient in Metriport.
+
+  Patient:
+    extends: BasePatient
+    properties:
+      id:
+        type: string
+        docs: | 
+          The ID assigned to this Patient. This ID will be used to uniquely 
+          identify this Patient in medical documents.
+      facilityIds:
+        type: list<FacilityId>
+        docs: Array of the IDs of the Facilities where the Patient is receiving care.
+    examples:
+      - name: Example1
+        value:
+          id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
+          firstName: Karen
+          lastName: Lynch
+          dob: 1963-12-30
+          genderAtBirth: F
+          personalIdentifiers:
+            - $PersonalIdentifier.Example1
+          address:
+            - $commons.Address.Example1
+          facilityIds:
+            - $FacilityId.Example1
+
+  ListPatientsResponse:
+    properties:
+      patients: list<Patient>
