@@ -8,7 +8,6 @@ import {
   parseCxIdAndJob,
   parseDisableWebhooks,
   parseFacilityId,
-  parseJobStartedAt,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidated,
 } from "./shared/patient-import";
@@ -53,7 +52,6 @@ export async function handler(event: StartPatientImportRequest) {
         cxId,
         facilityId,
         jobId,
-        jobStartedAt,
         triggerConsolidated,
         disableWebhooks,
         rerunPdOnNewDemographics,
@@ -89,7 +87,6 @@ function parseBody(body?: unknown): StartPatientImportRequest {
   const bodyAsJson = typeof body === "string" ? JSON.parse(body) : body;
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
   const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
@@ -102,7 +99,6 @@ function parseBody(body?: unknown): StartPatientImportRequest {
   const cxId = cxIdRaw as string;
   const facilityId = facilityIdRaw as string;
   const jobId = jobIdRaw as string;
-  const jobStartedAt = jobStartedAtRaw as string;
   const triggerConsolidated = triggerConsolidatedRaw as boolean;
   const disableWebhooks = disableWebhooksRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
@@ -112,7 +108,6 @@ function parseBody(body?: unknown): StartPatientImportRequest {
     cxId,
     facilityId,
     jobId,
-    jobStartedAt,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,

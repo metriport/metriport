@@ -23,22 +23,21 @@ export type RowError = { rowColumns: string[]; error: string };
 const eolRegex = new RegExp(/\r/g);
 const commaRegex = new RegExp(/,/g);
 
+// TODO 2330 add TSDoc
 export async function validateAndParsePatientImportCsvFromS3({
   cxId,
   jobId,
-  jobStartedAt,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  jobStartedAt: string;
   s3BucketName: string;
 }): Promise<PatientImportPatient[]> {
   const { log } = out(
     `PatientImport validateAndParsePatientImportCsvFromS3 - cxId ${cxId} jobId ${jobId}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyRaw(cxId, jobStartedAt, jobId);
+  const key = createFileKeyRaw(cxId, jobId);
   try {
     const csvAsString = await s3Utils.getFileContentsAsString(s3BucketName, key);
 
@@ -50,7 +49,6 @@ export async function validateAndParsePatientImportCsvFromS3({
         ? creatValidationFile({
             cxId,
             jobId,
-            jobStartedAt,
             stage: "valid",
             rows: [headers.join(","), ...validRows.map(rowColumn => rowColumn.join(","))],
             s3BucketName,
@@ -60,7 +58,6 @@ export async function validateAndParsePatientImportCsvFromS3({
         ? creatValidationFile({
             cxId,
             jobId,
-            jobStartedAt,
             stage: "invalid",
             rows: [
               [...headers, "error"].join(","),
@@ -79,7 +76,7 @@ export async function validateAndParsePatientImportCsvFromS3({
         cxId,
         jobId,
         key,
-        context: "patient-import.validate-and-parse-import",
+        context: "patient-import.validateAndParsePatientImportCsvFromS3",
         error,
       },
     });

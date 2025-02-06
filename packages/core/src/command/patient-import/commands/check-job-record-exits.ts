@@ -3,7 +3,7 @@ import { S3Utils } from "../../../external/aws/s3";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { createFileKeyPatient } from "../patient-import-shared";
+import { createFileKeyJob } from "../patient-import-shared";
 
 const region = Config.getAWSRegion();
 
@@ -11,36 +11,36 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-// TODO 2330 add TSDoc
-export async function checkPatientRecordExists({
+/**
+ * Verify that the job record exists in S3.
+ *
+ * @returns true if the job record exists, throws otherwise.
+ * @throws Error if the job record does not exist.
+ */
+export async function checkJobRecordExists({
   cxId,
   jobId,
-  patientId,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  patientId: string;
   s3BucketName: string;
 }): Promise<boolean> {
-  const { log } = out(
-    `PatientImport checkPatientRecordExists - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
-  );
+  const { log } = out(`PatientImport createJobRecord - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyPatient(cxId, jobId, patientId);
+  const key = createFileKeyJob(cxId, jobId);
   try {
-    const fileExists = await s3Utils.fileExists(s3BucketName, key);
-    return fileExists;
+    await s3Utils.getFileInfoFromS3(s3BucketName, key);
+    return true;
   } catch (error) {
-    const msg = `Failure while checking patient record exists @ PatientImport`;
+    const msg = `Job record not found @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
         jobId,
-        patientId,
         key,
-        context: "patient-import.check-patient-record-exists",
+        context: "patient-import.checkJobRecordExists",
         error,
       },
     });

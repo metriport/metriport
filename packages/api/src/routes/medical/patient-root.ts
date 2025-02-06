@@ -205,12 +205,11 @@ router.post(
     const { bucket } = await createJobRecord({
       cxId,
       jobId,
-      jobStartedAt,
       data: { cxId, facilityId, jobStartedAt, dryRun: dryRun ?? false, status: jobStatus },
       s3BucketName,
     });
 
-    const uploadFileKey = createFileKeyRaw(cxId, jobStartedAt, jobId);
+    const uploadFileKey = createFileKeyRaw(cxId, jobId);
 
     const s3Url = await s3Utils.getPresignedUploadUrl({
       bucket,

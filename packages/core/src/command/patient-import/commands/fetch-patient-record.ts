@@ -1,8 +1,8 @@
 import { errorToString } from "@metriport/shared";
 import { S3Utils } from "../../../external/aws/s3";
+import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { Config } from "../../../util/config";
 import { PatientRecord } from "../patient-import";
 import { createFileKeyPatient } from "../patient-import-shared";
 
@@ -12,16 +12,15 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+// TODO 2330 add TSDoc
 export async function fetchPatientRecord({
   cxId,
   jobId,
-  jobStartedAt,
   patientId,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  jobStartedAt: string;
   patientId: string;
   s3BucketName: string;
 }): Promise<PatientRecord> {
@@ -29,7 +28,7 @@ export async function fetchPatientRecord({
     `PatientImport fetchPatientRecord - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyPatient(cxId, jobStartedAt, jobId, patientId);
+  const key = createFileKeyPatient(cxId, jobId, patientId);
   try {
     const file = await s3Utils.getFileContentsAsString(s3BucketName, key);
     return JSON.parse(file);

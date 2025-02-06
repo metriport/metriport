@@ -12,24 +12,22 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+// TODO 2330 add TSDoc
 export async function createJobRecord({
   cxId,
   jobId,
-  jobStartedAt,
   data,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  jobStartedAt: string;
   data: JobRecord;
   s3BucketName: string;
 }): Promise<{ key: string; bucket: string }> {
   const { log } = out(`PatientImport createJobRecord - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyJob(cxId, jobStartedAt, jobId);
+  const key = createFileKeyJob(cxId, jobId);
   try {
-    // TODO 2330 insert it into the DB as well
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,
@@ -45,7 +43,7 @@ export async function createJobRecord({
         cxId,
         jobId,
         key,
-        context: "patient-import.create-job-record",
+        context: "patient-import.createJobRecord",
         error,
       },
     });

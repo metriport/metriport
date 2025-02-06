@@ -915,7 +915,6 @@ router.post(
  * @param req.params.id The patient ID.
  * @param req.query.facilityId The facility ID for running the patient import.
  * @param req.query.jobId The job Id of the fle.
- * @param req.query.jobStartedAt The date the job was triggered.
  * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
  * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
  * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
@@ -929,7 +928,6 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const jobId = getFrom("query").orFail("jobId", req);
-    const jobStartedAt = getFrom("query").orFail("jobStartedAt", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
@@ -942,7 +940,6 @@ router.post(
       cxId,
       facilityId,
       jobId,
-      jobStartedAt,
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,

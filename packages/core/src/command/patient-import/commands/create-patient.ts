@@ -5,6 +5,7 @@ import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
 import { PatientPayload } from "../patient-import";
 
+// TODO 2330 add TSDoc
 export async function createPatient({
   cxId,
   facilityId,
