@@ -180,18 +180,19 @@ router.post(
  * ...WIP
  *
  * @param req.query.facilityId The ID of the Facility the Patients should be associated with.
- * @param req.query.dry-run Whether to simply validate the bundle or actually import it (optional,
+ * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
  *        defaults to false).
  * @returns the bulk import job ID and the URL to upload the CSV file.
  */
 router.post(
   "/bulk",
-  checkRateLimit("patientCreateOrUpdate"),
+  // TODO add this if/when we need to rate limit this endpoint
+  // checkRateLimit("..."),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
-    const dryRun = getFromQueryAsBoolean("dry-run", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
 
     // TODO 2330 move this to a command #########################################
     const s3Utils = new S3Utils(Config.getAWSRegion());
