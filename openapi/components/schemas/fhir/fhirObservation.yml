@@ -1,0 +1,275 @@
+title: fhirObservation
+type: object
+description: >-
+  Measurements and simple assertions made about a patient, device or other
+  subject.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Observation
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this observation.
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A plan, proposal or order that is fulfilled in whole or in part by this
+      event. For example, a MedicationRequest may require a patient to have
+      laboratory test performed before it is dispensed.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A larger event of which this particular Observation is a component or
+      step. For example, an observation as part of a procedure.
+  status:
+    $ref: ./fhirObservationStatus.yml
+    nullable: true
+    description: The status of the result value.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A code that classifies the general type of observation being made.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      Describes what was observed. Sometimes this is called the observation
+      "name".
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The patient, or group of patients, location, or device this observation is
+      about and into whose record the observation is placed. If the actual focus
+      of the observation is different from the subject (or a sample of, part, or
+      region of the subject), the `focus` element or the `code` itself specifies
+      the actual focus of the observation.
+  focus:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The actual focus of an observation when it is not the patient of record
+      representing something or someone associated with the patient such as a
+      spouse, parent, fetus, or donor. For example, fetus observations in a
+      mother's record. The focus of an observation could also be an existing
+      condition, an intervention, the subject's diet, another observation of the
+      subject, or a body structure such as tumor or implanted device. An example
+      use case would be using the Observation resource to capture whether the
+      mother is trained to change her child's tracheostomy tube. In this
+      example, the child is the patient of record and the mother is the focus.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The healthcare event (e.g. a patient and healthcare provider interaction)
+      during which this observation is made.
+  effectiveDateTime:
+    type: string
+    nullable: true
+    description: >-
+      The time or time-period the observed value is asserted as being true. For
+      biological subjects - e.g. human patients - this is usually called the
+      "physiologically relevant time". This is usually either the time of the
+      procedure or of specimen collection, but very often the source of the
+      date/time is not known, only the date/time itself.
+  effectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The time or time-period the observed value is asserted as being true. For
+      biological subjects - e.g. human patients - this is usually called the
+      "physiologically relevant time". This is usually either the time of the
+      procedure or of specimen collection, but very often the source of the
+      date/time is not known, only the date/time itself.
+  effectiveTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: >-
+      The time or time-period the observed value is asserted as being true. For
+      biological subjects - e.g. human patients - this is usually called the
+      "physiologically relevant time". This is usually either the time of the
+      procedure or of specimen collection, but very often the source of the
+      date/time is not known, only the date/time itself.
+  effectiveInstant:
+    type: string
+    nullable: true
+    description: >-
+      The time or time-period the observed value is asserted as being true. For
+      biological subjects - e.g. human patients - this is usually called the
+      "physiologically relevant time". This is usually either the time of the
+      procedure or of specimen collection, but very often the source of the
+      date/time is not known, only the date/time itself.
+  issued:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: >-
+      The date and time this version of the observation was made available to
+      providers, typically after the results have been reviewed and verified.
+  performer:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Who was responsible for asserting the observed value as "true".
+  valueQuantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueString:
+    type: string
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueBoolean:
+    type: boolean
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueInteger:
+    type: number
+    format: double
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueRatio:
+    $ref: ./fhirRatio.yml
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueSampledData:
+    $ref: ./fhirSampledData.yml
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueTime:
+    type: string
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valueDateTime:
+    type: string
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  valuePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The information determined as a result of making the observation, if the
+      information has a simple value.
+  dataAbsentReason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Provides a reason why the expected value in the element
+      Observation.value[x] is missing.
+  interpretation:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A categorical assessment of an observation value. For example, high, low,
+      normal.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: Comments about the observation or the results.
+  bodySite:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Indicates the site on the subject's body where the observation was made
+      (i.e. the target site).
+  method:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Indicates the mechanism used to perform the observation.
+  specimen:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The specimen that was used when this observation was made.
+  device:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The device used to generate the observation data.
+  referenceRange:
+    type: array
+    items:
+      $ref: ./fhirObservationReferenceRange.yml
+    nullable: true
+    description: >-
+      Guidance on how to interpret the value by comparison to a normal or
+      recommended range. Multiple reference ranges are interpreted as an "OR".
+      In other words, to represent two distinct target populations, two
+      `referenceRange` elements would be used.
+  hasMember:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      This observation is a group observation (e.g. a battery, a panel of tests,
+      a set of vital sign measurements) that includes the target as a member of
+      the group.
+  derivedFrom:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The target resource that represents a measurement from which this
+      observation value is derived. For example, a calculated anion gap or a
+      fetal measurement based on an ultrasound image.
+  component:
+    type: array
+    items:
+      $ref: ./fhirObservationComponent.yml
+    nullable: true
+    description: >-
+      Some observations have multiple component observations. These component
+      observations are expressed as separate code value pairs that share the
+      same attributes. Examples include systolic and diastolic component
+      observations for blood pressure measurement and multiple component
+      observations for genetics observations.
+required:
+  - resourceType
+  - code
+allOf:
+  - $ref: ./fhirBaseResource.yml

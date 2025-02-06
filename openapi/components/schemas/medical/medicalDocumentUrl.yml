@@ -1,0 +1,8 @@
+title: medicalDocumentUrl
+type: object
+description: A json object containing the URL will be returned.
+properties:
+  url:
+    type: string
+    nullable: true
+    description: The presigned URL.

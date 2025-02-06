@@ -1,0 +1,8 @@
+title: fhirCoverageEligibilityResponseOutcome
+type: string
+enum:
+  - queued
+  - complete
+  - error
+  - partial
+description: The outcome of the request processing.

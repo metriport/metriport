@@ -1,0 +1,7 @@
+title: fhirExpressionLanguage
+type: string
+enum:
+  - text/cql
+  - text/fhirpath
+  - application/x-fhir-query
+description: The media type of the language for the expression.

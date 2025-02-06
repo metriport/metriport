@@ -1,0 +1,103 @@
+title: fhirCoverageEligibilityRequestItem
+type: object
+description: >-
+  The CoverageEligibilityRequest provides patient and insurance coverage
+  information to an insurer for them to respond, in the form of an
+  CoverageEligibilityResponse, with information regarding whether the stated
+  coverage is valid and in-force and optionally to provide the insurance details
+  of the policy.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  supportingInfoSequence:
+    type: array
+    items:
+      $ref: ./fhirpositiveInt.yml
+    nullable: true
+    description: >-
+      Exceptions, special conditions and supporting information applicable for
+      this service or product line.
+  category:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Code to identify the general type of benefits under which products and
+      services are provided.
+  productOrService:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      This contains the product, service, drug or other billing code for the
+      item.
+  modifier:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Item typification or modifiers codes to convey additional context for the
+      product or service.
+  provider:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The practitioner who is responsible for the product or service to be
+      rendered to the patient.
+  quantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: The number of repetitions of a service or product.
+  unitPrice:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: The amount charged to the patient by the provider for a single unit.
+  facility:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Facility where the services will be provided.
+  diagnosis:
+    type: array
+    items:
+      $ref: ./fhirCoverageEligibilityRequestDiagnosis.yml
+    nullable: true
+    description: Patient diagnosis for which care is sought.
+  detail:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The plan/proposal/order describing the proposed service in detail.

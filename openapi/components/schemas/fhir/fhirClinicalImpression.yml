@@ -1,0 +1,145 @@
+title: fhirClinicalImpression
+type: object
+description: >-
+  A record of a clinical assessment performed to determine what problem(s) may
+  affect the patient and before planning the treatments or management strategies
+  that are best to manage a patient's condition. Assessments are often 1:1 with
+  a clinical consultation / encounter, but this varies greatly depending on the
+  clinical workflow. This resource is called "ClinicalImpression" rather than
+  "ClinicalAssessment" to avoid confusion with the recording of assessment tools
+  such as Apgar score.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ClinicalImpression
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this clinical impression by the performer
+      or other systems which remain constant as the resource is updated and
+      propagates from server to server.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: Identifies the workflow status of the assessment.
+  statusReason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Captures the reason for the current state of the ClinicalImpression.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Categorizes the type of clinical assessment performed.
+  description:
+    type: string
+    nullable: true
+    description: >-
+      A summary of the context and/or cause of the assessment - why / where it
+      was performed, and what patient events/status prompted it.
+  subject:
+    $ref: ./fhirReference.yml
+    description: The patient or group of individuals assessed as part of this record.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Encounter during which this ClinicalImpression was created or to which
+      the creation of this record is tightly associated.
+  effectiveDateTime:
+    type: string
+    nullable: true
+    description: The point in time or period over which the subject was assessed.
+  effectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The point in time or period over which the subject was assessed.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: Indicates when the documentation of the assessment was complete.
+  assessor:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The clinician performing the assessment.
+  previous:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A reference to the last assessment that was conducted on this patient.
+      Assessments are often/usually ongoing in nature; a care provider
+      (practitioner or team) will make new assessments on an ongoing basis as
+      new data arises or the patient's conditions changes.
+  problem:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A list of the relevant problems/conditions for a patient.
+  investigation:
+    type: array
+    items:
+      $ref: ./fhirClinicalImpressionInvestigation.yml
+    nullable: true
+    description: >-
+      One or more sets of investigations (signs, symptoms, etc.). The actual
+      grouping of investigations varies greatly depending on the type and
+      context of the assessment. These investigations may include data generated
+      during the assessment process, or data previously generated and recorded
+      that is pertinent to the outcomes.
+  protocol:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      Reference to a specific published clinical protocol that was followed
+      during this assessment, and/or that provides evidence in support of the
+      diagnosis.
+  summary:
+    type: string
+    nullable: true
+    description: A text summary of the investigations and the diagnosis.
+  finding:
+    type: array
+    items:
+      $ref: ./fhirClinicalImpressionFinding.yml
+    nullable: true
+    description: >-
+      Specific findings or diagnoses that were considered likely or relevant to
+      ongoing treatment.
+  prognosisCodeableConcept:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Estimate of likely outcome.
+  prognosisReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: RiskAssessment expressing likely outcome.
+  supportingInfo:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Information supporting the clinical impression.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Commentary about the impression, typically recorded after the impression
+      itself was made, though supplemental notes by the original author could
+      also appear.
+required:
+  - resourceType
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

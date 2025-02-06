@@ -1,0 +1,8 @@
+title: fhirAppointmentParticipantStatus
+type: string
+enum:
+  - accepted
+  - declined
+  - tentative
+  - needs-action
+description: Participation status of the actor.

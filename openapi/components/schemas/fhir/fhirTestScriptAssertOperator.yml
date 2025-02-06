@@ -1,0 +1,17 @@
+title: fhirTestScriptAssertOperator
+type: string
+enum:
+  - equals
+  - notEquals
+  - in
+  - notIn
+  - greaterThan
+  - lessThan
+  - empty
+  - notEmpty
+  - contains
+  - notContains
+  - eval
+description: >-
+  The operator type defines the conditional behavior of the assert. If not
+  defined, the default is equals.

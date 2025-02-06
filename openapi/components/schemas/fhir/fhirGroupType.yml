@@ -1,0 +1,12 @@
+title: fhirGroupType
+type: string
+enum:
+  - person
+  - animal
+  - practitioner
+  - device
+  - medication
+  - substance
+description: >-
+  Identifies the broad classification of the kind of resources the group
+  includes.

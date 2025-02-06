@@ -1,0 +1,36 @@
+title: fhirLinkage
+type: object
+description: >-
+  Identifies two or more records (resource instances) that refer to the same
+  real-world "occurrence".
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Linkage
+  active:
+    type: boolean
+    nullable: true
+    description: >-
+      Indicates whether the asserted set of linkages are considered to be "in
+      effect".
+  author:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the user or organization responsible for asserting the linkages
+      as well as the user or organization who establishes the context in which
+      the nature of each linkage is evaluated.
+  item:
+    type: array
+    items:
+      $ref: ./fhirLinkageItem.yml
+    description: >-
+      Identifies which record considered as the reference to the same real-world
+      occurrence as well as how the items should be evaluated within the
+      collection of linked items.
+required:
+  - resourceType
+  - item
+allOf:
+  - $ref: ./fhirBaseResource.yml

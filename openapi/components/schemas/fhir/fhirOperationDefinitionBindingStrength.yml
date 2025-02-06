@@ -1,0 +1,11 @@
+title: fhirOperationDefinitionBindingStrength
+type: string
+enum:
+  - required
+  - extensible
+  - preferred
+  - example
+description: >-
+  Indicates the degree of conformance expectations associated with this binding
+  - that is, the degree to which the provided value set must be adhered to in
+  the instances.

@@ -1,0 +1,10 @@
+title: fhirCodeSystemStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The date (and optionally time) when the code system resource was created or
+  revised.

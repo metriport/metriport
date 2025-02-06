@@ -1,0 +1,10 @@
+title: fhirConsentStatus
+type: string
+enum:
+  - draft
+  - proposed
+  - active
+  - rejected
+  - inactive
+  - entered-in-error
+description: Indicates the current state of this consent.

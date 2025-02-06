@@ -1,0 +1,9 @@
+title: fhirImagingStudyStatus
+type: string
+enum:
+  - registered
+  - available
+  - cancelled
+  - entered-in-error
+  - unknown
+description: The current state of the ImagingStudy.

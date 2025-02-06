@@ -1,0 +1,13 @@
+title: fhirBundleType
+type: string
+enum:
+  - document
+  - message
+  - transaction
+  - transaction-response
+  - batch
+  - batch-response
+  - history
+  - searchset
+  - collection
+description: Indicates the purpose of this bundle - how it is intended to be used.

@@ -1,0 +1,192 @@
+title: fhirOperationDefinition
+type: object
+description: >-
+  A formal computable definition of an operation (on the RESTful interface) or a
+  named query (using the search interaction).
+properties:
+  resourceType:
+    type: string
+    enum:
+      - OperationDefinition
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this operation definition when it
+      is referenced in a specification, model, design or an instance; also
+      called its canonical identifier. This SHOULD be globally unique and SHOULD
+      be a literal address at which at which an authoritative instance of this
+      operation definition is (or will be) published. This URL can be the target
+      of a canonical reference. It SHALL remain the same when the operation
+      definition is stored on different servers.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the operation
+      definition when it is referenced in a specification, model, design or
+      instance. This is an arbitrary value managed by the operation definition
+      author and is not expected to be globally unique. For example, it might be
+      a timestamp (e.g. yyyymmdd) if a managed version is not available. There
+      is also no expectation that versions can be placed in a lexicographical
+      sequence.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the operation definition. This name
+      should be usable as an identifier for the module by machine processing
+      applications such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the operation definition.
+  status:
+    $ref: ./fhirOperationDefinitionStatus.yml
+    nullable: true
+    description: >-
+      The status of this operation definition. Enables tracking the life-cycle
+      of the content.
+  kind:
+    $ref: ./fhirOperationDefinitionKind.yml
+    nullable: true
+    description: Whether this is an operation or a named query.
+  experimental:
+    type: boolean
+    nullable: true
+    description: >-
+      A Boolean value to indicate that this operation definition is authored for
+      testing purposes (or education/evaluation/marketing) and is not intended
+      to be used for genuine usage.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the operation definition was
+      published. The date must change when the business version changes and it
+      must change if the status code changes. In addition, it should change when
+      the substantive content of the operation definition changes.
+  publisher:
+    type: string
+    nullable: true
+    description: >-
+      The name of the organization or individual that published the operation
+      definition.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the operation definition from
+      a consumer's perspective.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate operation definition instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A legal or geographic region in which the operation definition is intended
+      to be used.
+  purpose:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Explanation of why this operation definition is needed and why it has been
+      designed as it has.
+  affectsState:
+    type: boolean
+    nullable: true
+    description: >-
+      Whether the operation affects state. Side effects such as producing audit
+      trail entries do not count as 'affecting state'.
+  code:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The name used to invoke the operation.
+  comment:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: Additional information about how to use this operation or named query.
+  base:
+    $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      Indicates that this operation definition is a constraining profile on the
+      base.
+  resource:
+    type: array
+    items:
+      $ref: ./fhircode.yml
+    nullable: true
+    description: The types on which this operation can be executed.
+  system:
+    type: boolean
+    nullable: true
+    description: >-
+      Indicates whether this operation or named query can be invoked at the
+      system level (e.g. without needing to choose a resource type for the
+      context).
+  type:
+    type: boolean
+    nullable: true
+    description: >-
+      Indicates whether this operation or named query can be invoked at the
+      resource type level for any given resource type level (e.g. without
+      needing to choose a specific resource id for the context).
+  instance:
+    type: boolean
+    nullable: true
+    description: >-
+      Indicates whether this operation can be invoked on a particular instance
+      of one of the given types.
+  inputProfile:
+    $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      Additional validation information for the in parameters - a single profile
+      that covers all the parameters. The profile is a constraint on the
+      parameters resource as a whole.
+  outputProfile:
+    $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      Additional validation information for the out parameters - a single
+      profile that covers all the parameters. The profile is a constraint on the
+      parameters resource.
+  parameter:
+    type: array
+    items:
+      $ref: ./fhirOperationDefinitionParameter.yml
+    nullable: true
+    description: The parameters for the operation/query.
+  overload:
+    type: array
+    items:
+      $ref: ./fhirOperationDefinitionOverload.yml
+    nullable: true
+    description: >-
+      Defines an appropriate combination of parameters to use when invoking this
+      operation, to help code generators when generating overloaded parameter
+      sets for this operation.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

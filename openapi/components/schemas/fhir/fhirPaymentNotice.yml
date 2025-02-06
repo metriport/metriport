@@ -1,0 +1,69 @@
+title: fhirPaymentNotice
+type: object
+description: >-
+  This resource provides the status of the payment for goods and services
+  rendered, and the request and response resource references.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - PaymentNotice
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this payment notice.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  request:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Reference of resource for which payment is being made.
+  response:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Reference of response to resource for which payment is being made.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date when this resource was created.
+  provider:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The practitioner who is responsible for the services rendered to the
+      patient.
+  payment:
+    $ref: ./fhirReference.yml
+    description: A reference to the payment which is the subject of this notice.
+  paymentDate:
+    type: string
+    format: date
+    nullable: true
+    description: The date when the above payment action occurred.
+  payee:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The party who will receive or has received payment that is the subject of
+      this notification.
+  recipient:
+    $ref: ./fhirReference.yml
+    description: The party who is notified of the payment status.
+  amount:
+    $ref: ./fhirMoney.yml
+    description: The amount sent to the payee.
+  paymentStatus:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A code indicating whether payment has been sent or cleared.
+required:
+  - resourceType
+  - payment
+  - recipient
+  - amount
+allOf:
+  - $ref: ./fhirBaseResource.yml

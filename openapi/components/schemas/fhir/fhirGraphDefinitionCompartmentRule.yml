@@ -1,0 +1,8 @@
+title: fhirGraphDefinitionCompartmentRule
+type: string
+enum:
+  - identical
+  - matching
+  - different
+  - custom
+description: identical | matching | different | no-rule | custom.

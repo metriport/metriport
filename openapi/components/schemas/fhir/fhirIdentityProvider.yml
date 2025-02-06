@@ -1,0 +1,29 @@
+title: fhirIdentityProvider
+type: object
+description: External Identity Provider (IdP) configuration details.
+properties:
+  authorizeUrl:
+    type: string
+    description: Remote URL for the external Identity Provider authorize endpoint.
+  tokenUrl:
+    type: string
+    description: Remote URL for the external Identity Provider token endpoint.
+  userInfoUrl:
+    type: string
+    description: Remote URL for the external Identity Provider userinfo endpoint.
+  clientId:
+    type: string
+    description: External Identity Provider client ID.
+  clientSecret:
+    type: string
+    description: External Identity Provider client secret.
+  useSubject:
+    type: boolean
+    nullable: true
+    description: Optional flag to use the subject field instead of the email field.
+required:
+  - authorizeUrl
+  - tokenUrl
+  - userInfoUrl
+  - clientId
+  - clientSecret

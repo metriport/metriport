@@ -1,0 +1,98 @@
+title: fhirObservationDefinition
+type: object
+description: >-
+  Set of definitional characteristics for a kind of observation or measurement
+  produced or consumed by an orderable health care service.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ObservationDefinition
+  publisher:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The name of the individual or organization that published the
+      ObservationDefinition.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A code that classifies the general type of observation.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      Describes what will be observed. Sometimes this is called the observation
+      "name".
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this ObservationDefinition artifact.
+  permittedDataType:
+    type: array
+    items:
+      $ref: ./fhirObservationDefinitionPermittedDataTypeItem.yml
+    nullable: true
+    description: >-
+      The data types allowed for the value element of the instance observations
+      conforming to this ObservationDefinition.
+  multipleResultsAllowed:
+    type: boolean
+    nullable: true
+    description: >-
+      Multiple results allowed for observations conforming to this
+      ObservationDefinition.
+  method:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The method or technique used to perform the observation.
+  preferredReportName:
+    type: string
+    nullable: true
+    description: >-
+      The preferred name to be used when reporting the results of observations
+      conforming to this ObservationDefinition.
+  quantitativeDetails:
+    $ref: ./fhirObservationDefinitionQuantitativeDetails.yml
+    nullable: true
+    description: Characteristics for quantitative results of this observation.
+  qualifiedInterval:
+    type: array
+    items:
+      $ref: ./fhirObservationDefinitionQualifiedInterval.yml
+    nullable: true
+    description: >-
+      Multiple ranges of results qualified by different contexts for ordinal or
+      continuous observations conforming to this ObservationDefinition.
+  validCodedValueSet:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The set of valid coded results for the observations conforming to this
+      ObservationDefinition.
+  normalCodedValueSet:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The set of normal coded results for the observations conforming to this
+      ObservationDefinition.
+  abnormalCodedValueSet:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The set of abnormal coded results for the observation conforming to this
+      ObservationDefinition.
+  criticalCodedValueSet:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The set of critical coded results for the observation conforming to this
+      ObservationDefinition.
+required:
+  - resourceType
+  - code
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,10 @@
+title: fhirLocationStatus
+type: string
+enum:
+  - active
+  - suspended
+  - inactive
+description: >-
+  The status property covers the general availability of the resource, not the
+  current value which may be covered by the operationStatus, or by a
+  schedule/slots if they are configured for the location.

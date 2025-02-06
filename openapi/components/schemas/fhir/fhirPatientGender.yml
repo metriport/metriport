@@ -1,0 +1,10 @@
+title: fhirPatientGender
+type: string
+enum:
+  - male
+  - female
+  - other
+  - unknown
+description: >-
+  Administrative Gender - the gender that the patient is considered to have for
+  administration and record keeping purposes.

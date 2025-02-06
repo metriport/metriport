@@ -1,0 +1,76 @@
+title: fhirOrganization
+type: object
+description: >-
+  A formally or informally recognized grouping of people or organizations formed
+  for the purpose of achieving some form of collective action. Includes
+  companies, institutions, corporations, departments, community groups,
+  healthcare practice groups, payer/insurer, etc.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Organization
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifier for the organization that is used to identify the organization
+      across multiple disparate systems.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether the organization's record is still in active use.
+  type:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The kind(s) of organization that this is.
+  name:
+    type: string
+    nullable: true
+    description: A name associated with the organization.
+  alias:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      A list of alternate names that the organization is known as, or was known
+      as in the past.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: A contact detail for the organization.
+  address:
+    type: array
+    items:
+      $ref: ./fhirAddress.yml
+    nullable: true
+    description: An address for the organization.
+  partOf:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The organization of which this organization forms a part.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirOrganizationContact.yml
+    nullable: true
+    description: Contact for the organization for a certain purpose.
+  endpoint:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Technical endpoints providing access to services operated for the
+      organization.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,80 @@
+title: fhirBiologicallyDerivedProduct
+type: object
+description: >-
+  A material substance originating from a biological entity intended to be
+  transplanted or infused into another (possibly the same) biological entity.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - BiologicallyDerivedProduct
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      This records identifiers associated with this biologically derived product
+      instance that are defined by business processes and/or used to refer to it
+      when a direct URL reference to the resource itself is not appropriate
+      (e.g. in CDA documents, or in written / printed documentation).
+  productCategory:
+    $ref: ./fhirBiologicallyDerivedProductProductCategory.yml
+    nullable: true
+    description: Broad category of this product.
+  productCode:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A code that identifies the kind of this biologically derived product
+      (SNOMED Ctcode).
+  status:
+    $ref: ./fhirBiologicallyDerivedProductStatus.yml
+    nullable: true
+    description: Whether the product is currently available.
+  request:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Procedure request to obtain this biologically derived product.
+  quantity:
+    type: integer
+    nullable: true
+    description: Number of discrete units within this product.
+  parent:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Parent product (if any).
+  collection:
+    $ref: ./fhirBiologicallyDerivedProductCollection.yml
+    nullable: true
+    description: How this product was collected.
+  processing:
+    type: array
+    items:
+      $ref: ./fhirBiologicallyDerivedProductProcessing.yml
+    nullable: true
+    description: >-
+      Any processing of the product during collection that does not change the
+      fundamental nature of the product. For example adding anti-coagulants
+      during the collection of Peripheral Blood Stem Cells.
+  manipulation:
+    $ref: ./fhirBiologicallyDerivedProductManipulation.yml
+    nullable: true
+    description: >-
+      Any manipulation of product post-collection that is intended to alter the
+      product. For example a buffy-coat enrichment or CD8 reduction of
+      Peripheral Blood Stem Cells to make it more suitable for infusion.
+  storage:
+    type: array
+    items:
+      $ref: ./fhirBiologicallyDerivedProductStorage.yml
+    nullable: true
+    description: Product storage.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,142 @@
+title: fhirMedia
+type: object
+description: >-
+  A photo, video, or audio recording acquired or used in healthcare. The actual
+  content may be inline or provided by direct reference.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Media
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifiers associated with the image - these may include identifiers for
+      the image itself, identifiers for the context of its collection (e.g.
+      series ids) and context ids such as accession numbers or other workflow
+      identifiers.
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A procedure that is fulfilled in whole or in part by the creation of this
+      media.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A larger event of which this particular event is a component or step.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The current state of the {{title}}.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A code that classifies whether the media is an image, video or audio
+      recording or some other media category.
+  modality:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Details of the type of the media - usually, how it was acquired (what type
+      of device). If images sourced from a DICOM system, are wrapped in a Media
+      resource, then this is the modality.
+  view:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The name of the imaging view e.g. Lateral or Antero-posterior (AP).
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Who/What this Media is a record of.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The encounter that establishes the context for this media.
+  createdDateTime:
+    type: string
+    nullable: true
+    description: The date and time(s) at which the media was collected.
+  createdPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The date and time(s) at which the media was collected.
+  issued:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: >-
+      The date and time this version of the media was made available to
+      providers, typically after having been reviewed.
+  operator:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The person who administered the collection of the image.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Describes why the event occurred in coded or textual form.
+  bodySite:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Indicates the site on the subject's body where the observation was made
+      (i.e. the target site).
+  deviceName:
+    type: string
+    nullable: true
+    description: >-
+      The name of the device / manufacturer of the device that was used to make
+      the recording.
+  device:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The device used to collect the media.
+  height:
+    $ref: ./fhirpositiveInt.yml
+    nullable: true
+    description: Height of the image in pixels (photo/video).
+  width:
+    $ref: ./fhirpositiveInt.yml
+    nullable: true
+    description: Width of the image in pixels (photo/video).
+  frames:
+    $ref: ./fhirpositiveInt.yml
+    nullable: true
+    description: >-
+      The number of frames in a photo. This is used with a multi-page fax, or an
+      imaging acquisition context that takes multiple slices in a single image,
+      or an animated gif. If there is more than one frame, this SHALL have a
+      value in order to alert interface software that a multi-frame capable
+      rendering widget is required.
+  duration:
+    $ref: ./fhirdecimal.yml
+    nullable: true
+    description: The duration of the recording in seconds - for audio and video.
+  content:
+    $ref: ./fhirAttachment.yml
+    description: >-
+      The actual content of the media - inline or by direct reference to the
+      media source file.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Comments made about the media by the performer, subject or other
+      participants.
+required:
+  - resourceType
+  - content
+allOf:
+  - $ref: ./fhirBaseResource.yml

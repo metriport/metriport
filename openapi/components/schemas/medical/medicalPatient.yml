@@ -1,0 +1,19 @@
+title: medicalPatient
+type: object
+properties:
+  id:
+    type: string
+    description: |-
+      The ID assigned to this Patient. This ID will be used to uniquely
+      identify this Patient in medical documents.
+    example: 018a80c4-292a-7486-a1234-76yuhe23yu14
+  facilityIds:
+    type: array
+    items:
+      $ref: ./medicalFacilityId.yml
+    description: Array of the IDs of the Facilities where the Patient is receiving care.
+required:
+  - id
+  - facilityIds
+allOf:
+  - $ref: ./medicalBasePatient.yml

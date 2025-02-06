@@ -1,0 +1,3 @@
+title: fhirstring
+type: string
+description: A sequence of Unicode characters

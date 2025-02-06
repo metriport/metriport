@@ -1,0 +1,251 @@
+title: fhirEffectEvidenceSynthesis
+type: object
+description: >-
+  The EffectEvidenceSynthesis resource describes the difference in an outcome
+  between exposures states in a population where the effect estimate is derived
+  from a combination of research studies.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - EffectEvidenceSynthesis
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this effect evidence synthesis
+      when it is referenced in a specification, model, design or an instance;
+      also called its canonical identifier. This SHOULD be globally unique and
+      SHOULD be a literal address at which at which an authoritative instance of
+      this effect evidence synthesis is (or will be) published. This URL can be
+      the target of a canonical reference. It SHALL remain the same when the
+      effect evidence synthesis is stored on different servers.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this effect evidence
+      synthesis when it is represented in other formats, or referenced in a
+      specification, model, design or an instance.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the effect
+      evidence synthesis when it is referenced in a specification, model, design
+      or instance. This is an arbitrary value managed by the effect evidence
+      synthesis author and is not expected to be globally unique. For example,
+      it might be a timestamp (e.g. yyyymmdd) if a managed version is not
+      available. There is also no expectation that versions can be placed in a
+      lexicographical sequence.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the effect evidence synthesis. This
+      name should be usable as an identifier for the module by machine
+      processing applications such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: >-
+      A short, descriptive, user-friendly title for the effect evidence
+      synthesis.
+  status:
+    $ref: ./fhirEffectEvidenceSynthesisStatus.yml
+    nullable: true
+    description: >-
+      The status of this effect evidence synthesis. Enables tracking the
+      life-cycle of the content.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the effect evidence synthesis was
+      published. The date must change when the business version changes and it
+      must change if the status code changes. In addition, it should change when
+      the substantive content of the effect evidence synthesis changes.
+  publisher:
+    type: string
+    nullable: true
+    description: >-
+      The name of the organization or individual that published the effect
+      evidence synthesis.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the effect evidence synthesis
+      from a consumer's perspective.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: A human-readable string to clarify or explain concepts about the resource.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate effect evidence synthesis instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A legal or geographic region in which the effect evidence synthesis is
+      intended to be used.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the effect evidence synthesis and/or its
+      contents. Copyright statements are generally legal restrictions on the use
+      and publishing of the effect evidence synthesis.
+  approvalDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was approved by the publisher.
+      Approval happens once when the content is officially approved for usage.
+  lastReviewDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was last reviewed. Review happens
+      periodically after approval but does not change the original approval
+      date.
+  effectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period during which the effect evidence synthesis content was or is
+      planned to be in active use.
+  topic:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Descriptive topics related to the content of the EffectEvidenceSynthesis.
+      Topics provide a high-level categorization grouping types of
+      EffectEvidenceSynthesiss that can be useful for filtering and searching.
+  author:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individiual or organization primarily involved in the creation and
+      maintenance of the content.
+  editor:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization primarily responsible for internal coherence
+      of the content.
+  reviewer:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization primarily responsible for review of some
+      aspect of the content.
+  endorser:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization responsible for officially endorsing the
+      content for use in some setting.
+  relatedArtifact:
+    type: array
+    items:
+      $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: >-
+      Related artifacts such as additional documentation, justification, or
+      bibliographic references.
+  synthesisType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Type of synthesis eg meta-analysis.
+  studyType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Type of study eg randomized trial.
+  population:
+    $ref: ./fhirReference.yml
+    description: >-
+      A reference to a EvidenceVariable resource that defines the population for
+      the research.
+  exposure:
+    $ref: ./fhirReference.yml
+    description: >-
+      A reference to a EvidenceVariable resource that defines the exposure for
+      the research.
+  exposureAlternative:
+    $ref: ./fhirReference.yml
+    description: >-
+      A reference to a EvidenceVariable resource that defines the comparison
+      exposure for the research.
+  outcome:
+    $ref: ./fhirReference.yml
+    description: >-
+      A reference to a EvidenceVariable resomece that defines the outcome for
+      the research.
+  sampleSize:
+    $ref: ./fhirEffectEvidenceSynthesisSampleSize.yml
+    nullable: true
+    description: A description of the size of the sample involved in the synthesis.
+  resultsByExposure:
+    type: array
+    items:
+      $ref: ./fhirEffectEvidenceSynthesisResultsByExposure.yml
+    nullable: true
+    description: >-
+      A description of the results for each exposure considered in the effect
+      estimate.
+  effectEstimate:
+    type: array
+    items:
+      $ref: ./fhirEffectEvidenceSynthesisEffectEstimate.yml
+    nullable: true
+    description: The estimated effect of the exposure variant.
+  certainty:
+    type: array
+    items:
+      $ref: ./fhirEffectEvidenceSynthesisCertainty.yml
+    nullable: true
+    description: A description of the certainty of the effect estimate.
+required:
+  - resourceType
+  - population
+  - exposure
+  - exposureAlternative
+  - outcome
+allOf:
+  - $ref: ./fhirBaseResource.yml

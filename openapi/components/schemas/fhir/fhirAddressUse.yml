@@ -1,0 +1,9 @@
+title: fhirAddressUse
+type: string
+enum:
+  - home
+  - work
+  - temp
+  - old
+  - billing
+description: The purpose of this address.

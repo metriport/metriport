@@ -1,0 +1,177 @@
+get:
+  description: Get the status of querying for patient's consolidated data.
+  operationId: medical_fhir_getConsolidatedQueryStatus
+  tags:
+    - MedicalFhir
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Patient
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 00000000-0000-0000-0000-000000000000
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: >-
+              ../../../components/schemas/medical/medicalGetConsolidatedQueryStatusResponse.yml
+          examples:
+            Example1:
+              value:
+                queries:
+                  - requestId: 00000000-0000-0000-0000-000000000000
+                    startedAt: '2023-07-27T21:29:31.491+00:00'
+                    dateFrom: '2023-07-27'
+                    dateTo: '2024-07-27'
+                    conversionType: html
+                    status: processing
+                  - requestId: 00000000-0000-0000-0000-000000000000
+                    startedAt: '2023-07-27T21:29:31.491+00:00'
+                    dateFrom: '2023-07-27'
+                    dateTo: '2024-07-27'
+                    conversionType: html
+                    status: processing
+                message: >-
+                  Trigger a new query by POST /patient/:id/consolidated/query;
+                  data will be sent through Webhook
+  summary: Get Consolidated Data Query Status
+  security:
+    - ApiKeyAuth: []
+
+post:
+  description: >-
+    Trigger a consolidated data query for the given patient.
+
+    When executed,
+
+    this endpoint triggers an asynchronous query to retrieve a Patient's
+    consolidated data from the FHIR repository.
+
+    Once the data is consolidated and ready for consumption,
+
+    a webhook request is sent to your configured URL containing the Patient's
+
+    data in FHIR-compliant format,
+
+    based on the parameters used to trigger the query.
+
+    You'll be able to query multiple times for the same Patient which will be
+    added to the queue and
+
+    processed in order. If the parameters are the same as a previous query that
+    is still processing,
+
+    the new query will be ignored and you'll get the status and request ID of
+    the previous one.
+
+    You can check the status of the data query by calling get consolidated data
+    query.
+
+    This endpoint also provides the ability to render a Medical Record Summary
+
+    from the FHIR bundle as a PDF or HTML document. This will be returned via a
+    webhook
+
+    as a FHIR bundle with a DocumentReference resource
+
+    that will contain a URL to retrieve the data from.,
+  operationId: medical_fhir_startConsolidatedQuery
+  tags:
+    - MedicalFhir
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Patient.
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 00000000-0000-0000-0000-000000000000
+    - name: resources
+      in: query
+      description: >-
+        A comma separated, case sensitive list of resources to be returned. If
+        none are provided all
+
+        resources will be included. Metriport will automatically hydrate the
+        initially filtered
+
+        resources with referenced ones to create bundle consistency.
+      required: false
+      schema:
+        type: string
+        nullable: true
+    - name: dateFrom
+      in: query
+      description: |-
+        The start date (inclusive) for which to filter returned resources -
+        formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+        no start date filter will be applied.
+      required: false
+      schema:
+        type: string
+        nullable: true
+    - name: dateTo
+      in: query
+      description: |-
+        The end date (inclusive) for which to filter returned resources -
+        formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+        no end date filter will be applied.
+      required: false
+      schema:
+        type: string
+        nullable: true
+    - name: conversionType
+      in: query
+      description: The doc type to convert to. Either `html` or `pdf`.
+      required: false
+      schema:
+        type: string
+        nullable: true
+  responses:
+    '200':
+      description: >-
+        Returns the filters used for this query, in addition to the identifier
+        used by the system to uniquely identify this query (property
+        `requestId`).
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalStartConsolidatedQueryResponse.yml
+          examples:
+            Example1:
+              value:
+                query:
+                  requestId: 00000000-0000-0000-0000-000000000000
+                  startedAt: '2023-07-27T21:29:31.491+00:00'
+                  dateFrom: '2023-07-27'
+                  dateTo: '2024-07-27'
+                  conversionType: html
+                  status: processing
+  summary: Start Consolidated Data Query
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    description: >
+      Metadata holds a record of up to 50 custom string key-value pairs. Key
+      names can be up to 40 characters long and values up to 500 characters
+      long.
+
+      This metadata will be returned in the webhook response.
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+        examples:
+          Example1: {}

@@ -1,0 +1,12 @@
+title: fhirSearchParameterComparatorItem
+type: string
+enum:
+  - eq
+  - ne
+  - gt
+  - lt
+  - ge
+  - le
+  - sa
+  - eb
+  - ap

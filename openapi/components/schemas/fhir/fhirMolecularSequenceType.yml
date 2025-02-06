@@ -1,0 +1,7 @@
+title: fhirMolecularSequenceType
+type: string
+enum:
+  - aa
+  - dna
+  - rna
+description: Amino Acid Sequence/ DNA Sequence / RNA Sequence.

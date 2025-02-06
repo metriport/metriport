@@ -1,0 +1,8 @@
+title: fhirPatientLinkType
+type: string
+enum:
+  - replaced-by
+  - replaces
+  - refer
+  - seealso
+description: The type of link between this patient resource and another patient resource.

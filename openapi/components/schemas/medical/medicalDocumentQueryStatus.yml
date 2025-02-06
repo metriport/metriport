@@ -1,0 +1,6 @@
+title: medicalDocumentQueryStatus
+type: string
+enum:
+  - processing
+  - completed
+  - failed

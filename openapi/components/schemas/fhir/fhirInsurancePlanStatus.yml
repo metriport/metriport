@@ -1,0 +1,8 @@
+title: fhirInsurancePlanStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: The current state of the health insurance product.

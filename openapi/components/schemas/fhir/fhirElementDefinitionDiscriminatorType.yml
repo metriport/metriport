@@ -1,0 +1,9 @@
+title: fhirElementDefinitionDiscriminatorType
+type: string
+enum:
+  - value
+  - exists
+  - pattern
+  - type
+  - profile
+description: How the element value is interpreted when discrimination is evaluated.

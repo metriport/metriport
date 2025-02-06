@@ -1,0 +1,21 @@
+title: fhirProjectMembershipAccessParameter
+type: object
+description: User options that control the display of the application.
+properties:
+  name:
+    $ref: ./fhircode.yml
+    description: The unique name of the parameter.
+  valueString:
+    type: string
+    nullable: true
+    description: >-
+      Value of the parameter - must be one of a constrained set of the data
+      types (see [Extensibility](extensibility.html) for a list).
+  valueReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Value of the parameter - must be one of a constrained set of the data
+      types (see [Extensibility](extensibility.html) for a list).
+required:
+  - name

@@ -1,0 +1,180 @@
+title: fhirCarePlanDetail
+type: object
+description: >-
+  Describes the intention of how one or more practitioners intend to deliver
+  care for a particular patient, group or community for a period of time,
+  possibly limited to care for a specific condition or set of conditions.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  kind:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      A description of the kind of resource the in-line definition of a care
+      plan activity is representing. The CarePlan.activity.detail is an in-line
+      definition when a resource is not referenced using
+      CarePlan.activity.reference. For example, a MedicationRequest, a
+      ServiceRequest, or a CommunicationRequest.
+  instantiatesCanonical:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      The URL pointing to a FHIR-defined protocol, guideline, questionnaire or
+      other definition that is adhered to in whole or in part by this CarePlan
+      activity.
+  instantiatesUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally maintained protocol, guideline,
+      questionnaire or other definition that is adhered to in whole or in part
+      by this CarePlan activity.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Detailed description of the type of planned activity; e.g. what lab test,
+      what procedure, what kind of encounter.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Provides the rationale that drove the inclusion of this particular
+      activity as part of the plan or the reason why the activity was
+      prohibited.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Indicates another resource, such as the health condition(s), whose
+      existence justifies this request and drove the inclusion of this
+      particular activity as part of the plan.
+  goal:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Internal reference that identifies the goals that this activity is
+      intended to contribute towards meeting.
+  status:
+    $ref: ./fhirCarePlanDetailStatus.yml
+    nullable: true
+    description: Identifies what progress is being made for the specific activity.
+  statusReason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Provides reason why the activity isn't yet started, is on hold, was
+      cancelled, etc.
+  doNotPerform:
+    type: boolean
+    nullable: true
+    description: >-
+      If true, indicates that the described activity is one that must NOT be
+      engaged in when following the plan. If false, or missing, indicates that
+      the described activity is one that should be engaged in when following the
+      plan.
+  scheduledTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: >-
+      The period, timing or frequency upon which the described activity is to
+      occur.
+  scheduledPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period, timing or frequency upon which the described activity is to
+      occur.
+  scheduledString:
+    type: string
+    nullable: true
+    description: >-
+      The period, timing or frequency upon which the described activity is to
+      occur.
+  location:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the facility where the activity will occur; e.g. home,
+      hospital, specific clinic, etc.
+  performer:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Identifies who's expected to be involved in the activity.
+  productCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Identifies the food, drug or other product to be consumed or supplied in
+      the activity.
+  productReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the food, drug or other product to be consumed or supplied in
+      the activity.
+  dailyAmount:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: Identifies the quantity expected to be consumed in a given day.
+  quantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: >-
+      Identifies the quantity expected to be supplied, administered or consumed
+      by the subject.
+  description:
+    type: string
+    nullable: true
+    description: >-
+      This provides a textual description of constraints on the intended
+      activity occurrence, including relation to other activities. It may also
+      include objectives, pre-conditions and end-conditions. Finally, it may
+      convey specifics about the activity such as body site, method, route, etc.

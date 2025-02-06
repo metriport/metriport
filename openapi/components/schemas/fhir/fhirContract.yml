@@ -1,0 +1,270 @@
+title: fhirContract
+type: object
+description: >-
+  Legally enforceable, formally recorded unilateral or bilateral directive i.e.,
+  a policy or agreement.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Contract
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Unique identifier for this Contract or a derivative that references a
+      Source Contract.
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      Canonical identifier for this contract, represented as a URI (globally
+      unique).
+  version:
+    type: string
+    nullable: true
+    description: >-
+      An edition identifier used for business purposes to label business
+      significant variants.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  legalState:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Legal states of the formation of a legal instrument, which is a formally
+      executed written document that can be formally attributed to its author,
+      records and formally expresses a legally enforceable act, process, or
+      contractual duty, obligation, or right, and therefore evidences that act,
+      process, or agreement.
+  instantiatesCanonical:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The URL pointing to a FHIR-defined Contract Definition that is adhered to
+      in whole or part by this Contract.
+  instantiatesUri:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally maintained definition that is adhered to
+      in whole or in part by this Contract.
+  contentDerivative:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The minimal content derived from the basal information source at a
+      specific stage in its lifecycle.
+  issued:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: When this Contract was issued.
+  applies:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: Relevant time or time-period when this Contract is applicable.
+  expirationType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Event resulting in discontinuation or termination of this Contract
+      instance by one or more parties to the contract.
+  subject:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The target entity impacted by or of interest to parties to the agreement.
+  authority:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A formally or informally recognized grouping of people, principals,
+      organizations, or jurisdictions formed for the purpose of achieving some
+      form of collective action such as the promulgation, administration and
+      enforcement of contracts and policies.
+  domain:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Recognized governance framework or system operating with a circumscribed
+      scope in accordance with specified principles, policies, processes or
+      procedures for managing rights, actions, or behaviors of parties or
+      principals relative to resources.
+  site:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Sites in which the contract is complied with, exercised, or in force.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying this Contract definition, derivative,
+      or instance in any legal state. Provides additional information about its
+      content. This name should be usable as an identifier for the module by
+      machine processing applications such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: >-
+      A short, descriptive, user-friendly title for this Contract definition,
+      derivative, or instance in any legal state.t giving additional information
+      about its content.
+  subtitle:
+    type: string
+    nullable: true
+    description: >-
+      An explanatory or alternate user-friendly title for this Contract
+      definition, derivative, or instance in any legal state.t giving additional
+      information about its content.
+  alias:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Alternative representation of the title for this Contract definition,
+      derivative, or instance in any legal state., e.g., a domain specific
+      contract number related to legislation.
+  author:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The individual or organization that authored the Contract definition,
+      derivative, or instance in any legal state.
+  scope:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A selector of legal concerns for this Contract definition, derivative, or
+      instance in any legal state.
+  topicCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Narrows the range of legal concerns to focus on the achievement of
+      specific contractual objectives.
+  topicReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Narrows the range of legal concerns to focus on the achievement of
+      specific contractual objectives.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A high-level category for the legal instrument, whether constructed as a
+      Contract definition, derivative, or instance in any legal state. Provides
+      additional information about its content within the context of the
+      Contract's scope to distinguish the kinds of systems that would be
+      interested in the contract.
+  subType:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Sub-category for the Contract that distinguishes the kinds of systems that
+      would be interested in the Contract within the context of the Contract's
+      scope.
+  contentDefinition:
+    $ref: ./fhirContractContentDefinition.yml
+    nullable: true
+    description: >-
+      Precusory content developed with a focus and intent of supporting the
+      formation a Contract instance, which may be associated with and
+      transformable into a Contract.
+  term:
+    type: array
+    items:
+      $ref: ./fhirContractTerm.yml
+    nullable: true
+    description: >-
+      One or more Contract Provisions, which may be related and conveyed as a
+      group, and may contain nested groups.
+  supportingInfo:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Information that may be needed by/relevant to the performer in their
+      execution of this term action.
+  relevantHistory:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Links to Provenance records for past versions of this Contract definition,
+      derivative, or instance, which identify key state transitions or updates
+      that are likely to be relevant to a user looking at the current version of
+      the Contract. The Provence.entity indicates the target that was changed in
+      the update.
+      http://build.fhir.org/provenance-definitions.html#Provenance.entity.
+  signer:
+    type: array
+    items:
+      $ref: ./fhirContractSigner.yml
+    nullable: true
+    description: >-
+      Parties with legal standing in the Contract, including the principal
+      parties, the grantor(s) and grantee(s), which are any person or
+      organization bound by the contract, and any ancillary parties, which
+      facilitate the execution of the contract such as a notary or witness.
+  friendly:
+    type: array
+    items:
+      $ref: ./fhirContractFriendly.yml
+    nullable: true
+    description: >-
+      The "patient friendly language" versionof the Contract in whole or in
+      parts. "Patient friendly language" means the representation of the
+      Contract and Contract Provisions in a manner that is readily accessible
+      and understandable by a layperson in accordance with best practices for
+      communication styles that ensure that those agreeing to or signing the
+      Contract understand the roles, actions, obligations, responsibilities, and
+      implication of the agreement.
+  legal:
+    type: array
+    items:
+      $ref: ./fhirContractLegal.yml
+    nullable: true
+    description: List of Legal expressions or representations of this Contract.
+  rule:
+    type: array
+    items:
+      $ref: ./fhirContractRule.yml
+    nullable: true
+    description: List of Computable Policy Rule Language Representations of this Contract.
+  legallyBindingAttachment:
+    $ref: ./fhirAttachment.yml
+    nullable: true
+    description: >-
+      Legally binding Contract: This is the signed and legally recognized
+      representation of the Contract, which is considered the "source of truth"
+      and which would be the basis for legal action related to enforcement of
+      this Contract.
+  legallyBindingReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Legally binding Contract: This is the signed and legally recognized
+      representation of the Contract, which is considered the "source of truth"
+      and which would be the basis for legal action related to enforcement of
+      this Contract.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,50 @@
+title: fhirMedicinalProductInteraction
+type: object
+description: >-
+  The interactions of the medicinal product with other medicinal products, or
+  other forms of interactions.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductInteraction
+  subject:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The medication for which this is a described interaction.
+  description:
+    type: string
+    nullable: true
+    description: The interaction described.
+  interactant:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductInteractionInteractant.yml
+    nullable: true
+    description: The specific medication, food or laboratory test that interacts.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The type of the interaction e.g. drug-drug interaction, drug-food
+      interaction, drug-lab test interaction.
+  effect:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The effect of the interaction, for example "reduced gastric absorption of
+      primary medication".
+  incidence:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The incidence of the interaction, e.g. theoretical, observed.
+  management:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Actions for managing the interaction.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

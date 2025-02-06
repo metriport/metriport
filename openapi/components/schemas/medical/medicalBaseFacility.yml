@@ -1,0 +1,29 @@
+title: medicalBaseFacility
+type: object
+properties:
+  name:
+    type: string
+    description: >-
+      The name of your Facility. This is the actual address where a patient will
+      receive care (can be virtual) - for example `Care Facility, LLC`.
+    example: Care Facility, LLC
+  npi:
+    type: string
+    description: >-
+      The 10 digit National Provider Identifier (NPI) that will be used to make
+      requests on behalf of the Facility.
+    example: '1234567891'
+  tin:
+    type: string
+    nullable: true
+    description: The Taxpayer Identification Number (TIN) of the Facility.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether or not this Facility is currently active - this is usually `true`.
+  address:
+    $ref: ../utils/Address.yml
+required:
+  - name
+  - npi
+  - address

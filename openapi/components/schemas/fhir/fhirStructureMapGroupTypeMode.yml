@@ -1,0 +1,9 @@
+title: fhirStructureMapGroupTypeMode
+type: string
+enum:
+  - none
+  - types
+  - type-and-types
+description: >-
+  If this is the default rule set to apply for the source type or this
+  combination of types.

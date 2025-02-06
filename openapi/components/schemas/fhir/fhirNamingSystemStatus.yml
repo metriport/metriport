@@ -1,0 +1,10 @@
+title: fhirNamingSystemStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this naming system. Enables tracking the life-cycle of the
+  content.

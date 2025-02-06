@@ -1,0 +1,42 @@
+title: fhirSpecimenDefinition
+type: object
+description: A kind of specimen with associated set of requirements.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - SpecimenDefinition
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A business identifier associated with the kind of specimen.
+  typeCollected:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The kind of material to be collected.
+  patientPreparation:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Preparation of the patient for specimen collection.
+  timeAspect:
+    type: string
+    nullable: true
+    description: Time aspect of specimen collection (duration or offset).
+  collection:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The action to be performed for collecting the specimen.
+  typeTested:
+    type: array
+    items:
+      $ref: ./fhirSpecimenDefinitionTypeTested.yml
+    nullable: true
+    description: Specimen conditioned in a container as expected by the testing laboratory.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

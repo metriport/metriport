@@ -1,0 +1,11 @@
+title: fhirTimingRepeatPeriodUnit
+type: string
+enum:
+  - s
+  - min
+  - h
+  - d
+  - wk
+  - mo
+  - a
+description: The units of time for the period in UCUM units.

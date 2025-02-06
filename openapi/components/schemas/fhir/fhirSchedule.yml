@@ -1,0 +1,69 @@
+title: fhirSchedule
+type: object
+description: A container for slots of time that may be available for booking appointments.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Schedule
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: External Ids for this item.
+  active:
+    type: boolean
+    nullable: true
+    description: >-
+      Whether this schedule record is in active use or should not be used (such
+      as was entered in error).
+  serviceCategory:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A broad categorization of the service that is to be performed during this
+      appointment.
+  serviceType:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The specific service that is to be performed during this appointment.
+  specialty:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The specialty of a practitioner that would be required to perform the
+      service requested in this appointment.
+  actor:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    description: >-
+      Slots that reference this schedule resource provide the availability
+      details to these referenced resource(s).
+  planningHorizon:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period of time that the slots that reference this Schedule resource
+      cover (even if none exist). These cover the amount of time that an
+      organization's planning horizon; the interval for which they are currently
+      accepting appointments. This does not define a "template" for planning
+      outside these dates.
+  comment:
+    type: string
+    nullable: true
+    description: >-
+      Comments on the availability to describe any extended information. Such as
+      custom constraints on the slots that may be associated.
+required:
+  - resourceType
+  - actor
+allOf:
+  - $ref: ./fhirBaseResource.yml

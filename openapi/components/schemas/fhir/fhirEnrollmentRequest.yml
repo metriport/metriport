@@ -1,0 +1,46 @@
+title: fhirEnrollmentRequest
+type: object
+description: >-
+  This resource provides the insurance enrollment details to the insurer
+  regarding a specified coverage.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - EnrollmentRequest
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: The Response business identifier.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date when this resource was created.
+  insurer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The Insurer who is target of the request.
+  provider:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The practitioner who is responsible for the services rendered to the
+      patient.
+  candidate:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Patient Resource.
+  coverage:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Reference to the program or plan identification, underwriter or payor.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

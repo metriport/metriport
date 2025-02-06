@@ -1,0 +1,6 @@
+title: fhirPlanDefinitionActionPrecheckBehavior
+type: string
+enum:
+  - 'yes'
+  - 'no'
+description: Defines whether the action should usually be preselected.

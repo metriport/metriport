@@ -1,0 +1,12 @@
+title: medicalMedicalRecordStatus
+type: object
+properties:
+  html:
+    $ref: ./medicalRecordStatus.yml
+    description: The status of the html conversion
+  pdf:
+    $ref: ./medicalRecordStatus.yml
+    description: The status of the pdf conversion
+required:
+  - html
+  - pdf

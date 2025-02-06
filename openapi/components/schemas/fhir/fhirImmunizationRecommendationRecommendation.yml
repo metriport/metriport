@@ -1,0 +1,130 @@
+title: fhirImmunizationRecommendationRecommendation
+type: object
+description: >-
+  A patient's point-in-time set of recommendations (i.e. forecasting) according
+  to a published schedule with optional supporting justification.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  vaccineCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Vaccine(s) or vaccine group that pertain to the recommendation.
+  targetDisease:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The targeted disease for the recommendation.
+  contraindicatedVaccineCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Vaccine(s) which should not be used to fulfill the recommendation.
+  forecastStatus:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      Indicates the patient status with respect to the path to immunity for the
+      target disease.
+  forecastReason:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The reason for the assigned forecast status.
+  dateCriterion:
+    type: array
+    items:
+      $ref: ./fhirImmunizationRecommendationDateCriterion.yml
+    nullable: true
+    description: >-
+      Vaccine date recommendations. For example, earliest date to administer,
+      latest date to administer, etc.
+  description:
+    type: string
+    nullable: true
+    description: >-
+      Contains the description about the protocol under which the vaccine was
+      administered.
+  series:
+    type: string
+    nullable: true
+    description: >-
+      One possible path to achieve presumed immunity against a disease - within
+      the context of an authority.
+  doseNumberPositiveInt:
+    type: number
+    format: double
+    nullable: true
+    description: >-
+      Nominal position of the recommended dose in a series (e.g. dose 2 is the
+      next recommended dose).
+  doseNumberString:
+    type: string
+    nullable: true
+    description: >-
+      Nominal position of the recommended dose in a series (e.g. dose 2 is the
+      next recommended dose).
+  seriesDosesPositiveInt:
+    type: number
+    format: double
+    nullable: true
+    description: The recommended number of doses to achieve immunity.
+  seriesDosesString:
+    type: string
+    nullable: true
+    description: The recommended number of doses to achieve immunity.
+  supportingImmunization:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Immunization event history and/or evaluation that supports the status and
+      recommendation.
+  supportingPatientInformation:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Patient Information that supports the status and recommendation. This
+      includes patient observations, adverse reactions and allergy/intolerance
+      information.
+required:
+  - forecastStatus

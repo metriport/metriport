@@ -1,0 +1,28 @@
+get:
+  description: Returns the URL for a medical record summary
+  operationId: medical_patient_getMedicalRecordSummary
+  tags:
+    - MedicalPatient
+  parameters:
+    - name: patientId
+      in: path
+      description: The ID of the Patient.
+      required: true
+      schema:
+        type: string
+    - name: conversionType
+      in: query
+      description: The type of conversion to perform. `html` or `pdf`
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: The URL for the medical record summary
+      content:
+        application/json:
+          schema:
+            type: string
+  summary: Get Medical Record Summary
+  security:
+    - ApiKeyAuth: []

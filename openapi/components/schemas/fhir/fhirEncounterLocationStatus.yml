@@ -1,0 +1,11 @@
+title: fhirEncounterLocationStatus
+type: string
+enum:
+  - planned
+  - active
+  - reserved
+  - completed
+description: >-
+  The status of the participants' presence at the specified location during the
+  period specified. If the participant is no longer at the location, then the
+  period will have an end date/time.

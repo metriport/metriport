@@ -1,0 +1,98 @@
+post:
+  description: Creates a Facility in Metriport where your patients receive care.
+  operationId: medical_facility_create
+  tags:
+    - MedicalFacility
+  parameters: []
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalFacility.yml
+          examples:
+            Example1:
+              value:
+                id: 018a80c4-292a-7486-a1234-9uiu76yhe234
+                oid: 2.16.840.1.113883.3.666.123.4.101
+                name: Care Facility, LLC
+                npi: '1234567891'
+                address:
+                  addressLine1: 2261 Market Street
+                  addressLine2: '#4818'
+                  city: San Francisco
+                  state: CA
+                  zip: '94114'
+                  country: USA
+                tin: 12-3456789
+                active: true
+  summary: Create Facility
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../../components/schemas/medical/medicalBaseFacility.yml
+        examples:
+          Example1:
+            value:
+              name: Care Facility, LLC
+              npi: '1234567891'
+              address:
+                addressLine1: 2261 Market Street
+                addressLine2: '#4818'
+                city: San Francisco
+                state: CA
+                zip: '94114'
+                country: USA
+              tin: 12-3456789
+              active: true
+get:
+  description: Lists all of your Facilities.
+  operationId: medical_facility_list
+  tags:
+    - MedicalFacility
+  parameters: []
+  responses:
+    '200':
+      description: Array of all of the Facilities created under your Organization.
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalListFacilitiesResponse.yml
+          examples:
+            Example1:
+              value:
+                facilities:
+                  - id: 018a80c4-292a-7486-a1234-9uiu76yhe234
+                    oid: 2.16.840.1.113883.3.666.123.4.101
+                    name: Care Facility, LLC
+                    npi: '1234567891'
+                    address:
+                      addressLine1: 2261 Market Street
+                      addressLine2: '#4818'
+                      city: San Francisco
+                      state: CA
+                      zip: '94114'
+                      country: USA
+                    tin: 12-3456789
+                    active: true
+                  - id: 018a80c4-292a-7486-a1234-9uiu76yhe234
+                    oid: 2.16.840.1.113883.3.666.123.4.101
+                    name: Care Facility, LLC
+                    npi: '1234567891'
+                    address:
+                      addressLine1: 2261 Market Street
+                      addressLine2: '#4818'
+                      city: San Francisco
+                      state: CA
+                      zip: '94114'
+                      country: USA
+                    tin: 12-3456789
+                    active: true
+  summary: List Facilities
+  security:
+    - ApiKeyAuth: []

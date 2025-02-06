@@ -1,0 +1,9 @@
+title: fhirStructureDefinitionContextType
+type: string
+enum:
+  - fhirpath
+  - element
+  - extension
+description: >-
+  Defines how to interpret the expression that defines what the context of the
+  extension is.

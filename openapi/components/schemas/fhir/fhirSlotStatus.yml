@@ -1,0 +1,9 @@
+title: fhirSlotStatus
+type: string
+enum:
+  - busy
+  - free
+  - busy-unavailable
+  - busy-tentative
+  - entered-in-error
+description: busy | free | busy-unavailable | busy-tentative | entered-in-error.

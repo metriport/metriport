@@ -1,0 +1,7 @@
+title: fhirSubstanceStatus
+type: string
+enum:
+  - active
+  - inactive
+  - entered-in-error
+description: A code to indicate if the substance is actively used.

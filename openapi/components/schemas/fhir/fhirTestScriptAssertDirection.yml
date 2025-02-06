@@ -1,0 +1,6 @@
+title: fhirTestScriptAssertDirection
+type: string
+enum:
+  - response
+  - request
+description: The direction to use for the assertion.

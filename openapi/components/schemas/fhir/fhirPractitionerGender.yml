@@ -1,0 +1,10 @@
+title: fhirPractitionerGender
+type: string
+enum:
+  - male
+  - female
+  - other
+  - unknown
+description: >-
+  Administrative Gender - the gender that the person is considered to have for
+  administration and record keeping purposes.

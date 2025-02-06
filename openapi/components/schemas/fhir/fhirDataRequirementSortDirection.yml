@@ -1,0 +1,6 @@
+title: fhirDataRequirementSortDirection
+type: string
+enum:
+  - ascending
+  - descending
+description: The direction of the sort, ascending or descending.

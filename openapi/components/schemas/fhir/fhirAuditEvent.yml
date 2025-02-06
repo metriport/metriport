@@ -1,0 +1,72 @@
+title: fhirAuditEvent
+type: object
+description: >-
+  A record of an event made for purposes of maintaining a security log. Typical
+  uses include detection of intrusion attempts and monitoring for inappropriate
+  usage.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - AuditEvent
+  type:
+    $ref: ./fhirCoding.yml
+    description: >-
+      Identifier for a family of the event. For example, a menu item, program,
+      rule, policy, function code, application name or URL. It identifies the
+      performed function.
+  subtype:
+    type: array
+    items:
+      $ref: ./fhirCoding.yml
+    nullable: true
+    description: Identifier for the category of event.
+  action:
+    $ref: ./fhirAuditEventAction.yml
+    nullable: true
+    description: >-
+      Indicator for type of action performed during the event that generated the
+      audit.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The period during which the activity occurred.
+  recorded:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: The time when the event was recorded.
+  outcome:
+    $ref: ./fhirAuditEventOutcome.yml
+    nullable: true
+    description: Indicates whether the event succeeded or failed.
+  outcomeDesc:
+    type: string
+    nullable: true
+    description: A free text description of the outcome of the event.
+  purposeOfEvent:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The purposeOfUse (reason) that was used during the event being recorded.
+  agent:
+    type: array
+    items:
+      $ref: ./fhirAuditEventAgent.yml
+    description: An actor taking an active role in the event or activity that is logged.
+  source:
+    $ref: ./fhirAuditEventSource.yml
+    description: The system that is reporting the event.
+  entity:
+    type: array
+    items:
+      $ref: ./fhirAuditEventEntity.yml
+    nullable: true
+    description: Specific instances of data or objects that have been accessed.
+required:
+  - resourceType
+  - type
+  - agent
+  - source
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,7 @@
+title: fhirPlanDefinitionActionGroupingBehavior
+type: string
+enum:
+  - visual-group
+  - logical-group
+  - sentence-group
+description: Defines the grouping behavior for the action and its children.

@@ -1,0 +1,8 @@
+title: fhirOperationOutcomeIssueSeverity
+type: string
+enum:
+  - fatal
+  - error
+  - warning
+  - information
+description: Indicates whether the issue indicates a variation from successful processing.

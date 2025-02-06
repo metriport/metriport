@@ -1,0 +1,79 @@
+title: fhirAccount
+type: object
+description: >-
+  A financial tool for tracking value accrued for a particular purpose. In the
+  healthcare field, used to track charges for a patient, cost centers, etc.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Account
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Unique identifier used to reference the account. Might or might not be
+      intended for human use (e.g. credit card number).
+  status:
+    $ref: ./fhirAccountStatus.yml
+    nullable: true
+    description: Indicates whether the account is presently used/usable or not.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Categorizes the account for reporting and searching purposes.
+  name:
+    type: string
+    nullable: true
+    description: Name used for the account when displaying it to humans in reports, etc.
+  subject:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the entity which incurs the expenses. While the immediate
+      recipients of services or goods might be entities related to the subject,
+      the expenses were ultimately incurred by the subject of the Account.
+  servicePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The date range of services associated with this account.
+  coverage:
+    type: array
+    items:
+      $ref: ./fhirAccountCoverage.yml
+    nullable: true
+    description: >-
+      The party(s) that are responsible for covering the payment of this
+      account, and what order should they be applied to the account.
+  owner:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Indicates the service area, hospital, department, etc. with responsibility
+      for managing the Account.
+  description:
+    type: string
+    nullable: true
+    description: >-
+      Provides additional information about what the account tracks and how it
+      is used.
+  guarantor:
+    type: array
+    items:
+      $ref: ./fhirAccountGuarantor.yml
+    nullable: true
+    description: >-
+      The parties responsible for balancing the account if other payment options
+      fall short.
+  partOf:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Reference to a parent Account.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

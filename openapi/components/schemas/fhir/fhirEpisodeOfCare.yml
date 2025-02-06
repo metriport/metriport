@@ -1,0 +1,94 @@
+title: fhirEpisodeOfCare
+type: object
+description: >-
+  An association between a patient and an organization / healthcare provider(s)
+  during which time encounters may occur. The managing organization assumes a
+  level of responsibility for the patient during this time.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - EpisodeOfCare
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      The EpisodeOfCare may be known by different identifiers for different
+      contexts of use, such as when an external agency is tracking the Episode
+      for funding purposes.
+  status:
+    $ref: ./fhirEpisodeOfCareStatus.yml
+    nullable: true
+    description: planned | waitlist | active | onhold | finished | cancelled.
+  statusHistory:
+    type: array
+    items:
+      $ref: ./fhirEpisodeOfCareStatusHistory.yml
+    nullable: true
+    description: >-
+      The history of statuses that the EpisodeOfCare has been through (without
+      requiring processing the history of the resource).
+  type:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A classification of the type of episode of care; e.g. specialist referral,
+      disease management, type of funded care.
+  diagnosis:
+    type: array
+    items:
+      $ref: ./fhirEpisodeOfCareDiagnosis.yml
+    nullable: true
+    description: The list of diagnosis relevant to this episode of care.
+  patient:
+    $ref: ./fhirReference.yml
+    description: The patient who is the focus of this episode of care.
+  managingOrganization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The organization that has assumed the specific responsibilities for the
+      specified duration.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The interval during which the managing organization assumes the defined
+      responsibility.
+  referralRequest:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Referral Request(s) that are fulfilled by this EpisodeOfCare, incoming
+      referrals.
+  careManager:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The practitioner that is the care manager/care coordinator for this
+      patient.
+  team:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The list of practitioners that may be facilitating this episode of care
+      for specific purposes.
+  account:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The set of accounts that may be used for billing for this EpisodeOfCare.
+required:
+  - resourceType
+  - patient
+allOf:
+  - $ref: ./fhirBaseResource.yml

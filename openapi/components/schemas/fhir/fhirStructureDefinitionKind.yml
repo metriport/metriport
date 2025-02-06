@@ -1,0 +1,8 @@
+title: fhirStructureDefinitionKind
+type: string
+enum:
+  - primitive-type
+  - complex-type
+  - resource
+  - logical
+description: Defines the kind of structure that this definition is describing.

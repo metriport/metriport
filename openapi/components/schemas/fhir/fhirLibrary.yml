@@ -1,0 +1,256 @@
+title: fhirLibrary
+type: object
+description: >-
+  The Library resource is a general-purpose container for knowledge asset
+  definitions. It can be used to describe and expose existing knowledge assets
+  such as logic libraries and information model descriptions, as well as to
+  describe a collection of knowledge assets.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Library
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this library when it is
+      referenced in a specification, model, design or an instance; also called
+      its canonical identifier. This SHOULD be globally unique and SHOULD be a
+      literal address at which at which an authoritative instance of this
+      library is (or will be) published. This URL can be the target of a
+      canonical reference. It SHALL remain the same when the library is stored
+      on different servers.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this library when it is
+      represented in other formats, or referenced in a specification, model,
+      design or an instance. e.g. CMS or NQF identifiers for a measure artifact.
+      Note that at least one identifier is required for non-experimental active
+      artifacts.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the library when
+      it is referenced in a specification, model, design or instance. This is an
+      arbitrary value managed by the library author and is not expected to be
+      globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a
+      managed version is not available. There is also no expectation that
+      versions can be placed in a lexicographical sequence. To provide a version
+      consistent with the Decision Support Service specification, use the format
+      Major.Minor.Revision (e.g. 1.0.0). For more information on versioning
+      knowledge assets, refer to the Decision Support Service specification.
+      Note that a version is required for non-experimental active artifacts.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the library. This name should be
+      usable as an identifier for the module by machine processing applications
+      such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the library.
+  subtitle:
+    type: string
+    nullable: true
+    description: >-
+      An explanatory or alternate title for the library giving additional
+      information about its content.
+  status:
+    $ref: ./fhirLibraryStatus.yml
+    nullable: true
+    description: >-
+      The status of this library. Enables tracking the life-cycle of the
+      content.
+  experimental:
+    type: boolean
+    nullable: true
+    description: >-
+      A Boolean value to indicate that this library is authored for testing
+      purposes (or education/evaluation/marketing) and is not intended to be
+      used for genuine usage.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      Identifies the type of library such as a Logic Library, Model Definition,
+      Asset Collection, or Module Definition.
+  subjectCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A code or group definition that describes the intended subject of the
+      contents of the library.
+  subjectReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A code or group definition that describes the intended subject of the
+      contents of the library.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the library was published. The date
+      must change when the business version changes and it must change if the
+      status code changes. In addition, it should change when the substantive
+      content of the library changes.
+  publisher:
+    type: string
+    nullable: true
+    description: The name of the organization or individual that published the library.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the library from a consumer's
+      perspective.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate library instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A legal or geographic region in which the library is intended to be used.
+  purpose:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Explanation of why this library is needed and why it has been designed as
+      it has.
+  usage:
+    type: string
+    nullable: true
+    description: >-
+      A detailed description of how the library is used from a clinical
+      perspective.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the library and/or its contents.
+      Copyright statements are generally legal restrictions on the use and
+      publishing of the library.
+  approvalDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was approved by the publisher.
+      Approval happens once when the content is officially approved for usage.
+  lastReviewDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was last reviewed. Review happens
+      periodically after approval but does not change the original approval
+      date.
+  effectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period during which the library content was or is planned to be in
+      active use.
+  topic:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Descriptive topics related to the content of the library. Topics provide a
+      high-level categorization of the library that can be useful for filtering
+      and searching.
+  author:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individiual or organization primarily involved in the creation and
+      maintenance of the content.
+  editor:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization primarily responsible for internal coherence
+      of the content.
+  reviewer:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization primarily responsible for review of some
+      aspect of the content.
+  endorser:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization responsible for officially endorsing the
+      content for use in some setting.
+  relatedArtifact:
+    type: array
+    items:
+      $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: >-
+      Related artifacts such as additional documentation, justification, or
+      bibliographic references.
+  parameter:
+    type: array
+    items:
+      $ref: ./fhirParameterDefinition.yml
+    nullable: true
+    description: The parameter element defines parameters used by the library.
+  dataRequirement:
+    type: array
+    items:
+      $ref: ./fhirDataRequirement.yml
+    nullable: true
+    description: >-
+      Describes a set of data that must be provided in order to be able to
+      successfully perform the computations defined by the library.
+  content:
+    type: array
+    items:
+      $ref: ./fhirAttachment.yml
+    nullable: true
+    description: >-
+      The content of the library as an Attachment. The content may be a
+      reference to a url, or may be directly embedded as a base-64 string.
+      Either way, the contentType of the attachment determines how to interpret
+      the content.
+required:
+  - resourceType
+  - type
+allOf:
+  - $ref: ./fhirBaseResource.yml

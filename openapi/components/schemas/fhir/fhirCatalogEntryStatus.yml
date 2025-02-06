@@ -1,0 +1,10 @@
+title: fhirCatalogEntryStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  Used to support catalog exchange even for unsupported products, e.g. getting
+  list of medications even if not prescribable.

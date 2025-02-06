@@ -1,0 +1,12 @@
+title: fhirDeviceDeviceNameType
+type: string
+enum:
+  - udi-label-name
+  - user-friendly-name
+  - patient-reported-name
+  - manufacturer-name
+  - model-name
+  - other
+description: >-
+  The type of deviceName. UDILabelName | UserFriendlyName | PatientReportedName
+  | ManufactureDeviceName | ModelName.

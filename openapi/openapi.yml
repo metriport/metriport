@@ -1,0 +1,51 @@
+openapi: 3.0.1
+info:
+  title: api
+  version: '0.0.1'
+paths:
+  # Document
+  /medical/v1/document/query:
+    $ref: paths/medical_v1/document/query.yml
+  /medical/v1/document:
+    $ref: paths/medical_v1/document/root.yml
+  /medical/v1/document/download-url:
+    $ref: paths/medical_v1/document/download-url.yml
+  /medical/v1/document/upload:
+    $ref: paths/medical_v1/document/upload.yml
+  /medical/v1/document/download-url/bulk:
+    $ref: paths/medical_v1/document/download-url_bulk.yml
+
+  # Facility
+  /medical/v1/facility:
+    $ref: paths/medical_v1/facility/root.yml
+  /medical/v1/facility/{id}:
+    $ref: paths/medical_v1/facility/{id}.yml
+    
+  # Patient
+  /medical/v1/patient/{id}/consolidated/query:
+    $ref: paths/medical_v1/patient/{id}_consolidated_query.yml
+  /medical/v1/patient/{patientId}/consolidated/query/{requestId}:
+    $ref: paths/medical_v1/patient/{patientId}_consolidated_query_{requestId}.yml
+  /medical/v1/patient/{id}/consolidated:
+    $ref: paths/medical_v1/patient/{id}_consolidated.yml
+  /medical/v1/patient/{id}/consolidated/count:
+    $ref: paths/medical_v1/patient/{id}_consolidated_count.yml
+  /medical/v1/patient:
+    $ref: paths/medical_v1/patient/root.yml
+  /medical/v1/patient/{id}:
+    $ref: paths/medical_v1/patient/{id}.yml
+  /medical/v1/patient/{patientId}/medical-record:
+    $ref: paths/medical_v1/patient/{patientId}_medical-record.yml
+  /medical/v1/patient/{patientId}/medical-record-status:
+    $ref: paths/medical_v1/patient/{patientId}_medical-record-status.yml
+  /medical/v1/patient/match:
+    $ref: paths/medical_v1/patient/match.yml
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+servers:
+  - url: https://api.metriport.com
+    description: Production

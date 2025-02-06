@@ -1,0 +1,13 @@
+title: fhirEncounterStatusHistoryStatus
+type: string
+enum:
+  - planned
+  - arrived
+  - triaged
+  - in-progress
+  - onleave
+  - finished
+  - cancelled
+  - entered-in-error
+  - unknown
+description: planned | arrived | triaged | in-progress | onleave | finished | cancelled +.

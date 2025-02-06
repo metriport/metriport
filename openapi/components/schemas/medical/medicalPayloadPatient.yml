@@ -1,0 +1,24 @@
+title: medicalPayloadPatient
+type: object
+properties:
+  patientId:
+    type: string
+    description: The ID of the patient.
+  externalId:
+    type: string
+    nullable: true
+    description: The external ID of the patient.
+  status:
+    $ref: ./medicalConsolidatedWebhookStatus.yml
+    description: The status of the webhook.
+  bundle:
+    $ref: ../fhir/fhirBundle.yml
+    nullable: true
+    description: The FHIR bundle with the patient's consolidated data.
+  filters:
+    $ref: ./medicalFilters.yml
+    nullable: true
+    description: The filters used to obtain the bundle.
+required:
+  - patientId
+  - status

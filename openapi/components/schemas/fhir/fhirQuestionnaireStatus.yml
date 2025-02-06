@@ -1,0 +1,10 @@
+title: fhirQuestionnaireStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this questionnaire. Enables tracking the life-cycle of the
+  content.

@@ -1,0 +1,194 @@
+title: fhirChargeItemDefinition
+type: object
+description: >-
+  The ChargeItemDefinition resource provides the properties that apply to the
+  (billing) codes necessary to calculate costs and prices. The properties may
+  differ largely depending on type and realm, therefore this resource gives only
+  a rough structure and requires profiling for each type of billing code system.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ChargeItemDefinition
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this charge item definition when
+      it is referenced in a specification, model, design or an instance; also
+      called its canonical identifier. This SHOULD be globally unique and SHOULD
+      be a literal address at which at which an authoritative instance of this
+      charge item definition is (or will be) published. This URL can be the
+      target of a canonical reference. It SHALL remain the same when the charge
+      item definition is stored on different servers.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this charge item definition
+      when it is represented in other formats, or referenced in a specification,
+      model, design or an instance.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the charge item
+      definition when it is referenced in a specification, model, design or
+      instance. This is an arbitrary value managed by the charge item definition
+      author and is not expected to be globally unique. For example, it might be
+      a timestamp (e.g. yyyymmdd) if a managed version is not available. There
+      is also no expectation that versions can be placed in a lexicographical
+      sequence. To provide a version consistent with the Decision Support
+      Service specification, use the format Major.Minor.Revision (e.g. 1.0.0).
+      For more information on versioning knowledge assets, refer to the Decision
+      Support Service specification. Note that a version is required for
+      non-experimental active assets.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the charge item definition.
+  derivedFromUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally-defined charge item definition that is
+      adhered to in whole or in part by this definition.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      A larger definition of which this particular definition is a component or
+      step.
+  replaces:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      As new versions of a protocol or guideline are defined, allows
+      identification of what versions are replaced by a new instance.
+  status:
+    $ref: ./fhirChargeItemDefinitionStatus.yml
+    nullable: true
+    description: The current state of the ChargeItemDefinition.
+  experimental:
+    type: boolean
+    nullable: true
+    description: >-
+      A Boolean value to indicate that this charge item definition is authored
+      for testing purposes (or education/evaluation/marketing) and is not
+      intended to be used for genuine usage.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the charge item definition was
+      published. The date must change when the business version changes and it
+      must change if the status code changes. In addition, it should change when
+      the substantive content of the charge item definition changes.
+  publisher:
+    type: string
+    nullable: true
+    description: >-
+      The name of the organization or individual that published the charge item
+      definition.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the charge item definition
+      from a consumer's perspective.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate charge item definition instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A legal or geographic region in which the charge item definition is
+      intended to be used.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the charge item definition and/or its
+      contents. Copyright statements are generally legal restrictions on the use
+      and publishing of the charge item definition.
+  approvalDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was approved by the publisher.
+      Approval happens once when the content is officially approved for usage.
+  lastReviewDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was last reviewed. Review happens
+      periodically after approval but does not change the original approval
+      date.
+  effectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period during which the charge item definition content was or is
+      planned to be in active use.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The defined billing details in this resource pertain to the given billing
+      code.
+  instance:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The defined billing details in this resource pertain to the given product
+      instance(s).
+  applicability:
+    type: array
+    items:
+      $ref: ./fhirChargeItemDefinitionApplicability.yml
+    nullable: true
+    description: Expressions that describe applicability criteria for the billing code.
+  propertyGroup:
+    type: array
+    items:
+      $ref: ./fhirChargeItemDefinitionPropertyGroup.yml
+    nullable: true
+    description: >-
+      Group of properties which are applicable under the same conditions. If no
+      applicability rules are established for the group, then all properties
+      always apply.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

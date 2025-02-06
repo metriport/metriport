@@ -1,0 +1,17 @@
+title: fhirBulkDataExportDeleted
+type: object
+description: >-
+  An array of deleted file items following the same structure as the output
+  array.
+properties:
+  type:
+    $ref: ./fhircode.yml
+    description: The FHIR resource type that is contained in the file.
+  url:
+    $ref: ./fhiruri.yml
+    description: >-
+      The absolute path to the file. The format of the file SHOULD reflect that
+      requested in the \_outputFormat parameter of the initial kick-off request.
+required:
+  - type
+  - url

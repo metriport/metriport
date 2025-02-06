@@ -1,0 +1,251 @@
+title: fhirTaskInput
+type: object
+description: A task to be performed.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      A code or description indicating how the input is intended to be used as
+      part of the task execution.
+  valueBase64Binary:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueBoolean:
+    type: boolean
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueCanonical:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueCode:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueDate:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueDateTime:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueDecimal:
+    type: number
+    format: double
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueId:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueInstant:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueInteger:
+    type: number
+    format: double
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueMarkdown:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueOid:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valuePositiveInt:
+    type: number
+    format: double
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueString:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueTime:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueUnsignedInt:
+    type: number
+    format: double
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueUri:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueUrl:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueUuid:
+    type: string
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueAddress:
+    $ref: ./fhirAddress.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueAnnotation:
+    $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueAttachment:
+    $ref: ./fhirAttachment.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueCoding:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueContactPoint:
+    $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueCount:
+    $ref: ./fhirCount.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueDistance:
+    $ref: ./fhirDistance.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueDuration:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueHumanName:
+    $ref: ./fhirHumanName.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueIdentifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueMoney:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valuePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueQuantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueRatio:
+    $ref: ./fhirRatio.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueSampledData:
+    $ref: ./fhirSampledData.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueSignature:
+    $ref: ./fhirSignature.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueContactDetail:
+    $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueContributor:
+    $ref: ./fhirContributor.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueDataRequirement:
+    $ref: ./fhirDataRequirement.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueExpression:
+    $ref: ./fhirExpression.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueParameterDefinition:
+    $ref: ./fhirParameterDefinition.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueRelatedArtifact:
+    $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueTriggerDefinition:
+    $ref: ./fhirTriggerDefinition.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueUsageContext:
+    $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueDosage:
+    $ref: ./fhirDosage.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+  valueMeta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: The value of the input parameter as a basic type.
+required:
+  - type

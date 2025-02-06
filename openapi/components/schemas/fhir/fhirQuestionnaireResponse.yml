@@ -1,0 +1,85 @@
+title: fhirQuestionnaireResponse
+type: object
+description: >-
+  A structured set of questions and their answers. The questions are ordered and
+  grouped into coherent subsets, corresponding to the structure of the grouping
+  of the questionnaire being responded to.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - QuestionnaireResponse
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A business identifier assigned to a particular completed (or partially
+      completed) questionnaire.
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The order, proposal or plan that is fulfilled in whole or in part by this
+      QuestionnaireResponse. For example, a ServiceRequest seeking an intake
+      assessment or a decision support recommendation to assess for post-partum
+      depression.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A procedure or observation that this questionnaire was performed as part
+      of the execution of. For example, the surgery a checklist was executed as
+      part of.
+  questionnaire:
+    $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      The Questionnaire that defines and organizes the questions for which
+      answers are being provided.
+  status:
+    $ref: ./fhirQuestionnaireResponseStatus.yml
+    nullable: true
+    description: The position of the questionnaire response within its overall lifecycle.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The subject of the questionnaire response. This could be a patient,
+      organization, practitioner, device, etc. This is who/what the answers
+      apply to, but is not necessarily the source of information.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Encounter during which this questionnaire response was created or to
+      which the creation of this record is tightly associated.
+  authored:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date and/or time that this set of answers were last changed.
+  author:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Person who received the answers to the questions in the
+      QuestionnaireResponse and recorded them in the system.
+  source:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The person who answered the questions about the subject.
+  item:
+    type: array
+    items:
+      $ref: ./fhirQuestionnaireResponseItem.yml
+    nullable: true
+    description: >-
+      A group or question item from the original questionnaire for which answers
+      are provided.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

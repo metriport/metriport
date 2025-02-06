@@ -1,0 +1,11 @@
+title: fhirAuditEventAction
+type: string
+enum:
+  - C
+  - R
+  - U
+  - D
+  - E
+description: >-
+  Indicator for type of action performed during the event that generated the
+  audit.

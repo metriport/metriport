@@ -1,0 +1,11 @@
+title: fhirAuditEventNetworkType
+type: string
+enum:
+  - '1'
+  - '2'
+  - '3'
+  - '4'
+  - '5'
+description: >-
+  An identifier for the type of network access point that originated the audit
+  event.

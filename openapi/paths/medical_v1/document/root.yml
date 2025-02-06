@@ -1,0 +1,59 @@
+get:
+  description: >-
+    Lists all Documents that can be retrieved for a Patient.
+
+    This endpoint returns the document references available
+
+    at Metriport which are associated with the given Patient.
+
+    To start a new document query, see the [Start Document Query
+    endpoint](/api-reference/medical/document/start-query).
+  operationId: medical_document_list
+  tags:
+    - MedicalDocument
+  parameters:
+    - name: patientId
+      in: query
+      description: The ID of the Patient for which to list available Documents.
+      required: true
+      schema:
+        type: string
+    - name: dateFrom
+      in: query
+      description: >-
+        The start date (inclusive) for which to filter returned documents -
+        formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no start date
+        filter will be applied.
+      required: false
+      schema:
+        type: string
+        nullable: true
+    - name: dateTo
+      in: query
+      description: >-
+        The end date (inclusive) for which to filter returned documents -
+        formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no end date
+        filter will be applied.
+      required: false
+      schema:
+        type: string
+        nullable: true
+    - name: content
+      in: query
+      description: >-
+        Value to search within the document reference and the actual contents of
+        the document (minimum 3 chars).
+      required: false
+      schema:
+        type: string
+        nullable: true
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalListDocumentReferences.yml
+  summary: List Documents
+  security:
+    - ApiKeyAuth: []

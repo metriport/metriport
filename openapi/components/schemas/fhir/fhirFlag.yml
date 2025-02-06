@@ -1,0 +1,58 @@
+title: fhirFlag
+type: object
+description: Prospective warnings of potential issues when providing care to the patient.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Flag
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this flag by the performer or other
+      systems which remain constant as the resource is updated and propagates
+      from server to server.
+  status:
+    $ref: ./fhirFlagStatus.yml
+    nullable: true
+    description: Supports basic workflow.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Allows a flag to be divided into different categories like clinical,
+      administrative etc. Intended to be used as a means of filtering which
+      flags are displayed to particular user or in a given context.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    description: The coded value or textual component of the flag to display to the user.
+  subject:
+    $ref: ./fhirReference.yml
+    description: >-
+      The patient, location, group, organization, or practitioner etc. this is
+      about record this flag is associated with.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period of time from the activation of the flag to inactivation of the
+      flag. If the flag is active, the end of the period should be unspecified.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: This alert is only relevant during the encounter.
+  author:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The person, organization or device that created the flag.
+required:
+  - resourceType
+  - code
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,9 @@
+title: fhirProvenanceEntityRole
+type: string
+enum:
+  - derivation
+  - revision
+  - quotation
+  - source
+  - removal
+description: How the entity was used during the activity.

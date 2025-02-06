@@ -1,0 +1,11 @@
+title: fhirMolecularSequenceRepositoryType
+type: string
+enum:
+  - directlink
+  - openapi
+  - login
+  - oauth
+  - other
+description: >-
+  Click and see / RESTful API / Need login to see / RESTful API with
+  authentication / Other ways to see resource.

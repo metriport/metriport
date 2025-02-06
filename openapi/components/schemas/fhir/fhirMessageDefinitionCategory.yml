@@ -1,0 +1,7 @@
+title: fhirMessageDefinitionCategory
+type: string
+enum:
+  - consequence
+  - currency
+  - notification
+description: The impact of the content of the message.

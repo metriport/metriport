@@ -1,0 +1,68 @@
+title: fhirHumanName
+type: object
+description: A human's name with the ability to identify parts and usage.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  use:
+    $ref: ./fhirHumanNameUse.yml
+    nullable: true
+    description: Identifies the purpose for this name.
+  text:
+    type: string
+    nullable: true
+    description: >-
+      Specifies the entire name as it should be displayed e.g. on an application
+      UI. This may be provided instead of or as well as the specific parts.
+  family:
+    type: string
+    nullable: true
+    description: >-
+      The part of a name that links to the genealogy. In some cultures (e.g.
+      Eritrea) the family name of a son is the first name of his father.
+  given:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: Given name.
+  prefix:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Part of the name that is acquired as a title due to academic, legal,
+      employment or nobility status, etc. and that appears at the start of the
+      name.
+  suffix:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Part of the name that is acquired as a title due to academic, legal,
+      employment or nobility status, etc. and that appears at the end of the
+      name.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      Indicates the period of time when this name was valid for the named
+      person.

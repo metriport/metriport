@@ -1,0 +1,44 @@
+title: fhirBasic
+type: object
+description: >-
+  Basic is used for handling concepts not yet defined in FHIR, narrative-only
+  resources that don't map to an existing resource, and custom resources not
+  appropriate for inclusion in the FHIR specification.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Basic
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifier assigned to the resource for business purposes, outside the
+      context of FHIR.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      Identifies the 'type' of resource - equivalent to the resource name for
+      other resources.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the patient, practitioner, device or any other resource that is
+      the "focus" of this resource.
+  created:
+    type: string
+    format: date
+    nullable: true
+    description: Identifies when the resource was first created.
+  author:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Indicates who was responsible for creating the resource instance.
+required:
+  - resourceType
+  - code
+allOf:
+  - $ref: ./fhirBaseResource.yml

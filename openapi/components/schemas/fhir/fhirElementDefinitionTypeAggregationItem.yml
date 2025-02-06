@@ -1,0 +1,6 @@
+title: fhirElementDefinitionTypeAggregationItem
+type: string
+enum:
+  - contained
+  - referenced
+  - bundled

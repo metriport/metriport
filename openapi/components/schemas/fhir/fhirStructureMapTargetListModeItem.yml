@@ -1,0 +1,7 @@
+title: fhirStructureMapTargetListModeItem
+type: string
+enum:
+  - first
+  - share
+  - last
+  - collate

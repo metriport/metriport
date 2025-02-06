@@ -1,0 +1,10 @@
+title: fhirSubscriptionStatus
+type: string
+enum:
+  - requested
+  - active
+  - error
+  - 'off'
+description: >-
+  The status of the subscription, which marks the server state for managing the
+  subscription.

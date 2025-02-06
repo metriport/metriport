@@ -1,0 +1,12 @@
+title: medicalListDocumentReferences
+type: object
+properties:
+  documents:
+    type: array
+    items:
+      $ref: ../fhir/fhirDocumentReference.yml
+    description: >-
+      An array of objects describing the Documents that can be retrieved for the
+      Patient.
+required:
+  - documents

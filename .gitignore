@@ -36,3 +36,5 @@ runs
 .aider.*
 .aider*
 .env*
+
+openapi/dist/

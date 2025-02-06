@@ -1,0 +1,85 @@
+title: fhirSupplyDelivery
+type: object
+description: Record of delivery of what is supplied.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - SupplyDelivery
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifier for the supply delivery event that is used to identify it
+      across multiple disparate systems.
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A plan, proposal or order that is fulfilled in whole or in part by this
+      event.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A larger event of which this particular event is a component or step.
+  status:
+    $ref: ./fhirSupplyDeliveryStatus.yml
+    nullable: true
+    description: A code specifying the state of the dispense event.
+  patient:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A link to a resource representing the person whom the delivered item is
+      for.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Indicates the type of dispensing event that is performed. Examples
+      include: Trial Fill, Completion of Trial, Partial Fill, Emergency Fill,
+      Samples, etc.
+  suppliedItem:
+    $ref: ./fhirSupplyDeliverySuppliedItem.yml
+    nullable: true
+    description: The item that is being delivered or has been supplied.
+  occurrenceDateTime:
+    type: string
+    nullable: true
+    description: The date or time(s) the activity occurred.
+  occurrencePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The date or time(s) the activity occurred.
+  occurrenceTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: The date or time(s) the activity occurred.
+  supplier:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The individual responsible for dispensing the medication, supplier or
+      device.
+  destination:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identification of the facility/location where the Supply was shipped to,
+      as part of the dispense event.
+  receiver:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Identifies the person who picked up the Supply.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

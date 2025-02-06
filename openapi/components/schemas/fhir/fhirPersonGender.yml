@@ -1,0 +1,8 @@
+title: fhirPersonGender
+type: string
+enum:
+  - male
+  - female
+  - other
+  - unknown
+description: Administrative Gender.

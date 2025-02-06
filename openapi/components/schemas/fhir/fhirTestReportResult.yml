@@ -1,0 +1,7 @@
+title: fhirTestReportResult
+type: string
+enum:
+  - pass
+  - fail
+  - pending
+description: The overall result from the execution of the TestScript.

@@ -1,0 +1,7 @@
+title: fhirPaymentReconciliationProcessNoteType
+type: string
+enum:
+  - display
+  - print
+  - printoper
+description: The business purpose of the note text.

@@ -1,0 +1,23 @@
+title: medicalPatientConsolidatedDataStatus
+type: object
+properties:
+  requestId:
+    type: string
+    example: 00000000-0000-0000-0000-000000000000
+  startedAt:
+    type: string
+    nullable: true
+  dateFrom:
+    type: string
+    nullable: true
+  dateTo:
+    type: string
+    nullable: true
+  conversionType:
+    $ref: ./medicalConversionTypeFHIR.yml
+  status:
+    $ref: ./medicalDocumentQueryStatusFHIR.yml
+required:
+  - requestId
+  - conversionType
+  - status

@@ -1,0 +1,6 @@
+title: medicalConversionTypeFHIR
+type: string
+enum:
+  - html
+  - pdf
+  - json

@@ -1,0 +1,6 @@
+title: fhirOperationDefinitionKind
+type: string
+enum:
+  - operation
+  - query
+description: Whether this is an operation or a named query.

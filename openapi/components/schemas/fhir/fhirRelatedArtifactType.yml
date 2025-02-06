@@ -1,0 +1,12 @@
+title: fhirRelatedArtifactType
+type: string
+enum:
+  - documentation
+  - justification
+  - citation
+  - predecessor
+  - successor
+  - derived-from
+  - depends-on
+  - composed-of
+description: The type of relationship to the related artifact.

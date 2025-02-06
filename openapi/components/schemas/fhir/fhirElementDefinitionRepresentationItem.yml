@@ -1,0 +1,8 @@
+title: fhirElementDefinitionRepresentationItem
+type: string
+enum:
+  - xmlAttr
+  - xmlText
+  - typeAttr
+  - cdaText
+  - xhtml

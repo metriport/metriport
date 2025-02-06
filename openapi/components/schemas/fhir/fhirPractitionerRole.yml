@@ -1,0 +1,105 @@
+title: fhirPractitionerRole
+type: object
+description: >-
+  A specific set of Roles/Locations/specialties/services that a practitioner may
+  perform at an organization for a period of time.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - PractitionerRole
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Business Identifiers that are specific to a role/location.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether this practitioner role record is in active use.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period during which the person is authorized to act as a practitioner
+      in these role(s) for the organization.
+  practitioner:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Practitioner that is able to provide the defined services for the
+      organization.
+  organization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The organization where the Practitioner performs the roles associated.
+  code:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Roles which this practitioner is authorized to perform for the
+      organization.
+  specialty:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Specific specialty of the practitioner.
+  location:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The location(s) at which this practitioner provides care.
+  healthcareService:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The list of healthcare services that this worker provides for this role's
+      Organization/Location(s).
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: Contact details that are specific to the role/location/service.
+  availableTime:
+    type: array
+    items:
+      $ref: ./fhirPractitionerRoleAvailableTime.yml
+    nullable: true
+    description: >-
+      A collection of times the practitioner is available or performing this
+      role at the location and/or healthcareservice.
+  notAvailable:
+    type: array
+    items:
+      $ref: ./fhirPractitionerRoleNotAvailable.yml
+    nullable: true
+    description: >-
+      The practitioner is not available or performing this role during this
+      period of time due to the provided reason.
+  availabilityExceptions:
+    type: string
+    nullable: true
+    description: >-
+      A description of site availability exceptions, e.g. public holiday
+      availability. Succinctly describing all possible exceptions to normal site
+      availability as details in the available Times and not available Times.
+  endpoint:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Technical endpoints providing access to services operated for the
+      practitioner with this role.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

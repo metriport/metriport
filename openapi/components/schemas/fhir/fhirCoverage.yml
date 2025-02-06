@@ -1,0 +1,118 @@
+title: fhirCoverage
+type: object
+description: >-
+  Financial instrument which may be used to reimburse or pay for health care
+  products and services. Includes both insurance and self-payment.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Coverage
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this coverage.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The type of coverage: social program, medical plan, accident coverage
+      (workers compensation, auto), group health or payment by an individual or
+      organization.
+  policyHolder:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The party who 'owns' the insurance policy.
+  subscriber:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The party who has signed-up for or 'owns' the contractual relationship to
+      the policy or to whom the benefit of the policy for services rendered to
+      them or their family is due.
+  subscriberId:
+    type: string
+    nullable: true
+    description: The insurer assigned ID for the Subscriber.
+  beneficiary:
+    $ref: ./fhirReference.yml
+    description: >-
+      The party who benefits from the insurance coverage; the patient when
+      products and/or services are provided.
+  dependent:
+    type: string
+    nullable: true
+    description: A unique identifier for a dependent under the coverage.
+  relationship:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The relationship of beneficiary (patient) to the subscriber.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      Time period during which the coverage is in force. A missing start date
+      indicates the start date isn't known, a missing end date means the
+      coverage is continuing to be in force.
+  payor:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    description: >-
+      The program or plan underwriter or payor including both insurance and
+      non-insurance agreements, such as patient-pay agreements.
+  class:
+    type: array
+    items:
+      $ref: ./fhirCoverageClass.yml
+    nullable: true
+    description: A suite of underwriter specific classifiers.
+  order:
+    $ref: ./fhirpositiveInt.yml
+    nullable: true
+    description: >-
+      The order of applicability of this coverage relative to other coverages
+      which are currently in force. Note, there may be gaps in the numbering and
+      this does not imply primary, secondary etc. as the specific positioning of
+      coverages depends upon the episode of care.
+  network:
+    type: string
+    nullable: true
+    description: >-
+      The insurer-specific identifier for the insurer-defined network of
+      providers to which the beneficiary may seek treatment which will be
+      covered at the 'in-network' rate, otherwise 'out of network' terms and
+      conditions apply.
+  costToBeneficiary:
+    type: array
+    items:
+      $ref: ./fhirCoverageCostToBeneficiary.yml
+    nullable: true
+    description: >-
+      A suite of codes indicating the cost category and associated amount which
+      have been detailed in the policy and may have been included on the health
+      card.
+  subrogation:
+    type: boolean
+    nullable: true
+    description: >-
+      When 'subrogation=true' this insurance instance has been included not for
+      adjudication but to provide insurers with the details to recover costs.
+  contract:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The policy(s) which constitute this insurance coverage.
+required:
+  - resourceType
+  - beneficiary
+  - payor
+allOf:
+  - $ref: ./fhirBaseResource.yml

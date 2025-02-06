@@ -1,0 +1,93 @@
+title: fhirMessageHeader
+type: object
+description: >-
+  The header for a message exchange that is either requesting or responding to
+  an action. The reference(s) that are the subject of the action as well as
+  other information related to the action are typically transmitted in a bundle
+  in which the MessageHeader resource instance is the first resource in the
+  bundle.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MessageHeader
+  eventCoding:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: >-
+      Code that identifies the event this message represents and connects it
+      with its definition. Events defined as part of the FHIR specification have
+      the system value "http://terminology.hl7.org/CodeSystem/message-events".
+      Alternatively uri to the EventDefinition.
+  eventUri:
+    type: string
+    nullable: true
+    description: >-
+      Code that identifies the event this message represents and connects it
+      with its definition. Events defined as part of the FHIR specification have
+      the system value "http://terminology.hl7.org/CodeSystem/message-events".
+      Alternatively uri to the EventDefinition.
+  destination:
+    type: array
+    items:
+      $ref: ./fhirMessageHeaderDestination.yml
+    nullable: true
+    description: The destination application which the message is intended for.
+  sender:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Identifies the sending system to allow the use of a trust relationship.
+  enterer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The person or device that performed the data entry leading to this
+      message. When there is more than one candidate, pick the most proximal to
+      the message. Can provide other enterers in extensions.
+  author:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The logical author of the message - the person or device that decided the
+      described event should happen. When there is more than one candidate, pick
+      the most proximal to the MessageHeader. Can provide other authors in
+      extensions.
+  source:
+    $ref: ./fhirMessageHeaderSource.yml
+    description: The source application from which this message originated.
+  responsible:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The person or organization that accepts overall responsibility for the
+      contents of the message. The implication is that the message event
+      happened under the policies of the responsible party.
+  reason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Coded indication of the cause for the event - indicates a reason for the
+      occurrence of the event that is a focus of this message.
+  response:
+    $ref: ./fhirMessageHeaderResponse.yml
+    nullable: true
+    description: >-
+      Information about the message that this message is a response to. Only
+      present if this message is a response.
+  focus:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The actual data of the message - a reference to the root/focus class of
+      the event.
+  definition:
+    $ref: ./fhircanonical.yml
+    nullable: true
+    description: Permanent link to the MessageDefinition for this message.
+required:
+  - resourceType
+  - source
+allOf:
+  - $ref: ./fhirBaseResource.yml

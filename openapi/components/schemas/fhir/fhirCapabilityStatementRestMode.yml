@@ -1,0 +1,8 @@
+title: fhirCapabilityStatementRestMode
+type: string
+enum:
+  - client
+  - server
+description: >-
+  Identifies whether this portion of the statement is describing the ability to
+  initiate or receive restful operations.

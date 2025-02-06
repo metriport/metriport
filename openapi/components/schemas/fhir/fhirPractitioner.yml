@@ -1,0 +1,82 @@
+title: fhirPractitioner
+type: object
+description: >-
+  A person who is directly or indirectly involved in the provisioning of
+  healthcare.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Practitioner
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: An identifier that applies to this person in this role.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether this practitioner's record is in active use.
+  name:
+    type: array
+    items:
+      $ref: ./fhirHumanName.yml
+    nullable: true
+    description: The name(s) associated with the practitioner.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      A contact detail for the practitioner, e.g. a telephone number or an email
+      address.
+  address:
+    type: array
+    items:
+      $ref: ./fhirAddress.yml
+    nullable: true
+    description: >-
+      Address(es) of the practitioner that are not role specific (typically home
+      address).
+
+      Work addresses are not typically entered in this property as they are
+      usually role dependent.
+  gender:
+    $ref: ./fhirPractitionerGender.yml
+    nullable: true
+    description: >-
+      Administrative Gender - the gender that the person is considered to have
+      for administration and record keeping purposes.
+  birthDate:
+    type: string
+    format: date
+    nullable: true
+    description: The date of birth for the practitioner.
+  photo:
+    type: array
+    items:
+      $ref: ./fhirAttachment.yml
+    nullable: true
+    description: Image of the person.
+  qualification:
+    type: array
+    items:
+      $ref: ./fhirPractitionerQualification.yml
+    nullable: true
+    description: >-
+      The official certifications, training, and licenses that authorize or
+      otherwise pertain to the provision of care by the practitioner. For
+      example, a medical license issued by a medical board authorizing the
+      practitioner to practice medicine within a certian locality.
+  communication:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A language the practitioner can use in patient communication.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

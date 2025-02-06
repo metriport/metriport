@@ -1,0 +1,7 @@
+title: fhirTestReportParticipantType
+type: string
+enum:
+  - test-engine
+  - client
+  - server
+description: The type of participant.

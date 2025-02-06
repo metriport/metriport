@@ -1,0 +1,6 @@
+title: fhirOperationDefinitionParameterUse
+type: string
+enum:
+  - in
+  - out
+description: Whether this is an input or an output parameter.

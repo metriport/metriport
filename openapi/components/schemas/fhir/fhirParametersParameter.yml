@@ -1,0 +1,261 @@
+title: fhirParametersParameter
+type: object
+description: >-
+  This resource is a non-persisted resource used to pass information into and
+  back from an [operation](operations.html). It has no other use, and there is
+  no RESTful endpoint associated with it.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  name:
+    type: string
+    nullable: true
+    description: The name of the parameter (reference to the operation definition).
+  valueBase64Binary:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueBoolean:
+    type: boolean
+    nullable: true
+    description: If the parameter is a data type.
+  valueCanonical:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueCode:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueDate:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueDateTime:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueDecimal:
+    type: number
+    format: double
+    nullable: true
+    description: If the parameter is a data type.
+  valueId:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueInstant:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueInteger:
+    type: number
+    format: double
+    nullable: true
+    description: If the parameter is a data type.
+  valueMarkdown:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueOid:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valuePositiveInt:
+    type: number
+    format: double
+    nullable: true
+    description: If the parameter is a data type.
+  valueString:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueTime:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueUnsignedInt:
+    type: number
+    format: double
+    nullable: true
+    description: If the parameter is a data type.
+  valueUri:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueUrl:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueUuid:
+    type: string
+    nullable: true
+    description: If the parameter is a data type.
+  valueAddress:
+    $ref: ./fhirAddress.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueAnnotation:
+    $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueAttachment:
+    $ref: ./fhirAttachment.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueCoding:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueContactPoint:
+    $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueCount:
+    $ref: ./fhirCount.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueDistance:
+    $ref: ./fhirDistance.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueDuration:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueHumanName:
+    $ref: ./fhirHumanName.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueIdentifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueMoney:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valuePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueQuantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueRatio:
+    $ref: ./fhirRatio.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueSampledData:
+    $ref: ./fhirSampledData.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueSignature:
+    $ref: ./fhirSignature.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueContactDetail:
+    $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueContributor:
+    $ref: ./fhirContributor.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueDataRequirement:
+    $ref: ./fhirDataRequirement.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueExpression:
+    $ref: ./fhirExpression.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueParameterDefinition:
+    $ref: ./fhirParameterDefinition.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueRelatedArtifact:
+    $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueTriggerDefinition:
+    $ref: ./fhirTriggerDefinition.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueUsageContext:
+    $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueDosage:
+    $ref: ./fhirDosage.yml
+    nullable: true
+    description: If the parameter is a data type.
+  valueMeta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: If the parameter is a data type.
+  resource:
+    description: If the parameter is a whole resource.
+  part:
+    type: array
+    items:
+      $ref: ./fhirParametersParameter.yml
+    nullable: true
+    description: A named part of a multi-part parameter.
+required:
+  - resource

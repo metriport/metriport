@@ -1,0 +1,99 @@
+title: fhirMedicinalProductAuthorization
+type: object
+description: The regulatory authorization of a medicinal product.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductAuthorization
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifier for the marketing authorization, as assigned by a
+      regulator.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The medicinal product that is being authorized.
+  country:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The country in which the marketing authorization has been granted.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Jurisdiction within a country.
+  status:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The status of the marketing authorization.
+  statusDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date at which the given status has become applicable.
+  restoreDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date when a suspended the marketing or the marketing authorization of
+      the product is anticipated to be restored.
+  validityPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The beginning of the time period in which the marketing authorization is
+      in the specific status shall be specified A complete date consisting of
+      day, month and year shall be specified using the ISO 8601 date format.
+  dataExclusivityPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      A period of time after authorization before generic product applicatiosn
+      can be submitted.
+  dateOfFirstAuthorization:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date when the first authorization was granted by a Medicines
+      Regulatory Agency.
+  internationalBirthDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      Date of first marketing authorization for a company's new medicinal
+      product in any country in the World.
+  legalBasis:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The legal framework against which this authorization is granted.
+  jurisdictionalAuthorization:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductAuthorizationJurisdictionalAuthorization.yml
+    nullable: true
+    description: Authorization in areas within a country.
+  holder:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Marketing Authorization Holder.
+  regulator:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Medicines Regulatory Agency.
+  procedure:
+    $ref: ./fhirMedicinalProductAuthorizationProcedure.yml
+    nullable: true
+    description: >-
+      The regulatory procedure for granting or amending a marketing
+      authorization.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,8 @@
+title: fhirLocationMode
+type: string
+enum:
+  - instance
+  - kind
+description: >-
+  Indicates whether a resource instance represents a specific location or a
+  class of locations.

@@ -1,0 +1,13 @@
+title: fhirTestScriptAssertRequestMethod
+type: string
+enum:
+  - delete
+  - get
+  - options
+  - patch
+  - post
+  - put
+  - head
+description: >-
+  The request method or HTTP operation code to compare against that used by the
+  client system under test.

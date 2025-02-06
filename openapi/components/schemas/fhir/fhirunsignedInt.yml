@@ -1,0 +1,4 @@
+title: fhirunsignedInt
+type: number
+format: double
+description: An integer with a value that is not negative (e.g. >= 0)

@@ -1,0 +1,107 @@
+title: fhirInvoice
+type: object
+description: >-
+  Invoice containing collected ChargeItems from an Account with calculated
+  individual and total price for Billing purpose.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Invoice
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifier of this Invoice, often used for reference in correspondence
+      about this invoice or for tracking of payments.
+  status:
+    $ref: ./fhirInvoiceStatus.yml
+    nullable: true
+    description: The current state of the Invoice.
+  cancelledReason:
+    type: string
+    nullable: true
+    description: >-
+      In case of Invoice cancellation a reason must be given (entered in error,
+      superseded by corrected invoice etc.).
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Type of Invoice depending on domain, realm an usage (e.g.
+      internal/external, dental, preliminary).
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The individual or set of individuals receiving the goods and services
+      billed in this invoice.
+  recipient:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The individual or Organization responsible for balancing of this invoice.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: Date/time(s) of when this Invoice was posted.
+  participant:
+    type: array
+    items:
+      $ref: ./fhirInvoiceParticipant.yml
+    nullable: true
+    description: Indicates who or what performed or participated in the charged service.
+  issuer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The organizationissuing the Invoice.
+  account:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Account which is supposed to be balanced with this Invoice.
+  lineItem:
+    type: array
+    items:
+      $ref: ./fhirInvoiceLineItem.yml
+    nullable: true
+    description: >-
+      Each line item represents one charge for goods and services rendered.
+      Details such as date, code and amount are found in the referenced
+      ChargeItem resource.
+  totalPriceComponent:
+    type: array
+    items:
+      $ref: ./fhirInvoicePriceComponent.yml
+    nullable: true
+    description: >-
+      The total amount for the Invoice may be calculated as the sum of the line
+      items with surcharges/deductions that apply in certain conditions. The
+      priceComponent element can be used to offer transparency to the recipient
+      of the Invoice of how the total price was calculated.
+  totalNet:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: Invoice total , taxes excluded.
+  totalGross:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: Invoice total, tax included.
+  paymentTerms:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Payment details such as banking details, period of payment, deductibles,
+      methods of payment.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Comments made about the invoice by the issuer, subject, or other
+      participants.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,9 @@
+title: fhirAllergyIntoleranceCriticality
+type: string
+enum:
+  - low
+  - high
+  - unable-to-assess
+description: >-
+  Estimate of the potential clinical harm, or seriousness, of the reaction to
+  the identified substance.

@@ -1,0 +1,7 @@
+title: fhirAgentStatus
+type: string
+enum:
+  - active
+  - 'off'
+  - error
+description: The status of the agent.

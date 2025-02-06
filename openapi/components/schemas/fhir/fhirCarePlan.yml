@@ -1,0 +1,174 @@
+title: fhirCarePlan
+type: object
+description: >-
+  Describes the intention of how one or more practitioners intend to deliver
+  care for a particular patient, group or community for a period of time,
+  possibly limited to care for a specific condition or set of conditions.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - CarePlan
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this care plan by the performer or other
+      systems which remain constant as the resource is updated and propagates
+      from server to server.
+  instantiatesCanonical:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      The URL pointing to a FHIR-defined protocol, guideline, questionnaire or
+      other definition that is adhered to in whole or in part by this CarePlan.
+  instantiatesUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally maintained protocol, guideline,
+      questionnaire or other definition that is adhered to in whole or in part
+      by this CarePlan.
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A care plan that is fulfilled in whole or in part by this care plan.
+  replaces:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Completed or terminated care plan whose function is taken by this new care
+      plan.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A larger care plan of which this particular care plan is a component or
+      step.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Indicates whether the plan is currently being acted upon, represents
+      future intentions or is now a historical record.
+  intent:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Indicates the level of authority/intentionality associated with the care
+      plan and where the care plan fits into the workflow chain.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Identifies what "kind" of plan this is to support differentiation between
+      multiple co-existing plans; e.g. "Home health", "psychiatric", "asthma",
+      "disease management", "wellness plan", etc.
+  title:
+    type: string
+    nullable: true
+    description: Human-friendly name for the care plan.
+  description:
+    type: string
+    nullable: true
+    description: A description of the scope and nature of the plan.
+  subject:
+    $ref: ./fhirReference.yml
+    description: >-
+      Identifies the patient or group whose intended care is described by the
+      plan.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Encounter during which this CarePlan was created or to which the
+      creation of this record is tightly associated.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: Indicates when the plan did (or is intended to) come into effect and end.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      Represents when this particular CarePlan record was created in the system,
+      which is often a system-generated date.
+  author:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      When populated, the author is responsible for the care plan. The care plan
+      is attributed to the author.
+  contributor:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the individual(s) or organization who provided the contents of
+      the care plan.
+  careTeam:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies all people and organizations who are expected to be involved in
+      the care envisioned by this plan.
+  addresses:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the conditions/problems/concerns/diagnoses/etc. whose
+      management and/or mitigation are handled by this plan.
+  supportingInfo:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies portions of the patient's record that specifically influenced
+      the formation of the plan. These might include comorbidities, recent
+      procedures, limitations, recent assessments, etc.
+  goal:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Describes the intended objective(s) of carrying out the care plan.
+  activity:
+    type: array
+    items:
+      $ref: ./fhirCarePlanActivity.yml
+    nullable: true
+    description: >-
+      Identifies a planned action to occur as part of the plan. For example, a
+      medication to be used, lab tests to perform, self-monitoring, education,
+      etc.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: General notes about the care plan not covered elsewhere.
+required:
+  - resourceType
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

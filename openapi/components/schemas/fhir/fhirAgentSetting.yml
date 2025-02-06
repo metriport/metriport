@@ -1,0 +1,25 @@
+title: fhirAgentSetting
+type: object
+description: The settings for the agent.
+properties:
+  name:
+    type: string
+    description: The setting name.
+  valueString:
+    type: string
+    nullable: true
+    description: The setting value.
+  valueBoolean:
+    type: boolean
+    nullable: true
+    description: The setting value.
+  valueDecimal:
+    $ref: ./fhirdecimal.yml
+    nullable: true
+    description: The setting value.
+  valueInteger:
+    type: integer
+    nullable: true
+    description: The setting value.
+required:
+  - name

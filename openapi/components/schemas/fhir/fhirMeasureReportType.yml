@@ -1,0 +1,15 @@
+title: fhirMeasureReportType
+type: string
+enum:
+  - individual
+  - subject-list
+  - summary
+  - data-collection
+description: >-
+  The type of measure report. This may be an individual report, which provides
+  the score for the measure for an individual member of the population; a
+  subject-listing, which returns the list of members that meet the various
+  criteria in the measure; a summary report, which returns a population count
+  for each of the criteria in the measure; or a data-collection, which enables
+  the MeasureReport to be used to exchange the data-of-interest for a quality
+  measure.

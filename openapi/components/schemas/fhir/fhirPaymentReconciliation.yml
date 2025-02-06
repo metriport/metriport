@@ -1,0 +1,87 @@
+title: fhirPaymentReconciliation
+type: object
+description: >-
+  This resource provides the details including amount of a payment and allocates
+  the payment items being paid.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - PaymentReconciliation
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this payment reconciliation.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period of time for which payments have been gathered into this bulk
+      payment for settlement.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date when the resource was created.
+  paymentIssuer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The party who generated the payment.
+  request:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Original request resource reference.
+  requestor:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The practitioner who is responsible for the services rendered to the
+      patient.
+  outcome:
+    $ref: ./fhirPaymentReconciliationOutcome.yml
+    nullable: true
+    description: The outcome of a request for a reconciliation.
+  disposition:
+    type: string
+    nullable: true
+    description: >-
+      A human readable description of the status of the request for the
+      reconciliation.
+  paymentDate:
+    type: string
+    format: date
+    nullable: true
+    description: The date of payment as indicated on the financial instrument.
+  paymentAmount:
+    $ref: ./fhirMoney.yml
+    description: Total payment amount as indicated on the financial instrument.
+  paymentIdentifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Issuer's unique identifier for the payment instrument.
+  detail:
+    type: array
+    items:
+      $ref: ./fhirPaymentReconciliationDetail.yml
+    nullable: true
+    description: Distribution of the payment amount for a previously acknowledged payable.
+  formCode:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A code for the form to be used for printing the content.
+  processNote:
+    type: array
+    items:
+      $ref: ./fhirPaymentReconciliationProcessNote.yml
+    nullable: true
+    description: A note that describes or explains the processing in a human readable form.
+required:
+  - resourceType
+  - paymentAmount
+allOf:
+  - $ref: ./fhirBaseResource.yml

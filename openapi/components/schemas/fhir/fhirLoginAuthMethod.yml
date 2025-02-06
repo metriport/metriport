@@ -1,0 +1,10 @@
+title: fhirLoginAuthMethod
+type: string
+enum:
+  - client
+  - exchange
+  - execute
+  - external
+  - google
+  - password
+description: The authentication method used to obtain the code (password or google).

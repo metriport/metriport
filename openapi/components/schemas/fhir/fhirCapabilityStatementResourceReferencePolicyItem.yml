@@ -1,0 +1,8 @@
+title: fhirCapabilityStatementResourceReferencePolicyItem
+type: string
+enum:
+  - literal
+  - logical
+  - resolves
+  - enforced
+  - local

@@ -1,0 +1,7 @@
+title: fhirListStatus
+type: string
+enum:
+  - current
+  - retired
+  - entered-in-error
+description: Indicates the current state of this list.

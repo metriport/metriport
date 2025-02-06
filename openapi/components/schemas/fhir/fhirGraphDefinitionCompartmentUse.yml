@@ -1,0 +1,9 @@
+title: fhirGraphDefinitionCompartmentUse
+type: string
+enum:
+  - condition
+  - requirement
+description: >-
+  Defines how the compartment rule is used - whether it it is used to test
+  whether resources are subject to the rule, or whether it is a rule that must
+  be followed.

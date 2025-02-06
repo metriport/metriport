@@ -1,0 +1,9 @@
+title: fhirLinkageItemType
+type: string
+enum:
+  - source
+  - alternate
+  - historical
+description: >-
+  Distinguishes which item is "source of truth" (if any) and which items are no
+  longer considered to be current representations.

@@ -1,0 +1,76 @@
+put:
+  description: Create Patient's Consolidated Data with a FHIR Bundle.
+  operationId: medical_fhir_createPatientConsolidated
+  tags:
+    - MedicalFhir
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Patient
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 00000000-0000-0000-0000-000000000000
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/fhir/fhirBundle.yml
+          examples:
+            Example1:
+              value:
+                resourceType: Bundle
+                id: '12345'
+                type: transaction-response
+                entry:
+                  - resource: ''
+                    response:
+                      status: 201 Created
+                      location: Observation/3/_history/1
+                      etag: '1'
+                      lastModified: '2023-07-27T21:29:31.491+00:00'
+                      outcome:
+                        resourceType: OperationOutcome
+                        issue:
+                          - severity: information
+                            code: informational
+                            details:
+                              coding:
+                                - system: >-
+                                    https://public.metriport.com/fhir/StructureDefinition/operation-outcome
+                                  code: SUCCESSFUL_CREATE
+                                  display: Create succeeded.
+                            diagnostics: >-
+                              Successfully created resource
+                              "Observation/3/_history/1". Took 7ms.
+  summary: Create Patient's Consolidated Data
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../../components/schemas/medical/medicalConsolidatedBundleUpload.yml
+        examples:
+          Example1:
+            value:
+              resourceType: Bundle
+              type: collection
+              entry:
+                - resource:
+                    resourceType: Observation
+                    code:
+                      text: Cancer
+                    valueCodeableConcept:
+                      text: NEGATIVE
+                    status: final
+                    category:
+                      - coding:
+                          - system: >-
+                              http://terminology.hl7.org/CodeSystem/observation-category
+                            code: laboratory

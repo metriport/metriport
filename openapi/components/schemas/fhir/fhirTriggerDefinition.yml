@@ -1,0 +1,67 @@
+title: fhirTriggerDefinition
+type: object
+description: >-
+  A description of a triggering event. Triggering events can be named events,
+  data events, or periodic, as determined by the type element.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  type:
+    $ref: ./fhirTriggerDefinitionType.yml
+    nullable: true
+    description: The type of triggering event.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A formal name for the event. This may be an absolute URI that identifies
+      the event formally (e.g. from a trigger registry), or a simple relative
+      URI that identifies the event in a local context.
+  timingTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: The timing of the event (if this is a periodic trigger).
+  timingReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The timing of the event (if this is a periodic trigger).
+  timingDate:
+    type: string
+    nullable: true
+    description: The timing of the event (if this is a periodic trigger).
+  timingDateTime:
+    type: string
+    nullable: true
+    description: The timing of the event (if this is a periodic trigger).
+  data:
+    type: array
+    items:
+      $ref: ./fhirDataRequirement.yml
+    nullable: true
+    description: >-
+      The triggering data of the event (if this is a data trigger). If more than
+      one data is requirement is specified, then all the data requirements must
+      be true.
+  condition:
+    $ref: ./fhirExpression.yml
+    nullable: true
+    description: >-
+      A boolean-valued expression that is evaluated in the context of the
+      container of the trigger definition and returns whether or not the trigger
+      fires.

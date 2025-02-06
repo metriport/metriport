@@ -1,0 +1,175 @@
+title: fhirEncounter
+type: object
+description: >-
+  An interaction between a patient and healthcare provider(s) for the purpose of
+  providing healthcare service(s) or assessing the health status of a patient.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Encounter
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Identifier(s) by which this encounter is known.
+  status:
+    $ref: ./fhirEncounterStatus.yml
+    nullable: true
+    description: >-
+      planned | arrived | triaged | in-progress | onleave | finished | cancelled
+      +.
+  statusHistory:
+    type: array
+    items:
+      $ref: ./fhirEncounterStatusHistory.yml
+    nullable: true
+    description: >-
+      The status history permits the encounter resource to contain the status
+      history without needing to read through the historical versions of the
+      resource, or even have the server store them.
+  class:
+    $ref: ./fhirCoding.yml
+    description: >-
+      Concepts representing classification of patient encounter such as
+      ambulatory (outpatient), inpatient, emergency, home health or others due
+      to local variations.
+  classHistory:
+    type: array
+    items:
+      $ref: ./fhirEncounterClassHistory.yml
+    nullable: true
+    description: >-
+      The class history permits the tracking of the encounters transitions
+      without needing to go through the resource history. This would be used for
+      a case where an admission starts of as an emergency encounter, then
+      transitions into an inpatient scenario. Doing this and not restarting a
+      new encounter ensures that any lab/diagnostic results can more easily
+      follow the patient and not require re-processing and not get lost or
+      cancelled during a kind of discharge from emergency to inpatient.
+  type:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Specific type of encounter (e.g. e-mail consultation, surgical day-care,
+      skilled nursing, rehabilitation).
+  serviceType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Broad categorization of the service that is to be provided (e.g.
+      cardiology).
+  priority:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Indicates the urgency of the encounter.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The patient or group present at the encounter.
+  episodeOfCare:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Where a specific encounter should be classified as a part of a specific
+      episode(s) of care this field should be used. This association can
+      facilitate grouping of related encounters together for a specific purpose,
+      such as government reporting, issue tracking, association via a common
+      problem. The association is recorded on the encounter as these are
+      typically created after the episode of care and grouped on entry rather
+      than editing the episode of care to append another encounter to it (the
+      episode of care could span years).
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The request this encounter satisfies (e.g. incoming referral or procedure
+      request).
+  participant:
+    type: array
+    items:
+      $ref: ./fhirEncounterParticipant.yml
+    nullable: true
+    description: The list of people responsible for providing the service.
+  appointment:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The appointment that scheduled this encounter.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The start and end time of the encounter.
+  length:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: >-
+      Quantity of time the encounter lasted. This excludes the time during
+      leaves of absence.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Reason the encounter takes place, expressed as a code. For admissions,
+      this can be used for a coded admission diagnosis.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Reason the encounter takes place, expressed as a code. For admissions,
+      this can be used for a coded admission diagnosis.
+  diagnosis:
+    type: array
+    items:
+      $ref: ./fhirEncounterDiagnosis.yml
+    nullable: true
+    description: The list of diagnosis relevant to this encounter.
+  account:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The set of accounts that may be used for billing for this Encounter.
+  hospitalization:
+    $ref: ./fhirEncounterHospitalization.yml
+    nullable: true
+    description: Details about the admission to a healthcare service.
+  location:
+    type: array
+    items:
+      $ref: ./fhirEncounterLocation.yml
+    nullable: true
+    description: List of locations where the patient has been during this encounter.
+  serviceProvider:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The organization that is primarily responsible for this Encounter's
+      services. This MAY be the same as the organization on the Patient record,
+      however it could be different, such as if the actor performing the
+      services was from an external organization (which may be billed
+      seperately) for an external consultation. Refer to the example bundle
+      showing an abbreviated set of Encounters for a colonoscopy.
+  partOf:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Another Encounter of which this encounter is a part of (administratively
+      or in time).
+required:
+  - resourceType
+  - class
+allOf:
+  - $ref: ./fhirBaseResource.yml

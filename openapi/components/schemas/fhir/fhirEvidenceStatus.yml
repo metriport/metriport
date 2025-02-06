@@ -1,0 +1,8 @@
+title: fhirEvidenceStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: The status of this evidence. Enables tracking the life-cycle of the content.

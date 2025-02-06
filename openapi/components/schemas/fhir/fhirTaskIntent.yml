@@ -1,0 +1,15 @@
+title: fhirTaskIntent
+type: string
+enum:
+  - unknown
+  - proposal
+  - plan
+  - order
+  - original-order
+  - reflex-order
+  - filler-order
+  - instance-order
+  - option
+description: >-
+  Indicates the "level" of actionability associated with the Task, i.e. i+R[9]Cs
+  this a proposed task, a planned task, an actionable task, etc.

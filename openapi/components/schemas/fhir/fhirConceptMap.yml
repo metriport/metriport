@@ -1,0 +1,159 @@
+title: fhirConceptMap
+type: object
+description: >-
+  A statement of relationships from one set of concepts to one or more other
+  concepts - either concepts in code systems, or data element/data element
+  concepts, or classes in class models.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ConceptMap
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this concept map when it is
+      referenced in a specification, model, design or an instance; also called
+      its canonical identifier. This SHOULD be globally unique and SHOULD be a
+      literal address at which at which an authoritative instance of this
+      concept map is (or will be) published. This URL can be the target of a
+      canonical reference. It SHALL remain the same when the concept map is
+      stored on different servers.
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this concept map when it is
+      represented in other formats, or referenced in a specification, model,
+      design or an instance.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the concept map
+      when it is referenced in a specification, model, design or instance. This
+      is an arbitrary value managed by the concept map author and is not
+      expected to be globally unique. For example, it might be a timestamp (e.g.
+      yyyymmdd) if a managed version is not available. There is also no
+      expectation that versions can be placed in a lexicographical sequence.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the concept map. This name should be
+      usable as an identifier for the module by machine processing applications
+      such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the concept map.
+  status:
+    $ref: ./fhirConceptMapStatus.yml
+    nullable: true
+    description: >-
+      The status of this concept map. Enables tracking the life-cycle of the
+      content.
+  experimental:
+    type: boolean
+    nullable: true
+    description: >-
+      A Boolean value to indicate that this concept map is authored for testing
+      purposes (or education/evaluation/marketing) and is not intended to be
+      used for genuine usage.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the concept map was published. The
+      date must change when the business version changes and it must change if
+      the status code changes. In addition, it should change when the
+      substantive content of the concept map changes.
+  publisher:
+    type: string
+    nullable: true
+    description: The name of the organization or individual that published the concept map.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the concept map from a
+      consumer's perspective.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate concept map instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A legal or geographic region in which the concept map is intended to be
+      used.
+  purpose:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Explanation of why this concept map is needed and why it has been designed
+      as it has.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the concept map and/or its contents.
+      Copyright statements are generally legal restrictions on the use and
+      publishing of the concept map.
+  sourceUri:
+    type: string
+    nullable: true
+    description: >-
+      Identifier for the source value set that contains the concepts that are
+      being mapped and provides context for the mappings.
+  sourceCanonical:
+    type: string
+    nullable: true
+    description: >-
+      Identifier for the source value set that contains the concepts that are
+      being mapped and provides context for the mappings.
+  targetUri:
+    type: string
+    nullable: true
+    description: >-
+      The target value set provides context for the mappings. Note that the
+      mapping is made between concepts, not between value sets, but the value
+      set provides important context about how the concept mapping choices are
+      made.
+  targetCanonical:
+    type: string
+    nullable: true
+    description: >-
+      The target value set provides context for the mappings. Note that the
+      mapping is made between concepts, not between value sets, but the value
+      set provides important context about how the concept mapping choices are
+      made.
+  group:
+    type: array
+    items:
+      $ref: ./fhirConceptMapGroup.yml
+    nullable: true
+    description: A group of mappings that all have the same source and target system.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

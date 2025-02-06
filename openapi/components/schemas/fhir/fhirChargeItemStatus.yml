@@ -1,0 +1,11 @@
+title: fhirChargeItemStatus
+type: string
+enum:
+  - planned
+  - billable
+  - not-billable
+  - aborted
+  - billed
+  - entered-in-error
+  - unknown
+description: The current state of the ChargeItem.

@@ -1,0 +1,168 @@
+title: fhirFamilyMemberHistory
+type: object
+description: >-
+  Significant health conditions for a person related to the patient relevant in
+  the context of care for the patient.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - FamilyMemberHistory
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this family member history by the
+      performer or other systems which remain constant as the resource is
+      updated and propagates from server to server.
+  instantiatesCanonical:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      The URL pointing to a FHIR-defined protocol, guideline, orderset or other
+      definition that is adhered to in whole or in part by this
+      FamilyMemberHistory.
+  instantiatesUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally maintained protocol, guideline, orderset
+      or other definition that is adhered to in whole or in part by this
+      FamilyMemberHistory.
+  status:
+    $ref: ./fhirFamilyMemberHistoryStatus.yml
+    nullable: true
+    description: >-
+      A code specifying the status of the record of the family history of a
+      specific family member.
+  dataAbsentReason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Describes why the family member's history is not available.
+  patient:
+    $ref: ./fhirReference.yml
+    description: The person who this history concerns.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and possibly time) when the family member history was recorded
+      or last updated.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      This will either be a name or a description; e.g. "Aunt Susan", "my cousin
+      with the red hair".
+  relationship:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      The type of relationship this person has to the patient (father, mother,
+      brother etc.).
+  sex:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The birth sex of the family member.
+  bornPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The actual or approximate date of birth of the relative.
+  bornDate:
+    type: string
+    nullable: true
+    description: The actual or approximate date of birth of the relative.
+  bornString:
+    type: string
+    nullable: true
+    description: The actual or approximate date of birth of the relative.
+  ageAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: The age of the relative at the time the family member history is recorded.
+  ageRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: The age of the relative at the time the family member history is recorded.
+  ageString:
+    type: string
+    nullable: true
+    description: The age of the relative at the time the family member history is recorded.
+  estimatedAge:
+    type: boolean
+    nullable: true
+    description: If true, indicates that the age value specified is an estimated value.
+  deceasedBoolean:
+    type: boolean
+    nullable: true
+    description: >-
+      Deceased flag or the actual or approximate age of the relative at the time
+      of death for the family member history record.
+  deceasedAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: >-
+      Deceased flag or the actual or approximate age of the relative at the time
+      of death for the family member history record.
+  deceasedRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: >-
+      Deceased flag or the actual or approximate age of the relative at the time
+      of death for the family member history record.
+  deceasedDate:
+    type: string
+    nullable: true
+    description: >-
+      Deceased flag or the actual or approximate age of the relative at the time
+      of death for the family member history record.
+  deceasedString:
+    type: string
+    nullable: true
+    description: >-
+      Deceased flag or the actual or approximate age of the relative at the time
+      of death for the family member history record.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Describes why the family member history occurred in coded or textual form.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Indicates a Condition, Observation, AllergyIntolerance, or
+      QuestionnaireResponse that justifies this family member history event.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      This property allows a non condition-specific note to the made about the
+      related person. Ideally, the note would be in the condition property, but
+      this is not always possible.
+  condition:
+    type: array
+    items:
+      $ref: ./fhirFamilyMemberHistoryCondition.yml
+    nullable: true
+    description: >-
+      The significant Conditions (or condition) that the family member had. This
+      is a repeating section to allow a system to represent more than one
+      condition per resource, though there is nothing stopping multiple
+      resources - one per condition.
+required:
+  - resourceType
+  - patient
+  - relationship
+allOf:
+  - $ref: ./fhirBaseResource.yml

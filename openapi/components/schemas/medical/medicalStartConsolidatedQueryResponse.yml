@@ -1,0 +1,10 @@
+title: medicalStartConsolidatedQueryResponse
+type: object
+properties:
+  query:
+    $ref: ./medicalPatientConsolidatedDataStatus.yml
+  message:
+    type: string
+    nullable: true
+required:
+  - query

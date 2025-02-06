@@ -1,0 +1,85 @@
+title: fhirEndpoint
+type: object
+description: >-
+  The technical details of an endpoint that can be used for electronic services,
+  such as for web services providing XDS.b or a REST endpoint for another FHIR
+  server. This may include any security context information.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Endpoint
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifier for the organization that is used to identify the endpoint
+      across multiple disparate systems.
+  status:
+    $ref: ./fhirEndpointStatus.yml
+    nullable: true
+    description: active | suspended | error | off | test.
+  connectionType:
+    $ref: ./fhirCoding.yml
+    description: >-
+      A coded value that represents the technical details of the usage of this
+      endpoint, such as what WSDLs should be used in what way. (e.g.
+      XDS.b/DICOM/cds-hook).
+  name:
+    type: string
+    nullable: true
+    description: A friendly name that this endpoint can be referred to with.
+  managingOrganization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The organization that manages this endpoint (even if technically another
+      organization is hosting this in the cloud, it is the organization
+      associated with the data).
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      Contact details for a human to contact about the subscription. The primary
+      use of this for system administrator troubleshooting.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The interval during which the endpoint is expected to be operational.
+  payloadType:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    description: >-
+      The payload type describes the acceptable content that can be communicated
+      on the endpoint.
+  payloadMimeType:
+    type: array
+    items:
+      $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      The mime type to send the payload in - e.g. application/fhir+xml,
+      application/fhir+json. If the mime type is not specified, then the sender
+      could send any content (including no content depending on the
+      connectionType).
+  address:
+    $ref: ./fhirurl.yml
+    nullable: true
+    description: The uri that describes the actual end-point to connect to.
+  header:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: Additional headers / information to send as part of the notification.
+required:
+  - resourceType
+  - connectionType
+  - payloadType
+allOf:
+  - $ref: ./fhirBaseResource.yml

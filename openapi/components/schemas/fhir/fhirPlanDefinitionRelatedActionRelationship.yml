@@ -1,0 +1,13 @@
+title: fhirPlanDefinitionRelatedActionRelationship
+type: string
+enum:
+  - before-start
+  - before
+  - before-end
+  - concurrent-with-start
+  - concurrent
+  - concurrent-with-end
+  - after-start
+  - after
+  - after-end
+description: The relationship of this action to the related action.

@@ -1,0 +1,59 @@
+title: fhirBodyStructure
+type: object
+description: >-
+  Record details about an anatomical structure. This resource may be used when a
+  coded concept does not provide the necessary detail needed for the use case.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - BodyStructure
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Identifier for this instance of the anatomical structure.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether this body site is in active use.
+  morphology:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The kind of structure being represented by the body structure at
+      `BodyStructure.location`. This can define both normal and abnormal
+      morphologies.
+  location:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The anatomical location or region of the specimen, lesion, or body
+      structure.
+  locationQualifier:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Qualifier to refine the anatomical location. These include qualifiers for
+      laterality, relative location, directionality, number, and plane.
+  description:
+    type: string
+    nullable: true
+    description: A summary, characterization or explanation of the body structure.
+  image:
+    type: array
+    items:
+      $ref: ./fhirAttachment.yml
+    nullable: true
+    description: Image or images used to identify a location.
+  patient:
+    $ref: ./fhirReference.yml
+    description: The person to which the body site belongs.
+required:
+  - resourceType
+  - patient
+allOf:
+  - $ref: ./fhirBaseResource.yml

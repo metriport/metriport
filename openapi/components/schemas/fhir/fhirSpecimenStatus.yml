@@ -1,0 +1,8 @@
+title: fhirSpecimenStatus
+type: string
+enum:
+  - available
+  - unavailable
+  - unsatisfactory
+  - entered-in-error
+description: The availability of the specimen.

@@ -1,0 +1,10 @@
+title: fhirDeviceMetricOperationalStatus
+type: string
+enum:
+  - 'on'
+  - 'off'
+  - standby
+  - entered-in-error
+description: >-
+  Indicates current operational state of the device. For example: On, Off,
+  Standby, etc.

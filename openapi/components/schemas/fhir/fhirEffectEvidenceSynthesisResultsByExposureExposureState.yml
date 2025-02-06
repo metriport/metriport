@@ -1,0 +1,8 @@
+title: fhirEffectEvidenceSynthesisResultsByExposureExposureState
+type: string
+enum:
+  - exposure
+  - exposure-alternative
+description: >-
+  Whether these results are for the exposure state or alternative exposure
+  state.

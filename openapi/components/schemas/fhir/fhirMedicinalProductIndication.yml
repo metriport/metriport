@@ -1,0 +1,62 @@
+title: fhirMedicinalProductIndication
+type: object
+description: Indication for the Medicinal Product.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductIndication
+  subject:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The medication for which this is an indication.
+  diseaseSymptomProcedure:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The disease, symptom or procedure that is the indication for treatment.
+  diseaseStatus:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The status of the disease or symptom for which the indication applies.
+  comorbidity:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Comorbidity (concurrent condition) or co-infection as part of the
+      indication.
+  intendedEffect:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The intended effect, aim or strategy to be achieved by the indication.
+  duration:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: Timing or duration information as part of the indication.
+  otherTherapy:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductIndicationOtherTherapy.yml
+    nullable: true
+    description: >-
+      Information about the use of the medicinal product in relation to other
+      therapies described as part of the indication.
+  undesirableEffect:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Describe the undesirable effects of the medicinal product.
+  population:
+    type: array
+    items:
+      $ref: ./fhirPopulation.yml
+    nullable: true
+    description: The population group to which this applies.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

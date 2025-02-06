@@ -1,0 +1,176 @@
+title: fhirHealthcareService
+type: object
+description: The details of a healthcare service available at a location.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - HealthcareService
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: External identifiers for this item.
+  active:
+    type: boolean
+    nullable: true
+    description: >-
+      This flag is used to mark the record to not be used. This is not used when
+      a center is closed for maintenance, or for holidays, the notAvailable
+      period is to be used for this.
+  providedBy:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The organization that provides this healthcare service.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Identifies the broad category of service being performed or delivered.
+  type:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The specific type of service that may be delivered or performed.
+  specialty:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Collection of specialties handled by the service site. This is more of a
+      medical term.
+  location:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The location(s) where this healthcare service may be provided.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      Further description of the service as it would be presented to a consumer
+      while searching.
+  comment:
+    type: string
+    nullable: true
+    description: >-
+      Any additional description of the service and/or any specific issues not
+      covered by the other attributes, which can be displayed as further detail
+      under the serviceName.
+  extraDetails:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: Extra details about the service that can't be placed in the other fields.
+  photo:
+    $ref: ./fhirAttachment.yml
+    nullable: true
+    description: >-
+      If there is a photo/symbol associated with this HealthcareService, it may
+      be included here to facilitate quick identification of the service in a
+      list.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: List of contacts related to this specific healthcare service.
+  coverageArea:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The location(s) that this service is available to (not where the service
+      is provided).
+  serviceProvisionCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The code(s) that detail the conditions under which the healthcare service
+      is available/offered.
+  eligibility:
+    type: array
+    items:
+      $ref: ./fhirHealthcareServiceEligibility.yml
+    nullable: true
+    description: >-
+      Does this service have specific eligibility requirements that need to be
+      met in order to use the service?
+  program:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Programs that this service is applicable to.
+  characteristic:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Collection of characteristics (attributes).
+  communication:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Some services are specifically made available in multiple languages, this
+      property permits a directory to declare the languages this is offered in.
+      Typically this is only provided where a service operates in communities
+      with mixed languages used.
+  referralMethod:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Ways that the service accepts referrals, if this is not provided then it
+      is implied that no referral is required.
+  appointmentRequired:
+    type: boolean
+    nullable: true
+    description: >-
+      Indicates whether or not a prospective consumer will require an
+      appointment for a particular service at a site to be provided by the
+      Organization. Indicates if an appointment is required for access to this
+      service.
+  availableTime:
+    type: array
+    items:
+      $ref: ./fhirHealthcareServiceAvailableTime.yml
+    nullable: true
+    description: A collection of times that the Service Site is available.
+  notAvailable:
+    type: array
+    items:
+      $ref: ./fhirHealthcareServiceNotAvailable.yml
+    nullable: true
+    description: >-
+      The HealthcareService is not available during this period of time due to
+      the provided reason.
+  availabilityExceptions:
+    type: string
+    nullable: true
+    description: >-
+      A description of site availability exceptions, e.g. public holiday
+      availability. Succinctly describing all possible exceptions to normal site
+      availability as details in the available Times and not available Times.
+  endpoint:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Technical endpoints providing access to services operated for the specific
+      healthcare services defined at this resource.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

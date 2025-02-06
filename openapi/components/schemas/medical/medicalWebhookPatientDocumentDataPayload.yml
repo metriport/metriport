@@ -1,0 +1,14 @@
+title: medicalWebhookPatientDocumentDataPayload
+type: object
+properties:
+  meta:
+    $ref: ./medicalWebhookMetadataPayload.yml
+    description: The metadata of the webhook.
+  patients:
+    type: array
+    items:
+      $ref: ./medicalWebhookPatientPayload.yml
+    description: An array of WebhookPatientPayload objects.
+required:
+  - meta
+  - patients

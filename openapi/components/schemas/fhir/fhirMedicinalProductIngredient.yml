@@ -1,0 +1,43 @@
+title: fhirMedicinalProductIngredient
+type: object
+description: An ingredient of a manufactured item or pharmaceutical product.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductIngredient
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      The identifier(s) of this Ingredient that are assigned by business
+      processes and/or used to refer to it when a direct URL reference to the
+      resource itself is not appropriate.
+  role:
+    $ref: ./fhirCodeableConcept.yml
+    description: Ingredient role e.g. Active ingredient, excipient.
+  allergenicIndicator:
+    type: boolean
+    nullable: true
+    description: If the ingredient is a known or suspected allergen.
+  manufacturer:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Manufacturer of this Ingredient.
+  specifiedSubstance:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductIngredientSpecifiedSubstance.yml
+    nullable: true
+    description: A specified substance that comprises this ingredient.
+  substance:
+    $ref: ./fhirMedicinalProductIngredientSubstance.yml
+    nullable: true
+    description: The ingredient substance.
+required:
+  - resourceType
+  - role
+allOf:
+  - $ref: ./fhirBaseResource.yml

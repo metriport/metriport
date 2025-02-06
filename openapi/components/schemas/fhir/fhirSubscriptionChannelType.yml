@@ -1,0 +1,9 @@
+title: fhirSubscriptionChannelType
+type: string
+enum:
+  - rest-hook
+  - websocket
+  - email
+  - sms
+  - message
+description: The type of channel to send notifications on.

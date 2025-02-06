@@ -1,0 +1,8 @@
+title: fhirObservationDefinitionQualifiedIntervalGender
+type: string
+enum:
+  - male
+  - female
+  - other
+  - unknown
+description: Sex of the population the range applies to.

@@ -1,0 +1,8 @@
+title: fhirNamingSystemUniqueIdType
+type: string
+enum:
+  - oid
+  - uuid
+  - uri
+  - other
+description: Identifies the unique identifier scheme used for this particular identifier.

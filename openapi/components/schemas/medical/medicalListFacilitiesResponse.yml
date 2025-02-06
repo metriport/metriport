@@ -1,0 +1,9 @@
+title: medicalListFacilitiesResponse
+type: object
+properties:
+  facilities:
+    type: array
+    items:
+      $ref: ./medicalFacility.yml
+required:
+  - facilities

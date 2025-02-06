@@ -1,0 +1,16 @@
+title: fhirTaskStatus
+type: string
+enum:
+  - draft
+  - requested
+  - received
+  - accepted
+  - rejected
+  - ready
+  - cancelled
+  - in-progress
+  - on-hold
+  - failed
+  - completed
+  - entered-in-error
+description: The current status of the task.

@@ -1,0 +1,9 @@
+title: fhirCompartmentDefinitionCode
+type: string
+enum:
+  - Patient
+  - Encounter
+  - RelatedPerson
+  - Practitioner
+  - Device
+description: Which compartment this definition describes.

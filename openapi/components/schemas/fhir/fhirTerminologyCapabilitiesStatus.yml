@@ -1,0 +1,10 @@
+title: fhirTerminologyCapabilitiesStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this terminology capabilities. Enables tracking the life-cycle
+  of the content.

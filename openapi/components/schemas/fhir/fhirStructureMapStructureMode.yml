@@ -1,0 +1,8 @@
+title: fhirStructureMapStructureMode
+type: string
+enum:
+  - source
+  - queried
+  - target
+  - produced
+description: How the referenced structure is used in this mapping.

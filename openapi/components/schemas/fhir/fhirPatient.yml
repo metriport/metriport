@@ -1,0 +1,122 @@
+title: fhirPatient
+type: object
+description: >-
+  Demographics and other administrative information about an individual or
+  animal receiving care or other health-related services.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Patient
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: An identifier for this patient.
+  active:
+    type: boolean
+    nullable: true
+    description: >-
+      Whether this patient record is in active use. Many systems use this
+      property to mark as non-current patients, such as those that have not been
+      seen for a period of time based on an organization's business rules. It is
+      often used to filter patient lists to exclude inactive patients Deceased
+      patients may also be marked as inactive for the same reasons, but may be
+      active for some time after death.
+  name:
+    type: array
+    items:
+      $ref: ./fhirHumanName.yml
+    nullable: true
+    description: A name associated with the individual.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      A contact detail (e.g. a telephone number or an email address) by which
+      the individual may be contacted.
+  gender:
+    $ref: ./fhirPatientGender.yml
+    nullable: true
+    description: >-
+      Administrative Gender - the gender that the patient is considered to have
+      for administration and record keeping purposes.
+  birthDate:
+    type: string
+    format: date
+    nullable: true
+    description: The date of birth for the individual.
+  deceasedBoolean:
+    type: boolean
+    nullable: true
+    description: Indicates if the individual is deceased or not.
+  deceasedDateTime:
+    type: string
+    nullable: true
+    description: Indicates if the individual is deceased or not.
+  address:
+    type: array
+    items:
+      $ref: ./fhirAddress.yml
+    nullable: true
+    description: An address for the individual.
+  maritalStatus:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: This field contains a patient's most recent marital (civil) status.
+  multipleBirthBoolean:
+    type: boolean
+    nullable: true
+    description: >-
+      Indicates whether the patient is part of a multiple (boolean) or indicates
+      the actual birth order (integer).
+  multipleBirthInteger:
+    type: number
+    format: double
+    nullable: true
+    description: >-
+      Indicates whether the patient is part of a multiple (boolean) or indicates
+      the actual birth order (integer).
+  photo:
+    type: array
+    items:
+      $ref: ./fhirAttachment.yml
+    nullable: true
+    description: Image of the patient.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirPatientContact.yml
+    nullable: true
+    description: A contact party (e.g. guardian, partner, friend) for the patient.
+  communication:
+    type: array
+    items:
+      $ref: ./fhirPatientCommunication.yml
+    nullable: true
+    description: >-
+      A language which may be used to communicate with the patient about his or
+      her health.
+  generalPractitioner:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Patient's nominated care provider.
+  managingOrganization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Organization that is the custodian of the patient record.
+  link:
+    type: array
+    items:
+      $ref: ./fhirPatientLink.yml
+    nullable: true
+    description: Link to another patient resource that concerns the same actual patient.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

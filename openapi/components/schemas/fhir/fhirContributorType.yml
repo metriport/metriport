@@ -1,0 +1,8 @@
+title: fhirContributorType
+type: string
+enum:
+  - author
+  - editor
+  - reviewer
+  - endorser
+description: The type of contributor.

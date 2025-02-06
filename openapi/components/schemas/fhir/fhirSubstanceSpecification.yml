@@ -1,0 +1,110 @@
+title: fhirSubstanceSpecification
+type: object
+description: >-
+  The detailed description of a substance, typically at a level beyond what is
+  used for prescribing.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - SubstanceSpecification
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Identifier by which this substance is known.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: High level categorization, e.g. polymer or nucleic acid.
+  status:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Status of substance within the catalogue e.g. approved.
+  domain:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: If the substance applies to only human or veterinary use.
+  description:
+    type: string
+    nullable: true
+    description: Textual description of the substance.
+  source:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Supporting literature.
+  comment:
+    type: string
+    nullable: true
+    description: Textual comment about this record of a substance.
+  moiety:
+    type: array
+    items:
+      $ref: ./fhirSubstanceSpecificationMoiety.yml
+    nullable: true
+    description: Moiety, for structural modifications.
+  property:
+    type: array
+    items:
+      $ref: ./fhirSubstanceSpecificationProperty.yml
+    nullable: true
+    description: >-
+      General specifications for this substance, including how it is related to
+      other substances.
+  referenceInformation:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: General information detailing this substance.
+  structure:
+    $ref: ./fhirSubstanceSpecificationStructure.yml
+    nullable: true
+    description: Structural information.
+  code:
+    type: array
+    items:
+      $ref: ./fhirSubstanceSpecificationCode.yml
+    nullable: true
+    description: Codes associated with the substance.
+  name:
+    type: array
+    items:
+      $ref: ./fhirSubstanceSpecificationName.yml
+    nullable: true
+    description: Names applicable to this substance.
+  molecularWeight:
+    type: array
+    items:
+      $ref: ./fhirSubstanceSpecificationMolecularWeight.yml
+    nullable: true
+    description: >-
+      The molecular weight or weight range (for proteins, polymers or nucleic
+      acids).
+  relationship:
+    type: array
+    items:
+      $ref: ./fhirSubstanceSpecificationRelationship.yml
+    nullable: true
+    description: >-
+      A link between this substance and another, with details of the
+      relationship.
+  nucleicAcid:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Data items specific to nucleic acids.
+  polymer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Data items specific to polymers.
+  protein:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Data items specific to proteins.
+  sourceMaterial:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Material or taxonomic/anatomical source for the substance.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

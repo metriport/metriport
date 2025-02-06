@@ -1,0 +1,44 @@
+title: fhirSubstancePolymer
+type: object
+description: Todo.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - SubstancePolymer
+  class:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Todo.
+  geometry:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Todo.
+  copolymerConnectivity:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Todo.
+  modification:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: Todo.
+  monomerSet:
+    type: array
+    items:
+      $ref: ./fhirSubstancePolymerMonomerSet.yml
+    nullable: true
+    description: Todo.
+  repeat:
+    type: array
+    items:
+      $ref: ./fhirSubstancePolymerRepeat.yml
+    nullable: true
+    description: Todo.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,8 @@
+title: fhirLoginCodeChallengeMethod
+type: string
+enum:
+  - plain
+  - S256
+description: >-
+  OPTIONAL, defaults to "plain" if not present in the request. Code verifier
+  transformation method is "S256" or "plain".

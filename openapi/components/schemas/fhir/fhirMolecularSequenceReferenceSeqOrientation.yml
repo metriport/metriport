@@ -1,0 +1,9 @@
+title: fhirMolecularSequenceReferenceSeqOrientation
+type: string
+enum:
+  - sense
+  - antisense
+description: >-
+  A relative reference to a DNA strand based on gene orientation. The strand
+  that contains the open reading frame of the gene is the "sense" strand, and
+  the opposite complementary strand is the "antisense" strand.

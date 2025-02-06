@@ -1,0 +1,51 @@
+get:
+  description: Get a count of a Patient's data per resource.
+  operationId: medical_fhir_countPatientData
+  tags:
+    - MedicalFhir
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Patient
+      required: true
+      schema:
+        type: string
+    - name: resources
+      in: query
+      description: |-
+        A comma separated, case sensitive list of resources to be returned.
+        If none are provided all resources will be included.
+      required: false
+      schema:
+        type: string
+        nullable: true
+    - name: dateFrom
+      in: query
+      description: |-
+        The start date (inclusive) for which to filter returned resources -
+        formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+        no start date filter will be applied.
+      required: false
+      schema:
+        type: string
+        nullable: true
+    - name: dateTo
+      in: query
+      description: |-
+        The end date (inclusive) for which to filter returned resources -
+        formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+        no end date filter will be applied.
+      required: false
+      schema:
+        type: string
+        nullable: true
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalConsolidatedCountResponse.yml
+  summary: Count Patient Data
+  security:
+    - ApiKeyAuth: []

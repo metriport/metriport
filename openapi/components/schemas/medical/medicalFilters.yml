@@ -1,0 +1,6 @@
+title: medicalFilters
+type: object
+additionalProperties:
+  type: string
+  nullable: true
+description: A map of filter keys to their values.

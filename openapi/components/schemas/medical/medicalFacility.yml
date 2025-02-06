@@ -1,0 +1,18 @@
+title: medicalFacility
+type: object
+properties:
+  id:
+    type: string
+    description: |-
+      The ID assigned to this Facility. This ID will be used
+      to uniquely identify this Facility in medical documents.
+    example: 018a80c4-292a-7486-a1234-9uiu76yhe234
+  oid:
+    type: string
+    description: The OID of your facility.
+    example: 2.16.840.1.113883.3.666.123.4.101
+required:
+  - id
+  - oid
+allOf:
+  - $ref: ./medicalBaseFacility.yml

@@ -1,0 +1,13 @@
+title: fhirValueSetFilterOp
+type: string
+enum:
+  - '='
+  - is-a
+  - descendent-of
+  - is-not-a
+  - regex
+  - in
+  - not-in
+  - generalizes
+  - exists
+description: The kind of operation to perform as a part of the filter criteria.

@@ -1,0 +1,3 @@
+title: fhirbase64Binary
+type: string
+description: A stream of bytes

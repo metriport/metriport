@@ -1,0 +1,52 @@
+title: fhirResearchSubject
+type: object
+description: >-
+  A physical entity which is the primary unit of operational and/or
+  administrative interest in a study.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ResearchSubject
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Identifiers assigned to this research subject for a study.
+  status:
+    $ref: ./fhirResearchSubjectStatus.yml
+    nullable: true
+    description: The current state of the subject.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The dates the subject began and ended their participation in the study.
+  study:
+    $ref: ./fhirReference.yml
+    description: Reference to the study the subject is participating in.
+  individual:
+    $ref: ./fhirReference.yml
+    description: The record of the person or animal who is involved in the study.
+  assignedArm:
+    type: string
+    nullable: true
+    description: >-
+      The name of the arm in the study the subject is expected to follow as part
+      of this study.
+  actualArm:
+    type: string
+    nullable: true
+    description: >-
+      The name of the arm in the study the subject actually followed as part of
+      this study.
+  consent:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: A record of the patient's informed agreement to participate in the study.
+required:
+  - resourceType
+  - study
+  - individual
+allOf:
+  - $ref: ./fhirBaseResource.yml

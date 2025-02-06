@@ -1,0 +1,90 @@
+title: fhirProjectMembership
+type: object
+description: >-
+  Medplum project membership. A project membership grants a user access to a
+  project.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ProjectMembership
+  id:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      The logical id of the resource, as used in the URL for the resource. Once
+      assigned, this value never changes.
+  meta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: >-
+      The metadata about the resource. This is content that is maintained by the
+      infrastructure. Changes to the content might not always be associated with
+      version changes to the resource.
+  implicitRules:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      A reference to a set of rules that were followed when the resource was
+      constructed, and which must be understood when processing the content.
+      Often, this is a reference to an implementation guide that defines the
+      special rules along with other profiles etc.
+  language:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The base language in which the resource is written.
+  project:
+    $ref: ./fhirReference.yml
+    description: Project where the memberships are available.
+  invitedBy:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The project administrator who invited the user to the project.
+  user:
+    $ref: ./fhirReference.yml
+    description: User that is granted access to the project.
+  profile:
+    $ref: ./fhirReference.yml
+    description: >-
+      Reference to the resource that represents the user profile within the
+      project.
+  externalId:
+    type: string
+    nullable: true
+    description: >-
+      A String that is an identifier for the resource as defined by the
+      provisioning client. The "externalId" may simplify identification of a
+      resource between the provisioning client and the service provider by
+      allowing the client to use a filter to locate the resource with an
+      identifier from the provisioning domain, obviating the need to store a
+      local mapping between the provisioning domain's identifier of the resource
+      and the identifier used by the service provider. Each resource MAY include
+      a non-empty "externalId" value. The value of the "externalId" attribute is
+      always issued by the provisioning client and MUST NOT be specified by the
+      service provider. The service provider MUST always interpret the
+      externalId as scoped to the provisioning domain.
+  accessPolicy:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The access policy for the user within the project memebership.
+  access:
+    type: array
+    items:
+      $ref: ./fhirProjectMembershipAccess.yml
+    nullable: true
+    description: Extended access configuration using parameterized access policies.
+  userConfiguration:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The user configuration for the user within the project memebership such as
+      menu links, saved searches, and features.
+  admin:
+    type: boolean
+    nullable: true
+    description: Whether this user is a project administrator.
+required:
+  - resourceType
+  - project
+  - user
+  - profile

@@ -1,0 +1,3 @@
+title: fhircanonical
+type: string
+description: A URI that is a reference to a canonical URL on a FHIR resource

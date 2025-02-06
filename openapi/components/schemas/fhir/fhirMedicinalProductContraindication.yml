@@ -1,0 +1,56 @@
+title: fhirMedicinalProductContraindication
+type: object
+description: >-
+  The clinical particulars - indications, contraindications etc. of a medicinal
+  product, including for regulatory purposes.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductContraindication
+  subject:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The medication for which this is an indication.
+  disease:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The disease, symptom or procedure for the contraindication.
+  diseaseStatus:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The status of the disease or symptom for the contraindication.
+  comorbidity:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A comorbidity (concurrent condition) or coinfection.
+  therapeuticIndication:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Information about the use of the medicinal product in relation to other
+      therapies as part of the indication.
+  otherTherapy:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductContraindicationOtherTherapy.yml
+    nullable: true
+    description: >-
+      Information about the use of the medicinal product in relation to other
+      therapies described as part of the indication.
+  population:
+    type: array
+    items:
+      $ref: ./fhirPopulation.yml
+    nullable: true
+    description: The population group to which this applies.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

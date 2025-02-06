@@ -1,0 +1,108 @@
+title: fhirRiskAssessment
+type: object
+description: >-
+  An assessment of the likely outcome(s) for a patient or other subject as well
+  as the likelihood of each outcome.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - RiskAssessment
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Business identifier assigned to the risk assessment.
+  basedOn:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: A reference to the request that is fulfilled by this risk assessment.
+  parent:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A reference to a resource that this risk assessment is part of, such as a
+      Procedure.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      The status of the RiskAssessment, using the same statuses as an
+      Observation.
+  method:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The algorithm, process or mechanism used to evaluate the risk.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The type of the risk assessment performed.
+  subject:
+    $ref: ./fhirReference.yml
+    description: The patient or group the risk assessment applies to.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The encounter where the assessment was performed.
+  occurrenceDateTime:
+    type: string
+    nullable: true
+    description: The date (and possibly time) the risk assessment was performed.
+  occurrencePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The date (and possibly time) the risk assessment was performed.
+  condition:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      For assessments or prognosis specific to a particular condition, indicates
+      the condition being assessed.
+  performer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The provider or software application that performed the assessment.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The reason the risk assessment was performed.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Resources supporting the reason the risk assessment was performed.
+  basis:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Indicates the source data considered as part of the assessment (for
+      example, FamilyHistory, Observations, Procedures, Conditions, etc.).
+  prediction:
+    type: array
+    items:
+      $ref: ./fhirRiskAssessmentPrediction.yml
+    nullable: true
+    description: Describes the expected outcome for the subject.
+  mitigation:
+    type: string
+    nullable: true
+    description: >-
+      A description of the steps that might be taken to reduce the identified
+      risk(s).
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: Additional comments about the risk assessment.
+required:
+  - resourceType
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

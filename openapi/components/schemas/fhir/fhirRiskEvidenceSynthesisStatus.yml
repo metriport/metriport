@@ -1,0 +1,10 @@
+title: fhirRiskEvidenceSynthesisStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this risk evidence synthesis. Enables tracking the life-cycle of
+  the content.

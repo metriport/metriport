@@ -1,0 +1,10 @@
+title: fhirConceptMapStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this concept map. Enables tracking the life-cycle of the
+  content.

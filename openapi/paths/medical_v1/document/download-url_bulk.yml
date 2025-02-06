@@ -1,0 +1,63 @@
+post:
+  description: >-
+    Triggers a process to generate a list of download URLs for all of the
+    patient's documents.
+
+    The status of the process is returned in the response. Initially, it will be
+    `processing`,
+
+    and when the process is finished, the status will be updated to `completed`
+    or `failed`.
+
+    If you trigger this endpoint again while the process is still running, you
+    will get a response
+
+    that reflects the current progress.
+  operationId: medical_document_startBulkGetDocumentUrl
+  tags:
+    - MedicalDocument
+  parameters:
+    - name: patientId
+      in: query
+      description: The ID of the patient for which to initiate the bulk URL generation.
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 018a80c4-292a-7486-a1234-76yuhe23yu14
+  responses:
+    '200':
+      description: The status of the URL generation process and the request ID.
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalBulkGetDocumentUrlQuery.yml
+          examples:
+            Example1:
+              value:
+                status: processing
+                requestId: 018c1e9d-dfce-70cb-8c0e-edfbbd2a7f5f
+  summary: Start Bulk Get Document URL
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    description: >
+      Metadata holds a record of up to 50 custom string key-value pairs. Key
+      names can be up to 40 characters long and values up to 500 characters
+      long. 
+
+      This metadata will be returned in the webhook response.
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+        examples:
+          Example1:
+            value:
+              youCan: putAny
+              stringKeyValue: pairsHere

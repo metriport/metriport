@@ -1,0 +1,23 @@
+title: fhirQuestionnaireItemType
+type: string
+enum:
+  - group
+  - display
+  - boolean
+  - decimal
+  - integer
+  - date
+  - dateTime
+  - time
+  - string
+  - text
+  - url
+  - choice
+  - open-choice
+  - attachment
+  - reference
+  - quantity
+description: >-
+  The type of questionnaire item this is - whether text for display, a grouping
+  of other items or a particular type of data to be captured (string, integer,
+  coded choice, etc.).

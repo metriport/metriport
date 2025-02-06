@@ -1,0 +1,175 @@
+title: fhirClaim
+type: object
+description: >-
+  A provider issued list of professional services and products which have been
+  provided, or are to be provided, to a patient which is sent to an insurer for
+  reimbursement.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Claim
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this claim.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      The category of claim, e.g. oral, pharmacy, vision, institutional,
+      professional.
+  subType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A finer grained suite of claim type codes which may convey additional
+      information such as Inpatient vs Outpatient and/or a specialty service.
+  use:
+    $ref: ./fhirClaimUse.yml
+    nullable: true
+    description: >-
+      A code to indicate whether the nature of the request is: to request
+      adjudication of products and services previously rendered; or requesting
+      authorization and adjudication for provision in the future; or requesting
+      the non-binding adjudication of the listed products and services which
+      could be provided in the future.
+  patient:
+    $ref: ./fhirReference.yml
+    description: >-
+      The party to whom the professional services and/or products have been
+      supplied or are being considered and for whom actual or forecast
+      reimbursement is sought.
+  billablePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The period for which charges are being submitted.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date this resource was created.
+  enterer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Individual who created the claim, predetermination or preauthorization.
+  insurer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The Insurer who is target of the request.
+  provider:
+    $ref: ./fhirReference.yml
+    description: >-
+      The provider which is responsible for the claim, predetermination or
+      preauthorization.
+  priority:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      The provider-required urgency of processing the request. Typical values
+      include: stat, routine deferred.
+  fundsReserve:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A code to indicate whether and for whom funds are to be reserved for
+      future claims.
+  related:
+    type: array
+    items:
+      $ref: ./fhirClaimRelated.yml
+    nullable: true
+    description: >-
+      Other claims which are related to this claim such as prior submissions or
+      claims for related services or for the same event.
+  prescription:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Prescription to support the dispensing of pharmacy, device or vision
+      products.
+  originalPrescription:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Original prescription which has been superseded by this prescription to
+      support the dispensing of pharmacy services, medications or products.
+  payee:
+    $ref: ./fhirClaimPayee.yml
+    nullable: true
+    description: >-
+      The party to be reimbursed for cost of the products and services according
+      to the terms of the policy.
+  referral:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: A reference to a referral resource.
+  facility:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Facility where the services were provided.
+  careTeam:
+    type: array
+    items:
+      $ref: ./fhirClaimCareTeam.yml
+    nullable: true
+    description: The members of the team who provided the products and services.
+  supportingInfo:
+    type: array
+    items:
+      $ref: ./fhirClaimSupportingInfo.yml
+    nullable: true
+    description: >-
+      Additional information codes regarding exceptions, special considerations,
+      the condition, situation, prior or concurrent issues.
+  diagnosis:
+    type: array
+    items:
+      $ref: ./fhirClaimDiagnosis.yml
+    nullable: true
+    description: Information about diagnoses relevant to the claim items.
+  procedure:
+    type: array
+    items:
+      $ref: ./fhirClaimProcedure.yml
+    nullable: true
+    description: >-
+      Procedures performed on the patient relevant to the billing items with the
+      claim.
+  insurance:
+    type: array
+    items:
+      $ref: ./fhirClaimInsurance.yml
+    description: >-
+      Financial instruments for reimbursement for the health care products and
+      services specified on the claim.
+  accident:
+    $ref: ./fhirClaimAccident.yml
+    nullable: true
+    description: >-
+      Details of an accident which resulted in injuries which required the
+      products and services listed in the claim.
+  item:
+    type: array
+    items:
+      $ref: ./fhirClaimItem.yml
+    nullable: true
+    description: >-
+      A claim line. Either a simple product or service or a 'group' of details
+      which can each be a simple items or groups of sub-details.
+  total:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: The total value of the all the items in the claim.
+required:
+  - resourceType
+  - type
+  - patient
+  - provider
+  - priority
+  - insurance
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,5 @@
+title: medicalConsolidatedWebhookStatus
+type: string
+enum:
+  - completed
+  - failed

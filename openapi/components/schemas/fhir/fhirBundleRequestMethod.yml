@@ -1,0 +1,12 @@
+title: fhirBundleRequestMethod
+type: string
+enum:
+  - GET
+  - HEAD
+  - POST
+  - PUT
+  - DELETE
+  - PATCH
+description: >-
+  In a transaction or batch, this is the HTTP action to be executed for this
+  entry. In a history bundle, this indicates the HTTP action that occurred.

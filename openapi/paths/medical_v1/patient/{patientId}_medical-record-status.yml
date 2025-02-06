@@ -1,0 +1,22 @@
+get:
+  description: Returns the status of a medical record summary
+  operationId: medical_patient_getMedicalRecordSummaryStatus
+  tags:
+    - MedicalPatient
+  parameters:
+    - name: patientId
+      in: path
+      description: The ID of the Patient.
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: the status of the medical record summary
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalMedicalRecordStatus.yml
+  summary: Get Medical Record Summary Status
+  security:
+    - ApiKeyAuth: []

@@ -1,0 +1,121 @@
+title: fhirLocation
+type: object
+description: >-
+  Details and position information for a physical place where services are
+  provided and resources and participants may be stored, found, contained, or
+  accommodated.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Location
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Unique code or number identifying the location to its users.
+  status:
+    $ref: ./fhirLocationStatus.yml
+    nullable: true
+    description: >-
+      The status property covers the general availability of the resource, not
+      the current value which may be covered by the operationStatus, or by a
+      schedule/slots if they are configured for the location.
+  operationalStatus:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: >-
+      The operational status covers operation values most relevant to beds (but
+      can also apply to rooms/units/chairs/etc. such as an isolation
+      unit/dialysis chair). This typically covers concepts such as
+      contamination, housekeeping, and other activities like maintenance.
+  name:
+    type: string
+    nullable: true
+    description: Name of the location as used by humans. Does not need to be unique.
+  alias:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      A list of alternate names that the location is known as, or was known as,
+      in the past.
+  description:
+    type: string
+    nullable: true
+    description: >-
+      Description of the Location, which helps in finding or referencing the
+      place.
+  mode:
+    $ref: ./fhirLocationMode.yml
+    nullable: true
+    description: >-
+      Indicates whether a resource instance represents a specific location or a
+      class of locations.
+  type:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Indicates the type of function performed at the location.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      The contact details of communication devices available at the location.
+      This can include phone numbers, fax numbers, mobile numbers, email
+      addresses and web sites.
+  address:
+    $ref: ./fhirAddress.yml
+    nullable: true
+    description: Physical location.
+  physicalType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Physical form of the location, e.g. building, room, vehicle, road.
+  position:
+    $ref: ./fhirLocationPosition.yml
+    nullable: true
+    description: >-
+      The absolute geographic location of the Location, expressed using the
+      WGS84 datum (This is the same co-ordinate system used in KML).
+  managingOrganization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The organization responsible for the provisioning and upkeep of the
+      location.
+  partOf:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Another Location of which this Location is physically a part of.
+  hoursOfOperation:
+    type: array
+    items:
+      $ref: ./fhirLocationHoursOfOperation.yml
+    nullable: true
+    description: What days/times during a week is this location usually open.
+  availabilityExceptions:
+    type: string
+    nullable: true
+    description: >-
+      A description of when the locations opening ours are different to normal,
+      e.g. public holiday availability. Succinctly describing all possible
+      exceptions to normal site availability as detailed in the opening hours
+      Times.
+  endpoint:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Technical endpoints providing access to services operated for the
+      location.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

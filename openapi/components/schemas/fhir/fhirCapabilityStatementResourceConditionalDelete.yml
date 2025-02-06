@@ -1,0 +1,7 @@
+title: fhirCapabilityStatementResourceConditionalDelete
+type: string
+enum:
+  - not-supported
+  - single
+  - multiple
+description: A code that indicates how the server supports conditional delete.

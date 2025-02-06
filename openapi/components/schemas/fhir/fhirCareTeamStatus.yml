@@ -1,0 +1,9 @@
+title: fhirCareTeamStatus
+type: string
+enum:
+  - proposed
+  - active
+  - suspended
+  - inactive
+  - entered-in-error
+description: Indicates the current state of the care team.

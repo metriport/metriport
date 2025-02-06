@@ -1,0 +1,159 @@
+title: fhirDeviceDefinition
+type: object
+description: >-
+  The characteristics, operational status and capabilities of a medical-related
+  component of a medical device.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - DeviceDefinition
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Unique instance identifiers assigned to a device by the software,
+      manufacturers, other organizations or owners. For example: handle ID.
+  udiDeviceIdentifier:
+    type: array
+    items:
+      $ref: ./fhirDeviceDefinitionUdiDeviceIdentifier.yml
+    nullable: true
+    description: >-
+      Unique device identifier (UDI) assigned to device label or package. Note
+      that the Device may include multiple udiCarriers as it either may include
+      just the udiCarrier for the jurisdiction it is sold, or for multiple
+      jurisdictions it could have been sold.
+  manufacturerString:
+    type: string
+    nullable: true
+    description: A name of the manufacturer.
+  manufacturerReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: A name of the manufacturer.
+  deviceName:
+    type: array
+    items:
+      $ref: ./fhirDeviceDefinitionDeviceName.yml
+    nullable: true
+    description: A name given to the device to identify it.
+  modelNumber:
+    type: string
+    nullable: true
+    description: The model number for the device.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: What kind of device or device system this is.
+  specialization:
+    type: array
+    items:
+      $ref: ./fhirDeviceDefinitionSpecialization.yml
+    nullable: true
+    description: >-
+      The capabilities supported on a device, the standards to which the device
+      conforms for a particular purpose, and used for the communication.
+  version:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: The available versions of the device, e.g., software versions.
+  safety:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Safety characteristics of the device.
+  shelfLifeStorage:
+    type: array
+    items:
+      $ref: ./fhirProductShelfLife.yml
+    nullable: true
+    description: Shelf Life and storage information.
+  physicalCharacteristics:
+    $ref: ./fhirProdCharacteristic.yml
+    nullable: true
+    description: Dimensions, color etc.
+  languageCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Language code for the human-readable text strings produced by the device
+      (all supported).
+  capability:
+    type: array
+    items:
+      $ref: ./fhirDeviceDefinitionCapability.yml
+    nullable: true
+    description: Device capabilities.
+  property:
+    type: array
+    items:
+      $ref: ./fhirDeviceDefinitionProperty.yml
+    nullable: true
+    description: >-
+      The actual configuration settings of a device as it actually operates,
+      e.g., regulation status, time properties.
+  owner:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      An organization that is responsible for the provision and ongoing
+      maintenance of the device.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      Contact details for an organization or a particular human that is
+      responsible for the device.
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: A network address on which the device may be contacted directly.
+  onlineInformation:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: Access to on-line information about the device.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Descriptive information, usage information or implantation information
+      that is not captured in an existing element.
+  quantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: >-
+      The quantity of the device present in the packaging (e.g. the number of
+      devices present in a pack, or the number of devices in the same package of
+      the medicinal product).
+  parentDevice:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The parent device it can be part of.
+  material:
+    type: array
+    items:
+      $ref: ./fhirDeviceDefinitionMaterial.yml
+    nullable: true
+    description: A substance used to create the material(s) of which the device is made.
+  classification:
+    type: array
+    items:
+      $ref: ./fhirDeviceDefinitionClassification.yml
+    nullable: true
+    description: What kind of device or device system this is.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

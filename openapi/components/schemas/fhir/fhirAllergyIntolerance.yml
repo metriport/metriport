@@ -1,0 +1,148 @@
+title: fhirAllergyIntolerance
+type: object
+description: >-
+  Risk of harmful or undesirable, physiological response which is unique to an
+  individual and associated with exposure to a substance.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - AllergyIntolerance
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this AllergyIntolerance by the performer
+      or other systems which remain constant as the resource is updated and
+      propagates from server to server.
+  clinicalStatus:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The clinical status of the allergy or intolerance.
+  verificationStatus:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Assertion about certainty associated with the propensity, or potential
+      risk, of a reaction to the identified substance (including pharmaceutical
+      product).
+  type:
+    $ref: ./fhirAllergyIntoleranceType.yml
+    nullable: true
+    description: >-
+      Identification of the underlying physiological mechanism for the reaction
+      risk.
+  category:
+    type: array
+    items:
+      $ref: ./fhirAllergyIntoleranceCategoryItem.yml
+    nullable: true
+    description: Category of the identified substance.
+  criticality:
+    $ref: ./fhirAllergyIntoleranceCriticality.yml
+    nullable: true
+    description: >-
+      Estimate of the potential clinical harm, or seriousness, of the reaction
+      to the identified substance.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Code for an allergy or intolerance statement (either a positive or a
+      negated/excluded statement). This may be a code for a substance or
+      pharmaceutical product that is considered to be responsible for the
+      adverse reaction risk (e.g., "Latex"), an allergy or intolerance condition
+      (e.g., "Latex allergy"), or a negated/excluded code for a specific
+      substance or class (e.g., "No latex allergy") or a general or categorical
+      negated statement (e.g., "No known allergy", "No known drug allergies").
+      Note: the substance for a specific reaction may be different from the
+      substance identified as the cause of the risk, but it must be consistent
+      with it. For instance, it may be a more specific substance (e.g. a brand
+      medication) or a composite product that includes the identified substance.
+      It must be clinically safe to only process the 'code' and ignore the
+      'reaction.substance'. If a receiving system is unable to confirm that
+      AllergyIntolerance.reaction.substance falls within the semantic scope of
+      AllergyIntolerance.code, then the receiving system should ignore
+      AllergyIntolerance.reaction.substance.
+  patient:
+    $ref: ./fhirReference.yml
+    description: The patient who has the allergy or intolerance.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The encounter when the allergy or intolerance was asserted.
+  onsetDateTime:
+    type: string
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, or age when allergy or intolerance
+      was identified.
+  onsetAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, or age when allergy or intolerance
+      was identified.
+  onsetPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, or age when allergy or intolerance
+      was identified.
+  onsetRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, or age when allergy or intolerance
+      was identified.
+  onsetString:
+    type: string
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, or age when allergy or intolerance
+      was identified.
+  recordedDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The recordedDate represents when this particular AllergyIntolerance record
+      was created in the system, which is often a system-generated date.
+  recorder:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Individual who recorded the record and takes responsibility for its
+      content.
+  asserter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The source of the information about the allergy that is recorded.
+  lastOccurrence:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      Represents the date and/or time of the last known occurrence of a reaction
+      event.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Additional narrative about the propensity for the Adverse Reaction, not
+      captured in other fields.
+  reaction:
+    type: array
+    items:
+      $ref: ./fhirAllergyIntoleranceReaction.yml
+    nullable: true
+    description: >-
+      Details about each adverse reaction event linked to exposure to the
+      identified substance.
+required:
+  - resourceType
+  - patient
+allOf:
+  - $ref: ./fhirBaseResource.yml

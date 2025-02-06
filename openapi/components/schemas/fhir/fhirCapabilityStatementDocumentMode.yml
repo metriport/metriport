@@ -1,0 +1,8 @@
+title: fhirCapabilityStatementDocumentMode
+type: string
+enum:
+  - producer
+  - consumer
+description: >-
+  Mode of this document declaration - whether an application is a producer or
+  consumer.

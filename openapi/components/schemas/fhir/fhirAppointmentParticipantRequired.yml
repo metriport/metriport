@@ -1,0 +1,10 @@
+title: fhirAppointmentParticipantRequired
+type: string
+enum:
+  - required
+  - optional
+  - information-only
+description: >-
+  Whether this participant is required to be present at the meeting. This covers
+  a use-case where two doctors need to meet to discuss the results for a
+  specific patient, and the patient is not required to be present.

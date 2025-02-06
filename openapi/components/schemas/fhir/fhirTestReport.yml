@@ -1,0 +1,77 @@
+title: fhirTestReport
+type: object
+description: A summary of information based on the results of executing a TestScript.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - TestReport
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifier for the TestScript assigned for external purposes outside the
+      context of FHIR.
+  name:
+    type: string
+    nullable: true
+    description: A free text natural language name identifying the executed TestScript.
+  status:
+    $ref: ./fhirTestReportStatus.yml
+    nullable: true
+    description: The current state of this test report.
+  testScript:
+    $ref: ./fhirReference.yml
+    description: >-
+      Ideally this is an absolute URL that is used to identify the
+      version-specific TestScript that was executed, matching the
+      `TestScript.url`.
+  result:
+    $ref: ./fhirTestReportResult.yml
+    nullable: true
+    description: The overall result from the execution of the TestScript.
+  score:
+    $ref: ./fhirdecimal.yml
+    nullable: true
+    description: >-
+      The final score (percentage of tests passed) resulting from the execution
+      of the TestScript.
+  tester:
+    type: string
+    nullable: true
+    description: Name of the tester producing this report (Organization or individual).
+  issued:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: When the TestScript was executed and this TestReport was generated.
+  participant:
+    type: array
+    items:
+      $ref: ./fhirTestReportParticipant.yml
+    nullable: true
+    description: >-
+      A participant in the test execution, either the execution engine, a
+      client, or a server.
+  setup:
+    $ref: ./fhirTestReportSetup.yml
+    nullable: true
+    description: >-
+      The results of the series of required setup operations before the tests
+      were executed.
+  test:
+    type: array
+    items:
+      $ref: ./fhirTestReportTest.yml
+    nullable: true
+    description: A test executed from the test script.
+  teardown:
+    $ref: ./fhirTestReportTeardown.yml
+    nullable: true
+    description: >-
+      The results of the series of operations required to clean up after all the
+      tests were executed (successfully or otherwise).
+required:
+  - resourceType
+  - testScript
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,11 @@
+title: medicalContact
+type: object
+properties:
+  phone:
+    type: string
+    nullable: true
+    description: The Patient's 10 digit phone number, formatted `1234567899`.
+  email:
+    type: string
+    nullable: true
+    description: The Patient's email address.

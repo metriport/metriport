@@ -1,0 +1,10 @@
+title: fhirMessageDefinitionResponseRequired
+type: string
+enum:
+  - always
+  - on-error
+  - never
+  - on-success
+description: >-
+  Declare at a message definition level whether a response is required or only
+  upon error or success, or never.

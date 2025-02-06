@@ -1,0 +1,172 @@
+title: fhirClaimResponse
+type: object
+description: >-
+  This resource provides the adjudication details from the processing of a Claim
+  resource.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ClaimResponse
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this claim response.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      A finer grained suite of claim type codes which may convey additional
+      information such as Inpatient vs Outpatient and/or a specialty service.
+  subType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A finer grained suite of claim type codes which may convey additional
+      information such as Inpatient vs Outpatient and/or a specialty service.
+  use:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      A code to indicate whether the nature of the request is: to request
+      adjudication of products and services previously rendered; or requesting
+      authorization and adjudication for provision in the future; or requesting
+      the non-binding adjudication of the listed products and services which
+      could be provided in the future.
+  patient:
+    $ref: ./fhirReference.yml
+    description: >-
+      The party to whom the professional services and/or products have been
+      supplied or are being considered and for whom actual for facast
+      reimbursement is sought.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date this resource was created.
+  insurer:
+    $ref: ./fhirReference.yml
+    description: The party responsible for authorization, adjudication and reimbursement.
+  requestor:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The provider which is responsible for the claim, predetermination or
+      preauthorization.
+  request:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Original request resource reference.
+  outcome:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      The outcome of the claim, predetermination, or preauthorization
+      processing.
+  disposition:
+    type: string
+    nullable: true
+    description: A human readable description of the status of the adjudication.
+  preAuthRef:
+    type: string
+    nullable: true
+    description: >-
+      Reference from the Insurer which is used in later communications which
+      refers to this adjudication.
+  preAuthPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The time frame during which this authorization is effective.
+  payeeType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: 'Type of Party to be reimbursed: subscriber, provider, other.'
+  item:
+    type: array
+    items:
+      $ref: ./fhirClaimResponseItem.yml
+    nullable: true
+    description: >-
+      A claim line. Either a simple (a product or service) or a 'group' of
+      details which can also be a simple items or groups of sub-details.
+  addItem:
+    type: array
+    items:
+      $ref: ./fhirClaimResponseAddItem.yml
+    nullable: true
+    description: >-
+      The first-tier service adjudications for payor added product or service
+      lines.
+  adjudication:
+    type: array
+    items:
+      $ref: ./fhirClaimResponseAdjudication.yml
+    nullable: true
+    description: >-
+      The adjudication results which are presented at the header level rather
+      than at the line-item or add-item levels.
+  total:
+    type: array
+    items:
+      $ref: ./fhirClaimResponseTotal.yml
+    nullable: true
+    description: Categorized monetary totals for the adjudication.
+  payment:
+    $ref: ./fhirClaimResponsePayment.yml
+    nullable: true
+    description: Payment details for the adjudication of the claim.
+  fundsReserve:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A code, used only on a response to a preauthorization, to indicate whether
+      the benefits payable have been reserved and for whom.
+  formCode:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A code for the form to be used for printing the content.
+  form:
+    $ref: ./fhirAttachment.yml
+    nullable: true
+    description: >-
+      The actual form, by reference or inclusion, for printing the content or an
+      EOB.
+  processNote:
+    type: array
+    items:
+      $ref: ./fhirClaimResponseProcessNote.yml
+    nullable: true
+    description: >-
+      A note that describes or explains adjudication results in a human readable
+      form.
+  communicationRequest:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Request for additional supporting or authorizing information.
+  insurance:
+    type: array
+    items:
+      $ref: ./fhirClaimResponseInsurance.yml
+    nullable: true
+    description: >-
+      Financial instruments for reimbursement for the health care products and
+      services specified on the claim.
+  error:
+    type: array
+    items:
+      $ref: ./fhirClaimResponseError.yml
+    nullable: true
+    description: Errors encountered during the processing of the adjudication.
+required:
+  - resourceType
+  - type
+  - patient
+  - insurer
+allOf:
+  - $ref: ./fhirBaseResource.yml

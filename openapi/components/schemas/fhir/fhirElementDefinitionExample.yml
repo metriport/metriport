@@ -1,0 +1,350 @@
+title: fhirElementDefinitionExample
+type: object
+description: >-
+  Captures constraints on each element within the resource, profile, or
+  extension.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  label:
+    type: string
+    nullable: true
+    description: Describes the purpose of this example amoung the set of examples.
+  valueBase64Binary:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueBoolean:
+    type: boolean
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueCanonical:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueCode:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueDate:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueDateTime:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueDecimal:
+    type: number
+    format: double
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueId:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueInstant:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueInteger:
+    type: number
+    format: double
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueMarkdown:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueOid:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valuePositiveInt:
+    type: number
+    format: double
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueString:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueTime:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueUnsignedInt:
+    type: number
+    format: double
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueUri:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueUrl:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueUuid:
+    type: string
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueAddress:
+    $ref: ./fhirAddress.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueAnnotation:
+    $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueAttachment:
+    $ref: ./fhirAttachment.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueCoding:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueContactPoint:
+    $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueCount:
+    $ref: ./fhirCount.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueDistance:
+    $ref: ./fhirDistance.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueDuration:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueHumanName:
+    $ref: ./fhirHumanName.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueIdentifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueMoney:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valuePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueQuantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueRatio:
+    $ref: ./fhirRatio.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueSampledData:
+    $ref: ./fhirSampledData.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueSignature:
+    $ref: ./fhirSignature.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueContactDetail:
+    $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueContributor:
+    $ref: ./fhirContributor.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueDataRequirement:
+    $ref: ./fhirDataRequirement.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueExpression:
+    $ref: ./fhirExpression.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueParameterDefinition:
+    $ref: ./fhirParameterDefinition.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueRelatedArtifact:
+    $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueTriggerDefinition:
+    $ref: ./fhirTriggerDefinition.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueUsageContext:
+    $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueDosage:
+    $ref: ./fhirDosage.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.
+  valueMeta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: >-
+      The actual value for the element, which must be one of the types allowed
+      for this element.

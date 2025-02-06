@@ -1,0 +1,9 @@
+title: fhirTestReportStatus
+type: string
+enum:
+  - completed
+  - in-progress
+  - waiting
+  - stopped
+  - entered-in-error
+description: The current state of this test report.

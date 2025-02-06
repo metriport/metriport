@@ -1,0 +1,8 @@
+title: fhirConsentDataMeaning
+type: string
+enum:
+  - instance
+  - related
+  - dependents
+  - authoredby
+description: How the resource reference is interpreted when testing consent restrictions.

@@ -1,0 +1,166 @@
+title: fhirCommunication
+type: object
+description: >-
+  An occurrence of information being transmitted; e.g. an alert that was sent to
+  a responsible provider, a public health agency that was notified about a
+  reportable condition.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Communication
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this communication by the performer or
+      other systems which remain constant as the resource is updated and
+      propagates from server to server.
+  instantiatesCanonical:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      The URL pointing to a FHIR-defined protocol, guideline, orderset or other
+      definition that is adhered to in whole or in part by this Communication.
+  instantiatesUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally maintained protocol, guideline, orderset
+      or other definition that is adhered to in whole or in part by this
+      Communication.
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      An order, proposal or plan fulfilled in whole or in part by this
+      Communication.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Part of this action.
+  inResponseTo:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Prior communication that this communication is in response to.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the transmission.
+  statusReason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Captures the reason for the current state of the Communication.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The type of message conveyed such as alert, notification, reminder,
+      instruction, etc.
+  priority:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Characterizes how quickly the planned or in progress communication must be
+      addressed. Includes concepts such as stat, urgent, routine.
+  medium:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A channel that was used for this communication (e.g. email, fax).
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The patient or group that was the focus of this communication.
+  topic:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Description of the purpose/content, similar to a subject line in an email.
+  about:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Other resources that pertain to this communication and to which this
+      communication should be associated.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Encounter during which this Communication was created or to which the
+      creation of this record is tightly associated.
+  sent:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The time when this communication was sent.
+  received:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The time when this communication arrived at the destination.
+  recipient:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The entity (e.g. person, organization, clinical information system, care
+      team or device) which was the target of the communication. If receipts
+      need to be tracked by an individual, a separate resource instance will
+      need to be created for each recipient. Multiple recipient communications
+      are intended where either receipts are not tracked (e.g. a mass mail-out)
+      or a receipt is captured in aggregate (all emails confirmed received by a
+      particular time).
+  sender:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The entity (e.g. person, organization, clinical information system, or
+      device) which was the source of the communication.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The reason or justification for the communication.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Indicates another resource whose existence justifies this communication.
+  payload:
+    type: array
+    items:
+      $ref: ./fhirCommunicationPayload.yml
+    nullable: true
+    description: >-
+      Text, attachment(s), or resource(s) that was communicated to the
+      recipient.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Additional notes or commentary about the communication by the sender,
+      receiver or other interested parties.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

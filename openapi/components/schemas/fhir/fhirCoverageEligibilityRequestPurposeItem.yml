@@ -1,0 +1,7 @@
+title: fhirCoverageEligibilityRequestPurposeItem
+type: string
+enum:
+  - auth-requirements
+  - benefits
+  - discovery
+  - validation

@@ -1,0 +1,8 @@
+title: fhirCompositionAttesterMode
+type: string
+enum:
+  - personal
+  - professional
+  - legal
+  - official
+description: The type of attestation the authenticator offers.

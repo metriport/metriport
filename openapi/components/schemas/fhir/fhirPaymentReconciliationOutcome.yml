@@ -1,0 +1,8 @@
+title: fhirPaymentReconciliationOutcome
+type: string
+enum:
+  - queued
+  - complete
+  - error
+  - partial
+description: The outcome of a request for a reconciliation.

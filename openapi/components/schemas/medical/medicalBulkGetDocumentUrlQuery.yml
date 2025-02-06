@@ -1,0 +1,12 @@
+title: medicalBulkGetDocumentUrlQuery
+type: object
+properties:
+  status:
+    $ref: ./medicalDocumentQueryStatus.yml
+    description: The status of the URL generation process.
+  requestId:
+    type: string
+    nullable: true
+    description: The ID of the request.
+required:
+  - status

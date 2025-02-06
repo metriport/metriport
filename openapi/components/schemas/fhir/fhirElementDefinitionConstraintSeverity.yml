@@ -1,0 +1,8 @@
+title: fhirElementDefinitionConstraintSeverity
+type: string
+enum:
+  - error
+  - warning
+description: >-
+  Identifies the impact constraint violation has on the conformance of the
+  instance.

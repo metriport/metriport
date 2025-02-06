@@ -1,0 +1,8 @@
+title: fhirCapabilityStatementInteraction1Code
+type: string
+enum:
+  - transaction
+  - batch
+  - search-system
+  - history-system
+description: A coded identifier of the operation, supported by the system.

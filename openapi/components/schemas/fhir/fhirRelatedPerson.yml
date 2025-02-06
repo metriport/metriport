@@ -1,0 +1,86 @@
+title: fhirRelatedPerson
+type: object
+description: >-
+  Information about a person that is involved in the care for a patient, but who
+  is not the target of healthcare, nor has a formal responsibility in the care
+  process.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - RelatedPerson
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Identifier for a person within a particular scope.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether this related person record is in active use.
+  patient:
+    $ref: ./fhirReference.yml
+    description: The patient this person is related to.
+  relationship:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The nature of the relationship between a patient and the related person.
+  name:
+    type: array
+    items:
+      $ref: ./fhirHumanName.yml
+    nullable: true
+    description: A name associated with the person.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      A contact detail for the person, e.g. a telephone number or an email
+      address.
+  gender:
+    $ref: ./fhirRelatedPersonGender.yml
+    nullable: true
+    description: >-
+      Administrative Gender - the gender that the person is considered to have
+      for administration and record keeping purposes.
+  birthDate:
+    type: string
+    format: date
+    nullable: true
+    description: The date on which the related person was born.
+  address:
+    type: array
+    items:
+      $ref: ./fhirAddress.yml
+    nullable: true
+    description: Address where the related person can be contacted or visited.
+  photo:
+    type: array
+    items:
+      $ref: ./fhirAttachment.yml
+    nullable: true
+    description: Image of the person.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period of time during which this relationship is or was active. If
+      there are no dates defined, then the interval is unknown.
+  communication:
+    type: array
+    items:
+      $ref: ./fhirRelatedPersonCommunication.yml
+    nullable: true
+    description: >-
+      A language which may be used to communicate with about the patient's
+      health.
+required:
+  - resourceType
+  - patient
+allOf:
+  - $ref: ./fhirBaseResource.yml

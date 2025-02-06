@@ -1,0 +1,31 @@
+title: Address
+type: object
+properties:
+  addressLine1:
+    type: string
+    description: The address.
+    example: 2261 Market Street
+  addressLine2:
+    type: string
+    nullable: true
+    description: The address details, for example `#4451`
+  city:
+    type: string
+    description: The city.
+    example: San Francisco
+  state:
+    $ref: ../utils/USState.yml
+    description: The 2 letter state acronym, for example `CA`
+  zip:
+    type: string
+    description: Zip must be a string consisting of 5 numbers.
+    example: '94114'
+  country:
+    type: string
+    nullable: true
+    description: Defaults to “USA”
+required:
+  - addressLine1
+  - city
+  - state
+  - zip

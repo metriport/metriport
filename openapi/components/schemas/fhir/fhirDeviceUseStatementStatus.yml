@@ -1,0 +1,13 @@
+title: fhirDeviceUseStatementStatus
+type: string
+enum:
+  - active
+  - completed
+  - entered-in-error
+  - intended
+  - stopped
+  - on-hold
+description: >-
+  A code representing the patient or other source's judgment about the state of
+  the device used that this statement is about. Generally this will be active or
+  completed.

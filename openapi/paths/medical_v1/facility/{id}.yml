@@ -1,0 +1,127 @@
+get:
+  description: Get a Facility in Metriport where your patients receive care.
+  operationId: medical_facility_get
+  tags:
+    - MedicalFacility
+  parameters:
+    - name: id
+      in: path
+      description: |-
+        The ID assigned to this Facility. This ID will be used
+        to uniquely identify this Facility in medical documents.
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 018a80c4-292a-7486-a1234-9uiu76yhe234
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalFacility.yml
+          examples:
+            Example1:
+              value:
+                id: 018a80c4-292a-7486-a1234-9uiu76yhe234
+                oid: 2.16.840.1.113883.3.666.123.4.101
+                name: Care Facility, LLC
+                npi: '1234567891'
+                address:
+                  addressLine1: 2261 Market Street
+                  addressLine2: '#4818'
+                  city: San Francisco
+                  state: CA
+                  zip: '94114'
+                  country: USA
+                tin: 12-3456789
+                active: true
+  summary: Get Facility
+  security:
+    - ApiKeyAuth: []
+put:
+  description: Updates a Facility in Metriport where your patients receive care.
+  operationId: medical_facility_update
+  tags:
+    - MedicalFacility
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Facility.
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 018a80c4-292a-7486-a1234-9uiu76yhe234
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalFacility.yml
+          examples:
+            Example1:
+              value:
+                id: 018a80c4-292a-7486-a1234-9uiu76yhe234
+                oid: 2.16.840.1.113883.3.666.123.4.101
+                name: Care Facility, LLC
+                npi: '1234567891'
+                address:
+                  addressLine1: 2261 Market Street
+                  addressLine2: '#4818'
+                  city: San Francisco
+                  state: CA
+                  zip: '94114'
+                  country: USA
+                tin: 12-3456789
+                active: true
+  summary: Update Facility
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../../components/schemas/medical/medicalBaseFacility.yml
+        examples:
+          Example1:
+            value:
+              name: Care Facility, LLC
+              npi: '1234567891'
+              address:
+                addressLine1: 2261 Market Street
+                addressLine2: '#4818'
+                city: San Francisco
+                state: CA
+                zip: '94114'
+                country: USA
+              tin: 12-3456789
+              active: true
+delete:
+  description: >-
+    Deletes a Facility. Throws 400 if there are patients associated with the
+    Facility.
+  operationId: medical_facility_delete
+  tags:
+    - MedicalFacility
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Facility.
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 018a80c4-292a-7486-a1234-9uiu76yhe234
+  responses:
+    '204':
+      description: ''
+  summary: Delete Facility
+  security:
+    - ApiKeyAuth: []

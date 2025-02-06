@@ -1,0 +1,64 @@
+title: fhirMedicinalProductPackaged
+type: object
+description: A medicinal product in a container or package.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductPackaged
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Unique identifier.
+  subject:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The product with this is a pack for.
+  description:
+    type: string
+    nullable: true
+    description: Textual description.
+  legalStatusOfSupply:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The legal status of supply of the medicinal product as classified by the
+      regulator.
+  marketingStatus:
+    type: array
+    items:
+      $ref: ./fhirMarketingStatus.yml
+    nullable: true
+    description: Marketing information.
+  marketingAuthorization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Manufacturer of this Package Item.
+  manufacturer:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Manufacturer of this Package Item.
+  batchIdentifier:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductPackagedBatchIdentifier.yml
+    nullable: true
+    description: Batch numbering.
+  packageItem:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductPackagedPackageItem.yml
+    description: >-
+      A packaging item, as a contained for medicine, possibly with other
+      packaging items within.
+required:
+  - resourceType
+  - packageItem
+allOf:
+  - $ref: ./fhirBaseResource.yml

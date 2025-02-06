@@ -1,0 +1,226 @@
+title: fhirEvidence
+type: object
+description: >-
+  The Evidence resource describes the conditional state (population and any
+  exposures being compared within the population) and outcome (if specified)
+  that the knowledge (evidence, assertion, recommendation) is about.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Evidence
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this evidence when it is
+      referenced in a specification, model, design or an instance; also called
+      its canonical identifier. This SHOULD be globally unique and SHOULD be a
+      literal address at which at which an authoritative instance of this
+      evidence is (or will be) published. This URL can be the target of a
+      canonical reference. It SHALL remain the same when the evidence is stored
+      on different servers.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this evidence when it is
+      represented in other formats, or referenced in a specification, model,
+      design or an instance.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the evidence when
+      it is referenced in a specification, model, design or instance. This is an
+      arbitrary value managed by the evidence author and is not expected to be
+      globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a
+      managed version is not available. There is also no expectation that
+      versions can be placed in a lexicographical sequence. To provide a version
+      consistent with the Decision Support Service specification, use the format
+      Major.Minor.Revision (e.g. 1.0.0). For more information on versioning
+      knowledge assets, refer to the Decision Support Service specification.
+      Note that a version is required for non-experimental active artifacts.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the evidence. This name should be
+      usable as an identifier for the module by machine processing applications
+      such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the evidence.
+  shortTitle:
+    type: string
+    nullable: true
+    description: >-
+      The short title provides an alternate title for use in informal
+      descriptive contexts where the full, formal title is not necessary.
+  subtitle:
+    type: string
+    nullable: true
+    description: >-
+      An explanatory or alternate title for the Evidence giving additional
+      information about its content.
+  status:
+    $ref: ./fhirEvidenceStatus.yml
+    nullable: true
+    description: >-
+      The status of this evidence. Enables tracking the life-cycle of the
+      content.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the evidence was published. The date
+      must change when the business version changes and it must change if the
+      status code changes. In addition, it should change when the substantive
+      content of the evidence changes.
+  publisher:
+    type: string
+    nullable: true
+    description: The name of the organization or individual that published the evidence.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the evidence from a consumer's
+      perspective.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: A human-readable string to clarify or explain concepts about the resource.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate evidence instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A legal or geographic region in which the evidence is intended to be used.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the evidence and/or its contents.
+      Copyright statements are generally legal restrictions on the use and
+      publishing of the evidence.
+  approvalDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was approved by the publisher.
+      Approval happens once when the content is officially approved for usage.
+  lastReviewDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was last reviewed. Review happens
+      periodically after approval but does not change the original approval
+      date.
+  effectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period during which the evidence content was or is planned to be in
+      active use.
+  topic:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Descriptive topics related to the content of the Evidence. Topics provide
+      a high-level categorization grouping types of Evidences that can be useful
+      for filtering and searching.
+  author:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individiual or organization primarily involved in the creation and
+      maintenance of the content.
+  editor:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization primarily responsible for internal coherence
+      of the content.
+  reviewer:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization primarily responsible for review of some
+      aspect of the content.
+  endorser:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization responsible for officially endorsing the
+      content for use in some setting.
+  relatedArtifact:
+    type: array
+    items:
+      $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: >-
+      Related artifacts such as additional documentation, justification, or
+      bibliographic references.
+  exposureBackground:
+    $ref: ./fhirReference.yml
+    description: >-
+      A reference to a EvidenceVariable resource that defines the population for
+      the research.
+  exposureVariant:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A reference to a EvidenceVariable resource that defines the exposure for
+      the research.
+  outcome:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A reference to a EvidenceVariable resomece that defines the outcome for
+      the research.
+required:
+  - resourceType
+  - exposureBackground
+allOf:
+  - $ref: ./fhirBaseResource.yml

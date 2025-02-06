@@ -1,0 +1,167 @@
+title: fhirDevice
+type: object
+description: >-
+  A type of a manufactured item that is used in the provision of healthcare
+  without being substantially changed through that activity. The device may be a
+  medical or non-medical device.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Device
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Unique instance identifiers assigned to a device by manufacturers other
+      organizations or owners.
+  definition:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The reference to the definition for the device.
+  udiCarrier:
+    type: array
+    items:
+      $ref: ./fhirDeviceUdiCarrier.yml
+    nullable: true
+    description: >-
+      Unique device identifier (UDI) assigned to device label or package. Note
+      that the Device may include multiple udiCarriers as it either may include
+      just the udiCarrier for the jurisdiction it is sold, or for multiple
+      jurisdictions it could have been sold.
+  status:
+    $ref: ./fhirDeviceStatus.yml
+    nullable: true
+    description: Status of the Device availability.
+  statusReason:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Reason for the dtatus of the Device availability.
+  distinctIdentifier:
+    type: string
+    nullable: true
+    description: >-
+      The distinct identification string as required by regulation for a human
+      cell, tissue, or cellular and tissue-based product.
+  manufacturer:
+    type: string
+    nullable: true
+    description: A name of the manufacturer.
+  manufactureDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date and time when the device was manufactured.
+  expirationDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date and time beyond which this device is no longer valid or should
+      not be used (if applicable).
+  lotNumber:
+    type: string
+    nullable: true
+    description: Lot number assigned by the manufacturer.
+  serialNumber:
+    type: string
+    nullable: true
+    description: >-
+      The serial number assigned by the organization when the device was
+      manufactured.
+  deviceName:
+    type: array
+    items:
+      $ref: ./fhirDeviceDeviceName.yml
+    nullable: true
+    description: >-
+      This represents the manufacturer's name of the device as provided by the
+      device, from a UDI label, or by a person describing the Device. This
+      typically would be used when a person provides the name(s) or when the
+      device represents one of the names available from DeviceDefinition.
+  modelNumber:
+    type: string
+    nullable: true
+    description: The model number for the device.
+  partNumber:
+    type: string
+    nullable: true
+    description: The part number of the device.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The kind or type of device.
+  specialization:
+    type: array
+    items:
+      $ref: ./fhirDeviceSpecialization.yml
+    nullable: true
+    description: >-
+      The capabilities supported on a device, the standards to which the device
+      conforms for a particular purpose, and used for the communication.
+  version:
+    type: array
+    items:
+      $ref: ./fhirDeviceVersion.yml
+    nullable: true
+    description: The actual design of the device or software version running on the device.
+  property:
+    type: array
+    items:
+      $ref: ./fhirDeviceProperty.yml
+    nullable: true
+    description: >-
+      The actual configuration settings of a device as it actually operates,
+      e.g., regulation status, time properties.
+  patient:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Patient information, If the device is affixed to a person.
+  owner:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      An organization that is responsible for the provision and ongoing
+      maintenance of the device.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      Contact details for an organization or a particular human that is
+      responsible for the device.
+  location:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The place where the device can be found.
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: A network address on which the device may be contacted directly.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Descriptive information, usage information or implantation information
+      that is not captured in an existing element.
+  safety:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Provides additional safety characteristics about a medical device. For
+      example devices containing latex.
+  parent:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The parent device.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

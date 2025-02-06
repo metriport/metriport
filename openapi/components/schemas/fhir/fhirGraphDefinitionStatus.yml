@@ -1,0 +1,10 @@
+title: fhirGraphDefinitionStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this graph definition. Enables tracking the life-cycle of the
+  content.

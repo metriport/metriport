@@ -1,0 +1,176 @@
+title: fhirChargeItem
+type: object
+description: >-
+  The resource ChargeItem describes the provision of healthcare provider
+  products for a certain patient, therefore referring not only to the product,
+  but containing in addition details of the provision, like date, time, amounts
+  and participating organizations and persons. Main Usage of the ChargeItem is
+  to enable the billing process and internal cost allocation.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ChargeItem
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Identifiers assigned to this event performer or other systems.
+  definitionUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      References the (external) source of pricing information, rules of
+      application for the code this ChargeItem uses.
+  definitionCanonical:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      References the source of pricing information, rules of application for the
+      code this ChargeItem uses.
+  status:
+    $ref: ./fhirChargeItemStatus.yml
+    nullable: true
+    description: The current state of the ChargeItem.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: ChargeItems can be grouped to larger ChargeItems covering the whole set.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    description: A code that identifies the charge, like a billing code.
+  subject:
+    $ref: ./fhirReference.yml
+    description: >-
+      The individual or set of individuals the action is being or was performed
+      on.
+  context:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The encounter or episode of care that establishes the context for this
+      event.
+  occurrenceDateTime:
+    type: string
+    nullable: true
+    description: Date/time(s) or duration when the charged service was applied.
+  occurrencePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: Date/time(s) or duration when the charged service was applied.
+  occurrenceTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: Date/time(s) or duration when the charged service was applied.
+  performer:
+    type: array
+    items:
+      $ref: ./fhirChargeItemPerformer.yml
+    nullable: true
+    description: Indicates who or what performed or participated in the charged service.
+  performingOrganization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The organization requesting the service.
+  requestingOrganization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The organization performing the service.
+  costCenter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The financial cost center permits the tracking of charge attribution.
+  quantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: Quantity of which the charge item has been serviced.
+  bodysite:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The anatomical location where the related service has been applied.
+  factorOverride:
+    $ref: ./fhirdecimal.yml
+    nullable: true
+    description: >-
+      Factor overriding the factor determined by the rules associated with the
+      code.
+  priceOverride:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: >-
+      Total price of the charge overriding the list price associated with the
+      code.
+  overrideReason:
+    type: string
+    nullable: true
+    description: >-
+      If the list price or the rule-based factor associated with the code is
+      overridden, this attribute can capture a text to indicate the reason for
+      this action.
+  enterer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The device, practitioner, etc. who entered the charge item.
+  enteredDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: Date the charge item was entered.
+  reason:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Describes why the event occurred in coded or textual form.
+  service:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Indicated the rendered service that caused this charge.
+  productReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the device, food, drug or other product being charged either by
+      type code or reference to an instance.
+  productCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Identifies the device, food, drug or other product being charged either by
+      type code or reference to an instance.
+  account:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Account into which this ChargeItems belongs.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Comments made about the event by the performer, subject or other
+      participants.
+  supportingInformation:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Further information supporting this charge.
+required:
+  - resourceType
+  - code
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

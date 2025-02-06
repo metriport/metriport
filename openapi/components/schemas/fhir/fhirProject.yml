@@ -1,0 +1,86 @@
+title: fhirProject
+type: object
+description: Encapsulation of resources for a specific project or organization.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Project
+  id:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      The logical id of the resource, as used in the URL for the resource. Once
+      assigned, this value never changes.
+  meta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: >-
+      The metadata about the resource. This is content that is maintained by the
+      infrastructure. Changes to the content might not always be associated with
+      version changes to the resource.
+  implicitRules:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      A reference to a set of rules that were followed when the resource was
+      constructed, and which must be understood when processing the content.
+      Often, this is a reference to an implementation guide that defines the
+      special rules along with other profiles etc.
+  language:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The base language in which the resource is written.
+  name:
+    type: string
+    nullable: true
+    description: A name associated with the Project.
+  description:
+    type: string
+    nullable: true
+    description: A summary, characterization or explanation of the Project.
+  superAdmin:
+    type: boolean
+    nullable: true
+    description: >-
+      Whether this project is the super administrator project. A super
+      administrator is a user who has complete access to all resources in all
+      projects.
+  strictMode:
+    type: boolean
+    nullable: true
+    description: Whether this project uses strict FHIR validation.
+  checkReferencesOnWrite:
+    type: boolean
+    nullable: true
+    description: >-
+      Whether this project uses referential integrity on write operations such
+      as 'create' and 'update'.
+  owner:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The user who owns the project.
+  features:
+    type: array
+    items:
+      $ref: ./fhirProjectFeaturesItem.yml
+    nullable: true
+    description: A list of optional features that are enabled for the project.
+  defaultPatientAccessPolicy:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The default access policy for patients using open registration.
+  secret:
+    type: array
+    items:
+      $ref: ./fhirProjectSecret.yml
+    nullable: true
+    description: Secure environment variable that can be used to store secrets for bots.
+  site:
+    type: array
+    items:
+      $ref: ./fhirProjectSite.yml
+    nullable: true
+    description: Web application or web site that is associated with the project.
+required:
+  - resourceType

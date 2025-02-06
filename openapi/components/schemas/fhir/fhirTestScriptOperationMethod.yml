@@ -1,0 +1,13 @@
+title: fhirTestScriptOperationMethod
+type: string
+enum:
+  - delete
+  - get
+  - options
+  - patch
+  - post
+  - put
+  - head
+description: >-
+  The HTTP method the test engine MUST use for this operation regardless of any
+  other operation details.

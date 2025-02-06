@@ -1,0 +1,12 @@
+title: fhirClaimUse
+type: string
+enum:
+  - claim
+  - preauthorization
+  - predetermination
+description: >-
+  A code to indicate whether the nature of the request is: to request
+  adjudication of products and services previously rendered; or requesting
+  authorization and adjudication for provision in the future; or requesting the
+  non-binding adjudication of the listed products and services which could be
+  provided in the future.

@@ -1,0 +1,140 @@
+title: fhirNutritionOrder
+type: object
+description: >-
+  A request to supply a diet, formula feeding (enteral) or oral nutritional
+  supplement to a patient/resident.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - NutritionOrder
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifiers assigned to this order by the order sender or by the order
+      receiver.
+  instantiatesCanonical:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      The URL pointing to a FHIR-defined protocol, guideline, orderset or other
+      definition that is adhered to in whole or in part by this NutritionOrder.
+  instantiatesUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally maintained protocol, guideline, orderset
+      or other definition that is adhered to in whole or in part by this
+      NutritionOrder.
+  instantiates:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to a protocol, guideline, orderset or other definition
+      that is adhered to in whole or in part by this NutritionOrder.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The workflow status of the nutrition order/request.
+  intent:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Indicates the level of authority/intentionality associated with the
+      NutrionOrder and where the request fits into the workflow chain.
+  patient:
+    $ref: ./fhirReference.yml
+    description: >-
+      The person (patient) who needs the nutrition order for an oral diet,
+      nutritional supplement and/or enteral or formula feeding.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      An encounter that provides additional information about the healthcare
+      context in which this request is made.
+  dateTime:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date and time that this nutrition order was requested.
+  orderer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The practitioner that holds legal responsibility for ordering the diet,
+      nutritional supplement, or formula feedings.
+  allergyIntolerance:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A link to a record of allergies or intolerances which should be included
+      in the nutrition order.
+  foodPreferenceModifier:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      This modifier is used to convey order-specific modifiers about the type of
+      food that should be given. These can be derived from patient allergies,
+      intolerances, or preferences such as Halal, Vegan or Kosher. This modifier
+      applies to the entire nutrition order inclusive of the oral diet,
+      nutritional supplements and enteral formula feedings.
+  excludeFoodModifier:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      This modifier is used to convey Order-specific modifier about the type of
+      oral food or oral fluids that should not be given. These can be derived
+      from patient allergies, intolerances, or preferences such as No Red Meat,
+      No Soy or No Wheat or Gluten-Free. While it should not be necessary to
+      repeat allergy or intolerance information captured in the referenced
+      AllergyIntolerance resource in the excludeFoodModifier, this element may
+      be used to convey additional specificity related to foods that should be
+      eliminated from the patient’s diet for any reason. This modifier applies
+      to the entire nutrition order inclusive of the oral diet, nutritional
+      supplements and enteral formula feedings.
+  oralDiet:
+    $ref: ./fhirNutritionOrderOralDiet.yml
+    nullable: true
+    description: Diet given orally in contrast to enteral (tube) feeding.
+  supplement:
+    type: array
+    items:
+      $ref: ./fhirNutritionOrderSupplement.yml
+    nullable: true
+    description: >-
+      Oral nutritional products given in order to add further nutritional value
+      to the patient's diet.
+  enteralFormula:
+    $ref: ./fhirNutritionOrderEnteralFormula.yml
+    nullable: true
+    description: >-
+      Feeding provided through the gastrointestinal tract via a tube, catheter,
+      or stoma that delivers nutrition distal to the oral cavity.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Comments made about the {{title}} by the requester, performer, subject or
+      other participants.
+required:
+  - resourceType
+  - patient
+allOf:
+  - $ref: ./fhirBaseResource.yml

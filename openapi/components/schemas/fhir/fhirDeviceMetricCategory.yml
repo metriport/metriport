@@ -1,0 +1,10 @@
+title: fhirDeviceMetricCategory
+type: string
+enum:
+  - measurement
+  - setting
+  - calculation
+  - unspecified
+description: >-
+  Indicates the category of the observation generation process. A DeviceMetric
+  can be for example a setting, measurement, or calculation.

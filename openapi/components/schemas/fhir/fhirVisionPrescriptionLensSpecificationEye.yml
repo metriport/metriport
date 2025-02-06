@@ -1,0 +1,6 @@
+title: fhirVisionPrescriptionLensSpecificationEye
+type: string
+enum:
+  - right
+  - left
+description: The eye for which the lens specification applies.

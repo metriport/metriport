@@ -1,0 +1,7 @@
+title: fhirPlanDefinitionActionRequiredBehavior
+type: string
+enum:
+  - must
+  - could
+  - must-unless-documented
+description: Defines the required behavior for the action.

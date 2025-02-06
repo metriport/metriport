@@ -1,0 +1,15 @@
+title: fhirCapabilityStatementSearchParamType
+type: string
+enum:
+  - number
+  - date
+  - string
+  - token
+  - reference
+  - composite
+  - quantity
+  - uri
+  - special
+description: >-
+  The type of value a search parameter refers to, and how the content is
+  interpreted.

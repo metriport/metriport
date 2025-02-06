@@ -1,0 +1,8 @@
+title: fhirConsentProvisionType
+type: string
+enum:
+  - deny
+  - permit
+description: >-
+  Action to take - permit or deny - when the rule conditions are met. Not
+  permitted in root rule, required in all nested rules.

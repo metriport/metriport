@@ -1,0 +1,40 @@
+title: fhirSubstanceReferenceInformation
+type: object
+description: Todo.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - SubstanceReferenceInformation
+  comment:
+    type: string
+    nullable: true
+    description: Todo.
+  gene:
+    type: array
+    items:
+      $ref: ./fhirSubstanceReferenceInformationGene.yml
+    nullable: true
+    description: Todo.
+  geneElement:
+    type: array
+    items:
+      $ref: ./fhirSubstanceReferenceInformationGeneElement.yml
+    nullable: true
+    description: Todo.
+  classification:
+    type: array
+    items:
+      $ref: ./fhirSubstanceReferenceInformationClassification.yml
+    nullable: true
+    description: Todo.
+  target:
+    type: array
+    items:
+      $ref: ./fhirSubstanceReferenceInformationTarget.yml
+    nullable: true
+    description: Todo.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,65 @@
+title: fhirAppointmentResponse
+type: object
+description: >-
+  A reply to an appointment request for a patient and/or practitioner(s), such
+  as a confirmation or rejection.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - AppointmentResponse
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      This records identifiers associated with this appointment response concern
+      that are defined by business processes and/ or used to refer to it when a
+      direct URL reference to the resource itself is not appropriate.
+  appointment:
+    $ref: ./fhirReference.yml
+    description: Appointment that this response is replying to.
+  start:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: >-
+      Date/Time that the appointment is to take place, or requested new start
+      time.
+  end:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: >-
+      This may be either the same as the appointment request to confirm the
+      details of the appointment, or alternately a new time to request a
+      re-negotiation of the end time.
+  participantType:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Role of participant in the appointment.
+  actor:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A Person, Location, HealthcareService, or Device that is participating in
+      the appointment.
+  participantStatus:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Participation status of the participant. When the status is declined or
+      tentative if the start/end times are different to the appointment, then
+      these times should be interpreted as a requested time change. When the
+      status is accepted, the times can either be the time of the appointment
+      (as a confirmation of the time) or can be empty.
+  comment:
+    type: string
+    nullable: true
+    description: Additional comments about the appointment.
+required:
+  - resourceType
+  - appointment
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,14 @@
+title: fhirAccessPolicyResourceWriteCriteria
+type: object
+description: Invariants that must be satisfied for the resource to be written.
+properties:
+  pre:
+    type: string
+    nullable: true
+    description: Invariant to check against the state of the resource before modification.
+  post:
+    type: string
+    nullable: true
+    description: >-
+      Invariant to check against the state of the resource with modifications
+      tentatively applied.

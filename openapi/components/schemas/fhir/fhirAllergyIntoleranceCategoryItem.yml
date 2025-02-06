@@ -1,0 +1,7 @@
+title: fhirAllergyIntoleranceCategoryItem
+type: string
+enum:
+  - food
+  - medication
+  - environment
+  - biologic

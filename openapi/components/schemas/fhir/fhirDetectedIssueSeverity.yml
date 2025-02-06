@@ -1,0 +1,9 @@
+title: fhirDetectedIssueSeverity
+type: string
+enum:
+  - high
+  - moderate
+  - low
+description: >-
+  Indicates the degree of importance associated with the identified issue based
+  on the potential impact on the patient.

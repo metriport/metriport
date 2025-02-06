@@ -1,0 +1,101 @@
+title: fhirInsurancePlan
+type: object
+description: Details of a Health Insurance product/plan provided by an organization.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - InsurancePlan
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this health insurance product which
+      remain constant as the resource is updated and propagates from server to
+      server.
+  status:
+    $ref: ./fhirInsurancePlanStatus.yml
+    nullable: true
+    description: The current state of the health insurance product.
+  type:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The kind of health insurance product.
+  name:
+    type: string
+    nullable: true
+    description: Official name of the health insurance product as designated by the owner.
+  alias:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      A list of alternate names that the product is known as, or was known as in
+      the past.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: The period of time that the health insurance product is available.
+  ownedBy:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The entity that is providing the health insurance product and underwriting
+      the risk. This is typically an insurance carriers, other third-party
+      payers, or health plan sponsors comonly referred to as 'payers'.
+  administeredBy:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      An organization which administer other services such as underwriting,
+      customer service and/or claims processing on behalf of the health
+      insurance product owner.
+  coverageArea:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The geographic region in which a health insurance product's benefits
+      apply.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirInsurancePlanContact.yml
+    nullable: true
+    description: The contact for the health insurance product for a certain purpose.
+  endpoint:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The technical endpoints providing access to services operated for the
+      health insurance product.
+  network:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Reference to the network included in the health insurance product.
+  coverage:
+    type: array
+    items:
+      $ref: ./fhirInsurancePlanCoverage.yml
+    nullable: true
+    description: Details about the coverage offered by the insurance product.
+  plan:
+    type: array
+    items:
+      $ref: ./fhirInsurancePlanPlan.yml
+    nullable: true
+    description: Details about an insurance plan.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

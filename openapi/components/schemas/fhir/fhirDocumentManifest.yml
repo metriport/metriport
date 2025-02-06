@@ -1,0 +1,95 @@
+title: fhirDocumentManifest
+type: object
+description: >-
+  A collection of documents compiled for a purpose together with metadata that
+  applies to the collection.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - DocumentManifest
+  masterIdentifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A single identifier that uniquely identifies this manifest. Principally
+      used to refer to the manifest in non-FHIR contexts.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Other identifiers associated with the document manifest, including version
+      independent identifiers.
+  status:
+    $ref: ./fhirDocumentManifestStatus.yml
+    nullable: true
+    description: The status of this document manifest.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The code specifying the type of clinical activity that resulted in placing
+      the associated content into the DocumentManifest.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Who or what the set of documents is about. The documents can be about a
+      person, (patient or healthcare practitioner), a device (i.e. machine) or
+      even a group of subjects (such as a document about a herd of farm animals,
+      or a set of patients that share a common exposure). If the documents cross
+      more than one subject, then more than one subject is allowed here (unusual
+      use case).
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      When the document manifest was created for submission to the server (not
+      necessarily the same thing as the actual resource last modified time,
+      since it may be modified, replicated, etc.).
+  author:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies who is the author of the manifest. Manifest author is not
+      necessarly the author of the references included.
+  recipient:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A patient, practitioner, or organization for which this set of documents
+      is intended.
+  source:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      Identifies the source system, application, or software that produced the
+      document manifest.
+  description:
+    type: string
+    nullable: true
+    description: >-
+      Human-readable description of the source document. This is sometimes known
+      as the "title".
+  content:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    description: The list of Resources that consist of the parts of this manifest.
+  related:
+    type: array
+    items:
+      $ref: ./fhirDocumentManifestRelated.yml
+    nullable: true
+    description: Related identifiers or resources associated with the DocumentManifest.
+required:
+  - resourceType
+  - content
+allOf:
+  - $ref: ./fhirBaseResource.yml

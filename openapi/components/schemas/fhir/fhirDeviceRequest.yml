@@ -1,0 +1,185 @@
+title: fhirDeviceRequest
+type: object
+description: >-
+  Represents a request for a patient to employ a medical device. The device may
+  be an implantable device, or an external assistive device, such as a walker.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - DeviceRequest
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Identifiers assigned to this order by the orderer or by the receiver.
+  instantiatesCanonical:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      The URL pointing to a FHIR-defined protocol, guideline, orderset or other
+      definition that is adhered to in whole or in part by this DeviceRequest.
+  instantiatesUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally maintained protocol, guideline, orderset
+      or other definition that is adhered to in whole or in part by this
+      DeviceRequest.
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Plan/proposal/order fulfilled by this request.
+  priorRequest:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The request takes the place of the referenced completed or terminated
+      request(s).
+  groupIdentifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Composite request this is part of.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the request.
+  intent:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Whether the request is a proposal, plan, an original order or a reflex
+      order.
+  priority:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Indicates how quickly the {{title}} should be addressed with respect to
+      other requests.
+  codeReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The details of the device to be used.
+  codeCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The details of the device to be used.
+  parameter:
+    type: array
+    items:
+      $ref: ./fhirDeviceRequestParameter.yml
+    nullable: true
+    description: >-
+      Specific parameters for the ordered item. For example, the prism value for
+      lenses.
+  subject:
+    $ref: ./fhirReference.yml
+    description: The patient who will use the device.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      An encounter that provides additional context in which this request is
+      made.
+  occurrenceDateTime:
+    type: string
+    nullable: true
+    description: >-
+      The timing schedule for the use of the device. The Schedule data type
+      allows many different expressions, for example. "Every 8 hours"; "Three
+      times a day"; "1/2 an hour before breakfast for 10 days from 23-Dec
+      2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
+  occurrencePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The timing schedule for the use of the device. The Schedule data type
+      allows many different expressions, for example. "Every 8 hours"; "Three
+      times a day"; "1/2 an hour before breakfast for 10 days from 23-Dec
+      2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
+  occurrenceTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: >-
+      The timing schedule for the use of the device. The Schedule data type
+      allows many different expressions, for example. "Every 8 hours"; "Three
+      times a day"; "1/2 an hour before breakfast for 10 days from 23-Dec
+      2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
+  authoredOn:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: When the request transitioned to being actionable.
+  requester:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The individual who initiated the request and has responsibility for its
+      activation.
+  performerType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Desired type of performer for doing the diagnostic testing.
+  performer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The desired performer for doing the diagnostic testing.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Reason or justification for the use of this device.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Reason or justification for the use of this device.
+  insurance:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Insurance plans, coverage extensions, pre-authorizations and/or
+      pre-determinations that may be required for delivering the requested
+      service.
+  supportingInfo:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Additional clinical information about the patient that may influence the
+      request fulfilment. For example, this may include where on the subject's
+      body the device will be used (i.e. the target site).
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Details about this request that were not represented at all or
+      sufficiently in one of the attributes provided in a class. These may
+      include for example a comment, an instruction, or a note associated with
+      the statement.
+  relevantHistory:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Key events in the history of the request.
+required:
+  - resourceType
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

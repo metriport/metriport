@@ -1,0 +1,3 @@
+title: fhirurl
+type: string
+description: A URI that is a literal reference

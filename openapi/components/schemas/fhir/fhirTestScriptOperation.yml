@@ -1,0 +1,128 @@
+title: fhirTestScriptOperation
+type: object
+description: >-
+  A structured set of tests against a FHIR server or client implementation to
+  determine compliance against the FHIR specification.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  type:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: Server interaction or operation type.
+  resource:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The type of the resource. See http://build.fhir.org/resourcelist.html.
+  label:
+    type: string
+    nullable: true
+    description: The label would be used for tracking/logging purposes by test engines.
+  description:
+    type: string
+    nullable: true
+    description: >-
+      The description would be used by test engines for tracking and reporting
+      purposes.
+  accept:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The mime-type to use for RESTful operation in the 'Accept' header.
+  contentType:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The mime-type to use for RESTful operation in the 'Content-Type' header.
+  destination:
+    type: integer
+    nullable: true
+    description: >-
+      The server where the request message is destined for. Must be one of the
+      server numbers listed in TestScript.destination section.
+  encodeRequestUrl:
+    type: boolean
+    nullable: true
+    description: >-
+      Whether or not to implicitly send the request url in encoded format. The
+      default is true to match the standard RESTful client behavior. Set to
+      false when communicating with a server that does not support encoded url
+      paths.
+  method:
+    $ref: ./fhirTestScriptOperationMethod.yml
+    nullable: true
+    description: >-
+      The HTTP method the test engine MUST use for this operation regardless of
+      any other operation details.
+  origin:
+    type: integer
+    nullable: true
+    description: >-
+      The server where the request message originates from. Must be one of the
+      server numbers listed in TestScript.origin section.
+  params:
+    type: string
+    nullable: true
+    description: >-
+      Path plus parameters after [type]. Used to set parts of the request URL
+      explicitly.
+  requestHeader:
+    type: array
+    items:
+      $ref: ./fhirTestScriptRequestHeader.yml
+    nullable: true
+    description: Header elements would be used to set HTTP headers.
+  requestId:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: The fixture id (maybe new) to map to the request.
+  responseId:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: The fixture id (maybe new) to map to the response.
+  sourceId:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: The id of the fixture used as the body of a PUT or POST request.
+  targetId:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      Id of fixture used for extracting the [id], [type], and [vid] for GET
+      requests.
+  url:
+    type: string
+    nullable: true
+    description: Complete request URL.

@@ -1,0 +1,8 @@
+title: fhirCapabilityStatementSupportedMessageMode
+type: string
+enum:
+  - sender
+  - receiver
+description: >-
+  The mode of this event declaration - whether application is sender or
+  receiver.

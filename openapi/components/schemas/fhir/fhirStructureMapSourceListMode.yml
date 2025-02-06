@@ -1,0 +1,9 @@
+title: fhirStructureMapSourceListMode
+type: string
+enum:
+  - first
+  - not_first
+  - last
+  - not_last
+  - only_one
+description: How to handle the list mode for this element.

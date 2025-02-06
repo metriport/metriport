@@ -1,0 +1,6 @@
+title: fhirAccessPolicyIpAccessRuleAction
+type: string
+enum:
+  - allow
+  - block
+description: 'Access rule can perform one of the following actions: "allow" | "block".'

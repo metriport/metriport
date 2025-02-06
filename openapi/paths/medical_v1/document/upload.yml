@@ -1,0 +1,65 @@
+post:
+  description: >-
+    Creates a DocumentReference and returns its ID and a URL to use for a
+    medical document upload to our servers.
+  operationId: medical_document_createDocumentReference
+  tags:
+    - MedicalDocument
+  parameters:
+    - name: patientId
+      in: query
+      description: The ID of the Patient for which to list available Documents.
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 018a80c4-292a-7486-a1234-76yuhe23yu14
+  responses:
+    '200':
+      description: The DocumentReference ID and a URL to be used for file upload.
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalUploadDocumentResponse.yml
+          examples:
+            Example1:
+              value:
+                documentReferenceId: <DocumentReference-ID-string>
+                uploadUrl: <url-string>
+  summary: Upload Document
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    description: |
+      A FHIR DocumentReference.
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../../components/schemas/fhir/fhirDocumentReference.yml
+        examples:
+          Example1:
+            value:
+              resourceType: DocumentReference
+              content:
+                - attachment:
+                    title: Burn management Hospital Progress note
+              contained:
+                - resourceType: ExampleResource
+                  id: exampleId1
+                - resourceType: ExampleResource
+                  id: exampleId2
+              description: Third degree wrist burn treatment
+              type:
+                text: Burn management Hospital Progress note
+                coding:
+                  - code: 100556-0
+                    system: http://loinc.org
+                    display: Burn management Hospital Progress note
+              context:
+                period:
+                  start: '2023-10-10T14:14:17Z'
+                  end: '2023-10-10T15:30:30Z'
+                facilityType:
+                  text: John Snow Clinic - Acute Care Centre

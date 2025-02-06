@@ -1,0 +1,15 @@
+title: fhirUserConfigurationMenu
+type: object
+description: Optional menu of shortcuts to URLs.
+properties:
+  title:
+    type: string
+    description: Title of the menu.
+  link:
+    type: array
+    items:
+      $ref: ./fhirUserConfigurationMenuLink.yml
+    nullable: true
+    description: Shortcut links to URLs.
+required:
+  - title

@@ -1,0 +1,38 @@
+title: fhirImmunizationRecommendation
+type: object
+description: >-
+  A patient's point-in-time set of recommendations (i.e. forecasting) according
+  to a published schedule with optional supporting justification.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ImmunizationRecommendation
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this particular recommendation record.
+  patient:
+    $ref: ./fhirReference.yml
+    description: The patient the recommendation(s) are for.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date the immunization recommendation(s) were created.
+  authority:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Indicates the authority who published the protocol (e.g. ACIP).
+  recommendation:
+    type: array
+    items:
+      $ref: ./fhirImmunizationRecommendationRecommendation.yml
+    description: Vaccine administration recommendations.
+required:
+  - resourceType
+  - patient
+  - recommendation
+allOf:
+  - $ref: ./fhirBaseResource.yml

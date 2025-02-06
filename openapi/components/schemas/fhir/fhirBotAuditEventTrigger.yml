@@ -1,0 +1,11 @@
+title: fhirBotAuditEventTrigger
+type: string
+enum:
+  - always
+  - never
+  - on-error
+  - on-output
+description: >-
+  Criteria for creating an AuditEvent as a result of the bot invocation.
+  Possible values are 'always', 'never', 'on-error', or 'on-output'. Default
+  value is 'always'.

@@ -1,0 +1,10 @@
+title: fhirEvidenceVariableStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this evidence variable. Enables tracking the life-cycle of the
+  content.

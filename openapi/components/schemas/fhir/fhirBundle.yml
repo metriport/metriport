@@ -1,0 +1,77 @@
+title: fhirBundle
+type: object
+description: A container for a collection of resources.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Bundle
+  id:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      The logical id of the resource, as used in the URL for the resource. Once
+      assigned, this value never changes.
+  meta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: >-
+      The metadata about the resource. This is content that is maintained by the
+      infrastructure. Changes to the content might not always be associated with
+      version changes to the resource.
+  implicitRules:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      A reference to a set of rules that were followed when the resource was
+      constructed, and which must be understood when processing the content.
+      Often, this is a reference to an implementation guide that defines the
+      special rules along with other profiles etc.
+  language:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The base language in which the resource is written.
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A persistent identifier for the bundle that won't change as a bundle is
+      copied from server to server.
+  type:
+    $ref: ./fhirBundleType.yml
+    nullable: true
+    description: Indicates the purpose of this bundle - how it is intended to be used.
+  timestamp:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: >-
+      The date/time that the bundle was assembled - i.e. when the resources were
+      placed in the bundle.
+  total:
+    $ref: ./fhirunsignedInt.yml
+    nullable: true
+    description: >-
+      If a set of search matches, this is the total number of entries of type
+      'match' across all pages in the search. It does not include search.mode =
+      'include' or 'outcome' entries and it does not provide a count of the
+      number of entries in the Bundle.
+  link:
+    type: array
+    items:
+      $ref: ./fhirBundleLink.yml
+    nullable: true
+    description: A series of links that provide context to this bundle.
+  entry:
+    type: array
+    items:
+      $ref: ./fhirBundleEntry.yml
+    nullable: true
+    description: >-
+      An entry in a bundle resource - will either contain a resource or
+      information about a resource (transactions and history only).
+  signature:
+    $ref: ./fhirSignature.yml
+    nullable: true
+    description: Digital Signature - base64 encoded. XML-DSig or a JWT.
+required:
+  - resourceType

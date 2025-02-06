@@ -1,0 +1,69 @@
+title: fhirPerson
+type: object
+description: >-
+  Demographics and administrative information about a person independent of a
+  specific health-related context.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Person
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Identifier for a person within a particular scope.
+  name:
+    type: array
+    items:
+      $ref: ./fhirHumanName.yml
+    nullable: true
+    description: A name associated with the person.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      A contact detail for the person, e.g. a telephone number or an email
+      address.
+  gender:
+    $ref: ./fhirPersonGender.yml
+    nullable: true
+    description: Administrative Gender.
+  birthDate:
+    type: string
+    format: date
+    nullable: true
+    description: The birth date for the person.
+  address:
+    type: array
+    items:
+      $ref: ./fhirAddress.yml
+    nullable: true
+    description: One or more addresses for the person.
+  photo:
+    $ref: ./fhirAttachment.yml
+    nullable: true
+    description: >-
+      An image that can be displayed as a thumbnail of the person to enhance the
+      identification of the individual.
+  managingOrganization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The organization that is the custodian of the person record.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether this person's record is in active use.
+  link:
+    type: array
+    items:
+      $ref: ./fhirPersonLink.yml
+    nullable: true
+    description: Link to a resource that concerns the same actual person.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

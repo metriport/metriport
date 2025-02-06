@@ -1,0 +1,18 @@
+title: medicalDriversLicense
+type: object
+properties:
+  state:
+    $ref: ../utils/USState.yml
+    description: The 2 letter state acronym where this ID was issued, for example `CA`.
+  value:
+    type: string
+    description: The ID number.
+  assigner:
+    type: string
+    nullable: true
+  period:
+    $ref: ../fhir/fhirPeriod.yml
+    nullable: true
+required:
+  - state
+  - value

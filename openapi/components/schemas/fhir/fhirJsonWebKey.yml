@@ -1,0 +1,108 @@
+title: fhirJsonWebKey
+type: object
+description: >-
+  A JSON object that represents a cryptographic key. The members of the object
+  represent properties of the key, including its value.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - JsonWebKey
+  id:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      The logical id of the resource, as used in the URL for the resource. Once
+      assigned, this value never changes.
+  meta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: >-
+      The metadata about the resource. This is content that is maintained by the
+      infrastructure. Changes to the content might not always be associated with
+      version changes to the resource.
+  implicitRules:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      A reference to a set of rules that were followed when the resource was
+      constructed, and which must be understood when processing the content.
+      Often, this is a reference to an implementation guide that defines the
+      special rules along with other profiles etc.
+  language:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The base language in which the resource is written.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether this key is in active use.
+  alg:
+    type: string
+    nullable: true
+    description: The specific cryptographic algorithm used with the key.
+  kty:
+    type: string
+    nullable: true
+    description: The family of cryptographic algorithms used with the key.
+  use:
+    type: string
+    nullable: true
+    description: How the key was meant to be used; sig represents the signature.
+  key_ops:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: The operation(s) for which the key is intended to be used.
+  x5c:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      The x.509 certificate chain. The first entry in the array is the
+      certificate to use for token verification; the other certificates can be
+      used to verify this first certificate.
+  'n':
+    type: string
+    nullable: true
+    description: The modulus for the RSA public key.
+  e:
+    type: string
+    nullable: true
+    description: The exponent for the RSA public key.
+  kid:
+    type: string
+    nullable: true
+    description: The unique identifier for the key.
+  x5t:
+    type: string
+    nullable: true
+    description: The thumbprint of the x.509 cert (SHA-1 thumbprint).
+  d:
+    type: string
+    nullable: true
+    description: The exponent for the RSA private key.
+  p:
+    type: string
+    nullable: true
+    description: The first prime factor.
+  q:
+    type: string
+    nullable: true
+    description: The second prime factor.
+  dp:
+    type: string
+    nullable: true
+    description: The first factor CRT exponent.
+  dq:
+    type: string
+    nullable: true
+    description: The second factor CRT exponent.
+  qi:
+    type: string
+    nullable: true
+    description: The first CRT coefficient.
+required:
+  - resourceType

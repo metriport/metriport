@@ -1,0 +1,7 @@
+title: fhirDocumentManifestStatus
+type: string
+enum:
+  - current
+  - superseded
+  - entered-in-error
+description: The status of this document manifest.

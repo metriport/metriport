@@ -1,0 +1,17 @@
+title: fhirResearchSubjectStatus
+type: string
+enum:
+  - candidate
+  - eligible
+  - follow-up
+  - ineligible
+  - not-registered
+  - off-study
+  - on-study
+  - on-study-intervention
+  - on-study-observation
+  - pending-on-study
+  - potential-candidate
+  - screening
+  - withdrawn
+description: The current state of the subject.

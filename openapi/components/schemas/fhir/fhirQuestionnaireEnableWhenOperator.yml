@@ -1,0 +1,11 @@
+title: fhirQuestionnaireEnableWhenOperator
+type: string
+enum:
+  - exists
+  - '='
+  - '!='
+  - '>'
+  - <
+  - '>='
+  - <=
+description: Specifies the criteria by which the question is enabled.

@@ -1,0 +1,8 @@
+title: fhirTerminologyCapabilitiesCodeSearch
+type: string
+enum:
+  - explicit
+  - all
+description: >-
+  The degree to which the server supports the code search parameter on ValueSet,
+  if it is supported.

@@ -1,0 +1,9 @@
+title: fhirMessageHeaderResponseCode
+type: string
+enum:
+  - ok
+  - transient-error
+  - fatal-error
+description: >-
+  Code that identifies the type of response to the message - whether it was
+  successful or not, and whether it should be resent or not.

@@ -1,0 +1,15 @@
+title: fhirOperationDefinitionParameterSearchType
+type: string
+enum:
+  - number
+  - date
+  - string
+  - token
+  - reference
+  - composite
+  - quantity
+  - uri
+  - special
+description: >-
+  How the parameter is understood as a search parameter. This is only used if
+  the parameter type is 'string'.

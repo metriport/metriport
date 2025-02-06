@@ -1,0 +1,6 @@
+title: fhirStructureMapInputMode
+type: string
+enum:
+  - source
+  - target
+description: Mode for this instance of data.

@@ -1,0 +1,52 @@
+title: fhirMedicinalProductPharmaceutical
+type: object
+description: A pharmaceutical product described in terms of its composition and dose form.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductPharmaceutical
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: An identifier for the pharmaceutical medicinal product.
+  administrableDoseForm:
+    $ref: ./fhirCodeableConcept.yml
+    description: The administrable dose form, after necessary reconstitution.
+  unitOfPresentation:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Todo.
+  ingredient:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Ingredient.
+  device:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Accompanying device.
+  characteristics:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductPharmaceuticalCharacteristics.yml
+    nullable: true
+    description: Characteristics e.g. a products onset of action.
+  routeOfAdministration:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductPharmaceuticalRouteOfAdministration.yml
+    description: >-
+      The path by which the pharmaceutical product is taken into or makes
+      contact with the body.
+required:
+  - resourceType
+  - administrableDoseForm
+  - routeOfAdministration
+allOf:
+  - $ref: ./fhirBaseResource.yml

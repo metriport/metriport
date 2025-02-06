@@ -1,0 +1,57 @@
+title: fhirSubscription
+type: object
+description: >-
+  The subscription resource is used to define a push-based subscription from a
+  server to another system. Once a subscription is registered with the server,
+  the server checks every resource that is created or updated, and if the
+  resource matches the given criteria, it sends a message on the defined
+  "channel" so that another system can take an appropriate action.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Subscription
+  status:
+    $ref: ./fhirSubscriptionStatus.yml
+    nullable: true
+    description: >-
+      The status of the subscription, which marks the server state for managing
+      the subscription.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      Contact details for a human to contact about the subscription. The primary
+      use of this for system administrator troubleshooting.
+  end:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: The time for the server to turn the subscription off.
+  reason:
+    type: string
+    nullable: true
+    description: A description of why this subscription is defined.
+  criteria:
+    type: string
+    nullable: true
+    description: >-
+      The rules that the server should use to determine when to generate
+      notifications for this subscription.
+  error:
+    type: string
+    nullable: true
+    description: >-
+      A record of the last error that occurred when the server processed a
+      notification.
+  channel:
+    $ref: ./fhirSubscriptionChannel.yml
+    description: >-
+      Details where to send notifications when resources are received that meet
+      the criteria.
+required:
+  - resourceType
+  - channel
+allOf:
+  - $ref: ./fhirBaseResource.yml

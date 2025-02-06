@@ -1,0 +1,10 @@
+title: fhirInvoicePriceComponentType
+type: string
+enum:
+  - base
+  - surcharge
+  - deduction
+  - discount
+  - tax
+  - informational
+description: This code identifies the type of the component.

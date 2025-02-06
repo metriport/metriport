@@ -1,0 +1,3 @@
+title: fhirboolean
+type: boolean
+description: Value of "true" or "false"

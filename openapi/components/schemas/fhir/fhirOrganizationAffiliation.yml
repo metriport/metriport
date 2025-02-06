@@ -1,0 +1,94 @@
+title: fhirOrganizationAffiliation
+type: object
+description: >-
+  Defines an affiliation/assotiation/relationship between 2 distinct
+  oganizations, that is not a part-of relationship/sub-division relationship.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - OrganizationAffiliation
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Business identifiers that are specific to this role.
+  active:
+    type: boolean
+    nullable: true
+    description: Whether this organization affiliation record is in active use.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period during which the participatingOrganization is affiliated with
+      the primary organization.
+  organization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Organization where the role is available (primary organization/has
+      members).
+  participatingOrganization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Participating Organization provides/performs the role(s) defined by
+      the code to the Primary Organization (e.g. providing services or is a
+      member of).
+  network:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Health insurance provider network in which the participatingOrganization
+      provides the role's services (if defined) at the indicated locations (if
+      defined).
+  code:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Definition of the role the participatingOrganization plays in the
+      association.
+  specialty:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Specific specialty of the participatingOrganization in the context of the
+      role.
+  location:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The location(s) at which the role occurs.
+  healthcareService:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Healthcare services provided through the role.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: >-
+      Contact details at the participatingOrganization relevant to this
+      Affiliation.
+  endpoint:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Technical endpoints providing access to services operated for this role.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

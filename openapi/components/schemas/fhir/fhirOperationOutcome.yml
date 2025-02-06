@@ -1,0 +1,29 @@
+title: fhirOperationOutcome
+type: object
+description: >-
+  A collection of error, warning, or information messages that result from a
+  system action.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - OperationOutcome
+  issue:
+    type: array
+    items:
+      $ref: ./fhirOperationOutcomeIssue.yml
+    description: >-
+      An error, warning, or information message that results from a system
+      action.
+  status:
+    type: integer
+    nullable: true
+    description: Optional HTTP status code returned by the operation.
+  resource:
+    description: Optional Resource created or modified by this operation.
+required:
+  - resourceType
+  - issue
+  - resource
+allOf:
+  - $ref: ./fhirBaseResource.yml

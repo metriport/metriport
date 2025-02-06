@@ -1,0 +1,36 @@
+title: fhirMedicinalProductUndesirableEffect
+type: object
+description: Describe the undesirable effects of the medicinal product.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductUndesirableEffect
+  subject:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The medication for which this is an indication.
+  symptomConditionEffect:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The symptom, condition or undesirable effect.
+  classification:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Classification of the effect.
+  frequencyOfOccurrence:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The frequency of occurrence of the effect.
+  population:
+    type: array
+    items:
+      $ref: ./fhirPopulation.yml
+    nullable: true
+    description: The population group to which this applies.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

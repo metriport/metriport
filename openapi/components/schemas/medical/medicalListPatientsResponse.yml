@@ -1,0 +1,9 @@
+title: medicalListPatientsResponse
+type: object
+properties:
+  patients:
+    type: array
+    items:
+      $ref: ./medicalPatient.yml
+required:
+  - patients

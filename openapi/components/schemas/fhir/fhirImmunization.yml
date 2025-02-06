@@ -1,0 +1,176 @@
+title: fhirImmunization
+type: object
+description: >-
+  Describes the event of a patient being administered a vaccine or a record of
+  an immunization as reported by a patient, a clinician or another party.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Immunization
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this immunization record.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: Indicates the current status of the immunization event.
+  statusReason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Indicates the reason the immunization event was not performed.
+  vaccineCode:
+    $ref: ./fhirCodeableConcept.yml
+    description: Vaccine that was administered or was to be administered.
+  patient:
+    $ref: ./fhirReference.yml
+    description: The patient who either received or did not receive the immunization.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The visit or admission or other contact between patient and health care
+      provider the immunization was performed as part of.
+  occurrenceDateTime:
+    type: string
+    nullable: true
+    description: Date vaccine administered or was to be administered.
+  occurrenceString:
+    type: string
+    nullable: true
+    description: Date vaccine administered or was to be administered.
+  recorded:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date the occurrence of the immunization was first captured in the
+      record - potentially significantly after the occurrence of the event.
+  primarySource:
+    type: boolean
+    nullable: true
+    description: >-
+      An indication that the content of the record is based on information from
+      the person who administered the vaccine. This reflects the context under
+      which the data was originally recorded.
+  reportOrigin:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The source of the data when the report of the immunization event is not
+      based on information from the person who administered the vaccine.
+  location:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The service delivery location where the vaccine administration occurred.
+  manufacturer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Name of vaccine manufacturer.
+  lotNumber:
+    type: string
+    nullable: true
+    description: Lot number of the vaccine product.
+  expirationDate:
+    type: string
+    format: date
+    nullable: true
+    description: Date vaccine batch expires.
+  site:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Body site where vaccine was administered.
+  route:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The path by which the vaccine product is taken into the body.
+  doseQuantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: The quantity of vaccine product that was administered.
+  performer:
+    type: array
+    items:
+      $ref: ./fhirImmunizationPerformer.yml
+    nullable: true
+    description: Indicates who performed the immunization event.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Extra information about the immunization that is not conveyed by the other
+      attributes.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Reasons why the vaccine was administered.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Condition, Observation or DiagnosticReport that supports why the
+      immunization was administered.
+  isSubpotent:
+    type: boolean
+    nullable: true
+    description: >-
+      Indication if a dose is considered to be subpotent. By default, a dose
+      should be considered to be potent.
+  subpotentReason:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Reason why a dose is considered to be subpotent.
+  education:
+    type: array
+    items:
+      $ref: ./fhirImmunizationEducation.yml
+    nullable: true
+    description: >-
+      Educational material presented to the patient (or guardian) at the time of
+      vaccine administration.
+  programEligibility:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Indicates a patient's eligibility for a funding program.
+  fundingSource:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Indicates the source of the vaccine actually administered. This may be
+      different than the patient eligibility (e.g. the patient may be eligible
+      for a publically purchased vaccine but due to inventory issues, vaccine
+      purchased with private funds was actually administered).
+  reaction:
+    type: array
+    items:
+      $ref: ./fhirImmunizationReaction.yml
+    nullable: true
+    description: >-
+      Categorical data indicating that an adverse event is associated in time to
+      an immunization.
+  protocolApplied:
+    type: array
+    items:
+      $ref: ./fhirImmunizationProtocolApplied.yml
+    nullable: true
+    description: >-
+      The protocol (set of recommendations) being followed by the provider who
+      administered the dose.
+required:
+  - resourceType
+  - vaccineCode
+  - patient
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,14 @@
+title: fhirDiagnosticReportStatus
+type: string
+enum:
+  - registered
+  - partial
+  - preliminary
+  - final
+  - amended
+  - corrected
+  - appended
+  - cancelled
+  - entered-in-error
+  - unknown
+description: The status of the diagnostic report.

@@ -1,0 +1,9 @@
+title: fhirBiologicallyDerivedProductProductCategory
+type: string
+enum:
+  - organ
+  - tissue
+  - fluid
+  - cells
+  - biologicalAgent
+description: Broad category of this product.

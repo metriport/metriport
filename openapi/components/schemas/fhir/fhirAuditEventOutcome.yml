@@ -1,0 +1,8 @@
+title: fhirAuditEventOutcome
+type: string
+enum:
+  - '0'
+  - '4'
+  - '8'
+  - '12'
+description: Indicates whether the event succeeded or failed.

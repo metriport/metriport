@@ -1,0 +1,10 @@
+title: fhirEndpointStatus
+type: string
+enum:
+  - active
+  - suspended
+  - error
+  - 'off'
+  - entered-in-error
+  - test
+description: active | suspended | error | off | test.

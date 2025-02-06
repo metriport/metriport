@@ -1,0 +1,91 @@
+title: fhirVerificationResult
+type: object
+description: >-
+  Describes validation requirements, source(s), status and dates for one or more
+  elements.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - VerificationResult
+  target:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A resource that was validated.
+  targetLocation:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: The fhirpath location(s) within the resource that was validated.
+  need:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The frequency with which the target must be validated (none; initial;
+      periodic).
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      The validation status of the target (attested; validated; in process;
+      requires revalidation; validation failed; revalidation failed).
+  statusDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: When the validation status was updated.
+  validationType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      What the target is validated against (nothing; primary source; multiple
+      sources).
+  validationProcess:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The primary process by which the target is validated (edit check; value
+      set; primary source; multiple sources; standalone; in context).
+  frequency:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: Frequency of revalidation.
+  lastPerformed:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date/time validation was last completed (including failed
+      validations).
+  nextScheduled:
+    type: string
+    format: date
+    nullable: true
+    description: The date when target is next validated, if appropriate.
+  failureAction:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The result if validation fails (fatal; warning; record only; none).
+  primarySource:
+    type: array
+    items:
+      $ref: ./fhirVerificationResultPrimarySource.yml
+    nullable: true
+    description: Information about the primary source(s) involved in validation.
+  attestation:
+    $ref: ./fhirVerificationResultAttestation.yml
+    nullable: true
+    description: Information about the entity attesting to information.
+  validator:
+    type: array
+    items:
+      $ref: ./fhirVerificationResultValidator.yml
+    nullable: true
+    description: Information about the entity validating information.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

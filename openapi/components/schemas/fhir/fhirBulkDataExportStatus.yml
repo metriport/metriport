@@ -1,0 +1,8 @@
+title: fhirBulkDataExportStatus
+type: string
+enum:
+  - accepted
+  - active
+  - completed
+  - error
+description: The status of the request.

@@ -1,0 +1,43 @@
+title: fhirAccessPolicyResource
+type: object
+description: Access details for a resource type.
+properties:
+  compartment:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: DEPRECATED Optional compartment restriction for the resource type.
+  criteria:
+    type: string
+    nullable: true
+    description: >-
+      The rules that the server should use to determine which resources to
+      allow.
+  readonly:
+    type: boolean
+    nullable: true
+    description: Optional flag to indicate that the resource type is read-only.
+  hiddenFields:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Optional list of hidden fields. Hidden fields are not readable or
+      writeable.
+  readonlyFields:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Optional list of read-only fields. Read-only fields are readable but not
+      writeable.
+  writeConstraint:
+    type: array
+    items:
+      $ref: ./fhirExpression.yml
+    nullable: true
+    description: >-
+      Invariants that must be satisfied for the resource to be written. Can
+      include %before and %after placeholders to refer to the resource before
+      and after the updates are applied.

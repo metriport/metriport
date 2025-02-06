@@ -1,0 +1,80 @@
+title: fhirSlot
+type: object
+description: A slot of time on a schedule that may be available for booking appointments.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Slot
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: External Ids for this item.
+  serviceCategory:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A broad categorization of the service that is to be performed during this
+      appointment.
+  serviceType:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The type of appointments that can be booked into this slot (ideally this
+      would be an identifiable service - which is at a location, rather than the
+      location itself). If provided then this overrides the value provided on
+      the availability resource.
+  specialty:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The specialty of a practitioner that would be required to perform the
+      service requested in this appointment.
+  appointmentType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The style of appointment or patient that may be booked in the slot (not
+      service type).
+  schedule:
+    $ref: ./fhirReference.yml
+    description: >-
+      The schedule resource that this slot defines an interval of status
+      information.
+  status:
+    $ref: ./fhirSlotStatus.yml
+    nullable: true
+    description: busy | free | busy-unavailable | busy-tentative | entered-in-error.
+  start:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: Date/Time that the slot is to begin.
+  end:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: Date/Time that the slot is to conclude.
+  overbooked:
+    type: boolean
+    nullable: true
+    description: >-
+      This slot has already been overbooked, appointments are unlikely to be
+      accepted for this time.
+  comment:
+    type: string
+    nullable: true
+    description: >-
+      Comments on the slot to describe any extended information. Such as custom
+      constraints on the slot.
+required:
+  - resourceType
+  - schedule
+allOf:
+  - $ref: ./fhirBaseResource.yml

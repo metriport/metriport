@@ -1,0 +1,10 @@
+title: fhirFamilyMemberHistoryStatus
+type: string
+enum:
+  - partial
+  - completed
+  - entered-in-error
+  - health-unknown
+description: >-
+  A code specifying the status of the record of the family history of a specific
+  family member.

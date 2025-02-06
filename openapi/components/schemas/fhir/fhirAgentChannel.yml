@@ -1,0 +1,21 @@
+title: fhirAgentChannel
+type: object
+description: >-
+  Details where to send notifications when resources are received that meet the
+  criteria.
+properties:
+  endpoint:
+    $ref: ./fhirReference.yml
+    description: >-
+      The channel endpoint definition including protocol and network binding
+      details.
+  targetReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The target resource where channel messages will be delivered.
+  targetUrl:
+    $ref: ./fhirurl.yml
+    nullable: true
+    description: The target resource where channel messages will be delivered.
+required:
+  - endpoint

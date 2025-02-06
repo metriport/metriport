@@ -1,0 +1,12 @@
+title: fhirTriggerDefinitionType
+type: string
+enum:
+  - named-event
+  - periodic
+  - data-changed
+  - data-added
+  - data-modified
+  - data-removed
+  - data-accessed
+  - data-access-ended
+description: The type of triggering event.

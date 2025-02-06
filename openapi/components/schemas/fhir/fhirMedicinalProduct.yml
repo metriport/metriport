@@ -1,0 +1,140 @@
+title: fhirMedicinalProduct
+type: object
+description: >-
+  Detailed definition of a medicinal product, typically for uses other than
+  direct patient care (e.g. regulatory use).
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProduct
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: Business identifier for this product. Could be an MPID.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Regulatory type, e.g. Investigational or Authorized.
+  domain:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: If this medicine applies to human or veterinary uses.
+  combinedPharmaceuticalDoseForm:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The dose form for a single part product, or combined form of a multiple
+      part product.
+  legalStatusOfSupply:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The legal status of supply of the medicinal product as classified by the
+      regulator.
+  additionalMonitoringIndicator:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Whether the Medicinal Product is subject to additional monitoring for
+      regulatory reasons.
+  specialMeasures:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Whether the Medicinal Product is subject to special measures for
+      regulatory reasons.
+  paediatricUseIndicator:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: If authorised for use in children.
+  productClassification:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Allows the product to be classified by various systems.
+  marketingStatus:
+    type: array
+    items:
+      $ref: ./fhirMarketingStatus.yml
+    nullable: true
+    description: >-
+      Marketing status of the medicinal product, in contrast to marketing
+      authorizaton.
+  pharmaceuticalProduct:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Pharmaceutical aspects of product.
+  packagedMedicinalProduct:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Package representation for the product.
+  attachedDocument:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Supporting documentation, typically for regulatory submission.
+  masterFile:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A master file for to the medicinal product (e.g. Pharmacovigilance System
+      Master File).
+  contact:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A product specific contact, person (in a role), or an organization.
+  clinicalTrial:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Clinical trials or studies that this product is involved in.
+  name:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductName.yml
+    description: The product's name, including full name and possibly coded parts.
+  crossReference:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Reference to another product, e.g. for linking authorised to
+      investigational product.
+  manufacturingBusinessOperation:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductManufacturingBusinessOperation.yml
+    nullable: true
+    description: >-
+      An operation applied to the product, for manufacturing or adminsitrative
+      purpose.
+  specialDesignation:
+    type: array
+    items:
+      $ref: ./fhirMedicinalProductSpecialDesignation.yml
+    nullable: true
+    description: >-
+      Indicates if the medicinal product has an orphan designation for the
+      treatment of a rare disease.
+required:
+  - resourceType
+  - name
+allOf:
+  - $ref: ./fhirBaseResource.yml

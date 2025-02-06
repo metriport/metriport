@@ -1,0 +1,12 @@
+title: fhirObservationStatus
+type: string
+enum:
+  - registered
+  - preliminary
+  - final
+  - amended
+  - corrected
+  - cancelled
+  - entered-in-error
+  - unknown
+description: The status of the result value.

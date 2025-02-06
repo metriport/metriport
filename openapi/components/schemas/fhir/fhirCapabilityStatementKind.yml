@@ -1,0 +1,10 @@
+title: fhirCapabilityStatementKind
+type: string
+enum:
+  - instance
+  - capability
+  - requirements
+description: >-
+  The way that this statement is intended to be used, to describe an actual
+  running instance of software, a particular product (kind, not instance of
+  software) or a class of implementation (e.g. a desired purchase).

@@ -1,0 +1,8 @@
+title: fhirAllergyIntoleranceType
+type: string
+enum:
+  - allergy
+  - intolerance
+description: >-
+  Identification of the underlying physiological mechanism for the reaction
+  risk.

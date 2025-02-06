@@ -1,0 +1,8 @@
+title: fhirDeviceMetricCalibrationType
+type: string
+enum:
+  - unspecified
+  - offset
+  - gain
+  - two-point
+description: Describes the type of the calibration method.

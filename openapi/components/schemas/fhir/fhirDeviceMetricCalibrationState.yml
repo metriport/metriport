@@ -1,0 +1,8 @@
+title: fhirDeviceMetricCalibrationState
+type: string
+enum:
+  - not-calibrated
+  - calibration-required
+  - calibrated
+  - unspecified
+description: Describes the state of the calibration.

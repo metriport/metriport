@@ -1,0 +1,18 @@
+title: fhirTestScriptAssertResponse
+type: string
+enum:
+  - okay
+  - created
+  - noContent
+  - notModified
+  - bad
+  - forbidden
+  - notFound
+  - methodNotAllowed
+  - conflict
+  - gone
+  - preconditionFailed
+  - unprocessable
+description: >-
+  okay | created | noContent | notModified | bad | forbidden | notFound |
+  methodNotAllowed | conflict | gone | preconditionFailed | unprocessable.

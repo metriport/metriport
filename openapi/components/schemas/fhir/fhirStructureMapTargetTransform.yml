@@ -1,0 +1,21 @@
+title: fhirStructureMapTargetTransform
+type: string
+enum:
+  - create
+  - copy
+  - truncate
+  - escape
+  - cast
+  - append
+  - translate
+  - reference
+  - dateOp
+  - uuid
+  - pointer
+  - evaluate
+  - cc
+  - c
+  - qty
+  - id
+  - cp
+description: How the data is copied / created.

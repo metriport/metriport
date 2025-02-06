@@ -1,0 +1,7 @@
+title: fhirMolecularSequenceQualityType
+type: string
+enum:
+  - indel
+  - snp
+  - unknown
+description: INDEL / SNP / Undefined variant.

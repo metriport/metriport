@@ -1,0 +1,105 @@
+post:
+  description: >-
+    Creates a Patient in Metriport for the specified Facility where the patient
+    is receiving care.
+
+    The more demographic info you can provide about a Patient,
+
+    the higher chances Metriport will be able to find a match.
+
+    For example, nicknames, old addresses, multiple phone numbers,
+
+    a pre-marital last name, etc.
+  operationId: medical_patient_create
+  tags:
+    - MedicalPatient
+  parameters:
+    - name: facilityId
+      in: query
+      description: The ID of the Facility where the Patient is receiving care.
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 2.16.840.1.113883.3.666.5.2004.4.2005
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalPatient.yml
+          examples:
+            Example1:
+              value:
+                id: 018a80c4-292a-7486-a1234-76yuhe23yu14
+                firstName: Karen
+                lastName: Lynch
+                dob: '1963-12-30'
+                genderAtBirth: F
+                personalIdentifiers:
+                  - type: driversLicense
+                    state: CA
+                    value: '51227265'
+                address:
+                  - addressLine1: 2261 Market Street
+                    addressLine2: '#4818'
+                    city: San Francisco
+                    state: CA
+                    zip: '94114'
+                    country: USA
+                facilityIds:
+                  - 2.16.840.1.113883.3.666.5.2004.4.2005
+  summary: Create Patient
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../../components/schemas/medical/medicalBasePatient.yml
+        examples:
+          Example1:
+            value:
+              firstName: Karen
+              lastName: Lynch
+              dob: '1963-12-30'
+              genderAtBirth: F
+              personalIdentifiers:
+                - type: driversLicense
+                  state: CA
+                  value: '51227265'
+              address:
+                - addressLine1: 2261 Market Street
+                  addressLine2: '#4818'
+                  city: San Francisco
+                  state: CA
+                  zip: '94114'
+                  country: USA
+get:
+  description: >-
+    Lists all Patients receiving care at the specified Facility, or all Patients
+    if no Facility is specified.
+  operationId: medical_patient_list
+  tags:
+    - MedicalPatient
+  parameters:
+    - name: facilityId
+      in: query
+      description: The ID of the Facility where the patient is receiving care.
+      required: false
+      schema:
+        type: string
+        nullable: true
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalListPatientsResponse.yml
+  summary: List Patients at Facility
+  security:
+    - ApiKeyAuth: []

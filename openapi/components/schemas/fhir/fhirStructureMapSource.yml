@@ -1,0 +1,297 @@
+title: fhirStructureMapSource
+type: object
+description: >-
+  A Map of relationships between 2 structures that can be used to transform
+  data.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  context:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: Type or variable this rule applies to.
+  min:
+    type: integer
+    nullable: true
+    description: >-
+      Specified minimum cardinality for the element. This is optional; if
+      present, it acts an implicit check on the input content.
+  max:
+    type: string
+    nullable: true
+    description: >-
+      Specified maximum cardinality for the element - a number or a "_". This is
+      optional; if present, it acts an implicit check on the input content (_
+      just serves as documentation; it's the default value).
+  type:
+    type: string
+    nullable: true
+    description: >-
+      Specified type for the element. This works as a condition on the mapping -
+      use for polymorphic elements.
+  defaultValueBase64Binary:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueBoolean:
+    type: boolean
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueCanonical:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueCode:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueDate:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueDateTime:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueDecimal:
+    type: number
+    format: double
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueId:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueInstant:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueInteger:
+    type: number
+    format: double
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueMarkdown:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueOid:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValuePositiveInt:
+    type: number
+    format: double
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueString:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueTime:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueUnsignedInt:
+    type: number
+    format: double
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueUri:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueUrl:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueUuid:
+    type: string
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueAddress:
+    $ref: ./fhirAddress.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueAnnotation:
+    $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueAttachment:
+    $ref: ./fhirAttachment.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueCoding:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueContactPoint:
+    $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueCount:
+    $ref: ./fhirCount.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueDistance:
+    $ref: ./fhirDistance.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueDuration:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueHumanName:
+    $ref: ./fhirHumanName.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueIdentifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueMoney:
+    $ref: ./fhirMoney.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValuePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueQuantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueRatio:
+    $ref: ./fhirRatio.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueSampledData:
+    $ref: ./fhirSampledData.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueSignature:
+    $ref: ./fhirSignature.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueContactDetail:
+    $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueContributor:
+    $ref: ./fhirContributor.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueDataRequirement:
+    $ref: ./fhirDataRequirement.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueExpression:
+    $ref: ./fhirExpression.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueParameterDefinition:
+    $ref: ./fhirParameterDefinition.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueRelatedArtifact:
+    $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueTriggerDefinition:
+    $ref: ./fhirTriggerDefinition.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueUsageContext:
+    $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueDosage:
+    $ref: ./fhirDosage.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  defaultValueMeta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: A value to use if there is no existing value in the source object.
+  element:
+    type: string
+    nullable: true
+    description: Optional field for this source.
+  listMode:
+    $ref: ./fhirStructureMapSourceListMode.yml
+    nullable: true
+    description: How to handle the list mode for this element.
+  variable:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: Named context for field, if a field is specified.
+  condition:
+    type: string
+    nullable: true
+    description: FHIRPath expression - must be true or the rule does not apply.
+  check:
+    type: string
+    nullable: true
+    description: >-
+      FHIRPath expression - must be true or the mapping engine throws an error
+      instead of completing.
+  logMessage:
+    type: string
+    nullable: true
+    description: >-
+      A FHIRPath expression which specifies a message to put in the transform
+      log when content matching the source rule is found.

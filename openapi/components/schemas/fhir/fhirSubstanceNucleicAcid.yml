@@ -1,0 +1,53 @@
+title: fhirSubstanceNucleicAcid
+type: object
+description: >-
+  Nucleic acids are defined by three distinct elements: the base, sugar and
+  linkage. Individual substance/moiety IDs will be created for each of these
+  elements. The nucleotide sequence will be always entered in the 5’-3’
+  direction.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - SubstanceNucleicAcid
+  sequenceType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The type of the sequence shall be specified based on a controlled
+      vocabulary.
+  numberOfSubunits:
+    type: integer
+    nullable: true
+    description: >-
+      The number of linear sequences of nucleotides linked through
+      phosphodiester bonds shall be described. Subunits would be strands of
+      nucleic acids that are tightly associated typically through Watson-Crick
+      base pairing. NOTE: If not specified in the reference source, the
+      assumption is that there is 1 subunit.
+  areaOfHybridisation:
+    type: string
+    nullable: true
+    description: >-
+      The area of hybridisation shall be described if applicable for double
+      stranded RNA or DNA. The number associated with the subunit followed by
+      the number associated to the residue shall be specified in increasing
+      order. The underscore “” shall be used as separator as follows:
+      “Subunitnumber Residue”.
+  oligoNucleotideType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: (TBC).
+  subunit:
+    type: array
+    items:
+      $ref: ./fhirSubstanceNucleicAcidSubunit.yml
+    nullable: true
+    description: >-
+      Subunits are listed in order of decreasing length; sequences of the same
+      length will be ordered by molecular weight; subunits that have identical
+      sequences will be repeated multiple times.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

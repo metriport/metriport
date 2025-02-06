@@ -1,0 +1,111 @@
+title: fhirSupplyRequest
+type: object
+description: >-
+  A record of a request for a medication, substance or device used in the
+  healthcare setting.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - SupplyRequest
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this SupplyRequest by the author and/or
+      other systems. These identifiers remain constant as the resource is
+      updated and propagates from server to server.
+  status:
+    $ref: ./fhirSupplyRequestStatus.yml
+    nullable: true
+    description: Status of the supply request.
+  category:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Category of supply, e.g. central, non-stock, etc. This is used to support
+      work flows associated with the supply process.
+  priority:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Indicates how quickly this SupplyRequest should be addressed with respect
+      to other requests.
+  itemCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The item that is requested to be supplied. This is either a link to a
+      resource representing the details of the item or a code that identifies
+      the item from a known list.
+  itemReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The item that is requested to be supplied. This is either a link to a
+      resource representing the details of the item or a code that identifies
+      the item from a known list.
+  quantity:
+    $ref: ./fhirQuantity.yml
+    description: The amount that is being ordered of the indicated item.
+  parameter:
+    type: array
+    items:
+      $ref: ./fhirSupplyRequestParameter.yml
+    nullable: true
+    description: >-
+      Specific parameters for the ordered item. For example, the size of the
+      indicated item.
+  occurrenceDateTime:
+    type: string
+    nullable: true
+    description: When the request should be fulfilled.
+  occurrencePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: When the request should be fulfilled.
+  occurrenceTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: When the request should be fulfilled.
+  authoredOn:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: When the request was made.
+  requester:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The device, practitioner, etc. who initiated the request.
+  supplier:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Who is intended to fulfill the request.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The reason why the supply item was requested.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The reason why the supply item was requested.
+  deliverFrom:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Where the supply is expected to come from.
+  deliverTo:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Where the supply is destined to go.
+required:
+  - resourceType
+  - quantity
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,11 @@
+title: fhirCodeSystemContent
+type: string
+enum:
+  - not-present
+  - example
+  - fragment
+  - complete
+  - supplement
+description: >-
+  The extent of the content of the code system (the concepts and codes it
+  defines) are represented in this resource instance.

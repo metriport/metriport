@@ -1,0 +1,9 @@
+title: fhirTestReportOperationResult
+type: string
+enum:
+  - pass
+  - skip
+  - fail
+  - warning
+  - error
+description: The result of this operation.

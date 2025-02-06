@@ -1,0 +1,8 @@
+title: fhirDocumentReferenceRelatesToCode
+type: string
+enum:
+  - replaces
+  - transforms
+  - signs
+  - appends
+description: The type of relationship that this document has with anther document.

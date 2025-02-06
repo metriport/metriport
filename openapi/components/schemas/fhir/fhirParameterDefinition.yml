@@ -1,0 +1,63 @@
+title: fhirParameterDefinition
+type: object
+description: >-
+  The parameters to the module. This collection specifies both the input and
+  output parameters. Input parameters are provided by the caller as part of the
+  $evaluate operation. Output parameters are included in the GuidanceResponse.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  name:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      The name of the parameter used to allow access to the value of the
+      parameter in evaluation contexts.
+  use:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: Whether the parameter is input or output for the module.
+  min:
+    type: integer
+    nullable: true
+    description: >-
+      The minimum number of times this parameter SHALL appear in the request or
+      response.
+  max:
+    type: string
+    nullable: true
+    description: >-
+      The maximum number of times this element is permitted to appear in the
+      request or response.
+  documentation:
+    type: string
+    nullable: true
+    description: >-
+      A brief discussion of what the parameter is for and how it is used by the
+      module.
+  type:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The type of the parameter.
+  profile:
+    $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      If specified, this indicates a profile that the input data must conform
+      to, or that the output data will conform to.

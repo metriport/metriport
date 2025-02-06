@@ -1,0 +1,74 @@
+title: fhirClientApplication
+type: object
+description: Medplum client application for automated access.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ClientApplication
+  id:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      The logical id of the resource, as used in the URL for the resource. Once
+      assigned, this value never changes.
+  meta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: >-
+      The metadata about the resource. This is content that is maintained by the
+      infrastructure. Changes to the content might not always be associated with
+      version changes to the resource.
+  implicitRules:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      A reference to a set of rules that were followed when the resource was
+      constructed, and which must be understood when processing the content.
+      Often, this is a reference to an implementation guide that defines the
+      special rules along with other profiles etc.
+  language:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The base language in which the resource is written.
+  name:
+    type: string
+    nullable: true
+    description: A name associated with the ClientApplication.
+  description:
+    type: string
+    nullable: true
+    description: A summary, characterization or explanation of the ClientApplication.
+  secret:
+    type: string
+    nullable: true
+    description: Client secret string used to verify the identity of a client.
+  jwksUri:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      Optional JWKS URI for public key verification of JWTs issued by the
+      authorization server (client_secret_jwt).
+  redirectUri:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      Optional redirect URI used when redirecting a client back to the client
+      application.
+  launchUri:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: Optional launch URI for SMART EHR launch sequence.
+  pkceOptional:
+    type: boolean
+    nullable: true
+    description: >-
+      Flag to make PKCE optional for this client application. PKCE is required
+      by default for compliance with Smart App Launch. It can be disabled for
+      compatibility with legacy client applications.
+  identityProvider:
+    $ref: ./fhirIdentityProvider.yml
+    nullable: true
+    description: Optional external Identity Provider (IdP) for the client application.
+required:
+  - resourceType

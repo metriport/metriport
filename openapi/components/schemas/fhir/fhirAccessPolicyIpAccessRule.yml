@@ -1,0 +1,23 @@
+title: fhirAccessPolicyIpAccessRule
+type: object
+description: >-
+  Use IP Access Rules to allowlist, block, and challenge traffic based on the
+  visitor IP address.
+properties:
+  name:
+    type: string
+    nullable: true
+    description: >-
+      Friendly name that will make it easy for you to identify the IP Access
+      Rule in the future.
+  value:
+    type: string
+    description: >-
+      An IP Access rule will apply a certain action to incoming traffic based on
+      the visitor IP address or IP range.
+  action:
+    $ref: ./fhirAccessPolicyIpAccessRuleAction.yml
+    description: 'Access rule can perform one of the following actions: "allow" | "block".'
+required:
+  - value
+  - action

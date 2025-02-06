@@ -1,0 +1,13 @@
+title: fhirGoalLifecycleStatus
+type: string
+enum:
+  - proposed
+  - planned
+  - accepted
+  - active
+  - on-hold
+  - completed
+  - cancelled
+  - entered-in-error
+  - rejected
+description: The state of the goal throughout its lifecycle.

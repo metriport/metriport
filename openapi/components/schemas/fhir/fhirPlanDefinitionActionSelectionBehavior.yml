@@ -1,0 +1,10 @@
+title: fhirPlanDefinitionActionSelectionBehavior
+type: string
+enum:
+  - any
+  - all
+  - all-or-none
+  - exactly-one
+  - at-most-one
+  - one-or-more
+description: Defines the selection behavior for the action and its children.

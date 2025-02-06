@@ -1,0 +1,8 @@
+title: fhirPlanDefinitionParticipantType
+type: string
+enum:
+  - patient
+  - practitioner
+  - related-person
+  - device
+description: The type of participant in the action.

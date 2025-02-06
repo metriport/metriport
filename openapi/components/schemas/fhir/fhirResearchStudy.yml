@@ -1,0 +1,188 @@
+title: fhirResearchStudy
+type: object
+description: >-
+  A process where a researcher or organization plans and then executes a series
+  of steps intended to increase the field of healthcare-related knowledge. This
+  includes studies of safety, efficacy, comparative effectiveness and other
+  information about medications, devices, therapies and other interventional and
+  investigative techniques. A ResearchStudy involves the gathering of
+  information about human or animal subjects.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ResearchStudy
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifiers assigned to this research study by the sponsor or other
+      systems.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive user-friendly label for the study.
+  protocol:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The set of steps expected to be performed as part of the execution of the
+      study.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A larger research study of which this particular study is a component or
+      step.
+  status:
+    $ref: ./fhirResearchStudyStatus.yml
+    nullable: true
+    description: The current state of the study.
+  primaryPurposeType:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The type of study based upon the intent of the study's activities. A
+      classification of the intent of the study.
+  phase:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The stage in the progression of a therapy from initial experimental use in
+      humans in clinical trials to post-market evaluation.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Codes categorizing the type of study such as investigational vs.
+      observational, type of blinding, type of randomization, safety vs.
+      efficacy, etc.
+  focus:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The medication(s), food(s), therapy(ies), device(s) or other concerns or
+      interventions that the study is seeking to gain more information about.
+  condition:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The condition that is the focus of the study. For example, In a study to
+      examine risk factors for Lupus, might have as an inclusion criterion
+      "healthy volunteer", but the target condition code would be a Lupus SNOMED
+      code.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in learning more about or engaging with
+      the study.
+  relatedArtifact:
+    type: array
+    items:
+      $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: Citations, references and other related documents.
+  keyword:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Key terms to aid in searching for or filtering the study.
+  location:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Indicates a country, state or other region where the study is taking
+      place.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: A full description of how the study is being conducted.
+  enrollment:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Reference to a Group that defines the criteria for and quantity of
+      subjects participating in the study. E.g. " 200 female Europeans between
+      the ages of 20 and 45 with early onset diabetes".
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      Identifies the start date and the expected (or actual, depending on
+      status) end date for the study.
+  sponsor:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      An organization that initiates the investigation and is legally
+      responsible for the study.
+  principalInvestigator:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A researcher in a study who oversees multiple aspects of the study, such
+      as concept development, protocol writing, protocol submission for IRB
+      approval, participant recruitment, informed consent, data collection,
+      analysis, interpretation and presentation.
+  site:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A facility in which study activities are conducted.
+  reasonStopped:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A description and/or code explaining the premature termination of the
+      study.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Comments made about the study by the performer, subject or other
+      participants.
+  arm:
+    type: array
+    items:
+      $ref: ./fhirResearchStudyArm.yml
+    nullable: true
+    description: >-
+      Describes an expected sequence of events for one of the participants of a
+      study. E.g. Exposure to drug A, wash-out, exposure to drug B, wash-out,
+      follow-up.
+  objective:
+    type: array
+    items:
+      $ref: ./fhirResearchStudyObjective.yml
+    nullable: true
+    description: >-
+      A goal that the study is aiming to achieve in terms of a scientific
+      question to be answered by the analysis of data collected during the
+      study.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

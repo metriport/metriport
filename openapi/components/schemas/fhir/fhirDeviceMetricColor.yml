@@ -1,0 +1,17 @@
+title: fhirDeviceMetricColor
+type: string
+enum:
+  - black
+  - red
+  - green
+  - yellow
+  - blue
+  - magenta
+  - cyan
+  - white
+description: >-
+  Describes the color representation for the metric. This is often used to aid
+  clinicians to track and identify parameter types by color. In practice,
+  consider a Patient Monitor that has ECG/HR and Pleth for example; the
+  parameters are displayed in different characteristic colors, such as HR-blue,
+  BP-green, and PR and SpO2- magenta.

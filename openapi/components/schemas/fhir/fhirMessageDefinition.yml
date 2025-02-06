@@ -1,0 +1,189 @@
+title: fhirMessageDefinition
+type: object
+description: >-
+  Defines the characteristics of a message that can be shared between systems,
+  including the type of event that initiates the message, the content to be
+  transmitted and what response(s), if any, are permitted.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MessageDefinition
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The business identifier that is used to reference the MessageDefinition
+      and _is_ expected to be consistent from server to server.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this message definition when
+      it is represented in other formats, or referenced in a specification,
+      model, design or an instance.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the message
+      definition when it is referenced in a specification, model, design or
+      instance. This is an arbitrary value managed by the message definition
+      author and is not expected to be globally unique. For example, it might be
+      a timestamp (e.g. yyyymmdd) if a managed version is not available. There
+      is also no expectation that versions can be placed in a lexicographical
+      sequence.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the message definition. This name
+      should be usable as an identifier for the module by machine processing
+      applications such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the message definition.
+  replaces:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: A MessageDefinition that is superseded by this definition.
+  status:
+    $ref: ./fhirMessageDefinitionStatus.yml
+    nullable: true
+    description: >-
+      The status of this message definition. Enables tracking the life-cycle of
+      the content.
+  experimental:
+    type: boolean
+    nullable: true
+    description: >-
+      A Boolean value to indicate that this message definition is authored for
+      testing purposes (or education/evaluation/marketing) and is not intended
+      to be used for genuine usage.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the message definition was published.
+      The date must change when the business version changes and it must change
+      if the status code changes. In addition, it should change when the
+      substantive content of the message definition changes.
+  publisher:
+    type: string
+    nullable: true
+    description: >-
+      The name of the organization or individual that published the message
+      definition.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the message definition from a
+      consumer's perspective.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate message definition instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A legal or geographic region in which the message definition is intended
+      to be used.
+  purpose:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Explanation of why this message definition is needed and why it has been
+      designed as it has.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the message definition and/or its
+      contents. Copyright statements are generally legal restrictions on the use
+      and publishing of the message definition.
+  base:
+    $ref: ./fhircanonical.yml
+    nullable: true
+    description: The MessageDefinition that is the basis for the contents of this resource.
+  parent:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      Identifies a protocol or workflow that this MessageDefinition represents a
+      step in.
+  eventCoding:
+    $ref: ./fhirCoding.yml
+    nullable: true
+    description: Event code or link to the EventDefinition.
+  eventUri:
+    type: string
+    nullable: true
+    description: Event code or link to the EventDefinition.
+  category:
+    $ref: ./fhirMessageDefinitionCategory.yml
+    nullable: true
+    description: The impact of the content of the message.
+  focus:
+    type: array
+    items:
+      $ref: ./fhirMessageDefinitionFocus.yml
+    nullable: true
+    description: >-
+      Identifies the resource (or resources) that are being addressed by the
+      event. For example, the Encounter for an admit message or two Account
+      records for a merge.
+  responseRequired:
+    $ref: ./fhirMessageDefinitionResponseRequired.yml
+    nullable: true
+    description: >-
+      Declare at a message definition level whether a response is required or
+      only upon error or success, or never.
+  allowedResponse:
+    type: array
+    items:
+      $ref: ./fhirMessageDefinitionAllowedResponse.yml
+    nullable: true
+    description: >-
+      Indicates what types of messages may be sent as an application-level
+      response to this message.
+  graph:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      Canonical reference to a GraphDefinition. If a URL is provided, it is the
+      canonical reference to a [[[GraphDefinition]]] that it controls what
+      resources are to be added to the bundle when building the document. The
+      GraphDefinition can also specify profiles that apply to the various
+      resources.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

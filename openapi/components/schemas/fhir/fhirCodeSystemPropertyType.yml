@@ -1,0 +1,13 @@
+title: fhirCodeSystemPropertyType
+type: string
+enum:
+  - code
+  - Coding
+  - string
+  - integer
+  - boolean
+  - dateTime
+  - decimal
+description: >-
+  The type of the property value. Properties of type "code" contain a code
+  defined by the code system (e.g. a reference to another defined concept).

@@ -1,0 +1,10 @@
+title: fhirHealthcareServiceAvailableTimeDaysOfWeekItem
+type: string
+enum:
+  - mon
+  - tue
+  - wed
+  - thu
+  - fri
+  - sat
+  - sun

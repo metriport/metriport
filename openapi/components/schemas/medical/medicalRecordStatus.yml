@@ -1,0 +1,12 @@
+title: medicalRecordStatus
+type: object
+properties:
+  exists:
+    type: boolean
+    description: Whether or not the record exists
+  createdAt:
+    type: string
+    nullable: true
+    description: The date the record was created
+required:
+  - exists

@@ -1,0 +1,8 @@
+title: fhirBotRuntimeVersion
+type: string
+enum:
+  - awslambda
+  - vmcontext
+description: >-
+  The identifier of the bot runtime environment (i.e., vmcontext, awslambda,
+  etc).

@@ -1,0 +1,7 @@
+title: fhirResearchElementDefinitionType
+type: string
+enum:
+  - population
+  - exposure
+  - outcome
+description: The type of research element, a population, an exposure, or an outcome.

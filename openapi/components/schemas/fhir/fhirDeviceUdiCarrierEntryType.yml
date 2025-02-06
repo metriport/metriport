@@ -1,0 +1,10 @@
+title: fhirDeviceUdiCarrierEntryType
+type: string
+enum:
+  - barcode
+  - rfid
+  - manual
+  - card
+  - self-reported
+  - unknown
+description: A coded entry to indicate how the data was entered.

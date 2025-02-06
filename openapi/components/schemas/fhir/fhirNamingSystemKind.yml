@@ -1,0 +1,9 @@
+title: fhirNamingSystemKind
+type: string
+enum:
+  - codesystem
+  - identifier
+  - root
+description: >-
+  Indicates the purpose for the naming system - what kinds of things does it
+  make unique?

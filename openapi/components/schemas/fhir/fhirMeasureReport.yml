@@ -1,0 +1,85 @@
+title: fhirMeasureReport
+type: object
+description: >-
+  The MeasureReport resource contains the results of the calculation of a
+  measure; and optionally a reference to the resources involved in that
+  calculation.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MeasureReport
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this MeasureReport when it is
+      represented in other formats or referenced in a specification, model,
+      design or an instance.
+  status:
+    $ref: ./fhirMeasureReportStatus.yml
+    nullable: true
+    description: >-
+      The MeasureReport status. No data will be available until the
+      MeasureReport status is complete.
+  type:
+    $ref: ./fhirMeasureReportType.yml
+    nullable: true
+    description: >-
+      The type of measure report. This may be an individual report, which
+      provides the score for the measure for an individual member of the
+      population; a subject-listing, which returns the list of members that meet
+      the various criteria in the measure; a summary report, which returns a
+      population count for each of the criteria in the measure; or a
+      data-collection, which enables the MeasureReport to be used to exchange
+      the data-of-interest for a quality measure.
+  measure:
+    $ref: ./fhircanonical.yml
+    description: A reference to the Measure that was calculated to produce this report.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Optional subject identifying the individual or individuals the report is
+      for.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date this measure report was generated.
+  reporter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The individual, location, or organization that is reporting the data.
+  period:
+    $ref: ./fhirPeriod.yml
+    description: The reporting period for which the report was calculated.
+  improvementNotation:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Whether improvement in the measure is noted by an increase or decrease in
+      the measure score.
+  group:
+    type: array
+    items:
+      $ref: ./fhirMeasureReportGroup.yml
+    nullable: true
+    description: >-
+      The results of the calculation, one for each population group in the
+      measure.
+  evaluatedResource:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A reference to a Bundle containing the Resources that were used in the
+      calculation of this measure.
+required:
+  - resourceType
+  - measure
+  - period
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,110 @@
+title: fhirMolecularSequence
+type: object
+description: Raw data describing a biological sequence.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MolecularSequence
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A unique identifier for this particular sequence instance. This is a
+      FHIR-defined id.
+  type:
+    $ref: ./fhirMolecularSequenceType.yml
+    nullable: true
+    description: Amino Acid Sequence/ DNA Sequence / RNA Sequence.
+  coordinateSystem:
+    type: integer
+    nullable: true
+    description: >-
+      Whether the sequence is numbered starting at 0 (0-based numbering or
+      coordinates, inclusive start, exclusive end) or starting at 1 (1-based
+      numbering, inclusive start and inclusive end).
+  patient:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The patient whose sequencing results are described by this resource.
+  specimen:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Specimen used for sequencing.
+  device:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The method for sequencing, for example, chip information.
+  performer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The organization or lab that should be responsible for this result.
+  quantity:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: The number of copies of the sequence of interest. (RNASeq).
+  referenceSeq:
+    $ref: ./fhirMolecularSequenceReferenceSeq.yml
+    nullable: true
+    description: >-
+      A sequence that is used as a reference to describe variants that are
+      present in a sequence analyzed.
+  variant:
+    type: array
+    items:
+      $ref: ./fhirMolecularSequenceVariant.yml
+    nullable: true
+    description: >-
+      The definition of variant here originates from Sequence ontology
+      ([variant_of](http://www.sequenceontology.org/browser/current_svn/term/variant_of)).
+      This element can represent amino acid or nucleic sequence change(including
+      insertion,deletion,SNP,etc.) It can represent some complex mutation or
+      segment variation with the assist of CIGAR string.
+  observedSeq:
+    type: string
+    nullable: true
+    description: >-
+      Sequence that was observed. It is the result marked by referenceSeq along
+      with variant records on referenceSeq. This shall start from
+      referenceSeq.windowStart and end by referenceSeq.windowEnd.
+  quality:
+    type: array
+    items:
+      $ref: ./fhirMolecularSequenceQuality.yml
+    nullable: true
+    description: >-
+      An experimental feature attribute that defines the quality of the feature
+      in a quantitative way, such as a phred quality score
+      ([SO:0001686](http://www.sequenceontology.org/browser/current_svn/term/SO:0001686)).
+  readCoverage:
+    type: integer
+    nullable: true
+    description: >-
+      Coverage (read depth or depth) is the average number of reads representing
+      a given nucleotide in the reconstructed sequence.
+  repository:
+    type: array
+    items:
+      $ref: ./fhirMolecularSequenceRepository.yml
+    nullable: true
+    description: >-
+      Configurations of the external repository. The repository shall store
+      target's observedSeq or records related with target's observedSeq.
+  pointer:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Pointer to next atomic sequence which at most contains one variant.
+  structureVariant:
+    type: array
+    items:
+      $ref: ./fhirMolecularSequenceStructureVariant.yml
+    nullable: true
+    description: Information about chromosome structure variation.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

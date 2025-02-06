@@ -1,0 +1,148 @@
+title: fhirResearchElementDefinitionCharacteristic
+type: object
+description: >-
+  The ResearchElementDefinition resource describes a "PICO" element that
+  knowledge (evidence, assertion, recommendation) is about.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  definitionCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Define members of the research element using Codes (such as condition,
+      medication, or observation), Expressions ( using an expression language
+      such as FHIRPath or CQL) or DataRequirements (such as Diabetes diagnosis
+      onset in the last year).
+  definitionCanonical:
+    type: string
+    nullable: true
+    description: >-
+      Define members of the research element using Codes (such as condition,
+      medication, or observation), Expressions ( using an expression language
+      such as FHIRPath or CQL) or DataRequirements (such as Diabetes diagnosis
+      onset in the last year).
+  definitionExpression:
+    $ref: ./fhirExpression.yml
+    nullable: true
+    description: >-
+      Define members of the research element using Codes (such as condition,
+      medication, or observation), Expressions ( using an expression language
+      such as FHIRPath or CQL) or DataRequirements (such as Diabetes diagnosis
+      onset in the last year).
+  definitionDataRequirement:
+    $ref: ./fhirDataRequirement.yml
+    nullable: true
+    description: >-
+      Define members of the research element using Codes (such as condition,
+      medication, or observation), Expressions ( using an expression language
+      such as FHIRPath or CQL) or DataRequirements (such as Diabetes diagnosis
+      onset in the last year).
+  usageContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      Use UsageContext to define the members of the population, such as Age
+      Ranges, Genders, Settings.
+  exclude:
+    type: boolean
+    nullable: true
+    description: When true, members with this characteristic are excluded from the element.
+  unitOfMeasure:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Specifies the UCUM unit for the outcome.
+  studyEffectiveDescription:
+    type: string
+    nullable: true
+    description: A narrative description of the time period the study covers.
+  studyEffectiveDateTime:
+    type: string
+    nullable: true
+    description: Indicates what effective period the study covers.
+  studyEffectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: Indicates what effective period the study covers.
+  studyEffectiveDuration:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: Indicates what effective period the study covers.
+  studyEffectiveTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: Indicates what effective period the study covers.
+  studyEffectiveTimeFromStart:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: Indicates duration from the study initiation.
+  studyEffectiveGroupMeasure:
+    $ref: >-
+      ./fhirResearchElementDefinitionCharacteristicStudyEffectiveGroupMeasure.yml
+    nullable: true
+    description: Indicates how elements are aggregated within the study effective period.
+  participantEffectiveDescription:
+    type: string
+    nullable: true
+    description: A narrative description of the time period the study covers.
+  participantEffectiveDateTime:
+    type: string
+    nullable: true
+    description: Indicates what effective period the study covers.
+  participantEffectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: Indicates what effective period the study covers.
+  participantEffectiveDuration:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: Indicates what effective period the study covers.
+  participantEffectiveTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: Indicates what effective period the study covers.
+  participantEffectiveTimeFromStart:
+    $ref: ./fhirDuration.yml
+    nullable: true
+    description: Indicates duration from the participant's study entry.
+  participantEffectiveGroupMeasure:
+    $ref: >-
+      ./fhirResearchElementDefinitionCharacteristicParticipantEffectiveGroupMeasure.yml
+    nullable: true
+    description: Indicates how elements are aggregated within the study effective period.

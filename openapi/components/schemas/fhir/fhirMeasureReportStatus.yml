@@ -1,0 +1,9 @@
+title: fhirMeasureReportStatus
+type: string
+enum:
+  - complete
+  - pending
+  - error
+description: >-
+  The MeasureReport status. No data will be available until the MeasureReport
+  status is complete.

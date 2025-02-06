@@ -1,0 +1,9 @@
+title: medicalBasePatient
+type: object
+properties:
+  externalId:
+    type: string
+    nullable: true
+    description: An external Patient ID to associate to a Patient in Metriport.
+allOf:
+  - $ref: ./medicalDemographics.yml

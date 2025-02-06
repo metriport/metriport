@@ -1,0 +1,6 @@
+title: fhirPlanDefinitionActionCardinalityBehavior
+type: string
+enum:
+  - single
+  - multiple
+description: Defines whether the action can be selected multiple times.

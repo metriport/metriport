@@ -1,0 +1,9 @@
+title: fhirMolecularSequenceReferenceSeqStrand
+type: string
+enum:
+  - watson
+  - crick
+description: >-
+  An absolute reference to a strand. The Watson strand is the strand whose
+  5'-end is on the short arm of the chromosome, and the Crick strand as the one
+  whose 5'-end is on the long arm.

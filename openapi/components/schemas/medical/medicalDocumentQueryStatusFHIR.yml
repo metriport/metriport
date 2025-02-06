@@ -1,0 +1,6 @@
+title: medicalDocumentQueryStatusFHIR
+type: string
+enum:
+  - processing
+  - completed
+  - failed

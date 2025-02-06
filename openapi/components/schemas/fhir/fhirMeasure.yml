@@ -1,0 +1,318 @@
+title: fhirMeasure
+type: object
+description: The Measure resource provides the definition of a quality measure.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Measure
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this measure when it is
+      referenced in a specification, model, design or an instance; also called
+      its canonical identifier. This SHOULD be globally unique and SHOULD be a
+      literal address at which at which an authoritative instance of this
+      measure is (or will be) published. This URL can be the target of a
+      canonical reference. It SHALL remain the same when the measure is stored
+      on different servers.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this measure when it is
+      represented in other formats, or referenced in a specification, model,
+      design or an instance.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the measure when
+      it is referenced in a specification, model, design or instance. This is an
+      arbitrary value managed by the measure author and is not expected to be
+      globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a
+      managed version is not available. There is also no expectation that
+      versions can be placed in a lexicographical sequence. To provide a version
+      consistent with the Decision Support Service specification, use the format
+      Major.Minor.Revision (e.g. 1.0.0). For more information on versioning
+      knowledge assets, refer to the Decision Support Service specification.
+      Note that a version is required for non-experimental active artifacts.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the measure. This name should be
+      usable as an identifier for the module by machine processing applications
+      such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the measure.
+  subtitle:
+    type: string
+    nullable: true
+    description: >-
+      An explanatory or alternate title for the measure giving additional
+      information about its content.
+  status:
+    $ref: ./fhirMeasureStatus.yml
+    nullable: true
+    description: >-
+      The status of this measure. Enables tracking the life-cycle of the
+      content.
+  experimental:
+    type: boolean
+    nullable: true
+    description: >-
+      A Boolean value to indicate that this measure is authored for testing
+      purposes (or education/evaluation/marketing) and is not intended to be
+      used for genuine usage.
+  subjectCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The intended subjects for the measure. If this element is not provided, a
+      Patient subject is assumed, but the subject of the measure can be
+      anything.
+  subjectReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The intended subjects for the measure. If this element is not provided, a
+      Patient subject is assumed, but the subject of the measure can be
+      anything.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the measure was published. The date
+      must change when the business version changes and it must change if the
+      status code changes. In addition, it should change when the substantive
+      content of the measure changes.
+  publisher:
+    type: string
+    nullable: true
+    description: The name of the organization or individual that published the measure.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the measure from a consumer's
+      perspective.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate measure instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A legal or geographic region in which the measure is intended to be used.
+  purpose:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Explanation of why this measure is needed and why it has been designed as
+      it has.
+  usage:
+    type: string
+    nullable: true
+    description: >-
+      A detailed description, from a clinical perspective, of how the measure is
+      used.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the measure and/or its contents.
+      Copyright statements are generally legal restrictions on the use and
+      publishing of the measure.
+  approvalDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was approved by the publisher.
+      Approval happens once when the content is officially approved for usage.
+  lastReviewDate:
+    type: string
+    format: date
+    nullable: true
+    description: >-
+      The date on which the resource content was last reviewed. Review happens
+      periodically after approval but does not change the original approval
+      date.
+  effectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The period during which the measure content was or is planned to be in
+      active use.
+  topic:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Descriptive topics related to the content of the measure. Topics provide a
+      high-level categorization grouping types of measures that can be useful
+      for filtering and searching.
+  author:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individiual or organization primarily involved in the creation and
+      maintenance of the content.
+  editor:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization primarily responsible for internal coherence
+      of the content.
+  reviewer:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization primarily responsible for review of some
+      aspect of the content.
+  endorser:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      An individual or organization responsible for officially endorsing the
+      content for use in some setting.
+  relatedArtifact:
+    type: array
+    items:
+      $ref: ./fhirRelatedArtifact.yml
+    nullable: true
+    description: >-
+      Related artifacts such as additional documentation, justification, or
+      bibliographic references.
+  library:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      A reference to a Library resource containing the formal logic used by the
+      measure.
+  disclaimer:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Notices and disclaimers regarding the use of the measure or related to
+      intellectual property (such as code systems) referenced by the measure.
+  scoring:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Indicates how the calculation is performed for the measure, including
+      proportion, ratio, continuous-variable, and cohort. The value set is
+      extensible, allowing additional measure scoring types to be represented.
+  compositeScoring:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      If this is a composite measure, the scoring method used to combine the
+      component measures to determine the composite score.
+  type:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Indicates whether the measure is used to examine a process, an outcome
+      over time, a patient-reported outcome, or a structure measure such as
+      utilization.
+  riskAdjustment:
+    type: string
+    nullable: true
+    description: >-
+      A description of the risk adjustment factors that may impact the resulting
+      score for the measure and how they may be accounted for when computing and
+      reporting measure results.
+  rateAggregation:
+    type: string
+    nullable: true
+    description: >-
+      Describes how to combine the information calculated, based on logic in
+      each of several populations, into one summarized result.
+  rationale:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Provides a succinct statement of the need for the measure. Usually
+      includes statements pertaining to importance criterion: impact, gap in
+      care, and evidence.
+  clinicalRecommendationStatement:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Provides a summary of relevant clinical guidelines or other clinical
+      recommendations supporting the measure.
+  improvementNotation:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Information on whether an increase or decrease in score is the preferred
+      result (e.g., a higher score indicates better quality OR a lower score
+      indicates better quality OR quality is within a range).
+  definition:
+    type: array
+    items:
+      $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: Provides a description of an individual term used within the measure.
+  guidance:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Additional guidance for the measure including how it can be used in a
+      clinical context, and the intent of the measure.
+  group:
+    type: array
+    items:
+      $ref: ./fhirMeasureGroup.yml
+    nullable: true
+    description: A group of population criteria for the measure.
+  supplementalData:
+    type: array
+    items:
+      $ref: ./fhirMeasureSupplementalData.yml
+    nullable: true
+    description: >-
+      The supplemental data criteria for the measure report, specified as either
+      the name of a valid CQL expression within a referenced library, or a valid
+      FHIR Resource Path.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

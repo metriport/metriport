@@ -1,0 +1,10 @@
+title: fhirStructureMapStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this structure map. Enables tracking the life-cycle of the
+  content.

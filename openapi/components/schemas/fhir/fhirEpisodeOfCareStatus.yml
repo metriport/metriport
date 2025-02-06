@@ -1,0 +1,11 @@
+title: fhirEpisodeOfCareStatus
+type: string
+enum:
+  - planned
+  - waitlist
+  - active
+  - onhold
+  - finished
+  - cancelled
+  - entered-in-error
+description: planned | waitlist | active | onhold | finished | cancelled.

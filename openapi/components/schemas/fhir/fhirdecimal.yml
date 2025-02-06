@@ -1,0 +1,4 @@
+title: fhirdecimal
+type: number
+format: double
+description: A rational number with implicit precision

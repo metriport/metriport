@@ -1,0 +1,96 @@
+title: fhirCareTeam
+type: object
+description: >-
+  The Care Team includes all the people and organizations who plan to
+  participate in the coordination and delivery of care for a patient.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - CareTeam
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this care team by the performer or other
+      systems which remain constant as the resource is updated and propagates
+      from server to server.
+  status:
+    $ref: ./fhirCareTeamStatus.yml
+    nullable: true
+    description: Indicates the current state of the care team.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Identifies what kind of team. This is to support differentiation between
+      multiple co-existing teams, such as care plan team, episode of care team,
+      longitudinal care team.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A label for human use intended to distinguish like teams. E.g. the "red"
+      vs. "green" trauma teams.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the patient or group whose intended care is handled by the
+      team.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Encounter during which this CareTeam was created or to which the
+      creation of this record is tightly associated.
+  period:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: Indicates when the team did (or is intended to) come into effect and end.
+  participant:
+    type: array
+    items:
+      $ref: ./fhirCareTeamParticipant.yml
+    nullable: true
+    description: >-
+      Identifies all people and organizations who are expected to be involved in
+      the care team.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Describes why the care team exists.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Condition(s) that this care team addresses.
+  managingOrganization:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The organization responsible for the care team.
+  telecom:
+    type: array
+    items:
+      $ref: ./fhirContactPoint.yml
+    nullable: true
+    description: A central contact detail for the care team (that applies to all members).
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: Comments made about the CareTeam.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

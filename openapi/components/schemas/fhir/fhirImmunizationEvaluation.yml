@@ -1,0 +1,89 @@
+title: fhirImmunizationEvaluation
+type: object
+description: >-
+  Describes a comparison of an immunization event against published
+  recommendations to determine if the administration is "valid" in relation to
+  those recommendations.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ImmunizationEvaluation
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this immunization evaluation record.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Indicates the current status of the evaluation of the vaccination
+      administration event.
+  patient:
+    $ref: ./fhirReference.yml
+    description: The individual for whom the evaluation is being done.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date the evaluation of the vaccine administration event was performed.
+  authority:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Indicates the authority who published the protocol (e.g. ACIP).
+  targetDisease:
+    $ref: ./fhirCodeableConcept.yml
+    description: The vaccine preventable disease the dose is being evaluated against.
+  immunizationEvent:
+    $ref: ./fhirReference.yml
+    description: The vaccine administration event being evaluated.
+  doseStatus:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      Indicates if the dose is valid or not valid with respect to the published
+      recommendations.
+  doseStatusReason:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Provides an explanation as to why the vaccine administration event is
+      valid or not relative to the published recommendations.
+  description:
+    type: string
+    nullable: true
+    description: Additional information about the evaluation.
+  series:
+    type: string
+    nullable: true
+    description: >-
+      One possible path to achieve presumed immunity against a disease - within
+      the context of an authority.
+  doseNumberPositiveInt:
+    type: number
+    format: double
+    nullable: true
+    description: Nominal position in a series.
+  doseNumberString:
+    type: string
+    nullable: true
+    description: Nominal position in a series.
+  seriesDosesPositiveInt:
+    type: number
+    format: double
+    nullable: true
+    description: The recommended number of doses to achieve immunity.
+  seriesDosesString:
+    type: string
+    nullable: true
+    description: The recommended number of doses to achieve immunity.
+required:
+  - resourceType
+  - patient
+  - targetDisease
+  - immunizationEvent
+  - doseStatus
+allOf:
+  - $ref: ./fhirBaseResource.yml

@@ -1,0 +1,160 @@
+title: fhirTestScriptAssert
+type: object
+description: >-
+  A structured set of tests against a FHIR server or client implementation to
+  determine compliance against the FHIR specification.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  label:
+    type: string
+    nullable: true
+    description: The label would be used for tracking/logging purposes by test engines.
+  description:
+    type: string
+    nullable: true
+    description: >-
+      The description would be used by test engines for tracking and reporting
+      purposes.
+  direction:
+    $ref: ./fhirTestScriptAssertDirection.yml
+    nullable: true
+    description: The direction to use for the assertion.
+  compareToSourceId:
+    type: string
+    nullable: true
+    description: >-
+      Id of the source fixture used as the contents to be evaluated by either
+      the "source/expression" or "sourceId/path" definition.
+  compareToSourceExpression:
+    type: string
+    nullable: true
+    description: >-
+      The FHIRPath expression to evaluate against the source fixture. When
+      compareToSourceId is defined, either compareToSourceExpression or
+      compareToSourcePath must be defined, but not both.
+  compareToSourcePath:
+    type: string
+    nullable: true
+    description: >-
+      XPath or JSONPath expression to evaluate against the source fixture. When
+      compareToSourceId is defined, either compareToSourceExpression or
+      compareToSourcePath must be defined, but not both.
+  contentType:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      The mime-type contents to compare against the request or response message
+      'Content-Type' header.
+  expression:
+    type: string
+    nullable: true
+    description: >-
+      The FHIRPath expression to be evaluated against the request or response
+      message contents - HTTP headers and payload.
+  headerField:
+    type: string
+    nullable: true
+    description: The HTTP header field name e.g. 'Location'.
+  minimumId:
+    type: string
+    nullable: true
+    description: >-
+      The ID of a fixture. Asserts that the response contains at a minimum the
+      fixture specified by minimumId.
+  navigationLinks:
+    type: boolean
+    nullable: true
+    description: >-
+      Whether or not the test execution performs validation on the bundle
+      navigation links.
+  operator:
+    $ref: ./fhirTestScriptAssertOperator.yml
+    nullable: true
+    description: >-
+      The operator type defines the conditional behavior of the assert. If not
+      defined, the default is equals.
+  path:
+    type: string
+    nullable: true
+    description: >-
+      The XPath or JSONPath expression to be evaluated against the fixture
+      representing the response received from server.
+  requestMethod:
+    $ref: ./fhirTestScriptAssertRequestMethod.yml
+    nullable: true
+    description: >-
+      The request method or HTTP operation code to compare against that used by
+      the client system under test.
+  requestURL:
+    type: string
+    nullable: true
+    description: The value to use in a comparison against the request URL path string.
+  resource:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The type of the resource. See http://build.fhir.org/resourcelist.html.
+  response:
+    $ref: ./fhirTestScriptAssertResponse.yml
+    nullable: true
+    description: >-
+      okay | created | noContent | notModified | bad | forbidden | notFound |
+      methodNotAllowed | conflict | gone | preconditionFailed | unprocessable.
+  responseCode:
+    type: string
+    nullable: true
+    description: The value of the HTTP response code to be tested.
+  sourceId:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      Fixture to evaluate the XPath/JSONPath expression or the headerField
+      against.
+  validateProfileId:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: The ID of the Profile to validate against.
+  value:
+    type: string
+    nullable: true
+    description: The value to compare to.
+  warningOnly:
+    type: boolean
+    nullable: true
+    description: >-
+      Whether or not the test execution will produce a warning only on error for
+      this assert.

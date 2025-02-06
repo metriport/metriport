@@ -1,0 +1,6 @@
+title: fhirStructureDefinitionDerivation
+type: string
+enum:
+  - specialization
+  - constraint
+description: How the type relates to the baseDefinition.

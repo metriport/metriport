@@ -1,0 +1,9 @@
+title: fhirAllergyIntoleranceReactionSeverity
+type: string
+enum:
+  - mild
+  - moderate
+  - severe
+description: >-
+  Clinical assessment of the severity of the reaction event as a whole,
+  potentially considering multiple different manifestations.

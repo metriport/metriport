@@ -1,0 +1,8 @@
+title: fhirProjectFeaturesItem
+type: string
+enum:
+  - bots
+  - cron
+  - email
+  - google-auth-required
+  - graphql-introspection

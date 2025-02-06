@@ -1,0 +1,67 @@
+title: fhirAgent
+type: object
+description: Configuration details for an instance of the Medplum agent application.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Agent
+  id:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      The logical id of the resource, as used in the URL for the resource. Once
+      assigned, this value never changes.
+  meta:
+    $ref: ./fhirMeta.yml
+    nullable: true
+    description: >-
+      The metadata about the resource. This is content that is maintained by the
+      infrastructure. Changes to the content might not always be associated with
+      version changes to the resource.
+  implicitRules:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      A reference to a set of rules that were followed when the resource was
+      constructed, and which must be understood when processing the content.
+      Often, this is a reference to an implementation guide that defines the
+      special rules along with other profiles etc.
+  language:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The base language in which the resource is written.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: An identifier for this agent.
+  name:
+    type: string
+    description: The human readable friendly name of the agent.
+  status:
+    $ref: ./fhirAgentStatus.yml
+    description: The status of the agent.
+  device:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Optional device resource representing the device running the agent.
+  setting:
+    type: array
+    items:
+      $ref: ./fhirAgentSetting.yml
+    nullable: true
+    description: The settings for the agent.
+  channel:
+    type: array
+    items:
+      $ref: ./fhirAgentChannel.yml
+    description: >-
+      Details where to send notifications when resources are received that meet
+      the criteria.
+required:
+  - resourceType
+  - name
+  - status
+  - channel

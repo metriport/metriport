@@ -1,0 +1,9 @@
+title: fhirContactPointUse
+type: string
+enum:
+  - home
+  - work
+  - temp
+  - old
+  - mobile
+description: Identifies the purpose for the contact point.

@@ -1,0 +1,9 @@
+title: fhirQuestionnaireResponseStatus
+type: string
+enum:
+  - in-progress
+  - completed
+  - amended
+  - entered-in-error
+  - stopped
+description: The position of the questionnaire response within its overall lifecycle.

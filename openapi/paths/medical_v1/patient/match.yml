@@ -1,0 +1,63 @@
+post:
+  description: >-
+    Searches for a Patient previously created in Metriport, based on demographic
+    data.
+  operationId: medical_patient_match
+  tags:
+    - MedicalPatient
+  parameters: []
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalPatient.yml
+          examples:
+            Example1:
+              value:
+                id: 018a80c4-292a-7486-a1234-76yuhe23yu14
+                firstName: Karen
+                lastName: Lynch
+                dob: '1963-12-30'
+                genderAtBirth: F
+                personalIdentifiers:
+                  - type: driversLicense
+                    state: CA
+                    value: '51227265'
+                address:
+                  - addressLine1: 2261 Market Street
+                    addressLine2: '#4818'
+                    city: San Francisco
+                    state: CA
+                    zip: '94114'
+                    country: USA
+                facilityIds:
+                  - 2.16.840.1.113883.3.666.5.2004.4.2005
+  summary: Match Patient
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../../components/schemas/medical/medicalDemographics.yml
+        examples:
+          Example1:
+            value:
+              firstName: Karen
+              lastName: Lynch
+              dob: '1963-12-30'
+              genderAtBirth: F
+              personalIdentifiers:
+                - type: driversLicense
+                  state: CA
+                  value: '51227265'
+              address:
+                - addressLine1: 2261 Market Street
+                  addressLine2: '#4818'
+                  city: San Francisco
+                  state: CA
+                  zip: '94114'
+                  country: USA

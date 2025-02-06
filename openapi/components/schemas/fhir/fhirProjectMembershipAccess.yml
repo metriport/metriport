@@ -1,0 +1,17 @@
+title: fhirProjectMembershipAccess
+type: object
+description: Extended access configuration using parameterized access policies.
+properties:
+  policy:
+    $ref: ./fhirReference.yml
+    description: >-
+      The base access policy used as a template. Variables in the template
+      access policy are replaced by the values in the parameter.
+  parameter:
+    type: array
+    items:
+      $ref: ./fhirProjectMembershipAccessParameter.yml
+    nullable: true
+    description: User options that control the display of the application.
+required:
+  - policy

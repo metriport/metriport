@@ -1,0 +1,8 @@
+title: fhirQuestionnaireItemEnableBehavior
+type: string
+enum:
+  - all
+  - any
+description: >-
+  Controls how multiple enableWhen values are interpreted - whether all or any
+  must be true.

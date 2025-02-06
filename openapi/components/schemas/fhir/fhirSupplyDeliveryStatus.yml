@@ -1,0 +1,8 @@
+title: fhirSupplyDeliveryStatus
+type: string
+enum:
+  - in-progress
+  - completed
+  - abandoned
+  - entered-in-error
+description: A code specifying the state of the dispense event.

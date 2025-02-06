@@ -1,0 +1,8 @@
+title: fhirPersonLinkAssurance
+type: string
+enum:
+  - level1
+  - level2
+  - level3
+  - level4
+description: Level of assurance that this link is associated with the target resource.

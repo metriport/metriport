@@ -1,0 +1,9 @@
+title: fhirIdentifierUse
+type: string
+enum:
+  - usual
+  - official
+  - temp
+  - secondary
+  - old
+description: The purpose of this identifier.

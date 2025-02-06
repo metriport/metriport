@@ -35,7 +35,8 @@
     "publish:prod:ignore": "npm run build && npx lerna publish --signoff-git-commit --ignore-changes '**'",
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin",
     "test-fern-local": "bash fern/run_tests.sh",
-    "full-hbs-lint": "cd packages/fhir-converter && ./full-hbs-lint.sh"
+    "full-hbs-lint": "cd packages/fhir-converter && ./full-hbs-lint.sh",
+    "generate:oas": "npx @redocly/cli bundle openapi/openapi.yml -o openapi/dist/openapi.dist.yml"
   },
   "workspaces": [
     "packages/shared",
@@ -69,6 +70,7 @@
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",
     "@commitlint/cz-commitlint": "^17.4.2",
+    "@redocly/cli": "^1.28.3",
     "@tsconfig/recommended": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
@@ -79,6 +81,7 @@
     "lerna": "^7.4.2",
     "lint-staged": "^13.1.0",
     "mintlify": "^4.0.307",
+    "swagger-cli": "^4.0.4",
     "typescript": "^4.9.5"
   },
   "dependencies": {

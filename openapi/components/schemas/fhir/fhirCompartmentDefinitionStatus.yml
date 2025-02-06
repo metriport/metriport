@@ -1,0 +1,10 @@
+title: fhirCompartmentDefinitionStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this compartment definition. Enables tracking the life-cycle of
+  the content.

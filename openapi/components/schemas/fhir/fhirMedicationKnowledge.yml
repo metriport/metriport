@@ -1,0 +1,162 @@
+title: fhirMedicationKnowledge
+type: object
+description: Information about a medication that is used to support knowledge.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicationKnowledge
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A code that specifies this medication, or a textual description if no code
+      is available. Usage note: This could be a standard medication code such as
+      a code from RxNorm, SNOMED CT, IDMP etc. It could also be a national or
+      local formulary code, optionally with translations to other code systems.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      A code to indicate if the medication is in active use. The status refers
+      to the validity about the information of the medication and not to its
+      medicinal properties.
+  manufacturer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Describes the details of the manufacturer of the medication product. This
+      is not intended to represent the distributor of a medication product.
+  doseForm:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Describes the form of the item. Powder; tablets; capsule.
+  amount:
+    $ref: ./fhirQuantity.yml
+    nullable: true
+    description: >-
+      Specific amount of the drug in the packaged product. For example, when
+      specifying a product that has the same strength (For example, Insulin
+      glargine 100 unit per mL solution for injection), this attribute provides
+      additional clarification of the package amount (For example, 3 mL, 10mL,
+      etc.).
+  synonym:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Additional names for a medication, for example, the name(s) given to a
+      medication in different countries. For example, acetaminophen and
+      paracetamol or salbutamol and albuterol.
+  relatedMedicationKnowledge:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeRelatedMedicationKnowledge.yml
+    nullable: true
+    description: Associated or related knowledge about a medication.
+  associatedMedication:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Associated or related medications. For example, if the medication is a
+      branded product (e.g. Crestor), this is the Therapeutic Moeity (e.g.
+      Rosuvastatin) or if this is a generic medication (e.g. Rosuvastatin), this
+      would link to a branded product (e.g. Crestor).
+  productType:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Category of the medication or product (e.g. branded product, therapeutic
+      moeity, generic product, innovator product, etc.).
+  monograph:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeMonograph.yml
+    nullable: true
+    description: Associated documentation about the medication.
+  ingredient:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeIngredient.yml
+    nullable: true
+    description: Identifies a particular constituent of interest in the product.
+  preparationInstruction:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: The instructions for preparing the medication.
+  intendedRoute:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The intended or approved route of administration.
+  cost:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeCost.yml
+    nullable: true
+    description: The price of the medication.
+  monitoringProgram:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeMonitoringProgram.yml
+    nullable: true
+    description: The program under which the medication is reviewed.
+  administrationGuidelines:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeAdministrationGuidelines.yml
+    nullable: true
+    description: Guidelines for the administration of the medication.
+  medicineClassification:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeMedicineClassification.yml
+    nullable: true
+    description: >-
+      Categorization of the medication within a formulary or classification
+      system.
+  packaging:
+    $ref: ./fhirMedicationKnowledgePackaging.yml
+    nullable: true
+    description: Information that only applies to packages (not products).
+  drugCharacteristic:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeDrugCharacteristic.yml
+    nullable: true
+    description: >-
+      Specifies descriptive properties of the medicine, such as color, shape,
+      imprints, etc.
+  contraindication:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Potential clinical issue with or between medication(s) (for example,
+      drug-drug interaction, drug-disease contraindication, drug-allergy
+      interaction, etc.).
+  regulatory:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeRegulatory.yml
+    nullable: true
+    description: Regulatory information about a medication.
+  kinetics:
+    type: array
+    items:
+      $ref: ./fhirMedicationKnowledgeKinetics.yml
+    nullable: true
+    description: >-
+      The time course of drug absorption, distribution, metabolism and excretion
+      of a medication from the body.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

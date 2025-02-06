@@ -1,0 +1,40 @@
+title: medicalWebhookDocumentDataPayload
+type: object
+properties:
+  id:
+    type: string
+    description: The ID of the Document.
+  fileName:
+    type: string
+    description: The file name of the document.
+  description:
+    type: string
+    nullable: true
+    description: The description of the document.
+  mimeType:
+    type: string
+    nullable: true
+    description: The MIME type of the document.
+  size:
+    type: integer
+    nullable: true
+    description: The size of the document in bytes.
+  url:
+    type: string
+    nullable: true
+    description: The URL of the document.
+  status:
+    type: string
+    nullable: true
+    description: The status of the document.
+  indexed:
+    type: string
+    nullable: true
+    description: The indexed date of the document in ISO-8601 format.
+  type:
+    $ref: ../fhir/fhirCodeableConcept.yml
+    nullable: true
+    description: The type of the document.
+required:
+  - id
+  - fileName

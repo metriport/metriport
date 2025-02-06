@@ -1,0 +1,136 @@
+title: fhirAdverseEvent
+type: object
+description: >-
+  Actual or potential/avoided event causing unintended physical injury resulting
+  from or contributed to by medical care, a research study or other healthcare
+  setting factors that requires additional monitoring, treatment, or
+  hospitalization, or that results in death.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - AdverseEvent
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this adverse event by the performer or
+      other systems which remain constant as the resource is updated and
+      propagates from server to server.
+  actuality:
+    $ref: ./fhirAdverseEventActuality.yml
+    nullable: true
+    description: >-
+      Whether the event actually happened, or just had the potential to. Note
+      that this is independent of whether anyone was affected or harmed or how
+      severely.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The overall type of event, intended for search and filtering purposes.
+  event:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      This element defines the specific type of event that occurred or that was
+      prevented from occurring.
+  subject:
+    $ref: ./fhirReference.yml
+    description: This subject or group impacted by the event.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Encounter during which AdverseEvent was created or to which the
+      creation of this record is tightly associated.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date (and perhaps time) when the adverse event occurred.
+  detected:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      Estimated or actual date the AdverseEvent began, in the opinion of the
+      reporter.
+  recordedDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date on which the existence of the AdverseEvent was first recorded.
+  resultingCondition:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Includes information about the reaction that occurred as a result of
+      exposure to a substance (for example, a drug or a chemical).
+  location:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The information about where the adverse event occurred.
+  seriousness:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Assessment whether this event was of real importance.
+  severity:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Describes the severity of the adverse event, in relation to the subject.
+      Contrast to AdverseEvent.seriousness - a severe rash might not be serious,
+      but a mild heart problem is.
+  outcome:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Describes the type of outcome from the adverse event.
+  recorder:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Information on who recorded the adverse event. May be the patient or a
+      practitioner.
+  contributor:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Parties that may or should contribute or have contributed information to
+      the adverse event, which can consist of one or more activities. Such
+      information includes information leading to the decision to perform the
+      activity and how to perform the activity (e.g. consultant), information
+      that the activity itself seeks to reveal (e.g. informant of clinical
+      history), or information about what activity was performed (e.g. informant
+      witness).
+  suspectEntity:
+    type: array
+    items:
+      $ref: ./fhirAdverseEventSuspectEntity.yml
+    nullable: true
+    description: Describes the entity that is suspected to have caused the adverse event.
+  subjectMedicalHistory:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: AdverseEvent.subjectMedicalHistory.
+  referenceDocument:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: AdverseEvent.referenceDocument.
+  study:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: AdverseEvent.study.
+required:
+  - resourceType
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

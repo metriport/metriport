@@ -1,0 +1,50 @@
+title: fhirEnrollmentResponse
+type: object
+description: >-
+  This resource provides enrollment and plan details from the processing of an
+  EnrollmentRequest resource.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - EnrollmentResponse
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: The Response business identifier.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  request:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Original request resource reference.
+  outcome:
+    $ref: ./fhirEnrollmentResponseOutcome.yml
+    nullable: true
+    description: 'Processing status: error, complete.'
+  disposition:
+    type: string
+    nullable: true
+    description: A description of the status of the adjudication.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date when the enclosed suite of services were performed or completed.
+  organization:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The Insurer who produced this adjudicated response.
+  requestProvider:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The practitioner who is responsible for the services rendered to the
+      patient.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

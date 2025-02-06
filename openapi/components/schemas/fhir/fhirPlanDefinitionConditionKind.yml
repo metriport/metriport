@@ -1,0 +1,7 @@
+title: fhirPlanDefinitionConditionKind
+type: string
+enum:
+  - applicability
+  - start
+  - stop
+description: The kind of condition.

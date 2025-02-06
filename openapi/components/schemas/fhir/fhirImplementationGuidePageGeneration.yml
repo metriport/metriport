@@ -1,0 +1,8 @@
+title: fhirImplementationGuidePageGeneration
+type: string
+enum:
+  - html
+  - markdown
+  - xml
+  - generated
+description: A code that indicates how the page is generated.

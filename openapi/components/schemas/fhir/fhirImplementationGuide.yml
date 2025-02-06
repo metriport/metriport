@@ -1,0 +1,169 @@
+title: fhirImplementationGuide
+type: object
+description: >-
+  A set of rules of how a particular interoperability or standards problem is
+  solved - typically through the use of FHIR resources. This resource is used to
+  gather all the parts of an implementation guide into a logical whole and to
+  publish a computable definition of all the parts.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - ImplementationGuide
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this implementation guide when it
+      is referenced in a specification, model, design or an instance; also
+      called its canonical identifier. This SHOULD be globally unique and SHOULD
+      be a literal address at which at which an authoritative instance of this
+      implementation guide is (or will be) published. This URL can be the target
+      of a canonical reference. It SHALL remain the same when the implementation
+      guide is stored on different servers.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the implementation
+      guide when it is referenced in a specification, model, design or instance.
+      This is an arbitrary value managed by the implementation guide author and
+      is not expected to be globally unique. For example, it might be a
+      timestamp (e.g. yyyymmdd) if a managed version is not available. There is
+      also no expectation that versions can be placed in a lexicographical
+      sequence.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the implementation guide. This name
+      should be usable as an identifier for the module by machine processing
+      applications such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the implementation guide.
+  status:
+    $ref: ./fhirImplementationGuideStatus.yml
+    nullable: true
+    description: >-
+      The status of this implementation guide. Enables tracking the life-cycle
+      of the content.
+  experimental:
+    type: boolean
+    nullable: true
+    description: >-
+      A Boolean value to indicate that this implementation guide is authored for
+      testing purposes (or education/evaluation/marketing) and is not intended
+      to be used for genuine usage.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the implementation guide was
+      published. The date must change when the business version changes and it
+      must change if the status code changes. In addition, it should change when
+      the substantive content of the implementation guide changes.
+  publisher:
+    type: string
+    nullable: true
+    description: >-
+      The name of the organization or individual that published the
+      implementation guide.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the implementation guide from
+      a consumer's perspective.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate implementation guide instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A legal or geographic region in which the implementation guide is intended
+      to be used.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the implementation guide and/or its
+      contents. Copyright statements are generally legal restrictions on the use
+      and publishing of the implementation guide.
+  packageId:
+    $ref: ./fhirid.yml
+    nullable: true
+    description: >-
+      The NPM package name for this Implementation Guide, used in the NPM
+      package distribution, which is the primary mechanism by which FHIR based
+      tooling manages IG dependencies. This value must be globally unique, and
+      should be assigned with care.
+  license:
+    $ref: ./fhirImplementationGuideLicense.yml
+    nullable: true
+    description: >-
+      The license that applies to this Implementation Guide, using an SPDX
+      license code, or 'not-open-source'.
+  fhirVersion:
+    type: array
+    items:
+      $ref: ./fhirImplementationGuideFhirVersionItem.yml
+    nullable: true
+    description: >-
+      The version(s) of the FHIR specification that this ImplementationGuide
+      targets - e.g. describes how to use. The value of this element is the
+      formal version of the specification, without the revision number, e.g.
+      [publication].[major].[minor], which is 4.0.1. for this version.
+  dependsOn:
+    type: array
+    items:
+      $ref: ./fhirImplementationGuideDependsOn.yml
+    nullable: true
+    description: >-
+      Another implementation guide that this implementation depends on.
+      Typically, an implementation guide uses value sets, profiles etc.defined
+      in other implementation guides.
+  global:
+    type: array
+    items:
+      $ref: ./fhirImplementationGuideGlobal.yml
+    nullable: true
+    description: >-
+      A set of profiles that all resources covered by this implementation guide
+      must conform to.
+  definition:
+    $ref: ./fhirImplementationGuideDefinition.yml
+    nullable: true
+    description: >-
+      The information needed by an IG publisher tool to publish the whole
+      implementation guide.
+  manifest:
+    $ref: ./fhirImplementationGuideManifest.yml
+    nullable: true
+    description: >-
+      Information about an assembled implementation guide, created by the
+      publication tooling.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

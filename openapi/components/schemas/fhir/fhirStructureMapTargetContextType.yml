@@ -1,0 +1,6 @@
+title: fhirStructureMapTargetContextType
+type: string
+enum:
+  - type
+  - variable
+description: How to interpret the context.

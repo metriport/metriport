@@ -1,0 +1,26 @@
+title: medicalWebhookPatientPayload
+type: object
+properties:
+  patientId:
+    type: string
+    description: The ID of the patient.
+  externalId:
+    type: string
+    nullable: true
+    description: The external ID of the patient.
+  type:
+    type: string
+    description: The type of the webhook.
+  documents:
+    type: array
+    items:
+      $ref: ./medicalWebhookDocumentDataPayload.yml
+    nullable: true
+    description: An array of WebhookDocumentDataPayload objects.
+  status:
+    $ref: ./medicalMAPIWebhookStatus.yml
+    description: The status of the webhook.
+required:
+  - patientId
+  - type
+  - status

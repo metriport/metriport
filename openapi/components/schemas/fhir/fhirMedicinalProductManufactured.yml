@@ -1,0 +1,52 @@
+title: fhirMedicinalProductManufactured
+type: object
+description: The manufactured item as contained in the packaged medicinal product.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicinalProductManufactured
+  manufacturedDoseForm:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      Dose form as manufactured and before any transformation into the
+      pharmaceutical product.
+  unitOfPresentation:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The “real world” units in which the quantity of the manufactured item is
+      described.
+  quantity:
+    $ref: ./fhirQuantity.yml
+    description: The quantity or "count number" of the manufactured item.
+  manufacturer:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Manufacturer of the item (Note that this should be named "manufacturer"
+      but it currently causes technical issues).
+  ingredient:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Ingredient.
+  physicalCharacteristics:
+    $ref: ./fhirProdCharacteristic.yml
+    nullable: true
+    description: Dimensions, color etc.
+  otherCharacteristics:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Other codeable characteristics.
+required:
+  - resourceType
+  - manufacturedDoseForm
+  - quantity
+allOf:
+  - $ref: ./fhirBaseResource.yml

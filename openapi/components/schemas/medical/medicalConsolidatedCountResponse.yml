@@ -1,0 +1,24 @@
+title: medicalConsolidatedCountResponse
+type: object
+properties:
+  total:
+    type: integer
+    description: The sum of all resource type count.
+  resources:
+    type: object
+    additionalProperties:
+      type: integer
+    description: >-
+      Object containing resource types as properties and the amount of entries
+      for
+
+      the resource as the value (integer). Only resource types with amount
+
+      of entries higher than one are included.
+  filter:
+    $ref: ./medicalFilter.yml
+    description: The filters used to perform this operation.
+required:
+  - total
+  - resources
+  - filter

@@ -1,0 +1,3 @@
+title: fhirtime
+type: string
+description: A time during the day, with no date specified

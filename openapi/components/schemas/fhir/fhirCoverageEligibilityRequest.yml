@@ -1,0 +1,106 @@
+title: fhirCoverageEligibilityRequest
+type: object
+description: >-
+  The CoverageEligibilityRequest provides patient and insurance coverage
+  information to an insurer for them to respond, in the form of an
+  CoverageEligibilityResponse, with information regarding whether the stated
+  coverage is valid and in-force and optionally to provide the insurance details
+  of the policy.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - CoverageEligibilityRequest
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this coverage eligiblity request.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  priority:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: When the requestor expects the processor to complete processing.
+  purpose:
+    type: array
+    items:
+      $ref: ./fhirCoverageEligibilityRequestPurposeItem.yml
+    nullable: true
+    description: >-
+      Code to specify whether requesting: prior authorization requirements for
+      some service categories or billing codes; benefits for coverages specified
+      or discovered; discovery and return of coverages for the patient; and/or
+      validation that the specified coverage is in-force at the date/period
+      specified or 'now' if not specified.
+  patient:
+    $ref: ./fhirReference.yml
+    description: >-
+      The party who is the beneficiary of the supplied coverage and for whom
+      eligibility is sought.
+  servicedDate:
+    type: string
+    nullable: true
+    description: >-
+      The date or dates when the enclosed suite of services were performed or
+      completed.
+  servicedPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The date or dates when the enclosed suite of services were performed or
+      completed.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date when this resource was created.
+  enterer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Person who created the request.
+  provider:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The provider which is responsible for the request.
+  insurer:
+    $ref: ./fhirReference.yml
+    description: >-
+      The Insurer who issued the coverage in question and is the recipient of
+      the request.
+  facility:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Facility where the services are intended to be provided.
+  supportingInfo:
+    type: array
+    items:
+      $ref: ./fhirCoverageEligibilityRequestSupportingInfo.yml
+    nullable: true
+    description: >-
+      Additional information codes regarding exceptions, special considerations,
+      the condition, situation, prior or concurrent issues.
+  insurance:
+    type: array
+    items:
+      $ref: ./fhirCoverageEligibilityRequestInsurance.yml
+    nullable: true
+    description: >-
+      Financial instruments for reimbursement for the health care products and
+      services.
+  item:
+    type: array
+    items:
+      $ref: ./fhirCoverageEligibilityRequestItem.yml
+    nullable: true
+    description: >-
+      Service categories or billable services for which benefit details and/or
+      an authorization prior to service delivery may be required by the payor.
+required:
+  - resourceType
+  - patient
+  - insurer
+allOf:
+  - $ref: ./fhirBaseResource.yml

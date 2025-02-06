@@ -1,0 +1,8 @@
+title: fhirCodeSystemHierarchyMeaning
+type: string
+enum:
+  - grouped-by
+  - is-a
+  - part-of
+  - classified-with
+description: The meaning of the hierarchy of concepts as represented in this resource.

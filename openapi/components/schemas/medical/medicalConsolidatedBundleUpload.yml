@@ -1,0 +1,21 @@
+title: medicalConsolidatedBundleUpload
+type: object
+properties:
+  resourceType:
+    type: string
+    description: The resource needs to be “Bundle”
+    example: Bundle
+  type:
+    type: string
+    description: The type needs to be “collection”
+    example: collection
+  entry:
+    type: array
+    items:
+      type: object
+      additionalProperties: true
+    description: The entry needs to be an array of FHIR resources.
+required:
+  - resourceType
+  - type
+  - entry

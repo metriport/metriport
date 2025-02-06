@@ -1,0 +1,10 @@
+title: fhirSearchParameterStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this search parameter. Enables tracking the life-cycle of the
+  content.

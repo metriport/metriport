@@ -1,0 +1,119 @@
+title: fhirDocumentReference
+type: object
+description: >-
+  A reference to a document of any kind for any purpose. Provides metadata about
+  the document so that the document can be discovered and managed. The scope of
+  a document is any seralized object with a mime-type, so includes formal
+  patient centric documents (CDA), cliical notes, scanned paper, and non-patient
+  specific documents like policy text.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - DocumentReference
+  masterIdentifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Document identifier as assigned by the source of the document. This
+      identifier is specific to this version of the document. This unique
+      identifier may be used elsewhere to identify this version of the document.
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Other identifiers associated with the document, including version
+      independent identifiers.
+  status:
+    $ref: ./fhirDocumentReferenceStatus.yml
+    nullable: true
+    description: The status of this document reference.
+  docStatus:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the underlying document.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Specifies the particular kind of document referenced (e.g. History and
+      Physical, Discharge Summary, Progress Note). This usually equates to the
+      purpose of making the document referenced.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A categorization for the type of document referenced - helps for indexing
+      and searching. This may be implied by or derived from the code specified
+      in the DocumentReference.type.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Who or what the document is about. The document can be about a person,
+      (patient or healthcare practitioner), a device (e.g. a machine) or even a
+      group of subjects (such as a document about a herd of farm animals, or a
+      set of patients that share a common exposure).
+  date:
+    $ref: ./fhirinstant.yml
+    nullable: true
+    description: When the document reference was created.
+  author:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Identifies who is responsible for adding the information to the document.
+  authenticator:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Which person or organization authenticates that this document is valid.
+  custodian:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the organization or group who is responsible for ongoing
+      maintenance of and access to the document.
+  relatesTo:
+    type: array
+    items:
+      $ref: ./fhirDocumentReferenceRelatesTo.yml
+    nullable: true
+    description: >-
+      Relationships that this document has with other document references that
+      already exist.
+  description:
+    type: string
+    nullable: true
+    description: Human-readable description of the source document.
+  securityLabel:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A set of Security-Tag codes specifying the level of privacy/security of
+      the Document. Note that DocumentReference.meta.security contains the
+      security labels of the "reference" to the document, while
+      DocumentReference.securityLabel contains a snapshot of the security labels
+      on the document the reference refers to.
+  content:
+    type: array
+    items:
+      $ref: ./fhirDocumentReferenceContent.yml
+    description: >-
+      The document and format referenced. There may be multiple content element
+      repetitions, each with a different format.
+  context:
+    $ref: ./fhirDocumentReferenceContext.yml
+    nullable: true
+    description: The clinical context in which the document was prepared.
+required:
+  - resourceType
+  - content
+allOf:
+  - $ref: ./fhirBaseResource.yml

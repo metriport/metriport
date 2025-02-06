@@ -1,0 +1,9 @@
+title: fhirElementDefinitionTypeVersioning
+type: string
+enum:
+  - either
+  - independent
+  - specific
+description: >-
+  Whether this reference needs to be version specific or version independent, or
+  whether either can be used.

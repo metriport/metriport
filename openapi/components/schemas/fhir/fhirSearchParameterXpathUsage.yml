@@ -1,0 +1,11 @@
+title: fhirSearchParameterXpathUsage
+type: string
+enum:
+  - normal
+  - phonetic
+  - nearby
+  - distance
+  - other
+description: >-
+  How the search parameter relates to the set of elements returned by evaluating
+  the xpath query.

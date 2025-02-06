@@ -1,0 +1,8 @@
+title: fhirCatalogEntryRelatedEntryRelationtype
+type: string
+enum:
+  - triggers
+  - is-replaced-by
+description: >-
+  The type of relation to the related item: child, parent, packageContent,
+  containerPackage, usedIn, uses, requires, etc.

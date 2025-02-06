@@ -1,0 +1,7 @@
+title: fhirResearchElementDefinitionVariableType
+type: string
+enum:
+  - dichotomous
+  - continuous
+  - descriptive
+description: The type of the outcome (e.g. Dichotomous, Continuous, or Descriptive).

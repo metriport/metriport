@@ -1,0 +1,13 @@
+title: medicalDocumentQuery
+type: object
+properties:
+  download:
+    $ref: ./medicalProgress.yml
+    nullable: true
+  convert:
+    $ref: ./medicalProgress.yml
+    nullable: true
+  requestId:
+    type: string
+    nullable: true
+    description: The ID of the Document Query.

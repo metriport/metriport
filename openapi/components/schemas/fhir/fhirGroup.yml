@@ -1,0 +1,74 @@
+title: fhirGroup
+type: object
+description: >-
+  Represents a defined collection of entities that may be discussed or acted
+  upon collectively but which are not expected to act collectively, and are not
+  formally or legally recognized; i.e. a collection of entities that isn't an
+  Organization.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Group
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique business identifier for this group.
+  active:
+    type: boolean
+    nullable: true
+    description: >-
+      Indicates whether the record for the group is available for use or is
+      merely being retained for historical purposes.
+  type:
+    $ref: ./fhirGroupType.yml
+    nullable: true
+    description: >-
+      Identifies the broad classification of the kind of resources the group
+      includes.
+  actual:
+    type: boolean
+    nullable: true
+    description: >-
+      If true, indicates that the resource refers to a specific group of real
+      individuals. If false, the group defines a set of intended individuals.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Provides a specific type of resource the group includes; e.g. "cow",
+      "syringe", etc.
+  name:
+    type: string
+    nullable: true
+    description: A label assigned to the group for human identification and communication.
+  quantity:
+    $ref: ./fhirunsignedInt.yml
+    nullable: true
+    description: A count of the number of resource instances that are part of the group.
+  managingEntity:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Entity responsible for defining and maintaining Group characteristics
+      and/or registered members.
+  characteristic:
+    type: array
+    items:
+      $ref: ./fhirGroupCharacteristic.yml
+    nullable: true
+    description: >-
+      Identifies traits whose presence r absence is shared by members of the
+      group.
+  member:
+    type: array
+    items:
+      $ref: ./fhirGroupMember.yml
+    nullable: true
+    description: Identifies the resource instances that are members of the group.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

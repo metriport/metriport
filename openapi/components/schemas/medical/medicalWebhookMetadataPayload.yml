@@ -1,0 +1,19 @@
+title: medicalWebhookMetadataPayload
+type: object
+properties:
+  messageId:
+    type: string
+    description: The ID of the message.
+  when:
+    type: string
+    description: The timestamp of when the webhook was triggered.
+  type:
+    type: string
+    description: The type of the webhook.
+  data:
+    nullable: true
+    description: Any additional data associated with the webhook.
+required:
+  - messageId
+  - when
+  - type

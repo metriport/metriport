@@ -1,0 +1,8 @@
+title: fhirExplanationOfBenefitStatus
+type: string
+enum:
+  - active
+  - cancelled
+  - draft
+  - entered-in-error
+description: The status of the resource instance.

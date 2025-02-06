@@ -1,0 +1,191 @@
+title: fhirContractAction
+type: object
+description: >-
+  Legally enforceable, formally recorded unilateral or bilateral directive i.e.,
+  a policy or agreement.
+properties:
+  id:
+    type: string
+    nullable: true
+    description: >-
+      Unique id for the element within a resource (for internal references).
+      This may be any string value that does not contain spaces.
+  extension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension.
+  modifierExtension:
+    type: array
+    items:
+      $ref: ./fhirExtension.yml
+    nullable: true
+    description: >-
+      May be used to represent additional information that is not part of the
+      basic definition of the element and that modifies the understanding of the
+      element in which it is contained and/or the understanding of the
+      containing element's descendants. Usually modifier elements provide
+      negation or qualification. To make the use of extensions safe and
+      manageable, there is a strict set of governance applied to the definition
+      and use of extensions. Though any implementer can define an extension,
+      there is a set of requirements that SHALL be met as part of the definition
+      of the extension. Applications processing a resource are required to check
+      for modifier extensions. Modifier extensions SHALL NOT change the meaning
+      of any elements on Resource or DomainResource (including cannot change the
+      meaning of modifierExtension itself).
+  doNotPerform:
+    type: boolean
+    nullable: true
+    description: True if the term prohibits the action.
+  type:
+    $ref: ./fhirCodeableConcept.yml
+    description: >-
+      Activity or service obligation to be done or not done, performed or not
+      performed, effectuated or not by this Contract term.
+  subject:
+    type: array
+    items:
+      $ref: ./fhirContractSubject.yml
+    nullable: true
+    description: Entity of the action.
+  intent:
+    $ref: ./fhirCodeableConcept.yml
+    description: Reason or purpose for the action stipulated by this Contract Provision.
+  linkId:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Id [identifier??] of the clause or question text related to this action in
+      the referenced form or QuestionnaireResponse.
+  status:
+    $ref: ./fhirCodeableConcept.yml
+    description: Current state of the term action.
+  context:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Encounter or Episode with primary association to specified term activity.
+  contextLinkId:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Id [identifier??] of the clause or question text related to the requester
+      of this action in the referenced form or QuestionnaireResponse.
+  occurrenceDateTime:
+    type: string
+    nullable: true
+    description: When action happens.
+  occurrencePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: When action happens.
+  occurrenceTiming:
+    $ref: ./fhirTiming.yml
+    nullable: true
+    description: When action happens.
+  requester:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Who or what initiated the action and has responsibility for its
+      activation.
+  requesterLinkId:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Id [identifier??] of the clause or question text related to the requester
+      of this action in the referenced form or QuestionnaireResponse.
+  performerType:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The type of individual that is desired or required to perform or not
+      perform the action.
+  performerRole:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The type of role or competency of an individual desired or required to
+      perform or not perform the action.
+  performer:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Indicates who or what is being asked to perform (or not perform) the
+      ction.
+  performerLinkId:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Id [identifier??] of the clause or question text related to the reason
+      type or reference of this action in the referenced form or
+      QuestionnaireResponse.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Rationale for the action to be performed or not performed. Describes why
+      the action is permitted or prohibited.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Indicates another resource whose existence justifies permitting or not
+      permitting this action.
+  reason:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Describes why the action is to be performed or not performed in textual
+      form.
+  reasonLinkId:
+    type: array
+    items:
+      type: string
+    nullable: true
+    description: >-
+      Id [identifier??] of the clause or question text related to the reason
+      type or reference of this action in the referenced form or
+      QuestionnaireResponse.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Comments made about the term action made by the requester, performer,
+      subject or other participants.
+  securityLabelNumber:
+    type: array
+    items:
+      $ref: ./fhirunsignedInt.yml
+    nullable: true
+    description: Security labels that protects the action.
+required:
+  - type
+  - intent
+  - status

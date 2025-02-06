@@ -1,0 +1,14 @@
+title: medicalUploadDocumentResponse
+type: object
+properties:
+  documentReferenceId:
+    type: string
+    description: The ID of the DocumentReference.
+    example: <DocumentReference-ID-string>
+  uploadUrl:
+    type: string
+    description: The URL to use for uploading the document.
+    example: <url-string>
+required:
+  - documentReferenceId
+  - uploadUrl

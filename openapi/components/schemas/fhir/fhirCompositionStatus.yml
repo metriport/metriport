@@ -1,0 +1,10 @@
+title: fhirCompositionStatus
+type: string
+enum:
+  - preliminary
+  - final
+  - amended
+  - entered-in-error
+description: >-
+  The workflow/clinical status of this composition. The status is a marker for
+  the clinical standing of the document.

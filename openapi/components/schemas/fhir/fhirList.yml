@@ -1,0 +1,81 @@
+title: fhirList
+type: object
+description: A list is a curated collection of resources.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - List
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifier for the List assigned for business purposes outside the context
+      of FHIR.
+  status:
+    $ref: ./fhirListStatus.yml
+    nullable: true
+    description: Indicates the current state of this list.
+  mode:
+    $ref: ./fhirListMode.yml
+    nullable: true
+    description: >-
+      How this list was prepared - whether it is a working list that is suitable
+      for being maintained on an ongoing basis, or if it represents a snapshot
+      of a list of items from another source, or whether it is a prepared list
+      where items may be marked as added, modified or deleted.
+  title:
+    type: string
+    nullable: true
+    description: A label for the list assigned by the author.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: This code defines the purpose of the list - why it was created.
+  subject:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The common subject (or patient) of the resources that are in the list if
+      there is one.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The encounter that is the context in which this list was created.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date that the list was prepared.
+  source:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The entity responsible for deciding what the contents of the list were.
+      Where the list was created by a human, this is the same as the author of
+      the list.
+  orderedBy:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: What order applies to the items in the list.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: Comments that apply to the overall list.
+  entry:
+    type: array
+    items:
+      $ref: ./fhirListEntry.yml
+    nullable: true
+    description: Entries in this list.
+  emptyReason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: If the list is empty, why the list is empty.
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

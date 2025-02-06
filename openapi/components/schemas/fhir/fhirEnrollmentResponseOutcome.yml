@@ -1,0 +1,8 @@
+title: fhirEnrollmentResponseOutcome
+type: string
+enum:
+  - queued
+  - complete
+  - error
+  - partial
+description: 'Processing status: error, complete.'

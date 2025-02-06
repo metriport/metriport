@@ -1,0 +1,6 @@
+title: medicalMAPIWebhookStatus
+type: string
+enum:
+  - processing
+  - completed
+  - failed

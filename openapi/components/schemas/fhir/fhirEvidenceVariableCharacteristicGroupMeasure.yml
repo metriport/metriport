@@ -1,0 +1,10 @@
+title: fhirEvidenceVariableCharacteristicGroupMeasure
+type: string
+enum:
+  - mean
+  - median
+  - mean-of-mean
+  - mean-of-median
+  - median-of-mean
+  - median-of-median
+description: Indicates how elements are aggregated within the study effective period.

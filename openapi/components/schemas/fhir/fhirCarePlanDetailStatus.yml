@@ -1,0 +1,13 @@
+title: fhirCarePlanDetailStatus
+type: string
+enum:
+  - not-started
+  - scheduled
+  - in-progress
+  - on-hold
+  - completed
+  - cancelled
+  - stopped
+  - unknown
+  - entered-in-error
+description: Identifies what progress is being made for the specific activity.

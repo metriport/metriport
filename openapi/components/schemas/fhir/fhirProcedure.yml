@@ -1,0 +1,239 @@
+title: fhirProcedure
+type: object
+description: >-
+  An action that is or was performed on or for a patient. This can be a physical
+  intervention like an operation, or less invasive like long term services,
+  counseling, or hypnotherapy.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Procedure
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this procedure by the performer or other
+      systems which remain constant as the resource is updated and is propagated
+      from server to server.
+  instantiatesCanonical:
+    type: array
+    items:
+      $ref: ./fhircanonical.yml
+    nullable: true
+    description: >-
+      The URL pointing to a FHIR-defined protocol, guideline, order set or other
+      definition that is adhered to in whole or in part by this Procedure.
+  instantiatesUri:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      The URL pointing to an externally maintained protocol, guideline, order
+      set or other definition that is adhered to in whole or in part by this
+      Procedure.
+  basedOn:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A reference to a resource that contains details of the request for this
+      procedure.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A larger event of which this particular procedure is a component or step.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      A code specifying the state of the procedure. Generally, this will be the
+      in-progress or completed state.
+  statusReason:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Captures the reason for the current state of the procedure.
+  category:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A code that classifies the procedure for searching, sorting and display
+      purposes (e.g. "Surgical Procedure").
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The specific procedure that is performed. Use text if the exact nature of
+      the procedure cannot be coded (e.g. "Laparoscopic Appendectomy").
+  subject:
+    $ref: ./fhirReference.yml
+    description: The person, animal or group on which the procedure was performed.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Encounter during which this Procedure was created or performed or to
+      which the creation of this record is tightly associated.
+  performedDateTime:
+    type: string
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, period, or age when the procedure was
+      performed. Allows a period to support complex procedures that span more
+      than one date, and also allows for the length of the procedure to be
+      captured.
+  performedPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, period, or age when the procedure was
+      performed. Allows a period to support complex procedures that span more
+      than one date, and also allows for the length of the procedure to be
+      captured.
+  performedString:
+    type: string
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, period, or age when the procedure was
+      performed. Allows a period to support complex procedures that span more
+      than one date, and also allows for the length of the procedure to be
+      captured.
+  performedAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, period, or age when the procedure was
+      performed. Allows a period to support complex procedures that span more
+      than one date, and also allows for the length of the procedure to be
+      captured.
+  performedRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: >-
+      Estimated or actual date, date-time, period, or age when the procedure was
+      performed. Allows a period to support complex procedures that span more
+      than one date, and also allows for the length of the procedure to be
+      captured.
+  recorder:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Individual who recorded the record and takes responsibility for its
+      content.
+  asserter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Individual who is making the procedure statement.
+  performer:
+    type: array
+    items:
+      $ref: ./fhirProcedurePerformer.yml
+    nullable: true
+    description: Limited to "real" people rather than equipment.
+  location:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The location where the procedure actually happened. E.g. a newborn at
+      home, a tracheostomy at a restaurant.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The coded reason why the procedure was performed. This may be a coded
+      entity of some type, or may simply be present as text.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: The justification of why the procedure was performed.
+  bodySite:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Detailed and structured anatomical location information. Multiple
+      locations are allowed - e.g. multiple punch biopsies of a lesion.
+  outcome:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      The outcome of the procedure - did it resolve the reasons for the
+      procedure being performed?
+  report:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: This could be a histology result, pathology report, surgical report, etc.
+  complication:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Any complications that occurred during the procedure, or in the immediate
+      post-performance period. These are generally tracked separately from the
+      notes, which will typically describe the procedure itself rather than any
+      'post procedure' issues.
+  complicationDetail:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Any complications that occurred during the procedure, or in the immediate
+      post-performance period.
+  followUp:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      If the procedure required specific follow up - e.g. removal of sutures.
+      The follow up may be represented as a simple note or could potentially be
+      more complex, in which case the CarePlan resource can be used.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: Any other notes and comments about the procedure.
+  focalDevice:
+    type: array
+    items:
+      $ref: ./fhirProcedureFocalDevice.yml
+    nullable: true
+    description: >-
+      A device that is implanted, removed or otherwise manipulated (calibration,
+      battery replacement, fitting a prosthesis, attaching a wound-vac, etc.) as
+      a focal portion of the Procedure.
+  usedReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies medications, devices and any other substance used as part of
+      the procedure.
+  usedCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Identifies coded items that were used as part of the procedure.
+required:
+  - resourceType
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

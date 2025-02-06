@@ -1,0 +1,13 @@
+title: fhirUserConfigurationMenuLink
+type: object
+description: Shortcut links to URLs.
+properties:
+  name:
+    type: string
+    description: The human friendly name of the link.
+  target:
+    $ref: ./fhirurl.yml
+    description: The URL target of the link.
+required:
+  - name
+  - target

@@ -1,0 +1,6 @@
+title: fhirExampleScenarioActorType
+type: string
+enum:
+  - person
+  - entity
+description: The type of actor - person or system.

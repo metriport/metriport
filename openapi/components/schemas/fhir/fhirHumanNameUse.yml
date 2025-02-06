@@ -1,0 +1,11 @@
+title: fhirHumanNameUse
+type: string
+enum:
+  - usual
+  - official
+  - temp
+  - nickname
+  - anonymous
+  - old
+  - maiden
+description: Identifies the purpose for this name.

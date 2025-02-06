@@ -1,0 +1,177 @@
+title: fhirCondition
+type: object
+description: >-
+  A clinical condition, problem, diagnosis, or other event, situation, issue, or
+  clinical concept that has risen to a level of concern.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - Condition
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Business identifiers assigned to this condition by the performer or other
+      systems which remain constant as the resource is updated and propagates
+      from server to server.
+  clinicalStatus:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The clinical status of the condition.
+  verificationStatus:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The verification status to support the clinical status of the condition.
+  category:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A category assigned to the condition.
+  severity:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A subjective assessment of the severity of the condition as evaluated by
+      the clinician.
+  code:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Identification of the condition, problem or diagnosis.
+  bodySite:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: The anatomical location where this condition manifests itself.
+  subject:
+    $ref: ./fhirReference.yml
+    description: >-
+      Indicates the patient or group who the condition record is associated
+      with.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The Encounter during which this Condition was created or to which the
+      creation of this record is tightly associated.
+  onsetDateTime:
+    type: string
+    nullable: true
+    description: >-
+      Estimated or actual date or date-time the condition began, in the opinion
+      of the clinician.
+  onsetAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: >-
+      Estimated or actual date or date-time the condition began, in the opinion
+      of the clinician.
+  onsetPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      Estimated or actual date or date-time the condition began, in the opinion
+      of the clinician.
+  onsetRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: >-
+      Estimated or actual date or date-time the condition began, in the opinion
+      of the clinician.
+  onsetString:
+    type: string
+    nullable: true
+    description: >-
+      Estimated or actual date or date-time the condition began, in the opinion
+      of the clinician.
+  abatementDateTime:
+    type: string
+    nullable: true
+    description: >-
+      The date or estimated date that the condition resolved or went into
+      remission. This is called "abatement" because of the many overloaded
+      connotations associated with "remission" or "resolution" - Conditions are
+      never really resolved, but they can abate.
+  abatementAge:
+    $ref: ./fhirAge.yml
+    nullable: true
+    description: >-
+      The date or estimated date that the condition resolved or went into
+      remission. This is called "abatement" because of the many overloaded
+      connotations associated with "remission" or "resolution" - Conditions are
+      never really resolved, but they can abate.
+  abatementPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The date or estimated date that the condition resolved or went into
+      remission. This is called "abatement" because of the many overloaded
+      connotations associated with "remission" or "resolution" - Conditions are
+      never really resolved, but they can abate.
+  abatementRange:
+    $ref: ./fhirRange.yml
+    nullable: true
+    description: >-
+      The date or estimated date that the condition resolved or went into
+      remission. This is called "abatement" because of the many overloaded
+      connotations associated with "remission" or "resolution" - Conditions are
+      never really resolved, but they can abate.
+  abatementString:
+    type: string
+    nullable: true
+    description: >-
+      The date or estimated date that the condition resolved or went into
+      remission. This is called "abatement" because of the many overloaded
+      connotations associated with "remission" or "resolution" - Conditions are
+      never really resolved, but they can abate.
+  recordedDate:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The recordedDate represents when this particular Condition record was
+      created in the system, which is often a system-generated date.
+  recorder:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Individual who recorded the record and takes responsibility for its
+      content.
+  asserter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: Individual who is making the condition statement.
+  stage:
+    type: array
+    items:
+      $ref: ./fhirConditionStage.yml
+    nullable: true
+    description: >-
+      Clinical stage or grade of a condition. May include formal severity
+      assessments.
+  evidence:
+    type: array
+    items:
+      $ref: ./fhirConditionEvidence.yml
+    nullable: true
+    description: >-
+      Supporting evidence / manifestations that are the basis of the Condition's
+      verification status, such as evidence that confirmed or refuted the
+      condition.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Additional information about the Condition. This is a general
+      notes/comments entry for description of the Condition, its diagnosis and
+      prognosis.
+required:
+  - resourceType
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

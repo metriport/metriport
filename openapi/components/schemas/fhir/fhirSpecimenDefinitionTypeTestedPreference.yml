@@ -1,0 +1,6 @@
+title: fhirSpecimenDefinitionTypeTestedPreference
+type: string
+enum:
+  - preferred
+  - alternate
+description: The preference for this type of conditioned specimen.

@@ -1,0 +1,9 @@
+title: fhirInvoiceStatus
+type: string
+enum:
+  - draft
+  - issued
+  - balanced
+  - cancelled
+  - entered-in-error
+description: The current state of the Invoice.

@@ -1,0 +1,9 @@
+title: fhirObservationDefinitionQualifiedIntervalCategory
+type: string
+enum:
+  - reference
+  - critical
+  - absolute
+description: >-
+  The category of interval of values for continuous or ordinal observations
+  conforming to this ObservationDefinition.

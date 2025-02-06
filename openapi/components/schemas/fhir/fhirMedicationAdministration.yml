@@ -1,0 +1,169 @@
+title: fhirMedicationAdministration
+type: object
+description: >-
+  Describes the event of a patient consuming or otherwise being administered a
+  medication. This may be as simple as swallowing a tablet or it may be a long
+  running infusion. Related resources tie this event to the authorizing
+  prescription, and the specific encounter between patient and health care
+  practitioner.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - MedicationAdministration
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      Identifiers associated with this Medication Administration that are
+      defined by business processes and/or used to refer to it when a direct URL
+      reference to the resource itself is not appropriate. They are business
+      identifiers assigned to this resource by the performer or other systems
+      and remain constant as the resource is updated and propagates from server
+      to server.
+  instantiates:
+    type: array
+    items:
+      $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      A protocol, guideline, orderset, or other definition that was adhered to
+      in whole or in part by this event.
+  partOf:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: A larger event of which this particular event is a component or step.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Will generally be set to show that the administration has been completed.
+      For some long running administrations such as infusions, it is possible
+      for an administration to be started but not completed or it may be paused
+      while some other process is under way.
+  statusReason:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A code indicating why the administration was not performed.
+  category:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: Indicates where the medication is expected to be consumed or administered.
+  medicationCodeableConcept:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      Identifies the medication that was administered. This is either a link to
+      a resource representing the details of the medication or a simple
+      attribute carrying a code that identifies the medication from a known list
+      of medications.
+  medicationReference:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Identifies the medication that was administered. This is either a link to
+      a resource representing the details of the medication or a simple
+      attribute carrying a code that identifies the medication from a known list
+      of medications.
+  subject:
+    $ref: ./fhirReference.yml
+    description: The person or animal or group receiving the medication.
+  context:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The visit, admission, or other contact between patient and health care
+      provider during which the medication administration was performed.
+  supportingInformation:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Additional information (for example, patient height and weight) that
+      supports the administration of the medication.
+  effectiveDateTime:
+    type: string
+    nullable: true
+    description: >-
+      A specific date/time or interval of time during which the administration
+      took place (or did not take place, when the 'notGiven' attribute is true).
+      For many administrations, such as swallowing a tablet the use of dateTime
+      is more appropriate.
+  effectivePeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      A specific date/time or interval of time during which the administration
+      took place (or did not take place, when the 'notGiven' attribute is true).
+      For many administrations, such as swallowing a tablet the use of dateTime
+      is more appropriate.
+  performer:
+    type: array
+    items:
+      $ref: ./fhirMedicationAdministrationPerformer.yml
+    nullable: true
+    description: >-
+      Indicates who or what performed the medication administration and how they
+      were involved.
+  reasonCode:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A code indicating why the medication was given.
+  reasonReference:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      Condition or observation that supports why the medication was
+      administered.
+  request:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The original request, instruction or authority to perform the
+      administration.
+  device:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      The device used in administering the medication to the patient. For
+      example, a particular infusion pump.
+  note:
+    type: array
+    items:
+      $ref: ./fhirAnnotation.yml
+    nullable: true
+    description: >-
+      Extra information about the medication administration that is not conveyed
+      by the other attributes.
+  dosage:
+    $ref: ./fhirMedicationAdministrationDosage.yml
+    nullable: true
+    description: >-
+      Describes the medication dosage information details e.g. dose, rate, site,
+      route, etc.
+  eventHistory:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A summary of the events of interest that have occurred, such as when the
+      administration was verified.
+required:
+  - resourceType
+  - subject
+allOf:
+  - $ref: ./fhirBaseResource.yml

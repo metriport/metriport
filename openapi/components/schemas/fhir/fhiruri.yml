@@ -1,0 +1,3 @@
+title: fhiruri
+type: string
+description: String of characters used to identify a name or a resource

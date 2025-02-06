@@ -1,0 +1,6 @@
+title: fhirBiologicallyDerivedProductStatus
+type: string
+enum:
+  - available
+  - unavailable
+description: Whether the product is currently available.

@@ -1,0 +1,11 @@
+title: fhirNarrativeStatus
+type: string
+enum:
+  - generated
+  - extensions
+  - additional
+  - empty
+description: >-
+  The status of the narrative - whether it's entirely generated (from just the
+  defined data or the extensions too), or whether a human authored it and it may
+  contain additional data.

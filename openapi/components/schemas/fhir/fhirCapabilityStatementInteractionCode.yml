@@ -1,0 +1,13 @@
+title: fhirCapabilityStatementInteractionCode
+type: string
+enum:
+  - read
+  - vread
+  - update
+  - patch
+  - delete
+  - history-instance
+  - history-type
+  - create
+  - search-type
+description: Coded identifier of the operation, supported by the system resource.

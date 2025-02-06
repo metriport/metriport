@@ -1,0 +1,39 @@
+title: fhirUserConfigurationOption
+type: object
+description: User options that control the display of the application.
+properties:
+  id:
+    $ref: ./fhirid.yml
+    description: The unique identifier of the option.
+  valueBoolean:
+    type: boolean
+    nullable: true
+    description: >-
+      Value of option - must be one of a constrained set of the data types (see
+      [Extensibility](extensibility.html) for a list).
+  valueCode:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: >-
+      Value of option - must be one of a constrained set of the data types (see
+      [Extensibility](extensibility.html) for a list).
+  valueDecimal:
+    $ref: ./fhirdecimal.yml
+    nullable: true
+    description: >-
+      Value of option - must be one of a constrained set of the data types (see
+      [Extensibility](extensibility.html) for a list).
+  valueInteger:
+    type: integer
+    nullable: true
+    description: >-
+      Value of option - must be one of a constrained set of the data types (see
+      [Extensibility](extensibility.html) for a list).
+  valueString:
+    type: string
+    nullable: true
+    description: >-
+      Value of option - must be one of a constrained set of the data types (see
+      [Extensibility](extensibility.html) for a list).
+required:
+  - id

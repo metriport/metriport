@@ -1,0 +1,8 @@
+title: fhirCapabilityStatementResourceConditionalRead
+type: string
+enum:
+  - not-supported
+  - modified-since
+  - not-match
+  - full-support
+description: A code that indicates how the server supports conditional read.

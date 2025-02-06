@@ -1,0 +1,14 @@
+title: medicalSSN
+type: object
+properties:
+  value:
+    type: string
+    description: The 9 digit ID number, for example `123456789`.
+  assigner:
+    type: string
+    nullable: true
+  period:
+    $ref: ../fhir/fhirPeriod.yml
+    nullable: true
+required:
+  - value

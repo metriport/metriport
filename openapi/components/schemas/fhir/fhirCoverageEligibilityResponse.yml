@@ -1,0 +1,103 @@
+title: fhirCoverageEligibilityResponse
+type: object
+description: >-
+  This resource provides eligibility and plan details from the processing of an
+  CoverageEligibilityRequest resource.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - CoverageEligibilityResponse
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this coverage eligiblity request.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  purpose:
+    type: array
+    items:
+      $ref: ./fhirCoverageEligibilityResponsePurposeItem.yml
+    nullable: true
+    description: >-
+      Code to specify whether requesting: prior authorization requirements for
+      some service categories or billing codes; benefits for coverages specified
+      or discovered; discovery and return of coverages for the patient; and/or
+      validation that the specified coverage is in-force at the date/period
+      specified or 'now' if not specified.
+  patient:
+    $ref: ./fhirReference.yml
+    description: >-
+      The party who is the beneficiary of the supplied coverage and for whom
+      eligibility is sought.
+  servicedDate:
+    type: string
+    nullable: true
+    description: >-
+      The date or dates when the enclosed suite of services were performed or
+      completed.
+  servicedPeriod:
+    $ref: ./fhirPeriod.yml
+    nullable: true
+    description: >-
+      The date or dates when the enclosed suite of services were performed or
+      completed.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date this resource was created.
+  requestor:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: The provider which is responsible for the request.
+  request:
+    $ref: ./fhirReference.yml
+    description: Reference to the original request resource.
+  outcome:
+    $ref: ./fhirCoverageEligibilityResponseOutcome.yml
+    nullable: true
+    description: The outcome of the request processing.
+  disposition:
+    type: string
+    nullable: true
+    description: A human readable description of the status of the adjudication.
+  insurer:
+    $ref: ./fhirReference.yml
+    description: >-
+      The Insurer who issued the coverage in question and is the author of the
+      response.
+  insurance:
+    type: array
+    items:
+      $ref: ./fhirCoverageEligibilityResponseInsurance.yml
+    nullable: true
+    description: >-
+      Financial instruments for reimbursement for the health care products and
+      services.
+  preAuthRef:
+    type: string
+    nullable: true
+    description: >-
+      A reference from the Insurer to which these services pertain to be used on
+      further communication and as proof that the request occurred.
+  form:
+    $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: A code for the form to be used for printing the content.
+  error:
+    type: array
+    items:
+      $ref: ./fhirCoverageEligibilityResponseError.yml
+    nullable: true
+    description: Errors encountered during the processing of the request.
+required:
+  - resourceType
+  - patient
+  - request
+  - insurer
+allOf:
+  - $ref: ./fhirBaseResource.yml

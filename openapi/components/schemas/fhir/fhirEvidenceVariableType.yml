@@ -1,0 +1,7 @@
+title: fhirEvidenceVariableType
+type: string
+enum:
+  - dichotomous
+  - continuous
+  - descriptive
+description: The type of evidence element, a population, an exposure, or an outcome.

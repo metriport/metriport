@@ -1,0 +1,10 @@
+title: fhirMessageDefinitionStatus
+type: string
+enum:
+  - draft
+  - active
+  - retired
+  - unknown
+description: >-
+  The status of this message definition. Enables tracking the life-cycle of the
+  content.

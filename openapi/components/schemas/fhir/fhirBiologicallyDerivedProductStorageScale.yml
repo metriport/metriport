@@ -1,0 +1,7 @@
+title: fhirBiologicallyDerivedProductStorageScale
+type: string
+enum:
+  - farenheit
+  - celsius
+  - kelvin
+description: Temperature scale used.

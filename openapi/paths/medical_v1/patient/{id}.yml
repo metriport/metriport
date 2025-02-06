@@ -1,0 +1,105 @@
+get:
+  description: Get a Patient
+  operationId: medical_patient_get
+  tags:
+    - MedicalPatient
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Patient.
+      required: true
+      schema:
+        type: string
+      examples:
+        Example1:
+          value: 018a80c4-292a-7486-a1234-76yuhe23yu14
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalPatient.yml
+          examples:
+            Example1:
+              value:
+                id: 018a80c4-292a-7486-a1234-76yuhe23yu14
+                firstName: Karen
+                lastName: Lynch
+                dob: '1963-12-30'
+                genderAtBirth: F
+                personalIdentifiers:
+                  - type: driversLicense
+                    state: CA
+                    value: '51227265'
+                address:
+                  - addressLine1: 2261 Market Street
+                    addressLine2: '#4818'
+                    city: San Francisco
+                    state: CA
+                    zip: '94114'
+                    country: USA
+                facilityIds:
+                  - 2.16.840.1.113883.3.666.5.2004.4.2005
+  summary: Get Patient
+  security:
+    - ApiKeyAuth: []
+put:
+  description: Updates the specified Patient.
+  operationId: medical_patient_update
+  tags:
+    - MedicalPatient
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Patient to update.
+      required: true
+      schema:
+        type: string
+    - name: facilityId
+      in: query
+      description: The ID of the Facility where the patient is receiving care.
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: ../../../components/schemas/medical/medicalPatient.yml
+  summary: Update Patient
+  security:
+    - ApiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../../components/schemas/medical/medicalBasePatient.yml
+delete:
+  description: Removes the specified Patient.
+  operationId: medical_patient_delete
+  tags:
+    - MedicalPatient
+  parameters:
+    - name: id
+      in: path
+      description: The ID of the Patient to delete.
+      required: true
+      schema:
+        type: string
+    - name: facilityId
+      in: query
+      description: The ID of the Facility where the patient is receiving care.
+      required: false
+      schema:
+        type: string
+        nullable: true
+  responses:
+    '204':
+      description: ''
+  summary: Delete Patient
+  security:
+    - ApiKeyAuth: []

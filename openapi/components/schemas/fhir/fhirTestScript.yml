@@ -1,0 +1,184 @@
+title: fhirTestScript
+type: object
+description: >-
+  A structured set of tests against a FHIR server or client implementation to
+  determine compliance against the FHIR specification.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - TestScript
+  url:
+    $ref: ./fhiruri.yml
+    nullable: true
+    description: >-
+      An absolute URI that is used to identify this test script when it is
+      referenced in a specification, model, design or an instance; also called
+      its canonical identifier. This SHOULD be globally unique and SHOULD be a
+      literal address at which at which an authoritative instance of this test
+      script is (or will be) published. This URL can be the target of a
+      canonical reference. It SHALL remain the same when the test script is
+      stored on different servers.
+  identifier:
+    $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: >-
+      A formal identifier that is used to identify this test script when it is
+      represented in other formats, or referenced in a specification, model,
+      design or an instance.
+  version:
+    type: string
+    nullable: true
+    description: >-
+      The identifier that is used to identify this version of the test script
+      when it is referenced in a specification, model, design or instance. This
+      is an arbitrary value managed by the test script author and is not
+      expected to be globally unique. For example, it might be a timestamp (e.g.
+      yyyymmdd) if a managed version is not available. There is also no
+      expectation that versions can be placed in a lexicographical sequence.
+  name:
+    type: string
+    nullable: true
+    description: >-
+      A natural language name identifying the test script. This name should be
+      usable as an identifier for the module by machine processing applications
+      such as code generation.
+  title:
+    type: string
+    nullable: true
+    description: A short, descriptive, user-friendly title for the test script.
+  status:
+    $ref: ./fhirTestScriptStatus.yml
+    nullable: true
+    description: >-
+      The status of this test script. Enables tracking the life-cycle of the
+      content.
+  experimental:
+    type: boolean
+    nullable: true
+    description: >-
+      A Boolean value to indicate that this test script is authored for testing
+      purposes (or education/evaluation/marketing) and is not intended to be
+      used for genuine usage.
+  date:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: >-
+      The date (and optionally time) when the test script was published. The
+      date must change when the business version changes and it must change if
+      the status code changes. In addition, it should change when the
+      substantive content of the test script changes.
+  publisher:
+    type: string
+    nullable: true
+    description: The name of the organization or individual that published the test script.
+  contact:
+    type: array
+    items:
+      $ref: ./fhirContactDetail.yml
+    nullable: true
+    description: >-
+      Contact details to assist a user in finding and communicating with the
+      publisher.
+  description:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A free text natural language description of the test script from a
+      consumer's perspective.
+  useContext:
+    type: array
+    items:
+      $ref: ./fhirUsageContext.yml
+    nullable: true
+    description: >-
+      The content was developed with a focus and intent of supporting the
+      contexts that are listed. These contexts may be general categories
+      (gender, age, ...) or may be references to specific programs (insurance
+      plans, studies, ...) and may be used to assist with indexing and searching
+      for appropriate test script instances.
+  jurisdiction:
+    type: array
+    items:
+      $ref: ./fhirCodeableConcept.yml
+    nullable: true
+    description: >-
+      A legal or geographic region in which the test script is intended to be
+      used.
+  purpose:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      Explanation of why this test script is needed and why it has been designed
+      as it has.
+  copyright:
+    $ref: ./fhirmarkdown.yml
+    nullable: true
+    description: >-
+      A copyright statement relating to the test script and/or its contents.
+      Copyright statements are generally legal restrictions on the use and
+      publishing of the test script.
+  origin:
+    type: array
+    items:
+      $ref: ./fhirTestScriptOrigin.yml
+    nullable: true
+    description: >-
+      An abstract server used in operations within this test script in the
+      origin element.
+  destination:
+    type: array
+    items:
+      $ref: ./fhirTestScriptDestination.yml
+    nullable: true
+    description: >-
+      An abstract server used in operations within this test script in the
+      destination element.
+  metadata:
+    $ref: ./fhirTestScriptMetadata.yml
+    nullable: true
+    description: >-
+      The required capability must exist and are assumed to function correctly
+      on the FHIR server being tested.
+  fixture:
+    type: array
+    items:
+      $ref: ./fhirTestScriptFixture.yml
+    nullable: true
+    description: >-
+      Fixture in the test script - by reference (uri). All fixtures are required
+      for the test script to execute.
+  profile:
+    type: array
+    items:
+      $ref: ./fhirReference.yml
+    nullable: true
+    description: Reference to the profile to be used for validation.
+  variable:
+    type: array
+    items:
+      $ref: ./fhirTestScriptVariable.yml
+    nullable: true
+    description: >-
+      Variable is set based either on element value in response body or on
+      header field value in the response headers.
+  setup:
+    $ref: ./fhirTestScriptSetup.yml
+    nullable: true
+    description: A series of required setup operations before tests are executed.
+  test:
+    type: array
+    items:
+      $ref: ./fhirTestScriptTest.yml
+    nullable: true
+    description: A test in this script.
+  teardown:
+    $ref: ./fhirTestScriptTeardown.yml
+    nullable: true
+    description: >-
+      A series of operations required to clean up after all the tests are
+      executed (successfully or otherwise).
+required:
+  - resourceType
+allOf:
+  - $ref: ./fhirBaseResource.yml

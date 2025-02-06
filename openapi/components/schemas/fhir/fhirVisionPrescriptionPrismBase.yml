@@ -1,0 +1,8 @@
+title: fhirVisionPrescriptionPrismBase
+type: string
+enum:
+  - up
+  - down
+  - in
+  - out
+description: The relative base, or reference lens edge, for the prism.

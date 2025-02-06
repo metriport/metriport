@@ -1,0 +1,57 @@
+title: fhirVisionPrescription
+type: object
+description: >-
+  An authorization for the provision of glasses and/or contact lenses to a
+  patient.
+properties:
+  resourceType:
+    type: string
+    enum:
+      - VisionPrescription
+  identifier:
+    type: array
+    items:
+      $ref: ./fhirIdentifier.yml
+    nullable: true
+    description: A unique identifier assigned to this vision prescription.
+  status:
+    $ref: ./fhircode.yml
+    nullable: true
+    description: The status of the resource instance.
+  created:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date this resource was created.
+  patient:
+    $ref: ./fhirReference.yml
+    description: >-
+      A resource reference to the person to whom the vision prescription
+      applies.
+  encounter:
+    $ref: ./fhirReference.yml
+    nullable: true
+    description: >-
+      A reference to a resource that identifies the particular occurrence of
+      contact between patient and health care provider during which the
+      prescription was issued.
+  dateWritten:
+    $ref: ./fhirdateTime.yml
+    nullable: true
+    description: The date (and perhaps time) when the prescription was written.
+  prescriber:
+    $ref: ./fhirReference.yml
+    description: The healthcare professional responsible for authorizing the prescription.
+  lensSpecification:
+    type: array
+    items:
+      $ref: ./fhirVisionPrescriptionLensSpecification.yml
+    description: >-
+      Contain the details of the individual lens specifications and serves as
+      the authorization for the fullfillment by certified professionals.
+required:
+  - resourceType
+  - patient
+  - prescriber
+  - lensSpecification
+allOf:
+  - $ref: ./fhirBaseResource.yml

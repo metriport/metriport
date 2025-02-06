@@ -1,0 +1,3 @@
+title: fhiruuid
+type: string
+description: A UUID, represented as a URI

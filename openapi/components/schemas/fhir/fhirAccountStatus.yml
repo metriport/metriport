@@ -1,0 +1,9 @@
+title: fhirAccountStatus
+type: string
+enum:
+  - active
+  - inactive
+  - entered-in-error
+  - on-hold
+  - unknown
+description: Indicates whether the account is presently used/usable or not.

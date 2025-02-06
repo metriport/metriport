@@ -1,0 +1,11 @@
+title: fhirListMode
+type: string
+enum:
+  - working
+  - snapshot
+  - changes
+description: >-
+  How this list was prepared - whether it is a working list that is suitable for
+  being maintained on an ongoing basis, or if it represents a snapshot of a list
+  of items from another source, or whether it is a prepared list where items may
+  be marked as added, modified or deleted.

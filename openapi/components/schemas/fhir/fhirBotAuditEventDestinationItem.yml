@@ -1,0 +1,5 @@
+title: fhirBotAuditEventDestinationItem
+type: string
+enum:
+  - log
+  - resource
