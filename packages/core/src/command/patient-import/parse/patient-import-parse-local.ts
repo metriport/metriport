@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { capture, out } from "../../../util";
-import { createJobRecord } from "../commands/create-job-record";
+import { checkJobRecordExists } from "../commands/check-job-record-exists";
 import { validateAndParsePatientImportCsvFromS3 } from "../commands/validate-and-parse-import";
 import {
   PatientImportCreateHandler,
@@ -30,7 +30,6 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
     cxId,
     facilityId,
     jobId,
-    jobStartedAt,
     triggerConsolidated = false,
     disableWebhooks = false,
     rerunPdOnNewDemographics = false,
@@ -39,17 +38,14 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
     const { log } = out(`startPatientImport.local - cxId ${cxId} jobId ${jobId}`);
     try {
       const s3BucketName = this.patientImportBucket;
-      await createJobRecord({
+      await checkJobRecordExists({
         cxId,
         jobId,
-        jobStartedAt,
-        data: { cxId, facilityId, jobStartedAt, dryRun, status: "processing" },
         s3BucketName,
       });
       const patients = await validateAndParsePatientImportCsvFromS3({
         cxId,
         jobId,
-        jobStartedAt,
         s3BucketName,
       });
       if (dryRun) {
@@ -67,7 +63,6 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
               cxId,
               facilityId,
               jobId,
-              jobStartedAt,
               patientPayload,
               triggerConsolidated,
               disableWebhooks,

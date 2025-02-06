@@ -21,7 +21,6 @@ export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler
   async processPatientQuery({
     cxId,
     jobId,
-    jobStartedAt,
     patientId,
     triggerConsolidated,
     disableWebhooks,
@@ -46,7 +45,6 @@ export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
-        jobStartedAt,
         patientId,
         data: { patientQueryStatus: "processing" },
         s3BucketName: this.patientImportBucket,

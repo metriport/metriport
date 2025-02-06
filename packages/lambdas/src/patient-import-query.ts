@@ -8,7 +8,6 @@ import { prefixedLog } from "./shared/log";
 import {
   parseCxIdAndJob,
   parseDisableWebhooks,
-  parseJobStartedAt,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidated,
 } from "./shared/patient-import";
@@ -38,7 +37,6 @@ export async function handler(event: SQSEvent) {
     const {
       cxId,
       jobId,
-      jobStartedAt,
       patientId,
       triggerConsolidated,
       disableWebhooks,
@@ -56,7 +54,6 @@ export async function handler(event: SQSEvent) {
       const processPatientQueryRequest: ProcessPatientQueryRequest = {
         cxId,
         jobId,
-        jobStartedAt,
         patientId,
         triggerConsolidated,
         disableWebhooks,
@@ -98,7 +95,6 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
   const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
@@ -109,7 +105,6 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
 
   const cxId = cxIdRaw as string;
   const jobId = jobIdRaw as string;
-  const jobStartedAt = jobStartedAtRaw as string;
   const patientId = patientIdRaw as string;
   const triggerConsolidated = triggerConsolidatedRaw as boolean;
   const disableWebhooks = disableWebhooksRaw as boolean;
@@ -118,7 +113,6 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   return {
     cxId,
     jobId,
-    jobStartedAt,
     patientId,
     triggerConsolidated,
     disableWebhooks,

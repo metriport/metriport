@@ -6,7 +6,6 @@ export type ProcessPatientCreateRequest = {
   cxId: string;
   facilityId: string;
   jobId: string;
-  jobStartedAt: string;
   patientPayload: PatientPayload;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;

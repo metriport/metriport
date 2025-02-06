@@ -4,6 +4,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
 
+// TODO 2330 add TSDoc
 export async function startDocumentQuery({
   cxId,
   patientId,
@@ -41,7 +42,7 @@ export async function startDocumentQuery({
         url: patientUrl,
         cxId,
         patientId,
-        context: "patient-import.start-document-query",
+        context: "patient-import.startDocumentQuery",
         error,
       },
     });

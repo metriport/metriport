@@ -9,63 +9,42 @@ import {
   PatientImportPatient,
   toTitleCase,
 } from "@metriport/shared";
+import { S3Utils } from "../../external/aws/s3";
+import { Config } from "../../util/config";
 import { PatientPayload } from "./patient-import";
 
 const globalPrefix = "patient-import";
+const region = Config.getAWSRegion();
 
 export type FileStages = "raw" | "valid" | "invalid";
 
-function createCxJobPrefix(cxId: string, jobStartedAt: string, jobId: string): string {
-  return `cxid=${cxId}/date=${jobStartedAt.slice(0, 10)}/jobid=${jobId}`;
+function createCxJobPrefix(cxId: string, jobId: string): string {
+  return `cxid=${cxId}/jobid=${jobId}`;
 }
 
-function createFilePathPatients(
-  cxId: string,
-  jobStartedAt: string,
-  jobId: string,
-  patientId: string
-): string {
-  return `${createCxJobPrefix(
-    cxId,
-    jobStartedAt,
-    jobId
-  )}/patients/patientid=${patientId}/status.json`;
+function createFilePathPatients(cxId: string, jobId: string, patientId: string): string {
+  return `${createCxJobPrefix(cxId, jobId)}/patients/patientid=${patientId}/status.json`;
 }
 
-function createFilePathFiles(
-  cxId: string,
-  jobStartedAt: string,
-  jobId: string,
-  stage: FileStages
-): string {
-  return `${createCxJobPrefix(cxId, jobStartedAt, jobId)}/files/${stage}.csv`;
+function createFilePathFiles(cxId: string, jobId: string, stage: FileStages): string {
+  return `${createCxJobPrefix(cxId, jobId)}/files/${stage}.csv`;
 }
 
-export function createFileKeyJob(cxId: string, jobStartedAt: string, jobId: string): string {
-  return `${globalPrefix}/${createCxJobPrefix(cxId, jobStartedAt, jobId)}/status.json`;
+export function createFileKeyJob(cxId: string, jobId: string): string {
+  return `${globalPrefix}/${createCxJobPrefix(cxId, jobId)}/status.json`;
 }
-export function createFileKeyRaw(cxId: string, jobStartedAt: string, jobId: string): string {
-  return createFileKeyFiles(cxId, jobStartedAt, jobId, "raw");
+export function createFileKeyRaw(cxId: string, jobId: string): string {
+  return createFileKeyFiles(cxId, jobId, "raw");
 }
 
-export function createFileKeyPatient(
-  cxId: string,
-  jobStartedAt: string,
-  jobId: string,
-  patientId: string
-): string {
-  const fileName = createFilePathPatients(cxId, jobStartedAt, jobId, patientId);
+export function createFileKeyPatient(cxId: string, jobId: string, patientId: string): string {
+  const fileName = createFilePathPatients(cxId, jobId, patientId);
   const key = `${globalPrefix}/${fileName}`;
   return key;
 }
 
-export function createFileKeyFiles(
-  cxId: string,
-  jobStartedAt: string,
-  jobId: string,
-  stage: FileStages
-): string {
-  const fileName = createFilePathFiles(cxId, jobStartedAt, jobId, stage);
+export function createFileKeyFiles(cxId: string, jobId: string, stage: FileStages): string {
+  const fileName = createFilePathFiles(cxId, jobId, stage);
   const key = `${globalPrefix}/${fileName}`;
   return key;
 }
@@ -151,4 +130,8 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
     ],
     contact,
   };
+}
+
+export function getS3UtilsInstance(): S3Utils {
+  return new S3Utils(region);
 }
