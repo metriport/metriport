@@ -1,6 +1,7 @@
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { getSourceMapForPatient } from "../../../command/mapping/patient";
+import { PatientSourceMap } from "../../../domain/patient-mapping";
 import { EhrSourcesList } from "../../../external/ehr/shared";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { DemographicsDTO } from "./demographicsDTO";
@@ -8,7 +9,7 @@ import { DemographicsDTO } from "./demographicsDTO";
 export type PatientDTO = {
   facilityIds: string[];
   externalId?: string;
-  ehrIds?: Record<string, string>;
+  ehrIds?: PatientSourceMap;
   dateCreated?: Date;
 } & DemographicsDTO;
 

@@ -84,7 +84,7 @@ export async function getSourceMapForPatient({
   });
   const sourceMap = mappings.reduce((acc, mapping) => {
     const { source, externalId } = mapping.dataValues;
-    acc[source] = externalId;
+    acc[source] = [...(acc[source] || []), externalId];
     return acc;
   }, {} as PatientSourceMap);
   return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
