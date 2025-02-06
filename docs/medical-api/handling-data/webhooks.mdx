@@ -374,13 +374,13 @@ During the processing of a [Bulk Patient Create](/medical-api/api-reference/pati
 the Metriport API sends Webhook messages of type `medical.bulk-patient-create` to indicate the status
 update and provide relevant information.
 
-You can expect to get two messages of this type for each Bulk Patient Create job, with the status
+You can expect to get two messages of this type for each Bulk Patient Create, with the status
 being the main difference between each:
 
 - `waiting`: initial state, waiting for the CSV file;
 - `processing`: the CSV file has been uploaded and is being processed;
-- `completed`: the bulk import job is completed;
-- `failed`: the bulk import job failed (likely due to an uploaded file with invalid format).
+- `completed`: the bulk create is completed;
+- `failed`: the bulk create failed (likely due to an uploaded file with invalid format).
 
 Here is an example payload:
 
@@ -391,8 +391,8 @@ Here is an example payload:
     "when": "2024-12-30T05:05:12.215Z",
     "type": "medical.bulk-patient-create"
   },
-  "job": {
-    "jobId": "00000000-00000000-00000000-00000000",
+  "bulkPatientCreate": {
+    "requestId": "00000000-00000000-00000000-00000000",
     "status": "completed",
     "result": "<presigned-download-url>"
   }
@@ -412,28 +412,28 @@ The format follows:
   </Expandable>
 </ResponseField>
 
-<ResponseField name="job" type="BulkPatientCreateJob" required>
-  The information about the Bulk Patient Create job.
+<ResponseField name="bulkPatientCreate" type="BulkPatientCreate" required>
+  The information about the Bulk Patient Create request.
 
-  <Expandable title="BulkPatientCreateJob properties">
-    <ResponseField name="jobId" type="string" required>
-      The ID that represents this bulk patient create job.
+  <Expandable title="BulkPatientCreate properties">
+    <ResponseField name="requestId" type="string" required>
+      The ID that represents this bulk patient create.
     </ResponseField>
   
     <ResponseField name="status" type="string" required>
-      The status of the job. One of `processing`, `failed`, or `completed`.
+      The status of the bulk create. One of `processing`, `failed`, or `completed`.
       See all the possible values
       [here](/medical-api/api-reference/patient/bulk-create-patient#bulk-patient-create-status).
     </ResponseField>
 
     <ResponseField name="reason" type="string">
-      The reason for a failed job. Only present if the status
+      The reason for a failed bulk create. Only present if the status
       is `failed`.
     </ResponseField>
 
     <ResponseField name="result" type="string">
       The URL to download the CSV file containing the result of
-      the Bulk Patient Create job. It's valid for 5 minutes.
+      the Bulk Patient Create. It's valid for 5 minutes.
     </ResponseField>
 
   </Expandable>
@@ -442,7 +442,7 @@ The format follows:
 #### Result CSV File
 
 The message `medical.bulk-patient-create` with status `completed` includes a URL in the `result`
-field, which you can use to download the result of the Bulk Patient Create job.
+field, which you can use to download the result of the Bulk Patient Create.
 
 The file is based on the same format as the
 [input CSV](/medical-api/api-reference/patient/bulk-create-patient#input-csv-file-format), with the

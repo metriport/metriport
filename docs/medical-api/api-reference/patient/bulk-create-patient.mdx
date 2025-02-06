@@ -149,12 +149,12 @@ It will return a `404` if the facility can't be found or `400` if there's more t
 and the ID was not provided.
 
 Once the CSV is uploaded, the Metriport API will also validate the file is in the expected format
-(CSV). It might set the status of the job to `failed` and send a corresponding webhook message.
+(CSV). It might set the status of the request to `failed` and send a corresponding webhook message.
 
 If those previous validations are successful, each row will be validated individually and it's
 respective status will be stored so it can be reviewed in the
 [result CSV file](/medical-api/handling-data/webhooks#result-csv-file) (it won't fail the whole
-job at this point).
+request at this point).
 
 ### Uploading the CSV
 
@@ -173,13 +173,13 @@ curl --location --request PUT '<UPLOAD-URL>' \
 Once the CSV file is uploaded, the Metriport API starts processing it and sends a
 [webhook message](/medical-api/handling-data/webhooks#bulk-patient-create) to your App
 indicating the status is `processing`. Once the patiets are created and their medical
-data is available, we send a new webhook message indicating the job is done, including
+data is available, we send a new webhook message indicating the request is done, including
 a link to the resulting CSV file that contains the newly created Metriport IDs for the
 successfully created Patients.
 
 #### Bulk Patient Create Status
 
-During the processing of a bulk patient create, the job can change status following the logic
+During the processing of a bulk patient create, the request can change status following the logic
 below:
 
 [comment]: # (replace the image w/ the Mermaid diagram)
@@ -190,22 +190,22 @@ below:
 
 - `waiting`: initial state, waiting for the CSV file;
 - `processing`: the CSV file has been uploaded and is being processed;
-- `completed`: the bulk import job is completed;
-- `failed`: the bulk import job failed (likely due to an uploaded file with invalid format);
+- `completed`: the bulk create is completed;
+- `failed`: the bulk create failed (likely due to an uploaded file with invalid format);
 - `expired`: no file has been uploaded and the upload URL expired.
 
 ## Query Params
 
 <ParamField query="facilityId" type="string">
   The ID of the Facility where the Patients receive care.
-  All patients in a single job/CSV will be associated with
-  the same Facility. It can be omitted if there's only one
-  Facility in your account.
+  All patients in a single request/CSV will be associated
+  with the same Facility. It can be omitted if there's only
+  one Facility in your account.
 </ParamField>
 
 <ParamField query="dryRun" type="boolean">
   When set to `true`, no Patients will be created, and this
-  job is only used to validate the CSV file and provide
+  request is only used to validate the CSV file and provide
   feedback about each Patient demographics. Defaults to
   `false`.
 </ParamField>
@@ -216,13 +216,14 @@ No body is accepted/processed.
 
 ## Response
 
-<ResponseField name="jobId" type="string" required>
-  The ID that represents this bulk patient create job.
+<ResponseField name="requestId" type="string" required>
+  The ID that represents this bulk patient create.
 </ResponseField>
 
 <ResponseField name="status" type="string" required>
-  The status of the job. Always `waiting`. See all the
-  possible values [here](#bulk-patient-create-status).
+  The status of the bulk bulk patient create. Always
+  `waiting`. See all the possible values
+  [here](#bulk-patient-create-status).
 </ResponseField>
 
 <ResponseField name="uploadUrl" type="string" required>
@@ -240,7 +241,7 @@ Coming soon.
 
 ```json
 {
-  "jobId": "00000000-00000000-00000000-00000000",
+  "requestId": "00000000-00000000-00000000-00000000",
   "status": "waiting",
   "uploadUrl": "<presigned-upload-url>"
 }
