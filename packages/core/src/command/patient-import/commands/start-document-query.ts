@@ -4,6 +4,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
 
+// TODO 2330 add TSDoc
 export async function startDocumentQuery({
   cxId,
   patientId,
@@ -16,7 +17,7 @@ export async function startDocumentQuery({
   disableWebhooks: boolean;
 }): Promise<void> {
   const { log, debug } = out(
-    `PatientImport start document query - cxId ${cxId} patientId ${patientId}`
+    `PatientImport startDocumentQuery - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const patientUrl = `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&triggerConsolidated=${triggerConsolidated}&forceQuery=false`;
@@ -41,7 +42,7 @@ export async function startDocumentQuery({
         url: patientUrl,
         cxId,
         patientId,
-        context: "patient-import.start-document-query",
+        context: "patient-import.startDocumentQuery",
         error,
       },
     });

@@ -1,5 +1,16 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { createJobRecord } from "@metriport/core/command/patient-import/commands/create-job-record";
+import {
+  JobResponseCreate,
+  JobStatus,
+} from "@metriport/core/command/patient-import/patient-import";
+import { createFileKeyRaw } from "@metriport/core/command/patient-import/patient-import-shared";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { Config as CoreConfig } from "@metriport/core/util/config";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { PaginatedResponse, stringToBoolean } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -18,9 +29,18 @@ import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { isPaginated, paginated } from "../pagination";
-import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
+import {
+  asyncHandler,
+  getCxIdOrFail,
+  getFrom,
+  getFromQueryAsBoolean,
+  getFromQueryOrFail,
+} from "../util";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
+import { getFacilityFromOptionalParam } from "./shared";
+
+dayjs.extend(duration);
 
 const router = Router();
 
@@ -150,6 +170,67 @@ router.post(
       return res.status(status.OK).json(dtoFromModel(patient));
     }
     throw new NotFoundError("Cannot find patient");
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/bulk
+ *
+ * Initiates a bulk patient import.
+ *
+ * @param req.query.facilityId The ID of the Facility the Patients should be associated with
+ *        (optional if there's only one facility for the customer, fails if not provided and
+ *        there's more than one facility for the customer).
+ * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
+ *        defaults to false).
+ * @returns the bulk import job ID and the URL to upload the CSV file.
+ */
+router.post(
+  "/bulk",
+  // TODO add this if/when we need to rate limit this endpoint
+  // checkRateLimit("..."),
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    const facility = await getFacilityFromOptionalParam(req);
+
+    // TODO 2330 move this to a command #########################################
+    const s3Utils = new S3Utils(Config.getAWSRegion());
+    const s3BucketName = CoreConfig.getPatientImportBucket();
+
+    const jobId = uuidv7();
+    const jobStartedAt = new Date().toISOString();
+    const jobStatus: JobStatus = "waiting";
+
+    const { bucket } = await createJobRecord({
+      cxId,
+      jobId,
+      data: {
+        cxId,
+        facilityId: facility.id,
+        jobStartedAt,
+        dryRun: dryRun ?? false,
+        status: jobStatus,
+      },
+      s3BucketName,
+    });
+
+    const uploadFileKey = createFileKeyRaw(cxId, jobId);
+
+    const s3Url = await s3Utils.getPresignedUploadUrl({
+      bucket,
+      key: uploadFileKey,
+      durationSeconds: dayjs.duration(10, "minutes").asSeconds(),
+    });
+
+    const respPayload: JobResponseCreate = {
+      jobId,
+      status: jobStatus,
+      uploadUrl: s3Url,
+    };
+
+    return res.status(status.OK).json(respPayload);
   })
 );
 

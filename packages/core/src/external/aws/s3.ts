@@ -11,6 +11,8 @@ import {
   errorToString,
   executeWithRetries,
   ExecuteWithRetriesOptions,
+  MetriportError,
+  NotFoundError,
 } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
@@ -126,9 +128,17 @@ export class S3Utils {
     return await pipeline(readStream, writeStream);
   }
 
-  getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
-    const stream = this.getReadStream(s3BucketName, s3FileName);
-    return this.streamToString(stream);
+  async getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
+    return hydrateErrors(
+      async () => {
+        const stream = this.getReadStream(s3BucketName, s3FileName);
+        return await this.streamToString(stream);
+      },
+      {
+        bucket: s3BucketName,
+        key: s3FileName,
+      }
+    );
   }
 
   private getReadStream(s3BucketName: string, s3FileName: string): stream.Readable {
@@ -448,6 +458,21 @@ export async function returnUndefinedOn404<T>(fn: () => Promise<T>): Promise<T |
   } catch (error: any) {
     if (isNotFoundError(error)) return undefined;
     throw error;
+  }
+}
+
+export async function hydrateErrors<T>(
+  fn: () => Promise<T>,
+  fileInfo: { bucket: string; key: string }
+): Promise<T> {
+  try {
+    return await fn();
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (isNotFoundError(error)) {
+      throw new NotFoundError("Key not found", error, fileInfo);
+    }
+    throw new MetriportError("Error on getFileContentsAsString", error, fileInfo);
   }
 }
 
