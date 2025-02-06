@@ -38,6 +38,8 @@ how the Webhook flow works, see [our Webhooks guide](/medical-api/getting-starte
   [details](#bulk-document-download-urls) below;
 - `medical.consolidated-data`: result of a Consolidated Data Query, containing the patient's data in FHIR
   format - see [details](#patient-consolidated-data) below.
+- `medical.bulk-patient-create`: updates for a [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient)
+  - see [details](#bulk-patient-create) below.
 
 ### Workflow
 
@@ -365,6 +367,99 @@ The format follows:
 
   </Expandable>
 </ResponseField>
+
+### Bulk Patient Create
+
+During the processing of a [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient),
+the Metriport API sends Webhook messages of type `medical.bulk-patient-create` to indicate the status
+update and provide relevant information.
+
+You can expect to get one or two messages of this type for each Bulk Patient Create job, with the status
+being the main difference between each:
+
+- `waiting`: initial state, waiting for the CSV file;
+- `processing`: the CSV file has been uploaded and is being processed;
+- `completed`: the bulk import job is completed;
+- `failed`: the bulk import job failed (likely due to an uploaded file with invalid format).
+
+Here is an example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "00000000-00000000-00000000-00000000",
+    "when": "2024-12-30T05:05:12.215Z",
+    "type": "medical.bulk-patient-create"
+  },
+  "job": {
+    "jobId": "00000000-00000000-00000000-00000000",
+    "status": "completed",
+    "result": "<presigned-download-url>"
+  }
+}
+```
+
+The format follows:
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described
+  [here](/medical-api/getting-started/webhooks#meta-data).
+  <Expandable title="meta type property details">
+    <ResponseField name="type" type="string" required>
+      For Bulk Patient Create this will always be
+      `medical.bulk-patient-create`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="job" type="BulkPatientCreateJob" required>
+  The information about the Bulk Patient Create job.
+
+  <Expandable title="BulkPatientCreateJob properties">
+    <ResponseField name="jobId" type="string" required>
+      The ID that represents this bulk patient create job.
+    </ResponseField>
+  
+    <ResponseField name="status" type="string" required>
+      The status of the job. One of `processing`, `failed`, or `completed`.
+      See all the possible values
+      [here](/medical-api/api-reference/patient/bulk-create-patient#bulk-patient-create-status).
+    </ResponseField>
+
+    <ResponseField name="result" type="string">
+      The URL to download the CSV file containing the result of
+      the Bulk Patient Create job. It's valid for 5 minutes.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+#### Result CSV File
+
+The message `medical.bulk-patient-create` with status `completed` includes a URL in the `result`
+field, which you can use to download the result of the Bulk Patient Create job.
+
+The file is based on the same format as the
+[input CSV](/medical-api/api-reference/patient/bulk-create-patient#input-csv-file-format), with the
+following additional columns:
+
+<ParamField body="metriportId" type="string">
+  The ID of the Patient on Metriport - only provided if the
+  Patiend was created successfully.
+</ParamField>
+<ParamField body="status" type="string" required>
+  Whether the respective demographics was accepted and used
+  to create a Patient. Can be one of `succeeded` or
+  `failed`.
+</ParamField>
+<ParamField body="reason" type="string">
+  If the patient failed to be created, this indictes the
+  reason for failure - usually related to parsing the
+  respective demographics.
+</ParamField>
+
+An example of a result file can be accessed
+[here](https://docs.google.com/spreadsheets/d/1ojBjxya2l3mTjdZhK5DLY7QTZ9SIIkH9vhnacrftqY4/edit?usp=sharing).
 
 ### Bulk Document Download URLs
 
