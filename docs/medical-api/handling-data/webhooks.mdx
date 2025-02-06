@@ -426,6 +426,11 @@ The format follows:
       [here](/medical-api/api-reference/patient/bulk-create-patient#bulk-patient-create-status).
     </ResponseField>
 
+    <ResponseField name="reason" type="string">
+      The reason for a failed job. Only present if the status
+      is `failed`.
+    </ResponseField>
+
     <ResponseField name="result" type="string">
       The URL to download the CSV file containing the result of
       the Bulk Patient Create job. It's valid for 5 minutes.

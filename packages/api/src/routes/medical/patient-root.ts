@@ -221,7 +221,7 @@ router.post(
     const s3Url = await s3Utils.getPresignedUploadUrl({
       bucket,
       key: uploadFileKey,
-      durationSeconds: dayjs.duration(15, "minutes").asSeconds(),
+      durationSeconds: dayjs.duration(10, "minutes").asSeconds(),
     });
 
     const respPayload: JobResponseCreate = {
