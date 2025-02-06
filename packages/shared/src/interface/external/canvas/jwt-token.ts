@@ -1,9 +1,11 @@
 import z from "zod";
 
-export type CanvasJwtTokenData = {
-  practiceId: string;
-  source: "canvas";
-};
+export const canvasJwtTokenDataSchema = z.object({
+  practiceId: z.string(),
+  source: z.literal("canvas"),
+});
+
+export type CanvasJwtTokenData = z.infer<typeof canvasJwtTokenDataSchema>;
 
 export type CanvasClientJwtTokenData = {
   practiceId: string;
