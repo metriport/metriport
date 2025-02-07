@@ -29,10 +29,10 @@ export async function setDocRetrieveStartAt({
       transaction,
     });
 
-    const sourceData = existingPatient.data.externalData?.[source] ?? {};
+    const sourceData = existingPatient.dataValues.data.externalData?.[source] ?? {};
 
     const externalData: PatientExternalData = {
-      ...existingPatient.data.externalData,
+      ...existingPatient.dataValues.data.externalData,
       [source]: {
         ...sourceData,
         documentRetrievalStartTime: startedAt,
@@ -42,7 +42,7 @@ export async function setDocRetrieveStartAt({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         externalData,
       },
     };

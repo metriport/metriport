@@ -93,9 +93,10 @@ export const updateCommonwellIdsAndStatus = async ({
       transaction,
     });
 
-    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(existingPatient.data.externalData);
+    const updatedCQLinkStatus =
+      cqLinkStatus ?? getLinkStatusCQ(existingPatient.dataValues.data.externalData);
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = existingPatient.dataValues.data.externalData ?? {};
 
     const updateCWExternalData = {
       ...externalData,
@@ -110,7 +111,7 @@ export const updateCommonwellIdsAndStatus = async ({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         externalData: updateCWExternalData,
       },
     };
@@ -156,7 +157,7 @@ export const updatePatientDiscoveryStatus = async ({
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = existingPatient.dataValues.data.externalData ?? {};
 
     if (!params && !externalData.COMMONWELL?.discoveryParams) {
       throw new Error(`Cannot update discovery status before assigning discovery params @ CW`);
@@ -174,7 +175,7 @@ export const updatePatientDiscoveryStatus = async ({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         externalData: updatePatientDiscoveryStatus,
       },
     };

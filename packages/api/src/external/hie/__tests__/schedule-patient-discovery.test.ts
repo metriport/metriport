@@ -52,7 +52,7 @@ describe("update patient discovery schedule", () => {
       forceCarequality: undefined,
     };
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     await schedulePatientDiscovery({
       patient,
       source: MedicalDataSource.COMMONWELL,
@@ -85,7 +85,7 @@ describe("update patient discovery schedule", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     await schedulePatientDiscovery({
       patient,
       source: MedicalDataSource.COMMONWELL,
@@ -98,7 +98,7 @@ describe("update patient discovery schedule", () => {
 describe("reset patient discovery schedule", () => {
   it("reset patient with no existing schedule", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     await resetScheduledPatientDiscovery({
       patient,
       source: MedicalDataSource.COMMONWELL,
@@ -122,7 +122,7 @@ describe("reset patient discovery schedule", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     await resetScheduledPatientDiscovery({
       patient,
       source: MedicalDataSource.COMMONWELL,

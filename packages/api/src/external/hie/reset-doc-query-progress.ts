@@ -32,14 +32,14 @@ export async function resetDocQueryProgress({
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = existingPatient.dataValues.data.externalData ?? {};
 
     const resetExternalData = { ...externalData };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         externalData: resetExternalData,
       },
     };
@@ -62,7 +62,8 @@ export async function resetDocQueryProgress({
         documentQueryProgress: {},
       };
 
-      const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+      const existingPatientDocProgress =
+        existingPatient.dataValues.data.documentQueryProgress ?? {};
 
       const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
         existingPatientDocProgress,

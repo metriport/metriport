@@ -49,7 +49,7 @@ describe("run initial patient discovery", () => {
     facilityId: "test",
   };
   it("runs initial patient discovery with flags undefineds", async () => {
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: undefined,
@@ -76,7 +76,7 @@ describe("run initial patient discovery", () => {
     );
   });
   it("runs initial patient discovery with flags defined false", async () => {
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: false,
@@ -103,7 +103,7 @@ describe("run initial patient discovery", () => {
     );
   });
   it("runs initial patient discovery with flags defined true", async () => {
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: true,
@@ -138,7 +138,7 @@ describe("run initial patient discovery", () => {
     facilityId: "test",
   };
   it("runs initial patient discovery with flags undefineds", async () => {
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: undefined,
@@ -165,7 +165,7 @@ describe("run initial patient discovery", () => {
     );
   });
   it("runs initial patient discovery with flags defined false", async () => {
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: false,
@@ -192,7 +192,7 @@ describe("run initial patient discovery", () => {
     );
   });
   it("runs initial patient discovery with flags defined true", async () => {
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: true,

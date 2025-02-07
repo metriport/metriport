@@ -37,7 +37,7 @@ export async function updatePatientDiscoveryStatus({
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = existingPatient.dataValues.data.externalData ?? {};
 
     if (!params && !externalData.CAREQUALITY?.discoveryParams) {
       throw new Error(`Cannot update discovery status before assigning discovery params @ CQ`);
@@ -55,7 +55,7 @@ export async function updatePatientDiscoveryStatus({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         externalData: updatePatientDiscoveryStatus,
       },
     };

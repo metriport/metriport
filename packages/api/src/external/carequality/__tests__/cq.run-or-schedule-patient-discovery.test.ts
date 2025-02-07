@@ -37,7 +37,7 @@ afterEach(() => {
 describe("run or schedule patient discovery", () => {
   it("runs with no previous patient discovery", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toRun",
@@ -68,7 +68,7 @@ describe("run or schedule patient discovery", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toRun",
@@ -93,7 +93,7 @@ describe("run or schedule patient discovery", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toRun",
@@ -118,7 +118,7 @@ describe("run or schedule patient discovery", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toBeScheduled",
@@ -154,7 +154,7 @@ describe("run or schedule patient discovery", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toNotSchedule",

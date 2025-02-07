@@ -27,7 +27,7 @@ beforeEach(() => {
     },
   };
   patient = makePatient({ data: makePatientData({ documentQueryProgress, externalData }) });
-  patientModel = patient as unknown as PatientModel;
+  patientModel = { dataValues: patient } as unknown as PatientModel;
   mockStartTransaction();
   jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);

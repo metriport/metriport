@@ -36,12 +36,13 @@ export async function updatePatientLinkDemographics({
       transaction,
     });
 
-    const consolidatedLinkDemographics = existingPatient.data.consolidatedLinkDemographics;
+    const consolidatedLinkDemographics =
+      existingPatient.dataValues.data.consolidatedLinkDemographics;
 
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         consolidatedLinkDemographics: {
           names: [
             ...new Set([

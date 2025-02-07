@@ -41,7 +41,7 @@ describe("setCommonwellIdsAndStatus", () => {
   it("has CW externalData set to newValues when CW externalData is empty and we set newValues", async () => {
     const patient = makePatient();
 
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
 
     const newValues: CWParams = {
       commonwellPatientId: "commonwellPatientId",
@@ -75,7 +75,7 @@ describe("setCommonwellIdsAndStatus", () => {
       }),
     });
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
 
     const newValues: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
@@ -109,7 +109,7 @@ describe("setCommonwellIdsAndStatus", () => {
       }),
     });
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
 
     const newStatus: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
@@ -133,7 +133,7 @@ describe("setCommonwellIdsAndStatus", () => {
   it("has CW externalData set to onlyPatientId & cqLinkStatus = unlinked when CW externalData is empty and we set onlyPatientId", async () => {
     const patient = makePatient();
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
 
     const onlyPatientId: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",

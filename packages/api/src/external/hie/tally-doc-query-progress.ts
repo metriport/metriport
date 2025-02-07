@@ -49,7 +49,7 @@ export async function tallyDocQueryProgress({
     // Set the doc query progress for the chosen hie
     const externalData = setHIETallyCount(existingPatient, progress, type, source);
 
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+    const existingPatientDocProgress = existingPatient.dataValues.data.documentQueryProgress ?? {};
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
@@ -59,7 +59,7 @@ export async function tallyDocQueryProgress({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         requestId,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,

@@ -1,7 +1,11 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { FindBySimilarity, GetOne, PatientLoader } from "@metriport/core/command/patient-loader";
 import { Op, WhereOptions, json } from "sequelize";
-import { getPatientOrFail, getPatientStates } from "../../command/medical/patient/get-patient";
+import {
+  getPatientOrFail,
+  getPatientStates,
+  PatientWithExternalIds,
+} from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../medical/patient";
 
 /**
@@ -12,8 +16,10 @@ export class PatientLoaderLocal implements PatientLoader {
     return getPatientStates({ cxId, patientIds });
   }
 
-  async getOneOrFail({ id, cxId }: GetOne): Promise<Patient> {
-    return getPatientOrFail({ id, cxId });
+  async getOneOrFail({ id, cxId }: GetOne): Promise<PatientWithExternalIds> {
+    const patient = await getPatientOrFail({ id, cxId });
+    console.log("patient-loader-local", patient);
+    return patient;
   }
 
   /**
@@ -55,6 +61,6 @@ export class PatientLoaderLocal implements PatientLoader {
     if (Object.keys(whereClause).length === 0) throw new Error("No search criteria provided");
 
     const patients = await PatientModel.findAll({ where: whereClause });
-    return patients;
+    return patients.map(patient => patient.dataValues);
   }
 }

@@ -49,7 +49,7 @@ const checkPatientUpdateWith = (newValues: cqParams) => {
 describe("updatePatientDiscoveryStatus", () => {
   it("setting all possible values", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const discoveryStatus = "processing";
     const newParams: DiscoveryParams = {
       requestId: "test",
@@ -86,7 +86,7 @@ describe("updatePatientDiscoveryStatus", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const discoveryStatus = "completed";
     const results = await updatePatientDiscoveryStatus({
       patient,
@@ -100,7 +100,7 @@ describe("updatePatientDiscoveryStatus", () => {
   });
   it("setting only status w/ no previous values", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const discoveryStatus = "completed";
     try {
       await updatePatientDiscoveryStatus({

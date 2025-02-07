@@ -23,7 +23,7 @@ export async function resetScheduledPatientDiscovery({
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = existingPatient.dataValues.data.externalData ?? {};
 
     const updatedExternalData = {
       ...externalData,
@@ -36,7 +36,7 @@ export async function resetScheduledPatientDiscovery({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         externalData: updatedExternalData,
       },
     };

@@ -39,7 +39,7 @@ describe("update patient link demographics", () => {
   const newRequestId = "test";
   it("update patient with no existing link demographics", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const links: LinkDemographics[] = [linkDemographics];
     await updatePatientLinkDemographics({
       requestId: newRequestId,
@@ -82,7 +82,7 @@ describe("update patient link demographics", () => {
       consolidatedLinkDemographics: existingLinkDemographcsics,
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const links: LinkDemographics[] = [linkDemographics];
     await updatePatientLinkDemographics({
       requestId: newRequestId,

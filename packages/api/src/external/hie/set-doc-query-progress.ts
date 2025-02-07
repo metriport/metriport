@@ -56,7 +56,7 @@ export async function setDocQueryProgress({
       transaction,
     });
 
-    const existingExternalData = existingPatient.data.externalData ?? {};
+    const existingExternalData = existingPatient.dataValues.data.externalData ?? {};
 
     const externalData = setHIEDocProgress(
       existingExternalData,
@@ -69,7 +69,7 @@ export async function setDocQueryProgress({
       triggerConsolidated
     );
 
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+    const existingPatientDocProgress = existingPatient.dataValues.data.documentQueryProgress ?? {};
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
@@ -79,7 +79,7 @@ export async function setDocQueryProgress({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,
       },

@@ -55,13 +55,13 @@ export const setCQLinkStatus = async ({
     });
 
     // Important so we don't trigger WH notif if the CQ link was already done
-    const currentCQLinkStatus = getLinkStatusCQ(originalPatient.data.externalData);
+    const currentCQLinkStatus = getLinkStatusCQ(originalPatient.dataValues.data.externalData);
     if (currentCQLinkStatus === cqLinkStatus) {
       log(`Patient already has CQ link status ${cqLinkStatus}, skipping update...`);
       return { patient: originalPatient, updated: false };
     }
 
-    const updatedData = cloneDeep(originalPatient.data);
+    const updatedData = cloneDeep(originalPatient.dataValues.data);
     const cwData = {
       ...updatedData.externalData?.COMMONWELL,
       cqLinkStatus,

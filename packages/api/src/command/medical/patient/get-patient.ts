@@ -85,7 +85,7 @@ export async function getPatients({
   });
 
   const patientsWithEhrIds = await Promise.all(
-    patients.map(patient => attatchPatientEhrIds(patient))
+    patients.map(patient => attatchPatientEhrIds(patient.dataValues))
   );
   const sortedPatients = sortForPagination(patientsWithEhrIds, pagination);
   return sortedPatients;
@@ -204,7 +204,8 @@ export async function getPatientByDemo({
 }): Promise<PatientWithExternalIds | undefined> {
   const patientLoader = new PatientLoaderLocal();
   const patient = await getPatientByDemoMPI({ cxId, demo, patientLoader });
-  return patient ? await attatchPatientEhrIds(patient) : undefined;
+  console.log("patient", patient);
+  return patient;
 }
 
 export type GetPatient = {
@@ -241,7 +242,7 @@ export async function getPatient({
     transaction,
     lock,
   });
-  return patient ? await attatchPatientEhrIds(patient) : undefined;
+  return patient ? await attatchPatientEhrIds(patient.dataValues) : undefined;
 }
 
 /**

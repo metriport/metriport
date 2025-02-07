@@ -33,10 +33,10 @@ export async function setDocQueryStartAt({
       transaction,
     });
 
-    const sourceData = existingPatient.data.externalData?.[source] ?? {};
+    const sourceData = existingPatient.dataValues.data.externalData?.[source] ?? {};
 
     const externalData: PatientExternalData = {
-      ...existingPatient.data.externalData,
+      ...existingPatient.dataValues.data.externalData,
       [source]: {
         ...sourceData,
         documentQueryProgress: {
@@ -49,7 +49,7 @@ export async function setDocQueryStartAt({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         externalData,
       },
     };
