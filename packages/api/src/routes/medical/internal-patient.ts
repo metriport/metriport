@@ -1,4 +1,4 @@
-import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { ConsolidatedQuery, genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/parse/patient-import-parse-factory";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
@@ -13,6 +13,7 @@ import {
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -24,8 +25,10 @@ import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import {
+  ConsolidatedQueryParams,
   getConsolidated,
   getConsolidatedAndSendToCx,
+  startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
@@ -61,6 +64,8 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
@@ -947,6 +952,79 @@ router.post(
     });
 
     return res.sendStatus(status.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/consolidated/query
+ *
+ * For each patient, get all consolidated queries that are older than 1 hour and are still processing, and:
+ * - update the status of the query to "failed"; and
+ * - start a new consolidated query with the same parameters.
+ *
+ * @param req.query.patientIds The patient IDs.
+ * @param req.query.dryRun Whether to simply return what would be done or actually execute the changes and commands.
+ * @return The list of consolidated queries that where be executed (or would be executed, if dryRun is true).
+ */
+router.post(
+  "/consolidated/query",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    if (dryRun === undefined) throw new BadRequestError("dryRun is required");
+
+    const queryPromises: Promise<ConsolidatedQuery>[] = [];
+    const queryParams: ConsolidatedQueryParams[] = [];
+
+    for (const patientId of patientIds) {
+      await executeOnDBTx(PatientModel.prototype, async transaction => {
+        const patient = await PatientModel.findOne({
+          where: { id: patientId },
+          transaction,
+        });
+        if (!patient) return;
+        const consolidatedQueries = patient.data.consolidatedQueries ?? [];
+        const olderQueries = consolidatedQueries.filter(query =>
+          buildDayjs(query.startedAt).isBefore(buildDayjs().subtract(1, "hour").toISOString())
+        );
+        const queriesToProcess = olderQueries.filter(query => query.status === "processing");
+        if (queriesToProcess.length > 0) {
+          queriesToProcess.forEach(query => {
+            query.status = "failed";
+          });
+          if (!dryRun) {
+            const data = {
+              ...patient.data,
+              consolidatedQueries,
+            };
+            patient.changed("data", true);
+            await patient.update({ data });
+          }
+        }
+        for (const query of queriesToProcess) {
+          const startConsolidatedQueryParams: ConsolidatedQueryParams = {
+            cxId: patient.cxId,
+            patientId,
+            resources: query.resources,
+            dateFrom: query.dateFrom,
+            dateTo: query.dateTo,
+            conversionType: query.conversionType,
+          };
+          queryParams.push(startConsolidatedQueryParams);
+          if (!dryRun) {
+            queryPromises.push(startConsolidatedQuery(startConsolidatedQueryParams));
+          }
+        }
+      });
+    }
+
+    for (const queryPromise of queryPromises) {
+      await queryPromise;
+      await sleep(500);
+    }
+
+    return res.status(status.OK).json({ dryRun, queryParams });
   })
 );
 
