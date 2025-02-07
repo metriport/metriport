@@ -5,6 +5,7 @@ import * as cqPatient from "../../../external/carequality/patient";
 import * as cwRunOrSchedule from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
 import * as cwPatient from "../../../external/commonwell/patient";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { runInitialPatientDiscoveryAcrossHies } from "../run-initial-patient-discovery";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../run-or-schedule-patient-discovery";
@@ -18,6 +19,7 @@ let cwRunOrSchedule_mock: jest.SpyInstance;
 beforeEach(() => {
   mockStartTransaction();
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
+  jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
   cqDiscover_mock = jest.spyOn(cqPatient, "discover").mockImplementation(async () => {
     return;
   });

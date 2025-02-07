@@ -1,12 +1,11 @@
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
-import { USStateForAddress } from "@metriport/shared";
+import { NotFoundError, USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
 import { Op, QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
 import { PatientSourceMap } from "../../../domain/patient-mapping";
-import NotFoundError from "../../../errors/not-found";
 import { EhrSourcesList } from "../../../external/ehr/shared";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
@@ -86,7 +85,7 @@ export async function getPatients({
   });
 
   const patientsWithEhrIds = await Promise.all(
-    patients.map(patient => attatchPatientEhrIds(patient.dataValues))
+    patients.map(patient => attatchPatientEhrIds(patient))
   );
   const sortedPatients = sortForPagination(patientsWithEhrIds, pagination);
   return sortedPatients;
@@ -186,7 +185,7 @@ export async function getPatientIds({
         : undefined),
     },
   });
-  return patients.map(p => p.id);
+  return patients.map(p => p.dataValues.id);
 }
 
 /**
@@ -242,9 +241,21 @@ export async function getPatient({
     transaction,
     lock,
   });
-  return patient ? await attatchPatientEhrIds(patient.dataValues) : undefined;
+  return patient ? await attatchPatientEhrIds(patient) : undefined;
 }
 
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
+export async function getPatientOrFail(params: GetPatient): Promise<PatientWithExternalIds> {
+  const patient = await getPatient(params);
+  if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
+  return patient;
+}
+
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
 export async function getPatientModel({
   id,
   cxId,
@@ -257,15 +268,6 @@ export async function getPatientModel({
     lock,
   });
   return patient ?? undefined;
-}
-
-/**
- * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
- */
-export async function getPatientOrFail(params: GetPatient): Promise<PatientWithExternalIds> {
-  const patient = await getPatient(params);
-  if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
-  return patient;
 }
 
 /**
@@ -289,10 +291,9 @@ export async function getPatientWithDependencies({
   organization: Organization;
 }> {
   const patient = await getPatientOrFail({ id, cxId });
-  const patientWithEhrIds = await attatchPatientEhrIds(patient);
   const facilities = await getFacilities({ cxId, ids: patient.facilityIds });
   const organization = await getOrganizationOrFail({ cxId });
-  return { patient: patientWithEhrIds, facilities, organization };
+  return { patient, facilities, organization };
 }
 
 export async function getPatientStates({

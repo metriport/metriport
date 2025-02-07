@@ -1,5 +1,7 @@
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientMappingModel } from "../../../models/patient-mapping";
+
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { CWParams, updateCommonwellIdsAndStatus } from "../patient-external-data";
 import { PatientDataCommonwell } from "../patient-shared";
@@ -11,6 +13,7 @@ beforeEach(() => {
   mockStartTransaction();
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
+  jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 
 afterEach(() => {
