@@ -4,7 +4,7 @@ import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientModelOrFail } from "./get-patient";
 import { deleteAllPatientMappings } from "../../mapping/patient";

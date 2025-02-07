@@ -150,7 +150,7 @@ export const updatePatientDiscoveryStatus = async ({
   };
 
   return await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
       transaction,
@@ -172,7 +172,7 @@ export const updatePatientDiscoveryStatus = async ({
     };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData: updatePatientDiscoveryStatus,
