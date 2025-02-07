@@ -80,6 +80,7 @@ import {
   asyncHandler,
   getFrom,
   getFromParamsOrFail,
+  getFromQuery,
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
@@ -963,7 +964,10 @@ router.post(
  * - start a new consolidated query with the same parameters.
  *
  * @param req.query.patientIds The patient IDs.
- * @param req.query.dryRun Whether to simply return what would be done or actually execute the changes and commands.
+ * @param req.query.minAgeInMinutes The minimum age in minutes for the queries to be processed (optional,
+ *        defaults to 60 minutes).
+ * @param req.query.dryRun Whether to simply return what would be done or actually execute the changes
+ *        and commands.
  * @return The list of consolidated queries that where be executed (or would be executed, if dryRun is true).
  */
 router.post(
@@ -971,25 +975,42 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+    const skipWebhooks = getFromQueryAsBoolean("skipWebhooks", req);
+    if (skipWebhooks === undefined) throw new BadRequestError("skipWebhooks is required");
     const dryRun = getFromQueryAsBoolean("dryRun", req);
     if (dryRun === undefined) throw new BadRequestError("dryRun is required");
+    const minAgeRaw = getFromQuery("minAgeInMinutes", req);
+    const minAgeInMinutes = minAgeRaw ? parseInt(minAgeRaw) : 60;
+
+    const patientsNotFound: string[] = [];
+    const patientsUpdated: string[] = [];
+    const patientsWithoutQueries: string[] = [];
 
     const queryPromises: Promise<ConsolidatedQuery>[] = [];
-    const queryParams: ConsolidatedQueryParams[] = [];
-
+    const triggeredQueries: ConsolidatedQueryParams[] = [];
     for (const patientId of patientIds) {
+      const { log } = out(`patientId ${patientId} minAge ${minAgeInMinutes} dryRun ${dryRun}`);
       await executeOnDBTx(PatientModel.prototype, async transaction => {
         const patient = await PatientModel.findOne({
           where: { id: patientId },
           transaction,
         });
-        if (!patient) return;
+        if (!patient) {
+          patientsNotFound.push(patientId);
+          log(`not found`);
+          return;
+        }
         const consolidatedQueries = patient.data.consolidatedQueries ?? [];
-        const olderQueries = consolidatedQueries.filter(query =>
-          buildDayjs(query.startedAt).isBefore(buildDayjs().subtract(1, "hour").toISOString())
+        const queriesToProcess = consolidatedQueries.filter(
+          query =>
+            query.status === "processing" &&
+            buildDayjs(query.startedAt).isBefore(
+              buildDayjs().subtract(minAgeInMinutes, "minutes").toISOString()
+            )
         );
-        const queriesToProcess = olderQueries.filter(query => query.status === "processing");
+        log(`queriesToProcess ${queriesToProcess.length}`);
         if (queriesToProcess.length > 0) {
+          patientsUpdated.push(patientId);
           queriesToProcess.forEach(query => {
             query.status = "failed";
           });
@@ -1001,8 +1022,11 @@ router.post(
             patient.changed("data", true);
             await patient.update({ data });
           }
+        } else {
+          patientsWithoutQueries.push(patientId);
         }
         for (const query of queriesToProcess) {
+          const cxConsolidatedRequestMetadata = skipWebhooks ? { disableWHFlag: true } : undefined;
           const startConsolidatedQueryParams: ConsolidatedQueryParams = {
             cxId: patient.cxId,
             patientId,
@@ -1010,8 +1034,10 @@ router.post(
             dateFrom: query.dateFrom,
             dateTo: query.dateTo,
             conversionType: query.conversionType,
+            generateAiBrief: query.generateAiBrief,
+            cxConsolidatedRequestMetadata,
           };
-          queryParams.push(startConsolidatedQueryParams);
+          triggeredQueries.push(startConsolidatedQueryParams);
           if (!dryRun) {
             queryPromises.push(startConsolidatedQuery(startConsolidatedQueryParams));
           }
@@ -1023,8 +1049,19 @@ router.post(
       await queryPromise;
       await sleep(500);
     }
+    const { log } = out(`dryRun ${dryRun}`);
 
-    return res.status(status.OK).json({ dryRun, queryParams });
+    const response = {
+      dryRun,
+      skipWebhooks,
+      patientsNotFound,
+      patientsUpdated,
+      patientsWithoutQueries,
+      triggeredQueries,
+    };
+    log(`response ${JSON.stringify(response)}`);
+
+    return res.status(status.OK).json(response);
   })
 );
 
