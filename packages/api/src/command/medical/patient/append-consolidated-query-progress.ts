@@ -1,7 +1,7 @@
-import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { Patient } from "@metriport/core/domain/patient";
-import { QueryProgress } from "@metriport/core/domain/query-status";
+import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { capture } from "@metriport/core/util/notifications";
+import { QueryProgress } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientModelOrFail } from "./get-patient";
