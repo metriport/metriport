@@ -10,7 +10,7 @@ import {
   SetDocQueryProgressBase,
   aggregateDocQueryProgress,
 } from "../../command/medical/patient/append-doc-query-progress";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
 import { getCWData } from "../commonwell/patient";
 import { getCQData } from "../carequality/patient";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
@@ -50,7 +50,7 @@ export async function setDocQueryProgress({
   };
 
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
       transaction,
@@ -77,7 +77,7 @@ export async function setDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData,

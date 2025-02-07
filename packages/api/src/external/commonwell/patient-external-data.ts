@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import { executeWithRetriesSafe, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getPatientModelOrFail, getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
@@ -87,7 +87,7 @@ export const updateCommonwellIdsAndStatus = async ({
   };
 
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
       transaction,
@@ -108,7 +108,7 @@ export const updateCommonwellIdsAndStatus = async ({
     };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData: updateCWExternalData,

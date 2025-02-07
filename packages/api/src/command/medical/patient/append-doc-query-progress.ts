@@ -1,13 +1,13 @@
 import {
+  DocumentQueryProgress,
   getStatusFromProgress,
   Progress,
-  DocumentQueryProgress,
   ProgressType,
 } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { getPatientOrFail } from "./get-patient";
+import { getPatientModelOrFail } from "./get-patient";
 
 export type SetDocQueryProgressBase = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -51,7 +51,7 @@ export async function appendDocQueryProgress({
   };
 
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
       transaction,
@@ -73,7 +73,7 @@ export async function appendDocQueryProgress({
     updatedDocumentQueryProgress.requestId = requestId;
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         documentQueryProgress: updatedDocumentQueryProgress,
@@ -99,14 +99,14 @@ export async function updateProgressWebhookSent(
   };
 
   await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         documentQueryProgress: {

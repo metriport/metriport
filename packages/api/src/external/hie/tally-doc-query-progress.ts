@@ -1,13 +1,16 @@
-import { DocumentQueryProgress, Progress } from "@metriport/core/domain/document-query";
-import { getStatusFromProgress } from "@metriport/core/domain/document-query";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientExternalData } from "@metriport/core/domain//patient";
-import { ProgressType } from "@metriport/core/domain/document-query";
+import {
+  DocumentQueryProgress,
+  getStatusFromProgress,
+  Progress,
+  ProgressType,
+} from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
+import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
 
 type DynamicProgress = Pick<Progress, "successful" | "errors">;
@@ -40,7 +43,7 @@ export async function tallyDocQueryProgress({
   };
 
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
       transaction,
@@ -57,7 +60,7 @@ export async function tallyDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         requestId,

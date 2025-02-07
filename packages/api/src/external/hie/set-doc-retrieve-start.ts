@@ -1,8 +1,8 @@
 import { PatientExternalData } from "@metriport/core/domain//patient";
 import { Patient } from "@metriport/core/domain/patient";
+import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { setDocQueryStartAt } from "./set-doc-query-start";
 
 export type setDocRetrieveStartAt = setDocQueryStartAt;
@@ -23,7 +23,7 @@ export async function setDocRetrieveStartAt({
   };
 
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
       transaction,
@@ -40,7 +40,7 @@ export async function setDocRetrieveStartAt({
     };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData,

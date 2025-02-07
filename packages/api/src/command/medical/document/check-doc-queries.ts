@@ -10,7 +10,7 @@ import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
-import { getPatientOrFail } from "../patient/get-patient";
+import { getPatientModelOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";
 import {
   GroupedValidationResult,
@@ -124,7 +124,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
         id: patientId,
         cxId: cxId,
       };
-      const patient = await getPatientOrFail({
+      const patient = await getPatientModelOrFail({
         ...patientFilter,
         transaction,
       });
@@ -154,7 +154,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
           : undefined;
       }
       const updatedPatient = {
-        ...patient,
+        ...patient.dataValues,
         data: {
           ...patient.data,
           documentQueryProgress: docProgress,
