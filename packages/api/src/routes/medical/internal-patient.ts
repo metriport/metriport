@@ -1,4 +1,4 @@
-import { ConsolidatedQuery, genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/parse/patient-import-parse-factory";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
@@ -982,11 +982,12 @@ router.post(
     const minAgeRaw = getFromQuery("minAgeInMinutes", req);
     const minAgeInMinutes = minAgeRaw ? parseInt(minAgeRaw) : 60;
 
+    // TODO move this to an ops/internal command
+
     const patientsNotFound: string[] = [];
     const patientsUpdated: string[] = [];
     const patientsWithoutQueries: string[] = [];
 
-    const queryPromises: Promise<ConsolidatedQuery>[] = [];
     const triggeredQueries: ConsolidatedQueryParams[] = [];
     for (const patientId of patientIds) {
       const { log } = out(`patientId ${patientId} minAge ${minAgeInMinutes} dryRun ${dryRun}`);
@@ -1039,16 +1040,13 @@ router.post(
           };
           triggeredQueries.push(startConsolidatedQueryParams);
           if (!dryRun) {
-            queryPromises.push(startConsolidatedQuery(startConsolidatedQueryParams));
+            const query = await startConsolidatedQuery(startConsolidatedQueryParams);
+            log(`triggered query ${JSON.stringify(query)}`);
           }
         }
       });
     }
 
-    for (const queryPromise of queryPromises) {
-      await queryPromise;
-      await sleep(500);
-    }
     const { log } = out(`dryRun ${dryRun}`);
 
     const response = {
