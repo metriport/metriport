@@ -245,11 +245,34 @@ export async function getPatient({
   return patient ? await attatchPatientEhrIds(patient) : undefined;
 }
 
+export async function getPatientModel({
+  id,
+  cxId,
+  transaction,
+  lock,
+}: GetPatient): Promise<PatientModel | undefined> {
+  const patient = await PatientModel.findOne({
+    where: { cxId, id },
+    transaction,
+    lock,
+  });
+  return patient ?? undefined;
+}
+
 /**
  * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
  */
 export async function getPatientOrFail(params: GetPatient): Promise<PatientWithExternalIds> {
   const patient = await getPatient(params);
+  if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
+  return patient;
+}
+
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
+export async function getPatientModelOrFail(params: GetPatient): Promise<PatientModel> {
+  const patient = await getPatientModel(params);
   if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
   return patient;
 }

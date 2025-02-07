@@ -63,7 +63,7 @@ export async function schedulePatientDiscovery({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: updatedExternalData,

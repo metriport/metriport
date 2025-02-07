@@ -9,7 +9,7 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { getPatientOrFail } from "./get-patient";
+import { getPatientModelOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 
@@ -73,7 +73,7 @@ export async function updatePatientWithoutHIEs(
   if (addressWithCoordinates) patientUpdate.address = addressWithCoordinates;
 
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientOrFail({
+    const patient = await getPatientModelOrFail({
       id,
       cxId,
       lock: true,

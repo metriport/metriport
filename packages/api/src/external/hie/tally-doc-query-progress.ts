@@ -57,7 +57,7 @@ export async function tallyDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         requestId,
@@ -85,7 +85,7 @@ export async function tallyDocQueryProgress({
 }
 
 export function setHIETallyCount(
-  patient: PatientModel,
+  patient: Patient,
   progress: DynamicProgress,
   type: ProgressType,
   source: MedicalDataSource

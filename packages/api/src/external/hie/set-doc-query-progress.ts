@@ -77,7 +77,7 @@ export async function setDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData,

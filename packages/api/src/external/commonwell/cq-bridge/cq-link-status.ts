@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep } from "lodash";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientModelOrFail } from "../../../command/medical/patient/get-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getLinkStatusCQ } from "../patient";
@@ -47,7 +47,7 @@ export const setCQLinkStatus = async ({
 }): Promise<{ patient: Patient; updated: boolean }> => {
   const { log } = out(`setCQLinkStatus - patient ${patientId}`);
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const originalPatient = await getPatientOrFail({
+    const originalPatient = await getPatientModelOrFail({
       id: patientId,
       cxId,
       lock: true,

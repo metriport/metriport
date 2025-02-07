@@ -39,7 +39,7 @@ export async function updateConsolidatedQueryProgress({
     );
 
     const updatedPatient = {
-      ...patient.dataValues,
+      ...patient,
       data: {
         ...patient.data,
         consolidatedQueries,

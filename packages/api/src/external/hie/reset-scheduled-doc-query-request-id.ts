@@ -35,7 +35,7 @@ export async function resetPatientScheduledDocQueryRequestId({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: updatedExternalData,

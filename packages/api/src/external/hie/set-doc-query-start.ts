@@ -47,7 +47,7 @@ export async function setDocQueryStartAt({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData,

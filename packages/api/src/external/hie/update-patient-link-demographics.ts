@@ -39,7 +39,7 @@ export async function updatePatientLinkDemographics({
     const consolidatedLinkDemographics = existingPatient.data.consolidatedLinkDemographics;
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         consolidatedLinkDemographics: {

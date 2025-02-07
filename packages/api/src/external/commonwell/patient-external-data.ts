@@ -24,16 +24,15 @@ const _getPatientWithCWData = async ({
   id,
   cxId,
 }: Pick<Patient, "id" | "cxId">): Promise<PatientWithCWData> => {
-  const patientDB = await getPatientOrFail({
+  const patient = await getPatientOrFail({
     id,
     cxId,
   });
 
-  const cwData = getCWData(patientDB.data.externalData);
+  const cwData = getCWData(patient.data.externalData);
   if (!cwData) throw new MetriportError(`Missing CW data on patient`);
   if (!cwData.patientId) throw new MetriportError(`Missing CW patientId`);
 
-  const patient = patientDB.dataValues;
   return {
     ...patient,
     data: {
@@ -109,7 +108,7 @@ export const updateCommonwellIdsAndStatus = async ({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: updateCWExternalData,
@@ -173,7 +172,7 @@ export const updatePatientDiscoveryStatus = async ({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: updatePatientDiscoveryStatus,

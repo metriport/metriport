@@ -34,7 +34,7 @@ export async function resetScheduledPatientDiscovery({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: updatedExternalData,

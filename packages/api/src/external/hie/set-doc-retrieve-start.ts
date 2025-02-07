@@ -40,7 +40,7 @@ export async function setDocRetrieveStartAt({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData,

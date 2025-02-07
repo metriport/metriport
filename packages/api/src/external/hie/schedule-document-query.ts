@@ -50,7 +50,7 @@ export async function scheduleDocQuery({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: updatedExternalData,

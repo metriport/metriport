@@ -53,7 +53,7 @@ export async function updatePatientDiscoveryStatus({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: updatePatientDiscoveryStatus,
