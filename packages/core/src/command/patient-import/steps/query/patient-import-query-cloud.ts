@@ -1,8 +1,8 @@
 import { errorToString } from "@metriport/shared";
-import { SQSClient } from "../../../external/aws/sqs";
-import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
+import { SQSClient } from "../../../../external/aws/sqs";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
 import { PatientImportQueryHandler, ProcessPatientQueryRequest } from "./patient-import-query";
 
 const region = Config.getAWSRegion();

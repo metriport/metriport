@@ -1,8 +1,8 @@
 import { errorToString } from "@metriport/shared";
-import { makeLambdaClient } from "../../../external/aws/lambda";
-import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
+import { makeLambdaClient } from "../../../../external/aws/lambda";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
 import { PatientImportParseHandler, StartPatientImportRequest } from "./patient-import-parse";
 
 const region = Config.getAWSRegion();

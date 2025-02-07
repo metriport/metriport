@@ -1,4 +1,4 @@
-import { PatientDemoData } from "../../../domain/patient";
+import { PatientDemoData } from "../../../../domain/patient";
 
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
 

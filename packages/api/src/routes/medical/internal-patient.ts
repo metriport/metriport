@@ -1,6 +1,6 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/parse/patient-import-parse-factory";
+import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -937,7 +937,7 @@ router.post(
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    // const dryRun = getFromQueryAsBoolean("dryRun", req);
 
     await getFacilityOrFail({ cxId, id: facilityId });
 
@@ -949,7 +949,7 @@ router.post(
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,
-      dryRun,
+      // dryRun,
     });
 
     return res.sendStatus(status.OK);

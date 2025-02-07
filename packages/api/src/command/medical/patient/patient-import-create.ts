@@ -1,4 +1,4 @@
-import { createJobRecord } from "@metriport/core/command/patient-import/actions/create-job-record";
+import { createJobRecord } from "@metriport/core/command/patient-import/record/create-job-record";
 import { createFileKeyRaw } from "@metriport/core/command/patient-import/patient-import-shared";
 import { PatientImportStatus } from "@metriport/core/domain/patient/patient-import";
 import { S3Utils } from "@metriport/core/external/aws/s3";

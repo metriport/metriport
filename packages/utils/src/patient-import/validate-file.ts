@@ -6,7 +6,7 @@ import { createPatientPayload } from "@metriport/core/command/patient-import/pat
 import {
   RowError,
   validateAndParsePatientImportCsv,
-} from "@metriport/core/command/patient-import/actions/validate-and-parse-import";
+} from "@metriport/core/command/patient-import/record/validate-and-parse-import";
 import { PatientImportPatient, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import fs from "fs";

@@ -1,5 +1,5 @@
-import { StartPatientImportRequest } from "@metriport/core/command/patient-import/parse/patient-import-parse";
-import { PatientImportParseLocal } from "@metriport/core/command/patient-import/parse/patient-import-parse-local";
+import { StartPatientImportRequest } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse";
+import { PatientImportParseLocal } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";

@@ -1,5 +1,5 @@
-import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/query/patient-import-query";
-import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/query/patient-import-query-local";
+import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/steps/query/patient-import-query";
+import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/steps/query/patient-import-query-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";

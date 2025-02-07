@@ -1,8 +1,8 @@
 import {
   PatientPayload,
   ProcessPatientCreateRequest,
-} from "@metriport/core/command/patient-import/create/patient-import-create";
-import { PatientImportCreateHandlerLocal } from "@metriport/core/command/patient-import/create/patient-import-create-local";
+} from "@metriport/core/command/patient-import/steps/create/patient-import-create";
+import { PatientImportCreateHandlerLocal } from "@metriport/core/command/patient-import/steps/create/patient-import-create-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";

@@ -2,15 +2,15 @@ import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
-import { capture, out } from "../../../util";
-import { checkJobRecordExistsOrFail } from "../actions/check-job-record-exists";
-import { validateAndParsePatientImportCsvFromS3 } from "../actions/validate-and-parse-import";
+import { capture, out } from "../../../../util";
+import { createPatientPayload } from "../../patient-import-shared";
+import { checkJobRecordExistsOrFail } from "../../record/check-job-record-exists";
+import { validateAndParsePatientImportCsvFromS3 } from "../../record/validate-and-parse-import";
 import {
   PatientImportCreateHandler,
   ProcessPatientCreateRequest,
 } from "../create/patient-import-create";
 import { buildPatientImportCreateHandler } from "../create/patient-import-create-factory";
-import { createPatientPayload } from "../patient-import-shared";
 import { PatientImportParseHandler, StartPatientImportRequest } from "./patient-import-parse";
 
 dayjs.extend(duration);

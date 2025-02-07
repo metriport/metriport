@@ -1,9 +1,9 @@
 import { errorToString, sleep } from "@metriport/shared";
-import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
-import { checkPatientRecordExists } from "../actions/check-patient-record-exists";
-import { creatOrUpdatePatientRecord } from "../actions/create-or-update-patient-record";
-import { createPatient } from "../actions/create-patient";
+import { out } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
+import { createPatient } from "../../api/create-patient";
+import { checkPatientRecordExists } from "../../record/check-patient-record-exists";
+import { creatOrUpdatePatientRecord } from "../../record/create-or-update-patient-record";
 import { ProcessPatientQueryRequest } from "../query/patient-import-query";
 import { buildPatientImportQueryHandler } from "../query/patient-import-query-factory";
 import { PatientImportCreateHandler, ProcessPatientCreateRequest } from "./patient-import-create";
