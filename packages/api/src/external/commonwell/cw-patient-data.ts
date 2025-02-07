@@ -2,7 +2,9 @@ import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain
 import { LinkDemographicsHistory } from "@metriport/core/domain/patient-demographics";
 import { NetworkLink } from "@metriport/commonwell-sdk";
 
-export type CwLink = NetworkLink;
+export type CwLink = NetworkLink & {
+  isInvalid?: boolean;
+};
 
 // leaving room for other info if needed
 export type CwData = {

@@ -135,6 +135,9 @@ export async function getDocumentsFromCQ({
       } else if (!gateway.urlDQ) {
         log(`Gateway ${gateway.id} has no DQ URL, skipping...`);
         return;
+      } else if (patientLink.isInvalid) {
+        log(`Link ${patientLink.oid} is invalid, skipping...`);
+        return;
       }
 
       linksWithDqUrl.push({

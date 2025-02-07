@@ -6,6 +6,7 @@ export type CQExternalPatient = {
   patientId: string;
   systemId: string;
   patientResource?: PatientResource;
+  isInvalid?: boolean;
 };
 
 export type CQLinkedGateway = {
