@@ -1,9 +1,9 @@
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientExternalData } from "@metriport/core/domain//patient";
 import { Patient } from "@metriport/core/domain/patient";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
+import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
 
 export type setDocQueryStartAt = {
   patient: Pick<Patient, "id" | "cxId">;

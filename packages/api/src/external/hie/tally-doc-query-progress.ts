@@ -1,16 +1,13 @@
-import { PatientExternalData } from "@metriport/core/domain//patient";
-import {
-  DocumentQueryProgress,
-  getStatusFromProgress,
-  Progress,
-  ProgressType,
-} from "@metriport/core/domain/document-query";
-import { Patient } from "@metriport/core/domain/patient";
+import { DocumentQueryProgress, Progress } from "@metriport/core/domain/document-query";
+import { getStatusFromProgress } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
-import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
+import { PatientExternalData } from "@metriport/core/domain//patient";
+import { ProgressType } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
+import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
 
 type DynamicProgress = Pick<Progress, "successful" | "errors">;

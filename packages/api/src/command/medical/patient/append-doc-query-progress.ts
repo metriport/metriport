@@ -1,7 +1,7 @@
 import {
-  DocumentQueryProgress,
   getStatusFromProgress,
   Progress,
+  DocumentQueryProgress,
   ProgressType,
 } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";

@@ -1,5 +1,5 @@
-import { Patient } from "@metriport/core/domain/patient";
 import { webhookDisableFlagName } from "@metriport/core/domain/webhook/index";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientModelOrFail } from "./get-patient";
