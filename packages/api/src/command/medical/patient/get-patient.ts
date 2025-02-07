@@ -86,7 +86,7 @@ export async function getPatients({
   });
 
   const patientsWithEhrIds = await Promise.all(
-    patients.map(patient => attatchPatientEhrIds(patient))
+    patients.map(patient => attatchPatientEhrIds(patient.dataValues))
   );
   const sortedPatients = sortForPagination(patientsWithEhrIds, pagination);
   return sortedPatients;
@@ -242,7 +242,7 @@ export async function getPatient({
     transaction,
     lock,
   });
-  return patient ? await attatchPatientEhrIds(patient) : undefined;
+  return patient ? await attatchPatientEhrIds(patient.dataValues) : undefined;
 }
 
 export async function getPatientModel({
