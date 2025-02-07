@@ -3,7 +3,7 @@ import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { getPatientOrFail } from "./get-patient";
+import { getPatientModelOrFail } from "./get-patient";
 
 export type InitConsolidatedQueryCmd = {
   consolidatedQueries: ConsolidatedQuery[];
@@ -31,7 +31,7 @@ export type StoreQueryParams = {
 
 export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promise<Patient> => {
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientOrFail({
+    const patient = await getPatientModelOrFail({
       id,
       cxId,
       lock: true,
