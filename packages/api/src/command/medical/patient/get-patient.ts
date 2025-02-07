@@ -308,7 +308,7 @@ export async function getPatientStates({
   return uniq(nonUniqueStates);
 }
 
-async function attatchPatientEhrIds(patient: Patient): Promise<PatientWithExternalIds> {
+export async function attatchPatientEhrIds(patient: Patient): Promise<PatientWithExternalIds> {
   const ehrIds = await getSourceMapForPatient({
     cxId: patient.cxId,
     patientId: patient.id,
