@@ -1,7 +1,7 @@
+import { BadRequestError } from "@metriport/shared";
 import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
-import { BadRequestError } from "@metriport/shared";
 
 type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityModel["id"][] }>;
 
@@ -42,6 +42,25 @@ export async function getSingleFacilityOrFail(cxId: string): Promise<Facility> {
     );
   }
   return facilities[0];
+}
+
+/**
+ * Returns the facility for the given customer, if an ID is provided, or the single facility for the
+ * customer if no ID is provided.
+ *
+ * @param cxId - The customer ID.
+ * @param facilityId - The facility ID (optional).
+ * @returns the Facility
+ * @throws BadRequestError if no ID is provided and more than one facility is found for the customer.
+ */
+export async function getOptionalFacilityOrFail(
+  cxId: string,
+  facilityId: string | undefined
+): Promise<Facility> {
+  if (facilityId) {
+    return await getFacilityOrFail({ cxId, id: facilityId });
+  }
+  return await getSingleFacilityOrFail(cxId);
 }
 
 export async function getFacilityByOidOrFail(

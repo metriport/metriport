@@ -1,13 +1,4 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import { createJobRecord } from "@metriport/core/command/patient-import/commands/create-job-record";
-import {
-  JobResponseCreate,
-  JobStatus,
-} from "@metriport/core/command/patient-import/patient-import";
-import { createFileKeyRaw } from "@metriport/core/command/patient-import/patient-import-shared";
-import { S3Utils } from "@metriport/core/external/aws/s3";
-import { Config as CoreConfig } from "@metriport/core/util/config";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { PaginatedResponse, stringToBoolean } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -21,6 +12,7 @@ import {
   getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
+import { createPatientImport } from "../../command/medical/patient/patient-import-create";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import NotFoundError from "../../errors/not-found";
@@ -33,12 +25,13 @@ import {
   asyncHandler,
   getCxIdOrFail,
   getFrom,
+  getFromQuery,
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
+import { PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
-import { getFacilityFromOptionalParam } from "./shared";
 
 dayjs.extend(duration);
 
@@ -183,7 +176,11 @@ router.post(
  *        there's more than one facility for the customer).
  * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
  *        defaults to false).
- * @returns the bulk import job ID and the URL to upload the CSV file.
+ * @returns an object containing the information about the bulk import job:
+ * - `jobId` - the bulk import job ID
+ * - `status` - the status of the bulk import job
+ * - `uploadUrl` - the URL to upload the CSV file
+ * - `params` - the parameters used to create the bulk import job
  */
 router.post(
   "/bulk",
@@ -192,44 +189,14 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    const facilityId = getFromQuery("facilityId", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
-    const facility = await getFacilityFromOptionalParam(req);
 
-    // TODO 2330 move this to a command #########################################
-    const s3Utils = new S3Utils(Config.getAWSRegion());
-    const s3BucketName = CoreConfig.getPatientImportBucket();
+    const patientImportResponse = await createPatientImport({ cxId, facilityId, dryRun });
 
-    const jobId = uuidv7();
-    const jobStartedAt = new Date().toISOString();
-    const jobStatus: JobStatus = "waiting";
-
-    const { bucket } = await createJobRecord({
-      cxId,
-      jobId,
-      data: {
-        cxId,
-        facilityId: facility.id,
-        jobStartedAt,
-        dryRun: dryRun ?? false,
-        status: jobStatus,
-      },
-      s3BucketName,
-    });
-
-    const uploadFileKey = createFileKeyRaw(cxId, jobId);
-
-    const s3Url = await s3Utils.getPresignedUploadUrl({
-      bucket,
-      key: uploadFileKey,
-      durationSeconds: dayjs.duration(10, "minutes").asSeconds(),
-    });
-
-    const respPayload: JobResponseCreate = {
-      jobId,
-      status: jobStatus,
-      uploadUrl: s3Url,
+    const respPayload: PatientImportDto = {
+      ...patientImportResponse,
     };
-
     return res.status(status.OK).json(respPayload);
   })
 );

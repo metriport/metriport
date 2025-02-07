@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
+import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import {
   RowError,
   validateAndParsePatientImportCsv,
-} from "@metriport/core/command/patient-import/commands/validate-and-parse-import";
-import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
-import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
+} from "@metriport/core/command/patient-import/actions/validate-and-parse-import";
 import { PatientImportPatient, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import fs from "fs";

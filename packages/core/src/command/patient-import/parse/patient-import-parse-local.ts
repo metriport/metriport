@@ -3,8 +3,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { capture, out } from "../../../util";
-import { checkJobRecordExists } from "../commands/check-job-record-exists";
-import { validateAndParsePatientImportCsvFromS3 } from "../commands/validate-and-parse-import";
+import { checkJobRecordExistsOrFail } from "../actions/check-job-record-exists";
+import { validateAndParsePatientImportCsvFromS3 } from "../actions/validate-and-parse-import";
 import {
   PatientImportCreateHandler,
   ProcessPatientCreateRequest,
@@ -38,11 +38,7 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
     const { log } = out(`startPatientImport.local - cxId ${cxId} jobId ${jobId}`);
     try {
       const s3BucketName = this.patientImportBucket;
-      await checkJobRecordExists({
-        cxId,
-        jobId,
-        s3BucketName,
-      });
+      await checkJobRecordExistsOrFail({ cxId, jobId, s3BucketName });
       const patients = await validateAndParsePatientImportCsvFromS3({
         cxId,
         jobId,

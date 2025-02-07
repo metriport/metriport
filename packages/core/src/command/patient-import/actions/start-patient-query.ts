@@ -1,8 +1,7 @@
+import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
-import { errorToString } from "@metriport/shared";
-import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
+import { out } from "../../../util/log";
 
 // TODO 2330 add TSDoc
 export async function startPatientQuery({
@@ -18,7 +17,7 @@ export async function startPatientQuery({
     `PatientImport startPatientQuery - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const patientUrl = `/internal/patient/${patientId}/patient-discovery?cxId=${cxId}&rerunPdOnNewDemographics=${rerunPdOnNewDemographics}`;
+  const patientUrl = buildPatientDiscoveryUrl(cxId, patientId, rerunPdOnNewDemographics);
   try {
     const response = await api.post(patientUrl, {});
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
@@ -26,16 +25,24 @@ export async function startPatientQuery({
   } catch (error) {
     const msg = `Failure while starting patient query @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        url: patientUrl,
-        cxId,
-        patientId,
-        rerunPdOnNewDemographics,
-        context: "patient-import.startPatientQuery",
-        error,
-      },
+    throw new MetriportError(msg, error, {
+      url: patientUrl,
+      cxId,
+      patientId,
+      rerunPdOnNewDemographics,
+      context: "patient-import.startPatientQuery",
     });
-    throw error;
   }
+}
+
+function buildPatientDiscoveryUrl(
+  cxId: string,
+  patientId: string,
+  rerunPdOnNewDemographics: boolean
+) {
+  const urlParams = new URLSearchParams({
+    cxId,
+    rerunPdOnNewDemographics: rerunPdOnNewDemographics.toString(),
+  });
+  return `/internal/patient/${patientId}/patient-discovery?${urlParams.toString()}`;
 }

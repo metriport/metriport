@@ -38,14 +38,12 @@ export async function handler(event: StartPatientImportRequest) {
       dryRun,
     } = parsedBody;
 
-    const jobStartedAt = new Date().toISOString();
-
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}`);
     try {
       log(
         `Parsed: ${JSON.stringify(
           parsedBody
-        )}, jobStartedAt ${jobStartedAt}, patientImportBucket ${patientImportBucket}, processPatientCreateQueue}`
+        )}, patientImportBucket ${patientImportBucket}, processPatientCreateQueue}`
       );
 
       const processPatientImportRequest: StartPatientImportRequest = {

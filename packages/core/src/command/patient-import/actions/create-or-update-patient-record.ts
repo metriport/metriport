@@ -1,21 +1,22 @@
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
 import { PatientRecordUpdate } from "../patient-import";
 import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shared";
+import { checkPatientRecordExists } from "./check-patient-record-exists";
+import { fetchPatientRecord } from "./fetch-patient-record";
 
 // TODO 2330 add TSDoc
 export async function creatOrUpdatePatientRecord({
   cxId,
   jobId,
   patientId,
-  data = {},
+  data,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
   patientId: string;
-  data?: PatientRecordUpdate;
+  data: PatientRecordUpdate;
   s3BucketName: string;
 }): Promise<void> {
   const { log } = out(
@@ -24,25 +25,31 @@ export async function creatOrUpdatePatientRecord({
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyPatient(cxId, jobId, patientId);
   try {
+    const existingRecordExists = await checkPatientRecordExists({
+      cxId,
+      jobId,
+      patientId,
+      s3BucketName,
+    });
+    const existingRecord = existingRecordExists
+      ? await fetchPatientRecord({ cxId, jobId, patientId, s3BucketName, throwIfNotFound: false })
+      : {};
+    const updatedRecord = { ...existingRecord, patientId, ...data };
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,
-      file: Buffer.from(JSON.stringify({ patientId, ...data }), "utf8"),
+      file: Buffer.from(JSON.stringify(updatedRecord), "utf8"),
       contentType: "application/json",
     });
   } catch (error) {
     const msg = `Failure while creating or updating patient record @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        jobId,
-        patientId,
-        key,
-        context: "patient-import.creatOrUpdatePatientRecord",
-        error,
-      },
+    throw new MetriportError(msg, error, {
+      cxId,
+      jobId,
+      patientId,
+      key,
+      context: "patient-import.creatOrUpdatePatientRecord",
     });
-    throw error;
   }
 }

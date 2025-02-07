@@ -1,9 +1,9 @@
 import { errorToString, sleep } from "@metriport/shared";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { checkPatientRecordExists } from "../commands/check-patient-record-exists";
-import { creatOrUpdatePatientRecord } from "../commands/create-or-update-patient-record";
-import { createPatient } from "../commands/create-patient";
+import { checkPatientRecordExists } from "../actions/check-patient-record-exists";
+import { creatOrUpdatePatientRecord } from "../actions/create-or-update-patient-record";
+import { createPatient } from "../actions/create-patient";
 import { ProcessPatientQueryRequest } from "../query/patient-import-query";
 import { buildPatientImportQueryHandler } from "../query/patient-import-query-factory";
 import { PatientImportCreateHandler, ProcessPatientCreateRequest } from "./patient-import-create";
@@ -45,6 +45,7 @@ export class PatientImportCreateHandlerLocal implements PatientImportCreateHandl
         cxId,
         jobId,
         patientId,
+        data: { status: "processing" },
         s3BucketName: this.patientImportBucket,
       });
       const processPatientQueryRequest: ProcessPatientQueryRequest = {
