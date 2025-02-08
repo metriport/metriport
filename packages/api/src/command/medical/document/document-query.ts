@@ -190,14 +190,14 @@ export const updateConversionProgress = async ({
     });
 
     const documentQueryProgress = calculateConversionProgress({
-      patient: existingPatient,
+      patient: existingPatient.dataValues,
       convertResult,
     });
 
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         documentQueryProgress,
       },
     };

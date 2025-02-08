@@ -26,7 +26,7 @@ export async function setDocQueryStartAt({
     cxId: patient.cxId,
   };
 
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
@@ -61,6 +61,4 @@ export async function setDocQueryStartAt({
 
     return updatedPatient;
   });
-
-  return result;
 }

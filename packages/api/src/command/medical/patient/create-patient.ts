@@ -12,7 +12,7 @@ import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { attatchPatientEhrIds, getPatientByDemo, PatientWithExternalIds } from "./get-patient";
+import { attatchPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
 import { sanitize, validate } from "./shared";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
@@ -31,7 +31,7 @@ export async function createPatient({
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
-}): Promise<PatientWithExternalIds> {
+}): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
 
   const sanitized = sanitize(patient);
@@ -90,6 +90,6 @@ export async function createPatient({
       forceCommonwell,
     }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
   }
-  const patientWithEhrIds = await attatchPatientEhrIds(newPatient.dataValues);
-  return patientWithEhrIds;
+  const patientWithIdentifiers = await attatchPatientIdentifiers(newPatient.dataValues);
+  return patientWithIdentifiers;
 }

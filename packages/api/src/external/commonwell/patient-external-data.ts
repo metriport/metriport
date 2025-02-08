@@ -85,7 +85,6 @@ export const updateCommonwellIdsAndStatus = async ({
     id: patient.id,
     cxId: patient.cxId,
   };
-
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
@@ -115,7 +114,6 @@ export const updateCommonwellIdsAndStatus = async ({
         externalData: updateCWExternalData,
       },
     };
-
     await PatientModel.update(updatedPatient, {
       where: patientFilter,
       transaction,

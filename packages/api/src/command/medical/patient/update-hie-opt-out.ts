@@ -12,7 +12,7 @@ export async function setHieOptOut({
   patientId: string;
   hieOptOut: boolean;
 }): Promise<Patient> {
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
       id: patientId,
       cxId,
@@ -20,10 +20,8 @@ export async function setHieOptOut({
       transaction,
     });
 
-    return patient.update({ hieOptOut }, { transaction });
+    return (await patient.update({ hieOptOut }, { transaction })).dataValues;
   });
-
-  return result;
 }
 
 export async function getHieOptOut({

@@ -42,7 +42,7 @@ export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promi
       await patient.update(
         {
           data: {
-            ...patient.data,
+            ...patient.dataValues.data,
             ...cmd,
           },
         },

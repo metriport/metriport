@@ -16,7 +16,7 @@ export async function resetScheduledPatientDiscovery({
     cxId: patient.cxId,
   };
 
-  return await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,

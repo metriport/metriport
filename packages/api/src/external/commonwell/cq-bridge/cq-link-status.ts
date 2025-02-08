@@ -74,6 +74,6 @@ export const setCQLinkStatus = async ({
 
     const updatedPatient = await originalPatient.update({ data: updatedData }, { transaction });
 
-    return { patient: updatedPatient, updated: true };
+    return { patient: updatedPatient.dataValues, updated: true };
   });
 };

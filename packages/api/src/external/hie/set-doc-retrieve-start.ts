@@ -22,7 +22,7 @@ export async function setDocRetrieveStartAt({
     cxId: patient.cxId,
   };
 
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
@@ -54,6 +54,4 @@ export async function setDocRetrieveStartAt({
 
     return updatedPatient;
   });
-
-  return result;
 }

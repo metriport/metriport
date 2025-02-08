@@ -128,9 +128,11 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
         ...patientFilter,
         transaction,
       });
-      const docProgress = patient.data.documentQueryProgress;
+      const docProgress = patient.dataValues.data.documentQueryProgress;
       if (!docProgress) {
-        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
+        console.log(
+          `Patient without doc query progress @ update, skipping it: ${patient.dataValues.id} `
+        );
         return;
       }
       if (whatToUpdate.convert) {
@@ -156,7 +158,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
       const updatedPatient = {
         ...patient.dataValues,
         data: {
-          ...patient.data,
+          ...patient.dataValues.data,
           documentQueryProgress: docProgress,
         },
       };
@@ -164,6 +166,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
         where: patientFilter,
         transaction,
       });
+
       return updatedPatient;
     });
   }

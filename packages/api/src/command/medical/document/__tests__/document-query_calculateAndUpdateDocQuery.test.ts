@@ -22,9 +22,7 @@ describe("docQuery-conversionProgress", () => {
       jest.restoreAllMocks();
       mockStartTransaction();
       patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
-      patientModel = {
-        ...patient,
-      } as PatientModel;
+      patientModel = { dataValues: patient } as PatientModel;
       patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
     });
 
@@ -40,7 +38,7 @@ describe("docQuery-conversionProgress", () => {
       expect(patientSentToSequelize).toBeTruthy();
       expect(patientSentToSequelize === patientModel).toBeFalsy();
       expect(patientSentToSequelize?.data).toBeTruthy();
-      expect(patientSentToSequelize?.data === patientModel.data).toBeFalsy();
+      expect(patientSentToSequelize?.data === patientModel.dataValues.data).toBeFalsy();
     });
 
     it("updates 13 successul to 14 when success", async () => {
@@ -53,7 +51,7 @@ describe("docQuery-conversionProgress", () => {
           errors: 0,
         },
       });
-      patientModel_findOne.mockResolvedValue(patient);
+      patientModel_findOne.mockResolvedValue({ dataValues: patient });
 
       const res = await updateConversionProgress({
         patient: { id: uuidv4(), cxId: uuidv4() },

@@ -31,9 +31,9 @@ async function setDisableWHFlag(cmd: DisableWHCommand): Promise<Patient> {
       lock: true,
       transaction,
     });
-    const existingField = patient.data[field];
+    const existingField = patient.dataValues.data[field];
     patient.data = {
-      ...patient.data,
+      ...patient.dataValues.data,
       [field]: {
         ...(existingField ? existingField : {}),
         [webhookDisableFlagName]: isDisableWH,

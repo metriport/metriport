@@ -12,8 +12,6 @@ export enum EhrSources {
   elation = "elation",
 }
 
-export const EhrSourcesList = Object.values(EhrSources);
-
 export type Appointment = {
   cxId: string;
   practiceId: string;

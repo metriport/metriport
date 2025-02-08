@@ -4,7 +4,7 @@ import { Op, WhereOptions, json } from "sequelize";
 import {
   getPatientOrFail,
   getPatientStates,
-  PatientWithExternalIds,
+  PatientWithIdentifiers,
 } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../medical/patient";
 
@@ -16,7 +16,7 @@ export class PatientLoaderLocal implements PatientLoader {
     return getPatientStates({ cxId, patientIds });
   }
 
-  async getOneOrFail({ id, cxId }: GetOne): Promise<PatientWithExternalIds> {
+  async getOneOrFail({ id, cxId }: GetOne): Promise<PatientWithIdentifiers> {
     const patient = await getPatientOrFail({ id, cxId });
     console.log("patient-loader-local", patient);
     return patient;

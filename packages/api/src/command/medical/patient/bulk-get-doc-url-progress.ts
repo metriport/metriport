@@ -35,7 +35,7 @@ export async function appendBulkGetDocUrlProgress({
       transaction,
     });
 
-    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.data
+    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.dataValues.data
       ?.bulkGetDocumentsUrlProgress || { status: "processing" };
 
     if (status) {
@@ -48,11 +48,12 @@ export async function appendBulkGetDocUrlProgress({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         bulkGetDocumentsUrlProgress,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
     return updatedPatient;
   });
 }
@@ -73,7 +74,7 @@ export const storeBulkGetDocumentUrlQueryInit = async (
 ): Promise<Patient> => {
   const { id, cxId } = cmd;
 
-  return executeOnDBTx(PatientModel.prototype, async transaction => {
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
       id,
       cxId,
@@ -83,7 +84,7 @@ export const storeBulkGetDocumentUrlQueryInit = async (
 
     const update = {
       bulkGetDocumentsUrlProgress: {
-        ...patient.data.bulkGetDocumentsUrlProgress,
+        ...patient.dataValues.data.bulkGetDocumentsUrlProgress,
         ...cmd.bulkGetDocumentsUrlProgress,
         requestId: cmd.requestId,
       },
@@ -93,11 +94,12 @@ export const storeBulkGetDocumentUrlQueryInit = async (
     return patient.update(
       {
         data: {
-          ...patient.data,
+          ...patient.dataValues.data,
           ...update,
         },
       },
       { transaction }
     );
   });
+  return patient.dataValues;
 };

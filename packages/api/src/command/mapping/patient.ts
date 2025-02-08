@@ -4,7 +4,7 @@ import { Op } from "sequelize";
 import {
   PatientMapping,
   PatientMappingPerSource,
-  PatientSourceMap,
+  PatientSourceIdentifierMap,
 } from "../../domain/patient-mapping";
 import { PatientMappingModel } from "../../models/patient-mapping";
 
@@ -77,15 +77,15 @@ export async function getSourceMapForPatient({
 }: {
   cxId: string;
   patientId: string;
-  sources: string[];
-}): Promise<PatientSourceMap | undefined> {
+  sources?: string[];
+}): Promise<PatientSourceIdentifierMap | undefined> {
   const mappings = await PatientMappingModel.findAll({
-    where: { cxId, patientId, source: { [Op.in]: sources } },
+    where: { cxId, patientId, ...(sources ? { source: { [Op.in]: sources } } : {}) },
   });
-  const sourceMap = mappings.reduce((acc, mapping) => {
-    const { source, externalId } = mapping.dataValues;
-    acc[source] = [...(acc[source] || []), externalId];
-    return acc;
-  }, {} as PatientSourceMap);
-  return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
+  return mappings.length > 0
+    ? mappings.map(mapping => ({
+        key: mapping.dataValues.source,
+        value: mapping.dataValues.externalId,
+      }))
+    : undefined;
 }

@@ -33,7 +33,7 @@ export async function updateConsolidatedQueryProgress({
     });
 
     const consolidatedQueries = generateUpdateConsolidatedProgress(
-      patient.data.consolidatedQueries,
+      patient.dataValues.data.consolidatedQueries,
       progress,
       requestId
     );
@@ -41,11 +41,10 @@ export async function updateConsolidatedQueryProgress({
     const updatedPatient = {
       ...patient.dataValues,
       data: {
-        ...patient.data,
+        ...patient.dataValues.data,
         consolidatedQueries,
       },
     };
-
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
   });
 }

@@ -29,8 +29,7 @@ export async function updatePatientDiscoveryStatus({
     id: patient.id,
     cxId: patient.cxId,
   };
-
-  return await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
@@ -59,7 +58,6 @@ export async function updatePatientDiscoveryStatus({
         externalData: updatePatientDiscoveryStatus,
       },
     };
-
     await PatientModel.update(updatedPatient, {
       where: patientFilter,
       transaction,

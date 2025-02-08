@@ -11,7 +11,7 @@ export type PatientDTO = {
   personalIdentifiers?: PersonalIdentifier[];
   facilityIds: string[];
   externalId?: string;
-  ehrIds?: Record<string, string[]>;
+  identifiers?: { key: string; value: string }[];
   dateCreated?: Date;
   address: Address | Address[];
   contact?: Contact | Contact[];

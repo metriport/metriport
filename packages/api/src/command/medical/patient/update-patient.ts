@@ -12,7 +12,7 @@ import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientModelOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
-import { attatchPatientEhrIds, PatientWithExternalIds } from "./get-patient";
+import { attatchPatientIdentifiers, PatientWithIdentifiers } from "./get-patient";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -35,7 +35,7 @@ export async function updatePatient({
   forceCarequality?: boolean;
   // END TODO #1572 - remove
   emit?: boolean;
-}): Promise<PatientWithExternalIds> {
+}): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId } = patientUpdate;
 
   // validate facility exists and cx has access to it
@@ -54,8 +54,8 @@ export async function updatePatient({
     forceCarequality,
   }).catch(processAsyncError("runOrSchedulePatientDiscoveryAcrossHies"));
 
-  const patientWithEhrIds = await attatchPatientEhrIds(patient);
-  return patientWithEhrIds;
+  const patientWithIdentifiers = await attatchPatientIdentifiers(patient);
+  return patientWithIdentifiers;
 }
 
 export async function updatePatientWithoutHIEs(

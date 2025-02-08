@@ -58,9 +58,9 @@ export async function appendDocQueryProgress({
     });
 
     const documentQueryProgress =
-      reset || !existingPatient.data.documentQueryProgress
+      reset || !existingPatient.dataValues.data.documentQueryProgress
         ? {}
-        : existingPatient.data.documentQueryProgress;
+        : existingPatient.dataValues.data.documentQueryProgress;
 
     const updatedDocumentQueryProgress = aggregateDocQueryProgress(
       documentQueryProgress,
@@ -75,7 +75,7 @@ export async function appendDocQueryProgress({
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         documentQueryProgress: updatedDocumentQueryProgress,
       },
     };
@@ -92,13 +92,12 @@ export async function appendDocQueryProgress({
 export async function updateProgressWebhookSent(
   patient: Pick<Patient, "id" | "cxId">,
   type: ProgressType
-) {
+): Promise<void> {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
   };
-
-  await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientModelOrFail({
       ...patientFilter,
       lock: true,
@@ -108,17 +107,16 @@ export async function updateProgressWebhookSent(
     const updatedPatient = {
       ...existingPatient.dataValues,
       data: {
-        ...existingPatient.data,
+        ...existingPatient.dataValues.data,
         documentQueryProgress: {
-          ...existingPatient.data.documentQueryProgress,
+          ...existingPatient.dataValues.data.documentQueryProgress,
           [type]: {
-            ...existingPatient.data.documentQueryProgress?.[type],
+            ...existingPatient.dataValues.data.documentQueryProgress?.[type],
             webhookSent: true,
           },
         },
       },
     };
-
     await PatientModel.update(updatedPatient, {
       where: patientFilter,
       transaction,
