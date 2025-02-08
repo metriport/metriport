@@ -4,7 +4,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { QueryProgress } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { getPatientModelOrFail } from "./get-patient";
+import { getPatientOrFail } from "./get-patient";
 
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -26,22 +26,22 @@ export async function updateConsolidatedQueryProgress({
     cxId: patient.cxId,
   };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientModelOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const consolidatedQueries = generateUpdateConsolidatedProgress(
-      patient.dataValues.data.consolidatedQueries,
+      patient.data.consolidatedQueries,
       progress,
       requestId
     );
 
     const updatedPatient = {
-      ...patient.dataValues,
+      ...patient,
       data: {
-        ...patient.dataValues.data,
+        ...patient.data,
         consolidatedQueries,
       },
     };

@@ -6,6 +6,7 @@ import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/p
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { PatientModel } from "../../../../models/medical/patient";
+import { PatientMappingModel } from "../../../../models/patient-mapping";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import * as webhooks from "../../document/process-doc-query-webhook";
@@ -30,6 +31,7 @@ beforeEach(() => {
   mockStartTransaction();
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 
 afterEach(() => {

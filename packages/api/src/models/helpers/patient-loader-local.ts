@@ -18,7 +18,6 @@ export class PatientLoaderLocal implements PatientLoader {
 
   async getOneOrFail({ id, cxId }: GetOne): Promise<PatientWithIdentifiers> {
     const patient = await getPatientOrFail({ id, cxId });
-    console.log("patient-loader-local", patient);
     return patient;
   }
 

@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import { executeWithRetriesSafe, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { getPatientModelOrFail, getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
@@ -86,16 +86,15 @@ export const updateCommonwellIdsAndStatus = async ({
     cxId: patient.cxId,
   };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const updatedCQLinkStatus =
-      cqLinkStatus ?? getLinkStatusCQ(existingPatient.dataValues.data.externalData);
+    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(existingPatient.data.externalData);
 
-    const externalData = existingPatient.dataValues.data.externalData ?? {};
+    const externalData = existingPatient.data.externalData ?? {};
 
     const updateCWExternalData = {
       ...externalData,
@@ -108,9 +107,9 @@ export const updateCommonwellIdsAndStatus = async ({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         externalData: updateCWExternalData,
       },
     };
@@ -149,13 +148,13 @@ export const updatePatientDiscoveryStatus = async ({
   };
 
   return await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.dataValues.data.externalData ?? {};
+    const externalData = existingPatient.data.externalData ?? {};
 
     if (!params && !externalData.COMMONWELL?.discoveryParams) {
       throw new Error(`Cannot update discovery status before assigning discovery params @ CW`);
@@ -171,9 +170,9 @@ export const updatePatientDiscoveryStatus = async ({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         externalData: updatePatientDiscoveryStatus,
       },
     };

@@ -10,7 +10,7 @@ import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
-import { getPatientModelOrFail } from "../patient/get-patient";
+import { getPatientOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";
 import {
   GroupedValidationResult,
@@ -124,15 +124,13 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
         id: patientId,
         cxId: cxId,
       };
-      const patient = await getPatientModelOrFail({
+      const patient = await getPatientOrFail({
         ...patientFilter,
         transaction,
       });
-      const docProgress = patient.dataValues.data.documentQueryProgress;
+      const docProgress = patient.data.documentQueryProgress;
       if (!docProgress) {
-        console.log(
-          `Patient without doc query progress @ update, skipping it: ${patient.dataValues.id} `
-        );
+        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id}`);
         return;
       }
       if (whatToUpdate.convert) {
@@ -156,9 +154,9 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
           : undefined;
       }
       const updatedPatient = {
-        ...patient.dataValues,
+        ...patient,
         data: {
-          ...patient.dataValues.data,
+          ...patient.data,
           documentQueryProgress: docProgress,
         },
       };

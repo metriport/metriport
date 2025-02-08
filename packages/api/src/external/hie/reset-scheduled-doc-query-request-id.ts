@@ -1,5 +1,5 @@
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
@@ -17,13 +17,13 @@ export async function resetPatientScheduledDocQueryRequestId({
   };
 
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.dataValues.data.externalData ?? {};
+    const externalData = existingPatient.data.externalData ?? {};
 
     const updatedExternalData = {
       ...externalData,
@@ -35,9 +35,9 @@ export async function resetPatientScheduledDocQueryRequestId({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         externalData: updatedExternalData,
       },
     };

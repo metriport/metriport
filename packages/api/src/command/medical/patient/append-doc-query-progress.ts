@@ -7,7 +7,7 @@ import {
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { getPatientModelOrFail } from "./get-patient";
+import { getPatientOrFail } from "./get-patient";
 
 export type SetDocQueryProgressBase = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -49,18 +49,17 @@ export async function appendDocQueryProgress({
     id: patient.id,
     cxId: patient.cxId,
   };
-
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const documentQueryProgress =
-      reset || !existingPatient.dataValues.data.documentQueryProgress
+      reset || !existingPatient.data.documentQueryProgress
         ? {}
-        : existingPatient.dataValues.data.documentQueryProgress;
+        : existingPatient.data.documentQueryProgress;
 
     const updatedDocumentQueryProgress = aggregateDocQueryProgress(
       documentQueryProgress,
@@ -73,13 +72,12 @@ export async function appendDocQueryProgress({
     updatedDocumentQueryProgress.requestId = requestId;
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         documentQueryProgress: updatedDocumentQueryProgress,
       },
     };
-
     await PatientModel.update(updatedPatient, {
       where: patientFilter,
       transaction,
@@ -98,20 +96,20 @@ export async function updateProgressWebhookSent(
     cxId: patient.cxId,
   };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         documentQueryProgress: {
-          ...existingPatient.dataValues.data.documentQueryProgress,
+          ...existingPatient.data.documentQueryProgress,
           [type]: {
-            ...existingPatient.dataValues.data.documentQueryProgress?.[type],
+            ...existingPatient.data.documentQueryProgress?.[type],
             webhookSent: true,
           },
         },

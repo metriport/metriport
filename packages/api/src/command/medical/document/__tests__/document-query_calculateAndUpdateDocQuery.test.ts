@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { calculateConversionProgress } from "../../../../domain/medical/conversion-progress";
 import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-query";
 import { PatientModel } from "../../../../models/medical/patient";
+import { PatientMappingModel } from "../../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { updateConversionProgress } from "../document-query";
 
@@ -24,6 +25,7 @@ describe("docQuery-conversionProgress", () => {
       patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
       patientModel = { dataValues: patient } as PatientModel;
       patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+      jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
     });
 
     it("calculateAndUpdateDocQuery send a modified object to Sequelize", async () => {

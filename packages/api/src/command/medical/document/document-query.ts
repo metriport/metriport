@@ -21,7 +21,7 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { getPatientModelOrFail, getPatientOrFail } from "../patient/get-patient";
+import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
 
@@ -183,21 +183,21 @@ export const updateConversionProgress = async ({
     cxId: patient.cxId,
   };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const documentQueryProgress = calculateConversionProgress({
-      patient: existingPatient.dataValues,
+      patient: existingPatient,
       convertResult,
     });
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         documentQueryProgress,
       },
     };

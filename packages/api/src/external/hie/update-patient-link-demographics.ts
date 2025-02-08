@@ -2,7 +2,7 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
-import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 
@@ -30,19 +30,18 @@ export async function updatePatientLinkDemographics({
   };
 
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const consolidatedLinkDemographics =
-      existingPatient.dataValues.data.consolidatedLinkDemographics;
+    const consolidatedLinkDemographics = existingPatient.data.consolidatedLinkDemographics;
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         consolidatedLinkDemographics: {
           names: [
             ...new Set([

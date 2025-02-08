@@ -6,7 +6,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
-import { getPatientModelOrFail } from "./get-patient";
+import { getPatientModelOrFail, getPatientOrFail } from "./get-patient";
 
 export type SetBulkGetDocUrlProgress = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -29,13 +29,13 @@ export async function appendBulkGetDocUrlProgress({
     cxId: cxId,
   };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.dataValues.data
+    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.data
       ?.bulkGetDocumentsUrlProgress || { status: "processing" };
 
     if (status) {
@@ -46,9 +46,9 @@ export async function appendBulkGetDocUrlProgress({
     }
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         bulkGetDocumentsUrlProgress,
       },
     };
@@ -73,7 +73,6 @@ export const storeBulkGetDocumentUrlQueryInit = async (
   cmd: BulkGetDocUrlQueryInitCmd
 ): Promise<Patient> => {
   const { id, cxId } = cmd;
-
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
       id,

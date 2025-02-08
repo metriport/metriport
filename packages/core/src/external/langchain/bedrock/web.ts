@@ -14,10 +14,7 @@ import {
   BaseChatModelCallOptions,
   BindToolsInput,
 } from "@langchain/core/language_models/chat_models";
-import {
-  BaseLanguageModelInput,
-  isOpenAITool,
-} from "@langchain/core/language_models/base";
+import { BaseLanguageModelInput, isOpenAITool } from "@langchain/core/language_models/base";
 import { Runnable } from "@langchain/core/runnables";
 import { getEnvironmentVariable } from "@langchain/core/utils/env";
 import {
@@ -28,53 +25,21 @@ import {
   BaseMessageChunk,
   isAIMessage,
 } from "@langchain/core/messages";
-import {
-  ChatGeneration,
-  ChatGenerationChunk,
-  ChatResult,
-} from "@langchain/core/outputs";
-import {
-  isLangChainTool,
-  isStructuredTool,
-} from "@langchain/core/utils/function_calling";
+import { ChatGeneration, ChatGenerationChunk, ChatResult } from "@langchain/core/outputs";
+import { isLangChainTool, isStructuredTool } from "@langchain/core/utils/function_calling";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 import type { SerializedFields } from "./map_keys.js";
-import {
-  BaseBedrockInput,
-  BedrockLLMInputOutputAdapter,
-  type CredentialType,
-} from "./utils";
-import {
-  _toolsInParams,
-  isAnthropicTool,
-} from "./anthropic";
+import { BaseBedrockInput, BedrockLLMInputOutputAdapter, type CredentialType } from "./utils";
+import { _toolsInParams, isAnthropicTool } from "./anthropic";
 
 type AnthropicTool = Record<string, unknown>;
 
 type BedrockChatToolType = BindToolsInput | AnthropicTool;
 
-const AWS_REGIONS = [
-  "us",
-  "sa",
-  "me",
-  "il",
-  "eu",
-  "cn",
-  "ca",
-  "ap",
-  "af",
-  "us-gov",
-];
+const AWS_REGIONS = ["us", "sa", "me", "il", "eu", "cn", "ca", "ap", "af", "us-gov"];
 
-const ALLOWED_MODEL_PROVIDERS = [
-  "ai21",
-  "anthropic",
-  "amazon",
-  "cohere",
-  "meta",
-  "mistral",
-];
+const ALLOWED_MODEL_PROVIDERS = ["ai21", "anthropic", "amazon", "cohere", "meta", "mistral"];
 
 const PRELUDE_TOTAL_LENGTH_BYTES = 4;
 
@@ -92,9 +57,7 @@ function convertOneMessageToText(
   } else if (message._getType() === "function") {
     return `${humanPrompt} ${message.content}`;
   } else if (ChatMessage.isInstance(message)) {
-    return `\n\n${
-      message.role[0]!.toUpperCase() + message.role.slice(1)
-    }: {message.content}`;
+    return `\n\n${message.role[0]!.toUpperCase() + message.role.slice(1)}: {message.content}`;
   }
   throw new Error(`Unknown role: ${message._getType()}`);
 }
@@ -106,15 +69,12 @@ export function convertMessagesToPromptAnthropic(
 ): string {
   const messagesCopy = [...messages];
 
-  if (
-    messagesCopy.length === 0 ||
-    messagesCopy[messagesCopy.length - 1]?._getType() !== "ai"
-  ) {
+  if (messagesCopy.length === 0 || messagesCopy[messagesCopy.length - 1]?._getType() !== "ai") {
     messagesCopy.push(new AIMessage({ content: "" }));
   }
 
   return messagesCopy
-    .map((message) => convertOneMessageToText(message, humanPrompt, aiPrompt))
+    .map(message => convertOneMessageToText(message, humanPrompt, aiPrompt))
     .join("");
 }
 
@@ -126,10 +86,7 @@ export function convertMessagesToPromptAnthropic(
  * @param options Options to be used during the conversion.
  * @returns A string prompt that can be used as input for a chat model.
  */
-export function convertMessagesToPrompt(
-  messages: BaseMessage[],
-  provider: string
-): string {
+export function convertMessagesToPrompt(messages: BaseMessage[], provider: string): string {
   if (provider === "anthropic") {
     return convertMessagesToPromptAnthropic(messages);
   }
@@ -141,14 +98,14 @@ function formatTools(tools: BedrockChatCallOptions["tools"]): AnthropicTool[] {
     return [];
   }
   if (tools.every(isLangChainTool)) {
-    return tools.map((tc) => ({
+    return tools.map(tc => ({
       name: tc.name,
       description: tc.description,
       input_schema: zodToJsonSchema(tc.schema),
     }));
   }
   if (tools.every(isOpenAITool)) {
-    return tools.map((tc) => ({
+    return tools.map(tc => ({
       name: tc.function.name,
       description: tc.function.description,
       input_schema: tc.function.parameters,
@@ -157,14 +114,8 @@ function formatTools(tools: BedrockChatCallOptions["tools"]): AnthropicTool[] {
   if (tools.every(isAnthropicTool)) {
     return tools;
   }
-  if (
-    tools.some(isStructuredTool) ||
-    tools.some(isOpenAITool) ||
-    tools.some(isAnthropicTool)
-  ) {
-    throw new Error(
-      "All tools passed to BedrockChat must be of the same type."
-    );
+  if (tools.some(isStructuredTool) || tools.some(isOpenAITool) || tools.some(isAnthropicTool)) {
+    throw new Error("All tools passed to BedrockChat must be of the same type.");
   }
   throw new Error("Invalid tool format received.");
 }
@@ -173,9 +124,7 @@ export interface BedrockChatCallOptions extends BaseChatModelCallOptions {
   tools?: BedrockChatToolType[];
 }
 
-export interface BedrockChatFields
-  extends Partial<BaseBedrockInput>,
-    BaseChatModelParams {}
+export interface BedrockChatFields extends Partial<BaseBedrockInput>, BaseChatModelParams {}
 
 /**
  * AWS Bedrock chat model integration.
@@ -536,10 +485,12 @@ export class BedrockChat
 
   guardrailVersion = "";
 
-  guardrailConfig?: {
-    tagSuffix: string;
-    streamProcessingMode: "SYNCHRONOUS" | "ASYNCHRONOUS";
-  } | undefined;
+  guardrailConfig?:
+    | {
+        tagSuffix: string;
+        streamProcessingMode: "SYNCHRONOUS" | "ASYNCHRONOUS";
+      }
+    | undefined;
 
   override get lc_aliases(): Record<string, string> {
     return {
@@ -578,13 +529,10 @@ export class BedrockChat
   }
 
   constructor(fields?: BedrockChatFields) {
-    const awsAccessKeyId =
-      fields?.awsAccessKeyId ?? getEnvironmentVariable("AWS_ACCESS_KEY_ID");
+    const awsAccessKeyId = fields?.awsAccessKeyId ?? getEnvironmentVariable("AWS_ACCESS_KEY_ID");
     const awsSecretAccessKey =
-      fields?.awsSecretAccessKey ??
-      getEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
-    const awsSessionToken =
-      fields?.awsSessionToken ?? getEnvironmentVariable("AWS_SESSION_TOKEN");
+      fields?.awsSecretAccessKey ?? getEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
+    const awsSessionToken = fields?.awsSessionToken ?? getEnvironmentVariable("AWS_SESSION_TOKEN");
 
     let credentials = fields?.credentials;
     if (credentials === undefined) {
@@ -596,7 +544,7 @@ export class BedrockChat
       credentials = {
         accessKeyId: awsAccessKeyId,
         secretAccessKey: awsSecretAccessKey,
-        ...(awsSessionToken !== undefined ? { sessionToken: awsSessionToken }: {}),
+        ...(awsSessionToken !== undefined ? { sessionToken: awsSessionToken } : {}),
       };
     }
 
@@ -618,8 +566,7 @@ export class BedrockChat
         `Unknown model provider: '${this.modelProvider}', only these are supported: ${ALLOWED_MODEL_PROVIDERS}`
       );
     }
-    const region =
-      fields?.region ?? getEnvironmentVariable("AWS_DEFAULT_REGION");
+    const region = fields?.region ?? getEnvironmentVariable("AWS_DEFAULT_REGION");
     if (!region) {
       throw new Error(
         "Please set the AWS_DEFAULT_REGION environment variable or pass it to the constructor as the region field."
@@ -639,16 +586,13 @@ export class BedrockChat
     this.usesMessagesApi = canUseMessagesApi(this.model);
     this.trace = fields?.trace ?? this.trace;
     this.guardrailVersion = fields?.guardrailVersion ?? this.guardrailVersion;
-    this.guardrailIdentifier =
-      fields?.guardrailIdentifier ?? this.guardrailIdentifier;
+    this.guardrailIdentifier = fields?.guardrailIdentifier ?? this.guardrailIdentifier;
     this.guardrailConfig = fields?.guardrailConfig;
   }
 
   override invocationParams(options?: this["ParsedCallOptions"]) {
     if (options?.tool_choice) {
-      throw new Error(
-        "'tool_choice' call option is not supported by BedrockChat."
-      );
+      throw new Error("'tool_choice' call option is not supported by BedrockChat.");
     }
 
     return {
@@ -679,7 +623,11 @@ export class BedrockChat
     runManager?: CallbackManagerForLLMRun
   ): Promise<ChatResult> {
     if (this.streaming) {
-      const stream = this._streamResponseChunks(messages, options as this["ParsedCallOptions"], runManager);
+      const stream = this._streamResponseChunks(
+        messages,
+        options as this["ParsedCallOptions"],
+        runManager
+      );
       let finalResult: ChatGenerationChunk | undefined;
       for await (const chunk of stream) {
         if (finalResult === undefined) {
@@ -689,13 +637,13 @@ export class BedrockChat
         }
       }
       if (finalResult === undefined) {
-        throw new Error(
-          "Could not parse final output from Bedrock streaming call."
-        );
+        throw new Error("Could not parse final output from Bedrock streaming call.");
       }
       return {
         generations: [finalResult],
-        ...(finalResult.generationInfo !== undefined ? { llmOutput: finalResult.generationInfo } : {}),
+        ...(finalResult.generationInfo !== undefined
+          ? { llmOutput: finalResult.generationInfo }
+          : {}),
       };
     }
     return this._generateNonStreaming(messages, options, runManager);
@@ -707,8 +655,7 @@ export class BedrockChat
     _runManager?: CallbackManagerForLLMRun
   ): Promise<ChatResult> {
     const service = "bedrock-runtime";
-    const endpointHost =
-      this.endpointHost ?? `${service}.${this.region}.amazonaws.com`;
+    const endpointHost = this.endpointHost ?? `${service}.${this.region}.amazonaws.com`;
     const provider = this.modelProvider;
     const response = await this._signedFetch(messages, options as this["ParsedCallOptions"], {
       bedrockMethod: "invoke",
@@ -717,19 +664,18 @@ export class BedrockChat
     });
     const json = await response.json();
     if (!response.ok) {
-      throw new Error(
-        `Error ${response.status}: ${json.message ?? JSON.stringify(json)}`
-      );
+      throw new Error(`Error ${response.status}: ${json.message ?? JSON.stringify(json)}`);
     }
     if (this.usesMessagesApi) {
-      const outputGeneration =
-        BedrockLLMInputOutputAdapter.prepareMessagesOutput(provider, json);
+      const outputGeneration = BedrockLLMInputOutputAdapter.prepareMessagesOutput(provider, json);
       if (outputGeneration === undefined) {
         throw new Error("Failed to parse output generation.");
       }
       return {
         generations: [outputGeneration],
-        ...(outputGeneration.generationInfo !== undefined ? { llmOutput: outputGeneration.generationInfo } : {}),
+        ...(outputGeneration.generationInfo !== undefined
+          ? { llmOutput: outputGeneration.generationInfo }
+          : {}),
       };
     } else {
       const text = BedrockLLMInputOutputAdapter.prepareOutput(provider, json);
@@ -747,14 +693,8 @@ export class BedrockChat
     }
   ) {
     const { bedrockMethod, endpointHost, provider } = fields;
-    const {
-      max_tokens,
-      temperature,
-      stop,
-      modelKwargs,
-      guardrailConfig,
-      tools,
-    } = this.invocationParams(options);
+    const { max_tokens, temperature, stop, modelKwargs, guardrailConfig, tools } =
+      this.invocationParams(options);
     const inputBody = this.usesMessagesApi
       ? BedrockLLMInputOutputAdapter.prepareMessagesInput(
           provider,
@@ -777,9 +717,7 @@ export class BedrockChat
           guardrailConfig
         );
 
-    const url = new URL(
-      `https://${endpointHost}/model/${this.model}/${bedrockMethod}`
-    );
+    const url = new URL(`https://${endpointHost}/model/${this.model}/${bedrockMethod}`);
 
     const request = new HttpRequest({
       hostname: url.hostname,
@@ -833,8 +771,7 @@ export class BedrockChat
     const provider = this.modelProvider;
     const service = "bedrock-runtime";
 
-    const endpointHost =
-      this.endpointHost ?? `${service}.${this.region}.amazonaws.com`;
+    const endpointHost = this.endpointHost ?? `${service}.${this.region}.amazonaws.com`;
 
     const bedrockMethod =
       provider === "anthropic" ||
@@ -852,9 +789,9 @@ export class BedrockChat
 
     if (response.status < 200 || response.status >= 300) {
       throw Error(
-        `Failed to access underlying url '${endpointHost}': got ${
-          response.status
-        } ${response.statusText}: ${await response.text()}`
+        `Failed to access underlying url '${endpointHost}': got ${response.status} ${
+          response.statusText
+        }: ${await response.text()}`
       );
     }
 
@@ -882,9 +819,7 @@ export class BedrockChat
         }
         if (body.bytes !== undefined) {
           const chunkResult = JSON.parse(
-            decoder.decode(
-              Uint8Array.from(atob(body.bytes), (m) => m.codePointAt(0) ?? 0)
-            )
+            decoder.decode(Uint8Array.from(atob(body.bytes), m => m.codePointAt(0) ?? 0))
           );
           if (this.usesMessagesApi) {
             const chunk = BedrockLLMInputOutputAdapter.prepareMessagesOutput(
@@ -900,15 +835,11 @@ export class BedrockChat
             if (chunk === undefined) {
               continue;
             }
-            if (
-              provider === "anthropic" &&
-              chunk.generationInfo?.usage !== undefined
-            ) {
+            if (provider === "anthropic" && chunk.generationInfo?.usage !== undefined) {
               // Avoid bad aggregation in chunks, rely on final Bedrock data
               delete chunk.generationInfo.usage;
             }
-            const finalMetrics =
-              chunk.generationInfo?.["amazon-bedrock-invocationMetrics"];
+            const finalMetrics = chunk.generationInfo?.["amazon-bedrock-invocationMetrics"];
             if (
               finalMetrics != null &&
               typeof finalMetrics === "object" &&
@@ -917,8 +848,7 @@ export class BedrockChat
               chunk.message.usage_metadata = {
                 input_tokens: finalMetrics.inputTokenCount,
                 output_tokens: finalMetrics.outputTokenCount,
-                total_tokens:
-                  finalMetrics.inputTokenCount + finalMetrics.outputTokenCount,
+                total_tokens: finalMetrics.inputTokenCount + finalMetrics.outputTokenCount,
               };
             }
             if (isChatGenerationChunk(chunk)) {
@@ -927,10 +857,7 @@ export class BedrockChat
             // eslint-disable-next-line no-void
             void runManager?.handleLLMNewToken(chunk.text);
           } else {
-            const text = BedrockLLMInputOutputAdapter.prepareOutput(
-              provider,
-              chunkResult
-            );
+            const text = BedrockLLMInputOutputAdapter.prepareOutput(provider, chunkResult);
             yield new ChatGenerationChunk({
               text,
               message: new AIMessageChunk({ content: text }),
@@ -963,11 +890,7 @@ export class BedrockChat
 
     function getMessageLength(buffer: Uint8Array) {
       if (buffer.byteLength < PRELUDE_TOTAL_LENGTH_BYTES) return 0;
-      const view = new DataView(
-        buffer.buffer,
-        buffer.byteOffset,
-        buffer.byteLength
-      );
+      const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
       return view.getUint32(0, false);
     }
@@ -1005,11 +928,7 @@ export class BedrockChat
   override bindTools(
     tools: BedrockChatToolType[],
     _kwargs?: Partial<this["ParsedCallOptions"]>
-  ): Runnable<
-    BaseLanguageModelInput,
-    BaseMessageChunk,
-    this["ParsedCallOptions"]
-  > {
+  ): Runnable<BaseLanguageModelInput, BaseMessageChunk, this["ParsedCallOptions"]> {
     const provider = this.modelProvider;
     if (provider !== "anthropic") {
       throw new Error(
@@ -1022,12 +941,8 @@ export class BedrockChat
   }
 }
 
-function isChatGenerationChunk(
-  x?: ChatGenerationChunk | ChatGeneration
-): x is ChatGenerationChunk {
-  return (
-    x !== undefined && typeof (x as ChatGenerationChunk).concat === "function"
-  );
+function isChatGenerationChunk(x?: ChatGenerationChunk | ChatGeneration): x is ChatGenerationChunk {
+  return x !== undefined && typeof (x as ChatGenerationChunk).concat === "function";
 }
 
 function canUseMessagesApi(model: string): boolean {
@@ -1055,7 +970,7 @@ function canUseMessagesApi(model: string): boolean {
 
 function isInferenceModel(modelId: string): boolean {
   const parts = modelId.split(".");
-  return AWS_REGIONS.some((region) => parts[0] === region);
+  return AWS_REGIONS.some(region => parts[0] === region);
 }
 
 function getModelProvider(modelId: string): string {

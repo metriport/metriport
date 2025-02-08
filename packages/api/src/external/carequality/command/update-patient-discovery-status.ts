@@ -1,6 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
-import { getPatientModelOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { LinkStatus } from "../../patient-link";
@@ -30,13 +30,13 @@ export async function updatePatientDiscoveryStatus({
     cxId: patient.cxId,
   };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.dataValues.data.externalData ?? {};
+    const externalData = existingPatient.data.externalData ?? {};
 
     if (!params && !externalData.CAREQUALITY?.discoveryParams) {
       throw new Error(`Cannot update discovery status before assigning discovery params @ CQ`);
@@ -52,9 +52,9 @@ export async function updatePatientDiscoveryStatus({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         externalData: updatePatientDiscoveryStatus,
       },
     };

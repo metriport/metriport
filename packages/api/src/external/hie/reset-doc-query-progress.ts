@@ -2,7 +2,7 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
-import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
@@ -26,20 +26,20 @@ export async function resetDocQueryProgress({
   };
 
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.dataValues.data.externalData ?? {};
+    const externalData = existingPatient.data.externalData ?? {};
 
     const resetExternalData = { ...externalData };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         externalData: resetExternalData,
       },
     };
@@ -62,8 +62,7 @@ export async function resetDocQueryProgress({
         documentQueryProgress: {},
       };
 
-      const existingPatientDocProgress =
-        existingPatient.dataValues.data.documentQueryProgress ?? {};
+      const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
 
       const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
         existingPatientDocProgress,

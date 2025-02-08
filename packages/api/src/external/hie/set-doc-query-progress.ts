@@ -10,7 +10,7 @@ import {
   SetDocQueryProgressBase,
   aggregateDocQueryProgress,
 } from "../../command/medical/patient/append-doc-query-progress";
-import { getPatientModelOrFail } from "../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getCWData } from "../commonwell/patient";
 import { getCQData } from "../carequality/patient";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
@@ -50,13 +50,13 @@ export async function setDocQueryProgress({
   };
 
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientModelOrFail({
+    const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const existingExternalData = existingPatient.dataValues.data.externalData ?? {};
+    const existingExternalData = existingPatient.data.externalData ?? {};
 
     const externalData = setHIEDocProgress(
       existingExternalData,
@@ -69,7 +69,7 @@ export async function setDocQueryProgress({
       triggerConsolidated
     );
 
-    const existingPatientDocProgress = existingPatient.dataValues.data.documentQueryProgress ?? {};
+    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
@@ -77,9 +77,9 @@ export async function setDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...existingPatient,
       data: {
-        ...existingPatient.dataValues.data,
+        ...existingPatient.data,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,
       },
