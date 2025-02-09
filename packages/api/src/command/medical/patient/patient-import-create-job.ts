@@ -1,5 +1,5 @@
-import { createJobRecord } from "@metriport/core/command/patient-import/record/create-job-record";
 import { createFileKeyRaw } from "@metriport/core/command/patient-import/patient-import-shared";
+import { createJobRecord } from "@metriport/core/command/patient-import/record/create-job-record";
 import { PatientImportStatus } from "@metriport/core/domain/patient/patient-import";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config as CoreConfig } from "@metriport/core/util/config";
@@ -16,7 +16,7 @@ export type BulkPatientCreateParams = {
   dryRun?: boolean | undefined;
 };
 
-export type BulkPatientCreateResp = {
+export type CreatePatientImportResponse = {
   jobId: string;
   status: PatientImportStatus;
   uploadUrl: string;
@@ -35,11 +35,11 @@ export type BulkPatientCreateResp = {
  * @returns the bulk import job ID and the URL to upload the CSV file.
  * @throws BadRequestError if no facility ID is provided and there's more than one facility for the customer.
  */
-export async function createPatientImport({
+export async function createPatientImportJob({
   cxId,
   facilityId,
   dryRun = false,
-}: BulkPatientCreateParams): Promise<BulkPatientCreateResp> {
+}: BulkPatientCreateParams): Promise<CreatePatientImportResponse> {
   const { log } = out(
     `createPatientImport - cxId ${cxId}, facilityId ${facilityId}, dryRun ${dryRun}`
   );
@@ -74,7 +74,7 @@ export async function createPatientImport({
 
   log(`Initialized job ${jobId} for facility ${facility.id}, key ${key}`);
 
-  const resp: BulkPatientCreateResp = {
+  const resp: CreatePatientImportResponse = {
     jobId,
     status: jobStatus,
     uploadUrl: s3Url,

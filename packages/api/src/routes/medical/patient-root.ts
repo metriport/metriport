@@ -12,7 +12,7 @@ import {
   getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
-import { createPatientImport } from "../../command/medical/patient/patient-import-create";
+import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import NotFoundError from "../../errors/not-found";
@@ -192,7 +192,7 @@ router.post(
     const facilityId = getFromQuery("facilityId", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
 
-    const patientImportResponse = await createPatientImport({ cxId, facilityId, dryRun });
+    const patientImportResponse = await createPatientImportJob({ cxId, facilityId, dryRun });
 
     const respPayload: PatientImportDto = {
       ...patientImportResponse,

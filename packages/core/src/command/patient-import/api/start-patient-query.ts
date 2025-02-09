@@ -11,7 +11,7 @@ export async function startPatientQuery({
 }: {
   cxId: string;
   patientId: string;
-  rerunPdOnNewDemographics: boolean;
+  rerunPdOnNewDemographics?: boolean | undefined;
 }): Promise<void> {
   const { log, debug } = out(
     `PatientImport startPatientQuery - cxId ${cxId} patientId ${patientId}`
@@ -38,11 +38,13 @@ export async function startPatientQuery({
 function buildPatientDiscoveryUrl(
   cxId: string,
   patientId: string,
-  rerunPdOnNewDemographics: boolean
+  rerunPdOnNewDemographics?: boolean | undefined
 ) {
   const urlParams = new URLSearchParams({
     cxId,
-    rerunPdOnNewDemographics: rerunPdOnNewDemographics.toString(),
+    ...(rerunPdOnNewDemographics
+      ? { rerunPdOnNewDemographics: rerunPdOnNewDemographics.toString() }
+      : undefined),
   });
   return `/internal/patient/${patientId}/patient-discovery?${urlParams.toString()}`;
 }

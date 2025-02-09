@@ -7,7 +7,6 @@ import { prefixedLog } from "./shared/log";
 import {
   parseCxIdAndJob,
   parseDisableWebhooks,
-  parseFacilityId,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidated,
 } from "./shared/patient-import";
@@ -28,15 +27,8 @@ export async function handler(event: StartPatientImportRequest) {
   try {
     console.log(`Running with unparsed body: ${JSON.stringify(event)}`);
     const parsedBody = parseBody(event);
-    const {
-      cxId,
-      facilityId,
-      jobId,
-      triggerConsolidated,
-      disableWebhooks,
-      rerunPdOnNewDemographics,
-      dryRun,
-    } = parsedBody;
+    const { cxId, jobId, triggerConsolidated, disableWebhooks, rerunPdOnNewDemographics, dryRun } =
+      parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}`);
     try {
@@ -46,18 +38,17 @@ export async function handler(event: StartPatientImportRequest) {
         )}, patientImportBucket ${patientImportBucket}, processPatientCreateQueue}`
       );
 
-      const processPatientImportRequest: StartPatientImportRequest = {
+      const processJobParseRequest: StartPatientImportRequest = {
         cxId,
-        facilityId,
         jobId,
         triggerConsolidated,
         disableWebhooks,
         rerunPdOnNewDemographics,
         dryRun,
       };
-      const patientImportHandler = new PatientImportParseLocal(patientImportBucket);
+      const patientImportParser = new PatientImportParseLocal(patientImportBucket);
 
-      await patientImportHandler.startPatientImport(processPatientImportRequest);
+      await patientImportParser.processJobParse(processJobParseRequest);
 
       const finishedAt = new Date().getTime();
       console.log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -85,7 +76,6 @@ function parseBody(body?: unknown): StartPatientImportRequest {
   const bodyAsJson = typeof body === "string" ? JSON.parse(body) : body;
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { facilityIdRaw } = parseFacilityId(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
   const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
@@ -95,7 +85,6 @@ function parseBody(body?: unknown): StartPatientImportRequest {
   if (typeof dryRunRaw !== "boolean") throw new Error(`Invalid dryRun`);
 
   const cxId = cxIdRaw;
-  const facilityId = facilityIdRaw;
   const jobId = jobIdRaw;
   const triggerConsolidated = triggerConsolidatedRaw;
   const disableWebhooks = disableWebhooksRaw;
@@ -104,7 +93,6 @@ function parseBody(body?: unknown): StartPatientImportRequest {
 
   return {
     cxId,
-    facilityId,
     jobId,
     triggerConsolidated,
     disableWebhooks,

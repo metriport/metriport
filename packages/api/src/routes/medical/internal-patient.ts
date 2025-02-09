@@ -1,7 +1,7 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
+import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -924,7 +924,8 @@ router.post(
  * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
  * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
  * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
- * @param req.query.dryRun Whether to simply validate or run the assessment (optional, defaults to false).
+ * @param req.query.dryRun Whether to simply validate or run the assessment, overrides the cx
+ *                          provided one (optional, defaults to cx provided or false if none provides it).
  *
  */
 router.post(
@@ -932,24 +933,20 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getFrom("query").orFail("facilityId", req);
     const jobId = getFrom("query").orFail("jobId", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    // const dryRun = getFromQueryAsBoolean("dryRun", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
 
-    await getFacilityOrFail({ cxId, id: facilityId });
-
-    const patientImportConnector = buildPatientImportParseHandler();
-    await patientImportConnector.startPatientImport({
+    const patientImportParser = buildPatientImportParseHandler();
+    await patientImportParser.processJobParse({
       cxId,
-      facilityId,
       jobId,
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,
-      // dryRun,
+      dryRun,
     });
 
     return res.sendStatus(status.OK);

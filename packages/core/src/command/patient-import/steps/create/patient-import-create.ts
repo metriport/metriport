@@ -9,7 +9,7 @@ export type ProcessPatientCreateRequest = {
   patientPayload: PatientPayload;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
-  rerunPdOnNewDemographics: boolean;
+  rerunPdOnNewDemographics?: boolean | undefined;
 };
 
 export interface PatientImportCreateHandler {

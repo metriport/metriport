@@ -4,7 +4,7 @@ import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { capture, out } from "../../../../util";
 import { createPatientPayload } from "../../patient-import-shared";
-import { checkJobRecordExistsOrFail } from "../../record/check-job-record-exists";
+import { fetchJobRecord } from "../../record/fetch-job-record";
 import { validateAndParsePatientImportCsvFromS3 } from "../../record/validate-and-parse-import";
 import {
   PatientImportCreateHandler,
@@ -25,28 +25,28 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
     private readonly next: PatientImportCreateHandler = buildPatientImportCreateHandler()
   ) {}
 
-  // TODO 2330 rename to include "parse"
-  async startPatientImport({
+  async processJobParse({
     cxId,
-    facilityId,
     jobId,
     triggerConsolidated = false,
     disableWebhooks = false,
-    rerunPdOnNewDemographics = false,
-    dryRun = false,
+    rerunPdOnNewDemographics,
+    dryRun: dryRunFromInternal,
   }: StartPatientImportRequest): Promise<void> {
-    const { log } = out(`startPatientImport.local - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`processJobParse.local - cxId ${cxId} jobId ${jobId}`);
     try {
       const s3BucketName = this.patientImportBucket;
-      await checkJobRecordExistsOrFail({ cxId, jobId, s3BucketName });
+      const jobRecord = await fetchJobRecord({ cxId, jobId, s3BucketName });
       const patients = await validateAndParsePatientImportCsvFromS3({
         cxId,
         jobId,
         s3BucketName,
       });
+      const { facilityId, dryRun: dryRunFromCreate } = jobRecord;
+      const dryRun = dryRunFromInternal != undefined ? dryRunFromInternal : dryRunFromCreate;
       if (dryRun) {
-        // TODO 2330 provide feedback about the parsing of the file
-        log(`Dryrun is true, returning...`);
+        // TODO 2330 provide feedback to cx about the parsing of the file
+        log(`dryRun is true, returning...`);
         return;
       }
       const allOutcomes: PromiseSettledResult<void>[] = [];
@@ -88,13 +88,13 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
       const hadFailure = allOutcomes.some(outcome => outcome.status === "rejected");
       if (hadFailure) throw new Error("At least one payload failed to send to create queue");
     } catch (error) {
-      const msg = `Failure while processing patient import @ PatientImport`;
+      const msg = `Failure while parsing the job of patient import @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           cxId,
           jobId,
-          context: "patient-import-parse-local.startPatientImport",
+          context: "patient-import-parse-local.processJobParse",
           error,
         },
       });

@@ -1,28 +1,29 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import { out } from "../../../util/log";
-import { PatientRecord } from "../patient-import";
-import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shared";
+import { JobRecord } from "../patient-import";
+import { createFileKeyJob, getS3UtilsInstance } from "../patient-import-shared";
 import { checkJobRecordExistsOrFail } from "./check-job-record-exists";
 
-// TODO 2330 add TSDoc
-export async function fetchPatientRecord({
+/**
+ * Returns the Job record from S3. It includes information about the bulk patient import job.
+ *
+ * @see JobRecord
+ * @returns the JobRecord
+ */
+export async function fetchJobRecord({
   cxId,
   jobId,
-  patientId,
   s3BucketName,
   throwIfNotFound = true,
 }: {
   cxId: string;
   jobId: string;
-  patientId: string;
   s3BucketName: string;
   throwIfNotFound?: boolean;
-}): Promise<PatientRecord> {
-  const { log } = out(
-    `PatientImport fetchPatientRecord - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
-  );
+}): Promise<JobRecord> {
+  const { log } = out(`PatientImport fetchJobRecord - cxId ${cxId} jobId ${jobId} `);
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyPatient(cxId, jobId, patientId);
+  const key = createFileKeyJob(cxId, jobId);
   try {
     if (throwIfNotFound) {
       await checkJobRecordExistsOrFail({ cxId, jobId, s3BucketName });
@@ -30,14 +31,13 @@ export async function fetchPatientRecord({
     const file = await s3Utils.getFileContentsAsString(s3BucketName, key);
     return JSON.parse(file);
   } catch (error) {
-    const msg = `Failure while fetching patient record @ PatientImport`;
+    const msg = `Failure while fetching job record @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
       jobId,
-      patientId,
       key,
-      context: "patient-import.fetchPatientRecord",
+      context: "patient-import.fetchJobRecord",
     });
   }
 }
