@@ -1,5 +1,6 @@
 const { XMLParser } = require("fast-xml-parser");
 var { v4: uuidv4 } = require("uuid");
+const { convertDate } = require("../handlebars-converter/handlebars-helpers").internal;
 
 const parser = new XMLParser({
   ignoreAttributes: false,
