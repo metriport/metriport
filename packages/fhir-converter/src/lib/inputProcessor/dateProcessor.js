@@ -1,6 +1,5 @@
 const { XMLParser } = require("fast-xml-parser");
 var { v4: uuidv4 } = require("uuid");
-const { convertDate } = require("../handlebars-converter/handlebars-helpers").internal;
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -26,28 +25,30 @@ function extractEncounterTimePeriod(srcData) {
     };
   }
 
-  const birthTime = doc.recordTarget?.patientRole?.patient?.birthTime?.value;
-  const patientDob = convertDate(birthTime);
-
   const serviceEventTimeRaw =
     jsonObj.ClinicalDocument?.documentationOf?.serviceEvent?.effectiveTime;
 
-  if (serviceEventTimeRaw && patientDob) {
+  const birthTime = doc.recordTarget?.patientRole?.patient?.birthTime?.value;
+  if (serviceEventTimeRaw && birthTime) {
+    const patientDob = convertDate(birthTime);
+
     const serviceTimeLowRaw = serviceEventTimeRaw.low?.value;
     const serviceTimeHighRaw = serviceEventTimeRaw.high?.value;
 
-    const serviceEventTimeLow = convertDate(serviceTimeLowRaw);
-    const serviceEventTimeHigh = convertDate(serviceTimeHighRaw);
-
     let low = undefined;
-    let high = undefined;
-
-    if (serviceEventTimeLow && patientDob != serviceEventTimeLow) {
-      low = serviceEventTimeRaw.low;
+    if (serviceTimeLowRaw) {
+      const serviceEventTimeLow = convertDate(serviceTimeLowRaw);
+      if (serviceEventTimeLow && patientDob != serviceEventTimeLow) {
+        low = serviceEventTimeRaw.low;
+      }
     }
 
-    if (serviceEventTimeHigh && patientDob != serviceEventTimeHigh) {
-      high = serviceEventTimeRaw.high;
+    let high = undefined;
+    if (serviceTimeHighRaw) {
+      const serviceEventTimeHigh = convertDate(serviceTimeHighRaw);
+      if (serviceEventTimeHigh && patientDob != serviceEventTimeHigh) {
+        high = serviceEventTimeRaw.high;
+      }
     }
 
     return {
