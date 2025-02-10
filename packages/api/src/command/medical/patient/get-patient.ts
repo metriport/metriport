@@ -199,7 +199,6 @@ export async function getPatientByDemo({
   demo: PatientDemoData;
 }): Promise<PatientWithIdentifiers | undefined> {
   const patientLoader = new PatientLoaderLocal();
-  // TODO Fix this with typing
   const patient = await getPatientByDemoMPI({ cxId, demo, patientLoader });
   return patient ? await attatchPatientIdentifiers(patient) : undefined;
 }

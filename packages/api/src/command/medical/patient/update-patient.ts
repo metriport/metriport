@@ -74,7 +74,7 @@ export async function updatePatientWithoutHIEs(
   });
   if (addressWithCoordinates) patientUpdate.address = addressWithCoordinates;
 
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
       id,
       cxId,
@@ -102,7 +102,7 @@ export async function updatePatientWithoutHIEs(
     );
   });
 
-  if (emit) patientEvents().emitUpdated(result);
+  if (emit) patientEvents().emitUpdated(patient);
 
-  return result.dataValues;
+  return patient.dataValues;
 }
