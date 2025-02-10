@@ -28,7 +28,7 @@ type WebhookDocumentDataPayload = {
 type WebhookPatientPayload = {
   patientId: string;
   externalId?: string;
-  identifiers?: PatientSourceIdentifierMap;
+  additionalIds?: PatientSourceIdentifierMap;
 } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadata;
@@ -65,7 +65,7 @@ export const processPatientDocumentRequest = async (
         {
           patientId,
           ...(patient.externalId ? { externalId: patient.externalId } : {}),
-          ...(patient.additionalIds ? { identifiers: patient.additionalIds } : {}),
+          ...(patient.additionalIds ? { additionalIds: patient.additionalIds } : {}),
           documents,
           status,
         },

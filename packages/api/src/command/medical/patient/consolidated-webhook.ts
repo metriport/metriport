@@ -19,7 +19,7 @@ export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[numbe
 type Filters = Record<string, string | boolean | undefined>;
 
 type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta"> & {
-  identifiers?: PatientSourceIdentifierMap;
+  additionalIds?: PatientSourceIdentifierMap;
 };
 
 /**
@@ -57,7 +57,7 @@ export async function processConsolidatedDataWebhook({
         {
           patientId,
           ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
-          ...(currentPatient.additionalIds ? { identifiers: currentPatient.additionalIds } : {}),
+          ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
           status,
           bundle,
           filters,
