@@ -1,4 +1,5 @@
-import { S3Utils, splitS3Location } from "../s3";
+import { MetriportError, NotFoundError } from "@metriport/shared";
+import { isNotFoundError, S3Utils, splitS3Location } from "../s3";
 
 beforeAll(() => {
   jest.restoreAllMocks();
@@ -52,6 +53,44 @@ describe("S3Utils", () => {
       console.log(`res: ${JSON.stringify(res, null, 2)}`);
       expect(res).toBeTruthy();
       expect(res).toEqual(expect.objectContaining({ bucketName, key }));
+    });
+  });
+
+  describe("isNotFoundError", () => {
+    it("returns false when no code or statusCode", async () => {
+      const error = {};
+      const res = isNotFoundError(error);
+      expect(res).toEqual(false);
+    });
+
+    it("returns true when code is NoSuchKey", async () => {
+      const error = { code: "NoSuchKey" };
+      const res = isNotFoundError(error);
+      expect(res).toEqual(true);
+    });
+
+    it("returns true when Code is NoSuchKey", async () => {
+      const error = { Code: "NoSuchKey" };
+      const res = isNotFoundError(error);
+      expect(res).toEqual(true);
+    });
+
+    it("returns true when statusCode is 404", async () => {
+      const error = { statusCode: 404 };
+      const res = isNotFoundError(error);
+      expect(res).toEqual(true);
+    });
+
+    it("returns true when it gets NotFoundError", async () => {
+      const error = new NotFoundError("Key not found");
+      const res = isNotFoundError(error);
+      expect(res).toEqual(true);
+    });
+
+    it("returns false when it gets MetriportError", async () => {
+      const error = new MetriportError("Key not found");
+      const res = isNotFoundError(error);
+      expect(res).toEqual(false);
     });
   });
 });

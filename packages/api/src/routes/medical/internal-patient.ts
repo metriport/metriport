@@ -13,6 +13,7 @@ import {
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -24,8 +25,10 @@ import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import {
+  ConsolidatedQueryParams,
   getConsolidated,
   getConsolidatedAndSendToCx,
+  startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
@@ -61,6 +64,8 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
@@ -75,6 +80,7 @@ import {
   asyncHandler,
   getFrom,
   getFromParamsOrFail,
+  getFromQuery,
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
@@ -947,6 +953,113 @@ router.post(
     });
 
     return res.sendStatus(status.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/consolidated/query
+ *
+ * For each patient, get all consolidated queries that are older than 1 hour and are still processing, and:
+ * - update the status of the query to "failed"; and
+ * - start a new consolidated query with the same parameters.
+ *
+ * @param req.query.patientIds The patient IDs.
+ * @param req.query.minAgeInMinutes The minimum age in minutes for the queries to be processed (optional,
+ *        defaults to 60 minutes).
+ * @param req.query.dryRun Whether to simply return what would be done or actually execute the changes
+ *        and commands.
+ * @return The list of consolidated queries that where be executed (or would be executed, if dryRun is true).
+ */
+router.post(
+  "/consolidated/query",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+    const skipWebhooks = getFromQueryAsBoolean("skipWebhooks", req);
+    if (skipWebhooks === undefined) throw new BadRequestError("skipWebhooks is required");
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    if (dryRun === undefined) throw new BadRequestError("dryRun is required");
+    const minAgeRaw = getFromQuery("minAgeInMinutes", req);
+    const minAgeInMinutes = minAgeRaw ? parseInt(minAgeRaw) : 60;
+
+    // TODO move this to an ops/internal command
+
+    const patientsNotFound: string[] = [];
+    const patientsUpdated: string[] = [];
+    const patientsWithoutQueries: string[] = [];
+
+    const triggeredQueries: ConsolidatedQueryParams[] = [];
+    for (const patientId of patientIds) {
+      const { log } = out(`patientId ${patientId} minAge ${minAgeInMinutes} dryRun ${dryRun}`);
+      await executeOnDBTx(PatientModel.prototype, async transaction => {
+        const patient = await PatientModel.findOne({
+          where: { id: patientId },
+          transaction,
+        });
+        if (!patient) {
+          patientsNotFound.push(patientId);
+          log(`not found`);
+          return;
+        }
+        const consolidatedQueries = patient.data.consolidatedQueries ?? [];
+        const queriesToProcess = consolidatedQueries.filter(
+          query =>
+            query.status === "processing" &&
+            buildDayjs(query.startedAt).isBefore(
+              buildDayjs().subtract(minAgeInMinutes, "minutes").toISOString()
+            )
+        );
+        log(`queriesToProcess ${queriesToProcess.length}`);
+        if (queriesToProcess.length > 0) {
+          patientsUpdated.push(patientId);
+          queriesToProcess.forEach(query => {
+            query.status = "failed";
+          });
+          if (!dryRun) {
+            const data = {
+              ...patient.data,
+              consolidatedQueries,
+            };
+            patient.changed("data", true);
+            await patient.update({ data });
+          }
+        } else {
+          patientsWithoutQueries.push(patientId);
+        }
+        for (const query of queriesToProcess) {
+          const cxConsolidatedRequestMetadata = skipWebhooks ? { disableWHFlag: true } : undefined;
+          const startConsolidatedQueryParams: ConsolidatedQueryParams = {
+            cxId: patient.cxId,
+            patientId,
+            resources: query.resources,
+            dateFrom: query.dateFrom,
+            dateTo: query.dateTo,
+            conversionType: query.conversionType,
+            generateAiBrief: query.generateAiBrief,
+            cxConsolidatedRequestMetadata,
+          };
+          triggeredQueries.push(startConsolidatedQueryParams);
+          if (!dryRun) {
+            const query = await startConsolidatedQuery(startConsolidatedQueryParams);
+            log(`triggered query ${JSON.stringify(query)}`);
+          }
+        }
+      });
+    }
+
+    const { log } = out(`dryRun ${dryRun}`);
+
+    const response = {
+      dryRun,
+      skipWebhooks,
+      patientsNotFound,
+      patientsUpdated,
+      patientsWithoutQueries,
+      triggeredQueries,
+    };
+    log(`response ${JSON.stringify(response)}`);
+
+    return res.status(status.OK).json(response);
   })
 );
 
