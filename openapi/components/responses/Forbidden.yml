@@ -1,0 +1,13 @@
+'403':
+  description: Forbidden. The API key does not have permission to perform this operation.
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          message:
+            type: string
+        example:
+          Example1:
+            value:
+              message: Forbidden - insufficient permissions

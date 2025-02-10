@@ -1,7 +1,11 @@
 openapi: 3.0.1
 info:
-  title: api
+  title: Metriport API
   version: '0.0.1'
+  description: The Metriport Medical API
+  license:
+    name: GNU Affero General Public License v3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.en.html
 paths:
   # Document
   /medical/v1/document/query:
@@ -46,6 +50,14 @@ components:
       type: apiKey
       in: header
       name: X-API-Key
+x-responses:
+  '400':
+    $ref: components/responses/BadRequest.yml
+  '401':
+    $ref: components/responses/Unauthorized.yml
+  '403':
+    $ref: components/responses/Forbidden.yml
+
 servers:
   - url: https://api.metriport.com
     description: Production

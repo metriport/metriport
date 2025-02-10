@@ -1,0 +1,13 @@
+'401':
+  description: Unauthorized. The API key is missing or invalid.
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          message:
+            type: string
+        example:
+          Example1:
+            value:
+              message: Unauthorized - invalid API key
