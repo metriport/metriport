@@ -1,22 +1,18 @@
 import { FindBySimilarity, GetOne, PatientLoader } from "@metriport/core/command/patient-loader";
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { json, Op, WhereOptions } from "sequelize";
-import {
-  getPatientOrFail,
-  getPatientStates,
-  PatientWithIdentifiers,
-} from "../../command/medical/patient/get-patient";
+import { getPatientOrFail, getPatientStates } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../medical/patient";
 
 /**
  * Implementation of the PatientLoader that executes the logic within the API (local).
  */
-export class PatientLoaderLocal implements PatientLoader<PatientWithIdentifiers> {
+export class PatientLoaderLocal implements PatientLoader {
   public getStatesFromPatientIds(cxId: string, patientIds: string[]): Promise<string[]> {
     return getPatientStates({ cxId, patientIds });
   }
 
-  async getOneOrFail({ id, cxId }: GetOne): Promise<PatientWithIdentifiers> {
+  async getOneOrFail({ id, cxId }: GetOne): Promise<Patient> {
     const patient = await getPatientOrFail({ id, cxId });
     return patient;
   }

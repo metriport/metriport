@@ -201,7 +201,7 @@ export async function getPatientByDemo({
   const patientLoader = new PatientLoaderLocal();
   // TODO Fix this with typing
   const patient = await getPatientByDemoMPI({ cxId, demo, patientLoader });
-  return patient;
+  return patient ? await attatchPatientIdentifiers(patient) : undefined;
 }
 
 export type GetPatient = {
