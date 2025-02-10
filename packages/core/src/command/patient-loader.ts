@@ -12,10 +12,10 @@ export type FindBySimilarity = Pick<Patient, "cxId"> & {
   >;
 };
 
-export interface PatientLoader {
+export interface PatientLoader<T extends Patient> {
   getStatesFromPatientIds(cxId: string, patientIds: string[]): Promise<string[]>;
 
-  getOneOrFail<T extends Patient>(params: GetOne): Promise<T>;
+  getOneOrFail(params: GetOne): Promise<T>;
 
   /**
    * Finds patients that match the given criteria ACROSS ALL CUSTOMERS. This is to be used only on
@@ -23,9 +23,7 @@ export interface PatientLoader {
    *
    * When searching patients within a specific customer, use `findBySimilarity`.
    */
-  findBySimilarityAcrossAllCxs<T extends Patient>(
-    params: Omit<FindBySimilarity, "cxId">
-  ): Promise<T[]>;
+  findBySimilarityAcrossAllCxs(params: Omit<FindBySimilarity, "cxId">): Promise<T[]>;
 
-  findBySimilarity<T extends Patient>(params: FindBySimilarity): Promise<T[]>;
+  findBySimilarity(params: FindBySimilarity): Promise<T[]>;
 }

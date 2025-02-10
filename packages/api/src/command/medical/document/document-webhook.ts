@@ -65,7 +65,7 @@ export const processPatientDocumentRequest = async (
         {
           patientId,
           ...(patient.externalId ? { externalId: patient.externalId } : {}),
-          ...(patient.identifiers ? { identifiers: patient.identifiers } : {}),
+          ...(patient.additionalIds ? { identifiers: patient.additionalIds } : {}),
           documents,
           status,
         },

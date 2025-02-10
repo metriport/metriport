@@ -9,7 +9,7 @@ import { FindBySimilarity, GetOne, PatientLoader } from "./patient-loader";
  * Implementation of the PatientLoader that calls the Metriport API
  * to execute each its functions.
  */
-export class PatientLoaderMetriportAPI implements PatientLoader {
+export class PatientLoaderMetriportAPI implements PatientLoader<Patient> {
   constructor(private readonly apiUrl: string) {}
 
   public async getStatesFromPatientIds(cxId: string, patientIds: string[]): Promise<string[]> {

@@ -57,7 +57,7 @@ export async function processConsolidatedDataWebhook({
         {
           patientId,
           ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
-          ...(currentPatient.identifiers ? { identifiers: currentPatient.identifiers } : {}),
+          ...(currentPatient.additionalIds ? { identifiers: currentPatient.additionalIds } : {}),
           status,
           bundle,
           filters,
