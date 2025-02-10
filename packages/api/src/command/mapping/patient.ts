@@ -82,10 +82,10 @@ export async function getSourceMapForPatient({
   const mappings = await PatientMappingModel.findAll({
     where: { cxId, patientId, ...(sources ? { source: { [Op.in]: sources } } : {}) },
   });
-  return mappings.length > 0
-    ? mappings.map(mapping => ({
-        key: mapping.dataValues.source,
-        value: mapping.dataValues.externalId,
-      }))
-    : undefined;
+  const sourceMap = mappings.reduce((acc, mapping) => {
+    const { source, externalId } = mapping.dataValues;
+    acc[source] = externalId;
+    return acc;
+  }, {} as PatientSourceIdentifierMap);
+  return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
 }

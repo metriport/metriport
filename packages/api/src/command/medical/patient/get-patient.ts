@@ -17,7 +17,7 @@ import { sanitize, validate } from "./shared";
 
 export type PatientMatchCmd = PatientDemoData & { cxId: string };
 
-export type PatientWithIdentifiers = Patient & { identifiers?: PatientSourceIdentifierMap };
+export type PatientWithIdentifiers = Patient & { additionalIds?: PatientSourceIdentifierMap };
 
 export async function matchPatient(
   patient: PatientMatchCmd
@@ -307,12 +307,12 @@ export async function getPatientStates({
 }
 
 export async function attatchPatientIdentifiers(patient: Patient): Promise<PatientWithIdentifiers> {
-  const identifiers = await getSourceMapForPatient({
+  const additionalIds = await getSourceMapForPatient({
     cxId: patient.cxId,
     patientId: patient.id,
   });
   return {
     ...patient,
-    ...(identifiers ? { identifiers } : {}),
+    ...(additionalIds ? { additionalIds } : {}),
   };
 }

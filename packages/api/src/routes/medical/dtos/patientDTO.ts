@@ -8,7 +8,7 @@ import { DemographicsDTO } from "./demographicsDTO";
 export type PatientDTO = {
   facilityIds: string[];
   externalId?: string;
-  identifiers?: PatientSourceIdentifierMap;
+  additionalIds?: PatientSourceIdentifierMap;
   dateCreated?: Date;
 } & DemographicsDTO;
 
@@ -26,7 +26,7 @@ export function dtoFromModel(patient: PatientWithIdentifiers): PatientDTO {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
-    identifiers: patient.identifiers,
+    additionalIds: patient.additionalIds,
     dateCreated: patient.createdAt,
     firstName,
     lastName,
@@ -54,7 +54,7 @@ export function internalDtoFromModel(patient: PatientWithIdentifiers): InternalP
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
-    identifiers: patient.identifiers,
+    additionalIds: patient.additionalIds,
     dateCreated: patient.createdAt,
     firstName,
     lastName,
