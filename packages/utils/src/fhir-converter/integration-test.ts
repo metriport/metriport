@@ -24,7 +24,7 @@ import {
   writeFileContents,
 } from "../shared/fs";
 import { uuidv7 } from "../shared/uuid-v7";
-import { convertCDAsToFHIR } from "./convert";
+import { ProcessingOptions, convertCDAsToFHIR } from "./convert";
 import { countResourcesPerDirectory } from "./shared";
 
 dayjs.extend(duration);
@@ -81,6 +81,12 @@ type Params = {
   cleanup?: boolean;
   useFhirServer?: boolean;
 };
+
+const options: ProcessingOptions = {
+  hydrate: false,
+  normalize: false,
+};
+
 const program = new Command();
 program
   .name("integration-test")
@@ -123,7 +129,8 @@ export async function main() {
     startedAt,
     converterApi,
     fhirExtension,
-    outputFolderName
+    outputFolderName,
+    options
   );
   if (nonXMLBodyCount > 0) {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);
@@ -156,11 +163,10 @@ export async function main() {
     console.log(`Resources: `, stats.resources);
     console.log(`Total resources: ${stats.total}`);
     storeStats(stats, totalResourceCountPostFHIRInsertStatsLocation);
-
-    const duration = Date.now() - startedAt;
-    const durationMin = dayjs.duration(duration).asMinutes();
-    console.log(`Total time: ${duration} ms / ${durationMin} min`);
   }
+  const duration = Date.now() - startedAt;
+  const durationMin = dayjs.duration(duration).asMinutes();
+  console.log(`Total time: ${duration} ms / ${durationMin} min`);
   // IMPORTANT leave this here since scripts greps this line to get location for diffing stats
   console.log(`File1 Location: ${totalResourceCountStatsLocation}`);
   return;
