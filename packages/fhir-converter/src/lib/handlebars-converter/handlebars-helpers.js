@@ -1118,7 +1118,7 @@ module.exports.external = [
     },
   },
   {
-    name: "getFirstEffectiveTime",
+    name: "getFirstEffectiveTimeFromObservationComponent",
     description: "Getting the first effective time from observation components",
     func: function (components) {
       if (!Array.isArray(components)) return undefined;

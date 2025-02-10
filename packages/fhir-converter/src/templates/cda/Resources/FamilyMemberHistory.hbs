@@ -36,7 +36,7 @@
             {{/each}}
         ],
         "status":"completed",
-        {{#with (getFirstEffectiveTime familyEntry.component)}}
+        {{#with (getFirstEffectiveTimeFromObservationComponent familyEntry.component)}}
             "date": "{{formatAsDateTime this}}"
         {{/with}},
         "relationship":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code canBeUnknown=true}},
