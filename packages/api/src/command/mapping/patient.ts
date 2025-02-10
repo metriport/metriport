@@ -1,5 +1,5 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { NotFoundError } from "@metriport/shared";
+import { NotFoundError, MetriportError } from "@metriport/shared";
 import { Op } from "sequelize";
 import {
   PatientMapping,
@@ -7,6 +7,7 @@ import {
   PatientSourceIdentifierMap,
 } from "../../domain/patient-mapping";
 import { PatientMappingModel } from "../../models/patient-mapping";
+import { EhrSources } from "../../external/ehr/shared";
 
 export type PatientMappingParams = PatientMappingPerSource;
 
@@ -81,11 +82,25 @@ export async function getSourceMapForPatient({
 }): Promise<PatientSourceIdentifierMap | undefined> {
   const mappings = await PatientMappingModel.findAll({
     where: { cxId, patientId, ...(sources ? { source: { [Op.in]: sources } } : {}) },
+    order: [["createdAt", "ASC"]],
   });
   const sourceMap = mappings.reduce((acc, mapping) => {
     const { source, externalId } = mapping.dataValues;
-    acc[source] = externalId;
+    acc[source] = [...(acc[source] || []), parseExternalId(source, externalId)];
     return acc;
   }, {} as PatientSourceIdentifierMap);
   return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
+}
+
+function parseExternalId(source: string, externalId: string): string {
+  if (source === EhrSources.athena) {
+    const patientId = externalId.split("-")[2];
+    if (!patientId) {
+      throw new MetriportError("AthenaHealth patient mapping externalId is malformed", undefined, {
+        externalId,
+      });
+    }
+    return patientId;
+  }
+  return externalId;
 }

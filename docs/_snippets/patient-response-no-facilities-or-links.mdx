@@ -13,16 +13,19 @@
   within the webhook payloads.
 
   <Expandable title="AdditionalIdentifier properties">
-    <ResponseField name="athenahealth" type="string">
-      Athena patient ID.
+    <ResponseField name="athenahealth" type="string[]">
+      Athena patient ID. If more than one patient in Athena maps to a Metriport patient, they 
+      will all be included.
     </ResponseField>
 
-    <ResponseField name="canvas" type="string">
-      Canvas patient ID.
+    <ResponseField name="canvas" type="string[]">
+      Canvas patient ID. If more than one patient in Canvas maps to a Metriport patient, they 
+      will all be included.
     </ResponseField>
 
-    <ResponseField name="elation" type="string">
-      Elation Patient ID.
+    <ResponseField name="elation" type="string[]">
+      Elation Patient ID. If more than one patient in Elation maps to a Metriport patient, they 
+      will all be included.
     </ResponseField>
 
   </Expandable>

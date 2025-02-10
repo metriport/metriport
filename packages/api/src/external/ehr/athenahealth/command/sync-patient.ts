@@ -69,6 +69,12 @@ export async function syncAthenaPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+      }).catch(processAsyncError("AthenaHealth queryDocumentsAcrossHIEs"));
+    }
     return metriportPatient.id;
   }
 

@@ -59,6 +59,12 @@ export async function syncElationPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+      }).catch(processAsyncError("Elation queryDocumentsAcrossHIEs"));
+    }
     return metriportPatient.id;
   }
   let elationApi = api;
