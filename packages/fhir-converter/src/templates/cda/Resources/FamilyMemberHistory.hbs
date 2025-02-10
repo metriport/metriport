@@ -36,14 +36,9 @@
             {{/each}}
         ],
         "status":"completed",
-        "date": 
-            {{#each (toArray familyEntry.component)}}
-                {{#if this.observation.effectiveTime.value}}
-                    {{#unless @root.firstDateSet}}
-                        "{{formatAsDateTime this.observation.effectiveTime.value}}"
-                    {{/unless}}
-                {{/if}}
-            {{/each}},
+        {{#with (getFirstEffectiveTime familyEntry.component)}}
+            "date": "{{formatAsDateTime this}}"
+        {{/with}},
         "relationship":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code canBeUnknown=true}},
         "sex":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.subject.administrativeGenderCode}},
         "bornString":"{{familyEntry.subject.relatedSubject.subject.birthTime.value}}",
