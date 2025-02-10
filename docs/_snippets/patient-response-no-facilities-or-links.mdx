@@ -7,12 +7,12 @@
   An external Patient ID to associate to a Patient in Metriport.
 </ResponseField>
 
-<ResponseField name="additionalIds" type="AdditionalIdentifier" optional>
+<ResponseField name="additionalIds" type="AdditionalIdentifiers" optional>
   A map the containing additional external identifiers. If the patient is created in Metriport through one of 
   our [EHR apps](/ehr-apps/overview) - this property will be populated with the ID from the EHR, and included 
   within the webhook payloads.
 
-  <Expandable title="AdditionalIdentifier properties">
+  <Expandable title="AdditionalIdentifiers properties">
     <ResponseField name="athenahealth" type="string[]">
       Athena patient ID. If more than one patient in Athena maps to a Metriport patient, they 
       will all be included.
