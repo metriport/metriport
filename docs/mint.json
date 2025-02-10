@@ -135,6 +135,7 @@
     {
       "group": "Handling Data",
       "pages": [
+        "medical-api/handling-data/ai-summaries",
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
         "medical-api/handling-data/filters",
