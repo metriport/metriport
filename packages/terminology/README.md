@@ -7,41 +7,48 @@ Currently, this is mostly intended for internal use.
 
 ## Getting Started
 
-### For Metriport Devs
+### First Time Setup
 
-Set up the `.env` with the following variables:
+You'll need the UMLS Metathesaurus to run the terminology server. There are two ways to get it:
 
-- AWS_REGION=<staging-region>
-- TERMINOLOGY_BUCKET=<umls-bucket>
+**For Metriport devs:**
 
-These env vars will be used to download the UMLS metathesaurus file from S3 to your local directory
+1. Set up the `.env` with:
 
-### For everyone else
-
-Download the Metathesaurus from the following link:  
-[Metathesaurus Download](https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html)  
-**Note:** The file is large - 4 GB compressed and 28 GB uncompressed. Releases occur twice a year, so stay alert!
-
-Place the file into the package's root directory and name it `terminology.db`.
-
-### Start the Term Server Locally
-
-```bash
-npm run start
+```
+AWS_REGION=<staging-region>
+TERMINOLOGY_BUCKET=<umls-bucket>
 ```
 
-### Seed the Term Server
+2. Run `npm run start` - this will automatically download the Metathesaurus from S3 if it's not already in your local directory
 
-We currently only support crosswalks for ICD-10 to SNOMED and SNOMED to ICD-10. To seed the term server for lookups and crosswalks, run the following commands:
+**For external users:**
+
+1. Download the Metathesaurus from [UMLS Knowledge Sources](https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html)  
+   **Note:** The file is large - 4 GB compressed and 28 GB uncompressed. Releases occur twice a year.
+
+2. Place the file into the package's root directory and name it `terminology.db`
+
+### Seeding the Database
+
+If you're setting up from the raw Metathesaurus file, you'll need to seed the database. We currently support crosswalks for ICD-10 to SNOMED and SNOMED to ICD-10.
+
+Run these commands:
 
 ```bash
 npm run seed-lookup <path-to-zip>
 npm run seed-crosswalk <path-to-zip>
 ```
 
-### Uploading the Database
+### Running the Server
 
-After seeding, take the `terminology.db` file and upload it to the `umls-terminology` S3 bucket to get the term server working on the infrastructure.
+Once you have the database file (either uploaded on S3 or seeded locally):
+
+```bash
+npm run start
+```
+
+The server will look for `terminology.db` in the local directory. If you're a Metriport dev and the file isn't found locally, it will automatically download from S3.
 
 ## Testing with Docker
 
