@@ -1119,6 +1119,15 @@ module.exports.external = [
     },
   },
   {
+    name: "getFirstEffectiveTimeFromObservationComponent",
+    description: "Getting the first effective time from observation components",
+    func: function (components) {
+      if (!Array.isArray(components)) return undefined;
+      const component = components.find(comp => comp?.observation?.effectiveTime?.value);
+      return component?.observation?.effectiveTime?.value;
+    },
+  },
+  {
     name: "toString",
     description: "Converts to string: toString object",
     func: function (str) {
