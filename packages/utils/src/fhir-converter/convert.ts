@@ -122,7 +122,8 @@ export async function convert(
     });
   }
 
-  const documentExtension = buildDocIdFhirExtension(fileName);
+  // Making the value of the fileName short to prevent the insertion error on the FHIR test server.
+  const documentExtension = buildDocIdFhirExtension(fileName.split("-").pop() ?? ".json");
   const updatedConversionResult = postProcessBundle(combinedBundle, patientId, documentExtension);
 
   return updatedConversionResult;
