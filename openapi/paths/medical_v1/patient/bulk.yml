@@ -56,13 +56,11 @@ post:
               value:
                 requestId: "00000000-00000000-00000000-00000000"
                 status: "waiting"
-                uploadUrl: "https://metriport-uploads.s3.amazonaws.com/bulk-patients/00000000-0000-0000-0000-000000000000/patients.csv?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=EXAMPLE%2F20240101%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240101T000000Z&X-Amz-Expires=600&X-Amz-SignedHeaders=host&X-Amz-Signature=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                uploadUrl: "https://example-bucket.s3.amazonaws.com/uploads/EXAMPLE-REQUEST-ID/file.csv?X-Amz-Signature=EXAMPLE-SIGNATURE"
     '400':
-      description: Bad request - more than one Facility exists and facilityId was not provided
+      $ref: ../../../components/responses/BadRequest.yml
     '403':
-      description: Unauthorized
-    '500':
-      description: Internal server error
+      $ref: ../../../components/responses/Forbidden.yml
   summary: Bulk Create Patients
   security:
     - ApiKeyAuth: []
