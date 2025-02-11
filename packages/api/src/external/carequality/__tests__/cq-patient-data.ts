@@ -15,6 +15,7 @@ import {
 export function makeCqDataLink(): CQLink {
   const address = makeAddressStrict();
   return {
+    id: faker.string.uuid(),
     patientId: faker.string.uuid(),
     systemId: faker.string.uuid(),
     patientResource: {
