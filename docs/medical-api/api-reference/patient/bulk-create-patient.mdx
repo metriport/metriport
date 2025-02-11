@@ -1,7 +1,7 @@
 ---
 title: "Bulk Patient Create"
 description: "Creates a batch of patients in Metriport, and initiates Document Queries for all of them."
-api: "POST /medical/v1/patient/bulk"
+openapi: "POST /medical/v1/patient/bulk"
 ---
 
 The Bulk Patient Create endpoint allows you create, and kick off Document Queries for, a batch of
@@ -194,55 +194,15 @@ below:
 - `failed`: the bulk create failed (likely due to an uploaded file with invalid format);
 - `expired`: no file has been uploaded and the upload URL expired.
 
-## Query Params
-
-<ParamField query="facilityId" type="string">
-  The ID of the Facility where the Patients receive care.
-  All patients in a single request/CSV will be associated
-  with the same Facility. It can be omitted if there's only
-  one Facility in your account.
-</ParamField>
-
-<ParamField query="dryRun" type="boolean">
-  When set to `true`, no Patients will be created, and this
-  request is only used to validate the CSV file and provide
-  feedback about each Patient demographics. Defaults to
-  `false`.
-</ParamField>
-
-## Body
-
-No body is accepted/processed.
-
-## Response
-
-<ResponseField name="requestId" type="string" required>
-  The ID that represents this bulk patient create.
-</ResponseField>
-
-<ResponseField name="status" type="string" required>
-  The status of the bulk bulk patient create. Always
-  `waiting`. See all the possible values
-  [here](#bulk-patient-create-status).
-</ResponseField>
-
-<ResponseField name="uploadUrl" type="string" required>
-  The URL to upload the CSV file containing the Patient
-  demographics to be used to create new Patients. It's valid
-  for 10 minutes and should only be used once. See more
-  details [here](#uploading-the-csv)
-</ResponseField>
-
 <ResponseExample>
-
-Coming soon.
-
-</ResponseExample>
-
-```json
+```json 200
 {
   "requestId": "00000000-00000000-00000000-00000000",
   "status": "waiting",
-  "uploadUrl": "<presigned-upload-url>"
+  "uploadUrl": "https://example-bucket.s3.amazonaws.com/uploads/EXAMPLE-REQUEST-ID/file.csv?X-Amz-Signature=EXAMPLE-SIGNATURE"
 }
 ```
+
+<Snippet file="errors.mdx" />
+</ResponseExample>
+

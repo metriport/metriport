@@ -44,6 +44,8 @@ paths:
     $ref: paths/medical_v1/patient/{patientId}_medical-record-status.yml
   /medical/v1/patient/match:
     $ref: paths/medical_v1/patient/match.yml
+  /medical/v1/patient/bulk:
+    $ref: paths/medical_v1/patient/bulk.yml
 components:
   securitySchemes:
     ApiKeyAuth:

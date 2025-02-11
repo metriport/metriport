@@ -1,0 +1,68 @@
+post:
+  description: >-
+    Creates a batch of patients in Metriport, and initiates Document Queries for all of them.
+    This is an asynchronous endpoint - you upload a file with patient demographics and we notify
+    you when the process is completed, through a [webhook message](#webhook-with-the-result).
+  operationId: medical_patient_bulk_create
+  tags:
+    - MedicalPatient
+  parameters:
+    - name: facilityId
+      in: query
+      description: >-
+        The ID of the Facility where the Patients receive care. All patients in a single request/CSV
+        will be associated with the same Facility. It can be omitted if there's only one Facility
+        in your account.
+      required: false
+      schema:
+        type: string
+    - name: dryRun
+      in: query
+      description: >-
+        When set to true, no Patients will be created, and this request is only used to validate
+        the CSV file and provide feedback about each Patient demographics. See the [result CSV file](/medical-api/handling-data/webhooks#result-csv-file)
+        for more details.
+      required: false
+      schema:
+        type: boolean
+        default: false
+  responses:
+    '200':
+      description: Successfully initiated bulk patient create. See [uploading the CSV](#uploading-the-csv) for next steps.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - requestId
+              - status
+              - uploadUrl
+            properties:
+              requestId:
+                type: string
+                description: The ID that represents this bulk patient create
+              status:
+                type: string
+                description: The status of the bulk patient create. See [status values](#bulk-patient-create-status).
+                enum: [waiting, processing, completed, failed, expired]
+              uploadUrl:
+                type: string
+                description: >-
+                  The URL to upload the CSV file containing the Patient demographics to be used to
+                  create new Patients. It's valid for 10 minutes and should only be used once. See
+                  more details [here](/medical-api/handling-data/webhooks#uploading-the-csv).
+          examples:
+            Example1:
+              value:
+                requestId: "00000000-00000000-00000000-00000000"
+                status: "waiting"
+                uploadUrl: "https://metriport-uploads.s3.amazonaws.com/bulk-patients/00000000-0000-0000-0000-000000000000/patients.csv?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=EXAMPLE%2F20240101%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240101T000000Z&X-Amz-Expires=600&X-Amz-SignedHeaders=host&X-Amz-Signature=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    '400':
+      description: Bad request - more than one Facility exists and facilityId was not provided
+    '403':
+      description: Unauthorized
+    '500':
+      description: Internal server error
+  summary: Bulk Create Patients
+  security:
+    - ApiKeyAuth: []
