@@ -462,6 +462,7 @@ async function validateAndCreateCwLinks(patient: Patient, pdResults: CwLink[]): 
   const cwLinks = pdResults;
 
   const validatedLinks = await validateLinksBelongToPatient(
+    cxId,
     cwLinks,
     patient.data,
     cwLinkToPatientData

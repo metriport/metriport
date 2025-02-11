@@ -132,6 +132,7 @@ async function validateAndCreateCqLinks(
   const cqLinks = buildCQLinks(pdResults);
 
   const validCqLinks = await validateLinksBelongToPatient<CQLink>(
+    cxId,
     cqLinks,
     patient.data,
     cqLinkToPatientData
