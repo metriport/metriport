@@ -98,6 +98,12 @@ export async function processInboundXcpdRequest(
         jsonObj
       )}, request: ${request}`
     );
+    capture.error(msg, {
+      extra: {
+        error,
+        request,
+      },
+    });
     throw new Error(`${msg}: ${error}`);
   }
 }
