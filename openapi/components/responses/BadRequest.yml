@@ -1,13 +1,20 @@
-'400':
-  description: Invalid request. The request body is missing required fields or contains invalid data.
-  content:
-    application/json:
-      schema:
-        type: object
-        properties:
-          message:
-            type: string
-        example:
-          Example1:
-            value:
-              message: Invalid request - missing required field 'name'
+description: Invalid request. The request body is missing required fields or contains invalid data.
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        status:
+          type: integer
+          enum: [400]
+        title:
+          type: string
+        detail:
+          type: string
+        name:
+          type: string
+    example:
+      status: 400
+      title: "BadRequestError"
+      detail: "[Information]"
+      name: "Bad Request"

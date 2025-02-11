@@ -53,8 +53,6 @@ components:
 x-responses:
   '400':
     $ref: components/responses/BadRequest.yml
-  '401':
-    $ref: components/responses/Unauthorized.yml
   '403':
     $ref: components/responses/Forbidden.yml
 
