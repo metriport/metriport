@@ -37,8 +37,8 @@ If you're setting up from the raw Metathesaurus file, you'll need to seed the da
 Run these commands:
 
 ```bash
-npm run seed-lookup <path-to-zip>
-npm run seed-crosswalk <path-to-zip>
+npm run seed-lookup <path-to-metathesauruszip>
+npm run seed-crosswalk <path-to-metathesauruszip>
 ```
 
 ### Running the Server
