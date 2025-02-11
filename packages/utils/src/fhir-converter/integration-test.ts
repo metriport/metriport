@@ -189,7 +189,30 @@ function storeStats(stats: any, statsLocation: string) {
 async function createTenant() {
   const config = { cxId: tenantId, organizationNumber };
   console.log(`Creating tenant @ FHIRServer w/ ${JSON.stringify(config)}`);
-  await adminFhirApi.createTenant(config);
+  try {
+    await adminFhirApi.createTenant(config);
+    console.log(`Tenant created successfully.`);
+
+    // Verify tenant creation
+    try {
+      const verifyResponse = await fhirApi.search("Patient", "_summary=count");
+      console.log(`Tenant verification successful:`, {
+        tenantId,
+        total: verifyResponse.total,
+      });
+    } catch (verifyError) {
+      console.error(`Failed to verify tenant:`, verifyError);
+      throw verifyError;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error(`Failed to create tenant:`, {
+      error,
+      message: error.message,
+      response: error.response?.data,
+    });
+    throw error;
+  }
 }
 
 async function removeAllPartitionsFromFHIRServer() {
@@ -228,9 +251,27 @@ async function insertBundlesIntoFHIRServer(fileNames: string[]) {
   console.log(`Inserted ${fileNames.length} files in ${insertDuration} ms.${reportFailure}`);
 }
 
-async function insertSingleBundle(fileName: string) {
+async function insertSingleBundle(fileName: string, verbose = false) {
   const fileContents = getFileContents(fileName);
   const payload = JSON.parse(fileContents ?? "");
+
+  if (verbose) {
+    // Add diagnostic information about the bundle
+    console.log(`Bundle details:`, {
+      resourceType: payload.resourceType,
+      type: payload.type,
+      totalEntries: payload.entry?.length ?? 0,
+      resourceTypes: payload.entry
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ?.map((e: any) => e.resource?.resourceType)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .reduce((acc: any, curr: string) => {
+          acc[curr] = (acc[curr] || 0) + 1;
+          return acc;
+        }, {}),
+    });
+  }
+
   let response;
   try {
     response = await fhirApi.executeBatch(payload);
@@ -254,9 +295,30 @@ async function insertSingleBundle(fileName: string) {
     const errorFileName = `${fileName}.error`;
     try {
       makeDirIfNeeded(errorFileName);
-      writeFileContents(errorFileName, errAsString);
-    } catch (error) {
-      console.log(`>>> Error writing results to ${errorFileName}: `, error);
+      // Store more detailed error information
+      writeFileContents(
+        errorFileName,
+        JSON.stringify(
+          {
+            error: errAsString,
+            timestamp: new Date().toISOString(),
+            request: {
+              tenantId,
+              organizationNumber,
+              fileName,
+            },
+            response: {
+              status: error.response?.status,
+              data: error.response?.data,
+              headers: error.response?.headers,
+            },
+          },
+          null,
+          2
+        )
+      );
+    } catch (writeError) {
+      console.log(`>>> Error writing results to ${errorFileName}: `, writeError);
     }
     throw error;
   }
