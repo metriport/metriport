@@ -16,7 +16,7 @@ containing the document download URLs. The URL will be valid for 10 minutes afte
 Webhook message type - see [the respective section on the webhooks page](/medical-api/handling-data/webhooks#bulk-downloadable-url-generation)
 for more details:
 
-- `medical.document-bulk-download`: list of download urls for a patient's documents.
+- `medical.document-bulk-download-urls`: list of download urls for a patient's documents.
 
 <Warning>
   If you trigger this endpoint again while the process is still running, you will get a response
@@ -57,13 +57,13 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
 const metadata = {
-youCan: "putAny",
-stringKeyValue: "pairsHere",
+  youCan: "putAny",
+  stringKeyValue: "pairsHere",
 };
 
 const status = await metriport.startBulkGetDocumentUrl(
-"018a80c4-292a-7486-a1234-76yuhe23yu14",
-metadata
+  "018a80c4-292a-7486-a1234-76yuhe23yu14",
+  metadata
 );
 
 ```

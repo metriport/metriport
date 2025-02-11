@@ -36,9 +36,9 @@ async function main() {
 
   await initTermServer();
 
-  app.use("/terminology/", fhirRouter);
+  app.use("/", fhirRouter);
 
-  const PORT = process.env.PORT || 8080;
+  const PORT = process.env.PORT || 8555;
 
   const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

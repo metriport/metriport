@@ -112,11 +112,6 @@ export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean>
   return cxIdsWithNoWebhookPong.some(i => i === cxId);
 }
 
-export async function isAiBriefEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithAiBriefEnabled = await getCxsWithAiBriefFeatureFlag();
-  return cxIdsWithAiBriefEnabled.some(i => i === cxId);
-}
-
 export async function isCdaCustodianEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithFhirDedupEnabled = await getCxsWithCdaCustodianFeatureFlag();
   return cxIdsWithFhirDedupEnabled.some(i => i === cxId);

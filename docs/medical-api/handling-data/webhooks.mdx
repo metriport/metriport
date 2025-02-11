@@ -23,8 +23,9 @@ To enable this integration approach with Metriport, and for some prerequesite re
 how the Webhook flow works, see [our Webhooks guide](/medical-api/getting-started/webhooks).
 
 <Warning>
-  When you receive a webhook message, you should respond with a `200` status code within 4 seconds.
-  We recommend processing the webhook request asynchronously.
+  When you receive a webhook message, you should respond
+  with a `200` status code within 4 seconds. We recommend
+  processing the webhook request asynchronously.
 </Warning>
 
 ### Types of Messages
@@ -37,6 +38,8 @@ how the Webhook flow works, see [our Webhooks guide](/medical-api/getting-starte
   [details](#bulk-document-download-urls) below;
 - `medical.consolidated-data`: result of a Consolidated Data Query, containing the patient's data in FHIR
   format - see [details](#patient-consolidated-data) below.
+- `medical.bulk-patient-create`: updates for a [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient)
+  - see [details](#bulk-patient-create) below.
 
 ### Workflow
 
@@ -124,8 +127,8 @@ These are messages you can expect to receive in the following scenarios:
    in FHIR-compliant format.
 
 <Tip>
-  Note that the webhooks will only contain updates for new data fetched in the current document
-  query.
+  Note that the webhooks will only contain updates for new
+  data fetched in the current document query.
 </Tip>
 
 ```json
@@ -217,7 +220,7 @@ The format follows:
 
   <Expandable title="PatientDocQueryUpdate properties">
 
-    <ResponseField name="patiendId" type="string" required>
+    <ResponseField name="patientId" type="string" required>
       The Patient ID.
     </ResponseField>
 
@@ -242,14 +245,25 @@ The format follows:
 
 ### Patient Consolidated Data
 
-A Patient's consolidated data is the result of converting C-CDA documents from HIEs into FHIR, as well as other FHIR data your application
+A Patient's consolidated data is the result of converting all C-CDA documents into deduplicated and standardized FHIR, as well as other FHIR data your application
 has [inserted into Metriport's FHIR repository](/medical-api/api-reference/fhir/create-patient-consolidated).
+
+This data can be retrieved in either FHIR JSON format, or a rendered PDF or HTML [Medical Record Summary](/medical-api/handling-data/medical-record-summary).
 
 Patients can have a large amount of data, so in order to have access to a Patient's data:
 
 1. [Trigger a consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post) - one query per patient at any given time;
-1. Your app can check the status by calling [get consolidated query status](/medical-api/api-reference/fhir/consolidated-data-query-get);
+1. Your app can check the status by calling [get consolidated query status](/medical-api/api-reference/fhir/consolidated-data-query-get) (optional);
 1. When the result is ready, we'll send a webhook message with the results (below).
+
+Note that inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
+an attachment with a `url` which can be used to download the data.
+
+<Info>
+  If there was no data available for the Patient, the
+  `Bundle` will be empty (the `entry` array will have no
+  elements).
+</Info>
 
 Example payload:
 
@@ -266,59 +280,25 @@ Example payload:
       "externalId": "1234567890",
       "status": "completed",
       "filters": {
-        "resources": "DocumentReference,Appointment"
+        "resources": "Encounter,Observation"
       },
       "bundle": {
-        "type": "searchset",
         "resourceType": "Bundle",
         "total": 1,
+        "type": "collection",
         "entry": [
           {
             "resource": {
-              "resourceType": "Appointment",
-              "id": "123",
-              "start": "2021-06-10T13:00:00.000Z",
-              "end": "2021-06-10T13:55:00.000Z",
-              "status": "booked",
-              "meta": {
-                "source": "#cXWJjuhQX33LJ0VJrPiD0",
-                "versionId": "2",
-                "lastUpdated": "2023-08-23T12:41:54.661-05:00"
+              "resourceType": "DocumentReference",
+              "subject": {
+                "reference": "Patient/eddeefa1-b54a-41d6-854f-0e91b7871d6a"
               },
-              "contained": [
+              "content": [
                 {
-                  "id": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
-                  "meta": {
-                    "source": "#4fh35tN5_DjOxfVrq3dfi"
-                  },
-                  "name": [
-                    {
-                      "given": ["John"],
-                      "family": "Doe"
-                    }
-                  ],
-                  "gender": "male",
-                  "address": [
-                    {
-                      "country": "USA",
-                      "postalCode": "12345"
-                    }
-                  ],
-                  "birthDate": "1981-01-01",
-                  "resourceType": "Patient"
-                }
-              ],
-              "participant": [
-                {
-                  "actor": {
-                    "display": "John Doe",
-                    "reference": "Patient/eddeefa1-b54a-41d6-854f-0e91b7871d6a"
-                  },
-                  "period": {
-                    "end": "2021-05-24T13:21:28.527Z",
-                    "start": "2021-05-24T13:21:28.527Z"
-                  },
-                  "status": "accepted"
+                  "attachment": {
+                    "contentType": "application/json",
+                    "url": "https://documents.s3.amazonaws.com/abc123-Amz-SignedHeaders=host"
+                  }
                 }
               ]
             }
@@ -350,7 +330,7 @@ The format follows:
 
   <Expandable title="PatientConsolidatedData properties">
 
-    <ResponseField name="patiendId" type="string" required>
+    <ResponseField name="patientId" type="string" required>
       The Patient ID.
     </ResponseField>
 
@@ -381,67 +361,110 @@ The format follows:
     </ResponseField>
 
     <ResponseField name="bundle" type="Bundle">
-      A FHIR [Bundle](/medical-api/fhir/resources/bundle) of type "searchset" with the entry being the outcome of the query.
+      A FHIR [Bundle](/medical-api/fhir/resources/bundle) containing a `DocumentReference` resource with the first item in the `content` array containing
+      an attachment with a `url` which can be used to download the FHIR JSON payload - the `url` is valid for 3 minutes.
     </ResponseField>
 
   </Expandable>
 </ResponseField>
 
-#### Medical Record
+### Bulk Patient Create
 
-When querying for a Patient's consolidated data, you can also request this information in PDF or HTML format.
+During the processing of a [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient),
+the Metriport API sends Webhook messages of type `medical.bulk-patient-create` to indicate the status
+update and provide relevant information.
 
-The following is the result of the [previous section](#patient-consolidated-data), but with the `Bundle`
-containing a document reference to a rendered [Medical Record Summary](/medical-api/handling-data/medical-record-summary)
-that represents the resulting FHIR bundle.
+You can expect to get two messages of this type for each Bulk Patient Create, with the status
+being the main difference between each:
 
-Inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
-an attachment with a `url` which can be used to download the rendered medical record.
+- `waiting`: initial state, waiting for the CSV file;
+- `processing`: the CSV file has been uploaded and is being processed;
+- `completed`: the bulk create is completed;
+- `failed`: the bulk create failed (likely due to an uploaded file with invalid format).
 
-Example payload:
+Here is an example payload:
 
 ```json
 {
   "meta": {
-    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
-    "when": "2023-08-23T22:09:11.373Z",
-    "type": "medical.consolidated-data"
+    "messageId": "00000000-00000000-00000000-00000000",
+    "when": "2024-12-30T05:05:12.215Z",
+    "type": "medical.bulk-patient-create"
   },
-  "patients": [
-    {
-      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
-      "externalId": "1234567890",
-      "status": "completed",
-      "filters": {
-        "resources": "DocumentReference,Appointment"
-      },
-      "bundle": {
-        "resourceType": "Bundle",
-        "total": 1,
-        "type": "collection",
-        "entry": [
-          {
-            "resource": {
-              "resourceType": "DocumentReference",
-              "subject": {
-                "reference": "Patient/eddeefa1-b54a-41d6-854f-0e91b7871d6a"
-              },
-              "content": [
-                {
-                  "attachment": {
-                    "contentType": "application/pdf",
-                    "url": "https://documents.s3.amazonaws.com/abc123-Amz-SignedHeaders=host"
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      }
-    }
-  ]
+  "bulkPatientCreate": {
+    "requestId": "00000000-00000000-00000000-00000000",
+    "status": "completed",
+    "result": "<presigned-download-url>"
+  }
 }
 ```
+
+The format follows:
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described
+  [here](/medical-api/getting-started/webhooks#meta-data).
+  <Expandable title="meta type property details">
+    <ResponseField name="type" type="string" required>
+      For Bulk Patient Create this will always be
+      `medical.bulk-patient-create`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="bulkPatientCreate" type="BulkPatientCreate" required>
+  The information about the Bulk Patient Create request.
+
+  <Expandable title="BulkPatientCreate properties">
+    <ResponseField name="requestId" type="string" required>
+      The ID that represents this bulk patient create.
+    </ResponseField>
+  
+    <ResponseField name="status" type="string" required>
+      The status of the bulk create. One of `processing`, `failed`, or `completed`.
+      See all the possible values
+      [here](/medical-api/api-reference/patient/bulk-create-patient#bulk-patient-create-status).
+    </ResponseField>
+
+    <ResponseField name="reason" type="string">
+      The reason for a failed bulk create. Only present if the status
+      is `failed`.
+    </ResponseField>
+
+    <ResponseField name="result" type="string">
+      The URL to download the CSV file containing the result of
+      the Bulk Patient Create. It's valid for 5 minutes.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+#### Result CSV File
+
+The message `medical.bulk-patient-create` with status `completed` includes a URL in the `result`
+field, which you can use to download the result of the Bulk Patient Create.
+
+The file is based on the same format as the
+[input CSV](/medical-api/api-reference/patient/bulk-create-patient#input-csv-file-format), with the
+following additional columns:
+
+<ParamField body="metriportId" type="string">
+  The ID of the Patient on Metriport - only provided if the
+  Patient was created successfully.
+</ParamField>
+<ParamField body="status" type="string" required>
+  Whether the respective demographics was accepted and used
+  to create a Patient. Can be one of `succeeded` or
+  `failed`.
+</ParamField>
+<ParamField body="reason" type="string">
+  If the patient failed to be created, this indictes the
+  reason for failure. Only included if the patient fails to
+  be created.
+</ParamField>
+
+An example of a result file can be accessed
+[here](https://docs.google.com/spreadsheets/d/1ojBjxya2l3mTjdZhK5DLY7QTZ9SIIkH9vhnacrftqY4/edit?usp=sharing).
 
 ### Bulk Document Download URLs
 
@@ -455,7 +478,7 @@ Here is an example payload:
 "meta": {
     "messageId": "bd4184dd-3b35-4c60-8130-447d1d528fea",
     "when": "2023-11-30T05:05:12.215Z",
-    "type": "medical.document-bulk-download"
+    "type": "medical.document-bulk-download-urls"
   },
   "patients": [
     {

@@ -5,6 +5,7 @@ import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
 import { PatientPayload } from "../patient-import";
 
+// TODO 2330 add TSDoc
 export async function createPatient({
   cxId,
   facilityId,
@@ -14,7 +15,7 @@ export async function createPatient({
   facilityId: string;
   patientPayload: PatientPayload;
 }): Promise<string> {
-  const { log, debug } = out(`PatientImport create patient - cxId ${cxId}`);
+  const { log, debug } = out(`PatientImport createPatient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const patientUrl = `/internal/patient?cxId=${cxId}&facilityId=${facilityId}`;
   try {
@@ -30,7 +31,7 @@ export async function createPatient({
         url: patientUrl,
         cxId,
         facilityId,
-        context: "patient-import.create-patient",
+        context: "patient-import.createPatient",
         error,
       },
     });

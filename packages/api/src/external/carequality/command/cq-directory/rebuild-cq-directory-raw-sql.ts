@@ -104,7 +104,7 @@ export async function createTempCqDirectoryTable(sequelize: Sequelize): Promise<
   await deleteTempCqDirectoryTable(sequelize);
   // The PK is added later, on `updateCqDirectoryViewDefinition`
   const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} 
-                 INCLUDING DEFAULTS INCLUDING STORAGE EXCLUDING CONSTRAINTS)`;
+                 INCLUDING DEFAULTS INCLUDING STORAGE INCLUDING GENERATED EXCLUDING CONSTRAINTS)`;
   await sequelize.query(query, { type: QueryTypes.RAW });
 }
 
@@ -121,8 +121,9 @@ export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Pro
     await runSql(
       `ALTER TABLE ${cqDirectoryEntryTemp} ADD CONSTRAINT ${buildPkName()} PRIMARY KEY (id);`
     );
-    await runSql(`DROP VIEW IF EXISTS ${cqDirectoryEntryView};`);
-    await runSql(`CREATE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`);
+    await runSql(
+      `CREATE OR REPLACE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`
+    );
     await runSql(`DROP TABLE IF EXISTS ${cqDirectoryEntryBackup3};`);
     await runSql(
       `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup2} RENAME TO ${cqDirectoryEntryBackup3};`

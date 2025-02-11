@@ -4,28 +4,18 @@ description: "Trigger a consolidated data query for the given patient"
 api: "POST /medical/v1/patient/{id}/consolidated/query"
 ---
 
-When executed, this endpoint triggers an asynchronous query to retrieve a Patient's consolidated
-data from the FHIR repository.
+When executed, this endpoint triggers an asynchronous query to retrieve a Patient's consolidated data in either
+FHIR JSON format, or a rendered PDF or HTML [Medical Record Summary](/medical-api/handling-data/medical-record-summary).
 
-Once the data is consolidated and ready for consumption, webhook requests will be sent to
-[your configured URL](/medical-api/api-reference/settings/post-settings) containing the Patient's
-data in FHIR-compliant format, based on the [parameters](#query-params) used to trigger the query.
-
-Webhook message type - see [the respective section on the webhooks page](/medical-api/handling-data/webhooks#patient-consolidated-data)
-for more details:
-
-- `medical.consolidated-data`: contains the patient's data in FHIR format.
+Once the data is is ready for consumption, a `consolidated-data` [Webhook message](/medical-api/handling-data/webhooks#patient-consolidated-data) will be sent to
+[your configured URL](/medical-api/api-reference/settings/post-settings) - this message will contain a URL to download the data,
+based on the [parameters](#query-params) used to trigger the query.
 
 You'll be able to query multiple times for the same Patient which will be added to the queue and
 processed in order. If the parameters are the same as a previous query that is still processing,
 the new query will be ignored and you'll get the status and request ID of the previous one.
 
 You can check the status of the data query by calling [get consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-get).
-
-This endpoint also provides the ability to render a [Medical Record Summary](/medical-api/handling-data/medical-record-summary)
-from the FHIR bundle as a PDF or HTML document. This will be returned [via a webhook](/medical-api/handling-data/webhooks#medical-record)
-as a FHIR bundle with a [DocumentReference](/medical-api/fhir/resources/documentreference) resource
-that will contain a URL to retrieve the data from.
 
 ## Path Params
 
@@ -35,44 +25,39 @@ that will contain a URL to retrieve the data from.
 
 ## Query Params
 
+<ParamField query="conversionType" type="string" required>
+  The format of the resulting data. Can be one of `json`, `pdf`, or `html`.
+</ParamField>
+
 <Tip>
-  You can optionally filter resources by date, using the `dateFrom` and `dateTo` query params. Note
-  that not all resources will support this filter - see the [FHIR R4
-  docs](https://www.hl7.org/fhir/R4/searchparameter-registry.html#clinical-date) for a list of
-  supported resources.
+  You can optionally filter resources by date, using the
+  `dateFrom` and `dateTo` query params. Note that not all
+  resources will support this filter - see the [FHIR R4
+  docs](https://www.hl7.org/fhir/R4/searchparameter-registry.html#clinical-date)
+  for a list of supported resources.
 </Tip>
 
 <ParamField query="resources" type="string" optional>
-  A comma separated, case sensitive list of resources to be returned. If none are provided all
-  resources will be included. Metriport will automatically hydrate the initially filtered resources
-  with referenced ones to create bundle consistency.
+  A comma separated, case sensitive list of resources to be
+  returned. If none are provided all resources will be
+  included. Metriport will automatically hydrate the
+  initially filtered resources with referenced ones to
+  create bundle consistency. The list of accepted resources
+  can be accessed
+  [here](/medical-api/api-reference/fhir/consolidated-data-query-post#available-fhir-resources).
 </ParamField>
 
 <ParamField query="dateFrom" type="string" optional>
-  The start date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
-  ISO 8601. If not provided, no start date filter will be applied.
+  The start date (inclusive) for which to filter returned
+  resources - formatted `YYYY-MM-DD` as per ISO 8601. If not
+  provided, no start date filter will be applied.
 </ParamField>
 
 <ParamField query="dateTo" type="string" optional>
-  The end date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
-  ISO 8601. If not provided, no end date filter will be applied.
+  The end date (inclusive) for which to filter returned
+  resources - formatted `YYYY-MM-DD` as per ISO 8601. If not
+  provided, no end date filter will be applied.
 </ParamField>
-
-<ParamField query="conversionType" type="string" optional>
-  The format of the resulting data. Can be one of `pdf`, `html`, or `json`.
-
-If provided, the Webhook will contain a URL to the file of chosen type. The URL is active for 3 minutes.
-
-Otherwise, the data will be returned in JSON format in the Webhook payload (default).
-
-  <Info>Providing `pdf` or `html` results in a
-  [Medical Record Summary](/medical-api/handling-data/webhooks#medical-record) being sent.</Info>
-</ParamField>
-
-<Info>
-  You can scroll to the bottom of the page to view all [available
-  resources](/medical-api/api-reference/fhir/get-patient-consolidated#available-fhir-resources).
-</Info>
 
 ## Body
 
@@ -113,6 +98,7 @@ See [limits and throttling](/medical-api/more-info/limits#rate-limits)
 This is the list of all available [FHIR resources](/medical-api/fhir/resources) you can query for:
 
 - [AllergyIntolerance](/medical-api/fhir/resources/allergyintolerance)
+- [Binary](/medical-api/fhir/resources/binary)
 - [Communication](/medical-api/fhir/resources/communication)
 - [Composition](/medical-api/fhir/resources/composition)
 - [Condition](/medical-api/fhir/resources/condition)
@@ -137,6 +123,12 @@ This is the list of all available [FHIR resources](/medical-api/fhir/resources) 
 - [ServiceRequest](/medical-api/fhir/resources/servicerequest)
 
 <Tip>
-  Other resources referenced in the bundle will be automatically added to the bundle.
-  This could include resources like [Location](/medical-api/fhir/resources/location), [Organization](/medical-api/fhir/resources/organization), [Practitioner](/medical-api/fhir/resources/practitioner), [Medication](/medical-api/fhir/resources/medication), and others.
+  Other resources referenced in the bundle will be
+  automatically added to the bundle. This could include
+  resources like
+  [Location](/medical-api/fhir/resources/location),
+  [Organization](/medical-api/fhir/resources/organization),
+  [Practitioner](/medical-api/fhir/resources/practitioner),
+  [Medication](/medical-api/fhir/resources/medication), and
+  others.
 </Tip>

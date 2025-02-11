@@ -96,6 +96,7 @@ export function createAPIService({
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
   patientImportLambda,
+  patientImportBucket,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
@@ -130,6 +131,7 @@ export function createAPIService({
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
   patientImportLambda: ILambda;
+  patientImportBucket: s3.IBucket;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -254,6 +256,7 @@ export function createAPIService({
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
@@ -405,6 +408,7 @@ export function createAPIService({
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for buckets
+  patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   if (ehrResponsesBucket) {

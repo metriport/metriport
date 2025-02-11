@@ -1,5 +1,7 @@
+import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
+import { BadRequestError } from "@metriport/shared";
 
 type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityModel["id"][] }>;
 
@@ -25,6 +27,21 @@ export async function getFacilityOrFail({ cxId, id }: GetFacilityQuery): Promise
   });
   if (!facility) throw new NotFoundError(`Could not find facility`, undefined, { facilityId: id });
   return facility;
+}
+
+export async function getSingleFacilityOrFail(cxId: string): Promise<Facility> {
+  const facilities = await getFacilities({ cxId });
+  if (!facilities || facilities.length < 1) {
+    throw new NotFoundError(`Could not find facility`, undefined, { cxId });
+  }
+  if (facilities.length > 1) {
+    throw new BadRequestError(
+      `More than one facility found, please specify a facility ID`,
+      undefined,
+      { cxId }
+    );
+  }
+  return facilities[0];
 }
 
 export async function getFacilityByOidOrFail(

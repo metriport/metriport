@@ -32,6 +32,8 @@ function getSuffixForType(type?: ConsolidatedFileType): string {
       return "";
     case "dedup":
       return "_deduped";
+    case "normalized":
+      return "_normalized";
     case "invalid":
       return "_invalid";
   }
