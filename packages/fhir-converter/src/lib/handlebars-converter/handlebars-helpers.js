@@ -384,6 +384,7 @@ const allValuesInObjAreNullFlavor = obj => {
 module.exports.internal = {
   getDateTime: getDateTime,
   getDate: getDate,
+  convertDate,
 };
 
 module.exports.external = [
