@@ -1,13 +1,14 @@
-import { InboundPatientDiscoveryReq, PatientResource } from "@metriport/ihe-gateway-sdk";
-import { errorToString, isEmail, isPhoneNumber, toArray } from "@metriport/shared";
-import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import dayjs from "dayjs";
-import { out } from "../../../../../../util/log";
+import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { isEmail, isPhoneNumber } from "@metriport/shared";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
+import { errorToString, toArray } from "@metriport/shared";
+import { Iti55Request, iti55RequestSchema } from "./schema";
+import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import { extractText } from "../../../utils";
 import { mapIheGenderToFhir } from "../../../../shared";
 import { storeXcpdRequest } from "../../../monitor/store";
-import { extractText } from "../../../utils";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
-import { Iti55Request, iti55RequestSchema } from "./schema";
+import { out } from "../../../../../../util/log";
 
 export function transformIti55RequestToPatientResource(
   iti55Request: Iti55Request
@@ -38,12 +39,10 @@ export function transformIti55RequestToPatientResource(
     return [];
   });
 
-  const identifier = toArray(queryParams.livingSubjectId)
-    .flatMap(subjectId => toArray(subjectId.value ?? []))
-    .map(id => ({
-      system: id._root,
-      value: id._extension,
-    }));
+  const identifier = toArray(queryParams.livingSubjectId?.value).map(id => ({
+    system: id._root,
+    value: id._extension,
+  }));
 
   const iheGender = queryParams.livingSubjectAdministrativeGender?.value
     ? queryParams.livingSubjectAdministrativeGender?.value._code
