@@ -28,8 +28,6 @@ TERMINOLOGY_BUCKET=<umls-bucket>
 1. Download the Metathesaurus from [UMLS Knowledge Sources](https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html)  
    **Note:** The file is large - 4 GB compressed and 28 GB uncompressed. Releases occur twice a year.
 
-1. Place the file into the package's root directory and name it `terminology.db`
-
 ### Seeding the Database
 
 If you're setting up from the raw Metathesaurus file, you'll need to seed the database. We currently support crosswalks for ICD-10 to SNOMED and SNOMED to ICD-10.
