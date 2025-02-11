@@ -205,8 +205,8 @@ export function cwLinkToPatientData(cwLink: NetworkLink): PatientData {
   const dob = patient?.details.birthDate
     ? buildDayjs(patient.details.birthDate).format(ISO_DATE)
     : "";
-  const genderAtBirth =
-    patient?.details.gender.code === "M" ? "M" : patient?.details.gender.code === "F" ? "F" : "U";
+  const genderCode = patient?.details.gender.code;
+  const genderAtBirth = genderCode === "M" ? "M" : genderCode === "F" ? "F" : "U";
 
   const address = patient?.details.address
     ? patient?.details.address.map(address => ({

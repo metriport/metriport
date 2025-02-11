@@ -63,7 +63,7 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     log(`Starting to handle patient discovery results`);
-    const cqLinks = await validateAndCreateCQLinks(patient, results);
+    const cqLinks = await validateAndCreateCqLinks(patient, results);
 
     const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
     if (!discoveryParams) {
@@ -124,23 +124,24 @@ export async function processOutboundPatientDiscoveryResps({
   }
 }
 
-async function validateAndCreateCQLinks(
+async function validateAndCreateCqLinks(
   patient: Patient,
   pdResults: OutboundPatientDiscoveryResp[]
 ): Promise<CQLink[]> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
 
-  const validCQLinks = await validateLinksBelongToPatient<CQLink>(
+  const validCqLinks = await validateLinksBelongToPatient<CQLink>(
     cqLinks,
     patient.data,
     cqLinkToPatientData
   );
 
-  if (validCQLinks.length > 0)
-    await createOrUpdateCQPatientData({ id, cxId, cqLinks: validCQLinks });
+  if (validCqLinks.length > 0) {
+    await createOrUpdateCQPatientData({ id, cxId, cqLinks: validCqLinks });
+  }
 
-  return validCQLinks;
+  return validCqLinks;
 }
 
 function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {

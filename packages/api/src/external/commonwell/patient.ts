@@ -486,7 +486,6 @@ export async function runNextPdOnNewDemographics({
   requestId: string;
   cwLinks: CwLink[];
 }): Promise<boolean> {
-  // NEED TO UPDATE THIS TO ONLY GET VALID ONES
   const updatedPatient = await getPatientOrFail(patient);
 
   const validCwLinks = cwLinks.filter(link => !link.isInvalid);

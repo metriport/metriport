@@ -4,7 +4,7 @@ import { epicMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
 
 const SIMILARITY_THRESHOLD = 8.5;
 
-// TODO: this is a temporary solution to validate the links belong to the patient
+// TODO #2641 this is a temporary solution to validate the links belong to the patient
 // we need to create a more robust solution to validate the links belong to the patient
 export async function validateLinksBelongToPatient<NetworkLink>(
   networkLinks: NetworkLink[],
