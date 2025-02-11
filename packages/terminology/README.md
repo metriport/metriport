@@ -5,7 +5,7 @@
 This project provides a term server for lookups in SNOMED, ICD, LOINC, and RXNORM, CPT, and CVX and crosswalks between SNOMED and ICD.
 Currently, this is mostly intended for internal use.
 
-For a quick walkthrough on setting up and using the Metriport Terminology Server, watch [this video](https://www.loom.com/share/4004e6d5b5c3461e91ed4f72c0143eb1?sid=39df3baa-fd88-4e85-8ecd-dd2591554539)
+For a quick walkthrough on setting up and using the Metriport Terminology Server, watch [this video](https://www.loom.com/share/4004e6d5b5c3461e91ed4f72c0143eb1?sid=39df3baa-fd88-4e85-8ecd-dd2591554539).
 
 ## Getting Started
 
