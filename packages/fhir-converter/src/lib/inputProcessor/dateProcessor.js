@@ -52,10 +52,7 @@ function extractEncounterTimePeriod(srcData) {
       }
     }
 
-    return {
-      low,
-      high,
-    };
+    return { low, high };
   }
 
   return { low: undefined, high: undefined };
