@@ -13,8 +13,7 @@ export class PatientLoaderLocal implements PatientLoader {
   }
 
   async getOneOrFail({ id, cxId }: GetOne): Promise<Patient> {
-    const patient = await getPatientOrFail({ id, cxId });
-    return patient;
+    return getPatientOrFail({ id, cxId });
   }
 
   /**
