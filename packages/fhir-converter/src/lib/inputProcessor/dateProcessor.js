@@ -17,7 +17,7 @@ const parser = new XMLParser({
 function extractEncounterTimePeriod(srcData) {
   const jsonObj = parser.parse(srcData);
   const doc = jsonObj.ClinicalDocument;
-  const encEncounterTime = doc.componentOf?.encompassingEncounter?.effectiveTime;
+  const encEncounterTime = doc?.componentOf?.encompassingEncounter?.effectiveTime;
 
   if (encEncounterTime) {
     return {
@@ -29,7 +29,7 @@ function extractEncounterTimePeriod(srcData) {
   const serviceEventTimeRaw =
     jsonObj.ClinicalDocument?.documentationOf?.serviceEvent?.effectiveTime;
 
-  const birthTime = doc.recordTarget?.patientRole?.patient?.birthTime?.value;
+  const birthTime = doc?.recordTarget?.patientRole?.patient?.birthTime?.value;
   if (serviceEventTimeRaw && birthTime) {
     const patientDob = convertDate(birthTime);
 
@@ -39,7 +39,7 @@ function extractEncounterTimePeriod(srcData) {
     let low = undefined;
     if (serviceTimeLowRaw) {
       const serviceEventTimeLow = convertDate(serviceTimeLowRaw);
-      if (serviceEventTimeLow && patientDob != serviceEventTimeLow) {
+      if (serviceEventTimeLow && patientDob !== serviceEventTimeLow) {
         low = serviceEventTimeRaw.low;
       }
     }
@@ -47,12 +47,14 @@ function extractEncounterTimePeriod(srcData) {
     let high = undefined;
     if (serviceTimeHighRaw) {
       const serviceEventTimeHigh = convertDate(serviceTimeHighRaw);
-      if (serviceEventTimeHigh && patientDob != serviceEventTimeHigh) {
+      if (serviceEventTimeHigh && patientDob !== serviceEventTimeHigh) {
         high = serviceEventTimeRaw.high;
       }
     }
 
     return { low, high };
+  } else if (serviceEventTimeRaw) {
+    return serviceEventTimeRaw;
   }
 
   return { low: undefined, high: undefined };

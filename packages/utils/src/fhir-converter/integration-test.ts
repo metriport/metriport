@@ -192,18 +192,6 @@ async function createTenant() {
   try {
     await adminFhirApi.createTenant(config);
     console.log(`Tenant created successfully.`);
-
-    // Verify tenant creation
-    try {
-      const verifyResponse = await fhirApi.search("Patient", "_summary=count");
-      console.log(`Tenant verification successful:`, {
-        tenantId,
-        total: verifyResponse.total,
-      });
-    } catch (verifyError) {
-      console.error(`Failed to verify tenant:`, verifyError);
-      throw verifyError;
-    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error(`Failed to create tenant:`, {
@@ -212,6 +200,18 @@ async function createTenant() {
       response: error.response?.data,
     });
     throw error;
+  }
+
+  // Verify tenant creation
+  try {
+    const verifyResponse = await fhirApi.search("Patient", "_summary=count");
+    console.log(`Tenant verification successful:`, {
+      tenantId,
+      total: verifyResponse.total,
+    });
+  } catch (verifyError) {
+    console.error(`Failed to verify tenant:`, verifyError);
+    throw verifyError;
   }
 }
 
