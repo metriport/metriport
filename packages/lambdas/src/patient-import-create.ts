@@ -12,7 +12,7 @@ import {
   parseCxIdAndJob,
   parseDisableWebhooksOrFail,
   parseFacilityId,
-  parseRerunPdOnNewDemosOrFail,
+  parseRerunPdOnNewDemos,
   parseTriggerConsolidatedOrFail,
 } from "./shared/patient-import";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -104,9 +104,9 @@ function parseBody(body?: unknown): ProcessPatientCreateRequest {
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
-  const { triggerConsolidatedRaw } = parseTriggerConsolidatedOrFail(bodyAsJson);
-  const { disableWebhooksRaw } = parseDisableWebhooksOrFail(bodyAsJson);
-  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemosOrFail(bodyAsJson);
+  const triggerConsolidatedRaw = parseTriggerConsolidatedOrFail(bodyAsJson);
+  const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
+  const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientPayloadRaw = bodyAsJson.patientPayload;
   if (!patientPayloadRaw) throw new Error(`Missing patientPayload`);

@@ -7,6 +7,7 @@ import { prefixedLog } from "./shared/log";
 import {
   parseCxIdAndJob,
   parseDisableWebhooks,
+  parseDryRun,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidated,
 } from "./shared/patient-import";
@@ -76,13 +77,10 @@ function parseBody(body?: unknown): StartPatientImportRequest {
   const bodyAsJson = typeof body === "string" ? JSON.parse(body) : body;
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
-  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
-  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
-
-  const dryRunRaw = bodyAsJson.dryRun;
-  if (dryRunRaw === undefined) throw new Error(`Missing dryRun`);
-  if (typeof dryRunRaw !== "boolean") throw new Error(`Invalid dryRun`);
+  const triggerConsolidatedRaw = parseTriggerConsolidated(bodyAsJson);
+  const disableWebhooksRaw = parseDisableWebhooks(bodyAsJson);
+  const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
+  const dryRunRaw = parseDryRun(bodyAsJson);
 
   const cxId = cxIdRaw;
   const jobId = jobIdRaw;
