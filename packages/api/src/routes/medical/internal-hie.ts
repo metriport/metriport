@@ -8,6 +8,9 @@ import { getHieOverview } from "../../command/medical/admin/hie-overview";
 import { requestLogger } from "../helpers/request-logger";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom } from "../util";
+import { unlinkPatientFromOrganization } from "../../command/hie/unlink-patient-from-organization";
+import { capture } from "../../shared/notifications";
+import { errorToString } from "@metriport/shared/dist/error/shared";
 
 dayjs.extend(duration);
 
@@ -39,6 +42,43 @@ router.get(
     const debugLevel = debugLevelSchema.parse(req.query.debugLevel) ?? "info";
     const response = await getHieOverview(patientId, facilityIdParam, debugLevel);
     return res.status(httpStatus.OK).json(response);
+  })
+);
+
+/**
+ * POST /internal/hie/unlink
+ *
+ * Unlinks a patient from a facility and removes all data associated with it.
+ *
+ * @param req.query.patientId - The patient's ID.
+ * @param req.query.oid - The oid of the facility to unlink from.
+ */
+
+router.post(
+  "/unlink",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getUUIDFrom("query", req, "patientId").orFail();
+    const oid = getFrom("query").orFail("oid", req);
+
+    unlinkPatientFromOrganization({
+      cxId,
+      patientId,
+      oid,
+    }).catch(err => {
+      console.log(
+        `Error unlinking patient from organization for cxId ${cxId}: ${errorToString(err)}`
+      );
+      capture.error(err);
+    });
+
+    return res.status(httpStatus.OK).json({
+      processing: true,
+      cxId,
+      patientId,
+      oid,
+    });
   })
 );
 

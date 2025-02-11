@@ -2,6 +2,8 @@ import { NetworkLink } from "@metriport/commonwell-sdk";
 import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
 import { LinkDemographicsHistory } from "../../domain/patient-demographics";
 
+// TODO: remove this file once the core package is updated
+
 export type CwLink = NetworkLink;
 
 // leaving room for other info if needed

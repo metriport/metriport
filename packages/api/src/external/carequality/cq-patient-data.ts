@@ -2,8 +2,6 @@ import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain
 import { LinkDemographicsHistory } from "@metriport/core/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk";
 
-// TODO: remove this file once the core package is updated
-
 export type CQExternalPatient = {
   patientId: string;
   systemId: string;
