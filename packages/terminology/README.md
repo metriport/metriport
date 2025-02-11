@@ -27,6 +27,7 @@ TERMINOLOGY_BUCKET=<umls-bucket>
 1. Sign up for the UMLS Licence (typically takes a few business days) by following [this link](https://uts.nlm.nih.gov/uts/signup-login).
 1. Download the Metathesaurus from [UMLS Knowledge Sources](https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html)  
    **Note:** The file is large - 4 GB compressed and 28 GB uncompressed. Releases occur twice a year.
+1. Put the downloaded zip in the root of the terminology directory.
 
 ### Seeding the Database
 
