@@ -2,11 +2,11 @@ import { Transaction } from "sequelize";
 import { uniqBy } from "lodash";
 import { BaseUpdateCmdWithCustomer } from "../../../command/medical/base-update-command";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { getInvalidLinks } from "./get-invalid-links";
 import { InvalidLinksData } from "../../../domain/invalid-links";
 import { InvalidLinks } from "../../../domain/invalid-links";
 import { InvalidLinksCreate } from "../../../domain/invalid-links";
 import { InvalidLinksModel } from "../../../models/invalid-links";
+import { getInvalidLinksOrFail } from "./get-invalid-links";
 
 export type InvalidLinksUpdate = InvalidLinksCreate & BaseUpdateCmdWithCustomer;
 
@@ -26,16 +26,7 @@ export async function updateInvalidLinks({
   };
 
   const updateResult = await executeOnDBTx(InvalidLinksModel.prototype, async transaction => {
-    const existingInvalidLinks = await getInvalidLinks({
-      id,
-      cxId,
-      transaction,
-      lock: true,
-    });
-
-    if (!existingInvalidLinks) {
-      throw new Error(`Invalid links not found for id: ${id}`);
-    }
+    const existingInvalidLinks = await getInvalidLinksOrFail({ id, cxId, transaction, lock: true });
 
     return updateInvalidLinksWithinDBTx(invalidLinksUpdate, existingInvalidLinks, transaction);
   });
