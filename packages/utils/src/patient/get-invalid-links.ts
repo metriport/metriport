@@ -7,8 +7,7 @@ import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { CQPatientData } from "@metriport/core/external/carequality/patient-data";
 import { CwPatientData } from "@metriport/core/external/commonwell/patient-data";
 import { USStateForAddress } from "@metriport/shared";
-import { epicMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
-import { normalizePatientInboundMpi } from "@metriport/core/mpi/normalize-patient";
+import { strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
 import { buildDayjs } from "@metriport/shared/common/date";
 import fs from "fs";
 import { chunk } from "lodash";
@@ -17,8 +16,6 @@ import { sleep } from "@metriport/shared";
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
 const readOnlyDBPool = initReadonlyDbPool(sqlDBCreds, sqlReadReplicaEndpoint);
-
-const SIMILARITY_THRESHOLD = 8.5;
 
 const baseDir = "./runs/invalid-links";
 
@@ -87,28 +84,26 @@ async function main() {
         console.log(`totalInvalidLinkCount ${totalInvalidLinkCount}`);
 
         for (const record of chunk) {
-          const normalizedPatient = normalizePatientInboundMpi(record.data);
+          const recordPatient = record.data;
           try {
             // Process CQ links
             if (record.cq_data) {
-              const cqPatients = cqLinksToPatient(record.cq_data).map(patient =>
-                normalizePatientInboundMpi(patient)
-              );
+              const cqPatients = cqLinksToPatient(record.cq_data);
               for (const [index, cqPatient] of cqPatients.entries()) {
                 totalLinkCount++;
                 try {
-                  if (!epicMatchingAlgorithm(normalizedPatient, cqPatient, SIMILARITY_THRESHOLD)) {
+                  if (!strictMatchingAlgorithm(recordPatient, cqPatient)) {
                     totalInvalidLinkCount++;
                     invalidLinks.push({
                       linkIndex: index,
                       patientId: record.id,
                       patient: {
-                        firstName: normalizedPatient.firstName,
-                        lastName: normalizedPatient.lastName,
-                        dob: normalizedPatient.dob,
-                        genderAtBirth: normalizedPatient.genderAtBirth,
-                        address: normalizedPatient.address,
-                        contact: normalizedPatient.contact,
+                        firstName: recordPatient.firstName,
+                        lastName: recordPatient.lastName,
+                        dob: recordPatient.dob,
+                        genderAtBirth: recordPatient.genderAtBirth,
+                        address: recordPatient.address,
+                        contact: recordPatient.contact,
                       },
                       invalidLink: cqPatient,
                       source: "CQ",
@@ -123,24 +118,22 @@ async function main() {
 
             // Process CW links
             if (record.cw_data) {
-              const cwPatients = cwLinksToPatient(record.cw_data).map(patient =>
-                normalizePatientInboundMpi(patient)
-              );
+              const cwPatients = cwLinksToPatient(record.cw_data);
               for (const [index, cwPatient] of cwPatients.entries()) {
                 totalLinkCount++;
                 try {
-                  if (!epicMatchingAlgorithm(normalizedPatient, cwPatient, SIMILARITY_THRESHOLD)) {
+                  if (!strictMatchingAlgorithm(recordPatient, cwPatient)) {
                     totalInvalidLinkCount++;
                     invalidLinks.push({
                       linkIndex: index,
                       patientId: record.id,
                       patient: {
-                        firstName: normalizedPatient.firstName,
-                        lastName: normalizedPatient.lastName,
-                        dob: normalizedPatient.dob,
-                        genderAtBirth: normalizedPatient.genderAtBirth,
-                        address: normalizedPatient.address,
-                        contact: normalizedPatient.contact,
+                        firstName: recordPatient.firstName,
+                        lastName: recordPatient.lastName,
+                        dob: recordPatient.dob,
+                        genderAtBirth: recordPatient.genderAtBirth,
+                        address: recordPatient.address,
+                        contact: recordPatient.contact,
                       },
                       invalidLink: cwPatient,
                       source: "CW",
