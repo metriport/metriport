@@ -39,8 +39,8 @@
                         
                         {{>References/MedicationStatement/medicationReference.hbs ID=(generateUUID (toJsonString medEntry.substanceAdministration)) REF=(concat 'Medication/' (generateUUID (toJsonString medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial)))}},
                         {{#each (toArray medEntry.substanceAdministration.entryRelationship) as |medReq|}}
-                            {{#if medReq.supply}}
-                                {{>Resources/MedicationRequest.hbs medicationRequest=medReq.supply ID=(generateUUID (toJsonString medReq.supply))}},
+                            {{#if medReq.supply}}   
+                                {{>Resources/MedicationRequest.hbs medicationRequest=medReq.supply date=medEntry.substanceAdministration.effectiveTime ID=(generateUUID (toJsonString medReq.supply))}},
                                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                                 	{{>References/MedicationRequest/subject.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Patient/' patientId.Id)}},
                                 {{/with}}

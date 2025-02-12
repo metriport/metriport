@@ -1,5 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
@@ -12,6 +13,11 @@ import { uuidv7 } from "../shared/uuid-v7";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
 
+export type ProcessingOptions = {
+  hydrate: boolean;
+  normalize: boolean;
+};
+
 export async function convertCDAsToFHIR(
   baseFolderName: string,
   fileNames: string[],
@@ -19,7 +25,8 @@ export async function convertCDAsToFHIR(
   startedAt: number,
   api: AxiosInstance,
   fhirExtension: string,
-  outputFolderName: string
+  outputFolderName: string,
+  options?: ProcessingOptions
 ): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
@@ -28,7 +35,7 @@ export async function convertCDAsToFHIR(
     fileNames,
     async fileName => {
       try {
-        const conversionResult = await convert(baseFolderName, fileName, api);
+        const conversionResult = await convert(baseFolderName, fileName, api, options);
         const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
         makeDirIfNeeded(destFileName);
         writeFileContents(destFileName, JSON.stringify(conversionResult));
@@ -58,7 +65,8 @@ export async function convertCDAsToFHIR(
 export async function convert(
   baseFolderName: string,
   fileName: string,
-  api: AxiosInstance
+  api: AxiosInstance,
+  options?: ProcessingOptions
 ): Promise<Bundle<Resource>> {
   const cxId = uuidv7();
   const patientId = getPatientIdFromFileName(fileName);
@@ -68,7 +76,8 @@ export async function convert(
     throw new Error(`File has nonXMLBody`);
   }
 
-  const { documentContents: noB64FileContents } = removeBase64PdfEntries(fileContents);
+  const payloadClean = cleanUpPayload(fileContents);
+  const { documentContents: noB64FileContents } = removeBase64PdfEntries(payloadClean);
   const payloads = partitionPayload(noB64FileContents);
 
   const unusedSegments = false;
@@ -76,7 +85,7 @@ export async function convert(
   const url = `/api/convert/cda/ccd.hbs`;
 
   // Process payloads sequentially and combine into single bundle
-  const combinedBundle: Bundle<Resource> = {
+  let combinedBundle: Bundle<Resource> = {
     resourceType: "Bundle",
     type: "batch",
     entry: [],
@@ -85,7 +94,6 @@ export async function convert(
   const params = { patientId, fileName, unusedSegments, invalidAccess };
   for (let index = 0; index < payloads.length; index++) {
     const payload = payloads[index];
-
     const res = await api.post(url, payload, {
       params,
       headers: { "Content-Type": "text/plain" },
@@ -98,20 +106,25 @@ export async function convert(
     }
   }
 
-  const hydratedBundle = await hydrate({
-    cxId,
-    patientId,
-    bundle: combinedBundle,
-  });
+  if (options?.hydrate) {
+    combinedBundle = await hydrate({
+      cxId,
+      patientId,
+      bundle: combinedBundle,
+    });
+  }
 
-  const normalizedBundle = await normalize({
-    cxId,
-    patientId,
-    bundle: hydratedBundle,
-  });
+  if (options?.normalize) {
+    combinedBundle = await normalize({
+      cxId,
+      patientId,
+      bundle: combinedBundle,
+    });
+  }
 
-  const documentExtension = buildDocIdFhirExtension(fileName);
-  const updatedConversionResult = postProcessBundle(normalizedBundle, patientId, documentExtension);
+  // Making the value of the fileName short to prevent the insertion error on the FHIR test server.
+  const documentExtension = buildDocIdFhirExtension(fileName.split("-").pop() ?? ".json");
+  const updatedConversionResult = postProcessBundle(combinedBundle, patientId, documentExtension);
 
   return updatedConversionResult;
 }

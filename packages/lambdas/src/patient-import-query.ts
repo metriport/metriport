@@ -1,18 +1,16 @@
-import { SQSEvent } from "aws-lambda";
+import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/query/patient-import-query";
+import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/query/patient-import-query-local";
 import { errorToString, MetriportError } from "@metriport/shared";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
-import { ProcessPatientQueryEvemtPayload } from "@metriport/core/command/patient-import/patient-import-cloud";
-import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/patient-import";
-import {
-  parseCxIdAndJob,
-  parseJobStartedAt,
-  parseTriggerConsolidated,
-  parseDisableWebhooks,
-  parseRerunPdOnNewDemos,
-} from "./shared/patient-import";
+import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import {
+  parseCxIdAndJob,
+  parseDisableWebhooks,
+  parseRerunPdOnNewDemos,
+  parseTriggerConsolidated,
+} from "./shared/patient-import";
 import { getSingleMessageOrFail } from "./shared/sqs";
 
 // Keep this as early on the file as possible
@@ -39,7 +37,6 @@ export async function handler(event: SQSEvent) {
     const {
       cxId,
       jobId,
-      jobStartedAt,
       patientId,
       triggerConsolidated,
       disableWebhooks,
@@ -57,16 +54,16 @@ export async function handler(event: SQSEvent) {
       const processPatientQueryRequest: ProcessPatientQueryRequest = {
         cxId,
         jobId,
-        jobStartedAt,
         patientId,
-        s3BucketName: patientImportBucket,
         triggerConsolidated,
         disableWebhooks,
         rerunPdOnNewDemographics,
-        waitTimeInMillis,
       };
+      const patientImportHandler = new PatientImportQueryHandlerLocal(
+        patientImportBucket,
+        waitTimeInMillis
+      );
 
-      const patientImportHandler = makePatientImportHandler();
       await patientImportHandler.processPatientQuery(processPatientQueryRequest);
 
       const finishedAt = new Date().getTime();
@@ -89,7 +86,7 @@ export async function handler(event: SQSEvent) {
   }
 }
 
-function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
+function parseBody(body?: unknown): ProcessPatientQueryRequest {
   if (!body) throw new Error(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -98,7 +95,6 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
   const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
@@ -109,7 +105,6 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
 
   const cxId = cxIdRaw as string;
   const jobId = jobIdRaw as string;
-  const jobStartedAt = jobStartedAtRaw as string;
   const patientId = patientIdRaw as string;
   const triggerConsolidated = triggerConsolidatedRaw as boolean;
   const disableWebhooks = disableWebhooksRaw as boolean;
@@ -118,7 +113,6 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
   return {
     cxId,
     jobId,
-    jobStartedAt,
     patientId,
     triggerConsolidated,
     disableWebhooks,

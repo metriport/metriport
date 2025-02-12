@@ -1,5 +1,7 @@
 import { PatientDemoData } from "../../domain/patient";
 
+export type JobStatus = "waiting" | "processing" | "completed" | "failed";
+
 export type PhaseStatus = "processing" | "completed" | "failed";
 
 export type PatientRecord = {
@@ -14,66 +16,20 @@ export type PatientRecord = {
 export type PatientRecordUpdate = Omit<PatientRecord, "patientId">;
 
 export type JobRecord = {
-  jobStartedAt: string;
-};
-
-export type JobRecordUpdate = JobRecord;
-
-export type StartPatientImportRequest = {
   cxId: string;
   facilityId: string;
-  jobId: string;
-  processPatientImportLambda: string;
-  triggerConsolidated?: boolean;
-  disableWebhooks?: boolean;
-  rerunPdOnNewDemographics?: boolean;
-  dryrun?: boolean;
-};
-
-export type ProcessPatientImportRequest = {
-  cxId: string;
-  facilityId: string;
-  jobId: string;
   jobStartedAt: string;
-  s3BucketName: string;
-  processPatientCreateQueue: string;
-  triggerConsolidated: boolean;
-  disableWebhooks: boolean;
-  rerunPdOnNewDemographics: boolean;
-  dryrun: boolean;
+  dryRun: boolean;
+  status: JobStatus;
 };
 
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
 
-export type ProcessPatientCreateRequest = {
-  cxId: string;
-  facilityId: string;
+export type JobResponseBase = {
   jobId: string;
-  jobStartedAt: string;
-  patientPayload: PatientPayload;
-  s3BucketName: string;
-  processPatientQueryQueue: string;
-  triggerConsolidated: boolean;
-  disableWebhooks: boolean;
-  rerunPdOnNewDemographics: boolean;
-  waitTimeInMillis: number;
+  status: JobStatus;
 };
 
-export type ProcessPatientQueryRequest = {
-  cxId: string;
-  jobId: string;
-  jobStartedAt: string;
-  patientId: string;
-  s3BucketName: string;
-  triggerConsolidated: boolean;
-  disableWebhooks: boolean;
-  rerunPdOnNewDemographics: boolean;
-  waitTimeInMillis: number;
+export type JobResponseCreate = JobResponseBase & {
+  uploadUrl: string;
 };
-
-export interface PatientImportHandler {
-  startPatientImport(request: StartPatientImportRequest): Promise<void>;
-  processPatientImport(request: ProcessPatientImportRequest): Promise<void>;
-  processPatientCreate(request: ProcessPatientCreateRequest): Promise<void>;
-  processPatientQuery(request: ProcessPatientQueryRequest): Promise<void>;
-}

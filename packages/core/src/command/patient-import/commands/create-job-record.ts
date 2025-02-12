@@ -1,33 +1,24 @@
 import { errorToString } from "@metriport/shared";
-import { S3Utils } from "../../../external/aws/s3";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { Config } from "../../../util/config";
 import { JobRecord } from "../patient-import";
-import { createFileKeyJob } from "../patient-import-shared";
+import { createFileKeyJob, getS3UtilsInstance } from "../patient-import-shared";
 
-const region = Config.getAWSRegion();
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
-
+// TODO 2330 add TSDoc
 export async function createJobRecord({
   cxId,
   jobId,
-  jobStartedAt,
   data,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  jobStartedAt: string;
   data: JobRecord;
   s3BucketName: string;
-}): Promise<void> {
-  const { log } = out(`PatientImport create job record - cxId ${cxId} jobId ${jobId}`);
+}): Promise<{ key: string; bucket: string }> {
+  const { log } = out(`PatientImport createJobRecord - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyJob(cxId, jobStartedAt, jobId);
+  const key = createFileKeyJob(cxId, jobId);
   try {
     await s3Utils.uploadFile({
       bucket: s3BucketName,
@@ -35,6 +26,7 @@ export async function createJobRecord({
       file: Buffer.from(JSON.stringify(data), "utf8"),
       contentType: "application/json",
     });
+    return { key, bucket: s3BucketName };
   } catch (error) {
     const msg = `Failure while creating job record @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -43,7 +35,7 @@ export async function createJobRecord({
         cxId,
         jobId,
         key,
-        context: "patient-import.create-job-record",
+        context: "patient-import.createJobRecord",
         error,
       },
     });

@@ -36,7 +36,7 @@ async function main() {
 
   await initTermServer();
 
-  app.use("/terminology/", fhirRouter);
+  app.use("/", fhirRouter);
 
   const PORT = process.env.PORT || 8080;
 
