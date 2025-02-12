@@ -64,7 +64,7 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     log(`Starting to handle patient discovery results`);
-    const cqLinks = await validateAndCreateCqLinks(patient, results);
+    const { validNetworkLinks, invalidLinks } = await validateAndCreateCqLinks(patient, results);
 
     const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
     if (!discoveryParams) {
@@ -78,7 +78,7 @@ export async function processOutboundPatientDiscoveryResps({
         patient,
         facilityId: discoveryParams.facilityId,
         requestId,
-        cqLinks,
+        cqLinks: validNetworkLinks,
       });
       if (startedNewPd) return;
     }
@@ -90,7 +90,8 @@ export async function processOutboundPatientDiscoveryResps({
         hie: MedicalDataSource.CAREQUALITY,
         patientId: patient.id,
         requestId,
-        pdLinks: cqLinks.length,
+        pdLinks: validNetworkLinks.length,
+        invalidLinks: invalidLinks.length,
         duration: elapsedTimeFromNow(discoveryParams.startedAt),
         ...countStats,
       },
@@ -128,7 +129,7 @@ export async function processOutboundPatientDiscoveryResps({
 async function validateAndCreateCqLinks(
   patient: Patient,
   pdResults: OutboundPatientDiscoveryResp[]
-): Promise<CQLink[]> {
+): Promise<{ validNetworkLinks: CQLink[]; invalidLinks: CQLink[] }> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
 
@@ -153,7 +154,7 @@ async function validateAndCreateCqLinks(
     });
   }
 
-  return validNetworkLinks;
+  return { validNetworkLinks, invalidLinks };
 }
 
 function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
