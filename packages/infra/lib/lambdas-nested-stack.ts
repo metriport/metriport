@@ -495,7 +495,11 @@ export class LambdasNestedStack extends NestedStack {
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],
-      resources: ["*"],
+      resources: [
+        `arn:aws:bedrock:*:*:foundation-model/*`,
+        `arn:aws:bedrock:*:*:inference-profile/*`,
+        `arn:aws:bedrock:*:*:application-inference-profile/*`,
+      ],
     });
 
     fhirToBundleLambda.addToRolePolicy(bedrockPolicyStatement);
