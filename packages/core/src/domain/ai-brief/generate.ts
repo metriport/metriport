@@ -6,6 +6,7 @@ import { summarizeFilteredBundleWithAI } from "../../command/ai-brief/create";
 import { generateAiBriefFhirResource } from "../../command/ai-brief/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture } from "../../util";
+import { uuidv7 } from "../../util/uuid-v7";
 
 dayjs.extend(duration);
 
@@ -19,16 +20,20 @@ export async function generateAiBriefBundleEntry(
   patientId: string,
   log: typeof console.log
 ): Promise<BundleEntry<Binary> | undefined> {
-  let binaryBundleEntry: BundleEntry<Binary> | undefined;
+  let aiBriefContent;
+  const requestId = uuidv7();
+  let attemptNumber = 0;
 
   try {
     await executeWithNetworkRetries(
       async () => {
-        const aiBriefContent = await summarizeFilteredBundleWithAI(bundle, cxId, patientId);
-        const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
-        if (aiBriefFhirResource) {
-          binaryBundleEntry = buildBundleEntry(aiBriefFhirResource);
-        }
+        attemptNumber++;
+        aiBriefContent = await summarizeFilteredBundleWithAI(
+          bundle,
+          cxId,
+          patientId,
+          `${requestId}-${attemptNumber}`
+        );
       },
       {
         maxAttempts,
@@ -37,7 +42,11 @@ export async function generateAiBriefBundleEntry(
       }
     );
 
-    return binaryBundleEntry;
+    if (aiBriefContent) {
+      const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
+      return buildBundleEntry(aiBriefFhirResource);
+    }
+    return undefined;
   } catch (err) {
     const msg = `Failed to generate AI Brief with retries`;
     log(`${msg}. Error: ${errorToString(err)}`);

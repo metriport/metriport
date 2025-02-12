@@ -23,7 +23,6 @@ import {
 } from "../../external/fhir/shared/index";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
-import { uuidv7 } from "../../util/uuid-v7";
 import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date";
 import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
 
@@ -61,9 +60,9 @@ const documentVariableName = "text";
 export async function summarizeFilteredBundleWithAI(
   bundle: Bundle<Resource>,
   cxId: string,
-  patientId: string
+  patientId: string,
+  requestId: string
 ): Promise<string | undefined> {
-  const requestId = uuidv7();
   const startedAt = new Date();
   const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
   // filter out historical data
