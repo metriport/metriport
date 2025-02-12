@@ -81,6 +81,7 @@ export async function autoUpgradeNetworkLinks(
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata,
   networkLinks: CwLink[],
+  invalidLinks: CwLink[],
   commonwellPatientId: string,
   commonwellPersonId: string,
   executionContext: string,
@@ -90,14 +91,18 @@ export async function autoUpgradeNetworkLinks(
 
   const orgIdExcludeList = await getOrgIdExcludeList();
   debug(`resp getNetworkLinks: `, JSON.stringify(networkLinks));
+  debug(`resp invalidLinks: `, JSON.stringify(invalidLinks));
 
   if (networkLinks.length) {
-    const lola1Links = networkLinks.flatMap(filterTruthy).filter(isLOLA1);
-    const lola2or3Links = networkLinks.flatMap(filterTruthy).filter(isLOLA2 || isLOLA3);
+    const validLola1Links = networkLinks.flatMap(filterTruthy).filter(isLOLA1);
+    const validLola2or3Links = networkLinks.flatMap(filterTruthy).filter(isLOLA2 || isLOLA3);
+    const invalidLola2or3Links = invalidLinks.flatMap(filterTruthy).filter(isLOLA2 || isLOLA3);
 
-    const lola2or3LinksToDowngrade = lola2or3Links.filter(
-      link => isInsideOrgExcludeList(link, orgIdExcludeList) || link.isInvalid
+    const validLola2or3LinksToDowngrade = validLola2or3Links.filter(link =>
+      isInsideOrgExcludeList(link, orgIdExcludeList)
     );
+
+    const lola2or3LinksToDowngrade = [...validLola2or3LinksToDowngrade, ...invalidLola2or3Links];
 
     const downgradeRequests: Promise<NetworkLink>[] = [];
     lola2or3LinksToDowngrade.forEach(async link => {
@@ -135,8 +140,8 @@ export async function autoUpgradeNetworkLinks(
 
     await Promise.allSettled(downgradeRequests);
 
-    const lola1LinksToUpgrade = lola1Links.filter(
-      link => !isInsideOrgExcludeList(link, orgIdExcludeList) && !link.isInvalid
+    const lola1LinksToUpgrade = validLola1Links.filter(
+      link => !isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const upgradeRequests: Promise<NetworkLink>[] = [];
     lola1LinksToUpgrade.forEach(async link => {

@@ -71,6 +71,7 @@ export async function patchDuplicatedPersonsForPatient(
       commonWell,
       queryMeta,
       networkLinks,
+      [],
       cwPatientId,
       chosenPersonId,
       context,

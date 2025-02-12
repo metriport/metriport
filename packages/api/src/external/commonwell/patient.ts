@@ -57,6 +57,7 @@ import {
 } from "./patient-shared";
 import { getCwInitiator, validateCWEnabled } from "./shared";
 import { cwLinkToPatientData } from "./link/shared";
+import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-or-update-invalid-links";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -199,14 +200,19 @@ async function registerAndLinkPatientInCW({
     });
 
     let cwLinks: CwLink[] = [];
+    let invalidLinks: CwLink[] = [];
     if (networkLinks) {
-      cwLinks = await validateAndCreateCwLinks(patient, networkLinks);
+      const { validNetworkLinks, invalidLinks: invalidLinksFromValidation } =
+        await validateAndCreateCwLinks(patient, networkLinks);
+      cwLinks = validNetworkLinks;
+      invalidLinks = invalidLinksFromValidation;
     }
 
     await autoUpgradeNetworkLinks(
       commonWell,
       queryMeta,
       cwLinks,
+      invalidLinks,
       commonwellPatientId,
       personId,
       createContext,
@@ -231,8 +237,8 @@ async function registerAndLinkPatientInCW({
         hie: MedicalDataSource.COMMONWELL,
         patientId: patient.id,
         requestId,
-        pdLinks: cwLinks.filter(link => !link.isInvalid).length,
-        pdLinksInvalid: cwLinks.filter(link => link.isInvalid).length,
+        pdLinks: cwLinks.length,
+        pdLinksInvalid: invalidLinks.length,
         duration: elapsedTimeFromNow(startedAt),
       },
     });
@@ -387,14 +393,19 @@ async function updatePatientAndLinksInCw({
     });
 
     let cwLinks: CwLink[] = [];
+    let invalidLinks: CwLink[] = [];
     if (networkLinks) {
-      cwLinks = await validateAndCreateCwLinks(patient, networkLinks);
+      const { validNetworkLinks, invalidLinks: invalidLinksFromValidation } =
+        await validateAndCreateCwLinks(patient, networkLinks);
+      cwLinks = validNetworkLinks;
+      invalidLinks = invalidLinksFromValidation;
     }
 
     await autoUpgradeNetworkLinks(
       commonWell,
       queryMeta,
       cwLinks,
+      invalidLinks,
       commonwellPatientId,
       personId,
       createContext,
@@ -419,8 +430,8 @@ async function updatePatientAndLinksInCw({
         hie: MedicalDataSource.COMMONWELL,
         patientId: patient.id,
         requestId,
-        pdLinks: cwLinks.filter(link => !link.isInvalid).length,
-        pdLinksInvalid: cwLinks.filter(link => link.isInvalid).length,
+        pdLinks: cwLinks.length,
+        pdLinksInvalid: invalidLinks.length,
         duration: elapsedTimeFromNow(startedAt),
       },
     });
@@ -457,21 +468,36 @@ async function updatePatientAndLinksInCw({
   }
 }
 
-async function validateAndCreateCwLinks(patient: Patient, pdResults: CwLink[]): Promise<CwLink[]> {
+async function validateAndCreateCwLinks(
+  patient: Patient,
+  pdResults: CwLink[]
+): Promise<{
+  validNetworkLinks: CwLink[];
+  invalidLinks: CwLink[];
+}> {
   const { id, cxId } = patient;
   const cwLinks = pdResults;
 
-  const validatedLinks = await validateLinksBelongToPatient(
+  const { validNetworkLinks, invalidLinks } = await validateLinksBelongToPatient(
     cxId,
     cwLinks,
     patient.data,
     cwLinkToPatientData
   );
 
-  if (validatedLinks.length > 0)
-    await createOrUpdateCwPatientData({ id, cxId, cwLinks: validatedLinks });
+  if (validNetworkLinks.length > 0) {
+    await createOrUpdateCwPatientData({ id, cxId, cwLinks: validNetworkLinks });
+  }
 
-  return cwLinks;
+  if (invalidLinks.length > 0) {
+    await createOrUpdateInvalidLinks({
+      id,
+      cxId,
+      invalidLinks: { commonwell: invalidLinks },
+    });
+  }
+
+  return { validNetworkLinks, invalidLinks };
 }
 
 export async function runNextPdOnNewDemographics({
@@ -489,8 +515,7 @@ export async function runNextPdOnNewDemographics({
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
-  const validCwLinks = cwLinks.filter(link => !link.isInvalid);
-  const linksDemographics = getPatientNetworkLinks(validCwLinks).map(
+  const linksDemographics = getPatientNetworkLinks(cwLinks).map(
     patientNetworkLinkToNormalizedLinkDemographics
   );
   const newDemographicsHere = getNewDemographics(updatedPatient, linksDemographics);

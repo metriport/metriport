@@ -12,8 +12,9 @@ export async function validateLinksBelongToPatient<NetworkLink>(
   networkLinks: NetworkLink[],
   patientData: PatientData,
   linkToPatientData: (link: NetworkLink) => PatientData
-): Promise<NetworkLink[]> {
+): Promise<{ validNetworkLinks: NetworkLink[]; invalidLinks: NetworkLink[] }> {
   const validNetworkLinks: NetworkLink[] = [];
+  const invalidLinks: NetworkLink[] = [];
 
   for (const networkLink of networkLinks) {
     const linkPatientData = linkToPatientData(networkLink);
@@ -37,12 +38,9 @@ export async function validateLinksBelongToPatient<NetworkLink>(
     if (isPatientMatch) {
       validNetworkLinks.push(networkLink);
     } else {
-      validNetworkLinks.push({
-        ...networkLink,
-        isInvalid: true,
-      });
+      invalidLinks.push(networkLink);
     }
   }
 
-  return validNetworkLinks;
+  return { validNetworkLinks, invalidLinks };
 }
