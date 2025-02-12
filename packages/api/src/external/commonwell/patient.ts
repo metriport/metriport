@@ -199,25 +199,16 @@ async function registerAndLinkPatientInCW({
       patient,
     });
 
-    let cwLinks: CwLink[] = [];
-    let invalidLinks: CwLink[] = [];
-    if (networkLinks) {
-      const { validNetworkLinks, invalidLinks: invalidLinksFromValidation } =
-        await validateAndCreateCwLinks(patient, networkLinks);
-      cwLinks = validNetworkLinks;
-      invalidLinks = invalidLinksFromValidation;
-    }
-
-    await autoUpgradeNetworkLinks(
+    const { validNetworkLinks: cwLinks, invalidLinks } = await assessNetworkLinks({
       commonWell,
       queryMeta,
-      cwLinks,
-      invalidLinks,
       commonwellPatientId,
+      networkLinks,
       personId,
       createContext,
-      getOrgIdExcludeList
-    );
+      patient,
+      getOrgIdExcludeList,
+    });
 
     if (rerunPdOnNewDemographics) {
       const startedNewPd = await runNextPdOnNewDemographics({
@@ -392,25 +383,16 @@ async function updatePatientAndLinksInCw({
       patient,
     });
 
-    let cwLinks: CwLink[] = [];
-    let invalidLinks: CwLink[] = [];
-    if (networkLinks) {
-      const { validNetworkLinks, invalidLinks: invalidLinksFromValidation } =
-        await validateAndCreateCwLinks(patient, networkLinks);
-      cwLinks = validNetworkLinks;
-      invalidLinks = invalidLinksFromValidation;
-    }
-
-    await autoUpgradeNetworkLinks(
+    const { validNetworkLinks: cwLinks, invalidLinks } = await assessNetworkLinks({
       commonWell,
       queryMeta,
-      cwLinks,
-      invalidLinks,
       commonwellPatientId,
+      networkLinks,
       personId,
       createContext,
-      getOrgIdExcludeList
-    );
+      patient,
+      getOrgIdExcludeList,
+    });
 
     if (rerunPdOnNewDemographics) {
       const startedNewPd = await runNextPdOnNewDemographics({
@@ -466,6 +448,51 @@ async function updatePatientAndLinksInCw({
     });
     throw error;
   }
+}
+
+async function assessNetworkLinks({
+  commonWell,
+  queryMeta,
+  commonwellPatientId,
+  networkLinks,
+  personId,
+  createContext,
+  patient,
+  getOrgIdExcludeList,
+}: {
+  commonWell: CommonWellAPI;
+  queryMeta: RequestMetadata;
+  commonwellPatientId: string;
+  networkLinks: NetworkLink[] | undefined;
+  personId: string;
+  createContext: string;
+  patient: Patient;
+  getOrgIdExcludeList: () => Promise<string[]>;
+}): Promise<{
+  validNetworkLinks: CwLink[];
+  invalidLinks: CwLink[];
+}> {
+  let cwLinks: CwLink[] = [];
+  let invalidLinks: CwLink[] = [];
+  if (networkLinks) {
+    const { validNetworkLinks, invalidLinks: invalidLinksFromValidation } =
+      await validateAndCreateCwLinks(patient, networkLinks);
+    cwLinks = validNetworkLinks;
+    invalidLinks = invalidLinksFromValidation;
+  }
+
+  await autoUpgradeNetworkLinks(
+    commonWell,
+    queryMeta,
+    cwLinks,
+    invalidLinks,
+    commonwellPatientId,
+    personId,
+    createContext,
+    getOrgIdExcludeList
+  );
+
+  return { validNetworkLinks: cwLinks, invalidLinks };
 }
 
 async function validateAndCreateCwLinks(
