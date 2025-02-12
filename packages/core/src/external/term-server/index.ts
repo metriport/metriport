@@ -21,7 +21,7 @@ export type CodeSystemLookupOutput = {
 };
 
 export const termServerUrl = Config.getTermServerUrl();
-const bulkLookupUrl = "terminology/code-system/lookup/bulk";
+const bulkLookupUrl = "code-system/lookup/bulk";
 
 export const supportedSystems = [ICD_10_URL, SNOMED_URL, LOINC_URL, RXNORM_URL, CPT_URL, CVX_URL];
 

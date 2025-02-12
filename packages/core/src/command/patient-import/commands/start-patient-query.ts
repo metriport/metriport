@@ -4,6 +4,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
 
+// TODO 2330 add TSDoc
 export async function startPatientQuery({
   cxId,
   patientId,
@@ -14,7 +15,7 @@ export async function startPatientQuery({
   rerunPdOnNewDemographics: boolean;
 }): Promise<void> {
   const { log, debug } = out(
-    `PatientImport start patient query - cxId ${cxId} patientId ${patientId}`
+    `PatientImport startPatientQuery - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const patientUrl = `/internal/patient/${patientId}/patient-discovery?cxId=${cxId}&rerunPdOnNewDemographics=${rerunPdOnNewDemographics}`;
@@ -31,7 +32,7 @@ export async function startPatientQuery({
         cxId,
         patientId,
         rerunPdOnNewDemographics,
-        context: "patient-import.start-patient-query",
+        context: "patient-import.startPatientQuery",
         error,
       },
     });
