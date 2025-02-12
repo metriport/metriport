@@ -4,7 +4,7 @@ import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { capture, out } from "../../../../util";
 import { createPatientPayload } from "../../patient-import-shared";
-import { fetchJobRecord } from "../../record/fetch-job-record";
+import { fetchJobRecordOrFail } from "../../record/fetch-job-record";
 import { validateAndParsePatientImportCsvFromS3 } from "../../record/validate-and-parse-import";
 import {
   PatientImportCreateHandler,
@@ -36,7 +36,7 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
     const { log } = out(`processJobParse.local - cxId ${cxId} jobId ${jobId}`);
     try {
       const s3BucketName = this.patientImportBucket;
-      const jobRecord = await fetchJobRecord({ cxId, jobId, s3BucketName });
+      const jobRecord = await fetchJobRecordOrFail({ cxId, jobId, s3BucketName });
       const patients = await validateAndParsePatientImportCsvFromS3({
         cxId,
         jobId,

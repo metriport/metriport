@@ -10,23 +10,20 @@ export async function fetchPatientRecord({
   jobId,
   patientId,
   s3BucketName,
-  throwIfNotFound = true,
 }: {
   cxId: string;
   jobId: string;
   patientId: string;
   s3BucketName: string;
-  throwIfNotFound?: boolean;
-}): Promise<PatientRecord> {
+}): Promise<PatientRecord | undefined> {
   const { log } = out(
     `PatientImport fetchPatientRecord - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyPatient(cxId, jobId, patientId);
   try {
-    if (throwIfNotFound) {
-      await checkPatientRecordExists({ cxId, jobId, patientId, s3BucketName });
-    }
+    const fileExists = await checkPatientRecordExists({ cxId, jobId, patientId, s3BucketName });
+    if (!fileExists) return undefined;
     const file = await s3Utils.getFileContentsAsString(s3BucketName, key);
     return JSON.parse(file);
   } catch (error) {
@@ -40,4 +37,28 @@ export async function fetchPatientRecord({
       context: "patient-import.fetchPatientRecord",
     });
   }
+}
+
+export async function fetchPatientRecordOrFail({
+  cxId,
+  jobId,
+  patientId,
+  s3BucketName,
+}: {
+  cxId: string;
+  jobId: string;
+  patientId: string;
+  s3BucketName: string;
+}): Promise<PatientRecord> {
+  const patientRecord = await fetchPatientRecord({ cxId, jobId, patientId, s3BucketName });
+  if (!patientRecord) {
+    throw new MetriportError(`Patient record not found @ PatientImport`, {
+      cxId,
+      jobId,
+      patientId,
+      s3BucketName,
+      context: "patient-import.fetchPatientRecordOrFail",
+    });
+  }
+  return patientRecord;
 }

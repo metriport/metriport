@@ -2,7 +2,6 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import { out } from "../../../util/log";
 import { PatientRecordUpdate } from "../patient-import";
 import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shared";
-import { checkPatientRecordExists } from "./check-patient-record-exists";
 import { fetchPatientRecord } from "./fetch-patient-record";
 
 // TODO 2330 add TSDoc
@@ -25,15 +24,12 @@ export async function creatOrUpdatePatientRecord({
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyPatient(cxId, jobId, patientId);
   try {
-    const existingRecordExists = await checkPatientRecordExists({
+    const existingRecord = await fetchPatientRecord({
       cxId,
       jobId,
       patientId,
       s3BucketName,
     });
-    const existingRecord = existingRecordExists
-      ? await fetchPatientRecord({ cxId, jobId, patientId, s3BucketName, throwIfNotFound: false })
-      : {};
     const updatedRecord = { ...existingRecord, ...data, patientId };
     await s3Utils.uploadFile({
       bucket: s3BucketName,
