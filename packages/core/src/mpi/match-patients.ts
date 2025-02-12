@@ -2,7 +2,7 @@ import jaroWinkler from "jaro-winkler";
 import { intersectionWith } from "lodash";
 import { Contact } from "../domain/contact";
 import { PatientData, PersonalIdentifier } from "../domain/patient";
-import { normalizePatient } from "./normalize-patient";
+import { normalizePatient, normalizePatientInboundMpi } from "./normalize-patient";
 import { PatientMPI } from "./shared";
 // import { out } from "../util/log";
 import { splitName } from "./normalize-patient";
@@ -300,17 +300,39 @@ export function epicMatchingAlgorithm(
 }
 
 export function strictMatchingAlgorithm(patient1: PatientData, patient2: PatientData): boolean {
-  const isDobMatch = patient1.dob === patient2.dob;
-  const isGenderMatch = patient1.genderAtBirth === patient2.genderAtBirth;
+  const normalizedPatient1 = normalizePatientInboundMpi(patient1);
+  const normalizedPatient2 = normalizePatientInboundMpi(patient2);
 
-  const firstNames1 = splitName(patient1.firstName);
-  const firstNames2 = splitName(patient2.firstName);
+  const isDobMatch = normalizedPatient1.dob === normalizedPatient2.dob;
+  const isGenderMatch = normalizedPatient1.genderAtBirth === normalizedPatient2.genderAtBirth;
 
-  const lastNames1 = splitName(patient1.lastName);
-  const lastNames2 = splitName(patient2.lastName);
+  const firstNames1 = splitName(normalizedPatient1.firstName);
+  const firstNames2 = splitName(normalizedPatient2.firstName);
 
-  const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
-  const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
+  const lastNames1 = splitName(normalizedPatient1.lastName);
+  const lastNames2 = splitName(normalizedPatient2.lastName);
+
+  // Check if arrays have same length and all elements match (order doesn't matter)
+  const hasMatchingFirstName =
+    firstNames1.length === firstNames2.length &&
+    firstNames1.every(name => firstNames2.includes(name));
+  const hasMatchingLastName =
+    lastNames1.length === lastNames2.length && lastNames1.every(name => lastNames2.includes(name));
+
+  if (!isDobMatch)
+    console.log(`Dob mismatch: ${normalizedPatient1.dob} !== ${normalizedPatient2.dob}`);
+  if (!isGenderMatch)
+    console.log(
+      `Gender mismatch: ${normalizedPatient1.genderAtBirth} !== ${normalizedPatient2.genderAtBirth}`
+    );
+  if (!hasMatchingFirstName)
+    console.log(
+      `First name mismatch: ${normalizedPatient1.firstName} !== ${normalizedPatient2.firstName}`
+    );
+  if (!hasMatchingLastName)
+    console.log(
+      `Last name mismatch: ${normalizedPatient1.lastName} !== ${normalizedPatient2.lastName}`
+    );
 
   const isNameMatch = hasMatchingFirstName && hasMatchingLastName;
   return isNameMatch && isDobMatch && isGenderMatch;
