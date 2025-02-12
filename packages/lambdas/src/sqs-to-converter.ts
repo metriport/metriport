@@ -262,7 +262,13 @@ export async function handler(event: SQSEvent) {
             const msg = "Failed to hydrate the converted bundle";
             log(`${msg}: ${errorToString(error)}`);
             capture.message(msg, {
-              extra: { error, cxId, patientId, context: lambdaName },
+              extra: {
+                error,
+                cxId,
+                patientId,
+                context: lambdaName,
+                s3FileName,
+              },
               level: "warning",
             });
           }
