@@ -217,7 +217,6 @@ export function cqLinkToPatientData(cqLink: CQLink): PatientData {
 }
 
 export function cqGenderToPatientGender(gender: string | undefined): GenderAtBirth {
-  if (!gender) return "U";
   if (gender === "male") return "M";
   if (gender === "female") return "F";
   return "U";

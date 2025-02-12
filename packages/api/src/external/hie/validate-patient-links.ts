@@ -1,4 +1,3 @@
-import { normalizePatientInboundMpi } from "@metriport/core/mpi/normalize-patient";
 import { PatientData } from "@metriport/core/domain/patient";
 import { epicMatchingAlgorithm, strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
 import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/external/aws/app-config";
@@ -18,21 +17,15 @@ export async function validateLinksBelongToPatient<NetworkLink>(
 
   for (const networkLink of networkLinks) {
     const linkPatientData = linkToPatientData(networkLink);
-    const normalizedLinkPatient = normalizePatientInboundMpi(linkPatientData);
-    const normalizedPatient = normalizePatientInboundMpi(patientData);
 
     const isStrictMatchingAlgorithmEnabled = await isStrictMatchingAlgorithmEnabledForCx(cxId);
 
     let isPatientMatch = false;
 
     if (isStrictMatchingAlgorithmEnabled) {
-      isPatientMatch = strictMatchingAlgorithm(normalizedPatient, normalizedLinkPatient);
+      isPatientMatch = strictMatchingAlgorithm(patientData, linkPatientData);
     } else {
-      isPatientMatch = epicMatchingAlgorithm(
-        normalizedPatient,
-        normalizedLinkPatient,
-        SIMILARITY_THRESHOLD
-      );
+      isPatientMatch = epicMatchingAlgorithm(patientData, linkPatientData, SIMILARITY_THRESHOLD);
     }
 
     if (isPatientMatch) {

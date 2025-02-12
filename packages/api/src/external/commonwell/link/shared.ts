@@ -72,6 +72,7 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): 
  * @param queryMeta - RequestMetadata - this is the metadata that is passed in from the client.
  *    It contains the user's session token, the user's organization, and the user's userId.
  * @param networkLinks - The network links to process
+ * @param invalidLinks - The invalid network links to process
  * @param commonwellPatientId - The patient ID in the CommonWell system
  * @param commonwellPersonId - The CommonWell Person ID of the patient
  * @param executionContext - The execution context of the current request.
@@ -245,7 +246,6 @@ export function cwLinkToPatientData(cwLink: NetworkLink): PatientData {
 }
 
 export function cwGenderToPatientGender(gender: string | undefined): GenderAtBirth {
-  if (!gender) return "U";
   if (gender === "M") return "M";
   if (gender === "F") return "F";
   return "U";
