@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import status from "http-status";
+import httpStatus from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import {
   getPatientOrFail,
@@ -65,7 +65,7 @@ router.post(
       const numPatients = await PatientModel.count({ where: { cxId } });
       const patientLimit = await getSandboxPatientLimitForCx(cxId);
       if (numPatients >= patientLimit) {
-        return res.status(status.BAD_REQUEST).json({
+        return res.status(httpStatus.BAD_REQUEST).json({
           message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
         });
       }
@@ -84,7 +84,7 @@ router.post(
       forceCarequality,
     });
 
-    return res.status(status.CREATED).json(dtoFromModel(patient));
+    return res.status(httpStatus.CREATED).json(dtoFromModel(patient));
   })
 );
 
@@ -115,7 +115,7 @@ router.get(
     if (!isPaginated(req)) {
       const patients = await getPatients({ cxId, facilityId: facilityId, fullTextSearchFilters });
       const patientsData = patients.map(dtoFromModel);
-      return res.status(status.OK).json({ patients: patientsData });
+      return res.status(httpStatus.OK).json({ patients: patientsData });
     }
 
     const queryParams = {
@@ -134,7 +134,7 @@ router.get(
       meta,
       patients: items.map(dtoFromModel),
     };
-    return res.status(status.OK).json(response);
+    return res.status(httpStatus.OK).json(response);
   })
 );
 
@@ -160,7 +160,7 @@ router.post(
     if (patient) {
       // Authorization
       await getPatientOrFail({ cxId, id: patient.id });
-      return res.status(status.OK).json(dtoFromModel(patient));
+      return res.status(httpStatus.OK).json(dtoFromModel(patient));
     }
     throw new NotFoundError("Cannot find patient");
   })
@@ -189,15 +189,24 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFromQuery("facilityId", req);
+    const facilityIdParam = getFromQuery("facilityId", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
 
-    const patientImportResponse = await createPatientImportJob({ cxId, facilityId, dryRun });
+    const patientImportResponse = await createPatientImportJob({
+      cxId,
+      facilityId: facilityIdParam,
+      dryRun,
+    });
 
+    const { jobId, facilityId, status, uploadUrl, params } = patientImportResponse;
     const respPayload: PatientImportDto = {
-      ...patientImportResponse,
+      requestId: jobId,
+      facilityId,
+      status,
+      uploadUrl,
+      params,
     };
-    return res.status(status.OK).json(respPayload);
+    return res.status(httpStatus.OK).json(respPayload);
   })
 );
 

@@ -18,10 +18,10 @@ export type BulkPatientCreateParams = {
 
 export type CreatePatientImportResponse = {
   jobId: string;
+  facilityId: string;
   status: PatientImportStatus;
   uploadUrl: string;
   params: {
-    facilityId: string;
     dryRun: boolean;
   };
 };
@@ -76,10 +76,10 @@ export async function createPatientImportJob({
 
   const resp: CreatePatientImportResponse = {
     jobId,
+    facilityId: facility.id,
     status: jobStatus,
     uploadUrl: s3Url,
     params: {
-      facilityId: facility.id,
       dryRun,
     },
   };
