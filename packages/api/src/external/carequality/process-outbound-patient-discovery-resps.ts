@@ -30,7 +30,7 @@ import {
 import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
 import { validateLinksBelongToPatient } from "../hie/validate-patient-links";
 import { cqLinkToPatientData } from "./shared";
-import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-or-update-invalid-links";
+import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 
 dayjs.extend(duration);
 

@@ -57,7 +57,7 @@ import {
 } from "./patient-shared";
 import { getCwInitiator, validateCWEnabled } from "./shared";
 import { cwLinkToPatientData } from "./link/shared";
-import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-or-update-invalid-links";
+import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
