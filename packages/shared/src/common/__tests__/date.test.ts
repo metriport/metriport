@@ -36,4 +36,8 @@ describe("validateDateIsAfter1900", () => {
     expect(validateDateIsAfter1900("1899-12-31")).toBe(false);
     expect(validateDateIsAfter1900("970-01-31")).toBe(false);
   });
+
+  it("returns false for 1900-01-01", () => {
+    expect(validateDateIsAfter1900("1900-01-01")).toBe(false);
+  });
 });
