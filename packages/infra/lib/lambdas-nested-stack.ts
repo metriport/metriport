@@ -449,9 +449,7 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     appId: string;
     configId: string;
-    bedrock:
-      | { modelId: string; region: string; anthropicVersion: string; activeRegions?: string[] }
-      | undefined;
+    bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   }): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -495,16 +493,16 @@ export class LambdasNestedStack extends NestedStack {
       appConfigResources: ["*"],
     });
 
-    if (bedrock?.activeRegions) {
-      const bedrockPolicyStatement = new iam.PolicyStatement({
-        actions: ["bedrock:InvokeModel"],
-        resources: bedrock.activeRegions.flatMap(region => [
-          `arn:aws:bedrock:${region}:${this.account}:foundation-model/*`,
-          `arn:aws:bedrock:${region}:${this.account}:inference-profile/*`,
-        ]),
-      });
-      fhirToBundleLambda.addToRolePolicy(bedrockPolicyStatement);
-    }
+    const bedrockPolicyStatement = new iam.PolicyStatement({
+      actions: ["bedrock:InvokeModel"],
+      resources: [
+        `arn:aws:bedrock:*:*:foundation-model/*`,
+        `arn:aws:bedrock:*:*:inference-profile/*`,
+        `arn:aws:bedrock:*:*:application-inference-profile/*`,
+      ],
+    });
+
+    fhirToBundleLambda.addToRolePolicy(bedrockPolicyStatement);
 
     return fhirToBundleLambda;
   }
