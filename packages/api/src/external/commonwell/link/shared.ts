@@ -7,19 +7,22 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { CwLink } from "../cw-patient-data";
 import { errorToString } from "@metriport/core/util/error/shared";
+import { USStateForAddress } from "@metriport/shared/dist/domain/address";
 import {
   Patient,
   PatientData,
   PatientExternalData,
   PatientExternalDataEntry,
+  GenderAtBirth,
 } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { PatientDataCommonwell } from "../patient-shared";
-
 const urnOidRegex = /^urn:oid:/;
 
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {
@@ -68,6 +71,7 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): 
  * @param commonWell - The CommonWell API object
  * @param queryMeta - RequestMetadata - this is the metadata that is passed in from the client.
  *    It contains the user's session token, the user's organization, and the user's userId.
+ * @param networkLinks - The network links to process
  * @param commonwellPatientId - The patient ID in the CommonWell system
  * @param commonwellPersonId - The CommonWell Person ID of the patient
  * @param executionContext - The execution context of the current request.
@@ -77,27 +81,30 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): 
 export async function autoUpgradeNetworkLinks(
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata,
+  networkLinks: CwLink[],
+  invalidLinks: CwLink[],
   commonwellPatientId: string,
   commonwellPersonId: string,
   executionContext: string,
   getOrgIdExcludeList: () => Promise<string[]>
-): Promise<NetworkLink[] | undefined> {
+): Promise<void> {
   const { log, debug } = out("CW autoUpgradeNetworkLinks");
-  const [networkLinks, orgIdExcludeList] = await Promise.all([
-    commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
-    getOrgIdExcludeList(),
-  ]);
+
+  const orgIdExcludeList = await getOrgIdExcludeList();
   debug(`resp getNetworkLinks: `, JSON.stringify(networkLinks));
+  debug(`resp invalidLinks: `, JSON.stringify(invalidLinks));
 
-  if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
-    const lola1Links = networkLinks._embedded.networkLink.flatMap(filterTruthy).filter(isLOLA1);
-    const lola2or3Links = networkLinks._embedded.networkLink
-      .flatMap(filterTruthy)
-      .filter(isLOLA2 || isLOLA3);
+  if (networkLinks.length) {
+    const validLola1Links = networkLinks.flatMap(filterTruthy).filter(isLOLA1);
+    const validLola2or3Links = networkLinks.flatMap(filterTruthy).filter(isLOLA2 || isLOLA3);
+    const invalidLola2or3Links = invalidLinks.flatMap(filterTruthy).filter(isLOLA2 || isLOLA3);
 
-    const lola2or3LinksToDowngrade = lola2or3Links.filter(link =>
+    const validLola2or3LinksToDowngrade = validLola2or3Links.filter(link =>
       isInsideOrgExcludeList(link, orgIdExcludeList)
     );
+
+    const lola2or3LinksToDowngrade = [...validLola2or3LinksToDowngrade, ...invalidLola2or3Links];
+
     const downgradeRequests: Promise<NetworkLink>[] = [];
     lola2or3LinksToDowngrade.forEach(async link => {
       if (link._links?.downgrade?.href) {
@@ -134,7 +141,7 @@ export async function autoUpgradeNetworkLinks(
 
     await Promise.allSettled(downgradeRequests);
 
-    const lola1LinksToUpgrade = lola1Links.filter(
+    const lola1LinksToUpgrade = validLola1Links.filter(
       link => !isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const upgradeRequests: Promise<NetworkLink>[] = [];
@@ -161,6 +168,25 @@ export async function autoUpgradeNetworkLinks(
       }
     });
     await Promise.allSettled(upgradeRequests);
+  }
+}
+
+export async function getPatientsNetworkLinks(
+  commonWell: CommonWellAPI,
+  queryMeta: RequestMetadata,
+  commonwellPatientId: string
+): Promise<NetworkLink[]> {
+  const { debug, log } = out("CW getPatientNetworkLinks");
+
+  try {
+    const networkLinks = await commonWell.getNetworkLinks(queryMeta, commonwellPatientId);
+
+    debug(`resp getNetworkLinks: `, JSON.stringify(networkLinks));
+
+    if (!networkLinks._embedded?.networkLink) {
+      log(`No network links found for patient ${commonwellPatientId}`);
+      return [];
+    }
 
     const validNetworkLinks: NetworkLink[] = [];
 
@@ -171,5 +197,56 @@ export async function autoUpgradeNetworkLinks(
     }
 
     return validNetworkLinks;
+  } catch (error) {
+    log(`Error getting patient network links. Cause: ${errorToString(error)}`);
+    throw error;
   }
+}
+
+export function cwLinkToPatientData(cwLink: NetworkLink): PatientData {
+  const patient = cwLink.patient;
+
+  const firstName = patient?.details.name.flatMap(name => name.given).join(" ") ?? "";
+  const lastName = patient?.details.name.flatMap(name => name.family).join(" ") ?? "";
+  const dob = patient?.details.birthDate
+    ? buildDayjs(patient.details.birthDate).format(ISO_DATE)
+    : "";
+  const genderCode = patient?.details.gender.code;
+  const genderAtBirth = genderCode === "M" ? "M" : genderCode === "F" ? "F" : "U";
+
+  const address = patient?.details.address
+    ? patient?.details.address.map(address => ({
+        zip: address.zip,
+        city: address.city ?? "",
+        state: address.state as USStateForAddress,
+        country: address.country ?? "",
+        addressLine1: address.line?.[0] ?? "",
+        addressLine2: address.line?.[1] ?? "",
+      }))
+    : [];
+
+  const phone = patient?.details.telecom?.find(telecom => telecom.system === "phone")?.value ?? "";
+
+  const email = patient?.details.telecom?.find(telecom => telecom.system === "email")?.value ?? "";
+
+  return {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    address,
+    contact: [
+      {
+        phone,
+        email,
+      },
+    ],
+  };
+}
+
+export function cwGenderToPatientGender(gender: string | undefined): GenderAtBirth {
+  if (!gender) return "U";
+  if (gender === "M") return "M";
+  if (gender === "F") return "F";
+  return "U";
 }

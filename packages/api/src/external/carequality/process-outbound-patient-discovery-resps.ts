@@ -7,6 +7,7 @@ import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/care
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared/common/error";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
@@ -27,7 +28,9 @@ import {
   patientResourceToNormalizedLinkDemographics,
 } from "./patient-demographics";
 import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+import { validateLinksBelongToPatient } from "../hie/validate-patient-links";
+import { cqLinkToPatientData } from "./shared";
+import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 
 dayjs.extend(duration);
 
@@ -61,13 +64,7 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     log(`Starting to handle patient discovery results`);
-    const cqLinks = await createCQLinks(
-      {
-        id: patientId,
-        cxId,
-      },
-      results
-    );
+    const { validNetworkLinks, invalidLinks } = await validateAndCreateCqLinks(patient, results);
 
     const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
     if (!discoveryParams) {
@@ -81,7 +78,7 @@ export async function processOutboundPatientDiscoveryResps({
         patient,
         facilityId: discoveryParams.facilityId,
         requestId,
-        cqLinks,
+        cqLinks: validNetworkLinks,
       });
       if (startedNewPd) return;
     }
@@ -93,7 +90,8 @@ export async function processOutboundPatientDiscoveryResps({
         hie: MedicalDataSource.CAREQUALITY,
         patientId: patient.id,
         requestId,
-        pdLinks: cqLinks.length,
+        pdLinks: validNetworkLinks.length,
+        invalidLinks: invalidLinks.length,
         duration: elapsedTimeFromNow(discoveryParams.startedAt),
         ...countStats,
       },
@@ -128,16 +126,35 @@ export async function processOutboundPatientDiscoveryResps({
   }
 }
 
-async function createCQLinks(
-  patient: Pick<Patient, "id" | "cxId">,
+async function validateAndCreateCqLinks(
+  patient: Patient,
   pdResults: OutboundPatientDiscoveryResp[]
-): Promise<CQLink[]> {
+): Promise<{ validNetworkLinks: CQLink[]; invalidLinks: CQLink[] }> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
 
-  if (cqLinks.length > 0) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
+  const { validNetworkLinks, invalidLinks } = await validateLinksBelongToPatient<CQLink>(
+    cxId,
+    cqLinks,
+    patient.data,
+    cqLinkToPatientData
+  );
 
-  return cqLinks;
+  if (validNetworkLinks.length > 0) {
+    await createOrUpdateCQPatientData({ id, cxId, cqLinks: validNetworkLinks });
+  }
+
+  if (invalidLinks.length > 0) {
+    await createOrUpdateInvalidLinks({
+      id,
+      cxId,
+      invalidLinks: {
+        carequality: invalidLinks,
+      },
+    });
+  }
+
+  return { validNetworkLinks, invalidLinks };
 }
 
 function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {

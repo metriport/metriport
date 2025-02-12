@@ -299,6 +299,23 @@ export function epicMatchingAlgorithm(
   return match;
 }
 
+export function strictMatchingAlgorithm(patient1: PatientData, patient2: PatientData): boolean {
+  const isDobMatch = patient1.dob === patient2.dob;
+  const isGenderMatch = patient1.genderAtBirth === patient2.genderAtBirth;
+
+  const firstNames1 = splitName(patient1.firstName);
+  const firstNames2 = splitName(patient2.firstName);
+
+  const lastNames1 = splitName(patient1.lastName);
+  const lastNames2 = splitName(patient2.lastName);
+
+  const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
+  const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
+
+  const isNameMatch = hasMatchingFirstName && hasMatchingLastName;
+  return isNameMatch && isDobMatch && isGenderMatch;
+}
+
 function splitDob(dob: string): string[] {
   return dob.split(/[-/]/);
 }
