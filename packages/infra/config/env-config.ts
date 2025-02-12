@@ -138,6 +138,7 @@ type EnvConfigBase = {
     modelId: string;
     region: string;
     anthropicVersion: string;
+    activeRegions?: string[];
   };
   openSearch: OpenSearchConnectorConfig;
   carequality?: {
