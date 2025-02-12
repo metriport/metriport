@@ -2,7 +2,7 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import { out } from "../../../util/log";
 import { PatientRecord } from "../patient-import";
 import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shared";
-import { checkJobRecordExistsOrFail } from "./check-job-record-exists";
+import { checkPatientRecordExists } from "./check-patient-record-exists";
 
 // TODO 2330 add TSDoc
 export async function fetchPatientRecord({
@@ -25,7 +25,7 @@ export async function fetchPatientRecord({
   const key = createFileKeyPatient(cxId, jobId, patientId);
   try {
     if (throwIfNotFound) {
-      await checkJobRecordExistsOrFail({ cxId, jobId, s3BucketName });
+      await checkPatientRecordExists({ cxId, jobId, patientId, s3BucketName });
     }
     const file = await s3Utils.getFileContentsAsString(s3BucketName, key);
     return JSON.parse(file);

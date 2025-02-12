@@ -41,7 +41,7 @@ export async function createPatientImportJob({
   dryRun = false,
 }: BulkPatientCreateParams): Promise<CreatePatientImportResponse> {
   const { log } = out(
-    `createPatientImport - cxId ${cxId}, facilityId ${facilityId}, dryRun ${dryRun}`
+    `createPatientImportJob - cxId ${cxId}, facilityId ${facilityId}, dryRun ${dryRun}`
   );
   const facility = await getOptionalFacilityOrFail(cxId, facilityId);
 

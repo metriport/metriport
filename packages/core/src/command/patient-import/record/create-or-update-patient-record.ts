@@ -34,7 +34,7 @@ export async function creatOrUpdatePatientRecord({
     const existingRecord = existingRecordExists
       ? await fetchPatientRecord({ cxId, jobId, patientId, s3BucketName, throwIfNotFound: false })
       : {};
-    const updatedRecord = { ...existingRecord, patientId, ...data };
+    const updatedRecord = { ...existingRecord, ...data, patientId };
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,

@@ -169,18 +169,19 @@ router.post(
 /** ---------------------------------------------------------------------------
  * POST /patient/bulk
  *
- * Initiates a bulk patient import.
+ * Initiates a bulk patient create.
  *
  * @param req.query.facilityId The ID of the Facility the Patients should be associated with
  *        (optional if there's only one facility for the customer, fails if not provided and
  *        there's more than one facility for the customer).
  * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
  *        defaults to false).
- * @returns an object containing the information about the bulk import job:
- * - `jobId` - the bulk import job ID
+ * @returns an object containing the information about the bulk import job:s
+ * - `requestId` - the bulk import request ID
+ * - `facilityId` - the facility ID used to create the patients
  * - `status` - the status of the bulk import job
  * - `uploadUrl` - the URL to upload the CSV file
- * - `params` - the parameters used to create the bulk import job
+ * - `params` - the parameters used to initiate the bulk patient create
  */
 router.post(
   "/bulk",
