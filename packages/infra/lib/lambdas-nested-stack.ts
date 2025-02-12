@@ -499,7 +499,7 @@ export class LambdasNestedStack extends NestedStack {
       const bedrockPolicyStatement = new iam.PolicyStatement({
         actions: ["bedrock:InvokeModel"],
         resources: bedrock.activeRegions.flatMap(region => [
-          `arn:aws:bedrock:${region}:${this.account}:model/*`,
+          `arn:aws:bedrock:${region}:${this.account}:foundation-model/*`,
           `arn:aws:bedrock:${region}:${this.account}:inference-profile/*`,
         ]),
       });
