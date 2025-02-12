@@ -1,6 +1,6 @@
 import { Coordinates } from "@metriport/core/domain/address";
 import { AddressStrict } from "@metriport/core/domain/location-address";
-import { Patient, PatientData } from "@metriport/core/domain/patient";
+import { Patient, PatientData, GenderAtBirth } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
 import { isEmailValid, isPhoneValid, PurposeOfUse, USStateForAddress } from "@metriport/shared";
@@ -187,7 +187,7 @@ export function cqLinkToPatientData(cqLink: CQLink): PatientData {
   const firstName = patient?.name.map(name => name.given).join(" ") ?? "";
   const lastName = patient?.name.map(name => name.family).join(" ") ?? "";
   const dob = patient?.birthDate ? buildDayjs(patient.birthDate).format(ISO_DATE) : "";
-  const genderAtBirth = patient?.gender === "male" ? "M" : patient?.gender === "female" ? "F" : "U";
+  const genderAtBirth = cqGenderToPatientGender(patient?.gender);
   const address =
     patient?.address?.map(address => ({
       zip: address.postalCode ?? "",
@@ -214,4 +214,11 @@ export function cqLinkToPatientData(cqLink: CQLink): PatientData {
       },
     ],
   };
+}
+
+export function cqGenderToPatientGender(gender: string | undefined): GenderAtBirth {
+  if (!gender) return "U";
+  if (gender === "male") return "M";
+  if (gender === "female") return "F";
+  return "U";
 }

@@ -15,6 +15,7 @@ import {
   PatientData,
   PatientExternalData,
   PatientExternalDataEntry,
+  GenderAtBirth,
 } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
@@ -182,7 +183,7 @@ export async function getPatientsNetworkLinks(
 
     debug(`resp getNetworkLinks: `, JSON.stringify(networkLinks));
 
-    if (!networkLinks._embedded.networkLink) {
+    if (!networkLinks._embedded?.networkLink) {
       log(`No network links found for patient ${commonwellPatientId}`);
       return [];
     }
@@ -241,4 +242,11 @@ export function cwLinkToPatientData(cwLink: NetworkLink): PatientData {
       },
     ],
   };
+}
+
+export function cwGenderToPatientGender(gender: string | undefined): GenderAtBirth {
+  if (!gender) return "U";
+  if (gender === "M") return "M";
+  if (gender === "F") return "F";
+  return "U";
 }
