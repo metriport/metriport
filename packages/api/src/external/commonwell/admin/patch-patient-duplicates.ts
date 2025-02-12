@@ -4,8 +4,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import MetriportError from "../../../errors/metriport-error";
 import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "../link/shared";
-import { validateLinksBelongToPatient } from "../../hie/validate-patient-links";
-import { cwLinkToPatientData } from "../link/shared";
+import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
@@ -69,11 +68,10 @@ export async function patchDuplicatedPersonsForPatient(
     const networkLinks = await getPatientsNetworkLinks(commonWell, queryMeta, cwPatientId);
 
     // validate the links belong to the patient
-    const { validNetworkLinks, invalidLinks } = await validateLinksBelongToPatient(
+    const { validNetworkLinks, invalidLinks } = await validateCwLinksBelongToPatient(
       cxId,
       networkLinks,
-      patient.data,
-      cwLinkToPatientData
+      patient.data
     );
 
     // ...and upgrade the network links w/ that person's patients

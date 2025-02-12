@@ -4,7 +4,7 @@ import { InvalidLinks } from "../../../domain/invalid-links";
 import { InvalidLinksCreate } from "../../../domain/invalid-links";
 import { InvalidLinksModel } from "../../../models/invalid-links";
 import { getInvalidLinks } from "./get-invalid-links";
-import { updateInvalidLinksWithinDBTx } from "./update-invalid-links";
+import { updateInvalidLinksWithinDbTx } from "./update-invalid-links";
 
 export async function createOrUpdateInvalidLinks({
   id,
@@ -29,9 +29,11 @@ export async function createOrUpdateInvalidLinks({
       lock: true,
     });
     if (!existingInvalidLinks) return undefined;
-    return updateInvalidLinksWithinDBTx(invalidLinksCreate, existingInvalidLinks, transaction);
+    return updateInvalidLinksWithinDbTx(invalidLinksCreate, existingInvalidLinks, transaction);
   });
-  if (updateResult) return updateResult.dataValues;
+  if (updateResult) return updateResult;
 
-  return await InvalidLinksModel.create(invalidLinksCreate);
+  const invalidLinksResult = await InvalidLinksModel.create(invalidLinksCreate);
+
+  return invalidLinksResult.dataValues;
 }

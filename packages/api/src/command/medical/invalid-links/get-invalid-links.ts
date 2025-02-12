@@ -1,5 +1,5 @@
 import { Transaction } from "sequelize";
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { InvalidLinksModel } from "../../../models/invalid-links";
 
 export type GetInvalidLinks = {
@@ -23,15 +23,13 @@ export async function getInvalidLinks({
   return invalidLinks ?? undefined;
 }
 
-export async function getInvalidLinksOrFail({
-  id,
-  cxId,
-  transaction,
-  lock = false,
-}: GetInvalidLinks): Promise<InvalidLinksModel> {
-  const invalidLinks = await getInvalidLinks({ id, cxId, transaction, lock });
+export async function getInvalidLinksOrFail(params: GetInvalidLinks): Promise<InvalidLinksModel> {
+  const invalidLinks = await getInvalidLinks(params);
   if (!invalidLinks) {
-    throw new NotFoundError(`Invalid links not found for id: ${id}`);
+    throw new NotFoundError(`Invalid links not found`, undefined, {
+      id: params.id,
+      cxId: params.cxId,
+    });
   }
   return invalidLinks;
 }

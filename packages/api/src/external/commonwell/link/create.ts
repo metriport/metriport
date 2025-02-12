@@ -12,8 +12,7 @@ import {
 } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, getPatientsNetworkLinks, patientWithCWData } from "./shared";
-import { validateLinksBelongToPatient } from "../../hie/validate-patient-links";
-import { cwLinkToPatientData } from "./shared";
+import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
 
 const context = "cw.link.create";
 
@@ -79,11 +78,10 @@ export async function create(
 
     const networkLinks = await getPatientsNetworkLinks(commonWell, queryMeta, cwPatientId);
 
-    const { validNetworkLinks, invalidLinks } = await validateLinksBelongToPatient(
+    const { validNetworkLinks, invalidLinks } = await validateCwLinksBelongToPatient(
       cxId,
       networkLinks,
-      patient.data,
-      cwLinkToPatientData
+      patient.data
     );
 
     await autoUpgradeNetworkLinks(

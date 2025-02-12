@@ -28,8 +28,7 @@ import {
   patientResourceToNormalizedLinkDemographics,
 } from "./patient-demographics";
 import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
-import { validateLinksBelongToPatient } from "../hie/validate-patient-links";
-import { cqLinkToPatientData } from "./shared";
+import { validateCqLinksBelongToPatient } from "../hie/validate-patient-links";
 import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 
 dayjs.extend(duration);
@@ -133,26 +132,31 @@ async function validateAndCreateCqLinks(
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
 
-  const { validNetworkLinks, invalidLinks } = await validateLinksBelongToPatient<CQLink>(
+  const { validNetworkLinks, invalidLinks } = await validateCqLinksBelongToPatient(
     cxId,
     cqLinks,
-    patient.data,
-    cqLinkToPatientData
+    patient.data
   );
 
+  const promises = [];
+
   if (validNetworkLinks.length > 0) {
-    await createOrUpdateCQPatientData({ id, cxId, cqLinks: validNetworkLinks });
+    promises.push(createOrUpdateCQPatientData({ id, cxId, cqLinks: validNetworkLinks }));
   }
 
   if (invalidLinks.length > 0) {
-    await createOrUpdateInvalidLinks({
-      id,
-      cxId,
-      invalidLinks: {
-        carequality: invalidLinks,
-      },
-    });
+    promises.push(
+      createOrUpdateInvalidLinks({
+        id,
+        cxId,
+        invalidLinks: {
+          carequality: invalidLinks,
+        },
+      })
+    );
   }
+
+  await Promise.all(promises);
 
   return { validNetworkLinks, invalidLinks };
 }
