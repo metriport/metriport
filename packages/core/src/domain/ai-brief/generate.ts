@@ -6,7 +6,6 @@ import { summarizeFilteredBundleWithAI } from "../../command/ai-brief/create";
 import { generateAiBriefFhirResource } from "../../command/ai-brief/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture } from "../../util";
-import { uuidv7 } from "../../util/uuid-v7";
 
 dayjs.extend(duration);
 
@@ -21,7 +20,6 @@ export async function generateAiBriefBundleEntry(
   log: typeof console.log
 ): Promise<BundleEntry<Binary> | undefined> {
   let aiBriefContent;
-  const requestId = uuidv7();
   let attemptNumber = 0;
 
   try {
@@ -32,7 +30,7 @@ export async function generateAiBriefBundleEntry(
           bundle,
           cxId,
           patientId,
-          `${requestId}-${attemptNumber}`
+          attemptNumber.toString()
         );
       },
       {

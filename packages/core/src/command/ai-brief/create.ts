@@ -61,12 +61,12 @@ export async function summarizeFilteredBundleWithAI(
   bundle: Bundle<Resource>,
   cxId: string,
   patientId: string,
-  requestId: string
+  attemptNumber: string
 ): Promise<string | undefined> {
   const startedAt = new Date();
   const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
   // filter out historical data
-  log(`Starting with requestId ${requestId}, and bundle length ${bundle.entry?.length}`);
+  log(`Attempt #: ${attemptNumber}, and bundle length ${bundle.entry?.length}`);
   try {
     const latestReportDate = findDiagnosticReportResources(bundle)
       .flatMap(report => {
@@ -188,7 +188,6 @@ export async function summarizeFilteredBundleWithAI(
       distinctId: cxId,
       event: EventTypes.aiBriefGeneration,
       properties: {
-        requestId,
         patientId,
         startBundleSize: bundle.entry?.length,
         endBundleSize: slimPayloadBundle?.length,
