@@ -35,13 +35,15 @@ export function createAddresses(patient: PatientWithAddress): Address[] {
   const addressLine2 = patient.address.address_line2?.trim();
   const city = patient.address.city.trim();
   if (city === "") throw new BadRequestError("Patient address city is empty");
+  const state = normalizeUSStateForAddress(patient.address.state);
+  const zip = normalizeZipCodeNew(patient.address.zip);
   return [
     {
       addressLine1,
       addressLine2: !addressLine2 || addressLine2 === "" ? undefined : addressLine2,
       city,
-      state: normalizeUSStateForAddress(patient.address.state),
-      zip: normalizeZipCodeNew(patient.address.zip),
+      state,
+      zip,
       country: "USA",
     },
   ];

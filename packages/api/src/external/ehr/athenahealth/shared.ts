@@ -16,7 +16,7 @@ import {
   toTitleCase,
 } from "@metriport/shared";
 import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
-import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { PatientWithValidAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
@@ -27,7 +27,7 @@ const region = Config.getAWSRegion();
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createContacts(patient: PatientWithValidHomeAddress): Contact[] {
+export function createContacts(patient: PatientWithValidAddress): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       const email = normalizeEmailNewSafe(telecom.value);
@@ -42,7 +42,7 @@ export function createContacts(patient: PatientWithValidHomeAddress): Contact[] 
   });
 }
 
-export function createAddresses(patient: PatientWithValidHomeAddress): Address[] {
+export function createAddresses(patient: PatientWithValidAddress): Address[] {
   const addresses = patient.address.flatMap(address => {
     if (address.line.length === 0) return [];
     const addressLine1 = (address.line[0] as string).trim();
@@ -68,12 +68,17 @@ export function createAddresses(patient: PatientWithValidHomeAddress): Address[]
       country,
     };
   });
-  if (addresses.length === 0) throw new BadRequestError("Patient has no valid addresses");
+  if (addresses.length === 0)
+    throw new BadRequestError("Patient has no valid addresses", undefined, {
+      addresses: Object.values(addresses)
+        .map(a => JSON.stringify(a))
+        .join(","),
+    });
   return addresses;
 }
 
 export function createNames(
-  patient: PatientWithValidHomeAddress
+  patient: PatientWithValidAddress
 ): { firstName: string; lastName: string }[] {
   const names = patient.name.flatMap(name => {
     const lastName = name.family.trim();
@@ -84,7 +89,10 @@ export function createNames(
       return [{ firstName: toTitleCase(firstName), lastName: toTitleCase(lastName) }];
     });
   });
-  if (names.length === 0) throw new BadRequestError("Patient has no valid names");
+  if (names.length === 0)
+    throw new BadRequestError("Patient has no valid names", undefined, {
+      names: patient.name.map(n => JSON.stringify(n)).join(","),
+    });
   return names;
 }
 

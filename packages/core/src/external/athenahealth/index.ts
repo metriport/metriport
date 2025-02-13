@@ -47,10 +47,10 @@ import {
   medicationReferencesSchema,
   Patient,
   patientSchema,
-  patientSchemaWithValidHomeAddress,
+  patientSchemaWithValidAddress,
   PatientSearch,
   patientSearchSchema,
-  PatientWithValidHomeAddress,
+  PatientWithValidAddress,
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
@@ -240,7 +240,7 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getDepartmentIds - cxId ${cxId} practiceId ${this.practiceId}`
     );
-    const departmentsUrl = `/departments`;
+    const departmentsUrl = "/departments";
     const additionalInfo = { cxId, practiceId: this.practiceId };
     const departments = await this.makeRequest<Departments>({
       cxId,
@@ -260,7 +260,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientWithValidHomeAddress> {
+  }): Promise<PatientWithValidAddress> {
     const { debug } = out(
       `AthenaHealth getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -293,7 +293,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientWithValidHomeAddress> {
+  }): Promise<PatientWithValidAddress> {
     const { debug } = out(
       `AthenaHealth searchPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -313,6 +313,7 @@ class AthenaHealthApi {
       schema: patientSearchSchema,
       additionalInfo,
       debug,
+      useFhir: true,
     });
     const entry = patientSearch.entry;
     if (entry.length > 1) {
@@ -437,36 +438,24 @@ class AthenaHealthApi {
       THIRDPARTYUSERNAME: undefined,
       PATIENTFACINGCALL: undefined,
     };
-    try {
-      const createdProblem = await this.makeRequest<CreatedProblem>({
-        cxId,
-        patientId,
-        s3Path: "chart/problem",
-        method: "POST",
-        data,
-        url: chartProblemUrl,
-        schema: createdProblemSchema,
-        additionalInfo,
-        debug,
+    const createdProblem = await this.makeRequest<CreatedProblem>({
+      cxId,
+      patientId,
+      s3Path: "chart/problem",
+      method: "POST",
+      data,
+      url: chartProblemUrl,
+      schema: createdProblemSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!createdProblem.success) {
+      throw new MetriportError("Problem creation not successful", undefined, {
+        ...additionalInfo,
+        error: createdProblem.errormessage,
       });
-      if (!createdProblem.success) {
-        throw new MetriportError("Problem creation not successful", undefined, {
-          ...additionalInfo,
-          error: createdProblem.errormessage,
-        });
-      }
-      return createdProblemSuccessSchema.parse(createdProblem);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.response?.status === 400) {
-        throw new BadRequestError(
-          "Problem creation not successful - duplicate problem",
-          undefined,
-          additionalInfo
-        );
-      }
-      throw error;
     }
+    return createdProblemSuccessSchema.parse(createdProblem);
   }
 
   async createVitals({
@@ -533,7 +522,7 @@ class AthenaHealthApi {
       const vitalsData = this.createVitalsData(v, clinicalElementId, units);
       return {
         departmentid: this.stripDepartmentId(departmentId),
-        returnvitalsid: true,
+        returnvitalids: true,
         source: "DEVICEGENERATED",
         vitals: [vitalsData],
         THIRDPARTYUSERNAME: undefined,
@@ -676,7 +665,7 @@ class AthenaHealthApi {
             }. Cause: ${errorToString(e.error)}`
         )
         .join(", ");
-      const msg = `Failure while searching for some search values @ AthenaHealth`;
+      const msg = `Failure while searching for some medications @ AthenaHealth`;
       log(`${msg}. ${errorsToString}`);
       capture.message(msg, {
         extra: {
@@ -785,12 +774,12 @@ class AthenaHealthApi {
       `AthenaHealth getAppointmentsFromSubscription - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
-      showprocessedstartdatetime: startProcessedDate
-        ? this.formatDateTime(startProcessedDate.toISOString()) ?? ""
-        : "",
-      showprocessedenddatetime: endProcessedDate
-        ? this.formatDateTime(endProcessedDate.toISOString()) ?? ""
-        : "",
+      ...(startProcessedDate && {
+        showprocessedstartdatetime: this.formatDateTime(startProcessedDate.toISOString()) ?? "",
+      }),
+      ...(endProcessedDate && {
+        showprocessedenddatetime: this.formatDateTime(endProcessedDate.toISOString()) ?? "",
+      }),
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
@@ -857,6 +846,9 @@ class AthenaHealthApi {
     debug: typeof console.log;
     useFhir?: boolean;
   }): Promise<T> {
+    const { log } = out(
+      `AthenaHealth makeRequest - cxId ${cxId} practiceId ${this.practiceId} method ${method} url ${url}`
+    );
     const axiosInstance = useFhir ? this.axiosInstanceFhir : this.axiosInstanceProprietary;
     const response = await axiosInstance.request({
       method,
@@ -864,7 +856,14 @@ class AthenaHealthApi {
       data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
     });
     if (!response.data) {
-      throw new MetriportError(`No body returned from ${method} ${url}`, undefined, additionalInfo);
+      const msg = `No body returned @ AthenaHealth`;
+      log(`${msg}. ${method} ${url}`);
+      throw new MetriportError(msg, undefined, {
+        ...additionalInfo,
+        method,
+        url,
+        context: "athenahealth.make-request",
+      });
     }
     const body = response.data;
     debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
@@ -886,8 +885,13 @@ class AthenaHealthApi {
     }
     const outcome = schema.safeParse(body);
     if (!outcome.success) {
-      throw new MetriportError(`${method} ${url} response not parsed`, undefined, {
+      const msg = `Response not parsed @ AthenaHealth`;
+      log(`${msg}. ${method} ${url}`);
+      throw new MetriportError(msg, undefined, {
         ...additionalInfo,
+        method,
+        url,
+        context: "athenahealth.make-request",
         error: errorToString(outcome.error),
       });
     }
@@ -947,12 +951,15 @@ class AthenaHealthApi {
     return parsedDate.format(athenaDateTimeFormat);
   }
 
-  private parsePatient(patient: Patient): PatientWithValidHomeAddress {
-    if (!patient.address) throw new BadRequestError("No addresses found");
-    patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
-    if (patient.address.length === 0)
+  private parsePatient(patient: Patient): PatientWithValidAddress {
+    if (!patient.address || patient.address.length === 0) {
+      throw new BadRequestError("No addresses found");
+    }
+    patient.address = patient.address.filter(a => a.postalCode !== undefined);
+    if (patient.address.length === 0) {
       throw new BadRequestError("No home address with valid zip found");
-    return patientSchemaWithValidHomeAddress.parse(patient);
+    }
+    return patientSchemaWithValidAddress.parse(patient);
   }
 
   private getConditionSnomedCode(condition: Condition): string | undefined {

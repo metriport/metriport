@@ -145,7 +145,7 @@ class ElationApi {
     metadata: Metadata;
   }): Promise<PatientWithAddress> {
     const { debug } = out(
-      `Elation uupdatePatientMetadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `Elation updatePatientMetadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/patients/${patientId}/`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
