@@ -49,11 +49,7 @@ function getDocumentsWithOid(
   }
 
   for (const document of carequalityDocuments) {
-    const organization = document.contained?.find(contain => {
-      if (isOrganization(contain)) {
-        return contain.identifier?.find(identifier => identifier.value === oid);
-      }
-    });
+    const organization = document.contained?.find(isOrganization);
     if (!organization) continue;
 
     const identifier = organization.identifier?.find(identifier => identifier.value === oid);
