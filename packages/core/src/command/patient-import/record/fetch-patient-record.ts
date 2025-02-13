@@ -1,4 +1,4 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString, MetriportError, NotFoundError } from "@metriport/shared";
 import { out } from "../../../util/log";
 import { PatientRecord } from "../patient-import";
 import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shared";
@@ -52,7 +52,7 @@ export async function fetchPatientRecordOrFail({
 }): Promise<PatientRecord> {
   const patientRecord = await fetchPatientRecord({ cxId, jobId, patientId, s3BucketName });
   if (!patientRecord) {
-    throw new MetriportError(`Patient record not found @ PatientImport`, {
+    throw new NotFoundError(`Patient record not found @ PatientImport`, {
       cxId,
       jobId,
       patientId,
