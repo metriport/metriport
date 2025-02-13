@@ -37,7 +37,8 @@ import { deleteCwPatientData } from "./command/cw-patient-data/delete-cw-data";
 import { updateCwPatientData } from "./command/cw-patient-data/update-cw-data";
 import { CwLink } from "./cw-patient-data";
 import { queryAndProcessDocuments } from "./document/document-query";
-import { autoUpgradeNetworkLinks } from "./link/shared";
+import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "./link/shared";
+import { validateCwLinksBelongToPatient } from "../hie/validate-patient-links";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import {
   getPatientNetworkLinks,
@@ -55,6 +56,7 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator, validateCWEnabled } from "./shared";
+import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -194,13 +196,18 @@ async function registerAndLinkPatientInCW({
       commonwellPatientId,
       patientRefLink,
       patient,
-      getOrgIdExcludeList,
     });
 
-    let cwLinks: CwLink[] = [];
-    if (networkLinks) {
-      cwLinks = await createCwLinks(patient, networkLinks);
-    }
+    const { validNetworkLinks: cwLinks, invalidLinks } = await assessNetworkLinks({
+      commonWell,
+      queryMeta,
+      commonwellPatientId,
+      networkLinks,
+      personId,
+      createContext,
+      patient,
+      getOrgIdExcludeList,
+    });
 
     if (rerunPdOnNewDemographics) {
       const startedNewPd = await runNextPdOnNewDemographics({
@@ -221,6 +228,7 @@ async function registerAndLinkPatientInCW({
         patientId: patient.id,
         requestId,
         pdLinks: cwLinks.length,
+        pdLinksInvalid: invalidLinks.length,
         duration: elapsedTimeFromNow(startedAt),
       },
     });
@@ -372,13 +380,18 @@ async function updatePatientAndLinksInCw({
       personId,
       patientRefLink,
       patient,
-      getOrgIdExcludeList,
     });
 
-    let cwLinks: CwLink[] = [];
-    if (networkLinks) {
-      cwLinks = await createCwLinks(patient, networkLinks);
-    }
+    const { validNetworkLinks: cwLinks, invalidLinks } = await assessNetworkLinks({
+      commonWell,
+      queryMeta,
+      commonwellPatientId,
+      networkLinks,
+      personId,
+      createContext,
+      patient,
+      getOrgIdExcludeList,
+    });
 
     if (rerunPdOnNewDemographics) {
       const startedNewPd = await runNextPdOnNewDemographics({
@@ -399,6 +412,7 @@ async function updatePatientAndLinksInCw({
         patientId: patient.id,
         requestId,
         pdLinks: cwLinks.length,
+        pdLinksInvalid: invalidLinks.length,
         duration: elapsedTimeFromNow(startedAt),
       },
     });
@@ -435,16 +449,80 @@ async function updatePatientAndLinksInCw({
   }
 }
 
-async function createCwLinks(
-  patient: Pick<Patient, "id" | "cxId">,
-  pdResults: NetworkLink[]
-): Promise<CwLink[]> {
+async function assessNetworkLinks({
+  commonWell,
+  queryMeta,
+  commonwellPatientId,
+  networkLinks,
+  personId,
+  createContext,
+  patient,
+  getOrgIdExcludeList,
+}: {
+  commonWell: CommonWellAPI;
+  queryMeta: RequestMetadata;
+  commonwellPatientId: string;
+  networkLinks: NetworkLink[] | undefined;
+  personId: string;
+  createContext: string;
+  patient: Patient;
+  getOrgIdExcludeList: () => Promise<string[]>;
+}): Promise<{
+  validNetworkLinks: CwLink[];
+  invalidLinks: CwLink[];
+}> {
+  let cwLinks: CwLink[] = [];
+  let invalidLinks: CwLink[] = [];
+  if (networkLinks) {
+    const { validNetworkLinks, invalidLinks: invalidLinksFromValidation } =
+      await validateAndCreateCwLinks(patient, networkLinks);
+    cwLinks = validNetworkLinks;
+    invalidLinks = invalidLinksFromValidation;
+  }
+
+  await autoUpgradeNetworkLinks(
+    commonWell,
+    queryMeta,
+    cwLinks,
+    invalidLinks,
+    commonwellPatientId,
+    personId,
+    createContext,
+    getOrgIdExcludeList
+  );
+
+  return { validNetworkLinks: cwLinks, invalidLinks };
+}
+
+async function validateAndCreateCwLinks(
+  patient: Patient,
+  pdResults: CwLink[]
+): Promise<{
+  validNetworkLinks: CwLink[];
+  invalidLinks: CwLink[];
+}> {
   const { id, cxId } = patient;
   const cwLinks = pdResults;
 
-  if (cwLinks.length > 0) await createOrUpdateCwPatientData({ id, cxId, cwLinks });
+  const { validNetworkLinks, invalidLinks } = await validateCwLinksBelongToPatient(
+    cxId,
+    cwLinks,
+    patient.data
+  );
 
-  return cwLinks;
+  if (validNetworkLinks.length > 0) {
+    await createOrUpdateCwPatientData({ id, cxId, cwLinks: validNetworkLinks });
+  }
+
+  if (invalidLinks.length > 0) {
+    await createOrUpdateInvalidLinks({
+      id,
+      cxId,
+      invalidLinks: { commonwell: invalidLinks },
+    });
+  }
+
+  return { validNetworkLinks, invalidLinks };
 }
 
 export async function runNextPdOnNewDemographics({
@@ -730,7 +808,6 @@ async function findOrCreatePersonAndLink({
   commonwellPatientId,
   patientRefLink,
   patient,
-  getOrgIdExcludeList,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
@@ -738,7 +815,6 @@ async function findOrCreatePersonAndLink({
   commonwellPatientId: string;
   patientRefLink: string;
   patient: Patient;
-  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<{ personId: string; networkLinks: NetworkLink[] | undefined }> {
   const { log, debug } = out(`CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`);
   let findOrCreateResponse: FindOrCreatePersonResponse;
@@ -774,14 +850,7 @@ async function findOrCreatePersonAndLink({
     throw err;
   }
 
-  const networkLinks = await autoUpgradeNetworkLinks(
-    commonWell,
-    queryMeta,
-    commonwellPatientId,
-    personId,
-    createContext,
-    getOrgIdExcludeList
-  );
+  const networkLinks = await getPatientsNetworkLinks(commonWell, queryMeta, commonwellPatientId);
 
   return { personId, networkLinks };
 }
@@ -794,7 +863,6 @@ async function updatePersonAndLink({
   personId,
   patientRefLink,
   patient,
-  getOrgIdExcludeList,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
@@ -803,7 +871,6 @@ async function updatePersonAndLink({
   personId: string;
   patientRefLink: string;
   patient: Patient;
-  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<NetworkLink[] | undefined> {
   const { log, debug } = out(`CW updatePersonAndLink - CW patientId ${commonwellPatientId}`);
   const person = makePersonForPatient(commonwellPatient);
@@ -837,7 +904,6 @@ async function updatePersonAndLink({
         commonwellPatientId,
         patientRefLink,
         patient,
-        getOrgIdExcludeList,
       });
       return networkLinks;
     }
@@ -879,15 +945,14 @@ async function updatePersonAndLink({
     throw err;
   }
 
-  const networkLinks = await autoUpgradeNetworkLinks(
+  const { networkLinks } = await findOrCreatePersonAndLink({
     commonWell,
     queryMeta,
+    commonwellPatient,
     commonwellPatientId,
-    personId,
-    createContext,
-    getOrgIdExcludeList
-  );
-
+    patientRefLink,
+    patient,
+  });
   return networkLinks;
 }
 
