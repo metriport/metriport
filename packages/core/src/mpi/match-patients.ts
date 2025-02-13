@@ -315,21 +315,85 @@ export function strictMatchingAlgorithm(patient1: PatientData, patient2: Patient
   const isDobMatch = normalizedPatient1.dob === normalizedPatient2.dob;
   const isGenderMatch = normalizedPatient1.genderAtBirth === normalizedPatient2.genderAtBirth;
 
-  const firstNames1 = splitName(normalizedPatient1.firstName);
-  const firstNames2 = splitName(normalizedPatient2.firstName);
+  const cleanedFirstName1 = removeCommonPrefixesAndSuffixes(normalizedPatient1.firstName);
+  const cleanedFirstName2 = removeCommonPrefixesAndSuffixes(normalizedPatient2.firstName);
 
-  const lastNames1 = splitName(normalizedPatient1.lastName);
-  const lastNames2 = splitName(normalizedPatient2.lastName);
+  const cleanedLastName1 = removeCommonPrefixesAndSuffixes(normalizedPatient1.lastName);
+  const cleanedLastName2 = removeCommonPrefixesAndSuffixes(normalizedPatient2.lastName);
 
-  const hasMatchingFirstName =
-    firstNames1.length === firstNames2.length &&
-    firstNames1.every(name => firstNames2.includes(name));
-  const hasMatchingLastName =
-    lastNames1.length === lastNames2.length && lastNames1.every(name => lastNames2.includes(name));
+  const firstNameNoInitials1 = removeInitialsFromName(cleanedFirstName1);
+  const firstNameNoInitials2 = removeInitialsFromName(cleanedFirstName2);
+
+  const lastNameNoInitials1 = removeInitialsFromName(cleanedLastName1);
+  const lastNameNoInitials2 = removeInitialsFromName(cleanedLastName2);
+
+  const firstNames1 = splitName(firstNameNoInitials1);
+  const firstNames2 = splitName(firstNameNoInitials2);
+
+  const lastNames1 = splitName(lastNameNoInitials1);
+  const lastNames2 = splitName(lastNameNoInitials2);
+
+  const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
+  const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
 
   const isNameMatch = hasMatchingFirstName && hasMatchingLastName;
 
   return isNameMatch && isDobMatch && isGenderMatch;
+}
+
+export function removeInitialsFromName(name: string): string {
+  const nameParts = name.split(" ");
+  const cleanedNameParts = nameParts.filter(part => {
+    const isSingleLetter = part.length === 1;
+    const isSingleLetterWithPeriod = part.length === 2 && part.endsWith(".");
+    return !isSingleLetter && !isSingleLetterWithPeriod;
+  });
+  return cleanedNameParts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+export function removeCommonPrefixesAndSuffixes(name: string): string {
+  const prefixes = [
+    "Mr\\.",
+    "Mrs\\.",
+    "Ms\\.",
+    "Dr\\.",
+    "Prof\\.",
+    "Mr",
+    "Mrs",
+    "Ms",
+    "Dr",
+    "Prof",
+  ];
+  const suffixes = [
+    "Jr\\.",
+    "Sr\\.",
+    "III",
+    "II",
+    "PhD\\.",
+    "MD\\.",
+    "Esq\\.",
+    "Jr",
+    "Sr",
+    "PhD",
+    "MD",
+    "Esq",
+  ];
+
+  let cleanedName = name.trim();
+
+  for (const prefix of prefixes) {
+    const pattern = new RegExp(`^${prefix}\\s+`, "i");
+    cleanedName = cleanedName.replace(pattern, "");
+  }
+
+  for (const suffix of suffixes) {
+    const pattern = new RegExp(`\\s+${suffix}\\s*$`, "i");
+    cleanedName = cleanedName.replace(pattern, "");
+  }
+
+  cleanedName = cleanedName.replace(/\s+/g, " ");
+
+  return cleanedName.trim();
 }
 
 function splitDob(dob: string): string[] {
