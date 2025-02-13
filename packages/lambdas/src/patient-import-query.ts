@@ -7,9 +7,9 @@ import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import {
   parseCxIdAndJob,
-  parseDisableWebhooks,
-  parseRerunPdOnNewDemos,
-  parseTriggerConsolidated,
+  parseDisableWebhooksOrFail,
+  parseRerunPdOnNewDemosOrFail,
+  parseTriggerConsolidatedOrFail,
 } from "./shared/patient-import";
 import { getSingleMessageOrFail } from "./shared/sqs";
 
@@ -95,20 +95,20 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
-  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
-  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
+  const { triggerConsolidatedRaw } = parseTriggerConsolidatedOrFail(bodyAsJson);
+  const { disableWebhooksRaw } = parseDisableWebhooksOrFail(bodyAsJson);
+  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemosOrFail(bodyAsJson);
 
   const patientIdRaw = bodyAsJson.patientId;
   if (!patientIdRaw) throw new Error(`Missing patientId`);
   if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
 
-  const cxId = cxIdRaw as string;
-  const jobId = jobIdRaw as string;
-  const patientId = patientIdRaw as string;
-  const triggerConsolidated = triggerConsolidatedRaw as boolean;
-  const disableWebhooks = disableWebhooksRaw as boolean;
-  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
+  const cxId = cxIdRaw;
+  const jobId = jobIdRaw;
+  const patientId = patientIdRaw;
+  const triggerConsolidated = triggerConsolidatedRaw;
+  const disableWebhooks = disableWebhooksRaw;
+  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw;
 
   return {
     cxId,

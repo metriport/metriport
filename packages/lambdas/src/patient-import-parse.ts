@@ -96,13 +96,13 @@ function parseBody(body?: unknown): StartPatientImportRequest {
   if (dryRunRaw === undefined) throw new Error(`Missing dryRun`);
   if (typeof dryRunRaw !== "boolean") throw new Error(`Invalid dryRun`);
 
-  const cxId = cxIdRaw as string;
-  const facilityId = facilityIdRaw as string;
-  const jobId = jobIdRaw as string;
-  const triggerConsolidated = triggerConsolidatedRaw as boolean;
-  const disableWebhooks = disableWebhooksRaw as boolean;
-  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
-  const dryRun = dryRunRaw as boolean;
+  const cxId = cxIdRaw;
+  const facilityId = facilityIdRaw;
+  const jobId = jobIdRaw;
+  const triggerConsolidated = triggerConsolidatedRaw;
+  const disableWebhooks = disableWebhooksRaw;
+  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw;
+  const dryRun = dryRunRaw;
 
   return {
     cxId,
