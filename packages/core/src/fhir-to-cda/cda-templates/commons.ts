@@ -10,6 +10,7 @@ import {
   Practitioner,
 } from "@medplum/fhirtypes";
 import { normalizeOid, toArray } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
@@ -34,9 +35,6 @@ import {
   TextParagraph,
 } from "../cda-types/shared-types";
 import {
-  NOT_SPECIFIED,
-  _xmlnsXsiAttribute,
-  _xsiTypeAttribute,
   amaAssnSystemCode,
   extensionValue2014,
   fdasisSystemCode,
@@ -46,11 +44,14 @@ import {
   loincSystemCode,
   loincSystemName,
   nlmNihSystemCode,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
   providerTaxonomy,
   snomedSystemCode,
   vaccineAdministeredCodeSet,
+  _xmlnsXsiAttribute,
+  _xsiTypeAttribute,
 } from "./constants";
 
 dayjs.extend(localizedFormat);
@@ -314,7 +315,7 @@ export function formatDateToCdaTimestamp(dateString: string | undefined): string
     return undefined;
   }
 
-  const date = dayjs(dateString);
+  const date = buildDayjs(dateString);
 
   if (dateString.includes("T")) {
     const match = dateString.match(timeOffsetRegex);
@@ -333,7 +334,7 @@ export function formatDateToHumanReadableFormat(
 ): string | undefined {
   if (!dateString) return undefined;
 
-  const date = dayjs(dateString);
+  const date = buildDayjs(dateString);
 
   if (dateString.includes("T")) {
     const match = dateString.match(timeOffsetRegex);
