@@ -1,4 +1,4 @@
-import { Config } from "../../../util/config";
+import { Config } from "../../../../util/config";
 import { PatientImportQueryHandler } from "./patient-import-query";
 import { PatientImportQueryHandlerCloud } from "./patient-import-query-cloud";
 import { PatientImportQueryHandlerLocal } from "./patient-import-query-local";

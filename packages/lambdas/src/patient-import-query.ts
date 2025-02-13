@@ -1,5 +1,5 @@
-import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/query/patient-import-query";
-import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/query/patient-import-query-local";
+import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/steps/query/patient-import-query";
+import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/steps/query/patient-import-query-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -8,7 +8,7 @@ import { prefixedLog } from "./shared/log";
 import {
   parseCxIdAndJob,
   parseDisableWebhooksOrFail,
-  parseRerunPdOnNewDemosOrFail,
+  parseRerunPdOnNewDemos,
   parseTriggerConsolidatedOrFail,
 } from "./shared/patient-import";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -95,9 +95,9 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { triggerConsolidatedRaw } = parseTriggerConsolidatedOrFail(bodyAsJson);
-  const { disableWebhooksRaw } = parseDisableWebhooksOrFail(bodyAsJson);
-  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemosOrFail(bodyAsJson);
+  const triggerConsolidatedRaw = parseTriggerConsolidatedOrFail(bodyAsJson);
+  const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
+  const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientIdRaw = bodyAsJson.patientId;
   if (!patientIdRaw) throw new Error(`Missing patientId`);

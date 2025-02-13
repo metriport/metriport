@@ -1,11 +1,11 @@
 import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
-import { creatOrUpdatePatientRecord } from "../commands/create-or-update-patient-record";
-import { startDocumentQuery } from "../commands/start-document-query";
-import { startPatientQuery } from "../commands/start-patient-query";
+import { out } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
+import { startDocumentQuery } from "../../api/start-document-query";
+import { startPatientQuery } from "../../api/start-patient-query";
+import { creatOrUpdatePatientRecord } from "../../record/create-or-update-patient-record";
 import { PatientImportQueryHandler, ProcessPatientQueryRequest } from "./patient-import-query";
 
 dayjs.extend(duration);
@@ -46,7 +46,7 @@ export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler
         cxId,
         jobId,
         patientId,
-        data: { patientQueryStatus: "processing" },
+        data: { status: "successful" },
         s3BucketName: this.patientImportBucket,
       });
       if (this.waitTimeAtTheEndInMillis > 0) await sleep(this.waitTimeAtTheEndInMillis);

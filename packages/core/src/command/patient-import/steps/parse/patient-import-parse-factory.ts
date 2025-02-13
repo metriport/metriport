@@ -1,4 +1,4 @@
-import { Config } from "../../../util/config";
+import { Config } from "../../../../util/config";
 import { PatientImportParseHandler } from "./patient-import-parse";
 import { PatientImportParseCloud } from "./patient-import-parse-cloud";
 import { PatientImportParseLocal } from "./patient-import-parse-local";
