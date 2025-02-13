@@ -69,14 +69,9 @@ export async function createPatient({
       contact,
     },
   };
-  const addressWithCoordinates = await addCoordinatesToAddresses({
-    addresses: patientCreate.data.address,
-    cxId: patientCreate.cxId,
-    reportRelevance: true,
-  });
-  if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
-  const newPatient = await PatientModel.create(patientCreate);
+  const newPatientWithoutCoordinates = await PatientModel.create(patientCreate);
+  const newPatient = await addAddressCoordinates(newPatientWithoutCoordinates);
 
   const fhirPatient = toFHIR(newPatient);
   await upsertPatientToFHIRServer(newPatient.cxId, fhirPatient);
@@ -91,4 +86,22 @@ export async function createPatient({
     }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
   }
   return newPatient;
+}
+
+async function addAddressCoordinates(patient: PatientModel): Promise<PatientModel> {
+  const addressWithCoordinates = await addCoordinatesToAddresses({
+    addresses: patient.data.address,
+    cxId: patient.cxId,
+    reportRelevance: true,
+  });
+  if (addressWithCoordinates) {
+    return await patient.update({
+      data: {
+        ...patient.data,
+        address: addressWithCoordinates,
+      },
+      externalId: patient.externalId,
+    });
+  }
+  return patient;
 }
