@@ -3,6 +3,7 @@ import {
   matchingPersonalIdentifiersRule,
   matchingContactDetailsRule,
   removeCommonPrefixesAndSuffixes,
+  removeInitialsFromName,
 } from "../match-patients";
 import { PatientMPI } from "../shared";
 import { testPatientMPI } from "./test_data";
@@ -117,5 +118,34 @@ describe("removeCommonPrefixesAndSuffixes", () => {
     expect(removeCommonPrefixesAndSuffixes("Smith Jr.")).toBe("Smith");
     expect(removeCommonPrefixesAndSuffixes("Johnson Sr.")).toBe("Johnson");
     expect(removeCommonPrefixesAndSuffixes("Dr. Smith Jr.")).toBe("Smith");
+  });
+});
+
+describe("removeInitialsFromName", () => {
+  it("should remove single letters from names", () => {
+    expect(removeInitialsFromName("John A Smith")).toBe("John Smith");
+    expect(removeInitialsFromName("Mary J Doe")).toBe("Mary Doe");
+    expect(removeInitialsFromName("Robert E Lee")).toBe("Robert Lee");
+    expect(removeInitialsFromName("John F. Smith")).toBe("John Smith");
+  });
+
+  it("should preserve multi-letter parts", () => {
+    expect(removeInitialsFromName("Ab C De")).toBe("Ab De");
+    expect(removeInitialsFromName("John Jr Smith")).toBe("John Jr Smith");
+  });
+
+  it("should handle multiple single letters", () => {
+    expect(removeInitialsFromName("A B C Smith")).toBe("Smith");
+    expect(removeInitialsFromName("John A B C")).toBe("John");
+  });
+
+  it("should handle empty strings and single letters", () => {
+    expect(removeInitialsFromName("")).toBe("");
+    expect(removeInitialsFromName("A")).toBe("");
+  });
+
+  it("should handle names with extra spaces", () => {
+    expect(removeInitialsFromName("John   A    Smith")).toBe("John Smith");
+    expect(removeInitialsFromName("  A  B  Smith  ")).toBe("Smith");
   });
 });

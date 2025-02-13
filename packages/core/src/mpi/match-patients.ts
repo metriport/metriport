@@ -321,11 +321,17 @@ export function strictMatchingAlgorithm(patient1: PatientData, patient2: Patient
   const cleanedLastName1 = removeCommonPrefixesAndSuffixes(normalizedPatient1.lastName);
   const cleanedLastName2 = removeCommonPrefixesAndSuffixes(normalizedPatient2.lastName);
 
-  const firstNames1 = splitName(cleanedFirstName1);
-  const firstNames2 = splitName(cleanedFirstName2);
+  const firstNameNoInitials1 = removeInitialsFromName(cleanedFirstName1);
+  const firstNameNoInitials2 = removeInitialsFromName(cleanedFirstName2);
 
-  const lastNames1 = splitName(cleanedLastName1);
-  const lastNames2 = splitName(cleanedLastName2);
+  const lastNameNoInitials1 = removeInitialsFromName(cleanedLastName1);
+  const lastNameNoInitials2 = removeInitialsFromName(cleanedLastName2);
+
+  const firstNames1 = splitName(firstNameNoInitials1);
+  const firstNames2 = splitName(firstNameNoInitials2);
+
+  const lastNames1 = splitName(lastNameNoInitials1);
+  const lastNames2 = splitName(lastNameNoInitials2);
 
   const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
   const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
@@ -333,6 +339,16 @@ export function strictMatchingAlgorithm(patient1: PatientData, patient2: Patient
   const isNameMatch = hasMatchingFirstName && hasMatchingLastName;
 
   return isNameMatch && isDobMatch && isGenderMatch;
+}
+
+export function removeInitialsFromName(name: string): string {
+  const nameParts = name.split(" ");
+  const cleanedNameParts = nameParts.filter(part => {
+    const isSingleLetter = part.length === 1;
+    const isSingleLetterWithPeriod = part.length === 2 && part.endsWith(".");
+    return !isSingleLetter && !isSingleLetterWithPeriod;
+  });
+  return cleanedNameParts.join(" ").replace(/\s+/g, " ").trim();
 }
 
 export function removeCommonPrefixesAndSuffixes(name: string): string {
