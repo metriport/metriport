@@ -1,4 +1,4 @@
-import { Config } from "../../../util/config";
+import { Config } from "../../../../util/config";
 import { PatientImportCreateHandler } from "./patient-import-create";
 import { PatientImportCreateCloud } from "./patient-import-create-cloud";
 import { PatientImportCreateHandlerLocal } from "./patient-import-create-local";

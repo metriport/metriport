@@ -28,16 +28,16 @@ export async function updateInvalidLinks({
   const updateResult = await executeOnDBTx(InvalidLinksModel.prototype, async transaction => {
     const existingInvalidLinks = await getInvalidLinksOrFail({ id, cxId, transaction, lock: true });
 
-    return updateInvalidLinksWithinDBTx(invalidLinksUpdate, existingInvalidLinks, transaction);
+    return updateInvalidLinksWithinDbTx(invalidLinksUpdate, existingInvalidLinks, transaction);
   });
-  return updateResult.dataValues;
+  return updateResult;
 }
 
-export async function updateInvalidLinksWithinDBTx(
+export async function updateInvalidLinksWithinDbTx(
   update: InvalidLinksUpdate,
   existing: InvalidLinksModel,
   transaction: Transaction
-): Promise<InvalidLinksModel> {
+): Promise<InvalidLinks> {
   const { data: newData } = update;
 
   const updatedData = {
@@ -47,15 +47,17 @@ export async function updateInvalidLinksWithinDBTx(
 
   const uniqueUpdatedData = {
     carequality: uniqBy(updatedData.carequality, "oid"),
-    commonwell: uniqBy(updatedData.commonwell, function (nl) {
-      return nl.patient?.provider?.reference;
+    commonwell: uniqBy(updatedData.commonwell, function (networkLink) {
+      return networkLink.patient?.provider?.reference;
     }),
   };
 
-  return existing.update(
+  const result = await existing.update(
     {
       data: uniqueUpdatedData,
     },
     { transaction }
   );
+
+  return result.dataValues;
 }

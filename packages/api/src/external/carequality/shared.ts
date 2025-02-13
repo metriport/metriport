@@ -1,6 +1,7 @@
 import { Coordinates } from "@metriport/core/domain/address";
 import { AddressStrict } from "@metriport/core/domain/location-address";
 import { Patient, PatientData, GenderAtBirth } from "@metriport/core/domain/patient";
+import { Contact } from "@metriport/core/domain/contact";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
 import { isEmailValid, isPhoneValid, PurposeOfUse, USStateForAddress } from "@metriport/shared";
@@ -12,7 +13,6 @@ import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config"
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { CQLink } from "./cq-patient-data";
-
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
@@ -198,8 +198,18 @@ export function cqLinkToPatientData(cqLink: CQLink): PatientData {
       addressLine2: address.line?.[1] ?? "",
     })) ?? [];
 
-  const phone = patient?.telecom?.find(telecom => isPhoneValid(telecom.value ?? ""))?.value ?? "";
-  const email = patient?.telecom?.find(telecom => isEmailValid(telecom.value ?? ""))?.value ?? "";
+  const telecom: Contact[] = [];
+
+  if (patient?.telecom) {
+    patient.telecom.forEach(tel => {
+      const value = tel.value ?? "";
+      if (isPhoneValid(value)) {
+        telecom.push({ phone: value });
+      } else if (isEmailValid(value)) {
+        telecom.push({ email: value });
+      }
+    });
+  }
 
   return {
     firstName,
@@ -207,17 +217,11 @@ export function cqLinkToPatientData(cqLink: CQLink): PatientData {
     dob,
     genderAtBirth,
     address,
-    contact: [
-      {
-        phone,
-        email,
-      },
-    ],
+    contact: telecom,
   };
 }
 
 export function cqGenderToPatientGender(gender: string | undefined): GenderAtBirth {
-  if (!gender) return "U";
   if (gender === "male") return "M";
   if (gender === "female") return "F";
   return "U";

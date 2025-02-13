@@ -38,7 +38,7 @@ import { updateCwPatientData } from "./command/cw-patient-data/update-cw-data";
 import { CwLink } from "./cw-patient-data";
 import { queryAndProcessDocuments } from "./document/document-query";
 import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "./link/shared";
-import { validateLinksBelongToPatient } from "../hie/validate-patient-links";
+import { validateCwLinksBelongToPatient } from "../hie/validate-patient-links";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import {
   getPatientNetworkLinks,
@@ -56,7 +56,6 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator, validateCWEnabled } from "./shared";
-import { cwLinkToPatientData } from "./link/shared";
 import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 
 const createContext = "cw.patient.create";
@@ -505,11 +504,10 @@ async function validateAndCreateCwLinks(
   const { id, cxId } = patient;
   const cwLinks = pdResults;
 
-  const { validNetworkLinks, invalidLinks } = await validateLinksBelongToPatient(
+  const { validNetworkLinks, invalidLinks } = await validateCwLinksBelongToPatient(
     cxId,
     cwLinks,
-    patient.data,
-    cwLinkToPatientData
+    patient.data
   );
 
   if (validNetworkLinks.length > 0) {

@@ -1,4 +1,8 @@
-import { isValidISODate, validateIsPastOrPresentSafe } from "@metriport/shared/common/date";
+import {
+  isValidISODate,
+  validateIsPastOrPresentSafe,
+  validateDateIsAfter1900,
+} from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { z, ZodString } from "zod";
 
@@ -23,6 +27,10 @@ export const defaultDateString = defaultString.refine(isValidISODate, {
 export const pastOrTodayDateString = defaultDateString.refine(validateIsPastOrPresentSafe, {
   message: `Date can't be in the future`,
 });
+export const validDateOfBirthString = pastOrTodayDateString.refine(validateDateIsAfter1900, {
+  message: `Date can't be before 1900`,
+});
+
 export const defaultNameString = defaultString.min(1);
 
 export function optionalDateToISOString(

@@ -4,7 +4,7 @@ export type ProcessPatientQueryRequest = {
   patientId: string;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
-  rerunPdOnNewDemographics: boolean;
+  rerunPdOnNewDemographics?: boolean | undefined;
 };
 
 export interface PatientImportQueryHandler {

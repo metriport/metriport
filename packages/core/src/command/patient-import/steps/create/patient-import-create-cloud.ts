@@ -1,9 +1,9 @@
 import { errorToString } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { SQSClient } from "../../../external/aws/sqs";
-import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
+import { SQSClient } from "../../../../external/aws/sqs";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
 import { PatientImportCreateHandler, ProcessPatientCreateRequest } from "./patient-import-create";
 
 const region = Config.getAWSRegion();

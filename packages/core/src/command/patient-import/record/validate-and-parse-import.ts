@@ -1,6 +1,10 @@
-import { errorToString, PatientImportPatient, patientImportPatientSchema } from "@metriport/shared";
+import {
+  errorToString,
+  MetriportError,
+  PatientImportPatient,
+  patientImportPatientSchema,
+} from "@metriport/shared";
 import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
 import {
   compareCsvHeaders,
   createFileKeyRaw,
@@ -9,7 +13,7 @@ import {
   normalizeHeaders,
   patientImportCsvHeaders,
 } from "../patient-import-shared";
-import { creatValidationFile } from "./create-validation-file";
+import { createValidationFile } from "./create-validation-file";
 
 export type RowError = { rowColumns: string[]; error: string };
 
@@ -39,7 +43,7 @@ export async function validateAndParsePatientImportCsvFromS3({
     });
     await Promise.all([
       validRows.length > 0
-        ? creatValidationFile({
+        ? createValidationFile({
             cxId,
             jobId,
             stage: "valid",
@@ -48,7 +52,7 @@ export async function validateAndParsePatientImportCsvFromS3({
           })
         : async () => Promise<void>,
       invalidRows.length > 0
-        ? creatValidationFile({
+        ? createValidationFile({
             cxId,
             jobId,
             stage: "invalid",
@@ -64,16 +68,12 @@ export async function validateAndParsePatientImportCsvFromS3({
   } catch (error) {
     const msg = `Failure validating and parsing import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        jobId,
-        key,
-        context: "patient-import.validateAndParsePatientImportCsvFromS3",
-        error,
-      },
+    throw new MetriportError(msg, error, {
+      cxId,
+      jobId,
+      key,
+      context: "patient-import.validateAndParsePatientImportCsvFromS3",
     });
-    throw error;
   }
 }
 

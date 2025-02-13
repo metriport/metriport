@@ -1,8 +1,8 @@
 import {
   PatientPayload,
   ProcessPatientCreateRequest,
-} from "@metriport/core/command/patient-import/create/patient-import-create";
-import { PatientImportCreateHandlerLocal } from "@metriport/core/command/patient-import/create/patient-import-create-local";
+} from "@metriport/core/command/patient-import/steps/create/patient-import-create";
+import { PatientImportCreateHandlerLocal } from "@metriport/core/command/patient-import/steps/create/patient-import-create-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -10,10 +10,10 @@ import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import {
   parseCxIdAndJob,
-  parseDisableWebhooks,
+  parseDisableWebhooksOrFail,
   parseFacilityId,
   parseRerunPdOnNewDemos,
-  parseTriggerConsolidated,
+  parseTriggerConsolidatedOrFail,
 } from "./shared/patient-import";
 import { getSingleMessageOrFail } from "./shared/sqs";
 
@@ -104,21 +104,21 @@ function parseBody(body?: unknown): ProcessPatientCreateRequest {
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
-  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
-  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
-  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
+  const triggerConsolidatedRaw = parseTriggerConsolidatedOrFail(bodyAsJson);
+  const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
+  const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientPayloadRaw = bodyAsJson.patientPayload;
   if (!patientPayloadRaw) throw new Error(`Missing patientPayload`);
   if (typeof patientPayloadRaw !== "object") throw new Error(`Invalid patientPayload`);
 
-  const cxId = cxIdRaw as string;
-  const facilityId = facilityIdRaw as string;
-  const jobId = jobIdRaw as string;
+  const cxId = cxIdRaw;
+  const facilityId = facilityIdRaw;
+  const jobId = jobIdRaw;
   const patientPayload = patientPayloadRaw as PatientPayload;
-  const triggerConsolidated = triggerConsolidatedRaw as boolean;
-  const disableWebhooks = disableWebhooksRaw as boolean;
-  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
+  const triggerConsolidated = triggerConsolidatedRaw;
+  const disableWebhooks = disableWebhooksRaw;
+  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw;
 
   return {
     cxId,
