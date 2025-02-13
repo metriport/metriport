@@ -9,7 +9,7 @@ import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
 export const createPatient: PatientCreate = {
   firstName: "Junhdjjdkksuyujebeb",
   lastName: "Xamuscaeyttyworo",
-  dob: "1901-01-01",
+  dob: "1900-01-01",
   genderAtBirth: "M",
   contact: {
     phone: faker.phone.number("+1 ###-###-####"),
