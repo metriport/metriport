@@ -19,12 +19,36 @@ export async function validateCqLinksBelongToPatient(
   const invalidLinks: CQLink[] = [];
 
   for (const cqLink of cqLinks) {
-    const linkPatientData = cqLinkToPatientData(cqLink);
+    if (cqLink.patientResource) {
+      let hasMatch = false;
 
-    const isPatientMatch = await validateLinkBelongsToPatient(cxId, linkPatientData, patientData);
+      for (const name of cqLink.patientResource.name) {
+        const updatedCqLink: CQLink = {
+          ...cqLink,
+          patientResource: {
+            ...cqLink.patientResource,
+            name: [name],
+          },
+        };
 
-    if (isPatientMatch) {
-      validNetworkLinks.push(cqLink);
+        const linkPatientData = cqLinkToPatientData(updatedCqLink);
+
+        const isPatientMatch = await validateLinkBelongsToPatient(
+          cxId,
+          linkPatientData,
+          patientData
+        );
+
+        if (isPatientMatch) {
+          validNetworkLinks.push(cqLink);
+          hasMatch = true;
+          break;
+        }
+      }
+
+      if (!hasMatch) {
+        invalidLinks.push(cqLink);
+      }
     } else {
       invalidLinks.push(cqLink);
     }
@@ -42,12 +66,39 @@ export async function validateCwLinksBelongToPatient(
   const invalidLinks: CwLink[] = [];
 
   for (const cwLink of cwLinks) {
-    const linkPatientData = cwLinkToPatientData(cwLink);
+    if (cwLink.patient) {
+      let hasMatch = false;
 
-    const isPatientMatch = await validateLinkBelongsToPatient(cxId, linkPatientData, patientData);
+      for (const name of cwLink.patient.details.name) {
+        const updatedCwLink: CwLink = {
+          ...cwLink,
+          patient: {
+            ...cwLink.patient,
+            details: {
+              ...cwLink.patient.details,
+              name: [name],
+            },
+          },
+        };
 
-    if (isPatientMatch) {
-      validNetworkLinks.push(cwLink);
+        const linkPatientData = cwLinkToPatientData(updatedCwLink);
+
+        const isPatientMatch = await validateLinkBelongsToPatient(
+          cxId,
+          linkPatientData,
+          patientData
+        );
+
+        if (isPatientMatch) {
+          validNetworkLinks.push(cwLink);
+          hasMatch = true;
+          break;
+        }
+      }
+
+      if (!hasMatch) {
+        invalidLinks.push(cwLink);
+      }
     } else {
       invalidLinks.push(cwLink);
     }
