@@ -285,13 +285,12 @@ export class PatientImportNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     bucket: s3.Bucket;
     envType: EnvType;
-    notificationUrl?: string;
+    notificationUrl: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda | undefined {
     const { lambdaLayers, vpc, bucket, envType, notificationUrl, sentryDsn, alarmAction } =
       ownProps;
-    if (!notificationUrl) return;
 
     const lambda = createLambda({
       stack: this,
