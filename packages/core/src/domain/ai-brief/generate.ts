@@ -19,16 +19,19 @@ export async function generateAiBriefBundleEntry(
   patientId: string,
   log: typeof console.log
 ): Promise<BundleEntry<Binary> | undefined> {
-  let binaryBundleEntry: BundleEntry<Binary> | undefined;
+  let aiBriefContent;
+  let attemptNumber = 1;
 
   try {
     await executeWithNetworkRetries(
       async () => {
-        const aiBriefContent = await summarizeFilteredBundleWithAI(bundle, cxId, patientId);
-        const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
-        if (aiBriefFhirResource) {
-          binaryBundleEntry = buildBundleEntry(aiBriefFhirResource);
-        }
+        aiBriefContent = await summarizeFilteredBundleWithAI(
+          bundle,
+          cxId,
+          patientId,
+          attemptNumber.toString()
+        );
+        attemptNumber++;
       },
       {
         maxAttempts,
@@ -37,8 +40,13 @@ export async function generateAiBriefBundleEntry(
       }
     );
 
-    return binaryBundleEntry;
+    if (aiBriefContent) {
+      const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
+      return buildBundleEntry(aiBriefFhirResource);
+    }
+    return undefined;
   } catch (err) {
+    attemptNumber++;
     const msg = `Failed to generate AI Brief with retries`;
     log(`${msg}. Error: ${errorToString(err)}`);
     capture.error(msg, {
