@@ -1,4 +1,5 @@
 import { sendToSlack } from "@metriport/core/external/slack/index";
+import { Config } from "@metriport/core/util/config";
 import { errorToString } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { S3Event } from "aws-lambda";
@@ -9,6 +10,7 @@ import { getEnvOrFail } from "./shared/env";
 capture.init();
 
 const slackNotificationUrl = getEnvOrFail("SLACK_NOTIFICATION_URL");
+const isSandbox = Config.isSandbox();
 
 export async function handler(event: S3Event) {
   for (const record of event.Records) {
@@ -26,9 +28,10 @@ export async function handler(event: S3Event) {
         .split("/")
         .find(s => s.startsWith("cxid="))
         ?.split("=")[1];
+      const subjectSuffix = isSandbox ? " - :package: `SANDBOX` :package: " : "";
       await sendToSlack(
         {
-          subject: `New bulk patient import initiated!`,
+          subject: `New bulk patient import initiated` + subjectSuffix,
           message: `Customer: ${cxId}\nS3 bucket: ${sourceBucket}\nS3 key (file): ${sourceKey}`,
           emoji: ":warning:",
         },

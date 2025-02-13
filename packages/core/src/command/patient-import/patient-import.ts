@@ -1,16 +1,11 @@
 import { PatientDemoData } from "../../domain/patient";
+import { PatientImportStatus } from "../../domain/patient/patient-import";
 
-export type JobStatus = "waiting" | "processing" | "completed" | "failed";
-
-export type PhaseStatus = "processing" | "completed" | "failed";
+export type PatientRecordStatus = "processing" | "successful" | "failed";
 
 export type PatientRecord = {
   patientId: string;
-  patientQueryStatus?: PhaseStatus;
-  documentQueryStatus?: PhaseStatus;
-  documentRetrevialStatus?: PhaseStatus;
-  documentConversionStatus?: PhaseStatus;
-  cleanUpStatus?: PhaseStatus;
+  status: PatientRecordStatus;
 };
 
 export type PatientRecordUpdate = Omit<PatientRecord, "patientId">;
@@ -20,16 +15,7 @@ export type JobRecord = {
   facilityId: string;
   jobStartedAt: string;
   dryRun: boolean;
-  status: JobStatus;
+  status: PatientImportStatus;
 };
 
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
-
-export type JobResponseBase = {
-  jobId: string;
-  status: JobStatus;
-};
-
-export type JobResponseCreate = JobResponseBase & {
-  uploadUrl: string;
-};

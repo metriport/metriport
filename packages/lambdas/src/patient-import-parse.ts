@@ -1,5 +1,5 @@
-import { StartPatientImportRequest } from "@metriport/core/command/patient-import/parse/patient-import-parse";
-import { PatientImportParseLocal } from "@metriport/core/command/patient-import/parse/patient-import-parse-local";
+import { StartPatientImportRequest } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse";
+import { PatientImportParseLocal } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -7,7 +7,7 @@ import { prefixedLog } from "./shared/log";
 import {
   parseCxIdAndJob,
   parseDisableWebhooks,
-  parseFacilityId,
+  parseDryRun,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidated,
 } from "./shared/patient-import";
@@ -28,38 +28,28 @@ export async function handler(event: StartPatientImportRequest) {
   try {
     console.log(`Running with unparsed body: ${JSON.stringify(event)}`);
     const parsedBody = parseBody(event);
-    const {
-      cxId,
-      facilityId,
-      jobId,
-      triggerConsolidated,
-      disableWebhooks,
-      rerunPdOnNewDemographics,
-      dryRun,
-    } = parsedBody;
-
-    const jobStartedAt = new Date().toISOString();
+    const { cxId, jobId, triggerConsolidated, disableWebhooks, rerunPdOnNewDemographics, dryRun } =
+      parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}`);
     try {
       log(
         `Parsed: ${JSON.stringify(
           parsedBody
-        )}, jobStartedAt ${jobStartedAt}, patientImportBucket ${patientImportBucket}, processPatientCreateQueue}`
+        )}, patientImportBucket ${patientImportBucket}, processPatientCreateQueue}`
       );
 
-      const processPatientImportRequest: StartPatientImportRequest = {
+      const processJobParseRequest: StartPatientImportRequest = {
         cxId,
-        facilityId,
         jobId,
         triggerConsolidated,
         disableWebhooks,
         rerunPdOnNewDemographics,
         dryRun,
       };
-      const patientImportHandler = new PatientImportParseLocal(patientImportBucket);
+      const patientImportParser = new PatientImportParseLocal(patientImportBucket);
 
-      await patientImportHandler.startPatientImport(processPatientImportRequest);
+      await patientImportParser.processJobParse(processJobParseRequest);
 
       const finishedAt = new Date().getTime();
       console.log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -87,26 +77,20 @@ function parseBody(body?: unknown): StartPatientImportRequest {
   const bodyAsJson = typeof body === "string" ? JSON.parse(body) : body;
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { facilityIdRaw } = parseFacilityId(bodyAsJson);
-  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
-  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
-  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
+  const triggerConsolidatedRaw = parseTriggerConsolidated(bodyAsJson);
+  const disableWebhooksRaw = parseDisableWebhooks(bodyAsJson);
+  const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
+  const dryRunRaw = parseDryRun(bodyAsJson);
 
-  const dryRunRaw = bodyAsJson.dryRun;
-  if (dryRunRaw === undefined) throw new Error(`Missing dryRun`);
-  if (typeof dryRunRaw !== "boolean") throw new Error(`Invalid dryRun`);
-
-  const cxId = cxIdRaw as string;
-  const facilityId = facilityIdRaw as string;
-  const jobId = jobIdRaw as string;
-  const triggerConsolidated = triggerConsolidatedRaw as boolean;
-  const disableWebhooks = disableWebhooksRaw as boolean;
-  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
-  const dryRun = dryRunRaw as boolean;
+  const cxId = cxIdRaw;
+  const jobId = jobIdRaw;
+  const triggerConsolidated = triggerConsolidatedRaw;
+  const disableWebhooks = disableWebhooksRaw;
+  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw;
+  const dryRun = dryRunRaw;
 
   return {
     cxId,
-    facilityId,
     jobId,
     triggerConsolidated,
     disableWebhooks,
