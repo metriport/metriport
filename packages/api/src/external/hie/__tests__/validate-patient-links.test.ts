@@ -522,7 +522,7 @@ describe("validateLinksBelongToPatient with strict matching", () => {
     expect(cqInvalidLinks.length).toBe(0);
   });
 
-  it("should return no links as valid with comma-separated names when one matches", async () => {
+  it("should return links as valid with comma-separated names when one matches", async () => {
     const patientToMatch: PatientData = {
       ...basePatientData,
       firstName: "John,Johnny",
@@ -537,10 +537,52 @@ describe("validateLinksBelongToPatient with strict matching", () => {
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
 
-    expect(cwValidNetworkLinks.length).toBe(0);
-    expect(cwInvalidLinks.length).toBe(1);
-    expect(cqValidNetworkLinks.length).toBe(0);
-    expect(cqInvalidLinks.length).toBe(1);
+    expect(cwValidNetworkLinks.length).toBe(1);
+    expect(cwInvalidLinks.length).toBe(0);
+    expect(cqValidNetworkLinks.length).toBe(1);
+    expect(cqInvalidLinks.length).toBe(0);
+  });
+
+  it("should return links as valid when one of the names in the link is an exact match", async () => {
+    const patientToMatch: PatientData = {
+      ...basePatientData,
+      firstName: "John,Johnny",
+      lastName: "Doe,Smith",
+    };
+
+    const cwLink = createCwLink(patientToMatch);
+    if (cwLink.patient?.details?.name) {
+      cwLink.patient.details.name = [
+        ...cwLink.patient.details.name,
+        {
+          given: ["John"],
+          family: ["Doe"],
+        },
+      ];
+    }
+
+    const cqLink = createCQLink(patientToMatch);
+
+    if (cqLink.patientResource?.name) {
+      cqLink.patientResource.name = [
+        ...cqLink.patientResource.name,
+        { given: ["John"], family: "Doe" },
+      ];
+    }
+
+    const cwLinks: CwLink[] = [cwLink];
+    const cqLinks: CQLink[] = [cqLink];
+
+    const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+
+    const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
+      await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
+
+    expect(cwValidNetworkLinks.length).toBe(1);
+    expect(cwInvalidLinks.length).toBe(0);
+    expect(cqValidNetworkLinks.length).toBe(1);
+    expect(cqInvalidLinks.length).toBe(0);
   });
 
   it("should return the links as invalid when DOB differs", async () => {
