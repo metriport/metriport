@@ -82,12 +82,12 @@ export async function autoUpgradeNetworkLinks(
   executionContext: string,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<NetworkLink[] | undefined> {
-  const { log, debug } = out("CW autoUpgradeNetworkLinks");
+  const { log } = out("CW autoUpgradeNetworkLinks");
   const [networkLinks, orgIdExcludeList] = await Promise.all([
     commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
     getOrgIdExcludeList(),
   ]);
-  debug(`resp getNetworkLinks: `, JSON.stringify(networkLinks));
+  log(`resp getNetworkLinks: `, JSON.stringify(networkLinks));
 
   if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
     const lola1Links = networkLinks._embedded.networkLink.flatMap(filterTruthy).filter(isLOLA1);
@@ -162,11 +162,15 @@ export async function autoUpgradeNetworkLinks(
     });
     await Promise.allSettled(upgradeRequests);
 
-    const validNetworkLinks: NetworkLink[] = [];
+    const updatedNetworkLinks = await commonWell.getNetworkLinks(queryMeta, commonwellPatientId);
+    log(`resp updatedNetworkLinks: `, JSON.stringify(updatedNetworkLinks));
 
-    for (const networkLink of networkLinks._embedded.networkLink) {
-      if (networkLink) {
-        validNetworkLinks.push(networkLink);
+    const validNetworkLinks: NetworkLink[] = [];
+    if (updatedNetworkLinks._embedded && updatedNetworkLinks._embedded.networkLink?.length) {
+      for (const networkLink of updatedNetworkLinks._embedded.networkLink) {
+        if (networkLink) {
+          validNetworkLinks.push(networkLink);
+        }
       }
     }
 
