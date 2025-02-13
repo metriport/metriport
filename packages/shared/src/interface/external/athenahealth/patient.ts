@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 const address = z.object({
-  country: z.string(),
   state: z.string(),
   line: z.string().array(),
   city: z.string(),
   postalCode: z.string().optional(),
+  country: z.string(),
 });
 
 const addressWithPostalCode = address

@@ -857,7 +857,7 @@ class AthenaHealthApi {
     });
     if (!response.data) {
       const msg = `No body returned @ AthenaHealth`;
-      log(`${msg}. ${method} ${url}`);
+      log(msg);
       throw new MetriportError(msg, undefined, {
         ...additionalInfo,
         method,
@@ -886,7 +886,7 @@ class AthenaHealthApi {
     const outcome = schema.safeParse(body);
     if (!outcome.success) {
       const msg = `Response not parsed @ AthenaHealth`;
-      log(`${msg}. ${method} ${url}`);
+      log(`${msg}. Schema: ${schema.description}`);
       throw new MetriportError(msg, undefined, {
         ...additionalInfo,
         method,
@@ -957,7 +957,7 @@ class AthenaHealthApi {
     }
     patient.address = patient.address.filter(a => a.postalCode !== undefined);
     if (patient.address.length === 0) {
-      throw new BadRequestError("No home address with valid zip found");
+      throw new BadRequestError("No address zip found");
     }
     return patientSchemaWithValidAddress.parse(patient);
   }

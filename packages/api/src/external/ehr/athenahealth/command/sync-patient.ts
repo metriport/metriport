@@ -178,10 +178,10 @@ function collapsePatientDemos(demos: PatientDemoData[]): PatientDemoData {
   return demos.slice(1).reduce((acc: PatientDemoData, demo) => {
     return {
       ...acc,
-      firstName: acc.firstName.toLowerCase().includes(demo.firstName.toLowerCase())
+      firstName: acc.firstName.includes(demo.firstName)
         ? acc.firstName
         : `${acc.firstName} ${demo.firstName}`,
-      lastName: acc.lastName.toLowerCase().includes(demo.lastName.toLowerCase())
+      lastName: acc.lastName.includes(demo.lastName)
         ? acc.lastName
         : `${acc.lastName} ${demo.lastName}`,
     };
