@@ -20,18 +20,18 @@ export async function generateAiBriefBundleEntry(
   log: typeof console.log
 ): Promise<BundleEntry<Binary> | undefined> {
   let aiBriefContent;
-  let attemptNumber = 0;
+  let attemptNumber = 1;
 
   try {
     await executeWithNetworkRetries(
       async () => {
-        attemptNumber++;
         aiBriefContent = await summarizeFilteredBundleWithAI(
           bundle,
           cxId,
           patientId,
           attemptNumber.toString()
         );
+        attemptNumber++;
       },
       {
         maxAttempts,
@@ -46,6 +46,7 @@ export async function generateAiBriefBundleEntry(
     }
     return undefined;
   } catch (err) {
+    attemptNumber++;
     const msg = `Failed to generate AI Brief with retries`;
     log(`${msg}. Error: ${errorToString(err)}`);
     capture.error(msg, {
