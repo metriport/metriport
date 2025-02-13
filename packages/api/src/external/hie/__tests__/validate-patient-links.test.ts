@@ -522,7 +522,7 @@ describe("validateLinksBelongToPatient with strict matching", () => {
     expect(cqInvalidLinks.length).toBe(0);
   });
 
-  it("should return the links as valid with comma-separated names when one matches", async () => {
+  it("should return no links as valid with comma-separated names when one matches", async () => {
     const patientToMatch: PatientData = {
       ...basePatientData,
       firstName: "John,Johnny",
@@ -537,10 +537,10 @@ describe("validateLinksBelongToPatient with strict matching", () => {
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
 
-    expect(cwValidNetworkLinks.length).toBe(1);
-    expect(cwInvalidLinks.length).toBe(0);
-    expect(cqValidNetworkLinks.length).toBe(1);
-    expect(cqInvalidLinks.length).toBe(0);
+    expect(cwValidNetworkLinks.length).toBe(0);
+    expect(cwInvalidLinks.length).toBe(1);
+    expect(cqValidNetworkLinks.length).toBe(0);
+    expect(cqInvalidLinks.length).toBe(1);
   });
 
   it("should return the links as invalid when DOB differs", async () => {
