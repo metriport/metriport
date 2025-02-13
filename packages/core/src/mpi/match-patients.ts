@@ -321,8 +321,11 @@ export function strictMatchingAlgorithm(patient1: PatientData, patient2: Patient
   const lastNames1 = splitName(normalizedPatient1.lastName);
   const lastNames2 = splitName(normalizedPatient2.lastName);
 
-  const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
-  const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
+  const hasMatchingFirstName =
+    firstNames1.length === firstNames2.length &&
+    firstNames1.every(name => firstNames2.includes(name));
+  const hasMatchingLastName =
+    lastNames1.length === lastNames2.length && lastNames1.every(name => lastNames2.includes(name));
 
   const isNameMatch = hasMatchingFirstName && hasMatchingLastName;
 
