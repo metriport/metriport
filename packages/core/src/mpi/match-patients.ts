@@ -2,7 +2,7 @@ import jaroWinkler from "jaro-winkler";
 import { intersectionWith } from "lodash";
 import { Contact } from "../domain/contact";
 import { PatientData, PersonalIdentifier } from "../domain/patient";
-import { normalizePatient } from "./normalize-patient";
+import { normalizePatient, normalizePatientInboundMpi } from "./normalize-patient";
 import { PatientMPI } from "./shared";
 import { out } from "../util/log";
 import { splitName } from "./normalize-patient";
@@ -200,8 +200,8 @@ export function epicMatchingAlgorithm(
     ssn: 0,
   };
 
-  const normalizedPatient1 = normalizePatient(patient1);
-  const normalizedPatient2 = normalizePatient(patient2);
+  const normalizedPatient1 = normalizePatientInboundMpi(patient1);
+  const normalizedPatient2 = normalizePatientInboundMpi(patient2);
 
   if (
     normalizedPatient1.dob &&
@@ -309,8 +309,8 @@ export function epicMatchingAlgorithm(
 }
 
 export function strictMatchingAlgorithm(patient1: PatientData, patient2: PatientData): boolean {
-  const normalizedPatient1 = normalizePatient(patient1);
-  const normalizedPatient2 = normalizePatient(patient2);
+  const normalizedPatient1 = normalizePatientInboundMpi(patient1);
+  const normalizedPatient2 = normalizePatientInboundMpi(patient2);
 
   const isDobMatch = normalizedPatient1.dob === normalizedPatient2.dob;
   const isGenderMatch = normalizedPatient1.genderAtBirth === normalizedPatient2.genderAtBirth;
