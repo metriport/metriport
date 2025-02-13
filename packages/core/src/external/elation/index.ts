@@ -16,7 +16,7 @@ import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
-import { out } from "../../util/log";
+import { log, out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
@@ -241,7 +241,14 @@ class ElationApi {
       },
     });
     if (!response.data) {
-      throw new MetriportError(`No body returned from ${method} ${url}`, undefined, additionalInfo);
+      const msg = `No body returned @ Elation`;
+      log(msg);
+      throw new MetriportError(msg, undefined, {
+        ...additionalInfo,
+        method,
+        url,
+        context: "elation.make-request",
+      });
     }
     const body = response.data;
     debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
@@ -263,8 +270,13 @@ class ElationApi {
     }
     const outcome = schema.safeParse(body);
     if (!outcome.success) {
-      throw new MetriportError(`${method} ${url} response not parsed`, undefined, {
+      const msg = `Response not parsed @ Elation`;
+      log(`${msg}. Schema: ${schema.description}`);
+      throw new MetriportError(msg, undefined, {
         ...additionalInfo,
+        method,
+        url,
+        context: "elation.make-request",
         error: errorToString(outcome.error),
       });
     }
