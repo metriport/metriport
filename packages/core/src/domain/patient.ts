@@ -31,12 +31,10 @@ export type BaseIdentifier = {
 };
 
 export type PersonalIdentifier = BaseIdentifier &
-  (
-    | { type: GeneralPersonalIdentifiers }
-    | { type: DriversLicensePersonalIdentifier; state: USState }
-  );
+  ({ type: GeneralPersonalIdentifiers } | DriversLicense);
 
 export type DriversLicense = {
+  type: DriversLicensePersonalIdentifier;
   value: string;
   state: USState;
 };
