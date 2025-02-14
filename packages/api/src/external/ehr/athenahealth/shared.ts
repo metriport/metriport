@@ -16,7 +16,7 @@ import {
   toTitleCase,
 } from "@metriport/shared";
 import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
-import { Patient } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
@@ -27,7 +27,7 @@ const region = Config.getAWSRegion();
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createContacts(patient: Patient): Contact[] {
+export function createContacts(patient: AthenaPatient): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       const email = normalizeEmailNewSafe(telecom.value);
@@ -42,7 +42,7 @@ export function createContacts(patient: Patient): Contact[] {
   });
 }
 
-export function createAddresses(patient: Patient): Address[] {
+export function createAddresses(patient: AthenaPatient): Address[] {
   if (!patient.address) throw new BadRequestError("Patient has no address");
   const addresses = patient.address.flatMap(address => {
     if (!address.line || address.line.length === 0) return [];
@@ -82,7 +82,7 @@ export function createAddresses(patient: Patient): Address[] {
   return addresses;
 }
 
-export function createNames(patient: Patient): { firstName: string; lastName: string }[] {
+export function createNames(patient: AthenaPatient): { firstName: string; lastName: string }[] {
   if (!patient.name) throw new BadRequestError("Patient has no names");
   const names = patient.name.flatMap(name => {
     const lastName = name.family.trim();
