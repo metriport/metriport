@@ -3,6 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { faker } from "@faker-js/faker";
 import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
+import { validateAndParsePatientImportCsv } from "@metriport/core/command/patient-import/csv/validate-and-parse-import";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { DriversLicense, PersonalIdentifier } from "@metriport/core/domain/patient";
@@ -18,6 +19,7 @@ import dayjs from "dayjs";
 import fs from "fs";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { makeDir } from "../shared/fs";
+import { invalidToString, patientValidationToString, validToString } from "./shared";
 
 /**
  * Creates a mock CSV file with patient data for bulk import.
@@ -37,15 +39,15 @@ const percentageWithAddressLine2 = 0.4;
 const percentageWithSsn = 0.1;
 const percentageWithDriversLicence = 0.2;
 function getAmountOfAddresses() {
-  return faker.number.int({ min: 1, max: 2 });
+  return faker.number.int({ min: 1, max: 10 });
 }
 function getAmountOfContacts() {
-  return faker.number.int({ min: 0, max: 3 });
+  return faker.number.int({ min: 0, max: 10 });
 }
 
-const mainHeaders = "externalId,firstname*,lastname*,dob*,gender*";
-const addressHeaders = "zip*,city*,state*,addressLine1*,addressLine2";
-const contactHeaders = "phone*,email*";
+const mainHeaders = "externalId,firstname,lastname,dob,gender";
+const addressHeaders = "zip,city,state,addressLine1*,addressLine2";
+const contactHeaders = "phone,email";
 const additionalIdentifiersHeaders = "ssn,driversLicenceNo,driversLicenceState";
 
 async function main() {
@@ -54,9 +56,9 @@ async function main() {
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
   const timestamp = dayjs().toISOString();
-  const outputFolderName = `runs/bulk-import-mock`;
+  const outputFolderName = `runs/bulk-import-mock/${timestamp}`;
   makeDir(outputFolderName);
-  const outputFileName = `raw-${timestamp}.csv`;
+  const outputFileName = `raw.csv`;
 
   const patients: PatientPayload[] = [];
   for (let i = 0; i < numberOfPatients; i++) {
@@ -65,8 +67,22 @@ async function main() {
   }
   const { headers, amountOfAddresses, amountOfContacts } = buildHeaders(patients);
   const contents = patients.map(patientToCsv(amountOfAddresses, amountOfContacts)).join("\n");
-  fs.writeFileSync(`./${outputFolderName}/${outputFileName}`, headers + "\n");
-  fs.appendFileSync(`./${outputFolderName}/${outputFileName}`, contents);
+  const fileContents = [headers, contents].join("\n");
+  fs.writeFileSync(`./${outputFolderName}/${outputFileName}`, fileContents);
+
+  const {
+    validRows,
+    invalidRows,
+    patients: patientsFromParse,
+  } = await validateAndParsePatientImportCsv({ contents: fileContents });
+
+  const outputValid = headers + "\n" + validRows.map(validToString).join("\n");
+  const outputInvalid = headers + ",error" + "\n" + invalidRows.map(invalidToString).join("\n");
+  const outputPatientsValidation = patientsFromParse.map(patientValidationToString).join("\n");
+
+  fs.writeFileSync(`./${outputFolderName}/valid.csv`, outputValid);
+  fs.writeFileSync(`./${outputFolderName}/invalid.csv`, outputInvalid);
+  fs.writeFileSync(`./${outputFolderName}/patients-validation.csv`, outputPatientsValidation);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
 }
@@ -124,11 +140,11 @@ function buildHeaders(patients: PatientPayload[]): {
     maxAmountOfAddresses = Math.max(maxAmountOfAddresses, patient.address?.length ?? 0);
   });
   const headers = [mainHeaders];
-  for (let i = 0; i < maxAmountOfAddresses; i++) {
-    headers.push(buildHeadersFor(addressHeaders, i));
+  for (let i = 1; i <= maxAmountOfAddresses; i++) {
+    headers.push(buildHeadersForVariableColumns(addressHeaders, i));
   }
-  for (let i = 0; i < maxAmountOfContacts; i++) {
-    headers.push(buildHeadersFor(contactHeaders, i));
+  for (let i = 1; i <= maxAmountOfContacts; i++) {
+    headers.push(buildHeadersForVariableColumns(contactHeaders, i));
   }
   headers.push(additionalIdentifiersHeaders);
   return {
@@ -138,10 +154,10 @@ function buildHeaders(patients: PatientPayload[]): {
   };
 }
 
-function buildHeadersFor(headers: string, i: number) {
+function buildHeadersForVariableColumns(headers: string, columnNumber: number) {
   return headers
     .split(",")
-    .map(header => header + (i + 1))
+    .map(header => `${header}-${columnNumber}`)
     .join(",");
 }
 
