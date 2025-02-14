@@ -2,8 +2,8 @@ import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { ElationEnv, isElationEnv } from "@metriport/core/external/elation/index";
 import {
-  BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
+  BadRequestError,
   MetriportError,
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
