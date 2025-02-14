@@ -13,6 +13,12 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
+import {
+  buildDocumentNameForConversionResult,
+  buildDocumentNameForFromConverter,
+  buildDocumentNameForPreConversion,
+  buildDocumentNameForCleanConversion,
+} from "@metriport/core/domain/conversion/filename";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
@@ -179,9 +185,9 @@ export async function handler(event: SQSEvent) {
           invalidAccess,
         };
 
-        const preConversionFilename = `${s3FileName}.pre_conversion.xml`;
-        const cleanFileName = `${s3FileName}.clean.xml`;
-        const conversionResultFilename = `${s3FileName}.from_converter.json`;
+        const preConversionFilename = buildDocumentNameForPreConversion(s3FileName);
+        const cleanFileName = buildDocumentNameForCleanConversion(s3FileName);
+        const conversionResultFilename = buildDocumentNameForFromConverter(s3FileName);
 
         await storePreprocessedPayloadInS3({
           s3Utils,
@@ -444,7 +450,7 @@ async function sendConversionResult({
   medicalDataSource: string | undefined;
   log: Log;
 }) {
-  const fileName = `${sourceFileName}.json`;
+  const fileName = buildDocumentNameForConversionResult(sourceFileName);
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
 
   await executeWithRetriesS3(
