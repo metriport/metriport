@@ -6,13 +6,12 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
-  MetriportError,
   normalizeDate,
   normalizeGender,
   NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
-import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -25,12 +24,7 @@ import {
   getPatientOrFail,
 } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
-import {
-  createAthenaClient,
-  createMetriportAddresses,
-  createMetriportContacts,
-  createNames,
-} from "../shared";
+import { createAddresses, createAthenaClient, createContacts, createNames } from "../shared";
 
 const parallelPatientMatches = 5;
 
@@ -86,16 +80,6 @@ export async function syncAthenaPatientIntoMetriport({
     useSearch,
   });
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
-  if (athenaPatient.name.length === 0) {
-    throw new MetriportError("AthenaHealth patient missing at least one name", undefined, {
-      name: athenaPatient.name.map(name => JSON.stringify(name)).join(", "),
-    });
-  }
-  if (athenaPatient.address.length === 0) {
-    throw new MetriportError("AthenaHealth patient missing at least one address", undefined, {
-      address: athenaPatient.address.map(address => JSON.stringify(address)).join(", "),
-    });
-  }
 
   const demos = createMetriportPatientDemos(athenaPatient);
 
@@ -176,9 +160,9 @@ export async function syncAthenaPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemos(patient: PatientResourceWithHomeAddress): PatientDemoData[] {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+function createMetriportPatientDemos(patient: AthenaPatient): PatientDemoData[] {
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return names.map(n => {
     return {
@@ -193,10 +177,10 @@ function createMetriportPatientDemos(patient: PatientResourceWithHomeAddress): P
 }
 
 function createMetriportPatientCreateCmd(
-  patient: PatientResourceWithHomeAddress
+  patient: AthenaPatient
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return {
     firstName: [...new Set(names.map(n => toTitleCase(n.firstName)))].join(" "),
