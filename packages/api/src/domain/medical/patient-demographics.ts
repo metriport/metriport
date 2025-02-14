@@ -13,6 +13,7 @@ import {
   splitDob,
   splitName,
 } from "@metriport/core/domain/patient";
+import { normalizeEmailNewSafe } from "@metriport/shared";
 import {
   LinkDateOfBirth,
   LinkDemographics,
@@ -22,7 +23,6 @@ import {
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
-import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
@@ -184,7 +184,7 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    const email = normalizeEmail(c.email);
+    const email = normalizeEmailNewSafe(c.email);
     if (!email) return [];
     return [email];
   });
@@ -306,15 +306,6 @@ export function normalizeAddress({
 
 export function stringifyAddress(normalizedAddress: LinkGenericAddress): string {
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
-}
-
-export function normalizeEmail(email: string): string | undefined {
-  let normalEmail = email.trim().toLowerCase();
-  if (normalEmail.startsWith("mailto:")) {
-    normalEmail = normalEmail.slice(7);
-  }
-  const validEmail = emailSchema.safeParse(normalEmail);
-  return validEmail.success ? normalEmail : undefined;
 }
 
 export function normalizeAndStringifyDriversLicense({

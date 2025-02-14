@@ -15,7 +15,7 @@ import {
   toTitleCase,
 } from "@metriport/shared";
 import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
-import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
@@ -24,7 +24,7 @@ import { Config } from "../../../shared/config";
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createContacts(patient: PatientWithValidHomeAddress): Contact[] {
+export function createContacts(patient: AthenaPatient): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       const email = normalizeEmailNewSafe(telecom.value);
@@ -39,21 +39,26 @@ export function createContacts(patient: PatientWithValidHomeAddress): Contact[] 
   });
 }
 
-export function createAddresses(patient: PatientWithValidHomeAddress): Address[] {
+export function createAddresses(patient: AthenaPatient): Address[] {
+  if (!patient.address) throw new BadRequestError("Patient has no address");
   const addresses = patient.address.flatMap(address => {
-    if (address.line.length === 0) return [];
+    if (!address.line || address.line.length === 0) return [];
     const addressLine1 = (address.line[0] as string).trim();
     if (addressLine1 === "") return [];
     const addressLines2plus = address.line
       .slice(1)
       .map(l => l.trim())
       .filter(l => l !== "");
+    if (!address.city) return [];
     const city = address.city.trim();
     if (city === "") return [];
+    if (!address.country) return [];
     const country = address.country.trim();
     if (country === "") return [];
+    if (!address.state) return [];
     const state = normalizeUSStateForAddressSafe(address.state);
     if (!state) return [];
+    if (!address.postalCode) return [];
     const zip = normalizeZipCodeNewSafe(address.postalCode);
     if (!zip) return [];
     return {
@@ -65,13 +70,17 @@ export function createAddresses(patient: PatientWithValidHomeAddress): Address[]
       country,
     };
   });
-  if (addresses.length === 0) throw new BadRequestError("Patient has no valid addresses");
+  if (addresses.length === 0)
+    throw new BadRequestError("Patient has no valid addresses", undefined, {
+      addresses: Object.values(addresses)
+        .map(a => JSON.stringify(a))
+        .join(","),
+    });
   return addresses;
 }
 
-export function createNames(
-  patient: PatientWithValidHomeAddress
-): { firstName: string; lastName: string }[] {
+export function createNames(patient: AthenaPatient): { firstName: string; lastName: string }[] {
+  if (!patient.name) throw new BadRequestError("Patient has no name");
   const names = patient.name.flatMap(name => {
     const lastName = name.family.trim();
     if (lastName === "") return [];
@@ -81,7 +90,10 @@ export function createNames(
       return [{ firstName: toTitleCase(firstName), lastName: toTitleCase(lastName) }];
     });
   });
-  if (names.length === 0) throw new BadRequestError("Patient has no valid names");
+  if (names.length === 0)
+    throw new BadRequestError("Patient has no valid names", undefined, {
+      names: patient.name.map(n => JSON.stringify(n)).join(","),
+    });
   return names;
 }
 

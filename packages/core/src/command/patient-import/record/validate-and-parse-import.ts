@@ -1,42 +1,40 @@
-import { errorToString, PatientImportPatient, patientImportPatientSchema } from "@metriport/shared";
-import { S3Utils } from "../../../external/aws/s3";
-import { Config } from "../../../util/config";
+import {
+  errorToString,
+  MetriportError,
+  PatientImportPatient,
+  patientImportPatientSchema,
+} from "@metriport/shared";
 import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
 import {
   compareCsvHeaders,
-  createFileKeyFiles,
+  createFileKeyRaw,
   createObjectFromCsv,
+  getS3UtilsInstance,
   normalizeHeaders,
   patientImportCsvHeaders,
 } from "../patient-import-shared";
-import { creatValidationFile } from "./create-validation-file";
-
-const region = Config.getAWSRegion();
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
+import { createValidationFile } from "./create-validation-file";
 
 export type RowError = { rowColumns: string[]; error: string };
 
 const eolRegex = new RegExp(/\r/g);
 const commaRegex = new RegExp(/,/g);
 
+// TODO 2330 add TSDoc
 export async function validateAndParsePatientImportCsvFromS3({
   cxId,
   jobId,
-  jobStartedAt,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  jobStartedAt: string;
   s3BucketName: string;
 }): Promise<PatientImportPatient[]> {
-  const { log } = out(`PatientImport validate and parse import - cxId ${cxId} jobId ${jobId}`);
+  const { log } = out(
+    `PatientImport validateAndParsePatientImportCsvFromS3 - cxId ${cxId} jobId ${jobId}`
+  );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyFiles(cxId, jobStartedAt, jobId, "raw");
+  const key = createFileKeyRaw(cxId, jobId);
   try {
     const csvAsString = await s3Utils.getFileContentsAsString(s3BucketName, key);
 
@@ -45,20 +43,18 @@ export async function validateAndParsePatientImportCsvFromS3({
     });
     await Promise.all([
       validRows.length > 0
-        ? creatValidationFile({
+        ? createValidationFile({
             cxId,
             jobId,
-            jobStartedAt,
             stage: "valid",
             rows: [headers.join(","), ...validRows.map(rowColumn => rowColumn.join(","))],
             s3BucketName,
           })
         : async () => Promise<void>,
       invalidRows.length > 0
-        ? creatValidationFile({
+        ? createValidationFile({
             cxId,
             jobId,
-            jobStartedAt,
             stage: "invalid",
             rows: [
               [...headers, "error"].join(","),
@@ -72,16 +68,12 @@ export async function validateAndParsePatientImportCsvFromS3({
   } catch (error) {
     const msg = `Failure validating and parsing import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        jobId,
-        key,
-        context: "patient-import.validate-and-parse-import",
-        error,
-      },
+    throw new MetriportError(msg, error, {
+      cxId,
+      jobId,
+      key,
+      context: "patient-import.validateAndParsePatientImportCsvFromS3",
     });
-    throw error;
   }
 }
 

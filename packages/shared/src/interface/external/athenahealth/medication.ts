@@ -3,12 +3,12 @@ import { z } from "zod";
 export const createdMedicationSchema = z.object({
   success: z.boolean(),
   errormessage: z.string().optional(),
-  medicationentryid: z.string().optional(),
+  medicationentryid: z.coerce.string().optional(),
 });
 export type CreatedMedication = z.infer<typeof createdMedicationSchema>;
 export const createdMedicationSuccessSchema = z.object({
   success: z.literal(true),
-  medicationentryid: z.string(),
+  medicationentryid: z.coerce.string(),
 });
 export type CreatedMedicationSuccess = z.infer<typeof createdMedicationSuccessSchema>;
 

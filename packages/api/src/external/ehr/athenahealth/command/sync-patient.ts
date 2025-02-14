@@ -5,7 +5,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, MetriportError, normalizeDate, normalizeGender } from "@metriport/shared";
-import { PatientWithValidHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -141,7 +141,7 @@ export async function syncAthenaPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemos(patient: PatientWithValidHomeAddress): PatientDemoData[] {
+function createMetriportPatientDemos(patient: AthenaPatient): PatientDemoData[] {
   const dob = normalizeDate(patient.birthDate);
   const genderAtBirth = normalizeGender(patient.gender);
   const addressArray = createAddresses(patient);
@@ -162,7 +162,7 @@ function createMetriportPatientDemos(patient: PatientWithValidHomeAddress): Pati
 function collapsePatientDemos(demos: PatientDemoData[]): PatientDemoData {
   const firstDemo = demos[0];
   if (!firstDemo) throw new MetriportError("No patient demos to collapse");
-  return demos.reduce((acc: PatientDemoData, demo) => {
+  return demos.slice(1).reduce((acc: PatientDemoData, demo) => {
     return {
       ...acc,
       firstName: acc.firstName.includes(demo.firstName)

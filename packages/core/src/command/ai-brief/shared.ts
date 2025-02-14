@@ -7,9 +7,7 @@ import { base64ToString, stringToBase64 } from "../../util/base64";
 import { uuidv7 } from "../../util/uuid-v7";
 const AI_BRIEF_SOURCE = "metriport:ai-generated-brief";
 
-export function generateAiBriefFhirResource(content: string | undefined): Binary | undefined {
-  if (!content) return undefined;
-
+export function generateAiBriefFhirResource(content: string): Binary {
   const encodedContent = stringToBase64(content);
 
   return {

@@ -4,6 +4,7 @@ import {
   errorToString,
   JwtTokenInfo,
   MetriportError,
+  NotFoundError,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -15,15 +16,13 @@ import {
   Metadata,
   Patient,
   patientSchema,
-  patientSchemaWithValidAddress,
-  PatientWithAddress,
 } from "@metriport/shared/interface/external/elation/index";
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
-import { out } from "../../util/log";
+import { log, out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
@@ -122,13 +121,7 @@ class ElationApi {
     });
   }
 
-  async getPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientWithAddress> {
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `Elation getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -144,14 +137,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
   async updatePatientMetadata({
@@ -162,9 +148,9 @@ class ElationApi {
     cxId: string;
     patientId: string;
     metadata: Metadata;
-  }): Promise<PatientWithAddress> {
+  }): Promise<Patient> {
     const { debug } = out(
-      `Elation uupdatePatientMetadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `Elation updatePatientMetadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/patients/${patientId}/`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
@@ -180,14 +166,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
   async getAppointments({
@@ -250,17 +229,81 @@ class ElationApi {
     additionalInfo: AdditionalInfo;
     debug: typeof console.log;
   }): Promise<T> {
-    const response = await this.axiosInstance.request({
-      method,
-      url,
-      data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
-      headers: {
-        ...this.axiosInstance.defaults.headers.common,
-        ...headers,
-      },
-    });
+    const isJsonContentType = headers?.["content-type"] === "application/json";
+    let response: AxiosResponse;
+    try {
+      response = await this.axiosInstance.request({
+        method,
+        url,
+        data:
+          method === "GET"
+            ? undefined
+            : isJsonContentType
+            ? data
+            : this.createDataParams(data ?? {}),
+        headers: {
+          ...this.axiosInstance.defaults.headers.common,
+          ...headers,
+        },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error instanceof AxiosError) {
+        if (responsesBucket) {
+          const filePath = createHivePartitionFilePath({
+            cxId,
+            patientId: patientId ?? "global",
+            date: new Date(),
+          });
+          const key = this.buildS3Path(s3Path, `${filePath}-error`);
+          this.s3Utils
+            .uploadFile({
+              bucket: responsesBucket,
+              key,
+              file: Buffer.from(JSON.stringify(error), "utf8"),
+              contentType: "application/json",
+            })
+            .catch(processAsyncError(`Error saving error to s3 @ Elation - ${method} ${url}`));
+        }
+        const message = JSON.stringify(error.response?.data) ?? error.message;
+        switch (error.response?.status) {
+          case 400:
+            throw new BadRequestError(message, undefined, {
+              ...additionalInfo,
+              method,
+              url,
+              context: "elation.make-request",
+              error: errorToString(error),
+            });
+          case 404:
+            throw new NotFoundError(message, undefined, {
+              ...additionalInfo,
+              method,
+              url,
+              context: "elation.make-request",
+              error: errorToString(error),
+            });
+          default:
+            throw new MetriportError(message, undefined, {
+              ...additionalInfo,
+              method,
+              url,
+              context: "elation.make-request",
+              error: errorToString(error),
+            });
+        }
+      }
+      throw error;
+    }
     if (!response.data) {
-      throw new MetriportError(`No body returned from ${method} ${url}`, undefined, additionalInfo);
+      const msg = `No body returned @ Elation`;
+      log(msg);
+      throw new MetriportError(msg, undefined, {
+        ...additionalInfo,
+        method,
+        url,
+        context: "elation.make-request",
+      });
     }
     const body = response.data;
     debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
@@ -282,8 +325,13 @@ class ElationApi {
     }
     const outcome = schema.safeParse(body);
     if (!outcome.success) {
-      throw new MetriportError(`${method} ${url} response not parsed`, undefined, {
+      const msg = `Response not parsed @ Elation`;
+      log(`${msg}. Schema: ${schema.description}`);
+      throw new MetriportError(msg, undefined, {
         ...additionalInfo,
+        method,
+        url,
+        context: "elation.make-request",
         error: errorToString(outcome.error),
       });
     }
@@ -309,11 +357,6 @@ class ElationApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(elationDateFormat);
-  }
-
-  private parsePatient(patient: Patient): PatientWithAddress {
-    if (!patient.address) throw new BadRequestError("No addresses found");
-    return patientSchemaWithValidAddress.parse(patient);
   }
 }
 
