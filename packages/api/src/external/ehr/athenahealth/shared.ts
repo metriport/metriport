@@ -83,7 +83,7 @@ export function createAddresses(patient: AthenaPatient): Address[] {
 }
 
 export function createNames(patient: AthenaPatient): { firstName: string; lastName: string }[] {
-  if (!patient.name) throw new BadRequestError("Patient has no names");
+  if (!patient.name) throw new BadRequestError("Patient has no name");
   const names = patient.name.flatMap(name => {
     const lastName = name.family.trim();
     if (lastName === "") return [];
