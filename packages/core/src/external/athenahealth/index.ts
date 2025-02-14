@@ -12,6 +12,7 @@ import {
   errorToString,
   JwtTokenInfo,
   MetriportError,
+  NotFoundError,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -54,7 +55,7 @@ import {
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import { uniqBy } from "lodash";
 import { z } from "zod";
@@ -850,11 +851,62 @@ class AthenaHealthApi {
       `AthenaHealth makeRequest - cxId ${cxId} practiceId ${this.practiceId} method ${method} url ${url}`
     );
     const axiosInstance = useFhir ? this.axiosInstanceFhir : this.axiosInstanceProprietary;
-    const response = await axiosInstance.request({
-      method,
-      url,
-      data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
-    });
+    let response: AxiosResponse;
+    try {
+      response = await axiosInstance.request({
+        method,
+        url,
+        data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error instanceof AxiosError) {
+        if (responsesBucket) {
+          const filePath = createHivePartitionFilePath({
+            cxId,
+            patientId: patientId ?? "global",
+            date: new Date(),
+          });
+          const key = this.buildS3Path(s3Path, `${filePath}-error`);
+          this.s3Utils
+            .uploadFile({
+              bucket: responsesBucket,
+              key,
+              file: Buffer.from(JSON.stringify(error), "utf8"),
+              contentType: "application/json",
+            })
+            .catch(processAsyncError(`Error saving error to s3 @ AthenaHealth - ${method} ${url}`));
+        }
+        const message = error.response?.data?.error ?? error.message;
+        switch (error.response?.status) {
+          case 400:
+            throw new BadRequestError(message, undefined, {
+              ...additionalInfo,
+              method,
+              url,
+              context: "athenahealth.make-request",
+              error: errorToString(error),
+            });
+          case 404:
+            throw new NotFoundError(message, undefined, {
+              ...additionalInfo,
+              method,
+              url,
+              context: "athenahealth.make-request",
+              error: errorToString(error),
+            });
+          default:
+            throw new MetriportError(message, undefined, {
+              ...additionalInfo,
+              method,
+              url,
+              context: "athenahealth.make-request",
+              error: errorToString(error),
+            });
+        }
+      }
+      throw error;
+    }
     if (!response.data) {
       const msg = `No body returned @ AthenaHealth`;
       log(msg);
