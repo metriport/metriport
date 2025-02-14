@@ -33,6 +33,9 @@ export function normalizeEmailStrict(email: string): string {
   return normalEmail;
 }
 
+/**
+ * Returns the base email without the mailto prefix and in lowercase
+ */
 export function noramlizeEmailBase(email: string): string {
   return removeMailto(email.trim().toLowerCase());
 }
@@ -44,6 +47,10 @@ function removeMailto(email: string): string {
   return email;
 }
 
+/**
+ * Returns the base email without the mailto prefix and in lowercase
+ * If the email is not valid, returns undefined
+ */
 export function normalizeEmailNewSafe(
   email: string,
   normalizeBase: (email: string) => string = noramlizeEmailBase
@@ -53,6 +60,10 @@ export function normalizeEmailNewSafe(
   return baseEmail;
 }
 
+/**
+ * Returns the base email without the mailto prefix and in lowercase
+ * If the email is not valid, throws an error
+ */
 export function normalizeEmailNew(email: string): string {
   const emailOrUndefined = normalizeEmailNewSafe(email);
   if (!emailOrUndefined) {
