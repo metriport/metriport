@@ -945,14 +945,8 @@ async function updatePersonAndLink({
     throw err;
   }
 
-  const { networkLinks } = await findOrCreatePersonAndLink({
-    commonWell,
-    queryMeta,
-    commonwellPatient,
-    commonwellPatientId,
-    patientRefLink,
-    patient,
-  });
+  const networkLinks = await getPatientsNetworkLinks(commonWell, queryMeta, commonwellPatientId);
+
   return networkLinks;
 }
 
