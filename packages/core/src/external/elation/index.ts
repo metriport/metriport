@@ -237,12 +237,18 @@ class ElationApi {
     additionalInfo: AdditionalInfo;
     debug: typeof console.log;
   }): Promise<T> {
+    const isJsonContentType = headers?.["content-type"] === "application/json";
     let response: AxiosResponse;
     try {
       response = await this.axiosInstance.request({
         method,
         url,
-        data: method === "GET" ? undefined : this.createDataParams(data ?? {}),
+        data:
+          method === "GET"
+            ? undefined
+            : isJsonContentType
+            ? data
+            : this.createDataParams(data ?? {}),
         headers: {
           ...this.axiosInstance.defaults.headers.common,
           ...headers,
@@ -267,7 +273,7 @@ class ElationApi {
             })
             .catch(processAsyncError(`Error saving error to s3 @ Elation - ${method} ${url}`));
         }
-        const message = error.response?.data?.error ?? error.message;
+        const message = JSON.stringify(error.response?.data) ?? error.message;
         switch (error.response?.status) {
           case 400:
             throw new BadRequestError(message, undefined, {
