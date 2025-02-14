@@ -5,10 +5,17 @@ import {
   normalizeDate,
   normalizeExternalId,
   normalizeGender,
+  normalizeUSStateForAddressSafe,
   toTitleCase,
 } from "@metriport/shared";
+import { filterTruthy } from "@metriport/shared/common/filter-map";
 import csv from "csv-parser";
 import * as stream from "stream";
+import {
+  createDriversLicensePersonalIdentifier,
+  createSsnPersonalIdentifier,
+  PersonalIdentifier,
+} from "../../../domain/patient";
 import { out } from "../../../util/log";
 import { PatientPayload } from "../patient-import";
 import { createFileKeyRaw, getS3UtilsInstance } from "../patient-import-shared";
@@ -78,6 +85,14 @@ export async function validateAndParsePatientImportCsvFromS3({
   }
 }
 
+/**
+ * Validates and parses a CSV string containing patient data for bulk import.
+ *
+ * NOTE: when parsing columns, csv-parser populates them in lower-case.
+ *
+ * @param csvAsString - The CSV file contents as a string.
+ * @returns An object containing the parsed patients, valid rows, invalid rows, and headers.
+ */
 export async function validateAndParsePatientImportCsv({
   contents: csvAsString,
 }: {
@@ -143,10 +158,15 @@ export async function validateAndParsePatientImportCsv({
   return await promise;
 }
 
-function stripCommas(input: string, replacement = "") {
-  return input.replace(commaRegex, replacement);
-}
-
+/**
+ * Maps a record/map of CSV patient data to a Metriport patient.
+ *
+ * NOTE: when parsing columns, csv-parser populates them in lower-case, so
+ * the property names are all lower-case.
+ *
+ * @param csvPatient - The CSV patient data.
+ * @returns The Metriport patient data.
+ */
 export function mapCsvPatientToMetriportPatient(
   csvPatient: Record<string, string>
 ): PatientPayload | Array<{ field: string; error: string }> {
@@ -200,6 +220,10 @@ export function mapCsvPatientToMetriportPatient(
     ? normalizeExternalIdUtils(csvPatient.id)
     : normalizeExternalIdUtils(csvPatient.externalid) ?? undefined;
 
+  const ssn = mapCsvSsn(csvPatient);
+  const driversLicense = mapCsvDriversLicense(csvPatient);
+  const personalIdentifiers: PersonalIdentifier[] = [ssn, driversLicense].flatMap(filterTruthy);
+
   if (errors.length > 0) {
     return errors;
   }
@@ -214,6 +238,7 @@ export function mapCsvPatientToMetriportPatient(
     genderAtBirth,
     address: addresses,
     contact: contacts,
+    personalIdentifiers,
   };
 }
 
@@ -227,4 +252,26 @@ export function normalizeExternalIdUtils(id: string | undefined): string | undef
   const normalId = normalizeExternalId(id);
   if (normalId.length === 0) return undefined;
   return normalId;
+}
+
+export function mapCsvSsn(csvPatient: Record<string, string>): PersonalIdentifier | undefined {
+  if (!csvPatient.ssn) return undefined;
+  return createSsnPersonalIdentifier(csvPatient.ssn);
+}
+
+export function mapCsvDriversLicense(
+  csvPatient: Record<string, string>
+): PersonalIdentifier | undefined {
+  const value = csvPatient.driverslicenceno;
+  const state = csvPatient.driverslicencestate;
+  const normalizedValue = value?.trim().toLowerCase();
+  const normalizedState = state?.trim().toLowerCase();
+  if (!normalizedValue || !normalizedState) return undefined;
+  const parsedState = normalizeUSStateForAddressSafe(normalizedState);
+  if (!parsedState) return undefined;
+  return createDriversLicensePersonalIdentifier(normalizedValue, parsedState);
+}
+
+function stripCommas(input: string, replacement = "") {
+  return input.replace(commaRegex, replacement);
 }

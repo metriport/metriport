@@ -1,12 +1,12 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
-import { USState, USStateForAddress } from "@metriport/shared";
+import { USStateForAddress } from "@metriport/shared";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { Contact } from "./contact";
 import { DocumentQueryProgress } from "./document-query";
-import { LinkDemographics } from "./patient-demographics";
+import { LinkDemographics, normalizeSsn } from "./patient-demographics";
 import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
@@ -36,7 +36,7 @@ export type PersonalIdentifier = BaseIdentifier &
 export type DriversLicense = {
   type: DriversLicensePersonalIdentifier;
   value: string;
-  state: USState;
+  state: USStateForAddress;
 };
 
 export const genderAtBirthTypes = ["F", "M", "O", "U"] as const;
@@ -104,9 +104,17 @@ export function getStatesFromAddresses(patient: Patient): USStateForAddress[] {
   return patient.data.address.map(getState);
 }
 
+export function createSsnPersonalIdentifier(value: string): PersonalIdentifier {
+  const personalIdentifier: PersonalIdentifier = {
+    type: "ssn",
+    value: normalizeSsn(value),
+  };
+  return personalIdentifier;
+}
+
 export function createDriversLicensePersonalIdentifier(
   value: string,
-  state: USState
+  state: USStateForAddress
 ): PersonalIdentifier {
   const personalIdentifier: PersonalIdentifier = {
     type: "driversLicense",

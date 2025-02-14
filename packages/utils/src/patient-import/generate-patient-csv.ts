@@ -2,8 +2,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { faker } from "@faker-js/faker";
-import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
 import { validateAndParsePatientImportCsv } from "@metriport/core/command/patient-import/csv/validate-and-parse-import";
+import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { DriversLicense, PersonalIdentifier } from "@metriport/core/domain/patient";
@@ -45,6 +45,7 @@ function getAmountOfContacts() {
   return faker.number.int({ min: 0, max: 10 });
 }
 
+// The order inside each of those matters!
 const mainHeaders = "externalId,firstname,lastname,dob,gender";
 const addressHeaders = "zip,city,state,addressLine1*,addressLine2";
 const contactHeaders = "phone,email";
