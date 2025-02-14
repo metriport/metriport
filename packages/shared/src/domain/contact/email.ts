@@ -34,7 +34,7 @@ export function normalizeEmailStrict(email: string): string {
 }
 
 /**
- * Returns the base email without the mailto prefix and in lowercase
+ * Returns the base email without the `mailto:` prefix and in lowercase
  */
 export function noramlizeEmailBase(email: string): string {
   return removeMailto(email.trim().toLowerCase());
