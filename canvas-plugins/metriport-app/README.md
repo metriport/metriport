@@ -1,8 +1,8 @@
-# metriport-patient-app
+# metriport-app
 
 ## Description
 
-An embeddable application that can load the Metriport patient data into the canvas patient view.
+Get instant access to comprehensive patient clinical history summaries, and more.
 
 ### Installation
 
@@ -13,7 +13,7 @@ Requirments:
 
 Please reach out to support@metriport.com to get a Metriport Token if not already provided.
 
-1. Install the plugin: `canvas install metriport-patient-app`
+1. Install the plugin: `canvas install metriport-app`
 2. Set `METRIPORT_TOKEN` in the plugin settings to be the token from Requirements (2).
 
 ### Usage

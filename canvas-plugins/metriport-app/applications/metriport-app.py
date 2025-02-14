@@ -3,7 +3,7 @@ from canvas_sdk.effects.launch_modal import LaunchModalEffect
 from canvas_sdk.handlers.application import Application
 
 
-class MetriportPatientApp(Application):
+class MetriportApp(Application):
     """An embeddable application that can load the Metriport patient data into the canvas patient modal."""
 
     def on_open(self) -> Effect:
