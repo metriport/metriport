@@ -48,10 +48,8 @@ import {
   medicationReferencesSchema,
   Patient,
   patientSchema,
-  patientSchemaWithValidAddress,
   PatientSearch,
   patientSearchSchema,
-  PatientWithValidAddress,
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
@@ -255,13 +253,7 @@ class AthenaHealthApi {
     return departments.departments.map(d => d.departmentid);
   }
 
-  async getPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientWithValidAddress> {
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `AthenaHealth getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -278,23 +270,10 @@ class AthenaHealthApi {
       debug,
       useFhir: true,
     });
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
-  async searchPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientWithValidAddress> {
+  async searchPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `AthenaHealth searchPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -321,15 +300,8 @@ class AthenaHealthApi {
       throw new MetriportError("More than one patient found in search", undefined, additionalInfo);
     }
     const patient = entry[0]?.resource;
-    if (!patient) throw new MetriportError("No patient found in search", undefined, additionalInfo);
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    if (!patient) throw new NotFoundError("No patient found in search", undefined, additionalInfo);
+    return patient;
   }
 
   async createMedication({
@@ -420,11 +392,11 @@ class AthenaHealthApi {
     };
     const snomedCode = this.getConditionSnomedCode(condition);
     if (!snomedCode) {
-      throw new MetriportError("No SNOMED code found for condition", undefined, additionalInfo);
+      throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
     }
     const startDate = this.getConditionStartDate(condition);
     if (!startDate) {
-      throw new MetriportError("No start date found for condition", undefined, additionalInfo);
+      throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
     }
     const conditionStatus = this.getConditionStatus(condition);
     const problemStatus = conditionStatus
@@ -484,28 +456,28 @@ class AthenaHealthApi {
     };
     const code = getObservationCode(observation);
     if (!code) {
-      throw new MetriportError("No code found for observation", undefined, additionalInfo);
+      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
     }
     const clinicalElementId = vitalSignCodesMapAthena.get(code);
     if (!clinicalElementId) {
-      throw new MetriportError("No clinical element id found for observation", undefined, {
+      throw new BadRequestError("No clinical element id found for observation", undefined, {
         ...additionalInfo,
         code,
       });
     }
     const units = getObservationUnits(observation);
     if (!units) {
-      throw new MetriportError("No units found for observation", undefined, {
+      throw new BadRequestError("No units found for observation", undefined, {
         ...additionalInfo,
         code,
         clinicalElementId,
       });
     }
     if (!vitals.sortedPoints || vitals.sortedPoints.length === 0) {
-      throw new MetriportError("No points found for vitals", undefined, additionalInfo);
+      throw new BadRequestError("No points found for vitals", undefined, additionalInfo);
     }
     if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
-      throw new MetriportError("Duplicate reading taken for vitals", undefined, {
+      throw new BadRequestError("Duplicate reading taken for vitals", undefined, {
         ...additionalInfo,
         dates: vitals.sortedPoints.map(v => v.date).join(", "),
       });
@@ -608,7 +580,7 @@ class AthenaHealthApi {
     };
     const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
     if (!searchValues || searchValues.length === 0) {
-      throw new MetriportError(
+      throw new BadRequestError(
         "No search values for searching medication references",
         undefined,
         additionalInfo
@@ -618,7 +590,7 @@ class AthenaHealthApi {
       searchValue => searchValue.length >= 2
     );
     if (searchValuesWithAtLeastTwoParts.length === 0) {
-      throw new MetriportError(
+      throw new BadRequestError(
         "No search values with at least two parts",
         undefined,
         additionalInfo
@@ -1003,17 +975,6 @@ class AthenaHealthApi {
     return parsedDate.format(athenaDateTimeFormat);
   }
 
-  private parsePatient(patient: Patient): PatientWithValidAddress {
-    if (!patient.address || patient.address.length === 0) {
-      throw new BadRequestError("No addresses found");
-    }
-    patient.address = patient.address.filter(a => a.postalCode !== undefined);
-    if (patient.address.length === 0) {
-      throw new BadRequestError("No address zip found");
-    }
-    return patientSchemaWithValidAddress.parse(patient);
-  }
-
   private getConditionSnomedCode(condition: Condition): string | undefined {
     const code = condition.code;
     const snomedCoding = code?.coding?.find(coding => {
@@ -1075,7 +1036,7 @@ class AthenaHealthApi {
     if (units === "cel" || units === "c" || units.includes("celsius")) {
       return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
     }
-    throw new MetriportError("Unknown units", undefined, {
+    throw new BadRequestError("Unknown units", undefined, {
       units,
       clinicalElementId,
       value,

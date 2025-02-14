@@ -14,8 +14,6 @@ import {
   Metadata,
   Patient,
   patientSchema,
-  patientSchemaWithValidAddress,
-  PatientWithAddress,
 } from "@metriport/shared/interface/external/elation/index";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { z } from "zod";
@@ -109,13 +107,7 @@ class ElationApi {
     });
   }
 
-  async getPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientWithAddress> {
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `Elation getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -131,14 +123,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
   async updatePatientMetadata({
@@ -149,7 +134,7 @@ class ElationApi {
     cxId: string;
     patientId: string;
     metadata: Metadata;
-  }): Promise<PatientWithAddress> {
+  }): Promise<Patient> {
     const { debug } = out(
       `Elation updatePatientMetadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -167,14 +152,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
   async getAppointments({
@@ -365,11 +343,6 @@ class ElationApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(elationDateFormat);
-  }
-
-  private parsePatient(patient: Patient): PatientWithAddress {
-    if (!patient.address) throw new BadRequestError("No addresses found");
-    return patientSchemaWithValidAddress.parse(patient);
   }
 }
 

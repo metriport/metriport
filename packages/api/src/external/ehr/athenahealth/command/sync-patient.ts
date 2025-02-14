@@ -5,7 +5,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, MetriportError, normalizeDate, normalizeGender } from "@metriport/shared";
-import { PatientWithValidAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -154,7 +154,7 @@ export async function syncAthenaPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemos(patient: PatientWithValidAddress): PatientDemoData[] {
+function createMetriportPatientDemos(patient: AthenaPatient): PatientDemoData[] {
   const dob = normalizeDate(patient.birthDate);
   const genderAtBirth = normalizeGender(patient.gender);
   const addressArray = createAddresses(patient);
@@ -198,7 +198,7 @@ async function getPatientFromAthena({
   cxId: string;
   patientId: string;
   useSearch: boolean;
-}): Promise<PatientWithValidAddress> {
+}): Promise<AthenaPatient> {
   if (useSearch) {
     return await api.searchPatient({
       cxId,
