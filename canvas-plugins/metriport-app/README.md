@@ -8,7 +8,7 @@ Get instant access to comprehensive patient clinical history summaries, and more
 
 Requirments:
 
-1. [Canvas CLI](https://docs.canvasmedical.com/sdk/canvas_cli/) set up
+1. [Canvas CLI](https://docs.canvasmedical.com/sdk/canvas_cli/)
 2. Metriport Token
 
 Please reach out to support@metriport.com to get a Metriport Token if not already provided.
@@ -18,5 +18,5 @@ Please reach out to support@metriport.com to get a Metriport Token if not alread
 
 ### Usage
 
-1. Navigate to a patient in Canvas and click the Metriport Patient app icon.
-2. The Metriport Patient app will load the patient data into the canvas patient view.
+1. Navigate to a patient in Canvas, click the apps menu, and click the Metriport App icon.
+2. The Metriport App will load the patient data into the canvas patient view.
