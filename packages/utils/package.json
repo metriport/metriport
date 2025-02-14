@@ -30,7 +30,7 @@
     "compare-total-resource-counts": "bash src/fhir-converter/scripts/compare_total_resource_counts.sh",
     "compare-resource-counts-per-file": "bash src/fhir-converter/scripts/compare_resource_counts_per_file.sh",
     "compare-total-resource-count-post-fhir-insert": "bash src/fhir-converter/scripts/compare_total_resource_count_post_fhir_insert.sh",
-    "generate-patient-csv": "ts-node src/generate-patient-csv",
+    "generate-patient-csv": "ts-node src/patient-import/generate-patient-csv",
     "uuidv7": "ts-node src/make-uuidv7",
     "cda-to-html": "ts-node --files src/customer-requests/cda-to-html.ts",
     "saml-server": "ts-node src/saml/saml-server",

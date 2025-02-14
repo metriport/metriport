@@ -24,12 +24,12 @@ import { makeDir } from "../shared/fs";
  *
  * Usage:
  * - update the constants below
- * - run it with `ts-node src/patient-import/create-mock-csv.ts`
+ * - run it with `npm run generate-patient-csv`
  * - the file will be created in the `runs/bulk-import-mock` folder
  */
 
 // The amount of patients to generate
-const numberOfPatients = 10_000;
+const numberOfPatients = 1_000;
 
 // The percentage of patients that will have each property:
 const percentageWithExternalId = 0.5;
