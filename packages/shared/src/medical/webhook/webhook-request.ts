@@ -102,6 +102,7 @@ const documentsSchema = z.object({
 
 export const documentDownloadWebhookPatientSchema = z.object({
   patientId: z.string(),
+  externalId: z.string().optional(),
   status: z.enum(["completed", "failed"]),
   documents: z.array(documentsSchema),
 });
@@ -115,6 +116,7 @@ export type DocumentDownloadWebhookRequest = z.infer<typeof documentDownloadWebh
 
 export const documentConversionWebhookPatientSchema = z.object({
   patientId: z.string(),
+  externalId: z.string().optional(),
   status: z.enum(["completed", "failed"]),
 });
 export type DocumentConversionWebhookPatient = z.infer<
@@ -131,6 +133,7 @@ export type DocumentConversionWebhookRequest = z.infer<
 
 export const documentBulkDownloadWebhookPatientSchema = z.object({
   patientId: z.string(),
+  externalId: z.string().optional(),
   status: z.enum(["completed", "failed"]),
   documents: z.array(documentsSchema.extend({ url: z.string() })),
 });
