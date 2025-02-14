@@ -3,12 +3,13 @@ import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
-import { v4 as uuidv4 } from "uuid";
+import { uuidv7 } from "../util/uuid-v7";
 import { capture, out } from "../util";
 
 dayjs.extend(utc);
 
 const NO_KNOWN_SUBSTRING = "no known";
+const MISSING_ATTR = "-";
 
 const dateFormats = ["datetime", "date"] as const;
 const unknownValues = ["unknown", "unk", "no known"];
@@ -124,32 +125,32 @@ export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string
 }
 
 /**
- * Fills in existing maps.
+ * Deduplicates a resource within the resource map. If the key doesn't match an existing resource, the target resource will be added to the map.
  */
-export function fillMaps<T extends Resource>(
-  map: Map<string, T>,
-  key: string,
+export function deduplicateWithinMap<T extends Resource>(
+  dedupedResourcesMap: Map<string, T>,
+  dedupKey: string,
   targetResource: T,
   refReplacementMap: Map<string, string>,
   isExtensionIncluded = true,
-  applySpecialModifications?: ApplySpecialModificationsCallback<T>
+  customMergeLogic?: ApplySpecialModificationsCallback<T> | undefined
 ): void {
-  const existingResource = map.get(key);
+  const existingResource = dedupedResourcesMap.get(dedupKey);
   // if its a duplicate, combine the resources
   if (existingResource?.id) {
     const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
     let merged = combineTwoResources(existingResource, targetResource, isExtensionIncluded);
-    if (applySpecialModifications) {
-      merged = applySpecialModifications(merged, existingResource, targetResource);
+    if (customMergeLogic) {
+      merged = customMergeLogic(merged, existingResource, targetResource);
     }
-    map.set(key, merged);
+    dedupedResourcesMap.set(dedupKey, merged);
 
     if (targetResource.id) {
       const consumedRef = `${targetResource.resourceType}/${targetResource.id}`;
       refReplacementMap.set(consumedRef, masterRef);
     }
   } else {
-    map.set(key, targetResource);
+    dedupedResourcesMap.set(dedupKey, targetResource);
   }
 }
 
@@ -201,7 +202,7 @@ export function fillL1L2Maps<T extends Resource>({
   for (const key of getterKeys) {
     map2Key = map1.get(key); // Potential improvement. We just select the first uuid that matches. What if multple matches exist?
     if (map2Key) {
-      fillMaps(
+      deduplicateWithinMap(
         map2,
         map2Key,
         targetResource,
@@ -213,12 +214,12 @@ export function fillL1L2Maps<T extends Resource>({
     }
   }
   if (!map2Key) {
-    map2Key = uuidv4();
+    map2Key = uuidv7();
     for (const key of setterKeys) {
       map1.set(key, map2Key);
     }
     // fill L2 map only once to avoid duplicate entries
-    fillMaps(
+    deduplicateWithinMap(
       map2,
       map2Key,
       targetResource,
@@ -463,4 +464,126 @@ export function fetchCodeableConceptText(concept: CodeableConcept): string | und
     }
     throw error;
   }
+}
+
+/**
+ * Manages the deduplication of FHIR resources by maintaining a two-level mapping system:
+ * - Level 1 (referenceMap): Maps identifying characteristics to a resource reference ID
+ * - Level 2 (resourceMap): Maps resource reference IDs to the actual merged (deduplicated) resources
+ *
+ * When a duplicate is found, it merges the resources and maintains references to track
+ * which resources were combined.
+ *
+ * resourceKeyMap contains references to a resource based on all deduplication keys that were created for it. i.e.:
+ * `{{"snomedCode":"123",required"}, {"date":"2024-10-01",required}}` => `resource reference ID`
+ * `{{"loincCode":"abcd",required"}, {"date":"2024-10-01",optional}}` => `resource reference ID`
+ * `{{"loincCode":"abcd",required"}, {"date":"-",optional}}` => `resource reference ID`
+ *
+ * dedupedResourcesMap contains resource reference IDs pointing to deduplicated resources. i.e.:
+ * `resource reference ID #1` => deduplicated master resource #1
+ * `resource reference ID #2` => deduplicated master resource #2
+ *
+ * @param params Configuration object with the following properties:
+ * @param params.resourceKeyMap - Maps resource characteristics to unique resource IDs
+ * @param params.dedupedResourcesMap - Maps unique IDs to merged resources
+ * @param params.identifierKeys - Array of strings that identify this resource
+ * @param params.matchCandidateKeys - Potential matching resource identifiers to check against
+ * @param params.incomingResource - The new resource to deduplicate
+ * @param params.referenceUpdates - Tracks updates needed for references to merged resources
+ * @param params.keepExtensions - Whether to preserve FHIR extensions during merging
+ * @param params.customMergeLogic - Optional callback for resource-specific merge logic
+ */
+export function deduplicateAndTrackResource<T extends Resource>({
+  resourceKeyMap,
+  dedupedResourcesMap,
+  identifierKeys,
+  matchCandidateKeys,
+  incomingResource,
+  refReplacementMap,
+  keepExtensions = true,
+  customMergeLogic,
+}: {
+  resourceKeyMap: Map<string, string>;
+  dedupedResourcesMap: Map<string, T>;
+  identifierKeys: string[];
+  matchCandidateKeys: string[];
+  incomingResource: T;
+  refReplacementMap: Map<string, string>;
+  keepExtensions?: boolean;
+  customMergeLogic?: ApplySpecialModificationsCallback<T>;
+}): void {
+  let masterResourceId = undefined;
+
+  // Check if this resource matches any existing ones
+  for (const candidateKey of matchCandidateKeys) {
+    masterResourceId = resourceKeyMap.get(candidateKey);
+    if (masterResourceId) {
+      deduplicateWithinMap(
+        dedupedResourcesMap,
+        masterResourceId,
+        incomingResource,
+        refReplacementMap,
+        keepExtensions,
+        customMergeLogic
+      );
+      break;
+    }
+  }
+
+  // If no match found, create new entry
+  if (!masterResourceId) {
+    masterResourceId = uuidv7();
+    for (const identifier of identifierKeys) {
+      resourceKeyMap.set(identifier, masterResourceId);
+    }
+    deduplicateWithinMap(
+      dedupedResourcesMap,
+      masterResourceId,
+      incomingResource,
+      refReplacementMap,
+      keepExtensions,
+      customMergeLogic
+    );
+  }
+}
+
+export function buildKeyFromValueAndMissingRequiredAttribute(
+  value: object,
+  attribute: string
+): string {
+  return `${required({ ...value })},${required({ [attribute]: MISSING_ATTR })}`;
+}
+
+export function buildKeyFromValueAndRequiredAttribute(value: object, attribute: string): string {
+  return `${required({ ...value })},${required({ attribute })}`;
+}
+
+export function buildKeyFromValueAndMissingOptionalAttribute(
+  value: object,
+  attribute: string
+): string {
+  return `${required({ ...value })},${optional({ [attribute]: MISSING_ATTR })}`;
+}
+
+export function buildKeyFromValueAndOptionalAttribute(value: object, attribute: string): string {
+  return `${required({ ...value })},${optional({ attribute })}`;
+}
+
+export function buildKeyFromValueAndMissingDynamicAttribute(
+  value: object,
+  attribute: string,
+  isRequired: boolean
+): string {
+  if (isRequired) {
+    return buildKeyFromValueAndMissingRequiredAttribute(value, attribute);
+  }
+  return buildKeyFromValueAndMissingOptionalAttribute(value, attribute);
+}
+
+export function required(value: object): string {
+  return `${JSON.stringify({ ...value })},required`;
+}
+
+export function optional(value: object): string {
+  return `${JSON.stringify({ ...value })},optional`;
 }
