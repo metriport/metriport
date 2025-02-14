@@ -19,10 +19,9 @@ import {
   medicationCreateResponseSchema,
   MedicationReference,
   medicationReferencesGetResponseSchema,
-  PatientResourceWithHomeAddress,
-  patientResourceSchema,
-  patientResourceSchemaWithHomeAddress,
-  patientSearchResourceSchema,
+  patientSchema,
+  patientSearchSchema,
+  Patient,
   ProblemCreateResponse,
   problemCreateResponseSchema,
   subscriptionCreateResponseSchema,
@@ -273,7 +272,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResourceWithHomeAddress | undefined> {
+  }): Promise<Patient | undefined> {
     const { log, debug } = out(
       `AthenaHealth get patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -301,7 +300,7 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatient"));
       }
-      const patient = patientResourceSchema.safeParse(response.data);
+      const patient = patientSchema.safeParse(response.data);
       if (!patient.success) {
         const error = patient.error;
         const msg = "Patient from AthenaHealth could not be parsed";
@@ -319,25 +318,7 @@ class AthenaHealthApi {
         });
         return undefined;
       }
-      const patientData = patient.data;
-      patientData.address = patientData.address.filter(
-        a => a.postalCode !== undefined && a.use === "home"
-      );
-      if (patientData.address.length === 0) {
-        const msg = "No home address with valid zip found for patient";
-        capture.message(msg, {
-          extra: {
-            url: patientUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            context: "athenahealth.get-patient",
-          },
-          level: "info",
-        });
-        return undefined;
-      }
-      return patientResourceSchemaWithHomeAddress.parse(patientData);
+      return patient.data;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 404) return undefined;
@@ -363,7 +344,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResourceWithHomeAddress | undefined> {
+  }): Promise<Patient | undefined> {
     const { log, debug } = out(
       `AthenaHealth search patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -402,7 +383,7 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatientViaSearch"));
       }
-      const searchSet = patientSearchResourceSchema.safeParse(response.data);
+      const searchSet = patientSearchSchema.safeParse(response.data);
       if (!searchSet.success) {
         const error = searchSet.error;
         const msg = "Patient search set from AthenaHealth could not be parsed";
@@ -430,24 +411,7 @@ class AthenaHealthApi {
       }
       const patientData = entry[0]?.resource;
       if (!patientData) return undefined;
-      patientData.address = patientData.address.filter(
-        a => a.postalCode !== undefined && a.use === "home"
-      );
-      if (patientData.address.length === 0) {
-        const msg = "No home address with valid zip found for patient from search set";
-        capture.message(msg, {
-          extra: {
-            url: patientSearchUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            context: "athenahealth.get-patient",
-          },
-          level: "info",
-        });
-        return undefined;
-      }
-      return patientResourceSchemaWithHomeAddress.parse(patientData);
+      return patientData;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);

@@ -1,28 +1,11 @@
 import { z } from "zod";
 
-const period = z.object({
-  start: z.string(),
-  end: z.string().optional(),
-});
-
 const address = z.object({
-  use: z.string(),
-  country: z.string(),
-  period,
-  state: z.string(),
-  line: z.string().array(),
-  city: z.string(),
+  state: z.string().optional(),
+  line: z.string().array().optional(),
+  city: z.string().optional(),
   postalCode: z.string().optional(),
-});
-
-const homeAddress = z.object({
-  use: z.literal("home"),
-  country: z.string(),
-  period,
-  state: z.string(),
-  line: z.string().array(),
-  city: z.string(),
-  postalCode: z.string(),
+  country: z.string().optional(),
 });
 
 const telecome = z.object({
@@ -31,34 +14,24 @@ const telecome = z.object({
 });
 
 const name = z.object({
-  use: z.string(),
-  period,
   family: z.string(),
   given: z.string().array(),
 });
 
-export const patientResourceSchema = z.object({
+export const patientSchema = z.object({
   gender: z.string(),
-  name: name.array(),
-  address: address.array(),
+  name: name.array().optional(),
+  address: address.array().optional(),
   birthDate: z.string(),
   telecom: telecome.array().optional(),
 });
 
-export const patientResourceSchemaWithHomeAddress = z.object({
-  gender: z.string(),
-  name: name.array(),
-  address: homeAddress.array(),
-  birthDate: z.string(),
-  telecom: telecome.array().optional(),
-});
-
-export type PatientResource = z.infer<typeof patientResourceSchema>;
-export type PatientResourceWithHomeAddress = z.infer<typeof patientResourceSchemaWithHomeAddress>;
-export const patientSearchResourceSchema = z.object({
+export type Patient = z.infer<typeof patientSchema>;
+export const patientSearchSchema = z.object({
   entry: z
     .object({
-      resource: patientResourceSchema,
+      resource: patientSchema,
     })
     .array(),
 });
+export type PatientSearch = z.infer<typeof patientSearchSchema>;

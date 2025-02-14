@@ -3,9 +3,8 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import {
   appointmentsGetResponseSchema,
   Metadata,
-  PatientResource,
-  patientResourceSchema,
-  Resource,
+  Patient,
+  patientSchema,
 } from "@metriport/shared/interface/external/elation/index";
 import axios, { AxiosInstance } from "axios";
 import { createHivePartitionFilePath } from "../../domain/filename";
@@ -106,7 +105,7 @@ class ElationApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResource | undefined> {
+  }): Promise<Patient | undefined> {
     const { log, debug } = out(
       `Elation get patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -134,7 +133,7 @@ class ElationApi {
           })
           .catch(processAsyncError("Error saving to s3 @ Elation - getPatient"));
       }
-      const patient = patientResourceSchema.safeParse(response.data);
+      const patient = patientSchema.safeParse(response.data);
       if (!patient.success) {
         const error = patient.error;
         const msg = "Patient from Elation could not be parsed";
@@ -180,7 +179,7 @@ class ElationApi {
     cxId: string;
     patientId: string;
     metadata: Metadata;
-  }): Promise<PatientResource | undefined> {
+  }): Promise<Patient | undefined> {
     const { log, debug } = out(
       `Elation update patient metadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -217,7 +216,7 @@ class ElationApi {
           })
           .catch(processAsyncError("Error saving to s3 @ Elation - updatePatient"));
       }
-      const patient = patientResourceSchema.safeParse(response.data);
+      const patient = patientSchema.safeParse(response.data);
       if (!patient.success) {
         const error = patient.error;
         const msg = "Patient from Elation could not be parsed";
@@ -248,70 +247,6 @@ class ElationApi {
           practiceId: this.practiceId,
           patientId,
           context: "elation.update-patient",
-          error,
-        },
-      });
-      throw error;
-    }
-  }
-
-  async subscribeToEventViaWebhook({
-    cxId,
-    resource,
-    webhookBaseUrl,
-  }: {
-    cxId: string;
-    resource: Resource;
-    webhookBaseUrl: string;
-  }): Promise<void> {
-    const { log, debug } = out(
-      `Elation subscribe to event - cxId ${cxId} practiceId ${this.practiceId} resource ${resource} webhookBaseUrl ${webhookBaseUrl}`
-    );
-    const subscribeUrl = `/app/subscriptions`;
-    try {
-      const additionalInfo = { cxId, practiceId: this.practiceId, resource, webhookBaseUrl };
-      const response = await this.axiosInstance.post(
-        subscribeUrl,
-        this.createDataParams({
-          resource,
-          target: this.createWebhookUrl(this.practiceId, webhookBaseUrl),
-        })
-      );
-      if (!response.data) {
-        throw new MetriportError(
-          `No body returned from ${subscribeUrl}`,
-          undefined,
-          additionalInfo
-        );
-      }
-      debug(`${subscribeUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId: "global",
-          date: new Date(),
-        });
-        const key = this.buildS3Path("subscribe", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ Elation - subscribeToEvent"));
-      }
-    } catch (error) {
-      const msg = `Failure while subscribing to event @ Elation`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: subscribeUrl,
-          cxId,
-          practiceId: this.practiceId,
-          resource,
-          webhookBaseUrl,
-          context: "elation.subscribe-to-event",
           error,
         },
       });
@@ -399,10 +334,6 @@ class ElationApi {
     return Object.entries(data)
       .flatMap(([k, v]) => (v ? [`${k}=${v}`] : []))
       .join("&");
-  }
-
-  private createWebhookUrl(praticeId: string, baseUrl: string): string {
-    return `${baseUrl}/${praticeId}`;
   }
 
   private formatDate(date: string | undefined): string | undefined {

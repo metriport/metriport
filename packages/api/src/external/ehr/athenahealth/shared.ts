@@ -6,17 +6,19 @@ import AthenaHealthApi, {
 } from "@metriport/core/external/athenahealth/index";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
+  BadRequestError,
   MetriportError,
-  normalizeEmail,
-  normalizePhoneNumber,
-  normalizeUSStateForAddress,
-  normalizeZipCodeNew,
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
+  normalizeUSStateForAddressSafe,
+  normalizeZipCodeNewSafe,
+  toTitleCase,
 } from "@metriport/shared";
 import {
   AthenaClientJwtTokenData,
   AthenaClientJwtTokenInfo,
 } from "@metriport/shared/interface/external/athenahealth/jwt-token";
-import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
@@ -27,50 +29,76 @@ const region = Config.getAWSRegion();
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-export function createMetriportContacts(patient: PatientResourceWithHomeAddress): Contact[] {
+export function createContacts(patient: AthenaPatient): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
-      return {
-        email: normalizeEmail(telecom.value),
-      };
+      const email = normalizeEmailNewSafe(telecom.value);
+      if (!email) return [];
+      return { email };
     } else if (telecom.system === "phone") {
-      return {
-        phone: normalizePhoneNumber(telecom.value),
-      };
+      const phone = normalizePhoneNumberSafe(telecom.value);
+      if (!phone) return [];
+      return { phone };
     }
     return [];
   });
 }
 
-export function createMetriportAddresses(patient: PatientResourceWithHomeAddress): Address[] {
-  return patient.address.map(address => {
-    if (address.line.length === 0) {
-      throw new Error("AthenaHealth patient missing at least one line in address");
-    }
+export function createAddresses(patient: AthenaPatient): Address[] {
+  if (!patient.address) throw new BadRequestError("Patient has no address");
+  const addresses = patient.address.flatMap(address => {
+    if (!address.line || address.line.length === 0) return [];
+    const addressLine1 = (address.line[0] as string).trim();
+    if (addressLine1 === "") return [];
+    const addressLines2plus = address.line
+      .slice(1)
+      .map(l => l.trim())
+      .filter(l => l !== "");
+    if (!address.city) return [];
+    const city = address.city.trim();
+    if (city === "") return [];
+    if (!address.country) return [];
+    const country = address.country.trim();
+    if (country === "") return [];
+    if (!address.state) return [];
+    const state = normalizeUSStateForAddressSafe(address.state);
+    if (!state) return [];
+    if (!address.postalCode) return [];
+    const zip = normalizeZipCodeNewSafe(address.postalCode);
+    if (!zip) return [];
     return {
-      addressLine1: address.line[0] as string,
-      addressLine2: address.line.length > 1 ? address.line.slice(1).join(" ") : undefined,
-      city: address.city,
-      state: normalizeUSStateForAddress(address.state),
-      zip: normalizeZipCodeNew(address.postalCode),
-      country: address.country,
+      addressLine1,
+      addressLine2: addressLines2plus.length === 0 ? undefined : addressLines2plus.join(" "),
+      city,
+      state,
+      zip,
+      country,
     };
   });
+  if (addresses.length === 0)
+    throw new BadRequestError("Patient has no valid addresses", undefined, {
+      addresses: Object.values(addresses)
+        .map(a => JSON.stringify(a))
+        .join(","),
+    });
+  return addresses;
 }
 
-export function createNames(
-  patient: PatientResourceWithHomeAddress
-): { firstName: string; lastName: string }[] {
-  const names: { firstName: string; lastName: string }[] = [];
-  patient.name.map(name => {
+export function createNames(patient: AthenaPatient): { firstName: string; lastName: string }[] {
+  if (!patient.name) throw new BadRequestError("Patient has no name");
+  const names = patient.name.flatMap(name => {
     const lastName = name.family.trim();
-    if (lastName === "") return;
-    name.given.map(gName => {
+    if (lastName === "") return [];
+    return name.given.flatMap(gName => {
       const firstName = gName.trim();
-      if (firstName === "") return;
-      names.push({ firstName, lastName });
+      if (firstName === "") return [];
+      return [{ firstName: toTitleCase(firstName), lastName: toTitleCase(lastName) }];
     });
   });
+  if (names.length === 0)
+    throw new BadRequestError("Patient has no valid names", undefined, {
+      names: patient.name.map(n => JSON.stringify(n)).join(","),
+    });
   return names;
 }
 
