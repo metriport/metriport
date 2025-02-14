@@ -1,0 +1,28 @@
+{
+    "sdk_version": "0.1.4",
+    "plugin_version": "0.0.1",
+    "name": "metriport-patient-app",
+    "description": "Metriport Patient App",
+    "components": {
+        "applications": [
+            {
+                "class": "metriport-patient-app.applications.metriport-patient-app:MetriportPatientApp",
+                "name": "Metriport Patient",
+                "description": "An embeddable application that can load the Metriport patient data into the canvas patient modal.",
+                "scope": "patient_specific",
+                "icon": "assets/logo300.png",
+                "origins": ["https://ehr.metriport.com", "https://api.metriport.com"]
+            }
+        ],
+        "commands": [],
+        "content": [],
+        "effects": [],
+        "views": []
+    },
+    "secrets": ["METRIPORT_TOKEN"],
+    "tags": {},
+    "references": [],
+    "license": "",
+    "diagram": false,
+    "readme": "./README.md"
+}
