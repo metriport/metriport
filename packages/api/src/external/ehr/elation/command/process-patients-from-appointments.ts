@@ -11,6 +11,7 @@ import {
   delayBetweenPracticeBatches,
   EhrSources,
   getLookForwardTimeRange,
+  parallelPatients,
   parallelPractices,
 } from "../../shared";
 import { createElationClient } from "../shared";
@@ -103,7 +104,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
       if (error) syncPatientsErrors.push({ ...params, error });
     },
     {
-      numberOfParallelExecutions: parallelPractices,
+      numberOfParallelExecutions: parallelPatients,
       delay: delayBetweenPracticeBatches.asMilliseconds(),
     }
   );

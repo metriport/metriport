@@ -73,7 +73,7 @@ export async function syncAthenaPatientIntoMetriport({
         const patient = await getPatientByDemo(params);
         if (patient) patients.push(patient);
       } catch (error) {
-        log(`Failed get demos. Cause: ${errorToString(error)}`);
+        log(`Failed to get patient by demo. Cause: ${errorToString(error)}`);
         getPatientByDemoErrors.push(error);
       }
     },
