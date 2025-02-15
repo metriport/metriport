@@ -24,6 +24,7 @@ import {
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
+import { detectFileType } from "../../util/file-type";
 import { out } from "../../util/log";
 import { sizeInBytes } from "../../util/string";
 import { uuidv4 } from "../../util/uuid-v7";
@@ -75,7 +76,7 @@ export async function processAttachments({
   const uploadDetails: UploadParams[] = [];
 
   b64Attachments.acts.map(act => {
-    const fileDetails = getDetailsForAct(act.text);
+    const fileDetails = getDetailsForAct(act.text, log);
     if (!fileDetails) return;
 
     const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
@@ -168,7 +169,9 @@ async function handleS3Upload(
   s3Utils: S3Utils,
   log: typeof console.log
 ): Promise<void> {
-  log(`Upload details: ${JSON.stringify(uploadDetails)}`);
+  uploadDetails.forEach(d => {
+    log(`Upload details: ${JSON.stringify({ ...d, file: "" })}`);
+  });
   await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
     await s3Utils.uploadFile(uploadParams);
   });
@@ -190,14 +193,26 @@ function buildDocumentReferenceDraft(
   };
 }
 
-function getDetailsForAct(document: CdaOriginalText | undefined): FileDetails | undefined {
+function getDetailsForAct(
+  document: CdaOriginalText | undefined,
+  log: typeof console.log
+): FileDetails | undefined {
   const fileB64Contents = document?.["#text"];
   if (!fileB64Contents) return undefined;
 
   const mimeType = document?._mediaType;
+  if (mimeType) {
+    return {
+      fileB64Contents,
+      mimeType: mimeType,
+    };
+  }
+
+  const guessExt = detectFileType(Buffer.from(fileB64Contents, "base64").toString("utf-8"));
+  log(`Mimetype not found. Detected type: ${guessExt}`);
   return {
     fileB64Contents,
-    mimeType,
+    mimeType: guessExt.mimeType,
   };
 }
 
