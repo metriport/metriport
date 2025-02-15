@@ -45,7 +45,6 @@ function parseContact(
   let email: string | undefined = undefined;
   try {
     email = normalizeEmail(csvPatient[emailName]);
-    if (!email) throw new Error(`Invalid ${emailName}`);
   } catch (error) {
     errors.push({ field: emailName, error: errorToString(error) });
   }
@@ -53,7 +52,6 @@ function parseContact(
   let phone: string | undefined = undefined;
   try {
     phone = normalizePhoneNumber(csvPatient[phoneName]);
-    if (!phone) throw new Error(`Invalid ${phoneName}`);
   } catch (error) {
     errors.push({ field: phoneName, error: errorToString(error) });
   }
