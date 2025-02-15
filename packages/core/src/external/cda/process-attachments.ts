@@ -22,6 +22,7 @@ import {
   ObservationMedia,
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
+import { stringToBase64 } from "../../util/base64";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { detectFileType } from "../../util/file-type";
@@ -36,6 +37,7 @@ import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/conve
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
+import { OCTET_MIME_TYPE } from "../../util/mime";
 
 const region = Config.getAWSRegion();
 
@@ -170,7 +172,14 @@ async function handleS3Upload(
   log: typeof console.log
 ): Promise<void> {
   uploadDetails.forEach(d => {
-    log(`Upload details: ${JSON.stringify({ ...d, file: "" })}`);
+    log(
+      `Attachment upload details: ${JSON.stringify({
+        bucket: d.bucket,
+        key: d.key,
+        contentType: d.contentType,
+        metadata: d.metadata,
+      })}`
+    );
   });
   await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
     await s3Utils.uploadFile(uploadParams);
@@ -200,19 +209,17 @@ function getDetailsForAct(
   const fileB64Contents = document?.["#text"];
   if (!fileB64Contents) return undefined;
 
-  const mimeType = document?._mediaType;
-  if (mimeType) {
-    return {
-      fileB64Contents,
-      mimeType: mimeType,
-    };
+  let mimeType = detectFileType(stringToBase64(fileB64Contents)).mimeType;
+  log(`Detected mimetype: ${mimeType}`);
+
+  if (mimeType === OCTET_MIME_TYPE && document?._mediaType) {
+    log(`Will use specified mimetype: ${document._mediaType}`);
+    mimeType = document._mediaType;
   }
 
-  const guessExt = detectFileType(Buffer.from(fileB64Contents, "base64").toString("utf-8"));
-  log(`Mimetype not found. Detected type: ${guessExt}`);
   return {
     fileB64Contents,
-    mimeType: guessExt.mimeType,
+    mimeType,
   };
 }
 
