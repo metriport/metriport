@@ -8,7 +8,7 @@ import {
   toTitleCase,
 } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
-import { normalizeSsn } from "@metriport/shared/domain/patient/ssn";
+import { normalizeSsnSafe } from "@metriport/shared/domain/patient/ssn";
 import {
   createDriversLicensePersonalIdentifier,
   createSsnPersonalIdentifier,
@@ -118,8 +118,8 @@ export function normalizeExternalId(id: string | undefined): string | undefined 
 export function mapCsvSsn(csvPatient: Record<string, string>): PersonalIdentifier | undefined {
   const ssn = csvPatient.ssn;
   if (!ssn) return undefined;
-  const normalizedSsn = normalizeSsn(ssn);
-  if (normalizedSsn.length < 1) return undefined;
+  const normalizedSsn = normalizeSsnSafe(ssn);
+  if (!normalizedSsn || normalizedSsn.length < 1) return undefined;
   return createSsnPersonalIdentifier(normalizedSsn);
 }
 
