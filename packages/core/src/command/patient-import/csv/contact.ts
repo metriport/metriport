@@ -45,25 +45,21 @@ function parseContact(
 ): { contact: Contact | undefined; errors: ParsingError[] } {
   const errors: ParsingError[] = [];
   const indexSuffix = index ? `-${index}` : "";
+  const emailName = `email${indexSuffix}`;
+  const phoneName = `phone${indexSuffix}`;
 
   let email: string | undefined = undefined;
   try {
-    email = normalizeEmailUtils(csvPatient[`email${indexSuffix}`]);
+    email = normalizeEmailUtils(csvPatient[emailName]);
   } catch (error) {
-    errors.push({
-      field: `email${indexSuffix}`,
-      error: errorToString(error),
-    });
+    errors.push({ field: emailName, error: errorToString(error) });
   }
 
   let phone: string | undefined = undefined;
   try {
-    phone = normalizePhoneNumberUtils(csvPatient[`phone${indexSuffix}`]);
+    phone = normalizePhoneNumberUtils(csvPatient[phoneName]);
   } catch (error) {
-    errors.push({
-      field: `phone${indexSuffix}`,
-      error: errorToString(error),
-    });
+    errors.push({ field: phoneName, error: errorToString(error) });
   }
   if (!email && !phone) {
     return { contact: undefined, errors };

@@ -1,4 +1,5 @@
 import {
+  errorToString,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
   toTitleCase,
@@ -6,8 +7,8 @@ import {
 } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { Address } from "../../../domain/address";
+import { out } from "../../../util";
 import { ParsingError } from "./shared";
-import { errorToString } from "@metriport/shared";
 
 const maxAddresses = 10;
 
@@ -15,6 +16,7 @@ export function mapCsvAddresses(csvPatient: Record<string, string>): {
   addresses: Address[];
   errors: ParsingError[];
 } {
+  const { log } = out(`mapCsvAddresses`);
   const errors: ParsingError[] = [];
   const addresses: (Address | undefined)[] = [];
 
@@ -30,10 +32,8 @@ export function mapCsvAddresses(csvPatient: Record<string, string>): {
 
   const filteredAddresses = addresses.flatMap(filterTruthy);
   if (filteredAddresses.length > maxAddresses) {
-    errors.push({
-      field: "address",
-      error: `Found more than ${maxAddresses} addresses`,
-    });
+    log(`Found more than ${maxAddresses} addresses, discarding the rest`);
+    filteredAddresses.splice(maxAddresses);
   }
   if (filteredAddresses.length < 1) {
     errors.push({
@@ -49,86 +49,83 @@ function parseAddress(
   csvPatient: Record<string, string>,
   index: number | undefined
 ): { address: Address | undefined; errors: ParsingError[] } {
+  const { log } = out(`parseAddress`);
   const errors: ParsingError[] = [];
   const indexSuffix = index ? `-${index}` : "";
-  let foundProperty = false;
 
+  const addressLine1Name = `addressline1${indexSuffix}`;
+  const addressLine1AlternativeName = `address1${indexSuffix}`;
+  const addressLine2Name = `addressline2${indexSuffix}`;
+  const addressLine2AlternativeName = `address2${indexSuffix}`;
+  const cityName = `city${indexSuffix}`;
+  const stateName = `state${indexSuffix}`;
+  const zipName = `zip${indexSuffix}`;
+
+  let foundAtLeastOneProperty = false;
   let addressLine1: string | undefined = undefined;
   let addressLine2: string | undefined = undefined;
   try {
     const res = normalizeAddressLine(
-      csvPatient[`addressline1${indexSuffix}`] ?? csvPatient[`address1${indexSuffix}`],
-      `addressLine1${indexSuffix}`,
+      csvPatient[addressLine1Name] ?? csvPatient[addressLine1AlternativeName],
+      addressLine1Name,
       true
     );
     addressLine1 = res[0];
     addressLine2 = res[1];
-    if (!addressLine1) throw new Error(`Missing addressLine1${indexSuffix}`);
-    foundProperty = true;
+    if (!addressLine1) throw new Error(`Missing ${addressLine1Name}`);
+    foundAtLeastOneProperty = true;
   } catch (error) {
-    errors.push({
-      field: `addressLine1${indexSuffix}`,
-      error: errorToString(error),
-    });
+    errors.push({ field: addressLine1Name, error: errorToString(error) });
   }
 
   try {
     const dedicatedAddressLine2 = normalizeAddressLine(
-      csvPatient[`addressline2${indexSuffix}`] ?? csvPatient[`address2${indexSuffix}`],
-      `addressLine2${indexSuffix}`
+      csvPatient[addressLine2Name] ?? csvPatient[addressLine2AlternativeName],
+      addressLine2Name
     );
-    if (addressLine2 && dedicatedAddressLine2) {
-      throw new Error(
-        `Found addressLine2${indexSuffix} on both its own field and as part of addressLine1${indexSuffix} ` +
-          `(from addressLine1${indexSuffix}: ${addressLine2})`
-      );
+    if (dedicatedAddressLine2) {
+      if (addressLine2) {
+        log(
+          `Found ${addressLine2Name} on both its own field and as part of ${addressLine1Name} ` +
+            `(from ${addressLine1Name}: ${addressLine2}), using the one from ${addressLine2Name}: ${dedicatedAddressLine2}`
+        );
+      }
+      addressLine2 = dedicatedAddressLine2;
     }
-    if (!addressLine2) addressLine2 = dedicatedAddressLine2;
-    if (addressLine2) foundProperty = true;
+    if (addressLine2) foundAtLeastOneProperty = true;
   } catch (error) {
-    errors.push({
-      field: `addressLine2${indexSuffix}`,
-      error: errorToString(error),
-    });
+    errors.push({ field: addressLine2Name, error: errorToString(error) });
   }
 
   let city: string | undefined = undefined;
   try {
-    city = normalizeCitySafe(csvPatient[`city${indexSuffix}`]);
-    if (!city) throw new Error(`Missing city${indexSuffix}`);
-    foundProperty = true;
+    city = normalizeCitySafe(csvPatient[cityName]);
+    if (!city) throw new Error(`Missing ${cityName}`);
+    foundAtLeastOneProperty = true;
   } catch (error) {
-    errors.push({
-      field: `city${indexSuffix}`,
-      error: errorToString(error),
-    });
+    errors.push({ field: cityName, error: errorToString(error) });
   }
 
   let state: USStateForAddress | undefined = undefined;
   try {
-    state = normalizeUSStateForAddressSafe(csvPatient[`state${indexSuffix}`] ?? "");
-    if (!state) throw new Error(`Missing state${indexSuffix}`);
-    foundProperty = true;
+    state = normalizeUSStateForAddressSafe(csvPatient[stateName] ?? "");
+    if (!state) throw new Error(`Missing ${stateName}`);
+    foundAtLeastOneProperty = true;
   } catch (error) {
-    errors.push({
-      field: `state${indexSuffix}`,
-      error: errorToString(error),
-    });
+    errors.push({ field: stateName, error: errorToString(error) });
   }
 
   let zip: string | undefined = undefined;
   try {
-    zip = normalizeZipCodeNewSafe(csvPatient[`zip${indexSuffix}`] ?? "");
-    if (!zip) throw new Error(`Missing zip${indexSuffix}`);
-    foundProperty = true;
+    zip = normalizeZipCodeNewSafe(csvPatient[zipName] ?? "");
+    if (!zip) throw new Error(`Missing ${zipName}`);
+    foundAtLeastOneProperty = true;
   } catch (error) {
-    errors.push({
-      field: `zip${indexSuffix}`,
-      error: errorToString(error),
-    });
+    errors.push({ field: zipName, error: errorToString(error) });
   }
+
   if (!addressLine1 || !city || !state || !zip) {
-    if (foundProperty) return { address: undefined, errors };
+    if (foundAtLeastOneProperty) return { address: undefined, errors };
     return { address: undefined, errors: [] };
   }
   const address: Address = {
@@ -139,7 +136,6 @@ function parseAddress(
     zip,
     country: "USA",
   };
-
   return { address, errors };
 }
 
