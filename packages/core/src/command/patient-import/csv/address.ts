@@ -185,7 +185,9 @@ function processMatches(
 
 export function normalizeCity(city: string | undefined): string | undefined {
   if (city == undefined) return undefined;
-  return normalizeCityFromShared(city);
+  const normalizedCity = normalizeCityFromShared(city);
+  if (normalizedCity.length < 1) return undefined;
+  return normalizedCity;
 }
 
 const streetTypes = [
