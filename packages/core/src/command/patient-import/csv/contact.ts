@@ -1,16 +1,28 @@
-import { errorToString, normalizeEmailNewSafe, normalizePhoneNumberSafe } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  normalizeEmailNew,
+  normalizePhoneNumberStrict,
+} from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { Contact } from "../../../domain/contact";
-import { out } from "../../../util";
 import { ParsingError } from "./shared";
 
 const maxContacts = 10;
 
+/**
+ * Maps a record/map of CSV patient data to a Metriport patient's contacts.
+ *
+ * NOTE: when parsing columns, csv-parser populates them in lower-case, so
+ * the property names are all lower-case.
+ *
+ * @param csvPatient - The CSV patient data.
+ * @returns The Metriport patient's contacts, with errors indicated on the errors array.
+ */
 export function mapCsvContacts(csvPatient: Record<string, string>): {
   contacts: Contact[];
   errors: ParsingError[];
 } {
-  const { log } = out(`mapCsvContacts`);
   const errors: ParsingError[] = [];
   const contacts: (Contact | undefined)[] = [];
 
@@ -25,11 +37,6 @@ export function mapCsvContacts(csvPatient: Record<string, string>): {
   }
 
   const filteredContacts = contacts.flatMap(filterTruthy);
-  if (filteredContacts.length > maxContacts) {
-    log(`Found more than ${maxContacts} contacts, discarding the rest`);
-    filteredContacts.splice(maxContacts);
-  }
-
   return { contacts: filteredContacts, errors };
 }
 
@@ -44,14 +51,14 @@ function parseContact(
 
   let email: string | undefined = undefined;
   try {
-    email = normalizeEmail(csvPatient[emailName]);
+    email = normalizeEmail(csvPatient[emailName], emailName);
   } catch (error) {
     errors.push({ field: emailName, error: errorToString(error) });
   }
 
   let phone: string | undefined = undefined;
   try {
-    phone = normalizePhoneNumber(csvPatient[phoneName]);
+    phone = normalizePhoneNumber(csvPatient[phoneName], phoneName);
   } catch (error) {
     errors.push({ field: phoneName, error: errorToString(error) });
   }
@@ -65,14 +72,25 @@ function parseContact(
   return { contact, errors };
 }
 
-export function normalizePhoneNumber(phone: string | undefined): string | undefined {
-  if (phone == undefined) return undefined;
-  const normalPhone = normalizePhoneNumberSafe(phone);
-  return normalPhone;
+export function normalizePhoneNumber(
+  phone: string | undefined,
+  propName: string
+): string | undefined {
+  if (phone == undefined || phone.trim().length < 1) return undefined;
+  try {
+    const normalPhone = normalizePhoneNumberStrict(phone);
+    return normalPhone;
+  } catch (error) {
+    throw new BadRequestError(`Invalid ${propName}`);
+  }
 }
 
-export function normalizeEmail(email: string | undefined): string | undefined {
-  if (email == undefined) return undefined;
-  const normalEmail = normalizeEmailNewSafe(email);
-  return normalEmail;
+export function normalizeEmail(email: string | undefined, propName: string): string | undefined {
+  if (email == undefined || email.trim().length < 1) return undefined;
+  try {
+    const normalEmail = normalizeEmailNew(email);
+    return normalEmail;
+  } catch (error) {
+    throw new BadRequestError(`Invalid ${propName}`);
+  }
 }

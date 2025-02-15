@@ -1,4 +1,5 @@
 import {
+  BadRequestError,
   errorToString,
   normalizeCity as normalizeCityFromShared,
   normalizeUSStateForAddressSafe,
@@ -13,11 +14,19 @@ import { ParsingError } from "./shared";
 
 const maxAddresses = 10;
 
+/**
+ * Maps a record/map of CSV patient data to a Metriport Address.
+ *
+ * NOTE: when parsing columns, csv-parser populates them in lower-case, so
+ * the property names are all lower-case.
+ *
+ * @param csvPatient - The CSV patient data.
+ * @returns The Metriport patient's addresses, with errors indicated on the errors array.
+ */
 export function mapCsvAddresses(csvPatient: Record<string, string>): {
   addresses: Address[];
   errors: ParsingError[];
 } {
-  const { log } = out(`mapCsvAddresses`);
   const errors: ParsingError[] = [];
   const addresses: (Address | undefined)[] = [];
 
@@ -32,17 +41,12 @@ export function mapCsvAddresses(csvPatient: Record<string, string>): {
   }
 
   const filteredAddresses = addresses.flatMap(filterTruthy);
-  if (filteredAddresses.length > maxAddresses) {
-    log(`Found more than ${maxAddresses} addresses, discarding the rest`);
-    filteredAddresses.splice(maxAddresses);
-  }
   if (filteredAddresses.length < 1) {
     errors.push({
       field: "address",
       error: `Patient has no address`,
     });
   }
-
   return { addresses: filteredAddresses, errors };
 }
 
@@ -73,7 +77,7 @@ function parseAddress(
     );
     addressLine1 = res[0];
     addressLine2 = res[1];
-    if (!addressLine1) throw new Error(`Missing ${addressLine1Name}`);
+    if (!addressLine1) throw new BadRequestError(`Missing ${addressLine1Name}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
     errors.push({ field: addressLine1Name, error: errorToString(error) });
@@ -101,7 +105,7 @@ function parseAddress(
   let city: string | undefined = undefined;
   try {
     city = normalizeCity(csvPatient[cityName]);
-    if (!city) throw new Error(`Missing ${cityName}`);
+    if (!city) throw new BadRequestError(`Missing ${cityName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
     errors.push({ field: cityName, error: errorToString(error) });
@@ -110,7 +114,7 @@ function parseAddress(
   let state: USStateForAddress | undefined = undefined;
   try {
     state = normalizeUSStateForAddressSafe(csvPatient[stateName] ?? "");
-    if (!state) throw new Error(`Missing ${stateName}`);
+    if (!state) throw new BadRequestError(`Missing ${stateName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
     errors.push({ field: stateName, error: errorToString(error) });
@@ -119,7 +123,7 @@ function parseAddress(
   let zip: string | undefined = undefined;
   try {
     zip = normalizeZipCodeNewSafe(csvPatient[zipName] ?? "");
-    if (!zip) throw new Error(`Missing ${zipName}`);
+    if (!zip) throw new BadRequestError(`Missing ${zipName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
     errors.push({ field: zipName, error: errorToString(error) });
@@ -155,7 +159,7 @@ export function normalizeAddressLine(
   propName: string,
   splitUnit = false
 ): string | string[] {
-  if (addressLine == undefined) throw new Error(`Missing ` + propName);
+  if (addressLine == undefined) throw new BadRequestError(`Missing ` + propName);
   const withoutPunctuation = addressLine.replace(/[.,;]/g, " ");
   const withoutInstructions = withoutPunctuation.replace(/\(.*\)/g, " ");
   const normalized = toTitleCase(withoutInstructions);

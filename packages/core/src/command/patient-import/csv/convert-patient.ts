@@ -1,6 +1,8 @@
 import {
+  BadRequestError,
   errorToString,
   GenderAtBirth,
+  MetriportError,
   normalizeDobSafe,
   normalizeExternalId as normalizeExternalIdFromShared,
   normalizeGenderSafe,
@@ -8,7 +10,7 @@ import {
   toTitleCase,
 } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
-import { normalizeSsnSafe } from "@metriport/shared/domain/patient/ssn";
+import { normalizeSsn } from "@metriport/shared/domain/patient/ssn";
 import {
   createDriversLicensePersonalIdentifier,
   createSsnPersonalIdentifier,
@@ -17,6 +19,7 @@ import {
 import { PatientPayload } from "../patient-import";
 import { mapCsvAddresses } from "./address";
 import { mapCsvContacts } from "./contact";
+import { ParsingError } from "./shared";
 
 export type RowError = { rowColumns: string[]; error: string };
 
@@ -32,32 +35,26 @@ export type RowError = { rowColumns: string[]; error: string };
 export function mapCsvPatientToMetriportPatient(
   csvPatient: Record<string, string>
 ): PatientPayload | Array<{ field: string; error: string }> {
-  const errors: Array<{ field: string; error: string }> = [];
+  const errors: ParsingError[] = [];
 
   let firstName: string | undefined = undefined;
   try {
     firstName = normalizeName(csvPatient.firstname, "firstname");
   } catch (error) {
-    errors.push({
-      field: "firstName",
-      error: errorToString(error),
-    });
+    errors.push({ field: "firstName", error: errorToString(error) });
   }
 
   let lastName: string | undefined = undefined;
   try {
     lastName = normalizeName(csvPatient.lastname, "lastname");
   } catch (error) {
-    errors.push({
-      field: "lastName",
-      error: errorToString(error),
-    });
+    errors.push({ field: "lastName", error: errorToString(error) });
   }
 
   let dob: string | undefined = undefined;
   try {
     dob = normalizeDobSafe(csvPatient.dob ?? "");
-    if (!dob) throw new Error(`Missing dob`);
+    if (!dob) throw new BadRequestError(`Missing dob`);
   } catch (error) {
     errors.push({ field: "dob", error: errorToString(error) });
   }
@@ -65,7 +62,7 @@ export function mapCsvPatientToMetriportPatient(
   let genderAtBirth: GenderAtBirth | undefined = undefined;
   try {
     genderAtBirth = normalizeGenderSafe(csvPatient.gender ?? "");
-    if (!genderAtBirth) throw new Error(`Missing gender`);
+    if (!genderAtBirth) throw new BadRequestError(`Missing gender`);
   } catch (error) {
     errors.push({ field: "gender", error: errorToString(error) });
   }
@@ -80,8 +77,10 @@ export function mapCsvPatientToMetriportPatient(
     ? normalizeExternalId(csvPatient.id)
     : normalizeExternalId(csvPatient.externalid) ?? undefined;
 
-  const ssn = mapCsvSsn(csvPatient);
-  const driversLicense = mapCsvDriversLicense(csvPatient);
+  const { ssn, errors: ssnErrors } = mapCsvSsn(csvPatient);
+  errors.push(...ssnErrors);
+  const { driversLicense, errors: driversLicenseErrors } = mapCsvDriversLicense(csvPatient);
+  errors.push(...driversLicenseErrors);
   const personalIdentifiers: PersonalIdentifier[] = [ssn, driversLicense].flatMap(filterTruthy);
 
   if (errors.length > 0) {
@@ -104,7 +103,9 @@ export function mapCsvPatientToMetriportPatient(
 
 export function normalizeName(name: string | undefined, propName: string): string {
   const trimmedName = name?.trim();
-  if (trimmedName == undefined || trimmedName.length < 1) throw new Error(`Missing ` + propName);
+  if (trimmedName == undefined || trimmedName.length < 1) {
+    throw new BadRequestError(`Missing ` + propName);
+  }
   return toTitleCase(trimmedName);
 }
 
@@ -115,22 +116,48 @@ export function normalizeExternalId(id: string | undefined): string | undefined 
   return normalId;
 }
 
-export function mapCsvSsn(csvPatient: Record<string, string>): PersonalIdentifier | undefined {
-  const ssn = csvPatient.ssn;
-  if (!ssn) return undefined;
-  const normalizedSsn = normalizeSsnSafe(ssn, true);
-  if (!normalizedSsn || normalizedSsn.length < 1) return undefined;
-  return createSsnPersonalIdentifier(normalizedSsn);
+export function mapCsvSsn(csvPatient: Record<string, string>): {
+  ssn: PersonalIdentifier | undefined;
+  errors: ParsingError[];
+} {
+  try {
+    const ssn = csvPatient.ssn;
+    if (!ssn || ssn.trim().length < 1) return { ssn: undefined, errors: [] };
+    const normalizedSsn = normalizeSsn(ssn, true);
+    return { ssn: createSsnPersonalIdentifier(normalizedSsn), errors: [] };
+  } catch (error) {
+    return { ssn: undefined, errors: [{ field: "ssn", error: errorToString(error) }] };
+  }
 }
 
-export function mapCsvDriversLicense(
-  csvPatient: Record<string, string>
-): PersonalIdentifier | undefined {
-  const value = csvPatient.driverslicenceno;
-  const state = csvPatient.driverslicencestate;
-  const normalizedValue = value?.trim().toUpperCase();
-  if (!normalizedValue || !state) return undefined;
-  const parsedState = normalizeUSStateForAddressSafe(state);
-  if (!parsedState) return undefined;
-  return createDriversLicensePersonalIdentifier(normalizedValue, parsedState);
+export function mapCsvDriversLicense(csvPatient: Record<string, string>): {
+  driversLicense: PersonalIdentifier | undefined;
+  errors: ParsingError[];
+} {
+  try {
+    const value =
+      csvPatient.driverslicenceno ||
+      csvPatient.driverslicencenumber ||
+      csvPatient.driverslicencevalue;
+    const state = csvPatient.driverslicencestate;
+    const normalizedValue = value?.trim().toUpperCase();
+    const hasValue = normalizedValue && normalizedValue.length > 0;
+    const hasState = state;
+    const errorMissingStateMsg = `Invalid drivers license (missing state)`;
+    if (!hasState && hasValue) throw new BadRequestError(errorMissingStateMsg);
+    if (!hasState && !hasValue) return { driversLicense: undefined, errors: [] };
+    const parsedState = normalizeUSStateForAddressSafe(state ?? "");
+    if (!parsedState && hasValue) throw new BadRequestError(errorMissingStateMsg);
+    if (!parsedState && !hasValue) return { driversLicense: undefined, errors: [] };
+    if (parsedState && !hasValue)
+      throw new BadRequestError(`Invalid drivers license (missing value)`);
+    if (!normalizedValue || !parsedState) throw new MetriportError(`Programming error`);
+    const driversLicense = createDriversLicensePersonalIdentifier(normalizedValue, parsedState);
+    return { driversLicense, errors: [] };
+  } catch (error) {
+    return {
+      driversLicense: undefined,
+      errors: [{ field: "driversLicense", error: errorToString(error) }],
+    };
+  }
 }
