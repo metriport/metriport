@@ -7,6 +7,7 @@ dayjs.extend(utc);
 
 export const ISO_DATE = "YYYY-MM-DD";
 
+/** @see https://day.js.org/docs/en/parse/is-valid  */
 export function isValidISODate(date: string): boolean {
   return buildDayjs(date, ISO_DATE, true).isValid();
 }
@@ -26,18 +27,18 @@ export function validateIsPastOrPresent(date: string): boolean {
   return true;
 }
 export function validateIsPastOrPresentSafe(date: string): boolean {
-  if (dayjs(date).isAfter(dayjs())) return false;
+  if (buildDayjs(date).isAfter(buildDayjs())) return false;
   return true;
 }
 
 export function validateDateIsAfter1900(date: string): boolean {
-  const dateToCheck = dayjs(date);
-  const year1900 = dayjs("1900-01-01");
+  const dateToCheck = buildDayjs(date);
+  const year1900 = buildDayjs("1900-01-01");
   return dateToCheck.isSame(year1900) || dateToCheck.isAfter(year1900);
 }
 
 export function validateDateRange(start: string, end: string): boolean {
-  if (dayjs(start).isAfter(end)) {
+  if (buildDayjs(start).isAfter(end)) {
     throw new BadRequestError(`Invalid date range: 'start' must be before 'end'`, undefined, {
       start,
       end,
