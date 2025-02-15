@@ -9,12 +9,11 @@ class MetriportApp(Application):
     def on_open(self) -> Effect:
         """Handle the on_open event."""
         # To be used once Ouath flow is implemented
-        #oauthClientKey = self.secrets['WEBHOOK_ID']
-        #canvasDomain = self.secrets['CANVAS_DOMAIN']
-        metriportToken = self.secrets['METRIPORT_TOKEN']
-        if (metriportToken is None):
+        #oauth_client_id = self.secrets['OUATH_CLIENT_ID']
+        #canvas_domain = self.secrets['CANVAS_DOMAIN']
+        metriport_token = self.secrets['METRIPORT_TOKEN']
+        if (metriport_token is None):
           raise Exception("Metriport token not set")
-        if (metriportToken == ""):
+        if (metriport_token == ""):
           raise Exception("Metriport token is empty")
-        # Implement this method to handle the application on_open event.
-        return LaunchModalEffect(url=f"https://ehr.metriport.com/canvas/app#patient={self.context['patient']['id']}&access_token={metriportToken}", target=LaunchModalEffect.TargetType.DEFAULT_MODAL).apply()
+        return LaunchModalEffect(url=f"https://ehr.metriport.com/canvas/app#patient={self.context['patient']['id']}&access_token={metriport_token}", target=LaunchModalEffect.TargetType.DEFAULT_MODAL).apply()
