@@ -1,12 +1,13 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { USStateForAddress } from "@metriport/shared";
+import { normalizeSsn } from "@metriport/shared/domain/patient/ssn";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { Contact } from "./contact";
 import { DocumentQueryProgress } from "./document-query";
-import { LinkDemographics, normalizeSsn } from "./patient-demographics";
+import { LinkDemographics } from "./patient-demographics";
 import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;

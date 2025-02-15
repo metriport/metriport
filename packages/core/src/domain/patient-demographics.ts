@@ -1,5 +1,4 @@
 import { Patient as FHIRPatient } from "@medplum/fhirtypes";
-import { stripNonNumericChars } from "@metriport/shared";
 
 export type LinkDateOfBirth = string | undefined;
 export type LinkGender = FHIRPatient["gender"];
@@ -38,7 +37,3 @@ export type LinkDemographicsComparison = Partial<LinkDemographics>;
 export type LinkDemographicsHistory = {
   [key: string]: LinkDemographics[];
 };
-
-export function normalizeSsn(ssn: string): string {
-  return stripNonNumericChars(ssn).slice(-9);
-}

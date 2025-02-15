@@ -14,7 +14,6 @@ import {
   LinkGenericAddress,
   LinkGenericDriversLicense,
   LinkGenericName,
-  normalizeSsn as normalizeSsnFromCore,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import {
@@ -23,6 +22,7 @@ import {
   normalizeZipCodeNewSafe,
   USState,
 } from "@metriport/shared";
+import { normalizeSsn as normalizeSsnFromShared } from "@metriport/shared/domain/patient/ssn";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
@@ -333,7 +333,7 @@ export function normalizeAndStringifyDriversLicense({
 
 /** @deprecated Use Core's instead */
 export function normalizeSsn(ssn: string): string {
-  return normalizeSsnFromCore(ssn);
+  return normalizeSsnFromShared(ssn);
 }
 
 /**
