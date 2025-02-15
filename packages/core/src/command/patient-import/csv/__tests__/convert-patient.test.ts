@@ -5,69 +5,81 @@ import { mapCsvDriversLicense } from "../convert-patient";
 describe("convert-patient", () => {
   describe("mapCsvDriversLicense", () => {
     it("returns drivers license when all fields are present", () => {
-      const res = mapCsvDriversLicense({
+      const { driversLicense, errors } = mapCsvDriversLicense({
         driverslicenceno: "123456789",
         driverslicencestate: "CA",
       });
-      expect(res).toBeTruthy();
-      expect(res?.type).toBe("driversLicense");
-      const dl = res as DriversLicense;
+      expect(driversLicense).toBeTruthy();
+      expect(driversLicense?.type).toBe("driversLicense");
+      const dl = driversLicense as DriversLicense;
       expect(dl.value).toBe("123456789");
       expect(dl.state).toBe(USState.CA);
+      expect(errors).toEqual([]);
     });
 
-    it("throws when value is present but state is missing", () => {
-      expect(() =>
-        mapCsvDriversLicense({
-          driverslicenceno: "123456789",
-        })
-      ).toThrow("Invalid drivers license, missing state");
+    it("returns error when value is present but state is missing", () => {
+      const { driversLicense, errors } = mapCsvDriversLicense({
+        driverslicenceno: "123456789",
+      });
+      expect(driversLicense).toBeUndefined();
+      expect(errors).toEqual([
+        { field: "driversLicense", error: "Invalid drivers license (missing state)" },
+      ]);
     });
 
-    it("throws when state is present but value is missing", () => {
-      expect(() =>
-        mapCsvDriversLicense({
-          driverslicencestate: "CA",
-        })
-      ).toThrow("Invalid drivers license, missing value");
+    it("returns error when state is present but value is missing", () => {
+      const { driversLicense, errors } = mapCsvDriversLicense({
+        driverslicencestate: "CA",
+      });
+      expect(driversLicense).toBeUndefined();
+      expect(errors).toEqual([
+        { field: "driversLicense", error: "Invalid drivers license (missing value)" },
+      ]);
     });
 
-    it("throws when state is present and value is invalid", () => {
-      expect(() =>
-        mapCsvDriversLicense({
-          driverslicenceno: "",
-          driverslicencestate: "CA",
-        })
-      ).toThrow("Invalid drivers license, missing value");
+    it("returns error when state is present and value is invalid", () => {
+      const { driversLicense, errors } = mapCsvDriversLicense({
+        driverslicenceno: "",
+        driverslicencestate: "CA",
+      });
+      expect(driversLicense).toBeUndefined();
+      expect(errors).toEqual([
+        { field: "driversLicense", error: "Invalid drivers license (missing value)" },
+      ]);
     });
 
-    it("returns undefined value is present and state is invalid", () => {
-      const res = mapCsvDriversLicense({
+    it("returns undefined when value is present and state is invalid", () => {
+      const { driversLicense, errors } = mapCsvDriversLicense({
         driverslicencestate: "zz",
       });
-      expect(res).toBeUndefined();
+      expect(driversLicense).toBeUndefined();
+      expect(errors).toEqual([]);
     });
 
-    it("throws when value is present and state is invalid", () => {
-      expect(() =>
-        mapCsvDriversLicense({
-          driverslicenceno: "123456789",
-          driverslicencestate: "zz",
-        })
-      ).toThrow("Invalid drivers license, missing state");
+    it("returns error when value is present and state is invalid", () => {
+      const { driversLicense, errors } = mapCsvDriversLicense({
+        driverslicenceno: "123456789",
+        driverslicencestate: "zz",
+      });
+      expect(driversLicense).toBeUndefined();
+      expect(errors).toEqual([
+        { field: "driversLicense", error: "Invalid drivers license (missing state)" },
+      ]);
     });
 
     it("returns undefined when no fields are present", () => {
-      const res = mapCsvDriversLicense({});
-      expect(res).toBeUndefined();
+      const { driversLicense, errors } = mapCsvDriversLicense({});
+      expect(driversLicense).toBeUndefined();
+      expect(errors).toEqual([]);
     });
 
     it("returns undefined when both are invalid", () => {
-      const res = mapCsvDriversLicense({
+      const { driversLicense, errors } = mapCsvDriversLicense({
         driverslicenceno: "",
         driverslicencestate: "zz",
       });
-      expect(res).toBeUndefined();
+      expect(driversLicense).toBeUndefined();
+      expect(errors).toEqual([]);
     });
   });
 });
