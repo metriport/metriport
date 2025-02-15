@@ -17,7 +17,6 @@ export function mapCsvAddresses(csvPatient: Record<string, string>): {
   addresses: Address[];
   errors: ParsingError[];
 } {
-  const { log } = out(`mapCsvAddresses`);
   const errors: ParsingError[] = [];
   const addresses: (Address | undefined)[] = [];
 
@@ -32,17 +31,12 @@ export function mapCsvAddresses(csvPatient: Record<string, string>): {
   }
 
   const filteredAddresses = addresses.flatMap(filterTruthy);
-  if (filteredAddresses.length > maxAddresses) {
-    log(`Found more than ${maxAddresses} addresses, discarding the rest`);
-    filteredAddresses.splice(maxAddresses);
-  }
   if (filteredAddresses.length < 1) {
     errors.push({
       field: "address",
       error: `Patient has no address`,
     });
   }
-
   return { addresses: filteredAddresses, errors };
 }
 
