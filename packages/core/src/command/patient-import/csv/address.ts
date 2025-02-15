@@ -142,17 +142,17 @@ function parseAddress(
   return { address, errors };
 }
 
-function normalizeAddressLine(
+export function normalizeAddressLine(
   addressLine: string | undefined,
   propName: string,
   splitUnit: true
 ): string[];
-function normalizeAddressLine(
+export function normalizeAddressLine(
   addressLine: string | undefined,
   propName: string,
   splitUnit?: false | undefined
 ): string;
-function normalizeAddressLine(
+export function normalizeAddressLine(
   addressLine: string | undefined,
   propName: string,
   splitUnit = false
@@ -163,21 +163,26 @@ function normalizeAddressLine(
   const normalized = toTitleCase(withoutInstructions);
   if (!splitUnit) return normalized;
   // Common street type variations in US addresses
-  const match = (normalized + " ").match(pattern);
+  const match = (normalized + " ").match(addrUnitRegex);
   if (match && match.flatMap(filterTruthy).length > 3) {
     const [, mainAddressMatch, , unitMatch] = match;
-    const mainAddress = mainAddressMatch ? mainAddressMatch.trim() : undefined;
-    const unit = unitMatch ? unitMatch.trim() : undefined;
-    return [mainAddress, unit].flatMap(filterTruthy);
+    return processMatches(mainAddressMatch, unitMatch);
   }
-  const matchExact = normalized.match(patternExact);
+  const matchExact = normalized.match(addrUnitExactRegex);
   if (matchExact && matchExact.flatMap(filterTruthy).length > 2) {
     const [, mainAddressMatch, unitMatch] = matchExact;
-    const mainAddress = mainAddressMatch ? mainAddressMatch.trim() : undefined;
-    const unit = unitMatch ? unitMatch.trim() : undefined;
-    return [mainAddress, unit].flatMap(filterTruthy);
+    return processMatches(mainAddressMatch, unitMatch);
   }
   return [normalized];
+}
+
+function processMatches(
+  mainAddrMatch: string | undefined,
+  unitMatch: string | undefined
+): string[] {
+  const mainAddress = mainAddrMatch ? mainAddrMatch.trim() : undefined;
+  const unit = unitMatch ? unitMatch.trim() : undefined;
+  return [mainAddress, unit].flatMap(filterTruthy);
 }
 
 export function normalizeCity(city: string | undefined): string {
@@ -231,13 +236,13 @@ const streetTypes = [
 
 const unitIndicators = ["apt", "apartment", "unit", "suite", "ste", "#", "number", "floor", "trlr"];
 const unitIndicatorsExact = unitIndicators.concat(["no", "fl", "lot", "rm", "room"]);
-const pattern = new RegExp(
+const addrUnitRegex = new RegExp(
   `(.*?\\W+(${streetTypes.join("|")})\\W+.*?)\\s*((${unitIndicators.join(
     "|"
   )})\\s*[#]?\\s*[\\w\\s-]+)?$`,
   "i"
 );
-const patternExact = new RegExp(
+const addrUnitExactRegex = new RegExp(
   `(.+?)\\s*((${unitIndicatorsExact.join("|")})((\\s*#\\s*[\\w\\s-]+)|(\\s*[\\d\\s-]+)))?$`,
   "i"
 );
