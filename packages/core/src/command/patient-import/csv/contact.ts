@@ -10,6 +10,15 @@ import { ParsingError } from "./shared";
 
 const maxContacts = 10;
 
+/**
+ * Maps a record/map of CSV patient data to a Metriport patient's contacts.
+ *
+ * NOTE: when parsing columns, csv-parser populates them in lower-case, so
+ * the property names are all lower-case.
+ *
+ * @param csvPatient - The CSV patient data.
+ * @returns The Metriport patient's contacts, with errors indicated on the errors array.
+ */
 export function mapCsvContacts(csvPatient: Record<string, string>): {
   contacts: Contact[];
   errors: ParsingError[];

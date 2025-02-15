@@ -124,7 +124,6 @@ export function mapCsvSsn(csvPatient: Record<string, string>): {
     const ssn = csvPatient.ssn;
     if (!ssn || ssn.trim().length < 1) return { ssn: undefined, errors: [] };
     const normalizedSsn = normalizeSsn(ssn, true);
-    if (!normalizedSsn || normalizedSsn.length < 1) return { ssn: undefined, errors: [] };
     return { ssn: createSsnPersonalIdentifier(normalizedSsn), errors: [] };
   } catch (error) {
     return { ssn: undefined, errors: [{ field: "ssn", error: errorToString(error) }] };

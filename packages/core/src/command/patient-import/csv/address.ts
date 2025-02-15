@@ -14,6 +14,15 @@ import { ParsingError } from "./shared";
 
 const maxAddresses = 10;
 
+/**
+ * Maps a record/map of CSV patient data to a Metriport Address.
+ *
+ * NOTE: when parsing columns, csv-parser populates them in lower-case, so
+ * the property names are all lower-case.
+ *
+ * @param csvPatient - The CSV patient data.
+ * @returns The Metriport patient's addresses, with errors indicated on the errors array.
+ */
 export function mapCsvAddresses(csvPatient: Record<string, string>): {
   addresses: Address[];
   errors: ParsingError[];
