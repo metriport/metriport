@@ -1,5 +1,5 @@
 import {
-  normalizeDate,
+  normalizeDob,
   normalizeEmailStrict,
   normalizeExternalId,
   normalizeGender,
@@ -49,23 +49,6 @@ export function createFileKeyFiles(cxId: string, jobId: string, stage: FileStage
   return key;
 }
 
-export const patientImportCsvHeaders = [
-  "externalid",
-  "firstname",
-  "lastname",
-  "dob",
-  "gender",
-  "zip",
-  "city",
-  "state",
-  "addressline1",
-  "addressline2",
-  "phone1",
-  "email1",
-  // "phone2",
-  // "email2",
-];
-
 const replaceCharacters = ["*"];
 
 // TODO gotta accept email, email1, phone, phone1, etc
@@ -75,6 +58,10 @@ export function normalizeHeaders(headers: string[]): string[] {
     newHeaders = newHeaders.map(h => h.replace(char, "").toLowerCase());
   });
   return newHeaders;
+}
+
+export function getS3UtilsInstance(): S3Utils {
+  return new S3Utils(region);
 }
 
 export function compareCsvHeaders(headers: string[], input: string[], exact = false): boolean {
@@ -116,7 +103,7 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
     externalId,
     firstName: toTitleCase(patient.firstname),
     lastName: toTitleCase(patient.lastname),
-    dob: normalizeDate(patient.dob),
+    dob: normalizeDob(patient.dob),
     genderAtBirth: normalizeGender(patient.gender),
     address: [
       {
@@ -130,8 +117,4 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
     ],
     contact,
   };
-}
-
-export function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
 }

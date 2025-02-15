@@ -3,11 +3,11 @@ import { normalizeUSStateForAddressSafe } from "../address";
 import { normalizeZipCodeNewSafe } from "../address/zip";
 import { isEmailValid } from "../contact/email";
 import { isPhoneValid } from "../contact/phone";
-import { normalizeDateSafe } from "../dob";
+import { normalizeDobSafe } from "../dob";
 import { normalizeGenderSafe } from "../gender";
 
 export const patientImportPatientSchema = z.object({
-  dob: z.string().refine(normalizeDateSafe, { message: "Invalid dob" }),
+  dob: z.string().refine(normalizeDobSafe, { message: "Invalid dob" }),
   gender: z.string().refine(normalizeGenderSafe, { message: "Invalid gender" }),
   firstname: z.string().min(1, { message: "First name must be defined" }),
   lastname: z.string().min(1, { message: "Last name must be defined" }),
