@@ -1,5 +1,5 @@
 import { stripNonNumericChars } from "../../common/string";
-import { MetriportError } from "../../error/metriport-error";
+import { BadRequestError } from "../../error/bad-request";
 
 const numberOfDigits = 9;
 const minLengthToPad = 2;
@@ -15,8 +15,8 @@ export function normalizeSsnSafe(ssn: string, padZeros = false): string | undefi
   return normalized.slice(0, numberOfDigits);
 }
 
-export function normalizeSsn(ssn: string): string {
-  const normalized = normalizeSsnSafe(ssn);
-  if (!normalized) throw new MetriportError(`Invalid SSN`, undefined, { ssn });
+export function normalizeSsn(ssn: string, padZeros?: boolean): string {
+  const normalized = normalizeSsnSafe(ssn, padZeros);
+  if (!normalized) throw new BadRequestError(`Invalid SSN`, undefined, { ssn });
   return normalized;
 }

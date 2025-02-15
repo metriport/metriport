@@ -2,6 +2,7 @@ import {
   BadRequestError,
   errorToString,
   GenderAtBirth,
+  MetriportError,
   normalizeDobSafe,
   normalizeExternalId as normalizeExternalIdFromShared,
   normalizeGenderSafe,
@@ -9,7 +10,7 @@ import {
   toTitleCase,
 } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
-import { normalizeSsnSafe } from "@metriport/shared/domain/patient/ssn";
+import { normalizeSsn } from "@metriport/shared/domain/patient/ssn";
 import {
   createDriversLicensePersonalIdentifier,
   createSsnPersonalIdentifier,
@@ -114,8 +115,8 @@ export function normalizeExternalId(id: string | undefined): string | undefined 
 
 export function mapCsvSsn(csvPatient: Record<string, string>): PersonalIdentifier | undefined {
   const ssn = csvPatient.ssn;
-  if (!ssn) return undefined;
-  const normalizedSsn = normalizeSsnSafe(ssn, true);
+  if (!ssn || ssn.trim().length < 1) return undefined;
+  const normalizedSsn = normalizeSsn(ssn, true);
   if (!normalizedSsn || normalizedSsn.length < 1) return undefined;
   return createSsnPersonalIdentifier(normalizedSsn);
 }
@@ -123,11 +124,21 @@ export function mapCsvSsn(csvPatient: Record<string, string>): PersonalIdentifie
 export function mapCsvDriversLicense(
   csvPatient: Record<string, string>
 ): PersonalIdentifier | undefined {
-  const value = csvPatient.driverslicenceno;
+  const value =
+    csvPatient.driverslicenceno ||
+    csvPatient.driverslicencenumber ||
+    csvPatient.driverslicencevalue;
   const state = csvPatient.driverslicencestate;
   const normalizedValue = value?.trim().toUpperCase();
-  if (!normalizedValue || !state) return undefined;
-  const parsedState = normalizeUSStateForAddressSafe(state);
-  if (!parsedState) return undefined;
+  const hasValue = normalizedValue && normalizedValue.length > 0;
+  const hasState = state;
+  const errorMissingState = new BadRequestError(`Invalid drivers license, missing state`);
+  if (!hasState && hasValue) throw errorMissingState;
+  if (!hasState && !hasValue) return undefined;
+  const parsedState = normalizeUSStateForAddressSafe(state ?? "");
+  if (!parsedState && hasValue) throw errorMissingState;
+  if (!parsedState && !hasValue) return undefined;
+  if (parsedState && !hasValue) throw new BadRequestError(`Invalid drivers license, missing value`);
+  if (!normalizedValue || !parsedState) throw new MetriportError(`Programming error`);
   return createDriversLicensePersonalIdentifier(normalizedValue, parsedState);
 }
