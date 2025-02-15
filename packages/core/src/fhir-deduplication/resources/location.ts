@@ -2,10 +2,12 @@ import { Location } from "@medplum/fhirtypes";
 import { normalizeAddress } from "../../mpi/normalize-address";
 import {
   DeduplicationResult,
-  createRef,
+  buildKeyFromValueAndMissingDynamicAttribute,
+  buildKeyFromValueAndMissingOptionalAttribute,
+  buildKeyFromValueAndMissingRequiredAttribute,
   createKeyFromObjects,
-  createKeysFromObjectAndFlagBits,
-  fillL1L2Maps,
+  createRef,
+  deduplicateAndTrackResource,
 } from "../shared";
 
 export function deduplicateLocations(locations: Location[]): DeduplicationResult<Location> {
@@ -17,19 +19,13 @@ export function deduplicateLocations(locations: Location[]): DeduplicationResult
   };
 }
 
-/**
- * Approach:
- * 1 map, where the key is made of:
- * - name
- * - normalized address
- */
 export function groupSameLocations(locations: Location[]): {
   locationsMap: Map<string, Location>;
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const l1LocationsMap = new Map<string, string>();
-  const l2LocationsMap = new Map<string, Location>();
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Location>();
 
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
@@ -38,46 +34,50 @@ export function groupSameLocations(locations: Location[]): {
     const name = location.name;
     const address = location.address;
 
-    const addressBit = address ? 1 : 0;
-    const nameBit = name ? 1 : 0;
+    const hasAddress = !!address;
+    const hasName = !!name;
 
-    const setterKeys = [];
-    const getterKeys = [];
+    const identifierKeys = [];
+    const matchCandidateKeys = [];
 
     if (address && name) {
       const normalizedAddress = normalizeAddress(address);
       const key = createKeyFromObjects([name, normalizedAddress]);
-      setterKeys.push(key);
-      getterKeys.push(key);
+      identifierKeys.push(key);
+      matchCandidateKeys.push(key);
     }
 
     if (name) {
-      setterKeys.push(...createKeysFromObjectAndFlagBits({ name }, [addressBit]));
-      if (addressBit === 0) {
-        getterKeys.push(...createKeysFromObjectAndFlagBits({ name }, [1]));
-        getterKeys.push(...createKeysFromObjectAndFlagBits({ name }, [0]));
+      identifierKeys.push(
+        buildKeyFromValueAndMissingDynamicAttribute({ name }, "address", hasAddress)
+      );
+      if (hasAddress) {
+        matchCandidateKeys.push(buildKeyFromValueAndMissingOptionalAttribute({ name }, "address"));
       } else {
-        getterKeys.push(...createKeysFromObjectAndFlagBits({ name }, [0]));
+        matchCandidateKeys.push(buildKeyFromValueAndMissingRequiredAttribute({ name }, "address"));
+        matchCandidateKeys.push(buildKeyFromValueAndMissingOptionalAttribute({ name }, "address"));
       }
     }
 
     if (address) {
-      setterKeys.push(...createKeysFromObjectAndFlagBits({ address }, [nameBit]));
-      if (nameBit === 0) {
-        getterKeys.push(...createKeysFromObjectAndFlagBits({ address }, [1]));
-        getterKeys.push(...createKeysFromObjectAndFlagBits({ address }, [0]));
+      identifierKeys.push(
+        buildKeyFromValueAndMissingDynamicAttribute({ address }, "name", hasName)
+      );
+      if (hasName) {
+        matchCandidateKeys.push(buildKeyFromValueAndMissingOptionalAttribute({ address }, "name"));
       } else {
-        getterKeys.push(...createKeysFromObjectAndFlagBits({ address }, [0]));
+        matchCandidateKeys.push(buildKeyFromValueAndMissingRequiredAttribute({ address }, "name"));
+        matchCandidateKeys.push(buildKeyFromValueAndMissingOptionalAttribute({ address }, "name"));
       }
     }
 
-    if (setterKeys.length !== 0) {
-      fillL1L2Maps({
-        map1: l1LocationsMap,
-        map2: l2LocationsMap,
-        getterKeys,
-        setterKeys,
-        targetResource: location,
+    if (identifierKeys.length !== 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        identifierKeys,
+        matchCandidateKeys,
+        incomingResource: location,
         refReplacementMap,
       });
     } else {
@@ -87,7 +87,7 @@ export function groupSameLocations(locations: Location[]): {
   }
 
   return {
-    locationsMap: l2LocationsMap,
+    locationsMap: dedupedResourcesMap,
     refReplacementMap,
     danglingReferences,
   };
