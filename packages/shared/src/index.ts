@@ -19,6 +19,7 @@ export * from "./domain/address/index";
 export * from "./domain/address/state";
 export * from "./domain/address/territory";
 export * from "./domain/address/zip";
+export * from "./domain/address/city";
 export * from "./domain/contact/email";
 export * from "./domain/contact/phone";
 export * from "./domain/dob";

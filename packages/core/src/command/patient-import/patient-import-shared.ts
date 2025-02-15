@@ -1,5 +1,5 @@
 import {
-  normalizeDate,
+  normalizeDob,
   normalizeEmailStrict,
   normalizeExternalId,
   normalizeGender,
@@ -103,7 +103,7 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
     externalId,
     firstName: toTitleCase(patient.firstname),
     lastName: toTitleCase(patient.lastname),
-    dob: normalizeDate(patient.dob),
+    dob: normalizeDob(patient.dob),
     genderAtBirth: normalizeGender(patient.gender),
     address: [
       {

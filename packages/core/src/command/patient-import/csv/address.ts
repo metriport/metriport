@@ -1,5 +1,6 @@
 import {
   errorToString,
+  normalizeCity as normalizeCityFromShared,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
   toTitleCase,
@@ -99,7 +100,7 @@ function parseAddress(
 
   let city: string | undefined = undefined;
   try {
-    city = normalizeCitySafe(csvPatient[cityName]);
+    city = normalizeCity(csvPatient[cityName]);
     if (!city) throw new Error(`Missing ${cityName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
@@ -182,14 +183,9 @@ function processMatches(
   return [mainAddress, unit].flatMap(filterTruthy);
 }
 
-export function normalizeCity(city: string | undefined): string {
-  if (city == undefined) throw new Error(`Missing city`);
-  return toTitleCase(city);
-}
-
-export function normalizeCitySafe(city: string | undefined): string | undefined {
+export function normalizeCity(city: string | undefined): string | undefined {
   if (city == undefined) return undefined;
-  return normalizeCity(city);
+  return normalizeCityFromShared(city);
 }
 
 const streetTypes = [

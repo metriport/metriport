@@ -6,7 +6,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
-  normalizeDate,
+  normalizeDob,
   normalizeGender,
   NotFoundError,
   toTitleCase,
@@ -168,7 +168,7 @@ function createMetriportPatientDemos(patient: AthenaPatient): PatientDemoData[] 
     return {
       firstName: n.firstName,
       lastName: n.lastName,
-      dob: normalizeDate(patient.birthDate),
+      dob: normalizeDob(patient.birthDate),
       genderAtBirth: normalizeGender(patient.gender),
       address: addressArray,
       contact: contactArray,
@@ -185,7 +185,7 @@ function createMetriportPatientCreateCmd(
   return {
     firstName: [...new Set(names.map(n => toTitleCase(n.firstName)))].join(" "),
     lastName: [...new Set(names.map(n => toTitleCase(n.lastName)))].join(" "),
-    dob: normalizeDate(patient.birthDate),
+    dob: normalizeDob(patient.birthDate),
     genderAtBirth: normalizeGender(patient.gender),
     address: addressArray,
     contact: contactArray,
