@@ -7,6 +7,7 @@ import {
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { Address } from "../../../domain/address";
 import { ParsingError } from "./shared";
+import { errorToString } from "@metriport/shared";
 
 const maxAddresses = 10;
 
@@ -67,7 +68,7 @@ function parseAddress(
   } catch (error) {
     errors.push({
       field: `addressLine1${indexSuffix}`,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
 
@@ -87,7 +88,7 @@ function parseAddress(
   } catch (error) {
     errors.push({
       field: `addressLine2${indexSuffix}`,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
 
@@ -99,7 +100,7 @@ function parseAddress(
   } catch (error) {
     errors.push({
       field: `city${indexSuffix}`,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
 
@@ -111,7 +112,7 @@ function parseAddress(
   } catch (error) {
     errors.push({
       field: `state${indexSuffix}`,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
 
@@ -123,7 +124,7 @@ function parseAddress(
   } catch (error) {
     errors.push({
       field: `zip${indexSuffix}`,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
   if (!addressLine1 || !city || !state || !zip) {

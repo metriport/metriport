@@ -1,4 +1,5 @@
 import {
+  errorToString,
   isEmailValid,
   isPhoneValid,
   normalizeEmail,
@@ -51,7 +52,7 @@ function parseContact(
   } catch (error) {
     errors.push({
       field: `email${indexSuffix}`,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
 
@@ -61,7 +62,7 @@ function parseContact(
   } catch (error) {
     errors.push({
       field: `phone${indexSuffix}`,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
   if (!email && !phone) {

@@ -179,7 +179,7 @@ export function mapCsvPatientToMetriportPatient(
   } catch (error) {
     errors.push({
       field: "firstName",
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
 
@@ -190,7 +190,7 @@ export function mapCsvPatientToMetriportPatient(
   } catch (error) {
     errors.push({
       field: "lastName",
-      error: error instanceof Error ? error.message : String(error),
+      error: errorToString(error),
     });
   }
 
@@ -199,7 +199,7 @@ export function mapCsvPatientToMetriportPatient(
     dob = normalizeDate(csvPatient.dob ?? "");
     if (!dob) throw new Error(`Missing dob`);
   } catch (error) {
-    errors.push({ field: "dob", error: error instanceof Error ? error.message : String(error) });
+    errors.push({ field: "dob", error: errorToString(error) });
   }
 
   let genderAtBirth: GenderAtBirth | undefined = undefined;
@@ -207,7 +207,7 @@ export function mapCsvPatientToMetriportPatient(
     genderAtBirth = normalizeGender(csvPatient.gender ?? "");
     if (!genderAtBirth) throw new Error(`Missing gender`);
   } catch (error) {
-    errors.push({ field: "gender", error: error instanceof Error ? error.message : String(error) });
+    errors.push({ field: "gender", error: errorToString(error) });
   }
 
   const { addresses, errors: addressErrors } = mapCsvAddresses(csvPatient);
