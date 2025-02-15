@@ -1,6 +1,6 @@
 import { Composition } from "@medplum/fhirtypes";
 import { DOC_ID_EXTENSION_URL } from "../../external/fhir/shared/extensions/doc-id-extension";
-import { DeduplicationResult, combineResources, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, deduplicateWithinMap } from "../shared";
 
 export function deduplicateCompositions(
   compositions: Composition[]
@@ -32,10 +32,10 @@ export function groupSameCompositions(compositions: Composition[]): {
 
     if (documentName) {
       const key = JSON.stringify({ documentName });
-      fillMaps(compositionsMap, key, composition, refReplacementMap);
+      deduplicateWithinMap(compositionsMap, key, composition, refReplacementMap);
     } else {
       const key = JSON.stringify({ id: composition.id });
-      fillMaps(compositionsMap, key, composition, refReplacementMap);
+      deduplicateWithinMap(compositionsMap, key, composition, refReplacementMap);
     }
   }
 

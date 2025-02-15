@@ -3,52 +3,68 @@ import { Contact } from "@metriport/core/domain/contact";
 import { ElationEnv, isElationEnv } from "@metriport/core/external/elation/index";
 import {
   cxClientKeyAndSecretMapSecretSchema,
+  BadRequestError,
   MetriportError,
-  normalizeEmail,
-  normalizePhoneNumber,
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
+  toTitleCase,
 } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
+import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
 
-export function createMetriportContacts(patient: PatientResource): Contact[] {
+export function createContacts(patient: ElationPatient): Contact[] {
   return [
-    ...patient.phones.map(p => {
-      return {
-        phone: normalizePhoneNumber(p.phone),
-      };
+    ...(patient.emails ?? []).flatMap(e => {
+      const email = normalizeEmailNewSafe(e.email);
+      if (!email) return [];
+      return { email };
     }),
-    ...patient.emails.map(e => {
-      return {
-        email: normalizeEmail(e.email),
-      };
+    ...(patient.phones ?? []).flatMap(p => {
+      const phone = normalizePhoneNumberSafe(p.phone);
+      if (!phone) return [];
+      return { phone };
     }),
   ];
 }
 
-export function createMetriportAddresses(patient: PatientResource): Address[] {
+export function createAddresses(patient: ElationPatient): Address[] {
+  if (!patient.address) throw new BadRequestError("Patient has no address");
+  if (!patient.address.address_line1) throw new BadRequestError("Patient has no address_line1");
+  const addressLine1 = patient.address.address_line1.trim();
+  if (addressLine1 === "") throw new BadRequestError("Patient address address_line1 is empty");
+  const addressLine2 = patient.address.address_line2?.trim();
+  if (!patient.address.city) throw new BadRequestError("Patient has no city");
+  const city = patient.address.city.trim();
+  if (city === "") throw new BadRequestError("Patient address city is empty");
+  if (!patient.address.state) throw new BadRequestError("Patient has no state");
+  const state = normalizeUSStateForAddress(patient.address.state);
+  if (!patient.address.zip) throw new BadRequestError("Patient has no zip");
+  const zip = normalizeZipCodeNew(patient.address.zip);
   return [
     {
-      addressLine1: patient.address.address_line1,
-      addressLine2:
-        patient.address.address_line2 === null || patient.address.address_line2.trim() === ""
-          ? undefined
-          : patient.address.address_line2,
-      city: patient.address.city,
-      state: normalizeUSStateForAddress(patient.address.state),
-      zip: normalizeZipCodeNew(patient.address.zip),
+      addressLine1,
+      addressLine2: !addressLine2 || addressLine2 === "" ? undefined : addressLine2,
+      city,
+      state,
+      zip,
       country: "USA",
     },
   ];
 }
 
-export function createNames(patient: PatientResource): { firstName: string; lastName: string } {
+export function createNames(patient: ElationPatient): { firstName: string; lastName: string } {
+  if (!patient.first_name) throw new BadRequestError("Patient has no first_name");
+  const firstName = toTitleCase(patient.first_name.trim());
+  if (firstName === "") throw new BadRequestError("Patient first_name is empty");
+  if (!patient.last_name) throw new BadRequestError("Patient has no last_name");
+  const lastName = toTitleCase(patient.last_name.trim());
+  if (lastName === "") throw new BadRequestError("Patient last_name is empty");
+  const middleName = patient.middle_name ? toTitleCase(patient.middle_name.trim()) : undefined;
   return {
-    firstName: `${patient.first_name}${
-      patient.middle_name !== "" ? ` ${patient.middle_name}` : ""
-    }`,
-    lastName: patient.last_name,
+    firstName: `${firstName}${middleName && middleName !== "" ? ` ${middleName}` : ""}`,
+    lastName,
   };
 }
 

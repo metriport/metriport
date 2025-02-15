@@ -4,7 +4,7 @@ import {
   combineResources,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  deduplicateWithinMap,
   getDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
@@ -90,12 +90,26 @@ export function groupSameObservations(observations: Observation[]): {
     } else {
       if (keyCode) {
         const key = JSON.stringify({ date, value, keyCode });
-        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+        deduplicateWithinMap(
+          observationsMap,
+          key,
+          observation,
+          refReplacementMap,
+          undefined,
+          postProcess
+        );
       } else {
         const observationDisplay = extractDisplayFromConcept(observation.code);
         if (observationDisplay) {
           const key = JSON.stringify({ date, value, observationDisplay });
-          fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+          deduplicateWithinMap(
+            observationsMap,
+            key,
+            observation,
+            refReplacementMap,
+            undefined,
+            postProcess
+          );
         } else {
           danglingReferences.add(createRef(observation));
         }

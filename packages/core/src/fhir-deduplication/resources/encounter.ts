@@ -3,7 +3,7 @@ import {
   DeduplicationResult,
   combineResources,
   createRef,
-  fillMaps,
+  deduplicateWithinMap,
   getDateFromResource,
   pickMostDescriptiveStatus,
 } from "../shared";
@@ -74,7 +74,7 @@ export function groupSameEncounters(encounters: Encounter[]): {
     // TODO: Improve the key. Just date is not sufficient.
     if (datetime) {
       const key = JSON.stringify({ datetime });
-      fillMaps(
+      deduplicateWithinMap(
         encountersMap,
         key,
         encounter,
