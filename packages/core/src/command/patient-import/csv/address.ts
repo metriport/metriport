@@ -21,7 +21,7 @@ export function mapCsvAddresses(csvPatient: Record<string, string>): {
   addresses.push(addressNoIdx);
   errors.push(...errorsNoIdx);
 
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= maxAddresses; i++) {
     const { address: addressIdx, errors: errorsIdx } = parseAddress(csvPatient, i);
     addresses.push(addressIdx);
     errors.push(...errorsIdx);
@@ -31,7 +31,7 @@ export function mapCsvAddresses(csvPatient: Record<string, string>): {
   if (filteredAddresses.length > maxAddresses) {
     errors.push({
       field: "address",
-      error: `Found more than 10 addresses`,
+      error: `Found more than ${maxAddresses} addresses`,
     });
   }
   if (filteredAddresses.length < 1) {

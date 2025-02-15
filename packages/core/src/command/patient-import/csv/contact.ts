@@ -21,7 +21,7 @@ export function mapCsvContacts(csvPatient: Record<string, string>): {
   contacts.push(contact);
   errors.push(...errorsNoIdx);
 
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= maxContacts; i++) {
     const { contact, errors: errorsIdx } = parseContact(csvPatient, i);
     contacts.push(contact);
     errors.push(...errorsIdx);
@@ -31,7 +31,7 @@ export function mapCsvContacts(csvPatient: Record<string, string>): {
   if (filteredContacts.length > maxContacts) {
     errors.push({
       field: "address",
-      error: `Found more than 10 contacts`,
+      error: `Found more than ${maxContacts} contacts`,
     });
   }
 
