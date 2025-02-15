@@ -16,6 +16,26 @@ describe("normalizeSsn", () => {
       const result = normalizeSsnSafe("12345678901234567890");
       expect(result).toBe("123456789");
     });
+
+    it(`pads with zeros if less than 9 digits and padZeros is true`, async () => {
+      const result = normalizeSsnSafe("123", true);
+      expect(result).toBe("000000123");
+    });
+
+    it(`does not pad with zeros if less than 2 digits and padZeros is true`, async () => {
+      const result = normalizeSsnSafe("1", true);
+      expect(result).toBeUndefined();
+    });
+
+    it(`does not pad with zeros if less than 9 digits and padZeros is false`, async () => {
+      const result = normalizeSsnSafe("123", false);
+      expect(result).toBeUndefined();
+    });
+
+    it(`does not pad with zeros if less than 9 digits and padZeros is not set`, async () => {
+      const result = normalizeSsnSafe("123");
+      expect(result).toBeUndefined();
+    });
   });
 
   describe("normalizeSsn", () => {

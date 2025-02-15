@@ -118,7 +118,7 @@ export function normalizeExternalId(id: string | undefined): string | undefined 
 export function mapCsvSsn(csvPatient: Record<string, string>): PersonalIdentifier | undefined {
   const ssn = csvPatient.ssn;
   if (!ssn) return undefined;
-  const normalizedSsn = normalizeSsnSafe(ssn);
+  const normalizedSsn = normalizeSsnSafe(ssn, true);
   if (!normalizedSsn || normalizedSsn.length < 1) return undefined;
   return createSsnPersonalIdentifier(normalizedSsn);
 }
