@@ -37,8 +37,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);
 
     const originalDocument = await downloadDocumentFromS3({ fileName, bucketName });
-    if (!originalDocument) {
+    if (originalDocument === undefined) {
       throw new MetriportError(`Document not found in S3`, undefined, {
+        fileName,
+      });
+    }
+
+    if (originalDocument === "") {
+      throw new MetriportError(`Document body is empty`, undefined, {
         fileName,
       });
     }
