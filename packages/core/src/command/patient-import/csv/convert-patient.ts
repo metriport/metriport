@@ -1,4 +1,5 @@
 import {
+  BadRequestError,
   errorToString,
   GenderAtBirth,
   normalizeDobSafe,
@@ -38,26 +39,20 @@ export function mapCsvPatientToMetriportPatient(
   try {
     firstName = normalizeName(csvPatient.firstname, "firstname");
   } catch (error) {
-    errors.push({
-      field: "firstName",
-      error: errorToString(error),
-    });
+    errors.push({ field: "firstName", error: errorToString(error) });
   }
 
   let lastName: string | undefined = undefined;
   try {
     lastName = normalizeName(csvPatient.lastname, "lastname");
   } catch (error) {
-    errors.push({
-      field: "lastName",
-      error: errorToString(error),
-    });
+    errors.push({ field: "lastName", error: errorToString(error) });
   }
 
   let dob: string | undefined = undefined;
   try {
     dob = normalizeDobSafe(csvPatient.dob ?? "");
-    if (!dob) throw new Error(`Missing dob`);
+    if (!dob) throw new BadRequestError(`Missing dob`);
   } catch (error) {
     errors.push({ field: "dob", error: errorToString(error) });
   }
@@ -65,7 +60,7 @@ export function mapCsvPatientToMetriportPatient(
   let genderAtBirth: GenderAtBirth | undefined = undefined;
   try {
     genderAtBirth = normalizeGenderSafe(csvPatient.gender ?? "");
-    if (!genderAtBirth) throw new Error(`Missing gender`);
+    if (!genderAtBirth) throw new BadRequestError(`Missing gender`);
   } catch (error) {
     errors.push({ field: "gender", error: errorToString(error) });
   }
@@ -104,7 +99,9 @@ export function mapCsvPatientToMetriportPatient(
 
 export function normalizeName(name: string | undefined, propName: string): string {
   const trimmedName = name?.trim();
-  if (trimmedName == undefined || trimmedName.length < 1) throw new Error(`Missing ` + propName);
+  if (trimmedName == undefined || trimmedName.length < 1) {
+    throw new BadRequestError(`Missing ` + propName);
+  }
   return toTitleCase(trimmedName);
 }
 

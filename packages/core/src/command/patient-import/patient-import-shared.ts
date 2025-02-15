@@ -1,4 +1,5 @@
 import {
+  BadRequestError,
   normalizeDob,
   normalizeEmailStrict,
   normalizeExternalId,
@@ -84,7 +85,9 @@ export function createObjectFromCsv({
   const object: GenericObject = {};
   headers.forEach((header, columnIndex) => {
     const value = rowColumns[columnIndex];
-    if (value === undefined) throw Error("rowColumns and headers have different sizes");
+    if (value === undefined) {
+      throw new BadRequestError("rowColumns and headers have different sizes");
+    }
     object[header] = value.trim() === "" ? undefined : value;
   });
   return object;

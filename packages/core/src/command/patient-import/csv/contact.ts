@@ -1,4 +1,9 @@
-import { errorToString, normalizeEmailNew, normalizePhoneNumberStrict } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  normalizeEmailNew,
+  normalizePhoneNumberStrict,
+} from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { Contact } from "../../../domain/contact";
 import { ParsingError } from "./shared";
@@ -67,7 +72,7 @@ export function normalizePhoneNumber(
     const normalPhone = normalizePhoneNumberStrict(phone);
     return normalPhone;
   } catch (error) {
-    throw new Error(`Invalid ${propName}`);
+    throw new BadRequestError(`Invalid ${propName}`);
   }
 }
 
@@ -77,6 +82,6 @@ export function normalizeEmail(email: string | undefined, propName: string): str
     const normalEmail = normalizeEmailNew(email);
     return normalEmail;
   } catch (error) {
-    throw new Error(`Invalid ${propName}`);
+    throw new BadRequestError(`Invalid ${propName}`);
   }
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestError,
   errorToString,
   normalizeCity as normalizeCityFromShared,
   normalizeUSStateForAddressSafe,
@@ -67,7 +68,7 @@ function parseAddress(
     );
     addressLine1 = res[0];
     addressLine2 = res[1];
-    if (!addressLine1) throw new Error(`Missing ${addressLine1Name}`);
+    if (!addressLine1) throw new BadRequestError(`Missing ${addressLine1Name}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
     errors.push({ field: addressLine1Name, error: errorToString(error) });
@@ -95,7 +96,7 @@ function parseAddress(
   let city: string | undefined = undefined;
   try {
     city = normalizeCity(csvPatient[cityName]);
-    if (!city) throw new Error(`Missing ${cityName}`);
+    if (!city) throw new BadRequestError(`Missing ${cityName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
     errors.push({ field: cityName, error: errorToString(error) });
@@ -104,7 +105,7 @@ function parseAddress(
   let state: USStateForAddress | undefined = undefined;
   try {
     state = normalizeUSStateForAddressSafe(csvPatient[stateName] ?? "");
-    if (!state) throw new Error(`Missing ${stateName}`);
+    if (!state) throw new BadRequestError(`Missing ${stateName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
     errors.push({ field: stateName, error: errorToString(error) });
@@ -113,7 +114,7 @@ function parseAddress(
   let zip: string | undefined = undefined;
   try {
     zip = normalizeZipCodeNewSafe(csvPatient[zipName] ?? "");
-    if (!zip) throw new Error(`Missing ${zipName}`);
+    if (!zip) throw new BadRequestError(`Missing ${zipName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
     errors.push({ field: zipName, error: errorToString(error) });
@@ -149,7 +150,7 @@ export function normalizeAddressLine(
   propName: string,
   splitUnit = false
 ): string | string[] {
-  if (addressLine == undefined) throw new Error(`Missing ` + propName);
+  if (addressLine == undefined) throw new BadRequestError(`Missing ` + propName);
   const withoutPunctuation = addressLine.replace(/[.,;]/g, " ");
   const withoutInstructions = withoutPunctuation.replace(/\(.*\)/g, " ");
   const normalized = toTitleCase(withoutInstructions);
