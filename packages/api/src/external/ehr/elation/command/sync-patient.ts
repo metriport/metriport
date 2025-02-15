@@ -5,13 +5,12 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
-  MetriportError,
   normalizeDate,
   normalizeGender,
   NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
+import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -26,8 +25,8 @@ import {
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
 import {
-  createMetriportAddresses,
-  createMetriportContacts,
+  createAddresses,
+  createContacts,
   createNames,
   getElationClientKeyAndSecret,
   getElationEnv,
@@ -80,17 +79,6 @@ export async function syncElationPatientIntoMetriport({
     patientId: elationPatientId,
   });
   if (!elationPatient) throw new NotFoundError("Elation patient not found");
-  if (elationPatient.first_name.trim() === "" || elationPatient.last_name.trim() === "") {
-    throw new MetriportError("Elation patient has empty first or last name", undefined, {
-      firstName: elationPatient.first_name,
-      lastName: elationPatient.last_name,
-    });
-  }
-  if (elationPatient.address.address_line1.trim() === "") {
-    throw new MetriportError("Elation patient has empty address line 1", undefined, {
-      addressLine1: elationPatient.address.address_line1,
-    });
-  }
 
   const demo = createMetriportPatientDemo(elationPatient);
 
@@ -153,9 +141,9 @@ export async function syncElationPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+function createMetriportPatientDemo(patient: ElationPatient): PatientDemoData {
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return {
     ...names,
@@ -167,10 +155,10 @@ function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
 }
 
 function createMetriportPatientCreateCmd(
-  patient: PatientResource
+  patient: ElationPatient
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
-  const addressArray = createMetriportAddresses(patient);
-  const contactArray = createMetriportContacts(patient);
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
   const names = createNames(patient);
   return {
     firstName: toTitleCase(names.firstName),
