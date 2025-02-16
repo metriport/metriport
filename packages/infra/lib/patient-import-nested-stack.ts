@@ -36,7 +36,7 @@ function settings() {
       reportBatchItemFailures: true,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: patientCreateLambdaTimeout.minus(Duration.seconds(10)),
+      alarmMaxAgeOfOldestMessage: Duration.days(2),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientCreateLambdaTimeout.toSeconds() * 2 + 1),
@@ -56,7 +56,7 @@ function settings() {
       reportBatchItemFailures: true,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: patientQueryLambdaTimeout.minus(Duration.seconds(10)),
+      alarmMaxAgeOfOldestMessage: Duration.minutes(5),
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientQueryLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
