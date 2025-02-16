@@ -84,6 +84,8 @@ function generateResult(
 WorkerUtils.workerTaskProcessor(msg => {
   return new Promise((fulfill, reject) => {
     session.run(() => {
+      const startTime = new Date().getTime();
+      const getDuration = () => new Date().getTime() - startTime;
       switch (msg.type) {
         case "/api/convert/:srcDataType/:template":
           {
@@ -105,6 +107,7 @@ WorkerUtils.workerTaskProcessor(msg => {
               reject({
                 status: 400,
                 resultMsg: errorMessage(errorCodes.BadRequest, "No srcData provided."),
+                duration: getDuration(),
               });
             }
 
@@ -119,6 +122,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                         reject({
                           status: 404,
                           resultMsg: errorMessage(errorCodes.NotFound, "Template not found"),
+                          duration: getDuration(),
                         });
                       } else {
                         try {
@@ -134,6 +138,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                               errorCodes.BadRequest,
                               "Error during template compilation. " + convertErr.toString()
                             ),
+                            duration: getDuration(),
                           });
                         }
                       }
@@ -165,6 +170,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                           encounterTimePeriod,
                           encompassingEncounterIds
                         ),
+                        duration: getDuration(),
                       });
                     } catch (convertErr) {
                       reject({
@@ -173,6 +179,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                           errorCodes.BadRequest,
                           "Error during template evaluation. " + convertErr.toString()
                         ),
+                        duration: getDuration(),
                       });
                     }
                   },
@@ -188,6 +195,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                     errorCodes.BadRequest,
                     `Unable to parse input data for template ${templateName}. ${err.toString()}`
                   ),
+                  duration: getDuration(),
                 });
               });
           }
