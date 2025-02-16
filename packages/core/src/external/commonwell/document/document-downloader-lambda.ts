@@ -1,3 +1,4 @@
+import { out } from "../../../util";
 import { getLambdaResultPayload, makeLambdaClient } from "../../aws/lambda";
 import {
   Document,
@@ -45,6 +46,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
     fileInfo: FileInfo;
     cxId: string;
   }): Promise<DownloadResult> {
+    const { log } = out(`DocumentDownloaderLambda.download cxId ${cxId}`);
     const payload: DocumentDownloaderLambdaRequest = {
       document,
       fileInfo,
@@ -67,9 +69,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
       lambdaName: this.lambdaName,
     });
 
-    console.log(
-      `Response from the downloader lambda: ${lambdaResult.StatusCode} / ${resultPayload}`
-    );
+    log(`Response from the downloader lambda: ${lambdaResult.StatusCode} / ${resultPayload}`);
     return JSON.parse(resultPayload.toString());
   }
 }

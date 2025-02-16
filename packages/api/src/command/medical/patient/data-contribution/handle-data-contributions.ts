@@ -5,6 +5,7 @@ import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/c
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { emptyFunction } from "@metriport/shared";
 import { processCcdRequest } from "../../../../external/cda/process-ccd-request";
 import { hydrateBundle } from "../../../../external/fhir/shared/hydrate-bundle";
 import { validateFhirEntries } from "../../../../external/fhir/shared/json-validator";
@@ -67,7 +68,9 @@ export async function handleDataContribution({
       cdaBundles: converted,
       organization: fhirOrganization,
       docId: requestId,
-    }).then(() => log(`${Date.now() - cdaConversionStartedAt}ms to convert to CDA`));
+    })
+      .then(() => log(`${Date.now() - cdaConversionStartedAt}ms to convert to CDA`))
+      .catch(emptyFunction);
   }
 
   const storeStartedAt = Date.now();
@@ -81,7 +84,7 @@ export async function handleDataContribution({
 
   if (!Config.isSandbox()) {
     // intentionally async
-    processCcdRequest({ patient, organization, requestId });
+    processCcdRequest({ patient, organization, requestId }).catch(emptyFunction);
   }
 
   return consolidatedDataUploadResults;

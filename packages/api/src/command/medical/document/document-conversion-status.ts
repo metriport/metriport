@@ -7,6 +7,7 @@ import {
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
+import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getCQData } from "../../../external/carequality/patient";
 import { getCWData } from "../../../external/commonwell/patient";
@@ -111,13 +112,13 @@ export async function calculateDocumentConversionStatus({
         patient: updatedPatient,
         conversionType: "pdf",
         context: `Post-DQ getConsolidated ${source}`,
-      });
+      }).catch(emptyFunction);
     } else if (isGlobalConversionCompleted) {
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
         context: "Post-DQ getConsolidated GLOBAL",
-      });
+      }).catch(emptyFunction);
     }
   } else {
     const expectedPatient = await updateConversionProgress({
@@ -134,14 +135,14 @@ export async function calculateDocumentConversionStatus({
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
       await recreateConsolidated({ patient, context: "calculate-no-source" });
-
+      // intentionally async
       processPatientDocumentRequest(
         cxId,
         patientId,
         "medical.document-conversion",
         MAPIWebhookStatus.completed,
         ""
-      );
+      ).catch(emptyFunction);
     }
   }
 }
