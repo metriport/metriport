@@ -126,7 +126,6 @@ export async function handler(event: SQSEvent) {
         const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
         const metrics: Metrics = {};
 
-        await cloudWatchUtils.reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
@@ -169,7 +168,6 @@ export async function handler(event: SQSEvent) {
           continue;
         }
 
-        await cloudWatchUtils.reportMemoryUsage();
         const conversionStart = Date.now();
 
         const converterUrl = attrib.serverUrl?.stringValue;
@@ -198,8 +196,6 @@ export async function handler(event: SQSEvent) {
         });
 
         const partitionedPayloads = partitionPayload(payloadClean);
-
-        await cloudWatchUtils.reportMemoryUsage();
 
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
@@ -234,8 +230,6 @@ export async function handler(event: SQSEvent) {
           lambdaParams,
           log,
         });
-
-        await cloudWatchUtils.reportMemoryUsage();
 
         let hydratedBundle = conversionResult;
         // TODO: 2563 - Remove this after prod testing is done
@@ -279,8 +273,6 @@ export async function handler(event: SQSEvent) {
           }
         }
 
-        await cloudWatchUtils.reportMemoryUsage();
-
         const normalizedBundle = await normalize({
           cxId,
           patientId,
@@ -296,8 +288,6 @@ export async function handler(event: SQSEvent) {
           lambdaParams,
           log,
         });
-
-        await cloudWatchUtils.reportMemoryUsage();
 
         const postProcessStart = Date.now();
         const updatedConversionResult = postProcessBundle(
@@ -321,7 +311,6 @@ export async function handler(event: SQSEvent) {
           log,
         });
 
-        await cloudWatchUtils.reportMemoryUsage();
         await cloudWatchUtils.reportMetrics(metrics);
       } catch (error) {
         await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
