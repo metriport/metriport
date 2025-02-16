@@ -14,14 +14,14 @@ import {
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
-import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
@@ -140,18 +140,22 @@ export async function handler(event: SQSEvent) {
         const { documentContents: payloadNoB64, b64Attachments } =
           removeBase64PdfEntries(payloadRaw);
 
-        if (b64Attachments) {
-          log(`Extracted ${b64Attachments.total} B64 attachments`);
-          await processAttachments({
-            b64Attachments,
-            cxId,
-            patientId,
-            filePath: s3FileName,
-            medicalDataSource,
-            s3BucketName: medicalDocumentsBucketName,
-            fhirUrl,
-          });
+        if (b64Attachments && b64Attachments.total > 0) {
+          log(`Extracted ${b64Attachments.total} B64 attachments - will process them soon`);
         }
+        const dealWithAttachments = async () => {
+          if (b64Attachments && b64Attachments.total > 0) {
+            await processAttachments({
+              b64Attachments,
+              cxId,
+              patientId,
+              filePath: s3FileName,
+              medicalDataSource,
+              s3BucketName: medicalDocumentsBucketName,
+              fhirUrl,
+            });
+          }
+        };
 
         const payloadClean = cleanUpPayload(payloadNoB64);
         metrics.download = {
@@ -204,6 +208,7 @@ export async function handler(event: SQSEvent) {
             converterParams,
             log,
           }),
+          dealWithAttachments(),
           storePartitionedPayloadsInS3({
             s3Utils,
             partitionedPayloads,
@@ -330,7 +335,7 @@ export async function handler(event: SQSEvent) {
     capture.error(msg, {
       extra: { event, context: lambdaName, error },
     });
-    throw new MetriportError(msg, error);
+    throw new MetriportError(msg);
   }
 }
 
