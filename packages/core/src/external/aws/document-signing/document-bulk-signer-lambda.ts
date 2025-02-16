@@ -10,27 +10,20 @@ export class DocumentBulkSignerLambda extends DocumentBulkSigner {
     this.lambdaClient = makeLambdaClient(this.region);
   }
 
-  async sign({ patientId, cxId, requestId }: DocumentBulkSignerRequest) {
+  async sign({ patientId, cxId, requestId }: DocumentBulkSignerRequest): Promise<void> {
     const payload: DocumentBulkSignerRequest = {
       patientId: patientId,
       cxId: cxId,
       requestId: requestId,
     };
 
-    this.lambdaClient
+    await this.lambdaClient
       .invoke({
         FunctionName: this.lambdaName,
-        InvocationType: "RequestResponse",
+        InvocationType: "Event", // async
         Payload: JSON.stringify(payload),
       })
       .promise()
-      .then(
-        defaultLambdaInvocationResponseHandler({
-          lambdaName: this.lambdaName,
-        })
-      )
-      .catch(error => {
-        throw error;
-      });
+      .then(defaultLambdaInvocationResponseHandler({ lambdaName: this.lambdaName }));
   }
 }
