@@ -243,6 +243,11 @@ type EnvConfigBase = {
         EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP: string;
       };
     };
+    canvas: {
+      secrets: {
+        EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP: string;
+      };
+    };
   };
 };
 
