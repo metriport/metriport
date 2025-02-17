@@ -1,8 +1,8 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { normalizeDate, normalizeGender } from "@metriport/shared";
-import { PatientWithAddress } from "@metriport/shared/interface/external/elation/patient";
+import { normalizeDob, normalizeGender } from "@metriport/shared";
+import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -40,7 +40,14 @@ export async function syncElationPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
-    return metriportPatient.id;
+    const metriportPatientId = metriportPatient.id;
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+      }).catch(processAsyncError("Elation queryDocumentsAcrossHIEs"));
+    }
+    return metriportPatientId;
   }
 
   const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
@@ -91,8 +98,8 @@ export async function syncElationPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemo(patient: PatientWithAddress): PatientDemoData {
-  const dob = normalizeDate(patient.dob);
+function createMetriportPatientDemo(patient: ElationPatient): PatientDemoData {
+  const dob = normalizeDob(patient.dob);
   const genderAtBirth = normalizeGender(patient.sex);
   const addressArray = createAddresses(patient);
   const contactArray = createContacts(patient);

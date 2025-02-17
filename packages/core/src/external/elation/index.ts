@@ -1,4 +1,5 @@
-import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointments,
   appointmentsSchema,
@@ -8,8 +9,6 @@ import {
   Metadata,
   Patient,
   patientSchema,
-  patientSchemaWithValidAddress,
-  PatientWithAddress,
 } from "@metriport/shared/interface/external/elation/index";
 import axios, { AxiosInstance } from "axios";
 import { out } from "../../util/log";
@@ -86,7 +85,7 @@ class ElationApi {
     if (!this.twoLeggedAuthTokenInfo) {
       log(`Two Legged Auth token not found @ Elation - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
-    } else if (this.twoLeggedAuthTokenInfo.exp < new Date()) {
+    } else if (this.twoLeggedAuthTokenInfo.exp < buildDayjs().subtract(15, "minutes").toDate()) {
       log(`Two Legged Auth token expired @ Elation - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
     } else {
@@ -102,13 +101,7 @@ class ElationApi {
     });
   }
 
-  async getPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientWithAddress> {
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `Elation getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -124,14 +117,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
   async updatePatientMetadata({
@@ -142,9 +128,9 @@ class ElationApi {
     cxId: string;
     patientId: string;
     metadata: Metadata;
-  }): Promise<PatientWithAddress> {
+  }): Promise<Patient> {
     const { debug } = out(
-      `Elation uupdatePatientMetadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `Elation updatePatientMetadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/patients/${patientId}/`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
@@ -160,14 +146,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
   async getAppointments({
@@ -237,11 +216,6 @@ class ElationApi {
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, elationDateFormat);
-  }
-
-  private parsePatient(patient: Patient): PatientWithAddress {
-    if (!patient.address) throw new BadRequestError("No addresses found");
-    return patientSchemaWithValidAddress.parse(patient);
   }
 }
 

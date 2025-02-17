@@ -1,17 +1,19 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import {
-  RowError,
-  validateAndParsePatientImportCsv,
-} from "@metriport/core/command/patient-import/commands/validate-and-parse-import";
 import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
-import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
-import { PatientImportPatient, sleep } from "@metriport/shared";
+import { validateAndParsePatientImportCsv } from "@metriport/core/command/patient-import/csv/validate-and-parse-import";
+import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import fs from "fs";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getFileContents, makeDir } from "../shared/fs";
+import {
+  invalidToString,
+  patientCreationToString,
+  patientValidationToString,
+  validToString,
+} from "./shared";
 
 /**
  * Process a CSV file with patient data for bulk import.
@@ -46,7 +48,7 @@ async function main() {
     contents: stringBundle,
   });
 
-  const patientsForCreate: PatientPayload[] = patientsFromValidation.map(createPatientPayload);
+  const patientsForCreate: PatientPayload[] = patientsFromValidation;
 
   const outputValid = headers + "\n" + validRows.map(validToString).join("\n");
   const outputInvalid = headers + ",error" + "\n" + invalidRows.map(invalidToString).join("\n");
@@ -59,22 +61,6 @@ async function main() {
   fs.writeFileSync(`./${outputFolderName}/patients-creation.csv`, outputPatientsCreation);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
-}
-
-function validToString(entry: string[]) {
-  return entry.join(",");
-}
-
-function invalidToString(entry: RowError) {
-  return entry.rowColumns.join(",") + "," + entry.error;
-}
-
-function patientValidationToString(request: PatientImportPatient) {
-  return JSON.stringify(request);
-}
-
-function patientCreationToString(request: PatientPayload) {
-  return JSON.stringify(request);
 }
 
 main();

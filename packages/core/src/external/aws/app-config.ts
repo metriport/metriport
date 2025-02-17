@@ -37,6 +37,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
+  cxsWithNoMrLogoFeatureFlag: ffStringValuesSchema,
   cxsWithBmiMrFeatureFlag: ffStringValuesSchema,
   cxsWithDermMrFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
@@ -46,6 +47,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithEpicEnabled: ffStringValuesSchema,
   cxsWithDemoAugEnabled: ffStringValuesSchema,
   cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
+  cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
   cxsWithHydrationFeatureFlag: ffStringValuesSchema, // TODO: 2563 - Remove this after prod testing is done
   cxsUsingWkhtmltopdfInsteadOfPuppeteer: ffStringValuesSchema, // TODO: 2510 - Remove this when ready to rollout to all customers
 });
@@ -255,6 +257,15 @@ export async function getCxsWithFeatureFlagEnabled(
 
 export async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
+}
+
+export async function isStrictMatchingAlgorithmEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithStrictMatchingAlgorithmEnabled = await getCxsWithStrictMatchingAlgorithm();
+  return cxsWithStrictMatchingAlgorithmEnabled.includes(cxId);
+}
+
+export async function getCxsWithStrictMatchingAlgorithm(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithStrictMatchingAlgorithm");
 }
 
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {

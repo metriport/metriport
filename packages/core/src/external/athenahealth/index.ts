@@ -6,7 +6,14 @@ import {
   MedicationStatement,
   Observation,
 } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  JwtTokenInfo,
+  MetriportError,
+  NotFoundError,
+} from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import {
   AppointmentEvents,
   appointmentEventsSchema,
@@ -40,10 +47,8 @@ import {
   medicationReferencesSchema,
   Patient,
   patientSchema,
-  patientSchemaWithValidHomeAddress,
   PatientSearch,
   patientSearchSchema,
-  PatientWithValidHomeAddress,
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
@@ -186,7 +191,7 @@ class AthenaHealthApi {
     if (!this.twoLeggedAuthTokenInfo) {
       log(`Two Legged Auth token not found @ AthenaHealth - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
-    } else if (this.twoLeggedAuthTokenInfo.exp < new Date()) {
+    } else if (this.twoLeggedAuthTokenInfo.exp < buildDayjs().subtract(15, "minutes").toDate()) {
       log(`Two Legged Auth token expired @ AthenaHealth - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
     } else {
@@ -213,7 +218,7 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getDepartmentIds - cxId ${cxId} practiceId ${this.practiceId}`
     );
-    const departmentsUrl = `/departments`;
+    const departmentsUrl = "/departments";
     const additionalInfo = { cxId, practiceId: this.practiceId };
     const departments = await this.makeRequest<Departments>({
       cxId,
@@ -227,13 +232,7 @@ class AthenaHealthApi {
     return departments.departments.map(d => d.departmentid);
   }
 
-  async getPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientWithValidHomeAddress> {
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `AthenaHealth getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -250,23 +249,10 @@ class AthenaHealthApi {
       debug,
       useFhir: true,
     });
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
-  async searchPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientWithValidHomeAddress> {
+  async searchPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `AthenaHealth searchPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -286,21 +272,19 @@ class AthenaHealthApi {
       schema: patientSearchSchema,
       additionalInfo,
       debug,
+      useFhir: true,
     });
     const entry = patientSearch.entry;
     if (entry.length > 1) {
-      throw new MetriportError("More than one patient found in search", undefined, additionalInfo);
+      throw new BadRequestError(
+        "More than one patients found in search",
+        undefined,
+        additionalInfo
+      );
     }
     const patient = entry[0]?.resource;
-    if (!patient) throw new MetriportError("No patient found in search", undefined, additionalInfo);
-    try {
-      return this.parsePatient(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    if (!patient) throw new NotFoundError("No patient found in search", undefined, additionalInfo);
+    return patient;
   }
 
   async createMedication({
@@ -332,7 +316,11 @@ class AthenaHealthApi {
     });
     const firstOption = medicationOptions[0];
     if (!firstOption) {
-      throw new MetriportError("No medication options found via search", undefined, additionalInfo);
+      throw new BadRequestError(
+        "No medication options found via search",
+        undefined,
+        additionalInfo
+      );
     }
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
@@ -350,7 +338,7 @@ class AthenaHealthApi {
     const createdMedication = await this.makeRequest<CreatedMedication>({
       cxId,
       patientId,
-      s3Path: "chart/medication",
+      s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
       method: "POST",
       data,
       url: chartMedicationUrl,
@@ -391,11 +379,11 @@ class AthenaHealthApi {
     };
     const snomedCode = this.getConditionSnomedCode(condition);
     if (!snomedCode) {
-      throw new MetriportError("No SNOMED code found for condition", undefined, additionalInfo);
+      throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
     }
     const startDate = this.getConditionStartDate(condition);
     if (!startDate) {
-      throw new MetriportError("No start date found for condition", undefined, additionalInfo);
+      throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
     }
     const conditionStatus = this.getConditionStatus(condition);
     const problemStatus = conditionStatus
@@ -410,36 +398,24 @@ class AthenaHealthApi {
       THIRDPARTYUSERNAME: undefined,
       PATIENTFACINGCALL: undefined,
     };
-    try {
-      const createdProblem = await this.makeRequest<CreatedProblem>({
-        cxId,
-        patientId,
-        s3Path: "chart/problem",
-        method: "POST",
-        data,
-        url: chartProblemUrl,
-        schema: createdProblemSchema,
-        additionalInfo,
-        debug,
+    const createdProblem = await this.makeRequest<CreatedProblem>({
+      cxId,
+      patientId,
+      s3Path: `chart/problem/${additionalInfo.conditionId ?? "unknown"}`,
+      method: "POST",
+      data,
+      url: chartProblemUrl,
+      schema: createdProblemSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!createdProblem.success) {
+      throw new MetriportError("Problem creation not successful", undefined, {
+        ...additionalInfo,
+        error: createdProblem.errormessage,
       });
-      if (!createdProblem.success) {
-        throw new MetriportError("Problem creation not successful", undefined, {
-          ...additionalInfo,
-          error: createdProblem.errormessage,
-        });
-      }
-      return createdProblemSuccessSchema.parse(createdProblem);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.response?.status === 400) {
-        throw new BadRequestError(
-          "Problem creation not successful - duplicate problem",
-          undefined,
-          additionalInfo
-        );
-      }
-      throw error;
     }
+    return createdProblemSuccessSchema.parse(createdProblem);
   }
 
   async createVitals({
@@ -467,28 +443,28 @@ class AthenaHealthApi {
     };
     const code = getObservationCode(observation);
     if (!code) {
-      throw new MetriportError("No code found for observation", undefined, additionalInfo);
+      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
     }
     const clinicalElementId = vitalSignCodesMapAthena.get(code);
     if (!clinicalElementId) {
-      throw new MetriportError("No clinical element id found for observation", undefined, {
+      throw new BadRequestError("No clinical element id found for observation", undefined, {
         ...additionalInfo,
         code,
       });
     }
     const units = getObservationUnits(observation);
     if (!units) {
-      throw new MetriportError("No units found for observation", undefined, {
+      throw new BadRequestError("No units found for observation", undefined, {
         ...additionalInfo,
         code,
         clinicalElementId,
       });
     }
     if (!vitals.sortedPoints || vitals.sortedPoints.length === 0) {
-      throw new MetriportError("No points found for vitals", undefined, additionalInfo);
+      throw new BadRequestError("No points found for vitals", undefined, additionalInfo);
     }
     if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
-      throw new MetriportError("Duplicate reading taken for vitals", undefined, {
+      throw new BadRequestError("Duplicate reading taken for vitals", undefined, {
         ...additionalInfo,
         dates: vitals.sortedPoints.map(v => v.date).join(", "),
       });
@@ -496,17 +472,15 @@ class AthenaHealthApi {
     const allCreatedVitals: CreatedVitalsSuccess[] = [];
     const createVitalsErrors: {
       error: unknown;
-      cxId: string;
-      practiceId: string;
-      patientId: string;
-      departmentId: string;
-      observationId: string | undefined;
+      departmentid: string;
+      source: string;
+      vitals: string;
     }[] = [];
     const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
       const vitalsData = this.createVitalsData(v, clinicalElementId, units);
       return {
         departmentid: this.stripDepartmentId(departmentId),
-        returnvitalsid: true,
+        returnvitalids: true,
         source: "DEVICEGENERATED",
         vitals: [vitalsData],
         THIRDPARTYUSERNAME: undefined,
@@ -520,7 +494,7 @@ class AthenaHealthApi {
           const createdVitals = await this.makeRequest<CreatedVitals>({
             cxId,
             patientId,
-            s3Path: `chart/vitals/${observation.id ?? "unknown"}`,
+            s3Path: `chart/vitals/${additionalInfo.observationId ?? "unknown"}`,
             method: "POST",
             data: params,
             url: chartVitalsUrl,
@@ -536,7 +510,9 @@ class AthenaHealthApi {
           }
           allCreatedVitals.push(createdVitalsSuccessSchema.parse(createdVitals));
         } catch (error) {
-          createVitalsErrors.push({ error, ...additionalInfo });
+          const vitalsToString = JSON.stringify(params.vitals);
+          log(`Failed to create vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
+          createVitalsErrors.push({ error, ...params, vitals: vitalsToString });
         }
       },
       {
@@ -545,21 +521,14 @@ class AthenaHealthApi {
       }
     );
     if (createVitalsErrors.length > 0) {
-      const errorsToString = createVitalsErrors
-        .map(
-          e =>
-            `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${e.patientId} departmentId ${
-              e.departmentId
-            } observationId ${e.observationId}. Cause: ${errorToString(e.error)}`
-        )
-        .join(", ");
       const msg = `Failure while creating some vitals @ AthenaHealth`;
-      log(`${msg}. ${errorsToString}`);
       capture.message(msg, {
         extra: {
           ...additionalInfo,
-          context: "athenahealth.create-vitals",
+          createVitalsArgsCount: createVitalsArgs.length,
+          createVitalsErrorsCount: createVitalsErrors.length,
           errors: createVitalsErrors,
+          context: "athenahealth.create-vitals",
         },
         level: "warning",
       });
@@ -591,7 +560,7 @@ class AthenaHealthApi {
     };
     const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
     if (!searchValues || searchValues.length === 0) {
-      throw new MetriportError(
+      throw new BadRequestError(
         "No search values for searching medication references",
         undefined,
         additionalInfo
@@ -601,20 +570,14 @@ class AthenaHealthApi {
       searchValue => searchValue.length >= 2
     );
     if (searchValuesWithAtLeastTwoParts.length === 0) {
-      throw new MetriportError(
+      throw new BadRequestError(
         "No search values with at least two parts",
         undefined,
         additionalInfo
       );
     }
     const allMedicationReferences: MedicationReference[] = [];
-    const searchMedicationErrors: {
-      error: unknown;
-      cxId: string;
-      practiceId: string;
-      patientId: string;
-      medicationId: string | undefined;
-    }[] = [];
+    const searchMedicationErrors: { error: unknown; searchValue: string }[] = [];
     const searchMedicationArgs: string[] = searchValuesWithAtLeastTwoParts;
     await executeAsynchronously(
       searchMedicationArgs,
@@ -632,7 +595,12 @@ class AthenaHealthApi {
           });
           allMedicationReferences.push(...medicationReferencese);
         } catch (error) {
-          searchMedicationErrors.push({ error, ...additionalInfo });
+          log(
+            `Failed to search for medication with search value ${searchValue}. Cause: ${errorToString(
+              error
+            )}`
+          );
+          searchMedicationErrors.push({ error, searchValue });
         }
       },
       {
@@ -641,21 +609,14 @@ class AthenaHealthApi {
       }
     );
     if (searchMedicationErrors.length > 0) {
-      const errorsToString = searchMedicationErrors
-        .map(
-          e =>
-            `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${e.patientId} medicationId ${
-              e.medicationId
-            }. Cause: ${errorToString(e.error)}`
-        )
-        .join(", ");
-      const msg = `Failure while searching for some search values @ AthenaHealth`;
-      log(`${msg}. ${errorsToString}`);
+      const msg = `Failure while searching for some medications @ AthenaHealth`;
       capture.message(msg, {
         extra: {
           ...additionalInfo,
-          context: "athenahealth.search-for-medication",
+          searchMedicationArgsCount: searchMedicationArgs.length,
+          searchMedicationErrorsCount: searchMedicationErrors.length,
           errors: searchMedicationErrors,
+          context: "athenahealth.search-for-medication",
         },
         level: "warning",
       });
@@ -758,12 +719,12 @@ class AthenaHealthApi {
       `AthenaHealth getAppointmentsFromSubscription - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
-      showprocessedstartdatetime: startProcessedDate
-        ? this.formatDateTime(startProcessedDate.toISOString()) ?? ""
-        : "",
-      showprocessedenddatetime: endProcessedDate
-        ? this.formatDateTime(endProcessedDate.toISOString()) ?? ""
-        : "",
+      ...(startProcessedDate && {
+        showprocessedstartdatetime: this.formatDateTime(startProcessedDate.toISOString()) ?? "",
+      }),
+      ...(endProcessedDate && {
+        showprocessedenddatetime: this.formatDateTime(endProcessedDate.toISOString()) ?? "",
+      }),
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
@@ -841,15 +802,6 @@ class AthenaHealthApi {
 
   private formatDateTime(date: string | undefined): string | undefined {
     return formatDate(date, athenaDateTimeFormat);
-  }
-
-  private parsePatient(patient: Patient): PatientWithValidHomeAddress {
-    if (!patient.address) throw new BadRequestError("No addresses found");
-    patient.address = patient.address.filter(a => a.postalCode !== undefined && a.use === "home");
-    if (patient.address.length === 0) {
-      throw new BadRequestError("No home address with valid zip found");
-    }
-    return patientSchemaWithValidHomeAddress.parse(patient);
   }
 
   stripPracticeId(id: string) {
@@ -937,7 +889,7 @@ class AthenaHealthApi {
     if (units === "cel" || units === "c" || units.includes("celsius")) {
       return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
     }
-    throw new MetriportError("Unknown units", undefined, {
+    throw new BadRequestError("Unknown units", undefined, {
       units,
       clinicalElementId,
       value,

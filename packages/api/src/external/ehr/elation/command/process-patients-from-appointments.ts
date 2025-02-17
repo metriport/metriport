@@ -11,6 +11,7 @@ import {
   delayBetweenPracticeBatches,
   EhrSources,
   getLookForwardTimeRange,
+  parallelPatients,
   parallelPractices,
 } from "../../shared";
 import { createElationClient } from "../shared";
@@ -65,11 +66,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (getAppointmentsErrors.length > 0) {
-    const errorsToString = getAppointmentsErrors
-      .map(e => `cxId ${e.cxId} practiceId ${e.practiceId}. Cause: ${errorToString(e.error)}`)
-      .join(",");
     const msg = "Failed to get some appointments @ Elation";
-    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
@@ -107,22 +104,13 @@ export async function processPatientsFromAppointments(): Promise<void> {
       if (error) syncPatientsErrors.push({ ...params, error });
     },
     {
-      numberOfParallelExecutions: parallelPractices,
+      numberOfParallelExecutions: parallelPatients,
       delay: delayBetweenPracticeBatches.asMilliseconds(),
     }
   );
 
   if (syncPatientsErrors.length > 0) {
-    const errorsToString = syncPatientsErrors
-      .map(
-        e =>
-          `cxId ${e.cxId} elationPracticeId ${e.elationPracticeId} elationPatientId ${
-            e.elationPatientId
-          }. Cause: ${errorToString(e.error)}`
-      )
-      .join(",");
     const msg = "Failed to sync some patients @ Elation";
-    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,

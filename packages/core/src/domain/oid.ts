@@ -1,4 +1,4 @@
-import { USState } from "@metriport/shared";
+import { USStateForAddress } from "@metriport/shared/dist/domain/address";
 import { generalPersonalIdentifiers } from "../domain/patient";
 
 export const OID_ID_START = 100;
@@ -24,7 +24,7 @@ export function addOidPrefix(oid: string): string {
   return `${OID_PREFIX}${oid}`;
 }
 
-export const driversLicenseURIs: { [k in USState]: string } = {
+export const driversLicenseURIs: { [k in USStateForAddress]: string } = {
   AK: `${OID_PREFIX}2.16.840.1.113883.4.3.2`,
   AL: `${OID_PREFIX}2.16.840.1.113883.4.3.1`,
   AR: `${OID_PREFIX}2.16.840.1.113883.4.3.5`,
@@ -76,6 +76,14 @@ export const driversLicenseURIs: { [k in USState]: string } = {
   WI: `${OID_PREFIX}2.16.840.1.113883.4.3.55`,
   WV: `${OID_PREFIX}2.16.840.1.113883.4.3.54`,
   WY: `${OID_PREFIX}2.16.840.1.113883.4.3.56`,
+  // US territories - according to https://www.reginfo.gov, regarding the OID root 2.16.840.1.113883.4.3:
+  // United States Driver License Number. These identifiers are assigned by each state. ... U.S. territories have not been included.
+  // From https://www.reginfo.gov/public/do/DownloadDocument?objectID=35411401
+  // So we're adding our own.
+  AS: `${OID_PREFIX}2.16.840.1.113883.4.3.101`,
+  GU: `${OID_PREFIX}2.16.840.1.113883.4.3.102`,
+  PR: `${OID_PREFIX}2.16.840.1.113883.4.3.103`,
+  VI: `${OID_PREFIX}2.16.840.1.113883.4.3.104`,
 };
 
 export const ssnURI = `${OID_PREFIX}2.16.840.1.113883.4.1`;

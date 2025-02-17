@@ -1,10 +1,18 @@
-import { AdditionalInfo, JwtTokenInfo, MetriportError, errorToString } from "@metriport/shared";
+import {
+  AdditionalInfo,
+  BadRequestError,
+  JwtTokenInfo,
+  MetriportError,
+  NotFoundError,
+  errorToString,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { AxiosInstance } from "axios";
+import { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
+import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
@@ -70,17 +78,80 @@ export async function makeRequest<T>({
   additionalInfo,
   debug,
 }: MakeRequestParams<T>): Promise<T> {
-  const response = await axiosInstance.request({
-    method,
-    url,
-    data: method === "GET" ? undefined : createDataParams(data ?? {}),
-    headers: {
-      ...axiosInstance.defaults.headers.common,
-      ...headers,
-    },
-  });
+  const { log } = out(
+    `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
+  );
+  const isJsonContentType = headers?.["content-type"] === "application/json";
+  let response: AxiosResponse;
+  try {
+    response = await axiosInstance.request({
+      method,
+      url,
+      data: method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {}),
+      headers: {
+        ...axiosInstance.defaults.headers.common,
+        ...headers,
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error instanceof AxiosError) {
+      const message = JSON.stringify(error.response?.data) ?? error.message;
+      if (responsesBucket) {
+        const filePath = createHivePartitionFilePath({
+          cxId,
+          patientId: patientId ?? "global",
+          date: new Date(),
+        });
+        const key = buildS3Path(ehr, s3Path, `${filePath}-error`);
+        const s3Utils = getS3UtilsInstance();
+        s3Utils
+          .uploadFile({
+            bucket: responsesBucket,
+            key,
+            file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
+            contentType: "application/json",
+          })
+          .catch(processAsyncError(`Error saving error to s3 @ ${ehr} - ${method} ${url}`));
+      }
+      switch (error.response?.status) {
+        case 400:
+          throw new BadRequestError(message, undefined, {
+            ...additionalInfo,
+            method,
+            url,
+            context: `${ehr}.make-request`,
+            error: errorToString(error),
+          });
+        case 404:
+          throw new NotFoundError(message, undefined, {
+            ...additionalInfo,
+            method,
+            url,
+            context: `${ehr}.make-request`,
+            error: errorToString(error),
+          });
+        default:
+          throw new MetriportError(message, undefined, {
+            ...additionalInfo,
+            method,
+            url,
+            context: `${ehr}.make-request`,
+            error: errorToString(error),
+          });
+      }
+    }
+    throw error;
+  }
   if (!response.data) {
-    throw new MetriportError(`No body returned from ${method} ${url}`, undefined, additionalInfo);
+    const msg = `No body returned @ ${ehr}`;
+    log(msg);
+    throw new MetriportError(msg, undefined, {
+      ...additionalInfo,
+      method,
+      url,
+      context: `${ehr}.make-request`,
+    });
   }
   const body = response.data;
   debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
@@ -99,12 +170,17 @@ export async function makeRequest<T>({
         file: Buffer.from(JSON.stringify(response.data), "utf8"),
         contentType: "application/json",
       })
-      .catch(processAsyncError(`Error saving to s3 - ${method} ${url}`));
+      .catch(processAsyncError(`Error saving to s3 @ ${ehr} - ${method} ${url}`));
   }
   const outcome = schema.safeParse(body);
   if (!outcome.success) {
-    throw new MetriportError(`${method} ${url} response not parsed`, undefined, {
+    const msg = `Response not parsed @ ${ehr}`;
+    log(`${msg}. Schema: ${schema.description}`);
+    throw new MetriportError(msg, undefined, {
       ...additionalInfo,
+      method,
+      url,
+      context: `${ehr}.make-request`,
       error: errorToString(outcome.error),
     });
   }
