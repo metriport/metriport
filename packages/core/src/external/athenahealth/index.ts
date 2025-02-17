@@ -826,6 +826,7 @@ class AthenaHealthApi {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error instanceof AxiosError) {
+        const message = JSON.stringify(error.response?.data) ?? error.message;
         if (responsesBucket) {
           const filePath = createHivePartitionFilePath({
             cxId,
@@ -837,12 +838,11 @@ class AthenaHealthApi {
             .uploadFile({
               bucket: responsesBucket,
               key,
-              file: Buffer.from(JSON.stringify(error), "utf8"),
+              file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
               contentType: "application/json",
             })
             .catch(processAsyncError(`Error saving error to s3 @ AthenaHealth - ${method} ${url}`));
         }
-        const message = error.response?.data?.error ?? error.message;
         switch (error.response?.status) {
           case 400:
             throw new BadRequestError(message, undefined, {
