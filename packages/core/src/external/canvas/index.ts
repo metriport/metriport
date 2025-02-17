@@ -11,6 +11,7 @@ import {
   Practitioner,
 } from "@medplum/fhirtypes";
 import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointments,
   appointmentsSchema,
@@ -37,15 +38,15 @@ class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceCustomApi: AxiosInstance;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
-  private environment: string;
+  private baseUrl: string;
   private practiceId: string;
 
   private constructor(private config: CanvasApiConfig) {
     this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
     this.practiceId = config.practiceId;
-    this.environment = `${config.environment}${canvasDomainExtension}`;
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceCustomApi = axios.create({});
+    this.baseUrl = `${config.environment}${canvasDomainExtension}`;
   }
 
   public static async create(config: CanvasApiConfig): Promise<CanvasApi> {
@@ -59,7 +60,7 @@ class CanvasApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
-    const url = `https://${this.environment}/auth/token/`;
+    const url = `https://${this.baseUrl}/auth/token/`;
     const payload = `grant_type=client_credentials&client_id=${this.config.clientKey}&client_secret=${this.config.clientSecret}`;
 
     try {
@@ -67,11 +68,10 @@ class CanvasApi {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
-      console.log("response.data", response.data);
       const tokenData = canvasClientJwtTokenResponseSchema.parse(response.data);
       return {
         access_token: tokenData.access_token,
-        exp: new Date(Date.now() + tokenData.expires_in * 1000),
+        exp: new Date(Date.now() + +tokenData.expires_in * 1000),
       };
     } catch (error) {
       throw new MetriportError("Failed to fetch OAuth token @ Canvas", undefined, {
@@ -85,7 +85,7 @@ class CanvasApi {
     if (!this.twoLeggedAuthTokenInfo) {
       log(`Two Legged Auth token not found @ Canvas - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
-    } else if (this.twoLeggedAuthTokenInfo.exp < new Date()) {
+    } else if (this.twoLeggedAuthTokenInfo.exp < buildDayjs().subtract(15, "minutes").toDate()) {
       log(`Two Legged Auth token expired @ Canvas - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
     } else {
@@ -93,7 +93,7 @@ class CanvasApi {
     }
 
     this.axiosInstanceFhirApi = axios.create({
-      baseURL: `https://fumage-${this.environment}`,
+      baseURL: `https://fumage-${this.baseUrl}`,
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
@@ -102,7 +102,7 @@ class CanvasApi {
     });
 
     this.axiosInstanceCustomApi = axios.create({
-      baseURL: `https://${this.environment}/core/api`,
+      baseURL: `https://${this.baseUrl}/core/api`,
       headers: {
         Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
         "Content-Type": "application/json",
@@ -396,6 +396,7 @@ class CanvasApi {
     return await makeRequest<T>({
       ehr: "canvas",
       cxId,
+      practiceId: this.practiceId,
       patientId,
       s3Path,
       axiosInstance,

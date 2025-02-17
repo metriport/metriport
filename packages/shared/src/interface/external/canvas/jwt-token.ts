@@ -16,5 +16,5 @@ export type CanvasClientJwtTokenData = {
 export const canvasClientJwtTokenResponseSchema = z.object({
   scope: z.string(),
   access_token: z.string(),
-  expires_in: z.number(),
+  expires_in: z.coerce.string(),
 });
