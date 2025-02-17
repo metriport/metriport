@@ -68,6 +68,8 @@ export function getLookForwardTimeRange({ lookForward }: { lookForward: Duration
   };
 }
 
+export type EhrPerPracticeParams = { cxId: string; practiceId: string };
+
 /**
  * Expiration checks are handled by the clients themselves.
  */
@@ -75,11 +77,7 @@ async function getLatestClientJwtTokenInfo({
   cxId,
   practiceId,
   source,
-}: {
-  cxId: string;
-  practiceId: string;
-  source: EhrClientJwtTokenSource;
-}): Promise<JwtTokenInfo | undefined> {
+}: EhrPerPracticeParams & { source: EhrClientJwtTokenSource }): Promise<JwtTokenInfo | undefined> {
   const data = { cxId, practiceId, source };
   const token = await getLatestExpiringJwtTokenBySourceAndData({ source, data });
   if (!token) return undefined;
@@ -89,8 +87,7 @@ async function getLatestClientJwtTokenInfo({
   };
 }
 
-export type EhrClientUniqueClientParams = { cxId: string; practiceId: string };
-export type GetEnv<Env extends EhrEnv, EnvArgs> = {
+export type GetEnvParams<Env extends EhrEnv, EnvArgs> = {
   params: EnvArgs;
   getEnv: (params: EnvArgs) => EhrEnvAndClientCredentials<Env>;
 };
@@ -105,9 +102,9 @@ export async function createEhrClient<
   source,
   getEnv,
   getClient,
-}: EhrClientUniqueClientParams & {
+}: EhrPerPracticeParams & {
   source: EhrClientJwtTokenSource;
-  getEnv: GetEnv<Env, EnvArgs>;
+  getEnv: GetEnvParams<Env, EnvArgs>;
   getClient: (params: EhrClientParams<Env>) => Promise<Client>;
 }): Promise<Client> {
   const [environment, twoLeggedAuthTokenInfo] = await Promise.all([
