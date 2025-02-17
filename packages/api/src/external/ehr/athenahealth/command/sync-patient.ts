@@ -2,9 +2,8 @@ import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, normalizeGender, normalizeDob, MetriportError } from "@metriport/shared";
+import { MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
 import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
@@ -41,9 +40,6 @@ export async function syncAthenaPatientIntoMetriport({
   useSearch?: boolean;
   triggerDq?: boolean;
 }): Promise<string> {
-  const { log } = out(
-    `AthenaHealth syncAthenaPatientIntoMetriport - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
-  );
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: athenaPatientId,
@@ -54,7 +50,14 @@ export async function syncAthenaPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
-    return metriportPatient.id;
+    const metriportPatientId = metriportPatient.id;
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatientId,
+      }).catch(processAsyncError("AthenaHealth queryDocumentsAcrossHIEs"));
+    }
+    return metriportPatientId;
   }
 
   const athenaApi =
@@ -74,7 +77,7 @@ export async function syncAthenaPatientIntoMetriport({
   const demos = createMetriportPatientDemos(athenaPatient);
 
   const patients: Patient[] = [];
-  const getPatientByDemoErrors: unknown[] = [];
+  const getPatientByDemoErrors: { error: unknown; cxId: string; demos: string }[] = [];
   const getPatientByDemoArgs: GetPatientByDemoParams[] = demos.map(demo => {
     return { cxId, demo };
   });
@@ -86,17 +89,14 @@ export async function syncAthenaPatientIntoMetriport({
         const patient = await getPatientByDemo(params);
         if (patient) patients.push(patient);
       } catch (error) {
-        log(`Failed to get patient by demo. Cause: ${errorToString(error)}`);
-        getPatientByDemoErrors.push(error);
+        getPatientByDemoErrors.push({ error, ...params, demos: JSON.stringify(params.demo) });
       }
     },
     { numberOfParallelExecutions: parallelPatientMatches }
   );
 
   if (getPatientByDemoErrors.length > 0) {
-    const errorsToString = getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(",");
     const msg = "Failed to get patient by some demos @ AthenaHealth";
-    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         cxId,
