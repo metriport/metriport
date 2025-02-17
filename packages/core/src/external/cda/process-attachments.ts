@@ -171,19 +171,13 @@ async function handleS3Upload(
   s3Utils: S3Utils,
   log: typeof console.log
 ): Promise<void> {
-  uploadDetails.forEach(d => {
-    log(
-      `Attachment upload details: ${JSON.stringify({
-        bucket: d.bucket,
-        key: d.key,
-        contentType: d.contentType,
-        metadata: d.metadata,
-      })}`
-    );
-  });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const detailsToLog = uploadDetails.map(({ file, ...d }) => d);
+  log(`[handleS3Upload] Upload details: ${JSON.stringify(detailsToLog)}`);
   await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
     await s3Utils.uploadFile(uploadParams);
   });
+  log(`[handleS3Upload] Done`);
 }
 
 function buildDocumentReferenceDraft(
