@@ -13,13 +13,15 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
-import {
-  createAddresses,
-  createContacts,
-  createNames,
-  getElationClientKeyAndSecret,
-  getElationEnv,
-} from "../shared";
+import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
+
+export type SyncElationPatientIntoMetriportParams = {
+  cxId: string;
+  elationPracticeId: string;
+  elationPatientId: string;
+  api?: ElationApi;
+  triggerDq?: boolean;
+};
 
 export async function syncElationPatientIntoMetriport({
   cxId,
@@ -27,13 +29,7 @@ export async function syncElationPatientIntoMetriport({
   elationPatientId,
   api,
   triggerDq = false,
-}: {
-  cxId: string;
-  elationPracticeId: string;
-  elationPatientId: string;
-  api?: ElationApi;
-  triggerDq?: boolean;
-}): Promise<string> {
+}: SyncElationPatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: elationPatientId,
@@ -53,20 +49,8 @@ export async function syncElationPatientIntoMetriport({
     }
     return metriportPatientId;
   }
-  let elationApi = api;
-  if (!elationApi) {
-    const environment = getElationEnv();
-    const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
-      cxId,
-      practiceId: elationPracticeId,
-    });
-    elationApi = await ElationApi.create({
-      practiceId: elationPracticeId,
-      environment,
-      clientKey,
-      clientSecret,
-    });
-  }
+
+  const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
   const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
 
   const demo = createMetriportPatientDemo(elationPatient);
