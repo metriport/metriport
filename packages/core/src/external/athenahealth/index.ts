@@ -815,8 +815,11 @@ class AthenaHealthApi {
       `AthenaHealth makeRequest - cxId ${cxId} practiceId ${this.practiceId} method ${method} url ${url}`
     );
     const axiosInstance = useFhir ? this.axiosInstanceFhir : this.axiosInstanceProprietary;
-    const additionalInfoWithMethodAndUrlAndContext = {
+    const fullAdditionalInfo = {
       ...additionalInfo,
+      cxId,
+      patientId,
+      practiceId: this.practiceId,
       method,
       url,
       context: "athenahealth.make-request",
@@ -848,10 +851,7 @@ class AthenaHealthApi {
             })
             .catch(processAsyncError(`Error saving error to s3 @ AthenaHealth - ${method} ${url}`));
         }
-        const additionalInfoWithError = {
-          ...additionalInfoWithMethodAndUrlAndContext,
-          error: errorToString(error),
-        };
+        const additionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
         switch (error.response?.status) {
           case 400:
             throw new BadRequestError(message, undefined, additionalInfoWithError);
@@ -866,7 +866,7 @@ class AthenaHealthApi {
     if (!response.data) {
       const msg = `No body returned @ AthenaHealth`;
       log(msg);
-      throw new MetriportError(msg, undefined, additionalInfoWithMethodAndUrlAndContext);
+      throw new MetriportError(msg, undefined, fullAdditionalInfo);
     }
     const body = response.data;
     debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
@@ -891,7 +891,7 @@ class AthenaHealthApi {
       const msg = `Response not parsed @ AthenaHealth`;
       log(`${msg}. Schema: ${schema.description}`);
       throw new MetriportError(msg, undefined, {
-        ...additionalInfoWithMethodAndUrlAndContext,
+        ...fullAdditionalInfo,
         schema: schema.description,
         error: errorToString(outcome.error),
       });

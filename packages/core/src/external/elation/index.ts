@@ -216,8 +216,11 @@ class ElationApi {
     debug: typeof console.log;
   }): Promise<T> {
     const isJsonContentType = headers?.["content-type"] === "application/json";
-    const additionalInfoWithMethodAndUrlAndContext = {
+    const fullAdditionalInfo = {
       ...additionalInfo,
+      cxId,
+      patientId,
+      practiceId: this.practiceId,
       method,
       url,
       context: "elation.make-request",
@@ -258,10 +261,7 @@ class ElationApi {
             })
             .catch(processAsyncError(`Error saving error to s3 @ Elation - ${method} ${url}`));
         }
-        const additionalInfoWithError = {
-          ...additionalInfoWithMethodAndUrlAndContext,
-          error: errorToString(error),
-        };
+        const additionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
         switch (error.response?.status) {
           case 400:
             throw new BadRequestError(message, undefined, additionalInfoWithError);
@@ -276,7 +276,7 @@ class ElationApi {
     if (!response.data) {
       const msg = `No body returned @ Elation`;
       log(msg);
-      throw new MetriportError(msg, undefined, additionalInfoWithMethodAndUrlAndContext);
+      throw new MetriportError(msg, undefined, fullAdditionalInfo);
     }
     const body = response.data;
     debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
@@ -301,7 +301,7 @@ class ElationApi {
       const msg = `Response not parsed @ Elation`;
       log(`${msg}. Schema: ${schema.description}`);
       throw new MetriportError(msg, undefined, {
-        ...additionalInfoWithMethodAndUrlAndContext,
+        ...fullAdditionalInfo,
         schema: schema.description,
         error: errorToString(outcome.error),
       });
