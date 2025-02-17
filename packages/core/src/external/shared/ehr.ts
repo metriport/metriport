@@ -47,6 +47,7 @@ export function formatDate(date: string | undefined, format: string): string | u
 export type MakeRequestParams<T> = {
   ehr: string;
   cxId: string;
+  practiceId: string;
   patientId?: string | undefined;
   s3Path: string;
   axiosInstance: AxiosInstance;
@@ -61,12 +62,13 @@ export type MakeRequestParams<T> = {
 
 export type MakeRequestParamsInEhr<T> = Omit<
   MakeRequestParams<T>,
-  "ehr" | "axiosInstance" | "responsesBucket" | "s3Utils"
+  "ehr" | "practiceId" | "axiosInstance" | "responsesBucket" | "s3Utils"
 >;
 
 export async function makeRequest<T>({
   ehr,
   cxId,
+  practiceId,
   patientId,
   s3Path,
   axiosInstance,
@@ -82,6 +84,15 @@ export async function makeRequest<T>({
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
   );
   const isJsonContentType = headers?.["content-type"] === "application/json";
+  const fullAdditionalInfo = {
+    ...additionalInfo,
+    cxId,
+    practiceId,
+    patientId,
+    method,
+    url,
+    context: "athenahealth.make-request",
+  };
   let response: AxiosResponse;
   try {
     response = await axiosInstance.request({
@@ -114,31 +125,14 @@ export async function makeRequest<T>({
           })
           .catch(processAsyncError(`Error saving error to s3 @ ${ehr} - ${method} ${url}`));
       }
+      const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
       switch (error.response?.status) {
         case 400:
-          throw new BadRequestError(message, undefined, {
-            ...additionalInfo,
-            method,
-            url,
-            context: `${ehr}.make-request`,
-            error: errorToString(error),
-          });
+          throw new BadRequestError(message, undefined, fullAdditionalInfoWithError);
         case 404:
-          throw new NotFoundError(message, undefined, {
-            ...additionalInfo,
-            method,
-            url,
-            context: `${ehr}.make-request`,
-            error: errorToString(error),
-          });
+          throw new NotFoundError(message, undefined, fullAdditionalInfoWithError);
         default:
-          throw new MetriportError(message, undefined, {
-            ...additionalInfo,
-            method,
-            url,
-            context: `${ehr}.make-request`,
-            error: errorToString(error),
-          });
+          throw new MetriportError(message, undefined, fullAdditionalInfoWithError);
       }
     }
     throw error;
@@ -146,12 +140,7 @@ export async function makeRequest<T>({
   if (!response.data) {
     const msg = `No body returned @ ${ehr}`;
     log(msg);
-    throw new MetriportError(msg, undefined, {
-      ...additionalInfo,
-      method,
-      url,
-      context: `${ehr}.make-request`,
-    });
+    throw new MetriportError(msg, undefined, fullAdditionalInfo);
   }
   const body = response.data;
   debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
@@ -177,10 +166,8 @@ export async function makeRequest<T>({
     const msg = `Response not parsed @ ${ehr}`;
     log(`${msg}. Schema: ${schema.description}`);
     throw new MetriportError(msg, undefined, {
-      ...additionalInfo,
-      method,
-      url,
-      context: `${ehr}.make-request`,
+      ...fullAdditionalInfo,
+      schema: schema.description,
       error: errorToString(outcome.error),
     });
   }

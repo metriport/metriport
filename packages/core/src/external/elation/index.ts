@@ -201,6 +201,7 @@ class ElationApi {
     return await makeRequest<T>({
       ehr: "elation",
       cxId,
+      practiceId: this.practiceId,
       patientId,
       s3Path,
       axiosInstance: this.axiosInstance,
