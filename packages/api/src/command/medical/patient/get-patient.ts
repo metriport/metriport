@@ -136,7 +136,7 @@ function getPatientsSharedQueryUntilFTS(
         OR external_id = :filters 
         OR id = :filters
         OR id in (select patient_id from patient_mapping where external_id = :filters)
-        OR facility_ids && (select array_agg(id) from facility where name = :filters)
+        OR facility_ids && (select array_agg(id) from facility where name = :filters or id = :filters)
       )`
       : "");
 
