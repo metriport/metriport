@@ -6,7 +6,8 @@ export function makeAddressStrict(params: Partial<AddressStrict> = {}): AddressS
   const randomIndex = Math.floor(Math.random() * Object.keys(USState).length);
   return {
     addressLine1: params.addressLine1 ?? faker.location.streetAddress(),
-    zip: params.zip ?? faker.location.zipCode(),
+    ...(params.addressLine2 ? { addressLine2: params.addressLine2 } : {}),
+    zip: params.zip ?? faker.location.zipCode("#####"),
     city: params.city ?? faker.location.city(),
     state: params.state ?? Object.values(USState)[randomIndex] ?? USState.CA,
     country: params.country ?? "USA",

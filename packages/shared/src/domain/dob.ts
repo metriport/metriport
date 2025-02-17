@@ -1,16 +1,14 @@
-import { ISO_DATE } from "../common/date";
-import dayjs from "dayjs";
+import { buildDayjs, ISO_DATE, validateDateOfBirth } from "../common/date";
 
-export function normalizeDateSafe(date: string): string | undefined {
+export function normalizeDobSafe(date: string): string | undefined {
   const trimmedDate = date.trim();
-  const parsedDate = dayjs(trimmedDate);
-  if (!parsedDate.isValid()) return undefined;
-  // TODO Check if date is in future
-  return parsedDate.format(ISO_DATE);
+  if (trimmedDate.length < 1) return undefined;
+  if (!validateDateOfBirth(trimmedDate)) throw new Error("Invalid date of birth.");
+  return buildDayjs(trimmedDate).format(ISO_DATE);
 }
 
-export function normalizeDate(date: string): string {
-  const dateOrUndefined = normalizeDateSafe(date);
-  if (!dateOrUndefined) throw new Error("Invalid date.");
+export function normalizeDob(date: string): string {
+  const dateOrUndefined = normalizeDobSafe(date);
+  if (!dateOrUndefined) throw new Error("Invalid date of birth.");
   return dateOrUndefined;
 }

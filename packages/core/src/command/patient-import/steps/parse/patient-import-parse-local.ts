@@ -3,9 +3,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { capture, out } from "../../../../util";
-import { createPatientPayload } from "../../patient-import-shared";
 import { fetchJobRecordOrFail } from "../../record/fetch-job-record";
-import { validateAndParsePatientImportCsvFromS3 } from "../../record/validate-and-parse-import";
+import { validateAndParsePatientImportCsvFromS3 } from "../../csv/validate-and-parse-import";
 import {
   PatientImportCreateHandler,
   ProcessPatientCreateRequest,
@@ -53,8 +52,7 @@ export class PatientImportParseLocal implements PatientImportParseHandler {
       const patientChunks = chunk(patients, patientCreateChunk);
       for (const patientChunk of patientChunks) {
         const chunkOutcomes = await Promise.allSettled(
-          patientChunk.map(async patient => {
-            const patientPayload = createPatientPayload(patient);
+          patientChunk.map(async patientPayload => {
             const processPatientCreateRequest: ProcessPatientCreateRequest = {
               cxId,
               facilityId,

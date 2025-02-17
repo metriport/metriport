@@ -4,7 +4,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, MetriportError, normalizeDate, normalizeGender } from "@metriport/shared";
+import { errorToString, normalizeGender, normalizeDob, MetriportError } from "@metriport/shared";
 import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
@@ -155,7 +155,7 @@ export async function syncAthenaPatientIntoMetriport({
 }
 
 function createMetriportPatientDemos(patient: AthenaPatient): PatientDemoData[] {
-  const dob = normalizeDate(patient.birthDate);
+  const dob = normalizeDob(patient.birthDate);
   const genderAtBirth = normalizeGender(patient.gender);
   const addressArray = createAddresses(patient);
   const contactArray = createContacts(patient);

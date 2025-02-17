@@ -1,7 +1,7 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { normalizeDate, normalizeGender } from "@metriport/shared";
+import { normalizeDob, normalizeGender } from "@metriport/shared";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
@@ -108,7 +108,7 @@ export async function syncElationPatientIntoMetriport({
 }
 
 function createMetriportPatientDemo(patient: ElationPatient): PatientDemoData {
-  const dob = normalizeDate(patient.dob);
+  const dob = normalizeDob(patient.dob);
   const genderAtBirth = normalizeGender(patient.sex);
   const addressArray = createAddresses(patient);
   const contactArray = createContacts(patient);

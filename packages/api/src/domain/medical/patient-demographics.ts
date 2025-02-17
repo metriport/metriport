@@ -1,10 +1,3 @@
-import {
-  normalizeUSStateForAddressSafe,
-  normalizeZipCodeNewSafe,
-  normalizePhoneNumberSafe,
-  stripNonNumericChars,
-  USState,
-} from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import {
@@ -13,7 +6,6 @@ import {
   splitDob,
   splitName,
 } from "@metriport/core/domain/patient";
-import { normalizeEmailNewSafe } from "@metriport/shared";
 import {
   LinkDateOfBirth,
   LinkDemographics,
@@ -23,6 +15,14 @@ import {
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
+import {
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
+  normalizeUSStateForAddressSafe,
+  normalizeZipCodeNewSafe,
+  USState,
+} from "@metriport/shared";
+import { normalizeSsn as normalizeSsnFromShared } from "@metriport/shared/domain/patient/ssn";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
@@ -322,8 +322,9 @@ export function normalizeAndStringifyDriversLicense({
   return JSON.stringify(normalizedDl, Object.keys(normalizedDl).sort());
 }
 
+/** @deprecated Use Core's instead */
 export function normalizeSsn(ssn: string): string {
-  return stripNonNumericChars(ssn).slice(-9);
+  return normalizeSsnFromShared(ssn);
 }
 
 /**
