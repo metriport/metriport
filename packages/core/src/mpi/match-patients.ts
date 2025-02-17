@@ -111,11 +111,9 @@ export function jaroWinklerSimilarity(
   const similarityScores: { [key: string]: [number, string?, string?] } = {};
 
   const addScore = (field: string, value1: string, value2: string) => {
-    if (value1 && value2) {
-      const similarity = jaroWinkler(value1, value2);
-      similarityScores[field] = [similarity, value1, value2];
-      score += similarity;
-    }
+    const similarity = jaroWinkler(value1, value2);
+    similarityScores[field] = [similarity, value1, value2];
+    score += similarity;
     fieldCount += 1;
   };
 

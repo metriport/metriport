@@ -18,8 +18,8 @@ export function normalizeZipCodeNew(
   normalizeFn = normalizeZipCodeNewSafe
 ): string {
   const zipOrUndefined = normalizeFn(zipCode);
-  // if (!zipOrUndefined) throw new Error("Invalid Zip.");
-  return zipOrUndefined || zipCode;
+  if (!zipOrUndefined) throw new Error("Invalid Zip.");
+  return zipOrUndefined;
 }
 
 // TODO 2330 Move/merge this to normalizeZipCodeSafe

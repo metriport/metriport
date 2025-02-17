@@ -102,7 +102,7 @@ export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T
  * @returns a normalized version of the input string.
  */
 function normalizeString(str: string): string {
-  return str.trim().toLowerCase().replace(/[-]/g, " ").replace(/[']/g, "");
+  return str.trim().toLowerCase(); //.replace(/['-]/g, "");
 }
 
 /**
