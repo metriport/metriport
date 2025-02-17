@@ -1,4 +1,3 @@
-import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import {
@@ -17,6 +16,7 @@ import {
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import {
+  normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
@@ -184,7 +184,7 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    const email = normalizeEmail(c.email);
+    const email = normalizeEmailNewSafe(c.email);
     if (!email) return [];
     return [email];
   });
@@ -306,15 +306,6 @@ export function normalizeAddress({
 
 export function stringifyAddress(normalizedAddress: LinkGenericAddress): string {
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
-}
-
-export function normalizeEmail(email: string): string | undefined {
-  let normalEmail = email.trim().toLowerCase();
-  if (normalEmail.startsWith("mailto:")) {
-    normalEmail = normalEmail.slice(7);
-  }
-  const validEmail = emailSchema.safeParse(normalEmail);
-  return validEmail.success ? normalEmail : undefined;
 }
 
 export function normalizeAndStringifyDriversLicense({

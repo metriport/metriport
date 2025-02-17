@@ -9,7 +9,6 @@ import {
   normalizeAndStringifyDriversLicense,
   normalizeAndStringifyNames,
   normalizeDob,
-  normalizeEmail,
   patientToNormalizedCoreDemographics,
   stringifyAddress,
 } from "../patient-demographics";
@@ -114,29 +113,6 @@ describe("normalization", () => {
       const result = stringifyAddress(expectedAddress);
       expect(result).toBe(JSON.stringify(expectedAddress, Object.keys(expectedAddress).sort()));
     });
-  });
-
-  describe("normalizeEmail", () => {
-    const emailValid = "john.smith@gmail.com";
-    const emailsToCheck = [
-      emailValid,
-      " john.smith@gmail.com ",
-      "JOHN.SMITH@GMAIL.COM",
-      "mailto:john.smith@gmail.com",
-    ];
-    for (const email of emailsToCheck) {
-      it(`email: ${email}`, async () => {
-        const result = normalizeEmail(email);
-        expect(result).toBe(emailValid);
-      });
-    }
-    const emailsToCheckInvalid = ["john:smith@gmail.com"];
-    for (const email of emailsToCheckInvalid) {
-      it(`email: ${email}`, async () => {
-        const result = normalizeEmail(email);
-        expect(result).toBe(undefined);
-      });
-    }
   });
 
   describe("normalizeAndStringifyDriversLicense", () => {

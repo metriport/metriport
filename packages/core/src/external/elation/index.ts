@@ -1,67 +1,61 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  appointmentsGetResponseSchema,
+  Appointments,
+  appointmentsSchema,
+  BookedAppointment,
+  bookedAppointmentSchema,
+  elationClientJwtTokenResponseSchema,
   Metadata,
   Patient,
   patientSchema,
 } from "@metriport/shared/interface/external/elation/index";
 import axios, { AxiosInstance } from "axios";
-import { createHivePartitionFilePath } from "../../domain/filename";
-import { Config } from "../../util/config";
-import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
-import { capture } from "../../util/notifications";
-import { uuidv7 } from "../../util/uuid-v7";
-import { S3Utils } from "../aws/s3";
+import {
+  ApiConfig,
+  createDataParams,
+  formatDate,
+  makeRequest,
+  MakeRequestParamsInEhr,
+} from "../shared/ehr";
 
-interface ApiConfig {
-  twoLeggedAuthToken?: string | undefined;
-  practiceId: string;
+interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
-  clientKey: string;
-  clientSecret: string;
 }
 
-const region = Config.getAWSRegion();
-const responsesBucket = Config.getEhrResponsesBucketName();
 const elationDateFormat = "YYYY-MM-DD";
 
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
-
-export type ElationEnv = "app" | "sandbox";
+const elationEnv = ["app", "sandbox"] as const;
+export type ElationEnv = (typeof elationEnv)[number];
 export function isElationEnv(env: string): env is ElationEnv {
-  return env === "app" || env === "sandbox";
+  return elationEnv.includes(env as ElationEnv);
 }
-
-type BookedAppointment = {
-  patient: string;
-};
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
   private baseUrl: string;
-  private twoLeggedAuthToken: string | undefined;
+  private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   private practiceId: string;
-  private s3Utils: S3Utils;
 
-  private constructor(private config: ApiConfig) {
-    this.twoLeggedAuthToken = config.twoLeggedAuthToken;
+  private constructor(private config: ElationApiConfig) {
+    this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
     this.practiceId = config.practiceId;
-    this.s3Utils = getS3UtilsInstance();
     this.axiosInstance = axios.create({});
     this.baseUrl = `https://${config.environment}.elationemr.com/api/2.0`;
   }
 
-  public static async create(config: ApiConfig): Promise<ElationApi> {
+  public static async create(config: ElationApiConfig): Promise<ElationApi> {
     const instance = new ElationApi(config);
     await instance.initialize();
     return instance;
   }
 
-  private async fetchTwoLeggedAuthToken(): Promise<string> {
+  getTwoLeggedAuthTokenInfo(): JwtTokenInfo | undefined {
+    return this.twoLeggedAuthTokenInfo;
+  }
+
+  private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
     const url = `${this.baseUrl}/oauth2/token/`;
     const data = {
       grant_type: "client_credentials",
@@ -70,10 +64,15 @@ class ElationApi {
     };
 
     try {
-      const response = await axios.post(url, this.createDataParams(data), {
+      const response = await axios.post(url, createDataParams(data), {
         headers: { "content-type": "application/x-www-form-urlencoded" },
       });
-      return response.data.access_token;
+      if (!response.data) throw new MetriportError("No body returned from token endpoint");
+      const tokenData = elationClientJwtTokenResponseSchema.parse(response.data);
+      return {
+        access_token: tokenData.access_token,
+        exp: new Date(Date.now() + +tokenData.expires_in * 1000),
+      };
     } catch (error) {
       throw new MetriportError("Failed to fetch Two Legged Auth token @ Elation", undefined, {
         error: errorToString(error),
@@ -83,9 +82,12 @@ class ElationApi {
 
   async initialize(): Promise<void> {
     const { log } = out(`Elation initialize - practiceId ${this.practiceId}`);
-    if (!this.twoLeggedAuthToken) {
+    if (!this.twoLeggedAuthTokenInfo) {
       log(`Two Legged Auth token not found @ Elation - fetching new token`);
-      this.twoLeggedAuthToken = await this.fetchTwoLeggedAuthToken();
+      this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
+    } else if (this.twoLeggedAuthTokenInfo.exp < buildDayjs().subtract(15, "minutes").toDate()) {
+      log(`Two Legged Auth token expired @ Elation - fetching new token`);
+      this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
     } else {
       log(`Two Legged Auth token found @ Elation - using existing token`);
     }
@@ -93,82 +95,29 @@ class ElationApi {
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
       headers: {
-        Authorization: `Bearer ${this.twoLeggedAuthToken}`,
+        Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
         "content-type": "application/x-www-form-urlencoded",
       },
     });
   }
 
-  async getPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<Patient | undefined> {
-    const { log, debug } = out(
-      `Elation get patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
+    const { debug } = out(
+      `Elation getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/patients/${patientId}/`;
-    try {
-      const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-      const response = await this.axiosInstance.get(patientUrl);
-      if (!response.data) {
-        throw new MetriportError(`No body returned from ${patientUrl}`, undefined, additionalInfo);
-      }
-      debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = this.buildS3Path("patient", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ Elation - getPatient"));
-      }
-      const patient = patientSchema.safeParse(response.data);
-      if (!patient.success) {
-        const error = patient.error;
-        const msg = "Patient from Elation could not be parsed";
-        log(`${msg} - error ${errorToString(error)}`);
-        capture.message(msg, {
-          extra: {
-            url: patientUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            error,
-            context: "elation.get-patient",
-          },
-          level: "info",
-        });
-        return undefined;
-      }
-      return patient.data;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.response?.status === 404) return undefined;
-      const msg = `Failure while getting patient @ Elation`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: patientUrl,
-          cxId,
-          practiceId: this.practiceId,
-          patientId,
-          context: "elation.get-patient",
-          error,
-        },
-      });
-      throw error;
-    }
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const patient = await this.makeRequest<Patient>({
+      cxId,
+      patientId,
+      s3Path: "patient",
+      method: "GET",
+      url: patientUrl,
+      schema: patientSchema,
+      additionalInfo,
+      debug,
+    });
+    return patient;
   }
 
   async updatePatientMetadata({
@@ -179,79 +128,25 @@ class ElationApi {
     cxId: string;
     patientId: string;
     metadata: Metadata;
-  }): Promise<Patient | undefined> {
-    const { log, debug } = out(
-      `Elation update patient metadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+  }): Promise<Patient> {
+    const { debug } = out(
+      `Elation updatePatientMetadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/patients/${patientId}/`;
-    try {
-      const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-      const response = await this.axiosInstance.patch(
-        patientUrl,
-        { metadata },
-        {
-          headers: {
-            ...this.axiosInstance.defaults.headers.common,
-            "content-type": "application/json",
-          },
-        }
-      );
-      if (!response.data) {
-        throw new MetriportError(`No body returned from ${patientUrl}`, undefined, additionalInfo);
-      }
-      debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = this.buildS3Path("patient-update-metadata", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ Elation - updatePatient"));
-      }
-      const patient = patientSchema.safeParse(response.data);
-      if (!patient.success) {
-        const error = patient.error;
-        const msg = "Patient from Elation could not be parsed";
-        log(`${msg} - error ${errorToString(error)}`);
-        capture.message(msg, {
-          extra: {
-            url: patientUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            error,
-            context: "elation.update-patient",
-          },
-          level: "info",
-        });
-        return undefined;
-      }
-      return patient.data;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.response?.status === 404) return undefined;
-      const msg = `Failure while updating patient @ Elation`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: patientUrl,
-          cxId,
-          practiceId: this.practiceId,
-          patientId,
-          context: "elation.update-patient",
-          error,
-        },
-      });
-      throw error;
-    }
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const patient = await this.makeRequest<Patient>({
+      cxId,
+      patientId,
+      s3Path: "patient-update-metadata",
+      method: "PATCH",
+      url: patientUrl,
+      data: { metadata },
+      headers: { "content-type": "application/json" },
+      schema: patientSchema,
+      additionalInfo,
+      debug,
+    });
+    return patient;
   }
 
   async getAppointments({
@@ -263,89 +158,65 @@ class ElationApi {
     fromDate: Date;
     toDate: Date;
   }): Promise<BookedAppointment[]> {
-    const { log, debug } = out(
-      `Elation get appointments - cxId ${cxId} practiceId ${this.practiceId}`
-    );
+    const { debug } = out(`Elation getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
     const params = {
       from_date: this.formatDate(fromDate.toISOString()) ?? "",
       to_date: this.formatDate(toDate.toISOString()) ?? "",
     };
     const urlParams = new URLSearchParams(params);
     const appointmentUrl = `/appointments/?${urlParams.toString()}`;
-    try {
-      const additionalInfo = {
-        cxId,
-        practiceId: this.practiceId,
-        fromDate: fromDate.toISOString(),
-        toDate: toDate.toISOString(),
-      };
-      const response = await this.axiosInstance.get(appointmentUrl);
-      if (!response.data) {
-        throw new MetriportError(
-          `No body returned from ${appointmentUrl}`,
-          undefined,
-          additionalInfo
-        );
-      }
-      debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId: "global",
-          date: new Date(),
-        });
-        const key = this.buildS3Path("appointments", filePath);
-        this.s3Utils
-          .uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify(response.data), "utf8"),
-            contentType: "application/json",
-          })
-          .catch(processAsyncError("Error saving to s3 @ Elation - getAppointments"));
-      }
-      const outcome = appointmentsGetResponseSchema.safeParse(response.data);
-      if (!outcome.success) {
-        throw new MetriportError("Appointments not parsed", undefined, {
-          ...additionalInfo,
-          error: errorToString(outcome.error),
-        });
-      }
-      return outcome.data.results.filter(
-        app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
-      ) as BookedAppointment[];
-    } catch (error) {
-      const msg = `Failure while getting appointments @ Elation`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          url: appointmentUrl,
-          cxId,
-          practiceId: this.practiceId,
-          context: "elation.get-appointments",
-          error,
-        },
-      });
-      throw error;
-    }
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      fromDate: fromDate.toISOString(),
+      toDate: toDate.toISOString(),
+    };
+    const appointments = await this.makeRequest<Appointments>({
+      cxId,
+      s3Path: "appointments",
+      method: "GET",
+      url: appointmentUrl,
+      schema: appointmentsSchema,
+      additionalInfo,
+      debug,
+    });
+    const bookedAppointments = appointments.results.filter(
+      app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
+    );
+    return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
   }
 
-  private createDataParams(data: { [key: string]: string | undefined }): string {
-    return Object.entries(data)
-      .flatMap(([k, v]) => (v ? [`${k}=${v}`] : []))
-      .join("&");
+  private async makeRequest<T>({
+    cxId,
+    patientId,
+    s3Path,
+    url,
+    method,
+    data,
+    headers,
+    schema,
+    additionalInfo,
+    debug,
+  }: MakeRequestParamsInEhr<T>): Promise<T> {
+    return await makeRequest<T>({
+      ehr: "elation",
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      s3Path,
+      axiosInstance: this.axiosInstance,
+      url,
+      method,
+      data,
+      headers,
+      schema,
+      additionalInfo,
+      debug,
+    });
   }
 
   private formatDate(date: string | undefined): string | undefined {
-    if (!date) return undefined;
-    const trimmedDate = date.trim();
-    const parsedDate = buildDayjs(trimmedDate);
-    if (!parsedDate.isValid()) return undefined;
-    return parsedDate.format(elationDateFormat);
-  }
-
-  private buildS3Path(method: string, key: string): string {
-    return `elation/${method}/${key}/${uuidv7()}.json`;
+    return formatDate(date, elationDateFormat);
   }
 }
 
