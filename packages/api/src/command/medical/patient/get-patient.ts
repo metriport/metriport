@@ -135,7 +135,7 @@ function getPatientsSharedQueryUntilFTS(
         search_criteria @@ websearch_to_tsquery('english', :filters) 
         OR external_id = :filters 
         OR id = :filters
-        OR facility_ids && (select array_agg(id) from facility where name = :filters or id = :filters)
+        OR facility_ids && (select array_agg(id) from facility where data->>'name' ilike '%' || :filters || '%' or id = :filters)
       )`
       : "");
 
