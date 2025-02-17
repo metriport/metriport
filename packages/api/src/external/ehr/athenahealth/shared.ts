@@ -15,7 +15,11 @@ import {
 } from "@metriport/shared";
 import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrClienUniqueClientParams, EhrEnvAndClientCredentials } from "../shared";
+import {
+  createEhrClient,
+  EhrClientUniqueClientParams,
+  EhrEnvAndClientCredentials,
+} from "../shared";
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
@@ -109,13 +113,12 @@ function getAthenaEnv(): EhrEnvAndClientCredentials<AthenaEnv> {
 }
 
 export async function createAthenaClient(
-  unqiueParams: EhrClienUniqueClientParams
+  unqiueParams: EhrClientUniqueClientParams
 ): Promise<AthenaHealthApi> {
-  return await createEhrClient<undefined, AthenaEnv, AthenaHealthApi>({
+  return await createEhrClient<AthenaEnv, AthenaHealthApi>({
     ...unqiueParams,
     source: athenaClientJwtTokenSource,
-    getEnv: getAthenaEnv,
-    getEnvParams: undefined,
+    getEnv: { params: undefined, getEnv: getAthenaEnv },
     getClient: AthenaHealthApi.create,
   });
 }

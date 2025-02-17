@@ -13,7 +13,11 @@ import {
 } from "@metriport/shared";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrClienUniqueClientParams, EhrEnvAndClientCredentials } from "../shared";
+import {
+  createEhrClient,
+  EhrClientUniqueClientParams,
+  EhrEnvAndClientCredentials,
+} from "../shared";
 
 export const elationClientJwtTokenSource = "elation-client";
 
@@ -74,7 +78,7 @@ export function createNames(patient: ElationPatient): { firstName: string; lastN
 function getElationEnv({
   cxId,
   practiceId,
-}: EhrClienUniqueClientParams): EhrEnvAndClientCredentials<ElationEnv> {
+}: EhrClientUniqueClientParams): EhrEnvAndClientCredentials<ElationEnv> {
   const environment = Config.getElationEnv();
   if (!environment) throw new MetriportError("Elation environment not set");
   if (!isElationEnv(environment)) {
@@ -97,13 +101,12 @@ function getElationEnv({
 }
 
 export async function createElationClient(
-  unqiueParams: EhrClienUniqueClientParams
+  uniqueParams: EhrClientUniqueClientParams
 ): Promise<ElationApi> {
-  return await createEhrClient<EhrClienUniqueClientParams, ElationEnv, ElationApi>({
-    ...unqiueParams,
+  return await createEhrClient<ElationEnv, ElationApi, EhrClientUniqueClientParams>({
+    ...uniqueParams,
     source: elationClientJwtTokenSource,
-    getEnv: getElationEnv,
-    getEnvParams: unqiueParams,
+    getEnv: { params: uniqueParams, getEnv: getElationEnv },
     getClient: ElationApi.create,
   });
 }

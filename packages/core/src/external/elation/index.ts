@@ -17,7 +17,7 @@ import {
   createDataParams,
   formatDate,
   makeRequest,
-  MakeRequestParamsFromMethod,
+  MakeRequestParamsInEhr,
 } from "../shared/ehr";
 
 interface ElationApiConfig extends ApiConfig {
@@ -197,7 +197,7 @@ class ElationApi {
     schema,
     additionalInfo,
     debug,
-  }: MakeRequestParamsFromMethod<T>): Promise<T> {
+  }: MakeRequestParamsInEhr<T>): Promise<T> {
     return await makeRequest<T>({
       ehr: "elation",
       cxId,

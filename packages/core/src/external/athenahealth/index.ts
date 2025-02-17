@@ -65,7 +65,7 @@ import {
   createDataParams,
   formatDate,
   makeRequest,
-  MakeRequestParamsFromMethod,
+  MakeRequestParamsInEhr,
 } from "../shared/ehr";
 
 const parallelRequests = 5;
@@ -533,9 +533,6 @@ class AthenaHealthApi {
         level: "warning",
       });
     }
-    if (allCreatedVitals.length === 0) {
-      throw new MetriportError("No vitals created", undefined, additionalInfo);
-    }
     return allCreatedVitals;
   }
 
@@ -779,7 +776,7 @@ class AthenaHealthApi {
     additionalInfo,
     debug,
     useFhir = false,
-  }: MakeRequestParamsFromMethod<T> & { useFhir?: boolean }): Promise<T> {
+  }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhir : this.axiosInstanceProprietary;
     return await makeRequest<T>({
       ehr: "athenahealth",

@@ -89,23 +89,29 @@ async function getLatestClientJwtTokenInfo({
   };
 }
 
-export type EhrClienUniqueClientParams = { cxId: string; practiceId: string };
+export type EhrClientUniqueClientParams = { cxId: string; practiceId: string };
+export type GetEnv<Env extends EhrEnv, EnvArgs> = {
+  params: EnvArgs;
+  getEnv: (params: EnvArgs) => EhrEnvAndClientCredentials<Env>;
+};
 
-export async function createEhrClient<EnvArgs, Env extends EhrEnv, Client extends EhrClient>({
+export async function createEhrClient<
+  Env extends EhrEnv,
+  Client extends EhrClient,
+  EnvArgs = undefined
+>({
   cxId,
   practiceId,
   source,
   getEnv,
-  getEnvParams,
   getClient,
-}: EhrClienUniqueClientParams & {
+}: EhrClientUniqueClientParams & {
   source: EhrClientJwtTokenSource;
-  getEnv: (params: EnvArgs) => EhrEnvAndClientCredentials<Env>;
-  getEnvParams: EnvArgs;
+  getEnv: GetEnv<Env, EnvArgs>;
   getClient: (params: EhrClientParams<Env>) => Promise<Client>;
 }): Promise<Client> {
   const [environment, twoLeggedAuthTokenInfo] = await Promise.all([
-    getEnv(getEnvParams),
+    getEnv.getEnv(getEnv.params),
     getLatestClientJwtTokenInfo({ cxId, practiceId, source }),
   ]);
   const client = await getClient({

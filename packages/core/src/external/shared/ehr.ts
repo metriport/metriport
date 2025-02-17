@@ -59,7 +59,7 @@ export type MakeRequestParams<T> = {
   debug: typeof console.log;
 };
 
-export type MakeRequestParamsFromMethod<T> = Omit<
+export type MakeRequestParamsInEhr<T> = Omit<
   MakeRequestParams<T>,
   "ehr" | "axiosInstance" | "responsesBucket" | "s3Utils"
 >;
