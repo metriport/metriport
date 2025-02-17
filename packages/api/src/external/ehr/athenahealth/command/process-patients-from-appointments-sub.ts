@@ -57,7 +57,11 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
       const msg = "CxMapping departmentIds is malformed @ AthenaHealth";
-      log(`${msg}. cxId ${cxId} practiceId ${practiceId}`);
+      log(
+        `${msg}. cxId ${cxId} practiceId ${practiceId} departmentIds ${JSON.stringify(
+          departmentIds
+        )}`
+      );
       throw new MetriportError(msg, undefined, {
         cxId,
         practiceId,

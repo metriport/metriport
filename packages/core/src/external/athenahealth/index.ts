@@ -278,11 +278,10 @@ class AthenaHealthApi {
     });
     const entry = patientSearch.entry;
     if (entry.length > 1) {
-      throw new BadRequestError(
-        "More than one patients found in search",
-        undefined,
-        additionalInfo
-      );
+      throw new BadRequestError("More than one patients found in search", undefined, {
+        ...additionalInfo,
+        patientSearch: patientSearch.entry.map(e => JSON.stringify(e.resource)).join(","),
+      });
     }
     const patient = entry[0]?.resource;
     if (!patient) throw new NotFoundError("No patient found in search", undefined, additionalInfo);
@@ -349,7 +348,7 @@ class AthenaHealthApi {
       debug,
     });
     if (!createdMedication.success) {
-      throw new MetriportError("Medication creation not successful", undefined, {
+      throw new MetriportError("Medication creation failed", undefined, {
         ...additionalInfo,
         error: createdMedication.errormessage,
       });
@@ -412,7 +411,7 @@ class AthenaHealthApi {
       debug,
     });
     if (!createdProblem.success) {
-      throw new MetriportError("Problem creation not successful", undefined, {
+      throw new MetriportError("Problem creation failed", undefined, {
         ...additionalInfo,
         error: createdProblem.errormessage,
       });
@@ -505,7 +504,7 @@ class AthenaHealthApi {
             debug,
           });
           if (!createdVitals.success) {
-            throw new MetriportError("Vitals creation not successful", undefined, {
+            throw new MetriportError("Vitals creation failed", undefined, {
               ...additionalInfo,
               error: createdVitals.errormessage,
             });
@@ -582,7 +581,7 @@ class AthenaHealthApi {
       searchMedicationArgs,
       async (searchValue: string) => {
         try {
-          const medicationReferencese = await this.makeRequest<MedicationReferences>({
+          const medicationReferences = await this.makeRequest<MedicationReferences>({
             cxId,
             patientId,
             s3Path: `reference/medications/${searchValue}`,
@@ -592,7 +591,7 @@ class AthenaHealthApi {
             additionalInfo,
             debug,
           });
-          allMedicationReferences.push(...medicationReferencese);
+          allMedicationReferences.push(...medicationReferences);
         } catch (error) {
           log(
             `Failed to search for medication with search value ${searchValue}. Cause: ${errorToString(
@@ -653,7 +652,7 @@ class AthenaHealthApi {
       debug,
     });
     if (!createdSubscription.success) {
-      throw new MetriportError(`Subscription not successful`, undefined, additionalInfo);
+      throw new MetriportError(`Subscription failed`, undefined, additionalInfo);
     }
     return createdSubscriptionSuccessSchema.parse(createdSubscription);
   }
@@ -783,6 +782,7 @@ class AthenaHealthApi {
     return await makeRequest<T>({
       ehr: "athenahealth",
       cxId,
+      practiceId: this.practiceId,
       patientId,
       s3Path,
       axiosInstance,
