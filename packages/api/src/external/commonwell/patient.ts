@@ -17,19 +17,21 @@ import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import {
   createAugmentedPatient,
   getNewDemographics,
 } from "../../domain/medical/patient-demographics";
 import MetriportError from "../../errors/metriport-error";
-import { isEnhancedCoverageEnabledForCx, isDemoAugEnabledForCx } from "../aws/app-config";
+import { isDemoAugEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/app-config";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
+import { validateCwLinksBelongToPatient } from "../hie/validate-patient-links";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
@@ -38,7 +40,6 @@ import { updateCwPatientData } from "./command/cw-patient-data/update-cw-data";
 import { CwLink } from "./cw-patient-data";
 import { queryAndProcessDocuments } from "./document/document-query";
 import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "./link/shared";
-import { validateCwLinksBelongToPatient } from "../hie/validate-patient-links";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import {
   getPatientNetworkLinks,
@@ -56,7 +57,6 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator, validateCWEnabled } from "./shared";
-import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -343,9 +343,7 @@ async function updatePatientAndLinksInCw({
   try {
     const updateData = await setupPatient({ patient });
     if (!updateData) {
-      capture.message("Could not find external data on Patient, creating it @ CW", {
-        extra: { patientId: patient.id, context: updateContext },
-      });
+      log(`Could not find external data on Patient, creating it @ CW`);
       await registerAndLinkPatientInCW({
         patient,
         facilityId,

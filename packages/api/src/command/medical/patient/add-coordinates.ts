@@ -1,6 +1,6 @@
 import { Address, combineAddresses } from "@metriport/core/domain/address";
-import { capture } from "@metriport/core/util/notifications";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { capture } from "@metriport/core/util/notifications";
 import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/address";
 import { Config } from "../../../shared/config";
 
@@ -24,13 +24,15 @@ export async function addCoordinatesToAddresses({
   addresses,
   cxId,
   reportRelevance = false,
+  log,
 }: {
   addresses: Address[];
   cxId: string;
   reportRelevance?: boolean;
+  log?: typeof console.log;
 }): Promise<Address[] | undefined> {
   if (Config.isSandbox()) return;
-  const updatedAddresses = await addGeographicCoordinates(addresses, cxId, reportRelevance);
+  const updatedAddresses = await addGeographicCoordinates(addresses, cxId, reportRelevance, log);
   const addressesWithCoordinates = combineAddresses(updatedAddresses, addresses);
   return addressesWithCoordinates;
 }
@@ -39,14 +41,15 @@ export async function addCoordinatesToAddresses({
  * Generates geo coordinates for addresses that don't already have them. Reports relevance scores to the cx if requested.
  *
  * @param addressList a list of Address objects.
- * @param patient the patient's id and cxId.
+ * @param cxId the customer's ID.
  * @param reportRelevance optional, boolean to indicate whether to report a bad address to the cx. Defaults to false.
  * @returns a list of Address objects that got updated with coordinates.
  */
 async function addGeographicCoordinates(
   addressList: Address[],
   cxId: string,
-  reportRelevance = false
+  reportRelevance = false,
+  log?: typeof console.log
 ): Promise<Address[]> {
   const belowThreshold: AddressBelowThreshold[] = [];
 
@@ -96,7 +99,7 @@ async function addGeographicCoordinates(
   );
 
   if (reportRelevance && belowThreshold.length) {
-    reportLowRelevance(belowThreshold, cxId);
+    reportLowRelevance(belowThreshold, cxId, log);
   }
 
   const updatedAddresses = results.flatMap(p => {
@@ -112,9 +115,13 @@ async function addGeographicCoordinates(
  * @param addresses - a list of Address objects with low relevance scores.
  * @param cxId - the customer ID.
  */
-export function reportLowRelevance(addresses: AddressGeocodingResult[], cxId: string): void {
+export function reportLowRelevance(
+  addresses: AddressGeocodingResult[],
+  cxId: string,
+  log: typeof console.log = console.log
+): void {
   const msg = `Low address match coefficient`;
-  console.log(`${msg}. Addresses: ${JSON.stringify(addresses)}`);
+  log(`${msg}. Addresses: ${JSON.stringify(addresses)}`);
   capture.message(msg, {
     extra: {
       context: `getCoordinatesFromLocation`,

@@ -290,7 +290,11 @@ class AthenaHealthApi {
     });
     const entry = patientSearch.entry;
     if (entry.length > 1) {
-      throw new MetriportError("More than one patient found in search", undefined, additionalInfo);
+      throw new BadRequestError(
+        "More than one patients found in search",
+        undefined,
+        additionalInfo
+      );
     }
     const patient = entry[0]?.resource;
     if (!patient) throw new NotFoundError("No patient found in search", undefined, additionalInfo);
@@ -326,7 +330,11 @@ class AthenaHealthApi {
     });
     const firstOption = medicationOptions[0];
     if (!firstOption) {
-      throw new MetriportError("No medication options found via search", undefined, additionalInfo);
+      throw new BadRequestError(
+        "No medication options found via search",
+        undefined,
+        additionalInfo
+      );
     }
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
@@ -344,7 +352,7 @@ class AthenaHealthApi {
     const createdMedication = await this.makeRequest<CreatedMedication>({
       cxId,
       patientId,
-      s3Path: "chart/medication",
+      s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
       method: "POST",
       data,
       url: chartMedicationUrl,
@@ -407,7 +415,7 @@ class AthenaHealthApi {
     const createdProblem = await this.makeRequest<CreatedProblem>({
       cxId,
       patientId,
-      s3Path: "chart/problem",
+      s3Path: `chart/problem/${additionalInfo.conditionId ?? "unknown"}`,
       method: "POST",
       data,
       url: chartProblemUrl,
@@ -478,11 +486,9 @@ class AthenaHealthApi {
     const allCreatedVitals: CreatedVitalsSuccess[] = [];
     const createVitalsErrors: {
       error: unknown;
-      cxId: string;
-      practiceId: string;
-      patientId: string;
-      departmentId: string;
-      observationId: string | undefined;
+      departmentid: string;
+      source: string;
+      vitals: string;
     }[] = [];
     const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
       const vitalsData = this.createVitalsData(v, clinicalElementId, units);
@@ -502,7 +508,7 @@ class AthenaHealthApi {
           const createdVitals = await this.makeRequest<CreatedVitals>({
             cxId,
             patientId,
-            s3Path: `chart/vitals/${observation.id ?? "unknown"}`,
+            s3Path: `chart/vitals/${additionalInfo.observationId ?? "unknown"}`,
             method: "POST",
             data: params,
             url: chartVitalsUrl,
@@ -518,7 +524,9 @@ class AthenaHealthApi {
           }
           allCreatedVitals.push(createdVitalsSuccessSchema.parse(createdVitals));
         } catch (error) {
-          createVitalsErrors.push({ error, ...additionalInfo });
+          const vitalsToString = JSON.stringify(params.vitals);
+          log(`Failed to create vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
+          createVitalsErrors.push({ error, ...params, vitals: vitalsToString });
         }
       },
       {
@@ -527,21 +535,14 @@ class AthenaHealthApi {
       }
     );
     if (createVitalsErrors.length > 0) {
-      const errorsToString = createVitalsErrors
-        .map(
-          e =>
-            `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${e.patientId} departmentId ${
-              e.departmentId
-            } observationId ${e.observationId}. Cause: ${errorToString(e.error)}`
-        )
-        .join(", ");
       const msg = `Failure while creating some vitals @ AthenaHealth`;
-      log(`${msg}. ${errorsToString}`);
       capture.message(msg, {
         extra: {
           ...additionalInfo,
-          context: "athenahealth.create-vitals",
+          createVitalsArgsCount: createVitalsArgs.length,
+          createVitalsErrorsCount: createVitalsErrors.length,
           errors: createVitalsErrors,
+          context: "athenahealth.create-vitals",
         },
         level: "warning",
       });
@@ -590,13 +591,7 @@ class AthenaHealthApi {
       );
     }
     const allMedicationReferences: MedicationReference[] = [];
-    const searchMedicationErrors: {
-      error: unknown;
-      cxId: string;
-      practiceId: string;
-      patientId: string;
-      medicationId: string | undefined;
-    }[] = [];
+    const searchMedicationErrors: { error: unknown; searchValue: string }[] = [];
     const searchMedicationArgs: string[] = searchValuesWithAtLeastTwoParts;
     await executeAsynchronously(
       searchMedicationArgs,
@@ -614,7 +609,12 @@ class AthenaHealthApi {
           });
           allMedicationReferences.push(...medicationReferencese);
         } catch (error) {
-          searchMedicationErrors.push({ error, ...additionalInfo });
+          log(
+            `Failed to search for medication with search value ${searchValue}. Cause: ${errorToString(
+              error
+            )}`
+          );
+          searchMedicationErrors.push({ error, searchValue });
         }
       },
       {
@@ -623,21 +623,14 @@ class AthenaHealthApi {
       }
     );
     if (searchMedicationErrors.length > 0) {
-      const errorsToString = searchMedicationErrors
-        .map(
-          e =>
-            `cxId ${e.cxId} practiceId ${e.practiceId} patientId ${e.patientId} medicationId ${
-              e.medicationId
-            }. Cause: ${errorToString(e.error)}`
-        )
-        .join(", ");
       const msg = `Failure while searching for some medications @ AthenaHealth`;
-      log(`${msg}. ${errorsToString}`);
       capture.message(msg, {
         extra: {
           ...additionalInfo,
-          context: "athenahealth.search-for-medication",
+          searchMedicationArgsCount: searchMedicationArgs.length,
+          searchMedicationErrorsCount: searchMedicationErrors.length,
           errors: searchMedicationErrors,
+          context: "athenahealth.search-for-medication",
         },
         level: "warning",
       });
@@ -826,6 +819,7 @@ class AthenaHealthApi {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error instanceof AxiosError) {
+        const message = JSON.stringify(error.response?.data) ?? error.message;
         if (responsesBucket) {
           const filePath = createHivePartitionFilePath({
             cxId,
@@ -837,12 +831,11 @@ class AthenaHealthApi {
             .uploadFile({
               bucket: responsesBucket,
               key,
-              file: Buffer.from(JSON.stringify(error), "utf8"),
+              file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
               contentType: "application/json",
             })
             .catch(processAsyncError(`Error saving error to s3 @ AthenaHealth - ${method} ${url}`));
         }
-        const message = error.response?.data?.error ?? error.message;
         switch (error.response?.status) {
           case 400:
             throw new BadRequestError(message, undefined, {

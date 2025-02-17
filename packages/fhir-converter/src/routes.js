@@ -207,6 +207,7 @@ module.exports = function (app) {
     const patientId = req.query.patientId;
     const fileName = req.query.fileName;
     const startTime = new Date().getTime();
+    console.log(`[patient ${patientId}] Got file ${fileName} at ${new Date().toISOString()}`);
     workerPool
       .exec({
         type: "/api/convert/:srcDataType/:template",
@@ -214,9 +215,11 @@ module.exports = function (app) {
         srcDataType: req.params.srcDataType,
         templateName: req.params.template,
         patientId,
+        fileName,
       })
       .then(result => {
-        const duration = new Date().getTime() - startTime;
+        const internalDuration = result.duration;
+        const totalDuration = new Date().getTime() - startTime;
         const status = result.status ?? 400;
         const resultMessage = result.resultMsg;
         if (!retUnusedSegments) {
@@ -226,7 +229,8 @@ module.exports = function (app) {
           delete resultMessage["invalidAccess"];
         }
         console.log(
-          `[patient ${patientId}] Took ${duration}ms / status ${status} to process file ${fileName}`
+          `[patient ${patientId}] Took ${totalDuration}ms / status ${status} to process file ${fileName} ` +
+            `(internal: ${internalDuration}ms)`
         );
         res.status(status);
         res.json(resultMessage);
