@@ -2,8 +2,9 @@ import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
+import { errorToString, MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
 import { Patient as AthenaPatient } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
@@ -85,11 +86,16 @@ export async function syncAthenaPatientIntoMetriport({
   await executeAsynchronously(
     getPatientByDemoArgs,
     async (params: GetPatientByDemoParams) => {
+      const { log } = out(`AthenaHealth getPatientByDemo - cxId ${cxId}`);
       try {
         const patient = await getPatientByDemo(params);
         if (patient) patients.push(patient);
       } catch (error) {
-        getPatientByDemoErrors.push({ error, ...params, demos: JSON.stringify(params.demo) });
+        const demosToString = JSON.stringify(params.demo);
+        log(
+          `Failed to get patient by demo for demos ${demosToString}. Cause: ${errorToString(error)}`
+        );
+        getPatientByDemoErrors.push({ error, ...params, demos: demosToString });
       }
     },
     { numberOfParallelExecutions: parallelPatientMatches }
