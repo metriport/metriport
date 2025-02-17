@@ -2,15 +2,15 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
+import { capture } from "@metriport/core/util";
+import { errorToString } from "@metriport/shared/dist/error/shared";
 import httpStatus from "http-status";
 import { z } from "zod";
 import { getHieOverview } from "../../command/medical/admin/hie-overview";
 import { requestLogger } from "../helpers/request-logger";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom } from "../util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { unlinkPatientFromOrganization } from "../../command/hie/unlink-patient-from-organization";
-import { capture } from "../../shared/notifications";
-import { errorToString } from "@metriport/shared/dist/error/shared";
 
 dayjs.extend(duration);
 
@@ -44,7 +44,6 @@ router.get(
     return res.status(httpStatus.OK).json(response);
   })
 );
-
 /**
  * POST /internal/hie/unlink
  *
@@ -52,6 +51,7 @@ router.get(
  *
  * @param req.query.patientId - The patient's ID.
  * @param req.query.oid - The oid of the facility to unlink from.
+ * @param req.query.dryRun - If true, will only simulate the unlink operation.
  */
 
 router.post(
@@ -61,11 +61,13 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
     const oid = getFrom("query").orFail("oid", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
 
     unlinkPatientFromOrganization({
       cxId,
       patientId,
       oid,
+      dryRun,
     }).catch(err => {
       console.log(
         `Error unlinking patient from organization for cxId ${cxId}: ${errorToString(err)}`
@@ -78,6 +80,7 @@ router.post(
       cxId,
       patientId,
       oid,
+      dryRun,
     });
   })
 );

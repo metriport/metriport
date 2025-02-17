@@ -14,11 +14,13 @@ export async function updateCQPatientData({
   id,
   cxId,
   cqLinks,
+  invalidateLinks,
   requestLinksDemographics,
 }: {
   id: string;
   cxId: string;
   cqLinks?: CQLink[];
+  invalidateLinks?: CQLink[];
   requestLinksDemographics?: {
     requestId: string;
     linksDemographics: LinkDemographics[];
@@ -45,7 +47,12 @@ export async function updateCQPatientData({
       lock: true,
     });
 
-    return updateCQPatientDataWithinDBTx(cqPatientData, existingPatient, transaction);
+    return updateCQPatientDataWithinDBTx(
+      cqPatientData,
+      existingPatient,
+      transaction,
+      invalidateLinks
+    );
   });
   return updateResult.dataValues;
 }
@@ -53,11 +60,17 @@ export async function updateCQPatientData({
 export async function updateCQPatientDataWithinDBTx(
   update: CQPatientDataUpdate,
   existing: CQPatientDataModel,
-  transaction: Transaction
+  transaction: Transaction,
+  invalidateLinks?: CQLink[]
 ): Promise<CQPatientDataModel> {
   const { data: newData } = update;
   const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
-  const uniqueUpdatedLinks = uniqBy(updatedLinks, "oid");
+
+  const validLinks = invalidateLinks
+    ? updatedLinks.filter(link => !invalidateLinks.some(invalid => invalid.oid === link.oid))
+    : updatedLinks;
+
+  const uniqueUpdatedLinks = uniqBy(validLinks, "oid");
   const updatedLinkDemographicsHistory = {
     ...existing.data.linkDemographicsHistory,
     ...newData.linkDemographicsHistory,

@@ -7,18 +7,20 @@ import { CwPatientDataCreatePartial } from "../../cw-patient-data";
 import { CwLink, CwPatientData } from "../../cw-patient-data";
 import { CwPatientDataModel } from "../../models/cw-patient-data";
 import { getCwPatientDataOrFail } from "./get-cw-data";
-
+import { getLinkOid } from "../../shared";
 export type CwPatientDataUpdate = CwPatientDataCreatePartial & BaseUpdateCmdWithCustomer;
 
 export async function updateCwPatientData({
   id,
   cxId,
   cwLinks,
+  invalidateLinks,
   requestLinksDemographics,
 }: {
   id: string;
   cxId: string;
   cwLinks?: CwLink[];
+  invalidateLinks?: CwLink[];
   requestLinksDemographics?: {
     requestId: string;
     linksDemographics: LinkDemographics[];
@@ -45,7 +47,12 @@ export async function updateCwPatientData({
       lock: true,
     });
 
-    return updateCwPatientDataWithinDBTx(cwPatientData, existingPatient, transaction);
+    return updateCwPatientDataWithinDBTx(
+      cwPatientData,
+      existingPatient,
+      transaction,
+      invalidateLinks
+    );
   });
   return updateResult.dataValues;
 }
@@ -53,13 +60,17 @@ export async function updateCwPatientData({
 export async function updateCwPatientDataWithinDBTx(
   update: CwPatientDataUpdate,
   existing: CwPatientDataModel,
-  transaction: Transaction
+  transaction: Transaction,
+  invalidateLinks?: CwLink[]
 ): Promise<CwPatientDataModel> {
   const { data: newData } = update;
   const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
-  const uniqueUpdatedLinks = uniqBy(updatedLinks, function (nl) {
-    return nl.patient?.provider?.reference;
-  });
+
+  const validLinks = invalidateLinks
+    ? updatedLinks.filter(link => isLinkValid(link, invalidateLinks))
+    : updatedLinks;
+
+  const uniqueUpdatedLinks = uniqBy(validLinks, "oid");
   const updatedLinkDemographicsHistory = {
     ...existing.data.linkDemographicsHistory,
     ...newData.linkDemographicsHistory,
@@ -78,3 +89,9 @@ export async function updateCwPatientDataWithinDBTx(
     { transaction }
   );
 }
+
+const isLinkValid = (link: CwLink, invalidateLinks: CwLink[]): boolean => {
+  const linkOid = getLinkOid(link);
+  const isInvalid = invalidateLinks.some(invalidLink => getLinkOid(invalidLink) === linkOid);
+  return !isInvalid;
+};
