@@ -131,7 +131,13 @@ function getPatientsSharedQueryUntilFTS(
   const queryFTS =
     queryPatientIds +
     (fullTextSearchFilters
-      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filters) OR external_id = :filters OR id = :filters)`
+      ? ` AND (
+        search_criteria @@ websearch_to_tsquery('english', :filters) 
+        OR external_id = :filters 
+        OR id = :filters
+        OR id in (select patient_id from patient_mapping where external_id = :filters)
+        OR facility_ids && (select array_agg(id) from facility where name = :filters)
+      )`
       : "");
 
   return queryFTS;
