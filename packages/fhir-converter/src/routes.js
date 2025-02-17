@@ -207,6 +207,7 @@ module.exports = function (app) {
     const patientId = req.query.patientId;
     const fileName = req.query.fileName;
     const startTime = new Date().getTime();
+    console.log(`[patient ${patientId}] Got file ${fileName} at ${new Date().toISOString()}`);
     workerPool
       .exec({
         type: "/api/convert/:srcDataType/:template",
@@ -214,6 +215,7 @@ module.exports = function (app) {
         srcDataType: req.params.srcDataType,
         templateName: req.params.template,
         patientId,
+        fileName,
       })
       .then(result => {
         const internalDuration = result.duration;
