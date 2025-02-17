@@ -309,9 +309,6 @@ export function createAPIService({
           }),
           ...(props.config.ehrIntegration && {
             EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
-            EHR_ATHENA_CLIENT_KEY_ARN: props.config.ehrIntegration.athenaHealth.athenaClientKeyArn,
-            EHR_ATHENA_CLIENT_SECRET_ARN:
-              props.config.ehrIntegration.athenaHealth.athenaClientSecretArn,
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
           }),
           ...(!isSandbox(props.config) && {

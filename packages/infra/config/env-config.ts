@@ -230,8 +230,6 @@ type EnvConfigBase = {
   ehrIntegration?: {
     athenaHealth: {
       env: string;
-      athenaClientKeyArn: string;
-      athenaClientSecretArn: string;
       secrets: {
         EHR_ATHENA_CLIENT_KEY: string;
         EHR_ATHENA_CLIENT_SECRET: string;
