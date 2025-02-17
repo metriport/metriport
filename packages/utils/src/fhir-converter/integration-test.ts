@@ -85,6 +85,7 @@ type Params = {
 const options: ProcessingOptions = {
   hydrate: false,
   normalize: false,
+  processAttachments: false,
 };
 
 const program = new Command();
