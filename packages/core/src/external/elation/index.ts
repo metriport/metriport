@@ -216,6 +216,12 @@ class ElationApi {
     debug: typeof console.log;
   }): Promise<T> {
     const isJsonContentType = headers?.["content-type"] === "application/json";
+    const additionalInfoWithMethodAndUrlAndContext = {
+      ...additionalInfo,
+      method,
+      url,
+      context: "elation.make-request",
+    };
     let response: AxiosResponse;
     try {
       response = await this.axiosInstance.request({
@@ -252,31 +258,17 @@ class ElationApi {
             })
             .catch(processAsyncError(`Error saving error to s3 @ Elation - ${method} ${url}`));
         }
+        const additionalInfoWithError = {
+          ...additionalInfoWithMethodAndUrlAndContext,
+          error: errorToString(error),
+        };
         switch (error.response?.status) {
           case 400:
-            throw new BadRequestError(message, undefined, {
-              ...additionalInfo,
-              method,
-              url,
-              context: "elation.make-request",
-              error: errorToString(error),
-            });
+            throw new BadRequestError(message, undefined, additionalInfoWithError);
           case 404:
-            throw new NotFoundError(message, undefined, {
-              ...additionalInfo,
-              method,
-              url,
-              context: "elation.make-request",
-              error: errorToString(error),
-            });
+            throw new NotFoundError(message, undefined, additionalInfoWithError);
           default:
-            throw new MetriportError(message, undefined, {
-              ...additionalInfo,
-              method,
-              url,
-              context: "elation.make-request",
-              error: errorToString(error),
-            });
+            throw new MetriportError(message, undefined, additionalInfoWithError);
         }
       }
       throw error;
@@ -284,12 +276,7 @@ class ElationApi {
     if (!response.data) {
       const msg = `No body returned @ Elation`;
       log(msg);
-      throw new MetriportError(msg, undefined, {
-        ...additionalInfo,
-        method,
-        url,
-        context: "elation.make-request",
-      });
+      throw new MetriportError(msg, undefined, additionalInfoWithMethodAndUrlAndContext);
     }
     const body = response.data;
     debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
@@ -314,10 +301,8 @@ class ElationApi {
       const msg = `Response not parsed @ Elation`;
       log(`${msg}. Schema: ${schema.description}`);
       throw new MetriportError(msg, undefined, {
-        ...additionalInfo,
-        method,
-        url,
-        context: "elation.make-request",
+        ...additionalInfoWithMethodAndUrlAndContext,
+        schema: schema.description,
         error: errorToString(outcome.error),
       });
     }
