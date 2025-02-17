@@ -10,7 +10,7 @@ import {
   Patient as PatientFhir,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import {
   Appointments,
   appointmentsSchema,
@@ -18,20 +18,10 @@ import {
   bookedAppointmentSchema,
   canvasClientJwtTokenResponseSchema,
 } from "@metriport/shared/interface/external/canvas/index";
-import {
-  Patient as PatientApi,
-  patientFhirSchema,
-  PatientWithValidHomeAddress,
-} from "@metriport/shared/interface/external/shared/ehr/patient";
+import { Patient, patientSchema } from "@metriport/shared/interface/external/shared/ehr/patient";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { out } from "../../util/log";
-import {
-  ApiConfig,
-  formatDate,
-  makeRequest,
-  MakeRequestParamsFromMethod,
-  parsePatientFhir,
-} from "../shared/ehr";
+import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared/ehr";
 
 const RXNORM_SYSTEM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 
@@ -330,37 +320,24 @@ class CanvasApi {
     return response.data;
   }
 
-  async getPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientWithValidHomeAddress> {
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `Elation getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/Patient/${patientId}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const patient = await this.makeRequest<PatientApi>({
+    const patient = await this.makeRequest<Patient>({
       cxId,
       patientId,
       s3Path: "patient",
       method: "GET",
       url: patientUrl,
-      schema: patientFhirSchema,
+      schema: patientSchema,
       additionalInfo,
       debug,
       useFhir: true,
     });
-    try {
-      return parsePatientFhir(patient);
-    } catch (error) {
-      throw new BadRequestError("Failed to parse patient", undefined, {
-        ...additionalInfo,
-        error: errorToString(error),
-      });
-    }
+    return patient;
   }
 
   async getAppointments({
@@ -373,15 +350,13 @@ class CanvasApi {
     toDate: Date;
   }): Promise<BookedAppointment[]> {
     const { debug } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
-    const params = { status: "booked" };
+    const params = {
+      status: "booked",
+      ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
+      ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
+    };
     const urlParams = new URLSearchParams(params);
-    if (fromDate) {
-      urlParams.append("date", `ge${this.formatDate(fromDate.toISOString()) ?? ""}`);
-    }
-    if (toDate) {
-      urlParams.append("date", `lt${this.formatDate(toDate.toISOString()) ?? ""}`);
-    }
-    const appointmentUrl = `/appointments/booked/multipledepartment?${urlParams.toString()}`;
+    const appointmentUrl = `/Appointment?${urlParams.toString()}`;
     const additionalInfo = {
       cxId,
       practiceId: this.practiceId,
@@ -416,7 +391,7 @@ class CanvasApi {
     additionalInfo,
     debug,
     useFhir = false,
-  }: MakeRequestParamsFromMethod<T> & { useFhir?: boolean }): Promise<T> {
+  }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
     return await makeRequest<T>({
       ehr: "canvas",

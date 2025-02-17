@@ -1,16 +1,18 @@
 import { Coordinates } from "@metriport/core/domain/address";
 import { AddressStrict } from "@metriport/core/domain/location-address";
-import { Patient } from "@metriport/core/domain/patient";
+import { Patient, PatientData, GenderAtBirth } from "@metriport/core/domain/patient";
+import { Contact } from "@metriport/core/domain/contact";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
-import { PurposeOfUse } from "@metriport/shared";
+import { isEmailValid, isPhoneValid, PurposeOfUse, USStateForAddress } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { Config } from "../../shared/config";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
-
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { CQLink } from "./cq-patient-data";
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
@@ -179,3 +181,48 @@ export async function getCqAddress({
 export const cqOrgActiveSchema = z.object({
   active: z.boolean(),
 });
+
+export function cqLinkToPatientData(cqLink: CQLink): PatientData {
+  const patient = cqLink.patientResource;
+  const firstName = patient?.name.map(name => name.given).join(" ") ?? "";
+  const lastName = patient?.name.map(name => name.family).join(" ") ?? "";
+  const dob = patient?.birthDate ? buildDayjs(patient.birthDate).format(ISO_DATE) : "";
+  const genderAtBirth = cqGenderToPatientGender(patient?.gender);
+  const address =
+    patient?.address?.map(address => ({
+      zip: address.postalCode ?? "",
+      city: address.city ?? "",
+      state: address.state as USStateForAddress,
+      country: address.country ?? "",
+      addressLine1: address.line?.[0] ?? "",
+      addressLine2: address.line?.[1] ?? "",
+    })) ?? [];
+
+  const telecom: Contact[] = [];
+
+  if (patient?.telecom) {
+    patient.telecom.forEach(tel => {
+      const value = tel.value ?? "";
+      if (isPhoneValid(value)) {
+        telecom.push({ phone: value });
+      } else if (isEmailValid(value)) {
+        telecom.push({ email: value });
+      }
+    });
+  }
+
+  return {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    address,
+    contact: telecom,
+  };
+}
+
+export function cqGenderToPatientGender(gender: string | undefined): GenderAtBirth {
+  if (gender === "male") return "M";
+  if (gender === "female") return "F";
+  return "U";
+}

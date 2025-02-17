@@ -1,22 +1,20 @@
-import { SQSEvent } from "aws-lambda";
-import { errorToString, MetriportError } from "@metriport/shared";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
-import { ProcessPatientCreateEvemtPayload } from "@metriport/core/command/patient-import/patient-import-cloud";
 import {
-  ProcessPatientCreateRequest,
   PatientPayload,
-} from "@metriport/core/command/patient-import/patient-import";
-import {
-  parseCxIdAndJob,
-  parseJobStartedAt,
-  parseFacilityId,
-  parseTriggerConsolidated,
-  parseDisableWebhooks,
-  parseRerunPdOnNewDemos,
-} from "./shared/patient-import";
+  ProcessPatientCreateRequest,
+} from "@metriport/core/command/patient-import/steps/create/patient-import-create";
+import { PatientImportCreateHandlerLocal } from "@metriport/core/command/patient-import/steps/create/patient-import-create-local";
+import { errorToString, MetriportError } from "@metriport/shared";
+import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import {
+  parseCxIdAndJob,
+  parseDisableWebhooksOrFail,
+  parseFacilityId,
+  parseRerunPdOnNewDemos,
+  parseTriggerConsolidatedOrFail,
+} from "./shared/patient-import";
 import { getSingleMessageOrFail } from "./shared/sqs";
 
 // Keep this as early on the file as possible
@@ -26,7 +24,6 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
-const processPatientQueryQueue = getEnvOrFail("PATIENT_QUERY_QUEUE_URL");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
@@ -45,7 +42,6 @@ export async function handler(event: SQSEvent) {
       cxId,
       facilityId,
       jobId,
-      jobStartedAt,
       patientPayload,
       triggerConsolidated,
       disableWebhooks,
@@ -57,31 +53,30 @@ export async function handler(event: SQSEvent) {
       log(
         `Parsed: ${JSON.stringify(
           parsedBody
-        )}, patientImportBucket ${patientImportBucket}, processPatientQueryQueue ${processPatientQueryQueue}, waitTimeInMillis ${waitTimeInMillis}`
+        )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
       );
 
       const processPatientCreateRequest: ProcessPatientCreateRequest = {
         cxId,
         facilityId,
         jobId,
-        jobStartedAt,
-        s3BucketName: patientImportBucket,
         patientPayload,
-        processPatientQueryQueue,
         triggerConsolidated,
         disableWebhooks,
         rerunPdOnNewDemographics,
-        waitTimeInMillis,
       };
+      const patientImportHandler = new PatientImportCreateHandlerLocal(
+        patientImportBucket,
+        waitTimeInMillis
+      );
 
-      const patientImportHandler = makePatientImportHandler();
       await patientImportHandler.processPatientCreate(processPatientCreateRequest);
 
       const finishedAt = new Date().getTime();
-      console.log(`Done local duration: ${finishedAt - startedAt}ms`);
+      log(`Done local duration: ${finishedAt - startedAt}ms`);
     } catch (error) {
       errorHandled = true;
-      console.log(`${errorMsg}: ${errorToString(error)}`);
+      log(`${errorMsg}: ${errorToString(error)}`);
       capture.error(errorMsg, {
         extra: { event, context: lambdaName, error },
       });
@@ -99,7 +94,7 @@ export async function handler(event: SQSEvent) {
   }
 }
 
-function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
+function parseBody(body?: unknown): ProcessPatientCreateRequest {
   if (!body) throw new Error(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -108,30 +103,27 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
-  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
-  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
-  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
+  const triggerConsolidatedRaw = parseTriggerConsolidatedOrFail(bodyAsJson);
+  const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
+  const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientPayloadRaw = bodyAsJson.patientPayload;
   if (!patientPayloadRaw) throw new Error(`Missing patientPayload`);
   if (typeof patientPayloadRaw !== "object") throw new Error(`Invalid patientPayload`);
 
-  const cxId = cxIdRaw as string;
-  const facilityId = facilityIdRaw as string;
-  const jobId = jobIdRaw as string;
-  const jobStartedAt = jobStartedAtRaw as string;
+  const cxId = cxIdRaw;
+  const facilityId = facilityIdRaw;
+  const jobId = jobIdRaw;
   const patientPayload = patientPayloadRaw as PatientPayload;
-  const triggerConsolidated = triggerConsolidatedRaw as boolean;
-  const disableWebhooks = disableWebhooksRaw as boolean;
-  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
+  const triggerConsolidated = triggerConsolidatedRaw;
+  const disableWebhooks = disableWebhooksRaw;
+  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw;
 
   return {
     cxId,
     facilityId,
     jobId,
-    jobStartedAt,
     patientPayload,
     triggerConsolidated,
     disableWebhooks,

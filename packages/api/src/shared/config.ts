@@ -302,10 +302,6 @@ export class Config {
     return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 
-  static getPatientImportLambdaName(): string {
-    return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
-  }
-
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }

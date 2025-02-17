@@ -27,6 +27,7 @@ import { PatientModel } from "./medical/patient";
 import { PatientMappingModel } from "./patient-mapping";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { InvalidLinksModel } from "./invalid-links";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -53,6 +54,7 @@ const models: ModelSetup[] = [
   PatientMappingModel.setup,
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
+  InvalidLinksModel.setup,
 ];
 
 export type DbPoolProps = {

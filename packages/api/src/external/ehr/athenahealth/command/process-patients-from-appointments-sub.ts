@@ -1,7 +1,7 @@
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -54,11 +54,18 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
     const cxId = mapping.cxId;
     const practiceId = mapping.externalId;
-    const departmentIds = !mapping.secondaryMappings
-      ? undefined
-      : "departmentIds" in mapping.secondaryMappings
-      ? mapping.secondaryMappings.departmentIds
-      : undefined;
+    const departmentIds =
+      !mapping.secondaryMappings || !mapping.secondaryMappings.departmentIds
+        ? undefined
+        : mapping.secondaryMappings.departmentIds;
+    if (departmentIds && !Array.isArray(departmentIds)) {
+      const msg = "CxMapping departmentIds is malformed @ AthenaHealth";
+      log(`${msg}. cxId ${cxId} practiceId ${practiceId}`);
+      throw new MetriportError(msg, undefined, {
+        cxId,
+        practiceId,
+      });
+    }
     return {
       cxId,
       practiceId,
@@ -82,11 +89,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (getAppointmentsErrors.length > 0) {
-    const errorsToString = getAppointmentsErrors
-      .map(e => `cxId ${e.cxId} practiceId ${e.practiceId}. Cause: ${errorToString(e.error)}`)
-      .join(",");
     const msg = "Failed to get some appointments from subscription @ AthenaHealth";
-    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
@@ -130,16 +133,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (syncPatientsErrors.length > 0) {
-    const errorsToString = syncPatientsErrors
-      .map(
-        e =>
-          `cxId ${e.cxId} athenaPracticeId ${e.athenaPracticeId} athenaPatientId ${
-            e.athenaPatientId
-          } Cause: ${errorToString(e.error)}`
-      )
-      .join(",");
     const msg = "Failed to sync some patients @ AthenaHealth";
-    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
@@ -189,7 +183,7 @@ async function syncPatient({
   triggerDq,
 }: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
   const { log } = out(
-    `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} patientId ${athenaPatientId}`
+    `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   try {

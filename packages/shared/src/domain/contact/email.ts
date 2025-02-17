@@ -2,6 +2,7 @@ import { z } from "zod";
 import { BadRequestError } from "../../error/bad-request";
 
 export const exampleEmail = "test@test.com";
+const mailtoPrefix = "mailto:";
 
 export function isEmail(email: string): boolean {
   return email.includes("@");
@@ -15,28 +16,41 @@ export function isEmailValid(email: string): boolean {
   return true;
 }
 
+/**
+ * @deprecated Use noramlizeEmailBase instead
+ */
 export function normalizeEmail(email: string): string {
   const trimmedEmail = email.trim();
   return trimmedEmail.toLowerCase();
 }
 
+/**
+ * @deprecated Use normalizeEmailNew instead
+ */
 export function normalizeEmailStrict(email: string): string {
   const normalEmail = normalizeEmail(email);
   if (!isEmailValid(normalEmail)) throw new Error("Invalid email.");
   return normalEmail;
 }
 
-function noramlizeEmailBase(email: string): string {
+/**
+ * Returns the base email without the `mailto:` prefix and in lowercase
+ */
+export function noramlizeEmailBase(email: string): string {
   return removeMailto(email.trim().toLowerCase());
 }
 
 function removeMailto(email: string): string {
-  if (email.startsWith("mailto:")) {
-    return email.slice(7);
+  if (email.startsWith(mailtoPrefix)) {
+    return email.slice(mailtoPrefix.length);
   }
   return email;
 }
 
+/**
+ * Returns the base email without the mailto prefix and in lowercase
+ * If the email is not valid, returns undefined
+ */
 export function normalizeEmailNewSafe(
   email: string,
   normalizeBase: (email: string) => string = noramlizeEmailBase
@@ -46,6 +60,10 @@ export function normalizeEmailNewSafe(
   return baseEmail;
 }
 
+/**
+ * Returns the base email without the mailto prefix and in lowercase
+ * If the email is not valid, throws an error
+ */
 export function normalizeEmailNew(email: string): string {
   const emailOrUndefined = normalizeEmailNewSafe(email);
   if (!emailOrUndefined) {

@@ -39,9 +39,6 @@ export async function syncAthenaPatientIntoMetriport({
   api,
   triggerDq = false,
 }: SyncAthenaPatientIntoMetriportParams): Promise<string> {
-  const { log } = out(
-    `AthenaHealth syncAthenaPatientIntoMetriport - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
-  );
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: athenaPatientId,
@@ -52,7 +49,14 @@ export async function syncAthenaPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
-    return metriportPatient.id;
+    const metriportPatientId = metriportPatient.id;
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatientId,
+      }).catch(processAsyncError("AthenaHealth queryDocumentsAcrossHIEs"));
+    }
+    return metriportPatientId;
   }
 
   const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
@@ -61,7 +65,7 @@ export async function syncAthenaPatientIntoMetriport({
   const demos = createMetriportPatientDemosFhir(athenaPatient);
 
   const patients: Patient[] = [];
-  const getPatientByDemoErrors: unknown[] = [];
+  const getPatientByDemoErrors: { error: unknown; cxId: string; demos: string }[] = [];
   const getPatientByDemoArgs: GetPatientByDemoParams[] = demos.map(demo => {
     return { cxId, demo };
   });
@@ -69,21 +73,23 @@ export async function syncAthenaPatientIntoMetriport({
   await executeAsynchronously(
     getPatientByDemoArgs,
     async (params: GetPatientByDemoParams) => {
+      const { log } = out(`AthenaHealth getPatientByDemo - cxId ${cxId}`);
       try {
         const patient = await getPatientByDemo(params);
         if (patient) patients.push(patient);
       } catch (error) {
-        log(`Failed to get patient by demo. Cause: ${errorToString(error)}`);
-        getPatientByDemoErrors.push(error);
+        const demosToString = JSON.stringify(params.demo);
+        log(
+          `Failed to get patient by demo for demos ${demosToString}. Cause: ${errorToString(error)}`
+        );
+        getPatientByDemoErrors.push({ error, ...params, demos: demosToString });
       }
     },
     { numberOfParallelExecutions: parallelPatientMatches }
   );
 
   if (getPatientByDemoErrors.length > 0) {
-    const errorsToString = getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(",");
     const msg = "Failed to get patient by some demos @ AthenaHealth";
-    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         cxId,

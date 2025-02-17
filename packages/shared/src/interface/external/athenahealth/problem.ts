@@ -8,6 +8,6 @@ export const createdProblemSchema = z.object({
 export type CreatedProblem = z.infer<typeof createdProblemSchema>;
 export const createdProblemSuccessSchema = z.object({
   success: z.literal(true),
-  problemid: z.string(),
+  problemid: z.coerce.string(),
 });
 export type CreatedProblemSuccess = z.infer<typeof createdProblemSuccessSchema>;

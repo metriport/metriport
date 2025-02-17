@@ -2,16 +2,29 @@ import { faker } from "@faker-js/faker";
 import { USState } from "@metriport/shared";
 import { ISO_DATE } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
-import { Patient, PatientData, PersonalIdentifier } from "../patient";
 import { Contact } from "../contact";
+import { Patient, PatientData, PersonalIdentifier } from "../patient";
 import { makeBaseDomain } from "./base-domain";
+import { generateDriversLicenseForState } from "./drivers-license";
 import { makeAddressStrict } from "./location-address";
 
+/** @deprecated use the specific type of personal identifier */
 export function makePersonalIdentifier(): PersonalIdentifier {
+  return makePersonalIdentifierDriversLicense();
+}
+export function makePersonalIdentifierDriversLicense(): PersonalIdentifier {
+  const state = faker.helpers.arrayElement(Object.values(USState));
   return {
     type: "driversLicense",
-    value: faker.string.uuid(),
-    state: faker.helpers.arrayElement(Object.values(USState)),
+    value: generateDriversLicenseForState(state),
+    state,
+  };
+}
+
+export function makePersonalIdentifierSsn(): PersonalIdentifier {
+  return {
+    type: "ssn",
+    value: faker.helpers.replaceSymbols("#########"),
   };
 }
 

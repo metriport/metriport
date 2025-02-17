@@ -45,7 +45,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = true): string {
   const {
     patient,
     practitioners,
@@ -317,18 +317,22 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
       </head>
 
       <body>
-        ${createMRHeader(patient)}
+        ${createMRHeader(patient, isLogoEnabled)}
         ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
           ${createMedicationSection(medications, medicationStatements)}
-          ${createDiagnosticReportsSection(
-            diagnosticReports,
-            practitioners,
-            aweVisits,
-            organizations
-          )}
+          ${
+            isLogoEnabled
+              ? createDiagnosticReportsSection(
+                  diagnosticReports,
+                  practitioners,
+                  aweVisits,
+                  organizations
+                )
+              : ""
+          }
           ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
@@ -479,12 +483,14 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   };
 }
 
-function createMRHeader(patient: Patient) {
+const metriportLogo = `<div class='logo-container'>
+        <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
+      </div>`;
+
+function createMRHeader(patient: Patient, isLogoEnabled: boolean) {
   return `
     <div id="mr-header">
-      <div class='logo-container'>
-        <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
-      </div>
+      ${isLogoEnabled ? metriportLogo : ""}
       <h1 class="title">
         Medical Record Summary (${formatDateForDisplay(new Date())})
       </h1>
@@ -522,9 +528,13 @@ function createMRHeader(patient: Patient) {
                 <li>
                   <a href="#awe">Annual Wellness Exams</a>
                 </li>
-                <li>
+                ${
+                  isLogoEnabled
+                    ? `<li>
                   <a href="#reports">Reports</a>
-                </li>
+                </li>`
+                    : ""
+                }
                 <li>
                   <a href="#medications">Medications</a>
                 </li>

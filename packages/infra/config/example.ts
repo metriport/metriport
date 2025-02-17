@@ -79,6 +79,7 @@ export const config: EnvConfigNonSandbox = {
   },
   patientImport: {
     bucketName: "your-bucket-name",
+    notificationUrl: "the-notification-url",
   },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
