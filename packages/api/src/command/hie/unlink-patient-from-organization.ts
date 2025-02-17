@@ -208,7 +208,7 @@ async function findAndRemoveConversionResultsFromS3(
       })
     );
 
-    const validFiles = existingFiles.filter(fileName => fileName !== undefined);
+    const validFiles = existingFiles.filter(fileName => fileName !== undefined) as string[];
 
     for (const fileName of validFiles) {
       log(`${dryRunMsg}Deleting file ${fileName} from S3`);
@@ -283,14 +283,14 @@ async function findAndRemoveConsolidatedDocumentFromS3(
     if (existingConsolidatedFiles) {
       const consolidatedFileNames = existingConsolidatedFiles
         .map(file => file.Key)
-        .filter(filename => filename !== undefined);
+        .filter(filename => filename !== undefined) as string[];
       existingFilenames.push(...consolidatedFileNames);
     }
 
     if (existingMedicalRecordsFiles) {
       const medicalRecordsFileNames = existingMedicalRecordsFiles
         .map(file => file.Key)
-        .filter(filename => filename !== undefined);
+        .filter(filename => filename !== undefined) as string[];
       existingFilenames.push(...medicalRecordsFileNames);
     }
 
