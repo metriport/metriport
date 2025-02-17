@@ -1,11 +1,10 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
 import { EhrSources } from "../external/ehr/shared";
 
-export type PatientMappingSource = EhrSources.athena | EhrSources.elation | EhrSources.canvas;
+const patientMappingSource = [EhrSources.athena, EhrSources.elation, EhrSources.canvas] as const;
+export type PatientMappingSource = (typeof patientMappingSource)[number];
 export function isPatientMappingSource(source: string): source is PatientMappingSource {
-  return (
-    source === EhrSources.athena || source === EhrSources.elation || source === EhrSources.canvas
-  );
+  return patientMappingSource.includes(source as PatientMappingSource);
 }
 
 export type PatientMappingPerSource = {

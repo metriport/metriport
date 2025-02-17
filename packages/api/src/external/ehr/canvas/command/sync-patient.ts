@@ -39,9 +39,6 @@ export async function syncCanvasPatientIntoMetriport({
   api,
   triggerDq = false,
 }: SyncCanvasPatientIntoMetriportParams): Promise<string> {
-  const { log } = out(
-    `Canvas syncCanvasPatientIntoMetriport - cxId ${cxId} canvasPracticeId ${canvasPracticeId} canvasPatientId ${canvasPatientId}`
-  );
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: canvasPatientId,
@@ -52,7 +49,14 @@ export async function syncCanvasPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
-    return metriportPatient.id;
+    const metriportPatientId = metriportPatient.id;
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatientId,
+      }).catch(processAsyncError("Canvas queryDocumentsAcrossHIEs"));
+    }
+    return metriportPatientId;
   }
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
@@ -69,21 +73,23 @@ export async function syncCanvasPatientIntoMetriport({
   await executeAsynchronously(
     getPatientByDemoArgs,
     async (params: GetPatientByDemoParams) => {
+      const { log } = out(`Canvas getPatientByDemo - cxId ${cxId}`);
       try {
         const patient = await getPatientByDemo(params);
         if (patient) patients.push(patient);
       } catch (error) {
-        log(`Failed to get patient by demo. Cause: ${errorToString(error)}`);
-        getPatientByDemoErrors.push(error);
+        const demosToString = JSON.stringify(params.demo);
+        log(
+          `Failed to get patient by demo for demos ${demosToString}. Cause: ${errorToString(error)}`
+        );
+        getPatientByDemoErrors.push({ error, ...params, demos: demosToString });
       }
     },
     { numberOfParallelExecutions: parallelPatientMatches }
   );
 
   if (getPatientByDemoErrors.length > 0) {
-    const errorsToString = getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(",");
     const msg = "Failed to get patient by some demos @ Canvas";
-    log(`${msg}. ${errorsToString}`);
     capture.message(msg, {
       extra: {
         cxId,

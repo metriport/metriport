@@ -54,10 +54,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
     const cxId = mapping.cxId;
     const practiceId = mapping.externalId;
-    const departmentIds =
-      !mapping.secondaryMappings || !mapping.secondaryMappings.departmentIds
-        ? undefined
-        : mapping.secondaryMappings.departmentIds;
+    const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
       const msg = "CxMapping departmentIds is malformed @ AthenaHealth";
       log(`${msg}. cxId ${cxId} practiceId ${practiceId}`);

@@ -13,21 +13,17 @@ import { elationClientJwtTokenSource } from "../external/ehr/elation/shared";
 import { canvasClientJwtTokenSource } from "../external/ehr/canvas/shared";
 import { EhrSources } from "../external/ehr/shared";
 
-export type JwtTokenSource =
-  | EhrSources.athena
-  | typeof athenaClientJwtTokenSource
-  | typeof elationClientJwtTokenSource
-  | EhrSources.canvas
-  | typeof canvasClientJwtTokenSource;
+const jwtTokenSource = [
+  EhrSources.athena,
+  athenaClientJwtTokenSource,
+  elationClientJwtTokenSource,
+  EhrSources.canvas,
+  canvasClientJwtTokenSource,
+] as const;
 
+export type JwtTokenSource = (typeof jwtTokenSource)[number];
 export function isJwtTokenSource(source: string): source is JwtTokenSource {
-  return (
-    source === EhrSources.athena ||
-    source === athenaClientJwtTokenSource ||
-    source === elationClientJwtTokenSource ||
-    source === EhrSources.canvas ||
-    source === canvasClientJwtTokenSource
-  );
+  return jwtTokenSource.includes(source as JwtTokenSource);
 }
 
 export type JwtTokenData =

@@ -1,14 +1,14 @@
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
 import { cxClientKeyAndSecretMapSecretSchema, MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrClienUniqueClientParams, EhrEnvAndClientCredentials } from "../shared";
+import { createEhrClient, EhrPerPracticeParams, EhrEnvAndClientCredentials } from "../shared";
 
 export const canvasClientJwtTokenSource = "canvas-client";
 
 export function getCanvasEnv({
   cxId,
   practiceId,
-}: EhrClienUniqueClientParams): EhrEnvAndClientCredentials<CanvasEnv> {
+}: EhrPerPracticeParams): EhrEnvAndClientCredentials<CanvasEnv> {
   const rawClientsMap = Config.getCanvasClientKeyAndSecretMap();
   if (!rawClientsMap) throw new Error("Canvas secrets map not set");
   const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
@@ -33,13 +33,12 @@ export function getCanvasEnv({
 }
 
 export async function createCanvasClient(
-  unqiueParams: EhrClienUniqueClientParams
+  perPracticeParams: EhrPerPracticeParams
 ): Promise<CanvasApi> {
-  return await createEhrClient<EhrClienUniqueClientParams, CanvasEnv, CanvasApi>({
-    ...unqiueParams,
+  return await createEhrClient<CanvasEnv, CanvasApi, EhrPerPracticeParams>({
+    ...perPracticeParams,
     source: canvasClientJwtTokenSource,
-    getEnv: getCanvasEnv,
-    getEnvParams: unqiueParams,
+    getEnv: { params: perPracticeParams, getEnv: getCanvasEnv },
     getClient: CanvasApi.create,
   });
 }

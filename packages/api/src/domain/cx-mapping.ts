@@ -6,11 +6,10 @@ import {
 import { z } from "zod";
 import { EhrSources } from "../external/ehr/shared";
 
-export type CxMappingSource = EhrSources.athena | EhrSources.elation | EhrSources.canvas;
+const cxMappingSource = [EhrSources.athena, EhrSources.elation, EhrSources.canvas] as const;
+export type CxMappingSource = (typeof cxMappingSource)[number];
 export function isCxMappingSource(source: string): source is CxMappingSource {
-  return (
-    source === EhrSources.athena || source === EhrSources.elation || source === EhrSources.canvas
-  );
+  return cxMappingSource.includes(source as CxMappingSource);
 }
 
 export type CxMappingSecondaryMappings = AthenaSecondaryMappings | null;
