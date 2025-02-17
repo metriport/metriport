@@ -17,18 +17,18 @@ export function getCanvasEnv({
       rawClientsMap: !Config.isProdEnv() ? rawClientsMap : undefined,
     });
   }
-  const cxEnv = `${cxId}_${practiceId}_env`;
-  const cxEnvEntry = clientMap.data[cxEnv];
-  const cxKey = `${cxId}_${practiceId}_key`;
-  const cxKeyEntry = clientMap.data[cxKey];
-  const cxSecret = `${cxId}_${practiceId}_secret`;
-  const cxSecretEntry = clientMap.data[cxSecret];
-  if (!cxEnvEntry || !cxKeyEntry || !cxSecretEntry)
+  const env = `${cxId}_${practiceId}_env`;
+  const envEntry = clientMap.data[env];
+  const key = `${cxId}_${practiceId}_key`;
+  const keyEntry = clientMap.data[key];
+  const secret = `${cxId}_${practiceId}_secret`;
+  const secretEntry = clientMap.data[secret];
+  if (!envEntry || !keyEntry || !secretEntry)
     throw new MetriportError("Canvas credentials not found");
   return {
-    environment: cxEnvEntry,
-    clientKey: cxKeyEntry,
-    clientSecret: cxSecretEntry,
+    environment: envEntry,
+    clientKey: keyEntry,
+    clientSecret: secretEntry,
   };
 }
 

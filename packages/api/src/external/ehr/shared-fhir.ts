@@ -60,12 +60,13 @@ export function createAddressesFromFhir(patient: Patient): Address[] {
       country,
     };
   });
-  if (addresses.length === 0)
+  if (addresses.length === 0) {
     throw new BadRequestError("Patient has no valid addresses", undefined, {
       addresses: Object.values(addresses)
         .map(a => JSON.stringify(a))
         .join(","),
     });
+  }
   return addresses;
 }
 
@@ -80,10 +81,11 @@ export function createNamesFromFhir(patient: Patient): { firstName: string; last
       return [{ firstName: toTitleCase(firstName), lastName: toTitleCase(lastName) }];
     });
   });
-  if (names.length === 0)
+  if (names.length === 0) {
     throw new BadRequestError("Patient has no valid names", undefined, {
       names: patient.name.map(n => JSON.stringify(n)).join(","),
     });
+  }
   return names;
 }
 
