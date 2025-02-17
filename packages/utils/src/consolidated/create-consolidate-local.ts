@@ -27,6 +27,9 @@ dayjs.extend(duration);
 const bundlesFolder = ``;
 const outputFolder = `${bundlesFolder}/consolidated`;
 
+// Not necessary - just used for logging / analytics on dedup
+const cxId = ``;
+
 const program = new Command();
 program
   .name("consolidate-create")
@@ -75,13 +78,12 @@ export async function createConsolidatedFromLocal(
     { numberOfParallelExecutions: 10 }
   );
 
-  const duration = Date.now() - startedAt;
-  const durationMin = dayjs.duration(duration).asMinutes();
-
   withDups.entry?.push(patient);
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
-  const deduped = await deduplicate({ cxId: "123", patientId: patient.id!, bundle: withDups });
+  const deduped = await deduplicate({ cxId, patientId: patient.id!, bundle: withDups });
 
+  const duration = Date.now() - startedAt;
+  const durationMin = dayjs.duration(duration).asMinutes();
   console.log(`Total time: ${duration} ms / ${durationMin} min`);
   console.log(`File Location: ${outputFolderName}`);
 
