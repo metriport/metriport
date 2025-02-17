@@ -180,7 +180,7 @@ async function syncPatient({
   triggerDq,
 }: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
   const { log } = out(
-    `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} patientId ${athenaPatientId}`
+    `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   try {

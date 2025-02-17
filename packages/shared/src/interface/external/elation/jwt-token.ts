@@ -9,5 +9,5 @@ export type ElationClientJwtTokenData = {
 export const elationClientJwtTokenResponseSchema = z.object({
   scope: z.string(),
   access_token: z.string(),
-  expires_in: z.string(),
+  expires_in: z.coerce.string(),
 });
