@@ -85,6 +85,7 @@ WorkerUtils.workerTaskProcessor(msg => {
   return new Promise((fulfill, reject) => {
     session.run(() => {
       const startTime = new Date().getTime();
+      const nowIso = new Date().toISOString();
       const getDuration = () => new Date().getTime() - startTime;
       switch (msg.type) {
         case "/api/convert/:srcDataType/:template":
@@ -93,6 +94,10 @@ WorkerUtils.workerTaskProcessor(msg => {
             let templateName = msg.templateName;
             let srcDataType = msg.srcDataType;
             let patientId = msg.patientId;
+            let fileName = msg.fileName;
+
+            console.log(`[patient ${patientId}] Processing file ${fileName} at ${nowIso}`);
+
             let encounterTimePeriod = extractEncounterTimePeriod(srcData);
             let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
             let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
