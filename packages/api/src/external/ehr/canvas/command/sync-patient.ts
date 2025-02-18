@@ -50,12 +50,6 @@ export async function syncCanvasPatientIntoMetriport({
       id: existingPatient.patientId,
     });
     const metriportPatientId = metriportPatient.id;
-    if (triggerDq) {
-      queryDocumentsAcrossHIEs({
-        cxId,
-        patientId: metriportPatientId,
-      }).catch(processAsyncError("Canvas queryDocumentsAcrossHIEs"));
-    }
     return metriportPatientId;
   }
 
