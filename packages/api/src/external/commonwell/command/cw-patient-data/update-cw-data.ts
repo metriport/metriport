@@ -70,7 +70,9 @@ export async function updateCwPatientDataWithinDBTx(
     ? updatedLinks.filter(link => isLinkValid(link, invalidateLinks))
     : updatedLinks;
 
-  const uniqueUpdatedLinks = uniqBy(validLinks, "oid");
+  const uniqueUpdatedLinks = uniqBy(validLinks, function (nl) {
+    return nl.patient?.provider?.reference;
+  });
   const updatedLinkDemographicsHistory = {
     ...existing.data.linkDemographicsHistory,
     ...newData.linkDemographicsHistory,
