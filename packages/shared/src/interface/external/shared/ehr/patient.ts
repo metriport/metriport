@@ -32,6 +32,7 @@ export const patientSearchSchema = z.object({
     .object({
       resource: patientSchema,
     })
-    .array(),
+    .array()
+    .optional(),
 });
 export type PatientSearch = z.infer<typeof patientSearchSchema>;
