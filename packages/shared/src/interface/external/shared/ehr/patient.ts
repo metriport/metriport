@@ -9,13 +9,13 @@ const address = z.object({
 });
 
 const telecome = z.object({
-  value: z.string(),
-  system: z.enum(["phone", "email"]),
+  value: z.string().optional(),
+  system: z.enum(["phone", "email"]).optional(),
 });
 
 const name = z.object({
-  family: z.string(),
-  given: z.string().array(),
+  family: z.string().optional(),
+  given: z.string().array().optional(),
 });
 
 export const patientSchema = z.object({
@@ -32,6 +32,7 @@ export const patientSearchSchema = z.object({
     .object({
       resource: patientSchema,
     })
-    .array(),
+    .array()
+    .optional(),
 });
 export type PatientSearch = z.infer<typeof patientSearchSchema>;

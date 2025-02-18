@@ -1,4 +1,4 @@
-import { athenaJwtTokenDataSchema } from "@metriport/shared/interface/external/athenahealth/jwt-token";
+import { canvasJwtTokenDataSchema } from "@metriport/shared/interface/external/canvas/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -11,7 +11,7 @@ import { asyncHandler, getAuthorizationToken } from "../../../util";
 const router = Router();
 
 /**
- * GET /internal/token/athenahealth
+ * GET /internal/token/canvas
  */
 router.get(
   "/",
@@ -20,7 +20,7 @@ router.get(
     const token = getAuthorizationToken(req);
     const tokenStatus = await checkJwtToken({
       token,
-      source: EhrSources.athena,
+      source: EhrSources.canvas,
     });
     return res.status(httpStatus.OK).json(tokenStatus);
   })
@@ -28,11 +28,11 @@ router.get(
 
 const createJwtSchema = z.object({
   exp: z.number(),
-  data: athenaJwtTokenDataSchema,
+  data: canvasJwtTokenDataSchema,
 });
 
 /**
- * POST /internal/token/athenahealth
+ * POST /internal/token/canvas
  */
 router.post(
   "/",
@@ -42,7 +42,7 @@ router.post(
     const data = createJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
-      source: EhrSources.athena,
+      source: EhrSources.canvas,
       ...data,
     });
     return res.sendStatus(httpStatus.OK);

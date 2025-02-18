@@ -351,12 +351,6 @@ export class Config {
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
-  static getAthenaHealthClientKeyArn(): string | undefined {
-    return getEnvVar("EHR_ATHENA_CLIENT_KEY_ARN");
-  }
-  static getAthenaHealthClientSecretArn(): string | undefined {
-    return getEnvVar("EHR_ATHENA_CLIENT_SECRET_ARN");
-  }
   static getAthenaHealthClientKey(): string | undefined {
     return getEnvVar("EHR_ATHENA_CLIENT_KEY");
   }
@@ -367,9 +361,12 @@ export class Config {
   static getElationEnv(): string | undefined {
     return getEnvVar("EHR_ELATION_ENVIRONMENT");
   }
-
   static getElationClientKeyAndSecretMap(): string | undefined {
     return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getCanvasClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
   }
 
   static getRateLimitTableName(): string | undefined {

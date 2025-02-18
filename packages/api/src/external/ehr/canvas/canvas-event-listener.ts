@@ -1,15 +1,15 @@
-import CanvasSDK from "@metriport/core/external/canvas/index";
+import CanvasApi from "@metriport/core/external/canvas/index";
 import { createFullNote } from "@metriport/core/external/canvas/note";
 import { out } from "@metriport/core/util/log";
-import { getEnvVarOrFail } from "@metriport/shared";
+import { getEnvVarOrFail, getEnvVar } from "@metriport/shared";
 import {
   PatientEvents,
   patientEvents,
   CanvasIntegrationEvent,
-} from "../../event/medical/patient-event";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { CONVERSION_WEBHOOK_TYPE } from "../../command/medical/document/process-doc-query-webhook";
-import { Config } from "../../shared/config";
+} from "../../../event/medical/patient-event";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { CONVERSION_WEBHOOK_TYPE } from "../../../command/medical/document/process-doc-query-webhook";
+import { Config } from "../../../shared/config";
 
 const { log } = out("CANVAS EVENT LISTENER");
 
@@ -44,6 +44,7 @@ export default function () {
       const canvasClientId = getEnvVarOrFail(`CANVAS_CLIENT_ID`);
       const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
       const canvasEnvironment = getEnvVarOrFail(`CANVAS_ENVIRONMENT`);
+      const canvasPracticeId = getEnvVar(`CANVAS_PRACTICE_ID`) ?? "";
 
       const { id, cxId } = event;
       const patient = await getPatientOrFail({ id, cxId });
@@ -73,10 +74,11 @@ export default function () {
         return;
       }
 
-      const canvas = await CanvasSDK.create({
+      const canvas = await CanvasApi.create({
         environment: canvasEnvironment,
-        clientId: canvasClientId,
+        clientKey: canvasClientId,
         clientSecret: canvasClientSecret,
+        practiceId: canvasPracticeId,
       });
 
       await createFullNote({ canvas, canvasPatientId, patientA, patientB, providerLastName });
