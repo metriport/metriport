@@ -45,12 +45,14 @@ import {
   MedicationReference,
   MedicationReferences,
   medicationReferencesSchema,
+  VitalsCreateParams,
+} from "@metriport/shared/interface/external/athenahealth/index";
+import {
   Patient,
   patientSchema,
   PatientSearch,
   patientSearchSchema,
-  VitalsCreateParams,
-} from "@metriport/shared/interface/external/athenahealth/index";
+} from "@metriport/shared/interface/external/shared/ehr/patient";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
@@ -275,10 +277,11 @@ class AthenaHealthApi {
       useFhir: true,
     });
     const entry = patientSearch.entry;
+    if (!entry) throw new NotFoundError("No patient found in search", undefined, additionalInfo);
     if (entry.length > 1) {
       throw new BadRequestError("More than one patients found in search", undefined, {
         ...additionalInfo,
-        patientSearch: patientSearch.entry.map(e => JSON.stringify(e.resource)).join(","),
+        patientSearch: entry.map(e => JSON.stringify(e.resource)).join(","),
       });
     }
     const patient = entry[0]?.resource;

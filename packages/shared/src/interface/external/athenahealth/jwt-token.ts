@@ -1,10 +1,12 @@
 import z from "zod";
 
-export type AthenaJwtTokenData = {
-  ah_practice: string;
-  ah_department: string;
-  source: "athenahealth";
-};
+export const athenaJwtTokenDataSchema = z.object({
+  ah_practice: z.string(),
+  ah_department: z.string(),
+  source: z.literal("athenahealth"),
+});
+
+export type AthenaJwtTokenData = z.infer<typeof athenaJwtTokenDataSchema>;
 
 export type AthenaClientJwtTokenData = {
   practiceId: string;
