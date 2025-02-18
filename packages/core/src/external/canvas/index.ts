@@ -84,7 +84,7 @@ class CanvasApi {
     if (!this.twoLeggedAuthTokenInfo) {
       log(`Two Legged Auth token not found @ Canvas - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
-    } else if (this.twoLeggedAuthTokenInfo.exp < buildDayjs().subtract(15, "minutes").toDate()) {
+    } else if (this.twoLeggedAuthTokenInfo.exp < buildDayjs().add(15, "minutes").toDate()) {
       log(`Two Legged Auth token expired @ Canvas - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
     } else {
