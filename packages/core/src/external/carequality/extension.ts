@@ -19,6 +19,6 @@ export function isCarequalityContent(content: DocumentReferenceContent): boolean
   return content.extension?.some(isCarequalityExtension) === true;
 }
 
-export function hasCarequalityContent(doc: DocumentReference): boolean {
-  return doc.content?.some(isCarequalityContent) ?? false;
+export function hasCarequalityExtension(doc: DocumentReference): boolean {
+  return doc.extension?.some(isCarequalityExtension) ?? false;
 }

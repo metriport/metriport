@@ -9,15 +9,18 @@ import {
   buildDocumentNameForCleanConversion,
   buildDocumentNameForFromConverter,
 } from "@metriport/core/domain/conversion/filename";
+import { addOidPrefix } from "@metriport/core/domain/oid";
+import { createFolderName } from "@metriport/core/domain/filename";
+import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/file-search-connector-factory";
 import { capture } from "@metriport/core/util";
 import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
 import { updateCQPatientData } from "../../external/carequality/command/cq-patient-data/update-cq-data";
 import { updateCwPatientData } from "../../external/commonwell/command/cw-patient-data/update-cw-data";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
-import { isOrganization, isPatient } from "@metriport/core/external/fhir/shared";
-import { hasCommonwellContent } from "@metriport/core/external/commonwell/extension";
-import { hasCarequalityContent } from "@metriport/core/external/carequality/extension";
+import { isOrganization, isPatient } from "@metriport/core/external/fhir/shared/index";
+import { hasCommonwellExtension } from "@metriport/core/external/commonwell/extension";
+import { hasCarequalityExtension } from "@metriport/core/external/carequality/extension";
 import { getCQPatientData } from "../../external/carequality/command/cq-patient-data/get-cq-data";
 import { getCwPatientData } from "../../external/commonwell/command/cw-patient-data/get-cw-data";
 import { CQData } from "../../external/carequality/cq-patient-data";
@@ -25,7 +28,6 @@ import { CwData } from "../../external/commonwell/cw-patient-data";
 import { CwLink } from "../../external/commonwell/cw-patient-data";
 import { CQLink } from "../../external/carequality/cq-patient-data";
 import { Config } from "../../shared/config";
-import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/file-search-connector-factory";
 import { makeFhirApi } from "../../external/fhir/api/api-factory";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -60,6 +62,7 @@ export async function unlinkPatientFromOrganization({
   const cqLink = findCqLinkWithOid(cqPatientData?.data, oid);
 
   const documents = await getDocuments({ cxId, patientId });
+
   const documentsWithOid = getDocumentsWithOid(documents, oid);
 
   log(`Found ${documentsWithOid.length} documents to process`);
@@ -104,7 +107,9 @@ function findCwLinkWithOid(cwPatientData: CwData | undefined, oid: string): CwLi
     const patient = cwLink.patient;
     if (!patient) continue;
 
-    const identifier = patient.details.identifier?.find(identifier => identifier.system === oid);
+    const identifier = patient.identifier?.find(
+      identifier => identifier.system === addOidPrefix(oid)
+    );
 
     if (identifier) {
       return cwLink;
@@ -132,9 +137,9 @@ function getDocumentsWithOid(
   documents: DocumentReferenceWithId[],
   oid: string
 ): DocumentReferenceWithId[] {
-  const urnOid = `urn:oid:${oid}`;
-  const commonwellDocuments = documents.filter(hasCommonwellContent);
-  const carequalityDocuments = documents.filter(hasCarequalityContent);
+  const urnOid = addOidPrefix(oid);
+  const commonwellDocuments = documents.filter(hasCommonwellExtension);
+  const carequalityDocuments = documents.filter(hasCarequalityExtension);
 
   const matchingDocumentRefs = [];
 
@@ -153,6 +158,7 @@ function getDocumentsWithOid(
     if (!organization) continue;
 
     const identifier = organization.identifier?.find(identifier => identifier.value === oid);
+
     if (identifier) {
       matchingDocumentRefs.push(document);
     }
@@ -270,8 +276,11 @@ async function findAndRemoveConsolidatedDocumentFromS3(
 ): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
   try {
-    const consolidatedPrefix = `${cxId}_${patientId}_consolidated`;
-    const medicalRecordsPrefix = `${cxId}_${patientId}_MR`;
+    const consolidatedPrefix = `${createFolderName(
+      cxId,
+      patientId
+    )}/${cxId}_${patientId}_consolidated`;
+    const medicalRecordsPrefix = `${createFolderName(cxId, patientId)}/${cxId}_${patientId}_MR`;
 
     const [existingConsolidatedFiles, existingMedicalRecordsFiles] = await Promise.all([
       s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedPrefix),
@@ -336,9 +345,9 @@ async function findAndInvalidateLinks(
 
 async function deleteFromOpenSearch(entryId: string, dryRun = false, log: typeof console.log) {
   const dryRunMsg = getDryRunPrefix(dryRun);
+  const openSearch = makeSearchServiceRemover();
   try {
     if (!dryRun) {
-      const openSearch = makeSearchServiceRemover();
       await openSearch.remove(entryId);
     } else {
       log(`${dryRunMsg}Would delete entry ${entryId} from OpenSearch`);

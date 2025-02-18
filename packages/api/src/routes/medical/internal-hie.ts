@@ -3,7 +3,7 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { capture } from "@metriport/core/util";
-import { errorToString } from "@metriport/shared/dist/error/shared";
+import { errorToString } from "@metriport/shared";
 import httpStatus from "http-status";
 import { z } from "zod";
 import { getHieOverview } from "../../command/medical/admin/hie-overview";

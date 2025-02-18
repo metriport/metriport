@@ -28,3 +28,7 @@ export function isCommonwellContent(content: DocumentReferenceContent): boolean 
 export function hasCommonwellContent(doc: DocumentReference): boolean {
   return doc.content?.some(isCommonwellContent) ?? false;
 }
+
+export function hasCommonwellExtension(doc: DocumentReference): boolean {
+  return doc.extension?.some(isCommonwellExtension) ?? false;
+}
