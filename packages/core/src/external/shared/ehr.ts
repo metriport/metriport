@@ -91,7 +91,7 @@ export async function makeRequest<T>({
     patientId,
     method,
     url,
-    context: "athenahealth.make-request",
+    context: `${ehr}.make-request`,
   };
   let response: AxiosResponse;
   try {
