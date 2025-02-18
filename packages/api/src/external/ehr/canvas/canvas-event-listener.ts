@@ -1,7 +1,7 @@
 import CanvasApi from "@metriport/core/external/canvas/index";
 import { createFullNote } from "@metriport/core/external/canvas/note";
 import { out } from "@metriport/core/util/log";
-import { getEnvVarOrFail } from "@metriport/shared";
+import { getEnvVarOrFail, getEnvVar } from "@metriport/shared";
 import {
   PatientEvents,
   patientEvents,
@@ -44,7 +44,7 @@ export default function () {
       const canvasClientId = getEnvVarOrFail(`CANVAS_CLIENT_ID`);
       const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
       const canvasEnvironment = getEnvVarOrFail(`CANVAS_ENVIRONMENT`);
-      const canvasPracticeId = getEnvVarOrFail(`CANVAS_PRACTICE_ID`);
+      const canvasPracticeId = getEnvVar(`CANVAS_PRACTICE_ID`) ?? "";
 
       const { id, cxId } = event;
       const patient = await getPatientOrFail({ id, cxId });
