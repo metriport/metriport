@@ -67,9 +67,7 @@ export function createAddresses(patient: AthenaPatient): Address[] {
   });
   if (addresses.length === 0)
     throw new BadRequestError("Patient has no valid addresses", undefined, {
-      addresses: Object.values(addresses)
-        .map(a => JSON.stringify(a))
-        .join(","),
+      addresses: patient.address.map(a => JSON.stringify(a))?.join(","),
     });
   return addresses;
 }
