@@ -107,7 +107,7 @@ export async function makeRequest<T>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error instanceof AxiosError) {
-      const message = JSON.stringify(error.response?.data) ?? error.message;
+      const message = createAxiosErrorMessage(error);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -181,4 +181,13 @@ export function createDataParams(data: RequestData): string {
     dataParams.append(k, typeof v === "object" ? JSON.stringify(v) : v.toString());
   });
   return dataParams.toString();
+}
+
+function createAxiosErrorMessage(error: AxiosError): string {
+  if (error.response?.data) {
+    return Object.entries(error.response.data)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(", ");
+  }
+  return error.message;
 }
