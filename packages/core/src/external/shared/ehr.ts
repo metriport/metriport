@@ -186,7 +186,7 @@ export function createDataParams(data: RequestData): string {
 function createAxiosErrorMessage(error: AxiosError): string {
   if (error.response?.data) {
     return Object.entries(error.response.data)
-      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v.toString()}`)
       .join(", ");
   }
   return error.message;
