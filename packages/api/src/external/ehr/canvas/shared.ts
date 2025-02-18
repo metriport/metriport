@@ -23,8 +23,9 @@ export function getCanvasEnv({
   const keyEntry = clientMap.data[key];
   const secret = `${cxId}_${practiceId}_secret`;
   const secretEntry = clientMap.data[secret];
-  if (!envEntry || !keyEntry || !secretEntry)
+  if (!envEntry || !keyEntry || !secretEntry) {
     throw new MetriportError("Canvas credentials not found");
+  }
   return {
     environment: envEntry,
     clientKey: keyEntry,
