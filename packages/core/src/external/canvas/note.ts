@@ -1,4 +1,4 @@
-import CanvasSDK from "./index";
+import CanvasApi from "./index";
 import { generateFakeBundleFemale, generateFakeBundleMale } from "./data";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
@@ -12,7 +12,7 @@ export async function createFullNote({
   patientB,
   providerLastName,
 }: {
-  canvas: CanvasSDK;
+  canvas: CanvasApi;
   canvasPatientId: string;
   patientA: boolean;
   patientB: boolean;

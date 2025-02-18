@@ -84,15 +84,15 @@ function getElationEnv({
   if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
   const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
   if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
-  const cxKey = `${cxId}_${practiceId}_key`;
-  const cxKeyEntry = clientMap.data[cxKey];
-  const cxSecret = `${cxId}_${practiceId}_secret`;
-  const cxSecretEntry = clientMap.data[cxSecret];
-  if (!cxKeyEntry || !cxSecretEntry) throw new MetriportError("Elation credentials not found");
+  const key = `${cxId}_${practiceId}_key`;
+  const keyEntry = clientMap.data[key];
+  const secret = `${cxId}_${practiceId}_secret`;
+  const secretEntry = clientMap.data[secret];
+  if (!keyEntry || !secretEntry) throw new MetriportError("Elation credentials not found");
   return {
     environment,
-    clientKey: cxKeyEntry,
-    clientSecret: cxSecretEntry,
+    clientKey: keyEntry,
+    clientSecret: secretEntry,
   };
 }
 

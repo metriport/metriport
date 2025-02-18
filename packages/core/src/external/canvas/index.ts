@@ -1,74 +1,110 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import {
-  Patient,
-  Practitioner,
-  Condition,
-  MedicationStatement,
   AllergyIntolerance,
-  Location,
-  Encounter,
-  Medication,
-  Bundle,
   Appointment,
+  Bundle,
+  Condition,
+  Encounter,
+  Location,
+  Medication,
+  MedicationStatement,
+  Patient as PatientFhir,
+  Practitioner,
 } from "@medplum/fhirtypes";
+import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  Appointments,
+  appointmentsSchema,
+  BookedAppointment,
+  bookedAppointmentSchema,
+  canvasClientJwtTokenResponseSchema,
+} from "@metriport/shared/interface/external/canvas/index";
+import { Patient, patientSchema } from "@metriport/shared/interface/external/shared/ehr/patient";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import { out } from "../../util/log";
+import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared/ehr";
+import { RXNORM_URL as RXNORM_SYSTEM } from "../../util/constants";
 
-const RXNORM_SYSTEM = "http://www.nlm.nih.gov/research/umls/rxnorm";
-
-interface SDKConfig {
+interface CanvasApiConfig extends ApiConfig {
   environment: string;
-  clientId: string;
-  clientSecret: string;
 }
 
-class CanvasSDK {
+const canvasDomainExtension = ".canvasmedical.com";
+const canvasDateFormat = "YYYY-MM-DD";
+export type CanvasEnv = string;
+
+class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceCustomApi: AxiosInstance;
-  private OAuthToken: string;
+  private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  private baseUrl: string;
+  private practiceId: string;
 
-  private constructor(private config: SDKConfig) {
-    this.OAuthToken = "";
+  private constructor(private config: CanvasApiConfig) {
+    this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
+    this.practiceId = config.practiceId;
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceCustomApi = axios.create({});
+    this.baseUrl = `${config.environment}${canvasDomainExtension}`;
   }
 
-  public static async create(config: SDKConfig): Promise<CanvasSDK> {
-    const instance = new CanvasSDK(config);
+  public static async create(config: CanvasApiConfig): Promise<CanvasApi> {
+    const instance = new CanvasApi(config);
     await instance.initialize();
     return instance;
   }
 
-  private async fetchOAuthToken(): Promise<void> {
-    const url = `https://${this.config.environment}.canvasmedical.com/auth/token/`;
-    const payload = `grant_type=client_credentials&client_id=${this.config.clientId}&client_secret=${this.config.clientSecret}`;
+  getTwoLeggedAuthTokenInfo(): JwtTokenInfo | undefined {
+    return this.twoLeggedAuthTokenInfo;
+  }
+
+  private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
+    const url = `https://${this.baseUrl}/auth/token/`;
+    const payload = `grant_type=client_credentials&client_id=${this.config.clientKey}&client_secret=${this.config.clientSecret}`;
 
     try {
       const response = await axios.post(url, payload, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
-
-      this.OAuthToken = response.data.access_token;
+      if (!response.data) throw new MetriportError("No body returned from token endpoint");
+      const tokenData = canvasClientJwtTokenResponseSchema.parse(response.data);
+      return {
+        access_token: tokenData.access_token,
+        exp: new Date(Date.now() + +tokenData.expires_in * 1000),
+      };
     } catch (error) {
-      throw new Error("Failed to fetch OAuth token");
+      throw new MetriportError("Failed to fetch OAuth token @ Canvas", undefined, {
+        error: errorToString(error),
+      });
     }
   }
 
   async initialize(): Promise<void> {
-    await this.fetchOAuthToken();
+    const { log } = out(`Canvas initialize - practiceId ${this.practiceId}`);
+    if (!this.twoLeggedAuthTokenInfo) {
+      log(`Two Legged Auth token not found @ Canvas - fetching new token`);
+      this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
+    } else if (this.twoLeggedAuthTokenInfo.exp < buildDayjs().add(15, "minutes").toDate()) {
+      log(`Two Legged Auth token expired @ Canvas - fetching new token`);
+      this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
+    } else {
+      log(`Two Legged Auth token found @ Canvas - using existing token`);
+    }
 
     this.axiosInstanceFhirApi = axios.create({
-      baseURL: `https://fumage-${this.config.environment}.canvasmedical.com/`,
+      baseURL: `https://fumage-${this.baseUrl}`,
       headers: {
-        accept: "application/json",
-        Authorization: `Bearer ${this.OAuthToken}`,
-        "content-type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
+        "Content-Type": "application/json",
       },
     });
 
     this.axiosInstanceCustomApi = axios.create({
-      baseURL: `https://${this.config.environment}.canvasmedical.com/core/api`,
+      baseURL: `https://${this.baseUrl}/core/api`,
       headers: {
-        Authorization: `Bearer ${this.OAuthToken}`,
-        "content-type": "application/json",
+        Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
+        "Content-Type": "application/json",
       },
     });
   }
@@ -103,7 +139,7 @@ class CanvasSDK {
     return response.data.entry[0].resource;
   }
 
-  async createPatient(patient: Patient): Promise<string> {
+  async createPatient(patient: PatientFhir): Promise<string> {
     const response = await this.handleAxiosRequest(() =>
       this.axiosInstanceFhirApi.post("Patient", patient)
     );
@@ -282,6 +318,100 @@ class CanvasSDK {
     );
     return response.data;
   }
+
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
+    const { debug } = out(
+      `Elation getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const patientUrl = `/Patient/${patientId}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const patient = await this.makeRequest<Patient>({
+      cxId,
+      patientId,
+      s3Path: "patient",
+      method: "GET",
+      url: patientUrl,
+      schema: patientSchema,
+      additionalInfo,
+      debug,
+      useFhir: true,
+    });
+    return patient;
+  }
+
+  async getAppointments({
+    cxId,
+    fromDate,
+    toDate,
+  }: {
+    cxId: string;
+    fromDate: Date;
+    toDate: Date;
+  }): Promise<BookedAppointment[]> {
+    const { debug } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
+    const params = {
+      status: "booked",
+      ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
+      ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
+    };
+    const urlParams = new URLSearchParams(params);
+    const appointmentUrl = `/Appointment?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      fromDate: fromDate.toISOString(),
+      toDate: toDate.toISOString(),
+    };
+    const appointments = await this.makeRequest<Appointments>({
+      cxId,
+      s3Path: "appointments",
+      method: "GET",
+      url: appointmentUrl,
+      schema: appointmentsSchema,
+      additionalInfo,
+      debug,
+      useFhir: true,
+    });
+    const bookedAppointments = appointments.results.filter(
+      app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
+    );
+    return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
+  }
+
+  private async makeRequest<T>({
+    cxId,
+    patientId,
+    s3Path,
+    url,
+    method,
+    data,
+    headers,
+    schema,
+    additionalInfo,
+    debug,
+    useFhir = false,
+  }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
+    const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
+    return await makeRequest<T>({
+      ehr: "canvas",
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      s3Path,
+      axiosInstance,
+      url,
+      method,
+      data,
+      headers,
+      schema,
+      additionalInfo,
+      debug,
+    });
+  }
+
+  private formatDate(date: string | undefined): string | undefined {
+    return formatDate(date, canvasDateFormat);
+  }
 }
 
-export default CanvasSDK;
+export default CanvasApi;
