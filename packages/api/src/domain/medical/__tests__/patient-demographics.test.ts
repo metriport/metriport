@@ -1,6 +1,6 @@
-import { USState } from "@metriport/shared";
 import { Patient, PatientDemoData, splitDob } from "@metriport/core/domain/patient";
 import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
+import { USState } from "@metriport/shared";
 import {
   checkDemoMatch,
   createAugmentedPatient,
@@ -9,8 +9,6 @@ import {
   normalizeAndStringifyDriversLicense,
   normalizeAndStringifyNames,
   normalizeDob,
-  normalizeEmail,
-  normalizeSsn,
   patientToNormalizedCoreDemographics,
   stringifyAddress,
 } from "../patient-demographics";
@@ -117,29 +115,6 @@ describe("normalization", () => {
     });
   });
 
-  describe("normalizeEmail", () => {
-    const emailValid = "john.smith@gmail.com";
-    const emailsToCheck = [
-      emailValid,
-      " john.smith@gmail.com ",
-      "JOHN.SMITH@GMAIL.COM",
-      "mailto:john.smith@gmail.com",
-    ];
-    for (const email of emailsToCheck) {
-      it(`email: ${email}`, async () => {
-        const result = normalizeEmail(email);
-        expect(result).toBe(emailValid);
-      });
-    }
-    const emailsToCheckInvalid = ["john:smith@gmail.com"];
-    for (const email of emailsToCheckInvalid) {
-      it(`email: ${email}`, async () => {
-        const result = normalizeEmail(email);
-        expect(result).toBe(undefined);
-      });
-    }
-  });
-
   describe("normalizeAndStringifyDriversLicense", () => {
     const dlValid = { value: "i1234568", state: "ca" };
     const dlValidString = JSON.stringify(dlValid, Object.keys(dlValid).sort());
@@ -152,17 +127,6 @@ describe("normalization", () => {
       it(`dl: ${JSON.stringify(dl)}`, async () => {
         const result = normalizeAndStringifyDriversLicense(dl);
         expect(result).toBe(dlValidString);
-      });
-    }
-  });
-
-  describe("normalizeSsn", () => {
-    const ssnValid = "000000000";
-    const ssnsToCheck = [ssnValid, " 000000000 ", "000-00-0000", "1000000000"];
-    for (const ssn of ssnsToCheck) {
-      it(`ssn: ${ssn}`, async () => {
-        const result = normalizeSsn(ssn);
-        expect(result).toBe(ssnValid);
       });
     }
   });

@@ -1,10 +1,3 @@
-import {
-  normalizeUSStateForAddressSafe,
-  normalizeZipCodeNewSafe,
-  normalizePhoneNumberSafe,
-  stripNonNumericChars,
-  USState,
-} from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import {
@@ -22,7 +15,14 @@ import {
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
-import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
+import {
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
+  normalizeUSStateForAddressSafe,
+  normalizeZipCodeNewSafe,
+  USState,
+} from "@metriport/shared";
+import { normalizeSsn as normalizeSsnFromShared } from "@metriport/shared/domain/patient/ssn";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
@@ -184,7 +184,7 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    const email = normalizeEmail(c.email);
+    const email = normalizeEmailNewSafe(c.email);
     if (!email) return [];
     return [email];
   });
@@ -308,15 +308,6 @@ export function stringifyAddress(normalizedAddress: LinkGenericAddress): string 
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
 }
 
-export function normalizeEmail(email: string): string | undefined {
-  let normalEmail = email.trim().toLowerCase();
-  if (normalEmail.startsWith("mailto:")) {
-    normalEmail = normalEmail.slice(7);
-  }
-  const validEmail = emailSchema.safeParse(normalEmail);
-  return validEmail.success ? normalEmail : undefined;
-}
-
 export function normalizeAndStringifyDriversLicense({
   value,
   state,
@@ -331,8 +322,9 @@ export function normalizeAndStringifyDriversLicense({
   return JSON.stringify(normalizedDl, Object.keys(normalizedDl).sort());
 }
 
+/** @deprecated Use Core's instead */
 export function normalizeSsn(ssn: string): string {
-  return stripNonNumericChars(ssn).slice(-9);
+  return normalizeSsnFromShared(ssn);
 }
 
 /**

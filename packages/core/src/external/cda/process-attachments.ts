@@ -22,8 +22,10 @@ import {
   ObservationMedia,
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
+import { stringToBase64 } from "../../util/base64";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
+import { detectFileType } from "../../util/file-type";
 import { out } from "../../util/log";
 import { sizeInBytes } from "../../util/string";
 import { uuidv4 } from "../../util/uuid-v7";
@@ -35,6 +37,7 @@ import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/conve
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
+import { OCTET_MIME_TYPE } from "../../util/mime";
 
 const region = Config.getAWSRegion();
 
@@ -75,7 +78,7 @@ export async function processAttachments({
   const uploadDetails: UploadParams[] = [];
 
   b64Attachments.acts.map(act => {
-    const fileDetails = getDetailsForAct(act.text);
+    const fileDetails = getDetailsForAct(act.text, log);
     if (!fileDetails) return;
 
     const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
@@ -168,10 +171,13 @@ async function handleS3Upload(
   s3Utils: S3Utils,
   log: typeof console.log
 ): Promise<void> {
-  log(`Upload details: ${JSON.stringify(uploadDetails)}`);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const detailsToLog = uploadDetails.map(({ file, ...d }) => d);
+  log(`[handleS3Upload] Upload details: ${JSON.stringify(detailsToLog)}`);
   await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
     await s3Utils.uploadFile(uploadParams);
   });
+  log(`[handleS3Upload] Done`);
 }
 
 function buildDocumentReferenceDraft(
@@ -190,11 +196,21 @@ function buildDocumentReferenceDraft(
   };
 }
 
-function getDetailsForAct(document: CdaOriginalText | undefined): FileDetails | undefined {
+function getDetailsForAct(
+  document: CdaOriginalText | undefined,
+  log: typeof console.log
+): FileDetails | undefined {
   const fileB64Contents = document?.["#text"];
   if (!fileB64Contents) return undefined;
 
-  const mimeType = document?._mediaType;
+  let mimeType = detectFileType(stringToBase64(fileB64Contents)).mimeType;
+  log(`Detected mimetype: ${mimeType}`);
+
+  if (mimeType === OCTET_MIME_TYPE && document?._mediaType) {
+    log(`Will use specified mimetype: ${document._mediaType}`);
+    mimeType = document._mediaType;
+  }
+
   return {
     fileB64Contents,
     mimeType,

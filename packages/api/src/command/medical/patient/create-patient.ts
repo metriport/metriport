@@ -14,6 +14,7 @@ import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
 import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
+import { out } from "@metriport/core/util";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -33,6 +34,7 @@ export async function createPatient({
   forceCarequality?: boolean;
 }): Promise<Patient> {
   const { cxId, facilityId, externalId } = patient;
+  const { log } = out(`createPatient.${cxId}`);
 
   const sanitized = sanitize(patient);
   validate(sanitized);
@@ -73,6 +75,7 @@ export async function createPatient({
     addresses: patientCreate.data.address,
     cxId: patientCreate.cxId,
     reportRelevance: true,
+    log,
   });
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 

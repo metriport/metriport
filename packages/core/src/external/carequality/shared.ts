@@ -13,6 +13,9 @@ export const CODE_SYSTEM_ERROR = "1.3.6.1.4.1.19376.1.2.27.1";
 export const DEFAULT_TITLE = "Clinical Document";
 export const replyTo = "http://www.w3.org/2005/08/addressing/anonymous";
 
+// Our code accepts Driver's License from territories as well, see
+// packages/core/src/domain/oid.ts:driversLicenseURIs()
+// TODO we should make those consistent next time we touch this
 export const STATE_MAPPINGS: { [key: string]: USState } = {
   "urn:oid:2.16.840.1.113883.4.3.2": USState.AK, // Alaska Driver's License
   "urn:oid:2.16.840.1.113883.4.3.1": USState.AL, // Alabama Driver's License
