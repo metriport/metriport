@@ -17,10 +17,12 @@ import { Patient } from "@metriport/shared/interface/external/shared/ehr/patient
 export function createContactsFromFhir(patient: Patient): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
+      if (!telecom.value) return [];
       const email = normalizeEmailNewSafe(telecom.value);
       if (!email) return [];
       return { email };
     } else if (telecom.system === "phone") {
+      if (!telecom.value) return [];
       const phone = normalizePhoneNumberSafe(telecom.value);
       if (!phone) return [];
       return { phone };
@@ -73,8 +75,10 @@ export function createAddressesFromFhir(patient: Patient): Address[] {
 export function createNamesFromFhir(patient: Patient): { firstName: string; lastName: string }[] {
   if (!patient.name) throw new BadRequestError("Patient has no name");
   const names = patient.name.flatMap(name => {
+    if (!name.family) return [];
     const lastName = name.family.trim();
     if (lastName === "") return [];
+    if (!name.given) return [];
     return name.given.flatMap(gName => {
       const firstName = gName.trim();
       if (firstName === "") return [];
