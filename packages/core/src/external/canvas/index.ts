@@ -23,8 +23,7 @@ import { Patient, patientSchema } from "@metriport/shared/interface/external/sha
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { out } from "../../util/log";
 import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared/ehr";
-
-const RXNORM_SYSTEM = "http://www.nlm.nih.gov/research/umls/rxnorm";
+import { RXNORM_URL as RXNORM_SYSTEM } from "../../util/constants";
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
