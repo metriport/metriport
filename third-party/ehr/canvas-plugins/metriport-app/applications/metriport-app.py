@@ -16,4 +16,4 @@ class MetriportApp(Application):
           raise Exception("Metriport token not set")
         if (metriport_token == ""):
           raise Exception("Metriport token is empty")
-        return LaunchModalEffect(url=f"https://ehr.metriport.com/canvas/app#patient={self.context['patient']['id']}&access_token={metriport_token}", target=LaunchModalEffect.TargetType.DEFAULT_MODAL).apply()
+        return LaunchModalEffect(url=f"https://ehr.metriport.com/canvas/app#patient={self.context['patient']['id']}&access_token={metriport_token}", target=LaunchModalEffect.TargetType.RIGHT_CHART_PANE_LARGE).apply()
