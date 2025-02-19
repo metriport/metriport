@@ -18,7 +18,7 @@ export class OpenSearchFileRemoverDirect implements OpenSearchFileRemover {
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
-    const response = await client.delete({ index: indexName, id: entryId });
-    log(`Successfully deleted it, response: ${JSON.stringify(response.body)}`);
+    await client.delete({ index: indexName, id: entryId });
+    log(`Successfully deleted ${entryId}`);
   }
 }

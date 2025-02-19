@@ -1,15 +1,8 @@
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { out } from "@metriport/core/util/log";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import {
-  buildDocumentNameForPartialConversions,
-  buildDocumentNameForConversionResult,
-  buildDocumentNameForNormalizedConversion,
-  buildDocumentNameForPreConversion,
-  buildDocumentNameForCleanConversion,
-  buildDocumentNameForFromConverter,
-} from "@metriport/core/domain/conversion/filename";
 import { addOidPrefix } from "@metriport/core/domain/oid";
+import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { createFolderName } from "@metriport/core/domain/filename";
 import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/file-search-connector-factory";
 import { capture } from "@metriport/core/util";
@@ -55,17 +48,33 @@ export async function unlinkPatientFromOrganization({
   const { log } = out(`${dryRunMsg}unlinkPatientFromOrganization - patient ${patientId}`);
   log(`Unlinking patient from organization ${oid}`);
 
-  const cqPatientData = await getCQPatientData({ id: patientId, cxId });
-  const cwPatientData = await getCwPatientData({ id: patientId, cxId });
+  const documents = await getDocuments({ cxId, patientId });
+
+  if (documents.length === 0) {
+    log(`No documents found for patient ${patientId}`);
+    return;
+  }
+
+  const documentsWithOid = getDocumentsWithOid(documents, oid);
+
+  if (documentsWithOid.length === 0) {
+    log(`No documents found for patient ${patientId} with oid ${oid}`);
+    return;
+  }
+
+  log(`Found ${documentsWithOid.length} documents to process`);
+
+  const [cqPatientData, cwPatientData] = await Promise.all([
+    getCQPatientData({ id: patientId, cxId }),
+    getCwPatientData({ id: patientId, cxId }),
+  ]);
 
   const cwLink = findCwLinkWithOid(cwPatientData?.data, oid);
   const cqLink = findCqLinkWithOid(cqPatientData?.data, oid);
 
-  const documents = await getDocuments({ cxId, patientId });
+  await findAndInvalidateLinks(cwLink, cqLink, cxId, patientId, dryRun, log);
 
-  const documentsWithOid = getDocumentsWithOid(documents, oid);
-
-  log(`Found ${documentsWithOid.length} documents to process`);
+  const errors: { documentId: string; error: unknown }[] = [];
 
   for (const document of documentsWithOid) {
     const fileName = getS3FileNameFromDocument(document);
@@ -80,7 +89,6 @@ export async function unlinkPatientFromOrganization({
         findAndRemoveConversionResultsFromS3(fileName, dryRun, log),
         findAndRemoveMedicalDocumentFromS3(fileName, dryRun, log),
         findAndRemoveConsolidatedDocumentFromS3(cxId, patientId, dryRun, log),
-        findAndInvalidateLinks(cwLink, cqLink, cxId, patientId, dryRun, log),
         deleteFromOpenSearch(document.id, dryRun, log),
       ]);
 
@@ -88,11 +96,14 @@ export async function unlinkPatientFromOrganization({
       await deleteFhirResource(cxId, document.id, dryRun, log);
       log(`Successfully processed document ${document.id}`);
     } catch (error) {
-      const msg = `Failed to process document`;
-      log(`${msg} ${document.id}: ${errorToString(error)}`);
-      capture.error(msg, { extra: { error, documentId: document.id } });
+      log(`Failed to process document ${document.id}: ${errorToString(error)}`);
+      errors.push({ documentId: document.id, error });
       continue;
     }
+  }
+
+  if (errors.length > 0) {
+    capture.error("Failed to process some documents during unlink", { extra: { errors } });
   }
 
   log(`Completed unlinking patient from organization`);
@@ -107,11 +118,7 @@ function findCwLinkWithOid(cwPatientData: CwData | undefined, oid: string): CwLi
     const patient = cwLink.patient;
     if (!patient) continue;
 
-    const identifier = patient.identifier?.find(
-      identifier => identifier.system === addOidPrefix(oid)
-    );
-
-    if (identifier) {
+    if (patient.identifier?.some(identifier => identifier.system === addOidPrefix(oid))) {
       return cwLink;
     }
   }
@@ -124,13 +131,7 @@ function findCqLinkWithOid(cqPatientData: CQData | undefined, oid: string): CQLi
 
   const cqLinks = cqPatientData.links;
 
-  for (const cqLink of cqLinks) {
-    if (cqLink.oid === oid) {
-      return cqLink;
-    }
-  }
-
-  return undefined;
+  return cqLinks.find(link => link.oid === oid);
 }
 
 function getDocumentsWithOid(
@@ -168,7 +169,7 @@ function getDocumentsWithOid(
 }
 
 function getS3FileNameFromDocument(document: DocumentReferenceWithId): string | undefined {
-  const s3Attachment = document.content?.find(content => content.attachment?.url)?.attachment;
+  const s3Attachment = getMetriportContent(document)?.attachment;
   const fileName = s3Attachment?.title;
 
   if (!fileName) {
@@ -186,65 +187,24 @@ async function findAndRemoveConversionResultsFromS3(
 ): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
   try {
-    const conversionResultFileName = buildDocumentNameForConversionResult(fileName);
-    const normalizedFileName = buildDocumentNameForNormalizedConversion(fileName);
-    const cleanFileName = buildDocumentNameForCleanConversion(fileName);
-    const fromConverterFileName = buildDocumentNameForFromConverter(fileName);
-    const preConversionFileName = buildDocumentNameForPreConversion(fileName);
+    const objects = await s3Utils.listObjects(s3ConversionResultBucketName, fileName);
+    if (!objects) return;
 
-    const fileNames = [
-      conversionResultFileName,
-      normalizedFileName,
-      cleanFileName,
-      fromConverterFileName,
-      preConversionFileName,
-    ];
+    const validFiles = objects.flatMap(obj => obj.Key ?? []);
+    if (validFiles.length === 0) return;
 
-    const partialConversionFileNames = await getPartialConversionFileNames(preConversionFileName);
-    const allFileNames = [...fileNames, ...partialConversionFileNames];
+    log(`${dryRunMsg}Deleting ${validFiles.length} files from S3`);
 
-    const existingFiles = await Promise.all(
-      allFileNames.map(async fileName => {
-        try {
-          const exists = await s3Utils.fileExists(s3ConversionResultBucketName, fileName);
-          return exists ? fileName : undefined;
-        } catch (err) {
-          return undefined;
-        }
-      })
-    );
-
-    const validFiles = existingFiles.filter(fileName => fileName !== undefined) as string[];
-
-    for (const fileName of validFiles) {
-      log(`${dryRunMsg}Deleting file ${fileName} from S3`);
-      if (!dryRun) {
-        await s3Utils.deleteFile({ bucket: s3ConversionResultBucketName, key: fileName });
-      }
+    if (!dryRun) {
+      await s3Utils.deleteFiles({
+        bucket: s3ConversionResultBucketName,
+        keys: validFiles,
+      });
     }
   } catch (error) {
     log("Error removing conversion results from S3:", errorToString(error));
     throw error;
   }
-}
-
-async function getPartialConversionFileNames(preConversionFileName: string): Promise<string[]> {
-  const partialConversionFileNames: string[] = [];
-  let index = 0;
-  let partialExists = true;
-  while (partialExists) {
-    const partialFileName = buildDocumentNameForPartialConversions(preConversionFileName, index);
-    try {
-      partialExists = await s3Utils.fileExists(s3ConversionResultBucketName, partialFileName);
-      if (partialExists) {
-        partialConversionFileNames.push(partialFileName);
-      }
-    } catch (err) {
-      partialExists = false;
-    }
-    index++;
-  }
-  return partialConversionFileNames;
 }
 
 async function findAndRemoveMedicalDocumentFromS3(
@@ -276,11 +236,8 @@ async function findAndRemoveConsolidatedDocumentFromS3(
 ): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
   try {
-    const consolidatedPrefix = `${createFolderName(
-      cxId,
-      patientId
-    )}/${cxId}_${patientId}_consolidated`;
-    const medicalRecordsPrefix = `${createFolderName(cxId, patientId)}/${cxId}_${patientId}_MR`;
+    const consolidatedPrefix = createConsolidatedPrefix(cxId, patientId);
+    const medicalRecordsPrefix = createMedicalRecordsPrefix(cxId, patientId);
 
     const [existingConsolidatedFiles, existingMedicalRecordsFiles] = await Promise.all([
       s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedPrefix),
@@ -290,23 +247,23 @@ async function findAndRemoveConsolidatedDocumentFromS3(
     const existingFilenames: string[] = [];
 
     if (existingConsolidatedFiles) {
-      const consolidatedFileNames = existingConsolidatedFiles
-        .map(file => file.Key)
-        .filter(filename => filename !== undefined) as string[];
+      const consolidatedFileNames = existingConsolidatedFiles.flatMap(file => file.Key ?? []);
       existingFilenames.push(...consolidatedFileNames);
     }
 
     if (existingMedicalRecordsFiles) {
-      const medicalRecordsFileNames = existingMedicalRecordsFiles
-        .map(file => file.Key)
-        .filter(filename => filename !== undefined) as string[];
+      const medicalRecordsFileNames = existingMedicalRecordsFiles.flatMap(file => file.Key ?? []);
       existingFilenames.push(...medicalRecordsFileNames);
     }
 
-    for (const file of existingFilenames) {
-      log(`${dryRunMsg}Deleting file ${file} from S3`);
+    if (existingFilenames.length > 0) {
+      log(`${dryRunMsg}Deleting ${existingFilenames.length} files from S3`);
+
       if (!dryRun) {
-        await s3Utils.deleteFile({ bucket: s3MedicalDocumentsBucketName, key: file });
+        await s3Utils.deleteFiles({
+          bucket: s3MedicalDocumentsBucketName,
+          keys: existingFilenames,
+        });
       }
     }
   } catch (error) {
@@ -330,13 +287,16 @@ async function findAndInvalidateLinks(
       commonwell: cwLink ? [cwLink] : [],
     };
 
-    if (!dryRun) {
-      await createOrUpdateInvalidLinks({ id: patientId, cxId, invalidLinks });
-      await updateCQPatientData({ id: patientId, cxId, invalidateLinks: invalidLinks.carequality });
-      await updateCwPatientData({ id: patientId, cxId, invalidateLinks: invalidLinks.commonwell });
-    } else {
+    if (dryRun) {
       log(`${dryRunMsg}Would invalidate links:`, invalidLinks);
+      return;
     }
+
+    await Promise.all([
+      createOrUpdateInvalidLinks({ id: patientId, cxId, invalidLinks }),
+      updateCQPatientData({ id: patientId, cxId, invalidateLinks: invalidLinks.carequality }),
+      updateCwPatientData({ id: patientId, cxId, invalidateLinks: invalidLinks.commonwell }),
+    ]);
   } catch (error) {
     log("Error invalidating links:", error);
     throw error;
@@ -376,4 +336,12 @@ async function deleteFhirResource(
     log("Error deleting FHIR resource:", error);
     throw error;
   }
+}
+
+function createConsolidatedPrefix(cxId: string, patientId: string): string {
+  return `${createFolderName(cxId, patientId)}/${cxId}_${patientId}_consolidated`;
+}
+
+function createMedicalRecordsPrefix(cxId: string, patientId: string): string {
+  return `${createFolderName(cxId, patientId)}/${cxId}_${patientId}_MR`;
 }

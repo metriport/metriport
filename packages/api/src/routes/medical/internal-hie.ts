@@ -44,6 +44,7 @@ router.get(
     return res.status(httpStatus.OK).json(response);
   })
 );
+
 /**
  * POST /internal/hie/unlink
  *
@@ -53,7 +54,6 @@ router.get(
  * @param req.query.oid - The oid of the facility to unlink from.
  * @param req.query.dryRun - If true, will only simulate the unlink operation.
  */
-
 router.post(
   "/unlink",
   requestLogger,

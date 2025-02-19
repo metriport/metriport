@@ -432,6 +432,22 @@ export class S3Utils {
     }
   }
 
+  async deleteFiles({ bucket, keys }: { bucket: string; keys: string[] }): Promise<void> {
+    const deleteParams = {
+      Bucket: bucket,
+      Delete: {
+        Objects: keys.map(key => ({ Key: key })),
+      },
+    };
+    try {
+      await executeWithRetriesS3(() => this._s3.deleteObjects(deleteParams).promise());
+    } catch (error) {
+      const { log } = out("deleteFiles");
+      log(`Error during files deletion: ${errorToString(error)}`);
+      throw error;
+    }
+  }
+
   async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {
     const res = await executeWithRetriesS3(() =>
       this._s3.listObjectsV2({ Bucket: bucket, Prefix: prefix }).promise()

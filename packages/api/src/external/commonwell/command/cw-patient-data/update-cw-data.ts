@@ -61,13 +61,13 @@ export async function updateCwPatientDataWithinDBTx(
   update: CwPatientDataUpdate,
   existing: CwPatientDataModel,
   transaction: Transaction,
-  invalidateLinks?: CwLink[]
+  linksToInvalidate?: CwLink[]
 ): Promise<CwPatientDataModel> {
   const { data: newData } = update;
   const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
 
-  const validLinks = invalidateLinks
-    ? updatedLinks.filter(link => isLinkValid(link, invalidateLinks))
+  const validLinks = linksToInvalidate
+    ? updatedLinks.filter(link => isContainedAt(link, linksToInvalidate))
     : updatedLinks;
 
   const uniqueUpdatedLinks = uniqBy(validLinks, function (nl) {
@@ -92,8 +92,10 @@ export async function updateCwPatientDataWithinDBTx(
   );
 }
 
-const isLinkValid = (link: CwLink, invalidateLinks: CwLink[]): boolean => {
+function isContainedAt(link: CwLink, linksToInvalidate: CwLink[]): boolean {
   const linkOid = getLinkOid(link);
-  const isInvalid = invalidateLinks.some(invalidLink => getLinkOid(invalidLink) === linkOid);
+  const isInvalid = linksToInvalidate.some(function (invalidLink) {
+    return getLinkOid(invalidLink) === linkOid;
+  });
   return !isInvalid;
-};
+}
