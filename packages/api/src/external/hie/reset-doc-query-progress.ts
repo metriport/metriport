@@ -12,7 +12,7 @@ import { processDocQueryProgressWebhook } from "../../command/medical/document/p
  * @returns
  */
 export async function resetDocQueryProgress({
-  patient,
+  patient: { id, cxId },
   source,
   requestId,
 }: {
@@ -20,26 +20,22 @@ export async function resetDocQueryProgress({
   source: MedicalDataSource;
   requestId?: string;
 }): Promise<void> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
+  const patientFilter = { id, cxId };
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = patient.data.externalData ?? {};
 
     const resetExternalData = { ...externalData };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData: resetExternalData,
       },
     };
@@ -62,7 +58,7 @@ export async function resetDocQueryProgress({
         documentQueryProgress: {},
       };
 
-      const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+      const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
 
       const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
         existingPatientDocProgress,

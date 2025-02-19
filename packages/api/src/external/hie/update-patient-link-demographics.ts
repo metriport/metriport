@@ -11,7 +11,7 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
  */
 export async function updatePatientLinkDemographics({
   requestId,
-  patient,
+  patient: { id, cxId },
   source,
   links,
 }: {
@@ -20,28 +20,24 @@ export async function updatePatientLinkDemographics({
   source: MedicalDataSource;
   links: LinkDemographics[];
 }): Promise<Patient> {
-  const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
+  const { log } = out(`${source} PD - requestId ${requestId}, patient ${id}`);
 
   log(`Updating patient link demographics`);
 
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const consolidatedLinkDemographics = existingPatient.data.consolidatedLinkDemographics;
+    const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         consolidatedLinkDemographics: {
           names: [
             ...new Set([

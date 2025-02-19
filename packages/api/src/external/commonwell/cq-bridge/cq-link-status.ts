@@ -46,22 +46,22 @@ export const setCQLinkStatus = async ({
   cqLinkStatus?: CQLinkStatus | undefined;
 }): Promise<{ patient: Patient; updated: boolean }> => {
   const { log } = out(`setCQLinkStatus - patient ${patientId}`);
+  const patientFilter = { id: patientId, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const originalPatient = await getPatientModelOrFail({
-      id: patientId,
-      cxId,
+    const patient = await getPatientModelOrFail({
+      ...patientFilter,
       lock: true,
       transaction,
     });
 
     // Important so we don't trigger WH notif if the CQ link was already done
-    const currentCQLinkStatus = getLinkStatusCQ(originalPatient.dataValues.data.externalData);
+    const currentCQLinkStatus = getLinkStatusCQ(patient.dataValues.data.externalData);
     if (currentCQLinkStatus === cqLinkStatus) {
       log(`Patient already has CQ link status ${cqLinkStatus}, skipping update...`);
-      return { patient: originalPatient, updated: false };
+      return { patient, updated: false };
     }
 
-    const updatedData = cloneDeep(originalPatient.dataValues.data);
+    const updatedData = cloneDeep(patient.dataValues.data);
     const cwData = {
       ...updatedData.externalData?.COMMONWELL,
       cqLinkStatus,
@@ -72,7 +72,7 @@ export const setCQLinkStatus = async ({
       COMMONWELL: cwData,
     };
 
-    const updatedPatient = await originalPatient.update({ data: updatedData }, { transaction });
+    const updatedPatient = await patient.update({ data: updatedData }, { transaction });
 
     return { patient: updatedPatient.dataValues, updated: true };
   });

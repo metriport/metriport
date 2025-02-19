@@ -37,7 +37,7 @@ export type SetDocQueryProgress = SetDocQueryProgressBase &
  * @returns
  */
 export async function appendDocQueryProgress({
-  patient,
+  patient: { id, cxId },
   downloadProgress,
   convertProgress,
   convertibleDownloadErrors,
@@ -45,22 +45,16 @@ export async function appendDocQueryProgress({
   reset,
   requestId,
 }: SetDocQueryProgress): Promise<Patient> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const documentQueryProgress =
-      reset || !existingPatient.data.documentQueryProgress
-        ? {}
-        : existingPatient.data.documentQueryProgress;
-
+      reset || !patient.data.documentQueryProgress ? {} : patient.data.documentQueryProgress;
     const updatedDocumentQueryProgress = aggregateDocQueryProgress(
       documentQueryProgress,
       downloadProgress,
@@ -72,9 +66,9 @@ export async function appendDocQueryProgress({
     updatedDocumentQueryProgress.requestId = requestId;
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         documentQueryProgress: updatedDocumentQueryProgress,
       },
     };
@@ -91,34 +85,28 @@ export async function updateProgressWebhookSent(
   patient: Pick<Patient, "id" | "cxId">,
   type: ProgressType
 ): Promise<void> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
+  const patientFilter = { id: patient.id, cxId: patient.cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         documentQueryProgress: {
-          ...existingPatient.data.documentQueryProgress,
+          ...patient.data.documentQueryProgress,
           [type]: {
-            ...existingPatient.data.documentQueryProgress?.[type],
+            ...patient.data.documentQueryProgress?.[type],
             webhookSent: true,
           },
         },
       },
     };
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
   });
 }
 

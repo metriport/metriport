@@ -114,24 +114,22 @@ export async function updateDocQueryStatus(patients: PatientsWithValidationResul
   );
 }
 
-async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: [
+async function updatePatientsInSequence([id, { cxId, ...whatToUpdate }]: [
   string,
   GroupedValidationResult
-]) {
-  async function updatePatient() {
+]): Promise<void> {
+  async function updatePatient(): Promise<Patient | undefined> {
+    const patientFilter = { id, cxId };
     return executeOnDBTx(PatientModel.prototype, async transaction => {
-      const patientFilter = {
-        id: patientId,
-        cxId: cxId,
-      };
       const patient = await getPatientOrFail({
         ...patientFilter,
+        lock: true,
         transaction,
       });
       const docProgress = patient.data.documentQueryProgress;
       if (!docProgress) {
         console.log(`Patient without doc query progress @ update, skipping it: ${patient.id}`);
-        return;
+        return undefined;
       }
       if (whatToUpdate.convert) {
         const convert = docProgress.convert;
@@ -160,10 +158,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
           documentQueryProgress: docProgress,
         },
       };
-      await PatientModel.update(updatedPatient, {
-        where: patientFilter,
-        transaction,
-      });
+      await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
       return updatedPatient;
     });

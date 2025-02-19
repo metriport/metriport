@@ -17,26 +17,22 @@ export type setDocQueryStartAt = {
  * @returns Updated patient
  */
 export async function setDocQueryStartAt({
-  patient,
+  patient: { id, cxId },
   source,
   startedAt,
 }: setDocQueryStartAt): Promise<Patient> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const sourceData = existingPatient.data.externalData?.[source] ?? {};
+    const sourceData = patient.data.externalData?.[source] ?? {};
 
     const externalData: PatientExternalData = {
-      ...existingPatient.data.externalData,
+      ...patient.data.externalData,
       [source]: {
         ...sourceData,
         documentQueryProgress: {
@@ -47,9 +43,9 @@ export async function setDocQueryStartAt({
     };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData,
       },
     };

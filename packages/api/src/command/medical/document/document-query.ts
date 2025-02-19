@@ -174,30 +174,26 @@ type UpdateResult = {
   convertResult: ConvertResult;
 };
 
-export const updateConversionProgress = async ({
-  patient,
+export async function updateConversionProgress({
+  patient: { id, cxId },
   convertResult,
-}: UpdateResult): Promise<Patient> => {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
+}: UpdateResult): Promise<Patient> {
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const documentQueryProgress = calculateConversionProgress({
-      patient: existingPatient,
+      patient,
       convertResult,
     });
-
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         documentQueryProgress,
       },
     };
@@ -205,7 +201,7 @@ export const updateConversionProgress = async ({
 
     return updatedPatient;
   });
-};
+}
 
 /**
  * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.

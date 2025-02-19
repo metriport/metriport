@@ -41,7 +41,7 @@ describe("setCommonwellIdsAndStatus", () => {
   it("has CW externalData set to newValues when CW externalData is empty and we set newValues", async () => {
     const patient = makePatient();
 
-    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
+    patientModel_findOne.mockResolvedValue({ dataValues: patient });
 
     const newValues: CWParams = {
       commonwellPatientId: "commonwellPatientId",

@@ -34,7 +34,7 @@ export type SetDocQueryProgress = {
  * @returns
  */
 export async function setDocQueryProgress({
-  patient,
+  patient: { id, cxId },
   requestId,
   downloadProgress,
   convertProgress,
@@ -44,19 +44,15 @@ export async function setDocQueryProgress({
   startedAt,
   triggerConsolidated,
 }: SetDocQueryProgress): Promise<Patient> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
+  const patientFilter = { id, cxId };
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const existingExternalData = existingPatient.data.externalData ?? {};
+    const existingExternalData = patient.data.externalData ?? {};
 
     const externalData = setHIEDocProgress(
       existingExternalData,
@@ -69,7 +65,7 @@ export async function setDocQueryProgress({
       triggerConsolidated
     );
 
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+    const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
@@ -77,9 +73,9 @@ export async function setDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,
       },

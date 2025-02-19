@@ -29,11 +29,11 @@ export type StoreQueryParams = {
   cmd: QueryInitCmd;
 };
 
-export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promise<Patient> => {
+export async function storeQueryInit({ id, cxId, cmd }: StoreQueryParams): Promise<Patient> {
+  const patientFilter = { id, cxId };
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
-      id,
-      cxId,
+      ...patientFilter,
       lock: true,
       transaction,
     });
@@ -49,4 +49,4 @@ export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promi
     );
   });
   return patient.dataValues;
-};
+}

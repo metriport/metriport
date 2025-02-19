@@ -101,8 +101,6 @@ export async function updatePatientWithoutHIEs(
       { transaction }
     );
   });
-
   if (emit) patientEvents().emitUpdated(patient);
-
   return patient.dataValues;
 }

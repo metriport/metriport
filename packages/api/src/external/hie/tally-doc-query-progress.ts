@@ -28,28 +28,24 @@ export type TallyDocQueryProgress = {
  * @returns
  */
 export async function tallyDocQueryProgress({
-  patient,
+  patient: { id, cxId },
   requestId,
   progress,
   type,
   source,
 }: TallyDocQueryProgress): Promise<Patient> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
+  const patientFilter = { id, cxId };
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     // Set the doc query progress for the chosen hie
-    const externalData = setHIETallyCount(existingPatient, progress, type, source);
+    const externalData = setHIETallyCount(patient, progress, type, source);
 
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+    const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
@@ -57,9 +53,9 @@ export async function tallyDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         requestId,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,

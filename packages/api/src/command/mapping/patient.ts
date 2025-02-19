@@ -1,6 +1,5 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError, NotFoundError } from "@metriport/shared";
-import { Op } from "sequelize";
 import {
   PatientMapping,
   PatientMappingPerSource,
@@ -71,17 +70,19 @@ export async function deleteAllPatientMappings({
   });
 }
 
+export const defaultSources = [EhrSources.athena, EhrSources.canvas, EhrSources.elation];
+
 export async function getSourceMapForPatient({
   cxId,
   patientId,
-  sources,
+  sources = defaultSources,
 }: {
   cxId: string;
   patientId: string;
   sources?: string[];
 }): Promise<PatientSourceIdentifierMap | undefined> {
   const mappings = await PatientMappingModel.findAll({
-    where: { cxId, patientId, ...(sources ? { source: { [Op.in]: sources } } : {}) },
+    where: { cxId, patientId, ...(sources ? { source: sources } : undefined) },
     order: [["createdAt", "ASC"]],
   });
   const sourceMap = mappings.reduce((acc, mapping) => {

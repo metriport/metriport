@@ -5,25 +5,21 @@ import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 
 export async function resetScheduledPatientDiscovery({
-  patient,
+  patient: { id, cxId },
   source,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
 }): Promise<Patient> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = patient.data.externalData ?? {};
 
     const updatedExternalData = {
       ...externalData,
@@ -34,9 +30,9 @@ export async function resetScheduledPatientDiscovery({
     };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData: updatedExternalData,
       },
     };

@@ -24,18 +24,15 @@ export async function appendBulkGetDocUrlProgress({
   status,
   requestId,
 }: SetBulkGetDocUrlProgress): Promise<Patient> {
-  const patientFilter = {
-    id: id,
-    cxId: cxId,
-  };
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.data
+    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = patient.data
       ?.bulkGetDocumentsUrlProgress || { status: "processing" };
 
     if (status) {
@@ -46,9 +43,9 @@ export async function appendBulkGetDocUrlProgress({
     }
 
     const updatedPatient = {
-      ...existingPatient,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         bulkGetDocumentsUrlProgress,
       },
     };
@@ -69,9 +66,9 @@ export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
  * @param cmd - The `cmd` argument type to initialize the `BulkGetDocumentsUrlProgress` field
  * @returns a Promise that resolves to a Patient object.
  */
-export const storeBulkGetDocumentUrlQueryInit = async (
+export async function storeBulkGetDocumentUrlQueryInit(
   cmd: BulkGetDocUrlQueryInitCmd
-): Promise<Patient> => {
+): Promise<Patient> {
   const { id, cxId } = cmd;
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
@@ -101,4 +98,4 @@ export const storeBulkGetDocumentUrlQueryInit = async (
     );
   });
   return patient.dataValues;
-};
+}

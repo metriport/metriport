@@ -24,10 +24,10 @@ async function setDisableWHFlag(cmd: DisableWHCommand): Promise<Patient> {
     isDisableWH,
   } = cmd;
 
+  const patientFilter = { id, cxId };
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
-      id,
-      cxId,
+      ...patientFilter,
       lock: true,
       transaction,
     });
