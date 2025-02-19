@@ -37,7 +37,7 @@ export function analytics(params: EventMessageV1, postApiKey?: string): PostHog 
   return posthog;
 }
 
-export async function analyticsAsync(params: EventMessageV1, postApiKey?: string) {
+export async function analyticsAsync(params: EventMessageV1, postApiKey: string) {
   const posthog = analytics(params, postApiKey);
 
   if (!posthog) return;

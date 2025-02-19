@@ -8,10 +8,12 @@ export async function hydrate({
   cxId,
   patientId,
   bundle,
+  postHogApiKey,
 }: {
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
+  postHogApiKey?: string | undefined;
 }): Promise<Bundle<Resource>> {
   const { log } = out(`Hydrate. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
@@ -36,6 +38,9 @@ export async function hydrate({
   }
 
   log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
-  await analyticsAsync(metrics);
+  if (postHogApiKey) {
+    await analyticsAsync(metrics, postHogApiKey);
+  }
+
   return hydratedBundle;
 }

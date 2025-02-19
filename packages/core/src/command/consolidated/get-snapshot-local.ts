@@ -33,7 +33,9 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
   async execute(
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
-    const { cxId, id: patientId } = params.patient;
+    const { postHogApiKey, patient } = params;
+    const { cxId, id: patientId } = patient;
+
     const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);
@@ -52,12 +54,14 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       cxId,
       patientId,
       bundle: originalBundleWithoutContainedPatients,
+      postHogApiKey,
     });
 
     const normalizedBundle = await normalize({
       cxId,
       patientId,
       bundle: dedupedBundle,
+      postHogApiKey,
     });
 
     try {

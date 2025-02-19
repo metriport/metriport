@@ -8,10 +8,12 @@ export async function deduplicate({
   cxId,
   patientId,
   bundle,
+  postHogApiKey,
 }: {
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
+  postHogApiKey?: string | undefined;
 }): Promise<Bundle<Resource>> {
   const { log } = out(`Deduplicate. cx ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
@@ -28,8 +30,11 @@ export async function deduplicate({
       duration,
     },
   };
-  log(`Finished deduplication in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
-  await analyticsAsync(metrics);
+  log(`Finished deduplication in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
+  if (postHogApiKey) {
+    await analyticsAsync(metrics, postHogApiKey);
+  }
+
   return dedupedBundle;
 }
