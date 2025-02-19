@@ -114,12 +114,12 @@ export async function updateDocQueryStatus(patients: PatientsWithValidationResul
   );
 }
 
-async function updatePatientsInSequence([id, { cxId, ...whatToUpdate }]: [
+async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: [
   string,
   GroupedValidationResult
 ]): Promise<void> {
   async function updatePatient(): Promise<Patient | undefined> {
-    const patientFilter = { id, cxId };
+    const patientFilter = { id: patientId, cxId };
     return executeOnDBTx(PatientModel.prototype, async transaction => {
       const patient = await getPatientOrFail({
         ...patientFilter,
@@ -159,7 +159,6 @@ async function updatePatientsInSequence([id, { cxId, ...whatToUpdate }]: [
         },
       };
       await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
-
       return updatedPatient;
     });
   }

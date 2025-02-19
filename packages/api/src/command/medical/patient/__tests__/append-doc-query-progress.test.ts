@@ -26,11 +26,11 @@ beforeEach(() => {
     convert: makeProgress(),
   };
   jest.spyOn(webhooks, "processDocQueryProgressWebhook").mockImplementation();
+  mockStartTransaction();
   patient = makePatient({ data: makePatientData({ documentQueryProgress }) });
   patientModel = { dataValues: patient } as PatientModel;
-  mockStartTransaction();
-  patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 

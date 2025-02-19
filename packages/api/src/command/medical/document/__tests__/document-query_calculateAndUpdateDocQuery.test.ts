@@ -22,9 +22,9 @@ describe("docQuery-conversionProgress", () => {
     beforeEach(() => {
       jest.restoreAllMocks();
       mockStartTransaction();
-      patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
       patientModel = { dataValues: patient } as PatientModel;
       patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+      patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
       jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
     });
 
