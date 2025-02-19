@@ -9,6 +9,7 @@ export type CQExternalPatient = {
 };
 
 export type CQLinkedGateway = {
+  id: string;
   oid: string;
   url: string;
 };

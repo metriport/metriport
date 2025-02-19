@@ -9,7 +9,7 @@ import {
   getEnvVar,
   isEmailValid,
   isPhoneValid,
-  normalizeDate,
+  normalizeDob,
   normalizeEmail,
   normalizeExternalId,
   normalizeGender,
@@ -408,7 +408,7 @@ export function mapCsvPatientToMetriportPatient(csvPatient: {
 
   let dob: string | undefined = undefined;
   try {
-    dob = normalizeDate(csvPatient.dob ?? "");
+    dob = normalizeDob(csvPatient.dob ?? "");
     if (!dob) throw new Error(`Missing dob`);
   } catch (error) {
     errors.push({ field: "dob", error: error instanceof Error ? error.message : String(error) });

@@ -11,7 +11,8 @@ import {
   updatePatientDiscoveryStatus,
 } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
-import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
+import { autoUpgradeNetworkLinks, getPatientsNetworkLinks, patientWithCWData } from "./shared";
+import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
 
 const context = "cw.link.create";
 
@@ -75,9 +76,19 @@ export async function create(
       throw new Error("Link has no href");
     }
 
+    const networkLinks = await getPatientsNetworkLinks(commonWell, queryMeta, cwPatientId);
+
+    const { validNetworkLinks, invalidLinks } = await validateCwLinksBelongToPatient(
+      cxId,
+      networkLinks,
+      patient.data
+    );
+
     await autoUpgradeNetworkLinks(
       commonWell,
       queryMeta,
+      validNetworkLinks,
+      invalidLinks,
       cwPatientId,
       personId,
       context,

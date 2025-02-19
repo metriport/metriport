@@ -5,6 +5,7 @@ import {
   PatientDemoData,
 } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
+import { out } from "@metriport/core/util";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
@@ -33,6 +34,7 @@ export async function createPatient({
   forceCarequality?: boolean;
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
+  const { log } = out(`createPatient.${cxId}`);
 
   const sanitized = sanitize(patient);
   validate(sanitized);
@@ -73,6 +75,7 @@ export async function createPatient({
     addresses: patientCreate.data.address,
     cxId: patientCreate.cxId,
     reportRelevance: true,
+    log,
   });
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 

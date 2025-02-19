@@ -1,12 +1,5 @@
-import z from "zod";
 import { JwtTokenSource, JwtTokenData } from "../../domain/jwt-token";
 import { getJwtToken, findOrCreateJwtToken } from "../../command/jwt-token";
-
-export const createJwtSchema = z.object({
-  exp: z.number(),
-  data: z.custom<JwtTokenData>(),
-});
-export type CreateJwt = z.infer<typeof createJwtSchema>;
 
 export async function checkJwtToken({
   token,
@@ -27,16 +20,18 @@ export async function checkJwtToken({
 export async function saveJwtToken({
   token,
   source,
+  exp,
   data,
 }: {
   token: string;
   source: JwtTokenSource;
-  data: CreateJwt;
+  exp: number;
+  data: JwtTokenData;
 }): Promise<void> {
   await findOrCreateJwtToken({
     token,
-    exp: new Date(data.exp),
+    exp: new Date(exp),
     source,
-    data: data.data,
+    data,
   });
 }

@@ -323,12 +323,16 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
         <div id="mr-sections">
           ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
           ${createMedicationSection(medications, medicationStatements)}
-          ${createDiagnosticReportsSection(
-            diagnosticReports,
-            practitioners,
-            aweVisits,
-            organizations
-          )}
+          ${
+            isLogoEnabled
+              ? createDiagnosticReportsSection(
+                  diagnosticReports,
+                  practitioners,
+                  aweVisits,
+                  organizations
+                )
+              : ""
+          }
           ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
@@ -524,9 +528,13 @@ function createMRHeader(patient: Patient, isLogoEnabled: boolean) {
                 <li>
                   <a href="#awe">Annual Wellness Exams</a>
                 </li>
-                <li>
+                ${
+                  isLogoEnabled
+                    ? `<li>
                   <a href="#reports">Reports</a>
-                </li>
+                </li>`
+                    : ""
+                }
                 <li>
                   <a href="#medications">Medications</a>
                 </li>

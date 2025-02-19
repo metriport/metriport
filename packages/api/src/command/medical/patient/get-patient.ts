@@ -140,9 +140,10 @@ function getPatientsSharedQueryUntilFTS(
     queryPatientIds +
     (fullTextSearchFilters
       ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filters) 
-        OR external_id = :filters 
-        OR id = :filters 
-        OR id IN (SELECT patient_id FROM patient_mapping WHERE external_id = :filters)
+        OR external_id ilike '%' || :filters || '%'
+        OR id ilike '%' || :filters || '%'
+        OR id IN (SELECT patient_id FROM patient_mapping WHERE cx_id = :cxId and external_id ilike '%' || :filters || '%')
+        OR facility_ids && (select array_agg(id) from facility where cx_id = :cxId and data->>'name' ilike '%' || :filters || '%' or id ilike '%' || :filters || '%')
         `
       : "");
 
