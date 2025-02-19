@@ -3,7 +3,7 @@ import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { sizeInBytes } from "../../util/string";
 import { XMLBuilder } from "fast-xml-parser";
 
-export const MAX_CHUNK_SIZE_IN_BYTES = 10_000_000;
+export const MAX_CHUNK_SIZE_IN_BYTES = 5_000_000;
 const builder = new XMLBuilder({
   format: false,
   ignoreAttributes: false,
