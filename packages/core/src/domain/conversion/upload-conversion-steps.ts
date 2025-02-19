@@ -63,9 +63,11 @@ export async function storePartitionedPayloadsInS3({
 }): Promise<void> {
   const fileNames: string[] = [];
 
+  const payloadsWithIndices = partitionedPayloads.map((payload, index) => ({ payload, index }));
+
   const results = await executeAsynchronously(
-    partitionedPayloads,
-    async (payload, index) => {
+    payloadsWithIndices,
+    async ({ payload, index }) => {
       const nameWithPartNumber = buildDocumentNameForPartialConversions(
         preConversionFilename,
         index
