@@ -46,10 +46,10 @@ export const setCQLinkStatus = async ({
   cqLinkStatus?: CQLinkStatus | undefined;
 }): Promise<{ patient: Patient; updated: boolean }> => {
   const { log } = out(`setCQLinkStatus - patient ${patientId}`);
-  const patientFilter = { id: patientId, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
-      ...patientFilter,
+      id: patientId,
+      cxId,
       lock: true,
       transaction,
     });
@@ -58,7 +58,7 @@ export const setCQLinkStatus = async ({
     const currentCQLinkStatus = getLinkStatusCQ(patient.dataValues.data.externalData);
     if (currentCQLinkStatus === cqLinkStatus) {
       log(`Patient already has CQ link status ${cqLinkStatus}, skipping update...`);
-      return { patient, updated: false };
+      return { patient: patient.dataValues, updated: false };
     }
 
     const updatedData = cloneDeep(patient.dataValues.data);

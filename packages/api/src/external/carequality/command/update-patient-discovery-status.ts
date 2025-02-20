@@ -55,6 +55,7 @@ export async function updatePatientDiscoveryStatus({
         externalData: updatePatientDiscoveryStatus,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;

@@ -24,21 +24,23 @@ async function setDisableWHFlag(cmd: DisableWHCommand): Promise<Patient> {
     isDisableWH,
   } = cmd;
 
-  const patientFilter = { id, cxId };
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
-      ...patientFilter,
+      id,
+      cxId,
       lock: true,
       transaction,
     });
+
     const existingField = patient.dataValues.data[field];
-    patient.data = {
+    patient.dataValues.data = {
       ...patient.dataValues.data,
       [field]: {
         ...(existingField ? existingField : {}),
         [webhookDisableFlagName]: isDisableWH,
       },
     };
+
     return patient.save({ transaction });
   });
   return patient.dataValues;

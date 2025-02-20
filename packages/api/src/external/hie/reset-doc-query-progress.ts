@@ -21,7 +21,7 @@ export async function resetDocQueryProgress({
   requestId?: string;
 }): Promise<void> {
   const patientFilter = { id, cxId };
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -68,18 +68,15 @@ export async function resetDocQueryProgress({
       updatedPatient.data.documentQueryProgress = aggregatedDocProgresses;
     }
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
 
-  if (requestId && result.data.documentQueryProgress) {
+  if (requestId && patient.data.documentQueryProgress) {
     await processDocQueryProgressWebhook({
-      patient: result,
-      documentQueryProgress: result.data.documentQueryProgress,
+      patient,
+      documentQueryProgress: patient.data.documentQueryProgress,
       requestId,
     });
   }

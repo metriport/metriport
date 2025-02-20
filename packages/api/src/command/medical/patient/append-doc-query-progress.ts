@@ -72,10 +72,8 @@ export async function appendDocQueryProgress({
         documentQueryProgress: updatedDocumentQueryProgress,
       },
     };
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
@@ -106,6 +104,7 @@ export async function updateProgressWebhookSent(
         },
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
   });
 }

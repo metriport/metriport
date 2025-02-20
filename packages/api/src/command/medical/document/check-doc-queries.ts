@@ -126,6 +126,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
         lock: true,
         transaction,
       });
+
       const docProgress = patient.data.documentQueryProgress;
       if (!docProgress) {
         console.log(`Patient without doc query progress @ update, skipping it: ${patient.id}`);
@@ -151,6 +152,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
             }
           : undefined;
       }
+
       const updatedPatient = {
         ...patient,
         data: {
@@ -158,7 +160,9 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
           documentQueryProgress: docProgress,
         },
       };
+
       await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
       return updatedPatient;
     });
   }

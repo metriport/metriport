@@ -198,6 +198,7 @@ export async function updateConversionProgress({
         documentQueryProgress,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;

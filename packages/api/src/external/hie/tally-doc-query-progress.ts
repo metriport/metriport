@@ -35,7 +35,7 @@ export async function tallyDocQueryProgress({
   source,
 }: TallyDocQueryProgress): Promise<Patient> {
   const patientFilter = { id, cxId };
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -62,22 +62,19 @@ export async function tallyDocQueryProgress({
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
 
   await processDocQueryProgressWebhook({
-    patient: result,
-    documentQueryProgress: result.data.documentQueryProgress,
+    patient,
+    documentQueryProgress: patient.data.documentQueryProgress,
     requestId,
     progressType: type,
   });
 
-  return result;
+  return patient;
 }
 
 export function setHIETallyCount(

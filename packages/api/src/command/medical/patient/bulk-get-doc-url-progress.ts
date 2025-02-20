@@ -49,6 +49,7 @@ export async function appendBulkGetDocUrlProgress({
         bulkGetDocumentsUrlProgress,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;

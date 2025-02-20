@@ -38,10 +38,7 @@ export async function resetPatientScheduledDocQueryRequestId({
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });

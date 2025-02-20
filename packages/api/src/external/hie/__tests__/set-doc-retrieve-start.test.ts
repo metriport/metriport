@@ -28,8 +28,8 @@ beforeEach(() => {
   patient = makePatient({ data: makePatientData({ externalData }) });
   patientModel = { dataValues: patient } as PatientModel;
   mockStartTransaction();
-  jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 

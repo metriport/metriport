@@ -110,10 +110,8 @@ export async function updateCommonwellIdsAndStatus({
         externalData: updateCWExternalData,
       },
     };
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
@@ -140,7 +138,7 @@ export async function updatePatientDiscoveryStatus({
   params?: DiscoveryParams;
 }): Promise<Patient> {
   const patientFilter = { id, cxId };
-  return await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -170,10 +168,7 @@ export async function updatePatientDiscoveryStatus({
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });

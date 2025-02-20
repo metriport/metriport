@@ -30,10 +30,10 @@ export type StoreQueryParams = {
 };
 
 export async function storeQueryInit({ id, cxId, cmd }: StoreQueryParams): Promise<Patient> {
-  const patientFilter = { id, cxId };
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
-      ...patientFilter,
+      id,
+      cxId,
       lock: true,
       transaction,
     });

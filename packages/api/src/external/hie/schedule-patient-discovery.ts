@@ -66,9 +66,6 @@ export async function schedulePatientDiscovery({
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
   });
 }
