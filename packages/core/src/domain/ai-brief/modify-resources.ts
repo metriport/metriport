@@ -222,7 +222,7 @@ export type SlimImmunization = Omit<Immunization, "vaccineCode" | "site" | "rout
   vaccineCode?: string | undefined;
   site?: string | undefined;
   route?: string | undefined;
-  reference?: Record<string, string | Partial<SlimOrganization>>;
+  reference?: Record<string, string | object>;
 };
 
 function getSlimImmunization(res: Immunization): SlimImmunization | undefined {
