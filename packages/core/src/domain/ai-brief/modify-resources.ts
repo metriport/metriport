@@ -75,6 +75,12 @@ export type SlimResource =
   | SlimOrganization
   | SlimLocation;
 
+export type Instance = {
+  performedDateTime?: string | undefined;
+  performedPeriod?: Period | undefined;
+  onsetPeriod?: Period | undefined;
+};
+
 export type SlimProcedure = Omit<
   Procedure,
   "name" | "status" | "bodySite" | "performedDateTime" | "performedPeriod"
@@ -83,10 +89,7 @@ export type SlimProcedure = Omit<
   status?: string | undefined;
   bodySite?: string | undefined;
   reference?: Record<string, string | object>[];
-  instances?: Array<{
-    performedDateTime?: string | undefined;
-    performedPeriod?: Period | undefined;
-  }>;
+  instances?: Instance[];
 };
 
 /**
@@ -284,7 +287,7 @@ function getSlimProcedure(res: Procedure): SlimProcedure | undefined {
   };
 
   delete updRes.code;
-  delete updRes.reasonCode;
+  delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
   delete updRes.report;
   delete updRes.note;
   delete updRes.performedDateTime;

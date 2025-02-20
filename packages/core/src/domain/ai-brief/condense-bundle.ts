@@ -1,6 +1,7 @@
 import { Period } from "@medplum/fhirtypes";
 import { isEqual, uniqWith } from "lodash";
 import {
+  Instance,
   SlimCondition,
   SlimMedication,
   SlimMedicationStatement,
@@ -34,12 +35,12 @@ export function condenseBundle(bundle: SlimResource[]): SlimResource[] {
     ]
   );
 
-  const condensedConditions = condenseSlimResources(conditions, c => c.name, reconstructCondition);
-  const condensedProcedures = condenseSlimResources(procedures, p => p.name, reconstructProcedure);
+  const condensedConditions = condenseSlimResources(conditions, c => c.name, mergeCondition);
+  const condensedProcedures = condenseSlimResources(procedures, p => p.name, mergeProcedure);
   const condensedMedStmnts = condenseSlimResources(
     medStatements,
     s => JSON.stringify(s.reference),
-    reconstructMedStatement
+    mergeMedStatement
   );
   const condensedMedications: SlimMedication = {
     resourceType: "Medication",
@@ -57,13 +58,13 @@ export function condenseBundle(bundle: SlimResource[]): SlimResource[] {
 }
 
 function condenseSlimResources<T>(
-  items: T[],
+  resources: T[],
   getKey: (item: T) => string | undefined,
   merge: (existing: T, incoming: T) => T
 ): T[] {
   const map = new Map<string, T>();
 
-  items.forEach(item => {
+  resources.forEach(item => {
     const key = getKey(item);
     if (!key) return;
 
@@ -74,13 +75,13 @@ function condenseSlimResources<T>(
   return [...map.values()];
 }
 
-function reconstructCondition(master: SlimCondition, additional?: SlimCondition) {
-  const reference = {
+function mergeCondition(master: SlimCondition, additional?: SlimCondition) {
+  const mergedReferences = {
     ...(master.reference ?? {}),
     ...(additional?.reference ?? {}),
   };
 
-  const newInstance = createInstanceFromCondition(additional?.onsetPeriod);
+  const newInstance = createInstanceFromPeriod(additional?.onsetPeriod);
   const instances = uniqWith(
     [master.instances, newInstance].flatMap(i => i ?? []),
     isEqual
@@ -88,7 +89,7 @@ function reconstructCondition(master: SlimCondition, additional?: SlimCondition)
 
   const fullCondition: SlimCondition = {
     ...master,
-    reference,
+    reference: mergedReferences,
     instances,
   };
   delete fullCondition.onsetPeriod;
@@ -96,13 +97,16 @@ function reconstructCondition(master: SlimCondition, additional?: SlimCondition)
   return fullCondition;
 }
 
-function createInstanceFromCondition(period: Period | undefined) {
+/**
+ * Instance represents an occurrence of something
+ */
+function createInstanceFromPeriod(period: Period | undefined): Instance | undefined {
   if (!period) return undefined;
   return { onsetPeriod: period };
 }
 
-function reconstructProcedure(master: SlimProcedure, additional?: SlimProcedure) {
-  const references = uniqWith(
+function mergeProcedure(master: SlimProcedure, additional?: SlimProcedure) {
+  const mergedReferences = uniqWith(
     [master.reference, additional?.reference].flatMap(r => r ?? []),
     isEqual
   );
@@ -114,18 +118,15 @@ function reconstructProcedure(master: SlimProcedure, additional?: SlimProcedure)
 
   const fullProcedure: SlimProcedure = {
     ...master,
-    reference: references,
+    reference: mergedReferences,
     instances,
   };
 
   return fullProcedure;
 }
 
-function reconstructMedStatement(
-  master: SlimMedicationStatement,
-  additional?: SlimMedicationStatement
-) {
-  const reference = {
+function mergeMedStatement(master: SlimMedicationStatement, additional?: SlimMedicationStatement) {
+  const mergedReferences = {
     ...(master.reference ?? {}),
     ...(additional?.reference ?? {}),
   };
@@ -142,7 +143,7 @@ function reconstructMedStatement(
 
   const fullMedication: SlimMedicationStatement = {
     ...master,
-    reference,
+    reference: mergedReferences,
     instances,
   };
   delete fullMedication.effectivePeriod;
