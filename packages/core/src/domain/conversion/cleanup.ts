@@ -1,12 +1,12 @@
 export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g;
 
-const LESS_THAN = "&lt;";
+export const LESS_THAN = "&lt;";
 const AMPERSAND = "&amp;";
 
 export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoCdUnk = replaceCdUnkString(payloadRaw);
   const payloadNoAmpersand = replaceAmpersand(payloadNoCdUnk);
-  const payloadNoLessThan = replaceLessThanAndMoreThan(payloadNoAmpersand);
+  const payloadNoLessThan = replaceLessThanChar(payloadNoAmpersand);
   const payloadNoNullFlavor = replaceNullFlavor(payloadNoLessThan);
   const payloadCleanedCode = cleanUpTranslationCode(payloadNoNullFlavor);
   return payloadCleanedCode;
@@ -35,13 +35,9 @@ function replaceAmpersand(payloadRaw: string): string {
  *
  * Not replacing `>X` and `> X` because those might happen naturally, i.e. in lists `<td>1.`, etc.
  */
-function replaceLessThanAndMoreThan(payloadRaw: string): string {
-  const lessWithSpaces = /\s<\s/g; // Matches ` < `
-  const lessWithDigit = /<\s*(\d)/g; // Matches `<X` and `< X`
-
-  return payloadRaw
-    .replace(lessWithSpaces, ` ${LESS_THAN} `)
-    .replace(lessWithDigit, (_, digit) => `${LESS_THAN} ${digit}`);
+export function replaceLessThanChar(payloadRaw: string): string {
+  const lessPattern = /\s<\s|\s*<\s*(?=\d)/g;
+  return payloadRaw.replace(lessPattern, ` ${LESS_THAN} `);
 }
 
 export function cleanUpTranslationCode(payloadRaw: string): string {
