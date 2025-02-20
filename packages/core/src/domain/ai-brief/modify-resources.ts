@@ -430,7 +430,6 @@ function getSlimObservation(res: Observation): SlimObservation {
 }
 
 export type SlimMedication = Omit<Medication, "name"> & {
-  name?: string | undefined;
   reference?: Record<string, string>;
   sideNote?: string;
   names?: string[];
@@ -443,7 +442,7 @@ function getSlimMedication(res: Medication): SlimMedication {
   delete updRes.code;
   return {
     ...updRes,
-    name,
+    names: Array.from([name].flatMap(n => n ?? [])),
   };
 }
 

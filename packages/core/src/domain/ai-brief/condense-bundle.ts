@@ -45,7 +45,7 @@ export function condenseBundle(bundle: SlimResource[]): SlimResource[] {
   const condensedMedications: SlimMedication = {
     resourceType: "Medication",
     sideNote: "This is a list of all previously-used medications",
-    names: medications.flatMap(m => m.name ?? []),
+    names: medications.flatMap(m => m.names ?? []),
   };
 
   return [

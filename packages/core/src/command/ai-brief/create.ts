@@ -8,6 +8,7 @@ import { errorToString, toArray } from "@metriport/shared";
 import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
+import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 import {
   SlimCondition,
   SlimDiagnosticReport,
@@ -55,7 +56,6 @@ const referenceResources = ["Practitioner", "Organization", "Observation", "Loca
 
 const documentVariableName = "text";
 
-import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
