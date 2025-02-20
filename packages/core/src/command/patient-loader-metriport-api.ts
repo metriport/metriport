@@ -109,7 +109,7 @@ function validatePatient(patient: Patient): boolean {
 }
 
 //
-function getDomainFromDTO(dto: PatientDTO): Patient {
+export function getDomainFromDTO(dto: PatientDTO): Patient {
   return {
     id: dto.id,
     eTag: dto.eTag ?? "",

@@ -54,8 +54,15 @@ export class SecretsStack extends Stack {
       }
     }
 
-    if (props.config.canvas?.secretNames) {
-      for (const secretName of Object.values<string | undefined>(props.config.canvas.secretNames)) {
+    const ehrSecrets = {
+      ...props.config.canvas?.secretNames,
+      ...props.config.ehrIntegration?.athenaHealth.secrets,
+      ...props.config.ehrIntegration?.elation.secrets,
+      ...props.config.ehrIntegration?.canvas.secrets,
+    };
+
+    if (Object.keys(ehrSecrets).length) {
+      for (const secretName of Object.values<string | undefined>(ehrSecrets)) {
         if (!secretName || !secretName.trim().length) continue;
         const secret = makeSecret(secretName);
         logSecretInfo(this, secret, secretName);

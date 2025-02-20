@@ -19,6 +19,7 @@ import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { Config } from "../../shared/config";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
+import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -47,7 +48,8 @@ export async function generateCcd(
     type: "collection",
     entry: [...metriportGenerated, { resource: fhirOrganization }],
   };
-  const parsedBundle = bundleSchema.parse(bundle);
+  const normalizedBundle = normalizeBundle(bundle);
+  const parsedBundle = bundleSchema.parse(normalizedBundle);
   await uploadCcdFhirDataToS3(patient, parsedBundle, requestId);
 
   const validatedBundle = validateFhirEntries(parsedBundle);
@@ -64,7 +66,7 @@ export async function generateCcd(
 async function getFhirResourcesForCcd(
   patient: Patient
 ): Promise<BundleEntry<Resource>[] | undefined> {
-  const allResources = await getConsolidatedPatientData({ patient });
+  const allResources = await getConsolidatedPatientData({ patient, forceDataFromFhir: true });
   return allResources.entry?.filter(entry => {
     const resource = entry.resource;
     if (resource?.resourceType === "Composition") return false;

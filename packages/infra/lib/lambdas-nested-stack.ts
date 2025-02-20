@@ -4,6 +4,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as rds from "aws-cdk-lib/aws-rds";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
@@ -33,6 +34,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
     appId: string;
     configId: string;
   };
+  bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
 }
 
 export class LambdasNestedStack extends NestedStack {
@@ -137,6 +139,7 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       appId: props.appConfigEnvVars.appId,
       configId: props.appConfigEnvVars.configId,
+      bedrock: props.config.bedrock,
     });
   }
 
@@ -170,7 +173,12 @@ export class LambdasNestedStack extends NestedStack {
         CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared, lambdaLayers.chromium],
+      layers: [
+        lambdaLayers.shared,
+        lambdaLayers.chromium,
+        lambdaLayers.puppeteer,
+        lambdaLayers.saxon,
+      ],
       memory: 1024,
       timeout: CDA_TO_VIS_TIMEOUT,
       vpc,
@@ -429,6 +437,7 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction,
     appId,
     configId,
+    bedrock,
   }: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -440,6 +449,7 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     appId: string;
     configId: string;
+    bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   }): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -457,9 +467,15 @@ export class LambdasNestedStack extends NestedStack {
         CONVERSION_RESULT_BUCKET_NAME: conversionsBucket.bucketName,
         APPCONFIG_APPLICATION_ID: appId,
         APPCONFIG_CONFIGURATION_ID: configId,
+        ...(bedrock && {
+          // API_URL set on the api-stack after the OSS API is created
+          BEDROCK_REGION: bedrock?.region,
+          BEDROCK_VERSION: bedrock?.anthropicVersion,
+          AI_BRIEF_MODEL_ID: bedrock?.modelId,
+        }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 4096,
       timeout: lambdaTimeout,
       isEnableInsights: true,
@@ -476,6 +492,17 @@ export class LambdasNestedStack extends NestedStack {
       resourceRole: fhirToBundleLambda.role,
       appConfigResources: ["*"],
     });
+
+    const bedrockPolicyStatement = new iam.PolicyStatement({
+      actions: ["bedrock:InvokeModel"],
+      resources: [
+        `arn:aws:bedrock:*:*:foundation-model/*`,
+        `arn:aws:bedrock:*:*:inference-profile/*`,
+        `arn:aws:bedrock:*:*:application-inference-profile/*`,
+      ],
+    });
+
+    fhirToBundleLambda.addToRolePolicy(bedrockPolicyStatement);
 
     return fhirToBundleLambda;
   }

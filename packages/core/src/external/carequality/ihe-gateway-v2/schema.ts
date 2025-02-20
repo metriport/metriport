@@ -2,6 +2,13 @@ import { z } from "zod";
 
 export const stringOrNumberSchema = z.union([z.string(), z.number()]);
 
+export const numericValue = z.preprocess(input => {
+  if (typeof input === "string") {
+    return parseInt(input);
+  }
+  return input;
+}, z.number());
+
 export const schemaOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.literal("")]);
 export const schemaOrArray = <T extends z.ZodTypeAny>(schema: T) =>
@@ -61,9 +68,11 @@ export const genderCodeSchema = z.union([
 export type IheGender = z.infer<typeof genderCodeSchema>;
 
 export const slot = z.object({
-  ValueList: z.object({
-    Value: schemaOrArray(stringOrNumberSchema),
-  }),
+  ValueList: schemaOrEmpty(
+    z.object({
+      Value: schemaOrArray(stringOrNumberSchema),
+    })
+  ),
   _name: z.string(),
 });
 export type Slot = z.infer<typeof slot>;

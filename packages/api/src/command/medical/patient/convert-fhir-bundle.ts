@@ -1,21 +1,25 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import {
   ConsolidationConversionType,
   Input as ConversionInput,
   MedicalRecordFormat,
   Output as ConversionOutput,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import {
+  createMRSummaryFileName,
+  createSandboxMRSummaryFileName,
+} from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
+import { isWkhtmltopdfEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
+import { out } from "@metriport/core/util";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
-import { createSandboxMRSummaryFileName } from "./shared";
 
 dayjs.extend(duration);
 
@@ -40,7 +44,6 @@ export async function handleBundleToMedicalRecord({
   dateFrom,
   dateTo,
   conversionType,
-  generateAiBrief,
 }: {
   bundle: Bundle<Resource>;
   patient: Pick<Patient, "id" | "cxId" | "data">;
@@ -48,8 +51,8 @@ export async function handleBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: MedicalRecordFormat;
-  generateAiBrief?: boolean;
 }): Promise<SearchSetBundle<Resource>> {
+  const { log } = out(`handleBundleToMedicalRecord - pt ${patient.id}`);
   const bucketName = Config.getSandboxSeedBucketName();
   if (Config.isSandbox() && bucketName) {
     const patientMatch = getSandboxSeedData(patient.data.firstName);
@@ -70,12 +73,11 @@ export async function handleBundleToMedicalRecord({
     dateFrom,
     dateTo,
     conversionType,
-    generateAiBrief,
   });
 
   const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
   if (!hasContents) {
-    console.log(`No contents in the consolidated data for patient ${patient.id}`);
+    log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
     newBundle.total = 0;
   }
@@ -119,7 +121,6 @@ async function convertFHIRBundleToMedicalRecord({
   dateFrom,
   dateTo,
   conversionType,
-  generateAiBrief,
 }: {
   bundle: Bundle<Resource>;
   patient: Pick<Patient, "id" | "cxId" | "data">;
@@ -127,10 +128,18 @@ async function convertFHIRBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: MedicalRecordFormat;
-  generateAiBrief?: boolean;
 }): Promise<ConversionOutput> {
-  const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
-  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+  const { log } = out(`convertFHIRBundleToMedicalRecord - cx ${patient.cxId} pt ${patient.id}`);
+  const lambdaNameOld = Config.getFHIRToMedicalRecordLambdaName();
+  const lambdaNameNew = Config.getFHIRToMedicalRecordLambda2Name();
+  const isWkhtmltopdfEnabled = await isWkhtmltopdfEnabledForCx(patient.cxId);
+
+  const [activeLambdaName, inactiveLambdaName, inactiveSuffix] = isWkhtmltopdfEnabled
+    ? [lambdaNameNew, lambdaNameOld, "_puppeteer"]
+    : [lambdaNameOld, lambdaNameNew, "_wkhtmltopdf"];
+
+  if (!activeLambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+  log(`Using lambda name: ${activeLambdaName} - isWkhtmltopdfEnabled: ${isWkhtmltopdfEnabled}`);
 
   // Store the bundle on S3
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
@@ -149,7 +158,7 @@ async function convertFHIRBundleToMedicalRecord({
     metadata,
   });
   // Send it to conversion
-  const payload: ConversionInput = {
+  const activeLambdaPayload: ConversionInput = {
     fileName,
     patientId: patient.id,
     firstName: patient.data.firstName,
@@ -157,17 +166,30 @@ async function convertFHIRBundleToMedicalRecord({
     dateFrom,
     dateTo,
     conversionType,
-    generateAiBrief,
+  };
+  const inactiveLambdaPayload: ConversionInput = {
+    ...activeLambdaPayload,
+    resultFileNameSuffix: inactiveSuffix,
   };
 
-  const result = await lambdaClient
-    .invoke({
-      FunctionName: lambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise();
-  const resultPayload = getLambdaResultPayload({ result, lambdaName });
+  const [result] = await Promise.all([
+    lambdaClient
+      .invoke({
+        FunctionName: activeLambdaName,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify(activeLambdaPayload),
+      })
+      .promise(),
+    inactiveLambdaName &&
+      lambdaClient
+        .invoke({
+          FunctionName: inactiveLambdaName,
+          InvocationType: "RequestResponse",
+          Payload: JSON.stringify(inactiveLambdaPayload),
+        })
+        .promise(),
+  ]);
+  const resultPayload = getLambdaResultPayload({ result, lambdaName: activeLambdaName });
   return JSON.parse(resultPayload) as ConversionOutput;
 }
 

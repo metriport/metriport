@@ -1,0 +1,248 @@
+---
+title: "Bulk Patient Create"
+description: "Creates a batch of patients in Metriport, and initiates Document Queries for all of them."
+api: "POST /medical/v1/patient/bulk"
+---
+
+The Bulk Patient Create endpoint allows you create, and kick off Document Queries for, a batch of
+Patients in a single request.
+
+<Tip>
+  Currently, a max of 100,000 patients in a batch is
+  supported.
+</Tip>
+
+<Info>
+  This is an asynchronous endpoint: you upload a file with
+  patient demographics and we notify you when the process is
+  completed, through a [webhook
+  message](#webhook-with-the-result).
+</Info>
+
+<img src="/images/bulk-import-overview.png" />
+
+[comment]: # "source for the image above: ..."
+
+The response to this endpoint contains a URL that you should use to upload a file containing the
+Patient demographics that will be used to create individual Patients. More on this
+[below](#uploading-the-csv).
+
+### Input CSV File Format
+
+The file with the patient demographics should be created as comma-separated values, CSV. You can
+access an example of the file
+[here](https://docs.google.com/spreadsheets/d/1cftXTyN2XFMGBwLHvPQuS5xkGXev1qZTXm49jslt6-4/edit?usp=sharing).
+
+We support up to 10 addresses, 10 email addresses, and 10 phone numbers. In order to provide those,
+just index each column with `-N` at the end of the column name, where `N` is the index (1-10).
+
+<Expandable title="CSV columns">
+  <Info>
+    You may provide a comma/space delimited string to
+    specify multiple first and last names. For example, the
+    following inputs would be equivalent: `"John,Jonathan"`
+    & `"John Jonathan"` - these would translate to `["John",
+    "Jonathan"]`.
+  </Info>
+ 
+  <ParamField body="externalId" type="string">
+    The ID of the Patient in your system - it's available 
+    throughout the Metriport API.
+  </ParamField>
+ 
+  <ParamField body="firstName" type="string" required>
+    The Patient's first name(s).
+  </ParamField>
+ 
+  <ParamField body="lastName" type="string" required>
+    The Patient's last name(s).
+  </ParamField>
+ 
+  <ParamField body="dob" type="string" required>
+    The Patient's date of birth (DOB), formatted
+    `YYYY-MM-DD` as per [ISO
+    8601](https://en.wikipedia.org/wiki/ISO_8601).
+  </ParamField>
+ 
+  <ParamField body="gender" type="string" required>
+    The Patient's gender at birth, can be one of `M` or `F`
+    or `O` or `U`. Use `O` (other) when the patient's gender
+    is known but it is not `M` or `F`, i.e intersex or
+    hermaphroditic. Use U (unknown) when the patient's
+    gender is not known.
+  </ParamField>
+ 
+  <ParamField body="addressLine1-N" type="string" required>
+    The address.
+  </ParamField>
+ 
+  <ParamField body="addressLine2-N" type="string">
+    The address details, for example: `#4451`.
+  </ParamField>
+ 
+  <ParamField body="city-N" type="string" required>
+    The city.
+  </ParamField>
+ 
+  <ParamField body="state-N" type="string" required>
+    The 2 letter state acronym, for example: `CA`.
+  </ParamField>
+ 
+  <ParamField body="zip-N" type="string" required>
+    5 digit zip code.
+  </ParamField>
+ 
+  <ParamField body="phone-N" type="string">
+    The Patient's 10 digit phone number, formatted
+    `1234567899`.
+  </ParamField>
+
+  <ParamField body="email-N" type="string">
+    The Patient's email address.
+  </ParamField>
+  
+  <ParamField body="ssn" type="string">
+    The 9 digit SSN number.
+  </ParamField>
+  
+  <ParamField body="driversLicenceNo" type="string">
+    The driver's license number.
+  </ParamField>
+  
+  <ParamField body="driversLicenceState" type="string">
+    The 2 letter state acronym, for example: `CA`. 
+    Required if `driversLicenceNo` is provided.
+  </ParamField>
+</Expandable>
+
+**Example**
+
+The first Patient below has two email addresses, the second Patient only has one email, and the
+third Patient has three email addresses:
+
+| ... | zip\* | email-1          | email-2             | email-3           | ... |
+| --- | ----- | ---------------- | ------------------- | ----------------- | --- |
+| ... | 12345 | some@domain.com  | another@domain.com  |                   | ... |
+| ... | 12312 | avocado@food.com |                     |                   | ... |
+| ... | 99887 | lawyer@job.com   | personal@domain.com | family@domain.com | ... |
+
+For address fields, they work as a group: if you provide `addressLine1-2`, then all address fields
+with index `2` are required (otherwise, the respective row/Patient will be marked as invalid).
+Following this logic, if you don't provide any address field for index `3` through `10`, all the
+address fields for those indexes are disconsidered, and the Patient is considered valid (assuming
+other non-address fields are valid too).
+
+At least one complete address must be provided:
+
+- addressLine1-1
+- addressLine2-1
+- city-1
+- state-1
+- zip-1
+
+For information about the result file, see [this](/medical-api/handling-data/webhooks#result-csv-file).
+
+### Validation
+
+This endpoint validates access to the provided Facility ID (or that there's only one if omitted).
+It will return a `404` if the facility can't be found or `400` if there's more than one Facility
+and the ID was not provided.
+
+Once the CSV is uploaded, the Metriport API will also validate the file is in the expected format
+(CSV). It might set the status of the request to `failed` and send a corresponding webhook message.
+
+If those previous validations are successful, each row will be validated individually and it's
+respective status will be stored so it can be reviewed in the
+[result CSV file](/medical-api/handling-data/webhooks#result-csv-file) (it won't fail the whole
+request at this point).
+
+### Uploading the CSV
+
+The URL is pre-signed to your account and has a duration of 10 minutes. It should only be used
+once. Use it to send a `PUT` request like so:
+
+```shell
+curl --location --request PUT '<UPLOAD-URL>' \
+--header 'Content-Type: text/csv' \
+--header 'x-api-key: <YOUR-API-KEY>' \
+--data-binary '@/local-to-your/file.csv'
+```
+
+#### Webhook with the result
+
+Once the CSV file is uploaded, the Metriport API starts processing it and sends a
+[webhook message](/medical-api/handling-data/webhooks#bulk-patient-create) to your App
+indicating the status is `processing`. Once the patiets are created and their medical
+data is available, we send a new webhook message indicating the request is done, including
+a link to the resulting CSV file that contains the newly created Metriport IDs for the
+successfully created Patients.
+
+#### Bulk Patient Create Status
+
+During the processing of a bulk patient create, the request can change status following the logic
+below:
+
+[comment]: # (replace the image w/ the Mermaid diagram)
+
+<img src="/images/bulk-import-status.png" />
+
+[comment]: # (mermaid --- flowchart LR     A["waiting"] --> B["processing"] & C["failed"] & D["expired"]      B --> E["completed"] )
+
+- `waiting`: initial state, waiting for the CSV file;
+- `processing`: the CSV file has been uploaded and is being processed;
+- `completed`: the bulk create is completed;
+- `failed`: the bulk create failed (likely due to an uploaded file with invalid format);
+- `expired`: no file has been uploaded and the upload URL expired.
+
+## Query Params
+
+<ParamField query="facilityId" type="string">
+  The ID of the Facility where the Patients receive care.
+  All patients in a single request/CSV will be associated
+  with the same Facility. It can be omitted if there's only
+  one Facility in your account.
+</ParamField>
+
+<ParamField query="dryRun" type="boolean">
+  When set to `true`, no Patients will be created, and this
+  request is only used to validate the CSV file and provide
+  feedback about each Patient demographics. Defaults to
+  `false`.
+</ParamField>
+
+## Body
+
+No body is accepted/processed.
+
+## Response
+
+<ResponseField name="requestId" type="string" required>
+  The ID that represents this bulk patient create.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  The status of the bulk bulk patient create. Always
+  `waiting`. See all the possible values
+  [here](#bulk-patient-create-status).
+</ResponseField>
+
+<ResponseField name="uploadUrl" type="string" required>
+  The URL to upload the CSV file containing the Patient
+  demographics to be used to create new Patients. It's valid
+  for 10 minutes and should only be used once. See more
+  details [here](#uploading-the-csv)
+</ResponseField>
+
+<ResponseExample>
+
+Coming soon.
+
+</ResponseExample>
+
+```json
+{
+  "requestId": "00000000-00000000-00000000-00000000",
+  "status": "waiting",
+  "uploadUrl": "<presigned-upload-url>"
+}
+```

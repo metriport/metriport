@@ -12,10 +12,11 @@ import {
   combineResources,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  deduplicateWithinMap,
   getPerformedDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const procedureStatus = [
@@ -75,7 +76,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   ): Procedure {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
       return (
         system?.includes(CPT_CODE) ||
         system?.includes(CPT_OID) ||
@@ -128,7 +129,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
     else if (snomedCode) key = JSON.stringify({ datetime, snomedCode });
 
     if (key) {
-      fillMaps(
+      deduplicateWithinMap(
         proceduresMap,
         key,
         procedure,
@@ -140,7 +141,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
       const display = extractDisplayFromConcept(procedure.code);
       if (display) {
         const key = JSON.stringify({ datetime, display });
-        fillMaps(
+        deduplicateWithinMap(
           proceduresMap,
           key,
           procedure,
@@ -173,8 +174,8 @@ export function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(CPT_CODE) || system.includes(CPT_OID)) {
           cptCode = code;

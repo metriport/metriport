@@ -7,6 +7,7 @@ import { getFeedbackEntryOrFail } from "../../command/feedback/feedback-entry";
 import { FeedbackData } from "../../domain/feedback";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom } from "../util";
+import { handleParams } from "../helpers/handle-params";
 
 const router = Router();
 
@@ -17,6 +18,7 @@ const router = Router();
  */
 router.put(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getFrom("params").orFail("id", req);
@@ -38,6 +40,7 @@ router.put(
  */
 router.get(
   "/entry/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getFrom("params").orFail("id", req);

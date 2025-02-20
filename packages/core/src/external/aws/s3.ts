@@ -11,6 +11,8 @@ import {
   errorToString,
   executeWithRetries,
   ExecuteWithRetriesOptions,
+  MetriportError,
+  NotFoundError,
 } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
@@ -38,6 +40,14 @@ export type GetSignedUrlWithBucketAndKey = {
 export type GetSignedUrlWithLocation = {
   location: string;
   durationSeconds?: number;
+};
+
+export type UploadParams = {
+  bucket: string;
+  key: string;
+  file: Buffer;
+  contentType?: string;
+  metadata?: Record<string, string>;
 };
 
 export async function executeWithRetriesS3<T>(
@@ -118,9 +128,18 @@ export class S3Utils {
     return await pipeline(readStream, writeStream);
   }
 
-  getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
-    const stream = this.getReadStream(s3BucketName, s3FileName);
-    return this.streamToString(stream);
+  async getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
+    return hydrateErrors(
+      async () => {
+        const stream = this.getReadStream(s3BucketName, s3FileName);
+        return await this.streamToString(stream);
+      },
+      {
+        bucket: s3BucketName,
+        key: s3FileName,
+      },
+      `getFileContentsAsString`
+    );
   }
 
   private getReadStream(s3BucketName: string, s3FileName: string): stream.Readable {
@@ -364,13 +383,7 @@ export class S3Utils {
     file,
     contentType,
     metadata,
-  }: {
-    bucket: string;
-    key: string;
-    file: Buffer;
-    contentType?: string;
-    metadata?: Record<string, string>;
-  }): Promise<AWS.S3.ManagedUpload.SendData> {
+  }: UploadParams): Promise<AWS.S3.ManagedUpload.SendData> {
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
@@ -449,9 +462,30 @@ export async function returnUndefinedOn404<T>(fn: () => Promise<T>): Promise<T |
   }
 }
 
+export async function hydrateErrors<T>(
+  fn: () => Promise<T>,
+  fileInfo: { bucket: string; key: string },
+  functionName: string
+): Promise<T> {
+  try {
+    return await fn();
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (isNotFoundError(error)) {
+      throw new NotFoundError("Key not found", error, fileInfo);
+    }
+    throw new MetriportError(`Error on ${functionName}`, error, fileInfo);
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isNotFoundError(error: any): boolean {
-  return error.Code === "NoSuchKey" || error.code === "NoSuchKey" || error.statusCode === 404;
+  return (
+    error.Code === "NoSuchKey" ||
+    error.code === "NoSuchKey" ||
+    error.statusCode === 404 ||
+    error instanceof NotFoundError
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

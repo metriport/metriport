@@ -1,5 +1,10 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { ResourceTypeForConsolidation, SearchSetBundle } from "@metriport/shared/medical";
+import {
+  ResourceTypeForConsolidation,
+  SearchSetBundle,
+  toSearchSet,
+} from "@metriport/shared/medical";
+import { Patient } from "../../domain/patient";
 import {
   buildBundleEntry,
   getReferencesFromResources,
@@ -10,7 +15,6 @@ import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
 import { getConsolidated } from "./consolidated-get";
-
 const maxHydrationIterations = 5;
 
 /**
@@ -20,33 +24,36 @@ const maxHydrationIterations = 5;
  */
 export async function getConsolidatedFromS3({
   cxId,
-  patientId,
+  patient,
   ...params
 }: {
   cxId: string;
-  patientId: string;
+  patient: Patient;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
 }): Promise<SearchSetBundle> {
+  const patientId = patient.id;
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patientId });
-  log(`Consolidated with ${consolidated.entry?.length} entries`);
+  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patient });
+  const consolidatedSearchset = toSearchSet(consolidated);
 
-  const filtered = await filterConsolidated(consolidated, params);
-
-  return { ...filtered, type: "searchset", entry: filtered.entry ?? [] };
+  log(`Consolidated found with ${consolidatedSearchset.entry?.length} entries`);
+  const filtered = await filterConsolidated(consolidatedSearchset, params);
+  log(`Filtered to ${filtered?.entry?.length} entries`);
+  return filtered as SearchSetBundle;
 }
 
 async function getOrCreateConsolidatedOnS3({
   cxId,
-  patientId,
+  patient,
 }: {
   cxId: string;
-  patientId: string;
+  patient: Patient;
 }): Promise<Bundle> {
+  const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
   const preGenerated = await getConsolidated({
     cxId,
@@ -57,12 +64,12 @@ async function getOrCreateConsolidatedOnS3({
     return preGenerated.bundle;
   }
   log(`Did not found pre-generated consolidated, creating a new one...`);
-  const newConsolidated = await createConsolidatedFromConversions({ cxId, patientId });
+  const newConsolidated = await createConsolidatedFromConversions({ cxId, patient });
   return newConsolidated;
 }
 
 export async function filterConsolidated(
-  bundle: Bundle<Resource>,
+  bundle: Bundle,
   {
     resources = [],
     dateFrom,
@@ -92,11 +99,11 @@ export async function filterConsolidated(
 }
 
 export function addMissingReferences(
-  filteredBundle: Bundle<Resource>,
-  originalBundle: Bundle<Resource>,
+  filteredBundle: Bundle,
+  originalBundle: Bundle,
   addMissingReferencesFn = addMissingReferences,
   iteration = 1
-): Bundle<Resource> {
+): Bundle {
   const filteredResources = (filteredBundle.entry ?? []).flatMap(e => e.resource ?? []);
 
   const { missingReferences } = getReferencesFromResources({ resources: filteredResources });

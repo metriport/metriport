@@ -29,7 +29,6 @@ export type BooleanFF = z.infer<typeof ffBooleanSchema>;
 export const booleanFFsSchema = z.object({
   commonwellFeatureFlag: ffBooleanSchema,
   carequalityFeatureFlag: ffBooleanSchema,
-  cxsWithConsolidatedFromS3: ffBooleanSchema.optional(),
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
@@ -38,12 +37,19 @@ export const cxBasedFFsSchema = z.object({
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
+  cxsWithNoMrLogoFeatureFlag: ffStringValuesSchema,
+  cxsWithBmiMrFeatureFlag: ffStringValuesSchema,
+  cxsWithDermMrFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
   getCxsWithCdaCustodianFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
   cxsWithDemoAugEnabled: ffStringValuesSchema,
+  cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
+  cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
+  cxsWithHydrationFeatureFlag: ffStringValuesSchema, // TODO: 2563 - Remove this after prod testing is done
+  cxsUsingWkhtmltopdfInsteadOfPuppeteer: ffStringValuesSchema, // TODO: 2510 - Remove this when ready to rollout to all customers
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
@@ -126,8 +132,16 @@ export async function getFeatureFlagValueStringArray<T extends keyof StringValue
   envName: string,
   featureFlagName: T
 ): Promise<StringValueFeatureFlags[T]> {
-  const configContentValue = await getFeatureFlags(region, appId, configId, envName);
-  return configContentValue[featureFlagName];
+  try {
+    const configContentValue = await getFeatureFlags(region, appId, configId, envName);
+    return configContentValue[featureFlagName];
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
+    return { enabled: false, values: [] };
+  }
 }
 
 export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureFlags>(
@@ -245,11 +259,35 @@ export async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
 }
 
+export async function isStrictMatchingAlgorithmEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithStrictMatchingAlgorithmEnabled = await getCxsWithStrictMatchingAlgorithm();
+  return cxsWithStrictMatchingAlgorithmEnabled.includes(cxId);
+}
+
+export async function getCxsWithStrictMatchingAlgorithm(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithStrictMatchingAlgorithm");
+}
+
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
   return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
 
-export async function isConsolidatedFromS3Enabled(): Promise<boolean> {
-  return await isFeatureFlagEnabled("cxsWithConsolidatedFromS3");
+// TODO: 2563 - Remove this after prod testing is done
+export async function isHydrationEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithHydrationEnabled = await getCxsWithHydrationFeatureFlag();
+  return cxIdsWithHydrationEnabled.some(i => i === cxId);
+}
+
+// TODO: 2563 - Remove this after prod testing is done
+export async function getCxsWithHydrationFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithHydrationFeatureFlag");
+}
+
+export async function isWkhtmltopdfEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithWkhtmltopdfEnabled = await getCxsUsingWkhtmltopdfInsteadOfPuppeteer();
+  return cxIdsWithWkhtmltopdfEnabled.some(i => i === cxId);
+}
+export async function getCxsUsingWkhtmltopdfInsteadOfPuppeteer(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsUsingWkhtmltopdfInsteadOfPuppeteer");
 }

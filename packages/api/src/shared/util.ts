@@ -88,15 +88,6 @@ export class Util {
     debug: Util.debug(prefix, suffix),
   });
 
-  static sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));
-
-  static async sleepRandom(max: number, multiplierMin = 0.1): Promise<void> {
-    let multiplier = Math.random();
-    if (multiplier < multiplierMin) multiplier += multiplierMin; // at least 10% of the max delay
-    const timeToWait = Math.floor(multiplier * max);
-    await Util.sleep(timeToWait);
-  }
-
   static kilojoulesToKilocalories(kilojoules: number): number {
     return kilojoules * 0.239006;
   }

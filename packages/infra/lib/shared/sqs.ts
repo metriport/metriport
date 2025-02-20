@@ -32,19 +32,12 @@ export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
   consumer?: IGrantable;
   alarmSnsAction?: SnsAction;
   alarmMaxAgeOfOldestMessage?: Duration;
-} & (
-    | {
-        createDLQ: false;
-        createRetryLambda: false;
-      }
-    | {
-        createDLQ?: true | undefined;
-        createRetryLambda?: true | undefined;
-        lambdaLayers: ILayerVersion[];
-        envType: EnvType;
-        alarmMaxAgeOfOldestMessageDlq?: Duration;
-      }
-  );
+  createDLQ?: boolean | undefined;
+  createRetryLambda?: boolean | undefined;
+  lambdaLayers: ILayerVersion[];
+  envType: EnvType;
+  alarmMaxAgeOfOldestMessageDlq?: Duration;
+};
 
 /**
  * Creates a SQS queue.
@@ -67,6 +60,7 @@ export function createQueue(props: QueueProps): Queue {
           : undefined),
       })
     : undefined;
+  const isCreateRetryLambda = props.createRetryLambda ?? true;
   const defaultQueueProps = {
     ...(dlq ? { dlq: dlq } : {}),
   };
@@ -96,7 +90,7 @@ export function createQueue(props: QueueProps): Queue {
     alarmAction: props?.alarmSnsAction,
   });
 
-  if (createDLQ && dlq) {
+  if (dlq && isCreateRetryLambda) {
     createRetryLambda({
       ...props,
       sourceQueue: dlq,

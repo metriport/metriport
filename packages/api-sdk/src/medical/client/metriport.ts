@@ -1,4 +1,5 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
+import { PaginatedResponse } from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
@@ -31,10 +32,13 @@ import {
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
+import { NetworkEntry } from "../models/network-entry";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   GetConsolidatedQueryProgressResponse,
+  GetSingleConsolidatedQueryProgressResponse,
   PatientCreate,
+  PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
 } from "../models/patient";
@@ -45,6 +49,7 @@ const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
 const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
+const NETWORK_ENTRY_URL = `/network-entry`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
 const REQUEST_ID_HEADER_NAME = "x-metriport-request-id";
@@ -64,6 +69,18 @@ export type Options = {
       baseAddress?: string;
     }
 );
+
+/**
+ * Pagination options. Either fromItem or toItem can be provided, but not both.
+ * - fromItem: The ID of the first item to be returned.
+ * - toItem: The ID of the last item to be returned.
+ * - count: The number of items to be returned - defaults to 50, max is 500.
+ */
+export type Pagination = {
+  fromItem?: string;
+  toItem?: string;
+  count?: number;
+};
 
 export class MetriportMedicalApi {
   // TODO this should be private
@@ -283,6 +300,42 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Returns the network entries supported by Metriport.
+   *
+   * @param filter Full text search filters, optional. If not provided, all network entries will be returned
+   *                (according to pagination settings).
+   *                See https://docs.metriport.com/medical-api/more-info/filters
+   * @param pagination Pagination settings, optional. If not provided, we paginate with a default page size of 100 items, and the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
+   * @returns An object containing:
+   * - `networkEntries` - The network entries in the current page.
+   * - `meta` - Pagination information, including how to get to the next page.
+   */
+  async listNetworkEntries({
+    filter,
+    pagination,
+  }: {
+    filter?: string | undefined;
+    pagination?: Pagination | undefined;
+  } = {}): Promise<PaginatedResponse<NetworkEntry, "networkEntries">> {
+    const resp = await this.api.get(`${NETWORK_ENTRY_URL}`, {
+      params: {
+        filter,
+        ...getPaginationParams(pagination),
+      },
+    });
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, networkEntries: [] };
+    return resp.data;
+  }
+
+  async listNetworkEntriesPage(
+    url: string
+  ): Promise<PaginatedResponse<NetworkEntry, "networkEntries">> {
+    const resp = await this.api.get(url);
+    return resp.data;
+  }
+
+  /**
    * Creates a new patient at Metriport and HIEs.
    *
    * @param data The data to be used to create a new patient.
@@ -355,6 +408,24 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
+  }
+
+  /**
+   * Updates a patient's HIE opt-out status.
+   *
+   * @param patientId The ID of the patient whose opt-out status should be updated
+   * @param hieOptOut Boolean indicating whether to opt the patient out (true) or in (false)
+   * @returns The updated opt-out status
+   */
+  async updatePatientHieOptOut(
+    patientId: string,
+    hieOptOut: boolean
+  ): Promise<PatientHieOptOutResponse> {
+    const resp = await this.api.put(`${PATIENT_URL}/${patientId}/hie-opt-out`, undefined, {
+      params: { hieOptOut },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
   }
 
   // TODO #870 remove this
@@ -440,6 +511,23 @@ export class MetriportMedicalApi {
   }
 
   /** ---------------------------------------------------------------------------
+   * Get the consolidated data query status for a given patient and requestId.
+   * The results to the query are sent through Webhook (see
+   * startConsolidatedQuery() and https://docs.metriport.com/medical-api/more-info/webhooks).
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @param requestId The ID of the request to get the status of.
+   * @return The single consolidated data query status.
+   */
+  async getSingleConsolidatedQueryStatus(
+    patientId: string,
+    requestId: string
+  ): Promise<GetSingleConsolidatedQueryProgressResponse> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query/${requestId}`);
+    return resp.data;
+  }
+
+  /** ---------------------------------------------------------------------------
    * Add patient data as FHIR resources. Those can later be queried with startConsolidatedQuery(),
    * and will be made available to HIEs.
    *
@@ -493,15 +581,40 @@ export class MetriportMedicalApi {
   /**
    * Returns the patients associated with given facility.
    *
-   * @param facilityId The ID of the facility.
-   * @return The list of patients.
+   * @param facilityId The ID of the facility, optional. If not provided, patients from all facilities
+   *                   will be returned.
+   * @param filters Full text search filters, optional. If not provided, all patients will be returned
+   *                (according to pagination settings).
+   *                See https://docs.metriport.com/medical-api/more-info/filters
+   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
+   * @returns An object containing:
+   * - `patients` - A single page containing the patients corresponding to the given facility.
+   * - `meta` - Pagination information, including how to get to the next page.
    */
-  async listPatients(facilityId: string): Promise<PatientDTO[]> {
+  async listPatients({
+    facilityId,
+    filters,
+    pagination,
+  }: {
+    facilityId?: string | undefined;
+    filters?: string | undefined;
+    pagination?: Pagination | undefined;
+  } = {}): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(`${PATIENT_URL}`, {
-      params: { facilityId },
+      params: {
+        facilityId,
+        filters,
+        ...getPaginationParams(pagination),
+      },
     });
-    if (!resp.data) return [];
-    return resp.data.patients as PatientDTO[];
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, patients: [] };
+    return resp.data;
+  }
+
+  async listPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(url);
+    return resp.data;
   }
 
   /**
@@ -699,33 +812,37 @@ export class MetriportMedicalApi {
    * Verifies the signature of a webhook request.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
-   * @param wh_key - your webhook key.
-   * @param req.body - the body of the webhook request.
+   * @param key - your webhook key.
+   * @param body - the raw body of the webhook request, as string or Buffer.
    * @param signature - the signature obtained from the webhook request header.
-   *
    * @returns True if the signature is verified, false otherwise.
+   * @throws Error if the body is not a string.
    */
-  verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
-    return MetriportMedicalApi.verifyWebhookSignature(wh_key, reqBody, signature);
+  verifyWebhookSignature(key: string, body: string | Buffer, signature: string): boolean {
+    return MetriportMedicalApi.verifyWebhookSignature(key, body, signature);
   }
 
   /**
    * Verifies the signature of a webhook request.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
-   * @param wh_key - your webhook key.
-   * @param req.body - the body of the webhook request.
+   * @param key - your webhook key.
+   * @param body - the raw body of the webhook request, as string or Buffer.
    * @param signature - the signature obtained from the webhook request header.
-   *
    * @returns True if the signature is verified, false otherwise.
+   * @throws Error if the body is not a string.
    */
-  static verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
-    const signatureAsString = String(signature);
-    const receivedHash = crypto
-      .createHmac("sha256", wh_key)
-      .update(JSON.stringify(reqBody))
-      .digest("hex");
-    return receivedHash === signatureAsString;
+  static verifyWebhookSignature(key: string, body: string | Buffer, signature: string): boolean {
+    if (typeof body !== "string" && !(body instanceof Buffer)) {
+      throw new Error("Body must be a string or Buffer");
+    }
+    const normalizedBody = typeof body === "string" ? body : body.toString();
+    const receivedSignature = signature;
+    const expectedSignature = crypto.createHmac("sha256", key).update(normalizedBody).digest("hex");
+    const a = Buffer.from(expectedSignature);
+    const b = Buffer.from(receivedSignature);
+    if (Buffer.byteLength(a) != Buffer.byteLength(b)) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
   /**
@@ -764,4 +881,9 @@ export class MetriportMedicalApi {
     if (parse.success) return parse.data;
     return new WebhookRequestParsingFailure(parse.error, parse.error.format());
   }
+}
+
+function getPaginationParams(pagination?: Pagination) {
+  const { fromItem, toItem, count } = pagination ?? {};
+  return { fromItem, toItem, count };
 }

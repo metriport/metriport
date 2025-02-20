@@ -1,13 +1,14 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
-import { USState } from "@metriport/shared";
-import { BaseDomain, BaseDomainCreate } from "./base-domain";
-import { DocumentQueryProgress } from "./document-query";
-import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
-import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
+import { USStateForAddress } from "@metriport/shared";
+import { normalizeSsn } from "@metriport/shared/domain/patient/ssn";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
+import { BaseDomain, BaseDomainCreate } from "./base-domain";
+import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { Contact } from "./contact";
+import { DocumentQueryProgress } from "./document-query";
 import { LinkDemographics } from "./patient-demographics";
+import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
@@ -31,14 +32,12 @@ export type BaseIdentifier = {
 };
 
 export type PersonalIdentifier = BaseIdentifier &
-  (
-    | { type: GeneralPersonalIdentifiers }
-    | { type: DriversLicensePersonalIdentifier; state: USState }
-  );
+  ({ type: GeneralPersonalIdentifiers } | DriversLicense);
 
 export type DriversLicense = {
+  type: DriversLicensePersonalIdentifier;
   value: string;
-  state: USState;
+  state: USStateForAddress;
 };
 
 export const genderAtBirthTypes = ["F", "M", "O", "U"] as const;
@@ -82,6 +81,7 @@ export interface PatientCreate extends BaseDomainCreate {
   cxId: string;
   facilityIds: string[];
   externalId?: string;
+  hieOptOut?: boolean;
   data: PatientData;
 }
 
@@ -101,13 +101,21 @@ export function joinName(name: string[]): string {
 
 export interface Patient extends BaseDomain, PatientCreate {}
 
-export function getStatesFromAddresses(patient: Patient): USState[] {
+export function getStatesFromAddresses(patient: Patient): USStateForAddress[] {
   return patient.data.address.map(getState);
+}
+
+export function createSsnPersonalIdentifier(value: string): PersonalIdentifier {
+  const personalIdentifier: PersonalIdentifier = {
+    type: "ssn",
+    value: normalizeSsn(value),
+  };
+  return personalIdentifier;
 }
 
 export function createDriversLicensePersonalIdentifier(
   value: string,
-  state: USState
+  state: USStateForAddress
 ): PersonalIdentifier {
   const personalIdentifier: PersonalIdentifier = {
     type: "driversLicense",

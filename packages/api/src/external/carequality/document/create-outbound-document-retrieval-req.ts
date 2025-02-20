@@ -9,10 +9,14 @@ import { getGatewaySpecificDocRefsPerRequest } from "@metriport/core/external/ca
 import dayjs from "dayjs";
 import { chunk } from "lodash";
 import { HieInitiator } from "../../hie/get-hie-initiator";
-import { createPurposeOfUse, getSystemUserName, isGWValid } from "../shared";
+import { createPurposeOfUse, getSystemUserName } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
+
+function isGWValid(gateway: { homeCommunityId: string; url: string }): boolean {
+  return !!gateway.homeCommunityId && !!gateway.url;
+}
 
 export function createOutboundDocumentRetrievalReqs({
   requestId,

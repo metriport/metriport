@@ -20,8 +20,8 @@ dayjs.extend(duration);
 const folderName: string = ``; // eslint-disable-line @typescript-eslint/no-inferrable-types
 
 // keep empty to include all references
-const referencesToInclude: ResourceType[] = [];
-// const referencesToInclude: ResourceType[] = [
+const resourceTypesToInclude: ResourceType[] | undefined = undefined;
+// const resourceTypesToInclude: ResourceType[] = [
 //   "Location",
 //   "Organization",
 //   "RelatedPerson",
@@ -93,7 +93,7 @@ async function executeForFile(fileName: string, verbose: boolean) {
 
   const { references, missingReferences } = getReferencesFromResources({
     resources,
-    referencesToInclude,
+    referencesToInclude: resourceTypesToInclude,
   });
 
   totalResources += resources.length;

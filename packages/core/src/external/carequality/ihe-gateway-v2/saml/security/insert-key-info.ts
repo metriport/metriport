@@ -1,4 +1,5 @@
-import { XMLParser, XMLBuilder } from "fast-xml-parser";
+import { XMLBuilder } from "fast-xml-parser";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { v4 as uuidv4 } from "uuid";
 import {
   securityHeaderEnvelopedId,
@@ -18,7 +19,7 @@ export function insertKeyInfo({
   xmlContent: string;
   publicCert: string;
 }): string {
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
     parseAttributeValue: false,

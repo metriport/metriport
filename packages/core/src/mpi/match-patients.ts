@@ -2,8 +2,12 @@ import jaroWinkler from "jaro-winkler";
 import { intersectionWith } from "lodash";
 import { Contact } from "../domain/contact";
 import { PatientData, PersonalIdentifier } from "../domain/patient";
-import { normalizePatient } from "./normalize-patient";
+import { normalizePatient, normalizePatientInboundMpi } from "./normalize-patient";
 import { PatientMPI } from "./shared";
+import { out } from "../util/log";
+import { splitName } from "./normalize-patient";
+
+const { log } = out(`Patient Matching`);
 
 // Define a type for the similarity function
 type SimilarityFunction = (
@@ -174,4 +178,224 @@ function isSameIdentifierById(a?: PersonalIdentifier, b?: PersonalIdentifier): b
     a.type === b.type &&
     (a.type === "driversLicense" && b.type === "driversLicense" ? a.state === b.state : true)
   );
+}
+/**
+ * Implements the EPIC matching algorithm for patient data comparison.
+ * For detailed algorithm description and scoring logic, refer to:
+ * https://docs.google.com/document/d/1XgY-4AbBDpnQdiEcOuBe9It_i7oNuPYgIJM44FUSI3E/edit
+ */
+
+export function epicMatchingAlgorithm(
+  patient1: PatientData,
+  patient2: PatientData,
+  threshold: number
+): boolean {
+  const scores = {
+    dob: 0,
+    gender: 0,
+    names: 0,
+    address: 0,
+    phone: 0,
+    email: 0,
+    ssn: 0,
+  };
+
+  const normalizedPatient1 = normalizePatientInboundMpi(patient1);
+  const normalizedPatient2 = normalizePatientInboundMpi(patient2);
+
+  if (
+    normalizedPatient1.dob &&
+    normalizedPatient2.dob &&
+    normalizedPatient1.dob === normalizedPatient2.dob
+  ) {
+    scores.dob = 8;
+  } else if (normalizedPatient1.dob && normalizedPatient2.dob) {
+    const dob1Split = splitDob(normalizedPatient1.dob);
+    const dob2Split = splitDob(normalizedPatient2.dob);
+    const overlappingDateParts = dob2Split.filter(dp => dob1Split.includes(dp));
+    if (overlappingDateParts.length >= 2) {
+      scores.dob = 2;
+    }
+  }
+
+  if (normalizedPatient1.genderAtBirth && normalizedPatient2.genderAtBirth) {
+    if (normalizedPatient1.genderAtBirth === normalizedPatient2.genderAtBirth) {
+      scores.gender = 1;
+    }
+  }
+
+  const firstNames1 = splitName(normalizedPatient1.firstName);
+  const firstNames2 = splitName(normalizedPatient2.firstName);
+
+  const lastNames1 = splitName(normalizedPatient1.lastName);
+  const lastNames2 = splitName(normalizedPatient2.lastName);
+
+  const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
+  const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
+
+  if (hasMatchingFirstName && hasMatchingLastName) {
+    scores.names = 10;
+  } else if (hasMatchingFirstName || hasMatchingLastName) {
+    scores.names = 5;
+  }
+
+  const addressMatch = normalizedPatient1.address?.some(addr1 =>
+    normalizedPatient2.address?.some(addr2 => JSON.stringify(addr1) === JSON.stringify(addr2))
+  );
+  if (addressMatch) {
+    scores.address = 2;
+  } else {
+    const cityMatch = normalizedPatient1.address?.some(addr1 =>
+      normalizedPatient2.address?.some(addr2 => addr1?.city === addr2?.city)
+    );
+    const zipMatch = normalizedPatient1.address?.some(addr1 =>
+      normalizedPatient2.address?.some(addr2 => addr1?.zip === addr2?.zip)
+    );
+    if (cityMatch) scores.address += 0.5;
+    if (zipMatch) scores.address += 0.5;
+  }
+
+  const phoneMatch = normalizedPatient1.contact?.some(c1 =>
+    normalizedPatient2.contact?.some(c2 => c1.phone && c2.phone && c1.phone === c2.phone)
+  );
+  if (phoneMatch) {
+    scores.phone = 2;
+  }
+
+  const emailMatch = normalizedPatient1.contact?.some(c1 =>
+    normalizedPatient2.contact?.some(c2 => c1.email && c2.email && c1.email === c2.email)
+  );
+  if (emailMatch) {
+    scores.email = 2;
+  }
+
+  const ssn1 = normalizedPatient1.personalIdentifiers
+    ?.filter(id => id.type === "ssn")
+    .map(id => id.value);
+  const ssn2 = normalizedPatient2.personalIdentifiers
+    ?.filter(id => id.type === "ssn")
+    .map(id => id.value);
+  if (ssn1?.length && ssn2?.length) {
+    const ssnMatch = ssn1.some(s1 => ssn2.includes(s1));
+    if (ssnMatch) {
+      scores.ssn = 5;
+    }
+  }
+
+  const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+
+  if (ssn1?.length && ssn2?.length) {
+    const newThreshold = threshold + 1;
+    const match = totalScore >= newThreshold;
+    if (match) {
+      log(
+        `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Total Scores: ${JSON.stringify(
+          scores
+        )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
+      );
+    }
+    return match;
+  }
+
+  const match = totalScore >= threshold;
+  if (match) {
+    log(
+      `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Total Scores: ${JSON.stringify(
+        scores
+      )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
+    );
+  }
+  return match;
+}
+
+export function strictMatchingAlgorithm(patient1: PatientData, patient2: PatientData): boolean {
+  const normalizedPatient1 = normalizePatientInboundMpi(patient1);
+  const normalizedPatient2 = normalizePatientInboundMpi(patient2);
+
+  const isDobMatch = normalizedPatient1.dob === normalizedPatient2.dob;
+  const isGenderMatch = normalizedPatient1.genderAtBirth === normalizedPatient2.genderAtBirth;
+
+  const cleanedFirstName1 = removeCommonPrefixesAndSuffixes(normalizedPatient1.firstName);
+  const cleanedFirstName2 = removeCommonPrefixesAndSuffixes(normalizedPatient2.firstName);
+
+  const cleanedLastName1 = removeCommonPrefixesAndSuffixes(normalizedPatient1.lastName);
+  const cleanedLastName2 = removeCommonPrefixesAndSuffixes(normalizedPatient2.lastName);
+
+  const firstNameNoInitials1 = removeInitialsFromName(cleanedFirstName1);
+  const firstNameNoInitials2 = removeInitialsFromName(cleanedFirstName2);
+
+  const lastNameNoInitials1 = removeInitialsFromName(cleanedLastName1);
+  const lastNameNoInitials2 = removeInitialsFromName(cleanedLastName2);
+
+  const firstNames1 = splitName(firstNameNoInitials1);
+  const firstNames2 = splitName(firstNameNoInitials2);
+
+  const lastNames1 = splitName(lastNameNoInitials1);
+  const lastNames2 = splitName(lastNameNoInitials2);
+
+  const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
+  const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
+
+  const isNameMatch = hasMatchingFirstName && hasMatchingLastName;
+
+  return isNameMatch && isDobMatch && isGenderMatch;
+}
+
+export function removeInitialsFromName(name: string): string {
+  const nameParts = name.split(" ");
+  const cleanedNameParts = nameParts.filter(part => {
+    const isSingleLetter = part.length === 1;
+    const isSingleLetterWithPeriod = part.length === 2 && part.endsWith(".");
+    return !isSingleLetter && !isSingleLetterWithPeriod;
+  });
+  return cleanedNameParts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+export function removeCommonPrefixesAndSuffixes(name: string): string {
+  const prefixes = [
+    "Mr\\.",
+    "Mrs\\.",
+    "Ms\\.",
+    "Dr\\.",
+    "Prof\\.",
+    "Mr",
+    "Mrs",
+    "Ms",
+    "Dr",
+    "Prof",
+  ];
+  const suffixes = [
+    "Jr\\.",
+    "Sr\\.",
+    "III",
+    "II",
+    "PhD\\.",
+    "MD\\.",
+    "Esq\\.",
+    "Jr",
+    "Sr",
+    "PhD",
+    "MD",
+    "Esq",
+  ];
+
+  let cleanedName = name.trim();
+
+  for (const prefix of prefixes) {
+    const pattern = new RegExp(`^${prefix}\\s+`, "i");
+    cleanedName = cleanedName.replace(pattern, "");
+  }
+
+  for (const suffix of suffixes) {
+    const pattern = new RegExp(`\\s+${suffix}\\s*$`, "i");
+    cleanedName = cleanedName.replace(pattern, "");
+  }
+
+  cleanedName = cleanedName.replace(/\s+/g, " ");
+
+  return cleanedName.trim();
+}
+
+function splitDob(dob: string): string[] {
+  return dob.split(/[-/]/);
 }

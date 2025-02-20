@@ -4,6 +4,8 @@ dotenv.config();
 import { createConsolidatedFromConversions } from "@metriport/core/command/consolidated/consolidated-create";
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import { elapsedTimeAsStr } from "../shared/duration";
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metriport-api";
 
 /**
  * Utility to run the function that recreates the patient consolidated bundle from the terminal.
@@ -21,15 +23,23 @@ const patientId = "";
  */
 const inputBundleBucket = "";
 const consolidatedBucket = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+const apiKey = getEnvVarOrFail("API_KEY");
+const apiUrl = getEnvVarOrFail("API_URL");
+
+const sdk = new MetriportMedicalApi(apiKey, {
+  baseAddress: apiUrl,
+});
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
   console.log(`########################## Started at ${new Date(startedAt).toISOString()}`);
 
+  const patient = await sdk.getPatient(patientId);
+
   await createConsolidatedFromConversions({
     cxId,
-    patientId,
+    patient: getDomainFromDTO(patient),
     sourceBucketName: inputBundleBucket,
     destinationBucketName: consolidatedBucket,
   });

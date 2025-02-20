@@ -1,12 +1,14 @@
 import { OperationOutcomeError, Operator } from "@medplum/core";
 import {
   AllergyIntolerance,
+  Binary,
   Bundle,
   Composition,
   Condition,
   DiagnosticReport,
   DocumentReference,
   Encounter,
+  Endpoint,
   Extension,
   FamilyMemberHistory,
   Immunization,
@@ -168,6 +170,14 @@ export function isComposition(resource: Resource | undefined): resource is Compo
 
 export function isEncounter(resource: Resource | undefined): resource is Encounter {
   return resource?.resourceType === "Encounter";
+}
+
+export function isEndpoint(resource: Resource | undefined): resource is Endpoint {
+  return resource?.resourceType === "Endpoint";
+}
+
+export function isBinary(resource: Resource | undefined): resource is Binary {
+  return resource?.resourceType === "Binary";
 }
 
 export function isFamilyMemberHistory(

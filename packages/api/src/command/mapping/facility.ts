@@ -1,11 +1,16 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import NotFoundError from "../../errors/not-found";
+import { NotFoundError } from "@metriport/shared";
+import {
+  FacilityMapping,
+  FacilityMappingPerSource,
+  FacilityMappingSource,
+} from "../../domain/facility-mapping";
 import { FacilityMappingModel } from "../../models/facility-mapping";
-import { FacilityMapping, FacilityMappingPerSource } from "../../domain/facility-mapping";
 
 export type FacilityMappingParams = FacilityMappingPerSource;
 
 export type FacilityMappingLookUpParams = Omit<FacilityMappingParams, "facilityId">;
+export type FacilityMappingLookupByIdParams = Pick<FacilityMappingParams, "cxId"> & { id: string };
 
 export async function findOrCreateFacilityMapping({
   cxId,
@@ -53,24 +58,58 @@ export async function getFacilityMappingOrFail({
   return mapping;
 }
 
-export async function getFacilityMappingsForCustomer(where: {
+export async function getFacilityMappingsByCustomer({
+  cxId,
+  source,
+}: {
   cxId: string;
-  source?: string;
+  source?: FacilityMappingSource;
 }): Promise<FacilityMapping[]> {
-  const rows = await FacilityMappingModel.findAll({ where });
-  return rows.map(r => r.dataValues);
+  const mappings = await FacilityMappingModel.findAll({
+    where: { cxId, ...(source && { source }) },
+  });
+  return mappings.map(m => m.dataValues);
+}
+
+async function getFacilityMappingModelById({
+  cxId,
+  id,
+}: FacilityMappingLookupByIdParams): Promise<FacilityMappingModel | undefined> {
+  const existing = await FacilityMappingModel.findOne({
+    where: { cxId, id },
+  });
+  if (!existing) return undefined;
+  return existing;
+}
+
+async function getFacilityMappingModelByIdOrFail({
+  cxId,
+  id,
+}: FacilityMappingLookupByIdParams): Promise<FacilityMappingModel> {
+  const mapping = await getFacilityMappingModelById({
+    cxId,
+    id,
+  });
+  if (!mapping) {
+    throw new NotFoundError("FacilityMapping not found", undefined, { cxId, id });
+  }
+  return mapping;
+}
+
+export async function setExternalIdOnFacilityMapping({
+  cxId,
+  id,
+  externalId,
+}: FacilityMappingLookupByIdParams & { externalId: string }): Promise<FacilityMapping> {
+  const existing = await getFacilityMappingModelByIdOrFail({ cxId, id });
+  const updated = await existing.update({ externalId });
+  return updated.dataValues;
 }
 
 export async function deleteFacilityMapping({
   cxId,
-  externalId,
-  source,
-}: FacilityMappingLookUpParams): Promise<void> {
-  const existing = await FacilityMappingModel.findOne({
-    where: { cxId, externalId, source },
-  });
-  if (!existing) {
-    throw new NotFoundError("Entry not found", undefined, { cxId, externalId, source });
-  }
+  id,
+}: FacilityMappingLookupByIdParams): Promise<void> {
+  const existing = await getFacilityMappingModelByIdOrFail({ cxId, id });
   await existing.destroy();
 }

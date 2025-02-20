@@ -1,5 +1,6 @@
-import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { createUploadFilePath } from "@metriport/core/domain/document/upload";
+import { convertCollectionBundleToTransactionBundle } from "@metriport/core/external/fhir/bundle/convert-to-transaction-bundle";
 import { OPERATION_OUTCOME_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/extension";
 import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
@@ -32,10 +33,7 @@ export async function createOrUpdateConsolidatedPatientData({
   try {
     const fhir = makeFhirApi(cxId);
 
-    const patient = await fhir.readResource("Patient", patientId);
-
     const fhirBundleTransaction = convertCollectionBundleToTransactionBundle({
-      patient,
       fhirBundle,
     });
 
@@ -58,65 +56,6 @@ export async function createOrUpdateConsolidatedPatientData({
     throw new MetriportError(msg, error, additionalInfo);
   }
 }
-
-const convertCollectionBundleToTransactionBundle = ({
-  patient,
-  fhirBundle,
-}: {
-  patient: Patient;
-  fhirBundle: Bundle;
-}): Bundle => {
-  const transactionBundle: Bundle = {
-    resourceType: "Bundle",
-    type: "transaction",
-    entry: [],
-  };
-
-  for (const entry of fhirBundle.entry || []) {
-    const resource = entry.resource;
-    if (!resource) {
-      continue;
-    }
-
-    if (
-      resource.resourceType === "Agent" ||
-      resource.resourceType === "AsyncJob" ||
-      resource.resourceType === "AccessPolicy" ||
-      resource.resourceType === "Binary" ||
-      resource.resourceType === "Bot" ||
-      resource.resourceType === "BulkDataExport" ||
-      resource.resourceType === "Bundle" ||
-      resource.resourceType === "ClientApplication" ||
-      resource.resourceType === "DomainConfiguration" ||
-      resource.resourceType === "JsonWebKey" ||
-      resource.resourceType === "Login" ||
-      resource.resourceType === "Parameters" ||
-      resource.resourceType === "PasswordChangeRequest" ||
-      resource.resourceType === "Project" ||
-      resource.resourceType === "ProjectMembership" ||
-      resource.resourceType === "SmartAppLaunch" ||
-      resource.resourceType === "User" ||
-      resource.resourceType === "UserConfiguration"
-    )
-      continue;
-
-    const transactionEntry: BundleEntry = {
-      resource,
-      request: { method: "PUT", url: resource.resourceType + "/" + resource.id },
-    };
-
-    if (resource.resourceType !== "Patient") {
-      transactionEntry.resource = {
-        ...resource,
-        contained: resource.contained ? [...resource.contained, patient] : [patient],
-      };
-    }
-
-    transactionBundle.entry?.push(transactionEntry);
-  }
-
-  return transactionBundle;
-};
 
 const removeUnwantedFhirData = (data: Bundle): Bundle => {
   return {

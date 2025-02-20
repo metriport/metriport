@@ -20,10 +20,6 @@ export function getPatientFilter({
     resources && resources.length
       ? intersection(resources, medical.resourcesSearchableBySubject)
       : medical.resourcesSearchableBySubject;
-  const generalResourcesNoFilter =
-    resources && resources.length
-      ? intersection(resources, medical.generalResources)
-      : medical.generalResources;
 
   const fhirDateFilter = isoDateRangeToFHIRDateQuery(dateFrom, dateTo);
   const dateFilter = fhirDateFilter ? `&${fhirDateFilter}` : "";
@@ -31,7 +27,6 @@ export function getPatientFilter({
   return {
     resourcesByPatient,
     resourcesBySubject,
-    generalResourcesNoFilter,
     dateFilter,
   };
 }

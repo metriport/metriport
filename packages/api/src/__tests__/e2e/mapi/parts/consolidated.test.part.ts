@@ -9,112 +9,49 @@ import { AxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
-import fs from "fs";
-import { e2eResultsFolderName } from "../../shared";
-import { cxId, E2eContext, medicalApi } from "../shared";
+import {
+  cxId,
+  E2eContext,
+  getAllergyIdOrFail,
+  getBinaryIdOrFail,
+  getConditionIdOrFail,
+  getDocumentReferenceIdOrFail,
+  getEncounterIdOrFail,
+  getLocationIdOrFail,
+  getPractitionerIdOrFail,
+  getPutConsolidatedDataRequestIdOrFail,
+  medicalApi,
+} from "../shared";
 import { getConsolidatedWebhookRequest, resetConsolidatedData } from "../webhook/consolidated";
 import { checkWebhookRequestMeta } from "../webhook/shared";
 import {
   checkConsolidatedHtml,
   checkConsolidatedJson,
-  createConsolidatedPayloads,
+  prepareConsolidatedTests,
 } from "./consolidated/consolidated";
 
 dayjs.extend(isBetween);
 dayjs.extend(duration);
 
-const waitTimeAfterPutConsolidated = dayjs.duration({ seconds: 1 });
-
 const conversionCheckStatusMaxRetries = 12;
 const conversionCheckStatusWaitTime = dayjs.duration({ seconds: 10 });
 
 export function runConsolidatedTests(e2e: E2eContext) {
-  function createAndStoreConsolidatedData() {
-    if (!e2e.patientFhir) throw new Error("Missing patientFhir");
-    const payloads = createConsolidatedPayloads(e2e.patientFhir);
-    e2e.consolidatedPayload = payloads.consolidated;
-    e2e.allergyIntolerance = payloads.allergyIntolerance;
-    e2e.documentReference = payloads.documentReference;
-    e2e.binary = payloads.binary;
-  }
-
-  function resetWebhook() {
-    resetConsolidatedData();
-    e2e.url = undefined;
-    e2e.mrContentBuffer = undefined;
-    e2e.expectedWebhookMeta = undefined;
-  }
-
-  it("creates consolidated data", async () => {
-    if (!e2e.patient) throw new Error("Missing patient");
-    createAndStoreConsolidatedData();
-    if (!e2e.consolidatedPayload) throw new Error("Missing consolidatedPayload");
-    const consolidated = await medicalApi.createPatientConsolidated(
-      e2e.patient.id,
-      e2e.consolidatedPayload
-    );
-    e2e.putConsolidatedDataRequestId = medicalApi.lastRequestId;
-    expect(consolidated).toBeTruthy();
-    try {
-      expect(consolidated.type).toEqual("transaction-response");
-      expect(consolidated.entry).toBeTruthy();
-      if (!consolidated.entry) throw new Error("Missing entry");
-      expect(consolidated.entry.length).toEqual(2);
-      expect(consolidated.entry).toEqual(
-        expect.arrayContaining([
-          {
-            response: expect.objectContaining({
-              status: "201 Created",
-              location: expect.stringMatching(/AllergyIntolerance\/.+/),
-              outcome: expect.objectContaining({
-                resourceType: "OperationOutcome",
-              }),
-            }),
-          },
-          {
-            response: expect.objectContaining({
-              status: "201 Created",
-              location: expect.stringMatching(/DocumentReference\/.+/),
-              outcome: expect.objectContaining({
-                resourceType: "OperationOutcome",
-              }),
-            }),
-          },
-        ])
-      );
-    } catch (err) {
-      fs.writeFileSync(
-        e2eResultsFolderName + "/consolidated-received.json",
-        JSON.stringify(consolidated, null, 2)
-      );
-      fs.writeFileSync(
-        e2eResultsFolderName + "/consolidated-expected.json",
-        JSON.stringify(e2e.consolidatedPayload, null, 2)
-      );
-      throw err;
-    }
-  });
-
-  it("awaits data to be replicated to FHIR server", async () => {
-    await sleep(waitTimeAfterPutConsolidated.asMilliseconds());
+  it("prepares consolidated", async () => {
+    await prepareConsolidatedTests(e2e);
   });
 
   it("counts consolidated data", async () => {
     if (!e2e.patient) throw new Error("Missing patient");
-    if (!e2e.consolidatedPayload) throw new Error("Missing consolidatedPayload");
+    const expectedCount = getExpectedConsolidatedCount(e2e);
     const count = await medicalApi.countPatientConsolidated(e2e.patient.id);
-    expect(count.total).toEqual(e2e.consolidatedPayload.entry?.length);
+    expect(count.total).toEqual(expectedCount);
   });
 
   it("returns consolidated data", async () => {
     if (!e2e.patient) throw new Error("Missing patient");
-    if (!e2e.consolidatedPayload) throw new Error("Missing consolidatedPayload");
-    const consolidated = await medicalApi.getPatientConsolidated(e2e.patient.id);
-    expect(consolidated).toBeTruthy();
-    const consolidatedWithoutPatient = consolidated?.entry?.filter(
-      e => e.resource?.resourceType !== "Patient"
-    );
-    const expectedContents = (e2e.consolidatedPayload?.entry ?? []).map(e =>
+    if (!e2e.consolidated?.bundle) throw new Error("Missing consolidatedPayload");
+    const expectedContents = (e2e.consolidated?.bundle.entry ?? []).map(e =>
       expect.objectContaining({
         resource: expect.objectContaining({
           resourceType: e.resource?.resourceType,
@@ -122,8 +59,14 @@ export function runConsolidatedTests(e2e: E2eContext) {
         }),
       })
     );
+    const expectedCount = getExpectedConsolidatedCount(e2e);
+    const consolidated = await medicalApi.getPatientConsolidated(e2e.patient.id);
+    expect(consolidated).toBeTruthy();
+    const consolidatedWithoutPatient = consolidated?.entry?.filter(
+      e => e.resource?.resourceType !== "Patient"
+    );
     expect(consolidatedWithoutPatient).toBeTruthy();
-    expect(consolidatedWithoutPatient?.length).toEqual(e2e.consolidatedPayload.entry?.length);
+    expect(consolidatedWithoutPatient?.length).toEqual(expectedCount - 1); // not including the patient
     expect(consolidatedWithoutPatient).toEqual(expect.arrayContaining(expectedContents));
   });
 
@@ -202,9 +145,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
         ])
       );
       const docRefFromWebhook = (bundle.entry ?? []).map(e => e.resource).find(isDocumentReference);
-      if (!docRefFromWebhook) {
-        throw new Error("Missing DocumentReference");
-      }
+      if (!docRefFromWebhook) throw new Error("Missing DocumentReference");
       const patientRef = docRefFromWebhook.subject?.reference;
       expect(patientRef).toBeTruthy();
       expect(patientRef).toEqual(`Patient/${e2e.patient.id}`);
@@ -223,16 +164,16 @@ export function runConsolidatedTests(e2e: E2eContext) {
     if (format === "json") {
       it("gets MR in json format with expected contents", async () => {
         if (!e2e.patient) throw new Error("Missing patient");
-        const allergyId = e2e.allergyIntolerance?.id;
-        if (!allergyId) throw new Error("Missing allergyIntolerance.id");
         const lastName = e2e.patient?.lastName;
         if (!lastName) throw new Error("Missing patient.lastName");
-        const documentId = e2e.documentReference?.id;
-        if (!documentId) throw new Error("Missing documentReference.id");
-        const binaryId = e2e.binary?.id;
-        if (!binaryId) throw new Error("Missing binary");
-        const requestId = e2e.putConsolidatedDataRequestId;
-        if (!requestId) throw new Error("Missing putConsolidatedDataRequestId");
+        const allergyId = getAllergyIdOrFail(e2e);
+        const conditionId = getConditionIdOrFail(e2e);
+        const encounterId = getEncounterIdOrFail(e2e);
+        const locationId = getLocationIdOrFail(e2e);
+        const practitionerId = getPractitionerIdOrFail(e2e);
+        const documentId = getDocumentReferenceIdOrFail(e2e);
+        const binaryId = getBinaryIdOrFail(e2e);
+        const requestId = getPutConsolidatedDataRequestIdOrFail(e2e);
         if (!e2e.mrContentBuffer) throw new Error("Missing mrContentBuffer");
         const contact = (
           Array.isArray(e2e.patient.contact)
@@ -255,8 +196,12 @@ export function runConsolidatedTests(e2e: E2eContext) {
             phone,
             email,
             allergyId,
+            conditionId,
+            encounterId,
             documentId,
             requestId,
+            locationId,
+            practitionerId,
             binaryId,
           })
         ).toBeTrue();
@@ -269,8 +214,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
         const lastName = e2e.patient?.lastName;
         if (!lastName) throw new Error("Missing patient.lastName");
         if (!e2e.mrContentBuffer) throw new Error("Missing mrContentBuffer");
-        const allergyId = e2e.allergyIntolerance?.id;
-        if (!allergyId) throw new Error("Missing allergyIntolerance.id");
+        const allergyId = getAllergyIdOrFail(e2e);
         const contents = e2e.mrContentBuffer.toString("utf-8");
         expect(contents).toBeTruthy();
         expect(
@@ -294,7 +238,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
     }
 
     it(`resets ${format} WH handler`, async () => {
-      resetWebhook();
+      resetWebhook(e2e);
       expect(true).toBeTrue();
     });
   }
@@ -336,7 +280,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
   });
 
   it("resets custom meta WH handler", async () => {
-    resetWebhook();
+    resetWebhook(e2e);
     expect(true).toBeTrue();
   });
 
@@ -365,7 +309,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
   });
 
   it("resets failed WH handler", async () => {
-    resetWebhook();
+    resetWebhook(e2e);
     expect(true).toBeTrue();
   });
 
@@ -401,7 +345,54 @@ export function runConsolidatedTests(e2e: E2eContext) {
   });
 
   it("resets disabled WH handler", async () => {
-    resetWebhook();
+    resetWebhook(e2e);
     expect(true).toBeTrue();
   });
+
+  /*************************************************************
+   * Consolidated Query - Don't get WH when fromDashboard is true
+   *************************************************************/
+
+  it("does not send WH if fromDashboard is true", async () => {
+    if (!e2e.patient) throw new Error("Missing patient");
+    const conversionProgress = await medicalApi.startConsolidatedQuery(
+      e2e.patient.id,
+      undefined,
+      undefined,
+      undefined,
+      "json",
+      true
+    );
+    expect(conversionProgress).toBeTruthy();
+    expect(conversionProgress.status).toEqual("processing");
+  });
+
+  it("completes conversion w/ disabled WH successfully", async () => {
+    await waitAndCheckConversion();
+  });
+
+  it("does not receive consolidated WH when disabled WH", async () => {
+    const whRequest = getConsolidatedWebhookRequest();
+    expect(whRequest).toBeFalsy();
+  });
+
+  it("resets disabled WH handler", async () => {
+    resetWebhook(e2e);
+    expect(true).toBeTrue();
+  });
+}
+
+function resetWebhook(e2e: E2eContext) {
+  resetConsolidatedData();
+  e2e.url = undefined;
+  e2e.mrContentBuffer = undefined;
+  e2e.expectedWebhookMeta = undefined;
+}
+
+function getExpectedConsolidatedCount(e2e: E2eContext) {
+  const consolidatedCount = e2e.consolidated?.bundle.entry?.length ?? 0;
+  const contributedCount = e2e.contributed?.documentReference ? 1 : 0;
+  const patientCount = 1;
+  const expectedCount = consolidatedCount + patientCount + contributedCount;
+  return expectedCount;
 }

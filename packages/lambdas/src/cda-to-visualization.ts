@@ -1,4 +1,5 @@
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
@@ -35,13 +36,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ fileName, conversionType, bucketName }: Input): Promise<Output> => {
     console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);
 
-    const document = await downloadDocumentFromS3({ fileName, bucketName });
-
-    if (!document) {
+    const originalDocument = await downloadDocumentFromS3({ fileName, bucketName });
+    if (!originalDocument) {
       throw new MetriportError(`Document not found in S3`, undefined, {
         fileName,
       });
     }
+
+    const document = cleanUpPayload(originalDocument);
+
     if (conversionType === "html") {
       const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
       console.log("html", url);

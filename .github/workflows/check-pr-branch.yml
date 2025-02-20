@@ -1,0 +1,24 @@
+
+name: Check PR Base Branch
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .github/bots
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18.14"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run branch check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node src/check-pr-branch.js

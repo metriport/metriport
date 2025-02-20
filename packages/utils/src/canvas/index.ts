@@ -1,19 +1,20 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import CanvasSDK from "@metriport/core/external/canvas/index";
+import CanvasApi from "@metriport/core/external/canvas/index";
 import { createFullNote } from "@metriport/core/external/canvas/note";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
 const canvasClientId = getEnvVarOrFail(`CANVAS_CLIENT_ID`);
-
+const canvasPracticeId = getEnvVarOrFail(`CANVAS_PRACTICE_ID`);
 async function main() {
   try {
-    const canvas = await CanvasSDK.create({
+    const canvas = await CanvasApi.create({
       environment: "metriport-sandbox",
-      clientId: canvasClientId,
+      clientKey: canvasClientId,
       clientSecret: canvasClientSecret,
+      practiceId: canvasPracticeId,
     });
 
     // const appointment = await canvas.getAppointment("01910eff-0758-700e-bc2a-26a3a35e0b68");

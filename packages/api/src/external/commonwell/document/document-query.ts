@@ -9,14 +9,14 @@ import {
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import NotFoundError from "@metriport/core/util/error/not-found";
-import { errorToString } from "@metriport/core/util/error/shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { errorToString, MetriportError, NotFoundError, sleepRandom } from "@metriport/shared";
+import { buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
@@ -26,13 +26,13 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { Util } from "../../../shared/util";
 import {
   isCQDirectEnabledForCx,
-  isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
+  isStalePatientUpdateEnabledForCx,
 } from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
@@ -43,8 +43,8 @@ import { processFhirResponse } from "../../fhir/document/process-fhir-search-res
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { HieInitiator } from "../../hie/get-hie-initiator";
-import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -54,18 +54,18 @@ import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getCWData, update } from "../patient";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
-import { getCwInitiator } from "../shared";
+import { getCwInitiator, validateCWEnabled } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
   DocumentWithLocation,
   DocumentWithMetriportId,
-  getFileName,
   getContentTypeOrUnknown,
+  getFileName,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+
+const staleLookbackHours = 24;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -114,13 +114,10 @@ export async function queryAndProcessDocuments({
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
+  const { log } = out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
 
   if (Config.isSandbox()) {
-    await sandboxGetDocRefsAndUpsert({
-      patient: patientParam,
-      requestId,
-    });
+    await sandboxGetDocRefsAndUpsert({ patient: patientParam, requestId });
     return;
   }
 
@@ -131,10 +128,12 @@ export async function queryAndProcessDocuments({
     source: MedicalDataSource.COMMONWELL,
     log,
   });
-  const isCwEnabledForCx = await isCWEnabledForCx(cxId);
-  if (!isCwEnabledForCx) return interrupt(`CW disabled for cx ${cxId}`);
-  const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
-  if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
+  const isCwEnabled = await validateCWEnabled({
+    patient: patientParam,
+    facilityId,
+    log,
+  });
+  if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
     const [initiator] = await Promise.all([
@@ -149,11 +148,21 @@ export async function queryAndProcessDocuments({
       }),
     ]);
 
-    const patientCWData = getCWData(patientParam.data.externalData);
+    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
+    const patientCWData = getCWData(currentPatient.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
+    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
+    const now = buildDayjs(new Date());
+    const patientCreatedAt = buildDayjs(patientParam.createdAt);
+    const pdStartedAt = patientCWData?.discoveryParams?.startedAt
+      ? buildDayjs(patientCWData.discoveryParams.startedAt)
+      : undefined;
+    const isStale =
+      updateStalePatients &&
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
-    if (hasNoCWStatus || isProcessing || forcePatientDiscovery) {
+    if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
@@ -161,7 +170,7 @@ export async function queryAndProcessDocuments({
         triggerConsolidated,
       });
 
-      if (forcePatientDiscovery && !isProcessing) {
+      if ((forcePatientDiscovery || isStale) && !isProcessing) {
         update({
           patient: patientParam,
           facilityId: initiator.facilityId,
@@ -284,7 +293,7 @@ export async function internalGetDocuments({
   initiator: HieInitiator;
 }): Promise<Document[]> {
   const context = "cw.queryDocument";
-  const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
+  const { log } = out(`CW internalGetDocuments - M patient ${patient.id}`);
 
   const cwData = patient.data.externalData.COMMONWELL;
 
@@ -369,7 +378,7 @@ function reportCWErrors({
 }: {
   errors: OperationOutcome[];
   context: Record<string, unknown>;
-  log: ReturnType<typeof Util.out>["log"];
+  log: typeof console.log;
 }): void {
   const errorsByCategory = groupCWErrors(errors);
   for (const [category, errors] of Object.entries(errorsByCategory)) {
@@ -486,7 +495,7 @@ async function downloadDocsAndUpsertFHIR({
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<DocumentReference[]> {
-  const { log } = Util.out(
+  const { log } = out(
     `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
   );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
@@ -823,11 +832,8 @@ async function triggerDownloadDocument({
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);
 
 async function sleepBetweenChunks(): Promise<void> {
-  return Util.sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
+  return sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
 }
 async function jitterSingleDownload(): Promise<void> {
-  return Util.sleepRandom(
-    DOC_DOWNLOAD_JITTER_DELAY_MAX_MS,
-    DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100
-  );
+  return sleepRandom(DOC_DOWNLOAD_JITTER_DELAY_MAX_MS, DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100);
 }

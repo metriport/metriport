@@ -1,16 +1,18 @@
-import { USState } from "@metriport/shared";
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
+import { USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
-import { Op, Transaction } from "sequelize";
+import { Op, QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
+import { Pagination, sortForPagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { sanitize, validate } from "./shared";
+import { paginationSqlExpressions } from "../../../shared/sql";
 
 export type PatientMatchCmd = PatientDemoData & { cxId: string };
 
@@ -35,29 +37,121 @@ export async function matchPatient(patient: PatientMatchCmd): Promise<Patient | 
 }
 
 export async function getPatients({
-  facilityId,
   cxId,
   patientIds,
+  facilityId,
+  fullTextSearchFilters,
+  pagination,
 }: {
-  facilityId?: string;
   cxId: string;
   patientIds?: string[];
+  facilityId?: string;
+  fullTextSearchFilters?: string | undefined;
+  pagination?: Pagination;
 }): Promise<PatientModel[]> {
-  const patients = await PatientModel.findAll({
-    where: {
+  const sequelize = PatientModel.sequelize;
+  if (!sequelize) throw new Error("Sequelize not found");
+
+  /*
+   * If/when we move to Sequelize v7 we can replace the raw query with ORM:
+   * https://sequelize.org/docs/v7/querying/operators/#tsquery-matching-operator
+   */
+  const queryFTS = getPatientsSharedQueryUntilFTS(
+    "*",
+    facilityId,
+    patientIds,
+    fullTextSearchFilters
+  );
+
+  const { query: paginationQueryExpression, replacements: paginationReplacements } =
+    paginationSqlExpressions(pagination);
+  const queryFinal = queryFTS + paginationQueryExpression;
+
+  const patients = await sequelize.query(queryFinal, {
+    model: PatientModel,
+    mapToModel: true,
+    replacements: {
       cxId,
-      ...(facilityId
-        ? {
-            facilityIds: {
-              [Op.contains]: [facilityId],
-            },
-          }
-        : undefined),
-      ...(patientIds ? { id: patientIds } : undefined),
+      ...getPatientsSharedReplacements(facilityId, patientIds, fullTextSearchFilters),
+      ...paginationReplacements,
     },
-    order: [["id", "ASC"]],
+    type: QueryTypes.SELECT,
   });
-  return patients;
+
+  const sortedPatients = sortForPagination(patients, pagination);
+  return sortedPatients;
+}
+
+export async function getPatientsCount({
+  cxId,
+  patientIds,
+  facilityId,
+  fullTextSearchFilters,
+}: {
+  cxId: string;
+  patientIds?: string[];
+  facilityId?: string;
+  fullTextSearchFilters?: string | undefined;
+}): Promise<number> {
+  const sequelize = PatientModel.sequelize;
+  if (!sequelize) throw new Error("Sequelize not found");
+
+  const queryFTS = getPatientsSharedQueryUntilFTS(
+    "count(id)",
+    facilityId,
+    patientIds,
+    fullTextSearchFilters
+  );
+
+  const queryFinal = queryFTS;
+  const result = await sequelize.query(queryFinal, {
+    replacements: {
+      cxId,
+      ...getPatientsSharedReplacements(facilityId, patientIds, fullTextSearchFilters),
+    },
+    type: QueryTypes.SELECT,
+  });
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return parseInt((result[0] as unknown as any).count);
+}
+
+function getPatientsSharedQueryUntilFTS(
+  selectColumns: string,
+  facilityId?: string,
+  patientIds?: string[],
+  fullTextSearchFilters?: string
+): string {
+  const querySelect = `SELECT ${selectColumns} FROM ${PatientModel.tableName} WHERE cx_id = :cxId `;
+
+  const queryFacility =
+    querySelect + (facilityId ? ` AND facility_ids::text[] && :facilityIds::text[]` : "");
+
+  const queryPatientIds = queryFacility + (patientIds ? ` AND id IN (:patientIds)` : "");
+
+  const queryFTS =
+    queryPatientIds +
+    (fullTextSearchFilters
+      ? ` AND (
+        search_criteria @@ websearch_to_tsquery('english', :filters) 
+        OR external_id = :filters 
+        OR id = :filters
+        OR facility_ids && (select array_agg(id) from facility where cx_id = :cxId and data->>'name' ilike '%' || :filters || '%' or id = :filters)
+      )`
+      : "");
+
+  return queryFTS;
+}
+
+function getPatientsSharedReplacements(
+  facilityId?: string,
+  patientIds?: string[],
+  fullTextSearchFilters?: string
+): Record<string, string | string[]> {
+  return {
+    ...(facilityId ? { facilityIds: '{"' + [facilityId].join('","') + '"}' } : {}),
+    ...(patientIds ? { patientIds } : {}),
+    ...(fullTextSearchFilters ? { filters: fullTextSearchFilters } : {}),
+  };
 }
 
 export async function getPatientIds({
@@ -170,7 +264,7 @@ export async function getPatientStates({
 }: {
   cxId: string;
   patientIds: string[];
-}): Promise<USState[]> {
+}): Promise<USStateForAddress[]> {
   if (!patientIds || !patientIds.length) return [];
   const patients = await getPatients({ cxId, patientIds });
   const nonUniqueStates = patients.flatMap(getStatesFromAddresses).filter(s => s);

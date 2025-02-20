@@ -384,6 +384,7 @@ const allValuesInObjAreNullFlavor = obj => {
 module.exports.internal = {
   getDateTime: getDateTime,
   getDate: getDate,
+  convertDate,
 };
 
 module.exports.external = [
@@ -598,7 +599,10 @@ module.exports.external = [
         if (typeof encoding !== "string") {
           encoding = "utf8";
         }
-        return Buffer.from(str.toString(), encoding).toString("base64");
+        if (typeof str === "string") {
+          return Buffer.from(str, encoding).toString("base64");
+        }
+        return Buffer.from(str?.toString(), encoding).toString("base64");
       } catch (err) {
         throw `helper "base64Encode" : ${err}`;
       }
@@ -742,7 +746,10 @@ module.exports.external = [
         }
       }
 
-      return combinedArr;
+      return combinedArr.filter(el => {
+        if (!el) return true;
+        return !("lookupProperty" in el);
+      });
     },
   },
   {
@@ -805,6 +812,8 @@ module.exports.external = [
 
         for (var t = 0; t < templateIds.length - 1; t++) {
           // -1 because templateIds includes the full message at the end
+          if (!msg.ClinicalDocument.component?.structuredBody?.component) continue;
+
           let components = Array.isArray(msg.ClinicalDocument.component.structuredBody.component)
             ? msg.ClinicalDocument.component.structuredBody.component
             : [msg.ClinicalDocument.component.structuredBody.component];
@@ -855,6 +864,33 @@ module.exports.external = [
         return ret;
       } catch (err) {
         throw `helper "getAllCdaSectionsByTemplateId" : ${err}`;
+      }
+    },
+  },
+  {
+    name: "getAllCdaSectionsWithoutTemplateId",
+    description: "Returns an array of section contents based on the provided section templateIds",
+    func: function getAllCdaSectionsByTemplateId(msg, ...templateIds) {
+      try {
+        var ret = [];
+        if (templateIds.length <= 0) return ret;
+        if (msg?.ClinicalDocument?.component?.structuredBody?.component === undefined) return ret;
+
+        // -1 because templateIds includes the full message at the end
+        for (var t = 0; t < templateIds.length - 1; t++) {
+          for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
+            const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
+            if (
+              sectionObj?.templateId &&
+              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
+            ) {
+              ret.push(sectionObj);
+            }
+          }
+        }
+        return ret;
+      } catch (err) {
+        throw `helper "getAllCdaSectionsWithoutTemplateId" : ${err}`;
       }
     },
   },
@@ -1080,6 +1116,15 @@ module.exports.external = [
       } catch (err) {
         console.log(`helper "formatAsDateTime" : ${err}`);
       }
+    },
+  },
+  {
+    name: "getFirstEffectiveTimeFromObservationComponent",
+    description: "Getting the first effective time from observation components",
+    func: function (components) {
+      if (!Array.isArray(components)) return undefined;
+      const component = components.find(comp => comp?.observation?.effectiveTime?.value);
+      return component?.observation?.effectiveTime?.value;
     },
   },
   {
@@ -1451,6 +1496,11 @@ module.exports.external = [
             const ret = cleanUpReturn(low, high, "low", "high");
             if (ret) return ret;
           }
+        } else if (range.low || range.high) {
+          const low = getRangeLimit(range.low);
+          const high = getRangeLimit(range.high);
+          const ret = cleanUpReturn(low, high, "low", "high");
+          if (ret) return ret;
         }
         if (range.text?._) {
           return buildRange(range.text._);
@@ -1575,6 +1625,29 @@ module.exports.external = [
     },
   },
   {
+    name: "extractTextFromNestedProperties",
+    description: "extracts text from various nested properties",
+    func: function (data) {
+      let texts = [];
+
+      function recursiveSearch(obj) {
+        if (typeof obj === "object" && obj !== null) {
+          if ("_" in obj) {
+            texts.push(obj["_"]);
+          }
+          for (let key in obj) {
+            recursiveSearch(obj[key]);
+          }
+        } else if (Array.isArray(obj)) {
+          obj.forEach(element => recursiveSearch(element));
+        }
+      }
+
+      recursiveSearch(data);
+      return texts.join("\n");
+    },
+  },
+  {
     name: "convertMappedDataToPlainText",
     description: "Converts mapped data to plain text format.",
     func: function (mappedData) {
@@ -1586,6 +1659,23 @@ module.exports.external = [
             .join("\n");
         })
         .join("\n\n");
+    },
+  },
+  {
+    name: "buildDefaultDiagReportDetails",
+    description: "Returns default diagnostic reports details based on the CDA section",
+    func: function (section) {
+      const defaultCode = {
+        code: "34109-9",
+        codeSystem: "2.16.840.1.113883.6.1",
+        codeSystemName: "LOINC",
+        displayName: "Note",
+      };
+      return {
+        statusCode: { code: "completed" },
+        code: section.code ?? defaultCode,
+        templateId: { root: "2.16.840.1.113883.10.20.22.4.202", extension: "2016-11-01" },
+      };
     },
   },
   {

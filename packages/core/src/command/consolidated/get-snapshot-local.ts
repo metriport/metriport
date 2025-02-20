@@ -1,14 +1,21 @@
-import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/shared";
+import { Bundle } from "@medplum/fhirtypes";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  InternalSendConsolidated,
+  MetriportError,
+} from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
-import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
-import { checkBundleForPatient } from "../../external/fhir/bundle/qa";
+import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
+import { isPatient } from "../../external/fhir/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
 import {
   ConsolidatedSnapshotConnector,
@@ -27,6 +34,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
     const { cxId, id: patientId } = params.patient;
+    const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);
 
@@ -35,21 +43,62 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
     originalBundle.total = originalBundle.entry.length;
 
-    const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
+    const originalBundleWithoutContainedPatients = removeContainedPatients(
+      originalBundle,
+      patientId
+    );
 
-    checkBundleForPatient(dedupedBundle, cxId, patientId);
+    const dedupedBundle = await deduplicate({
+      cxId,
+      patientId,
+      bundle: originalBundleWithoutContainedPatients,
+    });
+
+    const normalizedBundle = await normalize({
+      cxId,
+      patientId,
+      bundle: dedupedBundle,
+    });
+
+    try {
+      checkBundle(normalizedBundle, cxId, patientId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const msg = "Bundle contains invalid data";
+      const additionalInfo = { cxId, patientId, type: error.message };
+      log(`${msg} - ${JSON.stringify(additionalInfo)}`);
+      capture.error(msg, { extra: { additionalInfo, error } });
+      try {
+        uploadConsolidatedSnapshotToS3({
+          ...params,
+          s3BucketName: this.bucketName,
+          bundle: dedupedBundle,
+          type: "invalid",
+        });
+      } catch (error) {
+        log(`Failed to store invalid bundle on S3 - ${errorToString(error)}`);
+      }
+      throw new MetriportError(msg, error, additionalInfo);
+    }
 
     const [, dedupedS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
-        bundle: originalBundle,
+        bundle: originalBundleWithoutContainedPatients,
+        type: "original",
       }),
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
         bundle: dedupedBundle,
-        isDeduped: true,
+        type: "dedup",
+      }),
+      uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: normalizedBundle,
+        type: "normalized",
       }),
     ]);
 
@@ -60,6 +109,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     };
     if (params.isAsync) {
       const { patient, ...decomposedParams } = params;
+
       await postSnapshotToApi({
         ...decomposedParams,
         apiURL: this.apiURL,
@@ -77,18 +127,21 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
 async function getBundle(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<SearchSetBundle> {
-  const { cxId, id: patientId } = params.patient;
-  const isGetFromS3 = await isConsolidatedFromS3Enabled();
+  const { forceDataFromFhir } = !params.isAsync ? params : { forceDataFromFhir: false };
+  const { cxId } = params.patient;
+  const isGetFromS3 = !forceDataFromFhir;
   const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
+  log(`forceDataFromFhir: ${forceDataFromFhir}`);
   if (isGetFromS3) {
     const startedAt = new Date();
-    const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId, patientId });
+    const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId });
     if (consolidatedBundle) {
       log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
       return consolidatedBundle;
     }
     log(`(from S3) Not found/created`);
   }
+  // Used for contributed data (shareback)
   const startedAt = new Date();
   const originalBundle = await getConsolidatedFromFhirServer(params);
   log(`(from FHIR) Took ${elapsedTimeFromNow(startedAt)}ms`);
@@ -103,6 +156,7 @@ async function postSnapshotToApi({
 }: InternalSendConsolidated & { cxId: string; patientId: string; apiURL: string }) {
   const postConsolidated = `${apiURL}/internal/patient/${patientId}/consolidated`;
   const queryParams = new URLSearchParams({ cxId });
+
   await executeWithNetworkRetries(
     () => axios.post(postConsolidated + "?" + queryParams.toString(), payload),
     {
@@ -110,4 +164,28 @@ async function postSnapshotToApi({
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
     }
   );
+}
+
+export function removeContainedPatients(bundle: Bundle, patientId: string): Bundle {
+  if (!bundle.entry) return bundle;
+
+  const updatedEntry = bundle.entry.map(entry => {
+    const resource = entry.resource;
+    if (resource && "contained" in resource) {
+      return {
+        ...entry,
+        resource: {
+          ...resource,
+          contained: resource.contained?.filter(r => !isPatient(r) || r.id === patientId),
+        },
+      };
+    }
+    return entry;
+  });
+
+  return {
+    ...bundle,
+    total: updatedEntry.length,
+    entry: updatedEntry,
+  };
 }

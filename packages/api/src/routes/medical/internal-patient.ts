@@ -1,5 +1,7 @@
-import { genderAtBirthSchema } from "@metriport/api-sdk";
+import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
+import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -7,17 +9,11 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   internalSendConsolidatedSchema,
-  normalizeDate,
-  normalizeEmailStrict,
-  normalizeExternalId,
-  normalizeGender,
-  normalizePhoneNumberStrict,
-  normalizeState,
-  normalizeZipCode,
+  patientImportSchema,
   sleep,
   stringToBoolean,
-  toTitleCase,
 } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -28,14 +24,15 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
+  ConsolidatedQueryParams,
   getConsolidated,
   getConsolidatedAndSendToCx,
+  startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
-import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -67,8 +64,11 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import {
   nonEmptyStringListFromQuerySchema,
@@ -80,15 +80,16 @@ import {
   asyncHandler,
   getFrom,
   getFromParamsOrFail,
+  getFromQuery,
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
+  getFromQueryOrFail,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
-import { coverageAssessmentSchema } from "./schemas/patient";
+import { schemaCreateToPatientData } from "./schemas/patient";
 
 dayjs.extend(duration);
 
@@ -202,6 +203,7 @@ router.post(
  */
 router.delete(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -233,6 +235,7 @@ router.delete(
  */
 router.post(
   "/:patientId/link/:source",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -271,6 +274,7 @@ router.post(
  */
 router.delete(
   "/:patientId/link/:source",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -289,43 +293,6 @@ router.delete(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /internal/patient/:patientId/link
- *
- * Builds and returns the current state of a patient's links across HIEs.
- *
- * @param req.params.patientId Patient ID for which to retrieve links.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to get links for patient.
- * @returns The patient's current and potential links.
- */
-router.get(
-  "/:patientId/link",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    const cwPersonLinks = await cwCommands.link.get(patientId, cxId, facilityId);
-    const cwConvertedLinks = dtoFromCW({
-      cwPotentialPersons: cwPersonLinks.potentialLinks,
-      cwCurrentPersons: cwPersonLinks.currentLinks,
-    });
-
-    const links: PatientLinksDTO & { networkLinks: unknown } = {
-      currentLinks: cwConvertedLinks.currentLinks,
-      potentialLinks: cwConvertedLinks.potentialLinks,
-      networkLinks: cwPersonLinks.networkLinks,
-    };
-
-    return res.status(status.OK).json(links);
-  })
-);
-
-/** ---------------------------------------------------------------------------
  * GET /internal/patient/duplicates
  * *
  * @param req.query.cxId The customer ID (optional, defaults to all customers).
@@ -337,7 +304,7 @@ router.get(
   "/duplicates",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await findDuplicatedPersons(cxId);
     console.log(`Result: ${stringify(result)}`);
     return res.status(status.OK).json(result);
@@ -441,6 +408,8 @@ const initEnhancedCoverageSchema = z.object({
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage
  *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
+ *
  * Trigger the job to enhance coverage of provided patients. Before doing that,
  * it also checks/fixes any stale enhanced coverage process.
  *
@@ -506,6 +475,8 @@ const cqLinkStatusSchema = z.enum(cqLinkStatus);
 /**
  * POST /internal/patient/enhance-coverage/set-cq-link-statuses
  *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
+ *
  * Sets the CQ link statuses to complete the enhanced coverage flow for a list of patients.
  * @param req.query.cxId The customer ID.
  * @param req.query.patientIds The IDs of the patients to complete the process for.
@@ -534,6 +505,8 @@ const updateECAfterIncludeListSchema = z.object({
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage/after-include-list
+ *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
  *
  * Store the result of running Enhanced Coverage from the local environment.
  *
@@ -566,6 +539,8 @@ const updateECAfterDocQuerySchema = z.object({
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage/after-doc-query
+ *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
  *
  * Store the result of running Enhanced Coverage from the local environment.
  *
@@ -626,13 +601,9 @@ router.get(
       ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
       : undefined;
 
-    const [organization, patient] = await Promise.all([
-      getOrganizationOrFail({ cxId }),
-      getPatientOrFail({ id: patientId, cxId }),
-    ]);
+    const patient = await getPatientOrFail({ id: patientId, cxId });
     const data = await getConsolidated({
       patient,
-      organization,
       documentIds,
       resources,
       dateFrom,
@@ -741,6 +712,7 @@ router.get(
  */
 router.get(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -762,6 +734,7 @@ router.get(
  */
 router.post(
   "/:id/patient-discovery",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -781,6 +754,7 @@ router.post(
   })
 );
 
+// TODO 2330 Review this
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/bulk/coverage-assessment
  *
@@ -798,37 +772,15 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
-    const payload = coverageAssessmentSchema.parse(req.body);
+    const payload = patientImportSchema.parse(req.body);
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
     const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
-      const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
-      const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
-      const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
-      const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
-      const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
-      const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
-      const contact = [contact1, contact2].flatMap(c => c ?? []);
-      const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
+      const payload = createPatientPayload(patient);
       return {
         cxId,
         facilityId: facility.id,
-        externalId,
-        firstName: toTitleCase(patient.firstname),
-        lastName: toTitleCase(patient.lastname),
-        dob: normalizeDate(patient.dob),
-        genderAtBirth: normalizeGender(patient.gender),
-        address: [
-          {
-            addressLine1: toTitleCase(patient.addressline1),
-            addressLine2: patient.addressline2 ? toTitleCase(patient.addressline2) : undefined,
-            city: toTitleCase(patient.city),
-            state: normalizeState(patient.state),
-            zip: normalizeZipCode(patient.zip),
-            country: "USA",
-          },
-        ],
-        contact,
+        ...payload,
       };
     });
 
@@ -877,23 +829,21 @@ router.get(
  */
 router.post(
   "/:id/consolidated",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
-    const [organization, patient] = await Promise.all([
-      getOrganizationOrFail({ cxId }),
-      getPatientOrFail({ id, cxId }),
-    ]);
+    const patient = await getPatientOrFail({ id, cxId });
     const {
       requestId,
       conversionType,
       resources,
-      generateAiBrief,
       dateFrom,
       dateTo,
       bundleLocation,
       bundleFilename,
+      fromDashboard,
     } = internalSendConsolidatedSchema.parse(req.body);
 
     const bundle = await getConsolidatedSnapshotFromS3({
@@ -903,20 +853,211 @@ router.post(
 
     getConsolidatedAndSendToCx({
       patient,
-      organization,
       bundle,
       requestId,
       conversionType,
-      generateAiBrief,
       resources,
       dateFrom,
       dateTo,
+      fromDashboard,
     }).catch(
       processAsyncError(
         "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"
       )
     );
     return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient
+ *
+ * Creates the patient corresponding to the specified facility at the
+ * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery by defaul.
+ *
+ * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
+ * @return The newly created patient.
+ */
+router.post(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFromQueryOrFail("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const runPd = getFromQueryAsBoolean("runPd", req) ?? false;
+    const payload = patientCreateSchema.parse(req.body);
+
+    const patientCreate: PatientCreateCmd = {
+      ...schemaCreateToPatientData(payload),
+      cxId,
+      facilityId,
+    };
+
+    const patient = await createPatient({
+      patient: patientCreate,
+      runPd,
+      rerunPdOnNewDemographics,
+      forceCommonwell,
+      forceCarequality,
+    });
+
+    return res.status(status.CREATED).json(dtoFromModel(patient));
+  })
+);
+
+// TODO 2330 Rework this so it becomes an internal way to create a new bulk import job, maybe with
+// some custom/internal params (e.g., to avoid sending WHs, etc.), returning the upload URL and
+// removing the trigger of the actual import from here.
+// We prob want to have a LOCAL/dev way to trigger the import here by uploading the file in the
+// body, so we can skip the S3 trigger and have the process running local.
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/import
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.facilityId The facility ID for running the patient import.
+ * @param req.query.jobId The job Id of the fle.
+ * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
+ * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
+ * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
+ * @param req.query.dryRun Whether to simply validate or run the assessment, overrides the cx
+ *                          provided one (optional, defaults to cx provided or false if none provides it).
+ *
+ */
+router.post(
+  "/import",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFrom("query").orFail("jobId", req);
+    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
+    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
+    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
+
+    const patientImportParser = buildPatientImportParseHandler();
+    await patientImportParser.processJobParse({
+      cxId,
+      jobId,
+      triggerConsolidated,
+      disableWebhooks,
+      rerunPdOnNewDemographics,
+      dryRun,
+    });
+
+    return res.sendStatus(status.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/consolidated/query
+ *
+ * For each patient, get all consolidated queries that are older than 1 hour and are still processing, and:
+ * - update the status of the query to "failed"; and
+ * - start a new consolidated query with the same parameters.
+ *
+ * @param req.query.patientIds The patient IDs.
+ * @param req.query.minAgeInMinutes The minimum age in minutes for the queries to be processed (optional,
+ *        defaults to 60 minutes).
+ * @param req.query.dryRun Whether to simply return what would be done or actually execute the changes
+ *        and commands.
+ * @return The list of consolidated queries that where be executed (or would be executed, if dryRun is true).
+ */
+router.post(
+  "/consolidated/query",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+    const skipWebhooks = getFromQueryAsBoolean("skipWebhooks", req);
+    if (skipWebhooks === undefined) throw new BadRequestError("skipWebhooks is required");
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    if (dryRun === undefined) throw new BadRequestError("dryRun is required");
+    const minAgeRaw = getFromQuery("minAgeInMinutes", req);
+    const minAgeInMinutes = minAgeRaw ? parseInt(minAgeRaw) : 60;
+
+    // TODO move this to an ops/internal command
+
+    const patientsNotFound: string[] = [];
+    const patientsUpdated: string[] = [];
+    const patientsWithoutQueries: string[] = [];
+
+    const triggeredQueries: ConsolidatedQueryParams[] = [];
+    for (const patientId of patientIds) {
+      const { log } = out(`patientId ${patientId} minAge ${minAgeInMinutes} dryRun ${dryRun}`);
+      await executeOnDBTx(PatientModel.prototype, async transaction => {
+        const patient = await PatientModel.findOne({
+          where: { id: patientId },
+          transaction,
+        });
+        if (!patient) {
+          patientsNotFound.push(patientId);
+          log(`not found`);
+          return;
+        }
+        const consolidatedQueries = patient.data.consolidatedQueries ?? [];
+        const queriesToProcess = consolidatedQueries.filter(
+          query =>
+            query.status === "processing" &&
+            buildDayjs(query.startedAt).isBefore(
+              buildDayjs().subtract(minAgeInMinutes, "minutes").toISOString()
+            )
+        );
+        log(`queriesToProcess ${queriesToProcess.length}`);
+        if (queriesToProcess.length > 0) {
+          patientsUpdated.push(patientId);
+          queriesToProcess.forEach(query => {
+            query.status = "failed";
+          });
+          if (!dryRun) {
+            const data = {
+              ...patient.data,
+              consolidatedQueries,
+            };
+            patient.changed("data", true);
+            await patient.update({ data });
+          }
+        } else {
+          patientsWithoutQueries.push(patientId);
+        }
+        for (const query of queriesToProcess) {
+          const cxConsolidatedRequestMetadata = skipWebhooks ? { disableWHFlag: true } : undefined;
+          const startConsolidatedQueryParams: ConsolidatedQueryParams = {
+            cxId: patient.cxId,
+            patientId,
+            resources: query.resources,
+            dateFrom: query.dateFrom,
+            dateTo: query.dateTo,
+            conversionType: query.conversionType,
+            generateAiBrief: query.generateAiBrief,
+            cxConsolidatedRequestMetadata,
+          };
+          triggeredQueries.push(startConsolidatedQueryParams);
+          if (!dryRun) {
+            const query = await startConsolidatedQuery(startConsolidatedQueryParams);
+            log(`triggered query ${JSON.stringify(query)}`);
+          }
+        }
+      });
+    }
+
+    const { log } = out(`dryRun ${dryRun}`);
+
+    const response = {
+      dryRun,
+      skipWebhooks,
+      patientsNotFound,
+      patientsUpdated,
+      patientsWithoutQueries,
+      triggeredQueries,
+    };
+    log(`response ${JSON.stringify(response)}`);
+
+    return res.status(status.OK).json(response);
   })
 );
 

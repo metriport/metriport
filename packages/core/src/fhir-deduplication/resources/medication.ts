@@ -12,8 +12,9 @@ import {
   combineResources,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  deduplicateWithinMap,
   hasBlacklistedText,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): DeduplicationResult<Medication> {
@@ -46,7 +47,7 @@ export function groupSameMedications(medications: Medication[]): {
   function removeOtherCodes(master: Medication): Medication {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
       return (
         system?.includes(SNOMED_CODE) ||
         system?.includes(SNOMED_OID) ||
@@ -75,16 +76,30 @@ export function groupSameMedications(medications: Medication[]): {
     const { rxnormCode, ndcCode, snomedCode } = extractCodes(medication.code);
 
     if (rxnormCode) {
-      fillMaps(rxnormMap, rxnormCode, medication, refReplacementMap, false, removeOtherCodes);
+      deduplicateWithinMap(
+        rxnormMap,
+        rxnormCode,
+        medication,
+        refReplacementMap,
+        false,
+        removeOtherCodes
+      );
     } else if (ndcCode) {
-      fillMaps(ndcMap, ndcCode, medication, refReplacementMap, false, removeOtherCodes);
+      deduplicateWithinMap(ndcMap, ndcCode, medication, refReplacementMap, false, removeOtherCodes);
     } else if (snomedCode) {
-      fillMaps(snomedMap, snomedCode, medication, refReplacementMap, false, removeOtherCodes);
+      deduplicateWithinMap(
+        snomedMap,
+        snomedCode,
+        medication,
+        refReplacementMap,
+        false,
+        removeOtherCodes
+      );
     } else {
       const display = extractDisplayFromConcept(medication.code);
       if (display) {
         const compKey = JSON.stringify({ display });
-        fillMaps(displayMap, compKey, medication, refReplacementMap, undefined);
+        deduplicateWithinMap(displayMap, compKey, medication, refReplacementMap, undefined);
       } else {
         danglingReferences.add(createRef(medication));
       }
@@ -113,8 +128,8 @@ function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(RXNORM_CODE) || system.includes(RXNORM_OID)) {
           rxnormCode = code;

@@ -1,3 +1,8 @@
+import {
+  isValidISODate,
+  validateIsPastOrPresentSafe,
+  validateDateIsAfter1900,
+} from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { z, ZodString } from "zod";
 
@@ -16,9 +21,16 @@ export const optionalString = (zodSchema: ZodString) =>
 export const ISO_DATE = "YYYY-MM-DD";
 export const defaultString = z.string().trim();
 export const defaultOptionalString = optionalString(defaultString);
-export const defaultDateString = defaultString.refine(v => dayjs(v, ISO_DATE, true).isValid(), {
+export const defaultDateString = defaultString.refine(isValidISODate, {
   message: `Date must be a valid ISO 8601 date formatted ${ISO_DATE}. Example: 2023-03-15`,
 });
+export const pastOrTodayDateString = defaultDateString.refine(validateIsPastOrPresentSafe, {
+  message: `Date can't be in the future`,
+});
+export const validDateOfBirthString = pastOrTodayDateString.refine(validateDateIsAfter1900, {
+  message: `Date can't be before 1900`,
+});
+
 export const defaultNameString = defaultString.min(1);
 
 export function optionalDateToISOString(

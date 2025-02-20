@@ -1,34 +1,41 @@
 import {
-  APIMode as CQAPIMode,
-  CarequalityManagementAPI,
-  CarequalityManagementAPIImpl,
+  APIMode,
+  CarequalityManagementApi,
+  CarequalityManagementApiFhir,
 } from "@metriport/carequality-sdk";
 import { Config } from "../../shared/config";
 
-const cqApiMode = Config.isProdEnv()
-  ? CQAPIMode.production
-  : Config.isStaging()
-  ? CQAPIMode.staging
-  : CQAPIMode.dev;
+/**
+ * Creates a new instance of the Carequality Management API client based on the current environment.
+ *
+ * @returns Carequality API client or undefined if not supported in the current environment.
+ */
+export function makeCarequalityManagementApi(): CarequalityManagementApi | undefined {
+  const apiMode = getApiMode();
+  if (!apiMode) return undefined;
+  const apiKey = Config.getCQManagementApiKey();
+  return new CarequalityManagementApiFhir({ apiKey, apiMode });
+}
 
 /**
- * Creates a new instance of the Carequality Management API client.
+ * Creates a new instance of the Carequality Management API client based on the current environment.
  *
- * @returns Carequality API.
+ * @returns Carequality API client.
+ * @throws Error if the API client cannot be initialized.
  */
-export function makeCarequalityManagementAPI(): CarequalityManagementAPI | undefined {
-  if (Config.isSandbox()) return;
+export function makeCarequalityManagementApiOrFail(): CarequalityManagementApi {
+  const api = makeCarequalityManagementApi();
+  if (!api) throw new Error("Carequality API not initialized");
+  return api;
+}
 
-  const cqManagementApiKey = Config.getCQManagementApiKey();
-  const cqOrgCert = Config.getCQOrgCertificate();
-  const cqOrgPrivateKey = Config.getCQOrgPrivateKey();
-  const cqPrivateKeyPassword = Config.getCQOrgPrivateKeyPassword();
-
-  return new CarequalityManagementAPIImpl({
-    apiKey: cqManagementApiKey,
-    apiMode: cqApiMode,
-    orgCert: cqOrgCert,
-    rsaPrivateKey: cqOrgPrivateKey,
-    rsaPrivateKeyPassword: cqPrivateKeyPassword,
-  });
+/**
+ * Returns the API mode based on the current environment.
+ * NOTE: Sandbox is not supported and returns undefined.
+ */
+function getApiMode(): APIMode | undefined {
+  if (Config.isProdEnv()) return APIMode.production;
+  if (Config.isStaging()) return APIMode.staging;
+  if (Config.isDev()) return APIMode.dev;
+  return undefined;
 }

@@ -1,18 +1,16 @@
 import { faker } from "@faker-js/faker";
 import { LinkDemographicsHistory } from "@metriport/core/domain/patient-demographics";
+import { normalizeEmailNewSafe } from "@metriport/shared";
 import dayjs from "dayjs";
-import { ISO_DATE } from "../../../shared/date";
 import { makeBaseDomain } from "../../../domain/__tests__/base-domain";
-import { CwLink, CwData, CwPatientData } from "../cw-patient-data";
 import { makeAddressStrict } from "../../../domain/medical/__tests__/location-address";
 import {
-  normalizeAndStringifyNames,
   normalizeAddress,
+  normalizeAndStringifyNames,
   stringifyAddress,
-  normalizeTelephone,
-  normalizeEmail,
-  normalizeSsn,
 } from "../../../domain/medical/patient-demographics";
+import { ISO_DATE } from "../../../shared/date";
+import { CwData, CwLink, CwPatientData } from "../cw-patient-data";
 
 export function makeCwDataLink(): CwLink {
   const address = makeAddressStrict();
@@ -94,7 +92,7 @@ export function makeCwDataLink(): CwLink {
 
 export function makeLinksHistory(): LinkDemographicsHistory {
   const address = makeAddressStrict();
-  const email = normalizeEmail(faker.internet.email()) ?? "test@test.com";
+  const email = normalizeEmailNewSafe(faker.internet.email()) ?? "test@test.com";
   return {
     [faker.string.uuid()]: [
       {
@@ -117,10 +115,10 @@ export function makeLinksHistory(): LinkDemographicsHistory {
             })
           ),
         ],
-        telephoneNumbers: [normalizeTelephone(faker.phone.number("##########"))],
+        telephoneNumbers: [faker.phone.number("##########")],
         emails: [email],
         driversLicenses: [], // TODO
-        ssns: [normalizeSsn(faker.phone.number("#########"))],
+        ssns: [faker.phone.number("#########")],
       },
     ],
   };

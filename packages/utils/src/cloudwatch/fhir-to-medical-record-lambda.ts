@@ -1,3 +1,18 @@
+/**
+ * Script to query CloudWatch logs for FHIR to medical record lambda executions.
+ *
+ * This script performs the following actions:
+ * - Queries CloudWatch logs for a specified log group and time range
+ * - Parses the log events to extract customer IDs and patient IDs
+ * - Groups the results by customer ID
+ *
+ * To run this script, set:
+ * - LOG_GROUP_NAME: The name of the CloudWatch log group to query
+ * - FILTER_PATTERN: The filter pattern to apply to the log query
+ * - startDate: The start date for the log query
+ * - endDate: The end date for the log query
+ */
+
 import { queryLogs } from "./query";
 
 const LOG_GROUP_NAME = "";

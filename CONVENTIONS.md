@@ -1,0 +1,27 @@
+- Try to use immutable code and avoid sharing state across different functions, objects, and systems
+- Prefer functional programming style functions: small, deterministic, 1 input, 1 output
+- Try to build code that's idempotent whenever possible
+- Use the Onion Pattern to organize a package's code in layers
+- Don’t use null inside the app, only on code interacting with external interfaces/services, like DB and HTTP; convert to undefined before sending inwards into the code
+- Use types whenever possible
+- Use `const` whenever possible
+- Use `async/await` instead of `.then()`
+- Only add comments to code to explain why something was done, not how it works
+- Naming:
+  - classes, enums: `PascalCase`
+  - constants, variables, functions: `camelCase`
+  - file names: `kebab-case`Ø
+  - table and column names: `snake_case`
+  - Use meaningful names, so whoever is reading the code understands what it means
+  - Don’t use negative names, like `notEnabled`, prefer `isDisabled`
+- If possible, use decomposing objects for function parameters
+- Prefer Nullish Coalesce (??) than the OR operator (||) when you want to provide a default value
+- Avoid creating arrow functions
+- Use truthy syntax instead of `in` - i.e., `if (data.link)` not `if ('link' in data)`
+- While handling errors, keep the stack trace around: if you create a new Error (e.g., MetriportError), make sure to pass the original error as the new one’s cause so the stack trace is available upstream.
+- Use `eslint` to enforce code style
+- Use `prettier` to format code
+- max column length is 100 chars
+- multi-line comments use `/** */`
+- top-level comments go after the import (save pre-import to basic file header, like license)
+- move literals to constants declared after imports when possible

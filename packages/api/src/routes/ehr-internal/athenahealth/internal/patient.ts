@@ -1,21 +1,25 @@
 import Router from "express-promise-router";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { getPatientIdsOrFailFromAppointments } from "../../../../external/ehr/athenahealth/command/get-patients-from-appointments";
+import { processPatientsFromAppointmentsSub } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments-sub";
 import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler } from "../../../util";
+import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
 const router = Router();
 
 /**
- * POST /internal/ehr/athenahealth/patient/from-appointments
+ * POST /internal/ehr/athenahealth/patient/from-appointments-subscription
  *
- * Fetches appointments in a predefined window and creates all patients not already existing
+ * Fetches appointments since last call creates all patients not already existing
  */
 router.post(
-  "/from-appointments",
+  "/from-appointments-subscription",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    getPatientIdsOrFailFromAppointments();
+    const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
+    processPatientsFromAppointmentsSub({ catchUp }).catch(
+      processAsyncError("AthenaHealth processPatientsFromAppointmentsSub")
+    );
     return res.sendStatus(httpStatus.OK);
   })
 );

@@ -8,8 +8,9 @@ import {
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction } from "@metriport/shared";
+import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
@@ -20,8 +21,6 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { Config } from "../../../shared/config";
-import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
@@ -67,9 +66,13 @@ export async function queryDocumentsAcrossHIEs({
   cqManagingOrgName?: string;
   triggerConsolidated?: boolean;
 }): Promise<DocumentQueryProgress> {
-  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
+  const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
+
+  if (patient.hieOptOut) {
+    throw new BadRequestError("Patient has opted out from the networks");
+  }
 
   validateOptionalFacilityId(patient, facilityId);
 
@@ -115,8 +118,9 @@ export async function queryDocumentsAcrossHIEs({
   let triggeredDocumentQuery = false;
 
   const commonwellEnabled = await isCommonwellEnabled();
+  // Why? Please add a comment explaining why we're not running CW if there's no CQ managing org name.
   if (!cqManagingOrgName) {
-    if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    if (commonwellEnabled || forceCommonwell) {
       getDocumentsFromCW({
         patient: updatedPatient,
         facilityId,

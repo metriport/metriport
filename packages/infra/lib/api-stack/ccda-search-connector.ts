@@ -10,7 +10,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { OpenSearchConnectorConfig } from "../../config/open-search-config";
 import { EnvType } from "../env-type";
-import { getConfig, METRICS_NAMESPACE } from "../shared/config";
+import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import OpenSearchConstruct from "../shared/open-search-construct";
@@ -108,7 +108,6 @@ export function setup({
     memory,
     envType: config.environmentType,
     envVars: {
-      METRICS_NAMESPACE,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       SEARCH_HOST: openSearch.domain.domainEndpoint,
       SEARCH_USER: openSearch.creds.username,

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Bundle, Medication, Reference, Resource } from "@medplum/fhirtypes";
+import { Bundle, Medication, Reference } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import { toReference } from "../../../external/fhir/shared/references";
 import { makeAllergyIntollerance } from "../../../external/fhir/__tests__/allergy-intolerance";
@@ -16,12 +16,7 @@ let addMissingReferences_mock: typeof addMissingReferences;
 beforeAll(() => {
   jest.restoreAllMocks();
   addMissingReferences_mock = jest.fn(
-    (
-      filteredBundle: Bundle<Resource>,
-      originalBundle: Bundle<Resource>,
-      addMissingReferencesFn,
-      iteration
-    ) => {
+    (filteredBundle: Bundle, originalBundle: Bundle, addMissingReferencesFn, iteration) => {
       return addMissingReferences(
         filteredBundle,
         originalBundle,

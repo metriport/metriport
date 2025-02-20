@@ -50,7 +50,7 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 });
 
 // query stuff
-const delayTime = dayjs.duration(30, "seconds");
+const delayTime = dayjs.duration(10, "seconds");
 const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "10");
 const detailedConfig: DetailedConfig = {
   patientChunkDelayJitterMs: parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000"),

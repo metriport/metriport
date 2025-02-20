@@ -5,10 +5,11 @@ import {
   combineResources,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  deduplicateWithinMap,
   getDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const immunizationStatus = ["entered-in-error", "completed", "not-done"] as const;
@@ -81,7 +82,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
 
       if (cvxCode) {
         const key = JSON.stringify({ date, cvxCode });
-        fillMaps(
+        deduplicateWithinMap(
           immunizationsCvxMap,
           key,
           immunization,
@@ -91,7 +92,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
         );
       } else if (ndcCode) {
         const key = JSON.stringify({ date, ndcCode });
-        fillMaps(
+        deduplicateWithinMap(
           immunizationsNdcMap,
           key,
           immunization,
@@ -103,7 +104,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
         const displayCode = extractDisplayFromConcept(immunization.vaccineCode);
         if (displayCode) {
           const key = JSON.stringify({ date, displayCode });
-          fillMaps(
+          deduplicateWithinMap(
             displayMap,
             key,
             immunization,
@@ -137,8 +138,8 @@ export function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(CVX_CODE) || system.includes(CVX_OID)) {
           cvxCode = code;

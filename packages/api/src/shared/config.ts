@@ -89,6 +89,10 @@ export class Config {
     return CoreConfig.getApiUrl();
   }
 
+  static getDashUrl(): string | undefined {
+    return getEnvVar("DASH_URL");
+  }
+
   static getApiGatewayUsagePlanId(): string | undefined {
     return getEnvVar("API_GW_USAGE_PLAN_ID");
   }
@@ -96,21 +100,24 @@ export class Config {
   static getCQManagementApiKey(): string {
     return getEnvVarOrFail("CQ_MANAGEMENT_API_KEY");
   }
-
   static getCQOrgPrivateKey(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
   }
-
   static getCQOrgPrivateKeyPassword(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
   }
-
   static getCQOrgCertificate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
 
+  static getCQOrgUrls(): string | undefined {
+    return getEnvVar("CQ_ORG_URLS");
+  }
   static getCQUrlsToExclude(): string | undefined {
     return getEnvVar("CQ_URLS_TO_EXCLUDE");
+  }
+  static getCqAdditionalOrgs(): string | undefined {
+    return getEnvVar("CQ_ADDITIONAL_ORGS");
   }
 
   static getPlaceIndexName(): string {
@@ -201,10 +208,6 @@ export class Config {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
 
-  static getFHIRServerQueueURL(): string {
-    return getEnvVarOrFail("FHIR_SERVER_QUEUE_URL");
-  }
-
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
@@ -249,6 +252,10 @@ export class Config {
   static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
   }
+
+  static getCdaToFhirConversionBucketName(): string {
+    return getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
+  }
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
@@ -281,6 +288,9 @@ export class Config {
   static getFHIRToMedicalRecordLambdaName(): string | undefined {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
+  static getFHIRToMedicalRecordLambda2Name(): string | undefined {
+    return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME");
+  }
 
   static getOutboundPatientDiscoveryLambdaName(): string | undefined {
     return getEnvVar("OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME");
@@ -306,10 +316,6 @@ export class Config {
   }
   static getSearchIndexName(): string {
     return getEnvVarOrFail("SEARCH_INDEX");
-  }
-
-  static getCQOrgUrls(): string | undefined {
-    return getEnvVar("CQ_ORG_URLS");
   }
 
   static getCWManagementUrl(): string | undefined {
@@ -345,12 +351,25 @@ export class Config {
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
-
-  static getAthenaHealthClientKeyArn(): string | undefined {
-    return getEnvVar("EHR_ATHENA_CLIENT_KEY_ARN");
+  static getAthenaHealthClientKey(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY");
+  }
+  static getAthenaHealthClientSecret(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
   }
 
-  static getAthenaHealthClientSecretArn(): string | undefined {
-    return getEnvVar("EHR_ATHENA_CLIENT_SECRET_ARN");
+  static getElationEnv(): string | undefined {
+    return getEnvVar("EHR_ELATION_ENVIRONMENT");
+  }
+  static getElationClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getCanvasClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getRateLimitTableName(): string | undefined {
+    return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
 }

@@ -110,7 +110,7 @@ export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
     oid: "2.16.840.1.113883.3.787.0.0",
   },
   externalGatewayPatient: {
-    id: "ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGUxMDU4LTllMWEtN2MzMy1hMmRkLTVhNzg4NGU2ZmMzOA==",
+    id: "0ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGUxMDU4LTllMWEtN2MzMy1hMmRkLTVhNzg4NGU2ZmMzOA==",
     system: "2.16.840.1.113883.3.9621",
   },
   patientMatch: true,
@@ -128,7 +128,7 @@ export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
         line: ["1100 Test Street"],
         city: "Helena",
         state: "AL",
-        postalCode: "35080",
+        postalCode: "05080",
         country: "USA",
       },
     ],

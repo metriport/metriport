@@ -22,6 +22,15 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
       : undefined),
     ...(config.analyticsSecretNames ? buildSecrets(scope, config.analyticsSecretNames) : undefined),
     ...(config.canvas?.secretNames ? buildSecrets(scope, config.canvas.secretNames) : undefined),
+    ...(config.ehrIntegration?.athenaHealth.secrets
+      ? buildSecrets(scope, config.ehrIntegration.athenaHealth.secrets)
+      : undefined),
+    ...(config.ehrIntegration?.elation.secrets
+      ? buildSecrets(scope, config.ehrIntegration.elation.secrets)
+      : undefined),
+    ...(config.ehrIntegration?.canvas.secrets
+      ? buildSecrets(scope, config.ehrIntegration.canvas.secrets)
+      : undefined),
   };
   return secrets;
 }

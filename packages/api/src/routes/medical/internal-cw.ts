@@ -2,21 +2,22 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { getFacilityByOidOrFail } from "../../command/medical/facility/get-facility";
 import {
-  verifyCxProviderAccess,
-  verifyCxItVendorAccess,
+  verifyCxAccessToSendFacilityToHies,
+  verifyCxAccessToSendOrgToHies,
 } from "../../command/medical/facility/verify-access";
 import {
-  getOrganizationOrFail,
   getOrganizationByOidOrFail,
+  getOrganizationOrFail,
 } from "../../command/medical/organization/get-organization";
-import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
-import { cwOrgActiveSchema } from "../../external/commonwell/shared";
-import { getParsedOrgOrFail } from "../../external/commonwell/organization";
 import { getAndUpdateCWOrgAndMetriportOrg } from "../../external/commonwell/command/create-or-update-cw-organization";
+import { getParsedOrgOrFail } from "../../external/commonwell/organization";
+import { cwOrgActiveSchema } from "../../external/commonwell/shared";
+import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
-import { asyncHandler, getFrom } from "../util";
 import { getUUIDFrom } from "../schemas/uuid";
+import { asyncHandler, getFrom } from "../util";
 
 const router = Router();
 
@@ -29,6 +30,7 @@ const router = Router();
  */
 router.get(
   "/ops/organization/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -36,7 +38,7 @@ router.get(
     const oid = getFrom("params").orFail("oid", req);
 
     if (facilityId) {
-      await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+      await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
     }
@@ -52,11 +54,12 @@ router.get(
  */
 router.put(
   "/ops/organization/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxProviderAccess(cxId);
+    await verifyCxAccessToSendOrgToHies(cxId);
 
     const org = await getOrganizationByOidOrFail({ cxId, oid });
     if (!org.cwApproved) throw new NotFoundError("CW not approved");
@@ -80,15 +83,16 @@ router.put(
  */
 router.put(
   "/ops/facility/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxItVendorAccess(cxId);
+    await verifyCxAccessToSendFacilityToHies(cxId);
 
     const org = await getOrganizationOrFail({ cxId });
-    const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+    const facility = await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     if (!facility.cwApproved) throw new NotFoundError("CW not approved");
 
     const facilityActive = cwOrgActiveSchema.parse(req.body);

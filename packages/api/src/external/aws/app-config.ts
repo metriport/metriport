@@ -69,6 +69,10 @@ export async function getCxsWitDemoAugEnabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithDemoAugEnabled");
 }
 
+export async function getCxsWitStalePatientUpdateEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithStalePatientUpdateEnabled");
+}
+
 export async function getE2eCxIds(): Promise<string | undefined> {
   if (Config.isDev()) {
     const apiKey = getEnvVar("TEST_API_KEY");
@@ -108,11 +112,6 @@ export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean>
   return cxIdsWithNoWebhookPong.some(i => i === cxId);
 }
 
-export async function isAiBriefEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithAiBriefEnabled = await getCxsWithAiBriefFeatureFlag();
-  return cxIdsWithAiBriefEnabled.some(i => i === cxId);
-}
-
 export async function isCdaCustodianEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithFhirDedupEnabled = await getCxsWithCdaCustodianFeatureFlag();
   return cxIdsWithFhirDedupEnabled.some(i => i === cxId);
@@ -126,6 +125,11 @@ export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
 export async function isDemoAugEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithDemoAugEnabled = await getCxsWitDemoAugEnabled();
   return cxIdsWithDemoAugEnabled.some(i => i === cxId);
+}
+
+export async function isStalePatientUpdateEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithStalePatientUpdateEnabled = await getCxsWitStalePatientUpdateEnabled();
+  return cxIdsWithStalePatientUpdateEnabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {

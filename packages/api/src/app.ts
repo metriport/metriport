@@ -12,6 +12,7 @@ import helmet from "helmet";
 import { initEvents } from "./event";
 import { initFeatureFlags } from "./external/aws/app-config";
 import initDB from "./models/db";
+import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { VERSION_HEADER_NAME } from "./routes/header";
 import { errorHandler } from "./routes/helpers/default-error-handler";
 import { notFoundHandlers } from "./routes/helpers/not-found-handler";
@@ -72,6 +73,8 @@ const server = app.listen(port, "0.0.0.0", async () => {
   try {
     // Initialize connection to the database and feature flags
     await Promise.all([initDB(), initFeatureFlags()]);
+    // Initialize rate limiter after initDB
+    initRateLimiter();
     console.log(`[server]: API server is running on port ${port} :)`);
   } catch (error) {
     const msg = "API server failed to start";

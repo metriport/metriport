@@ -1,4 +1,3 @@
-import { normalizePhoneNumber, stripNonNumericChars, USState } from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import {
@@ -16,7 +15,14 @@ import {
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
-import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
+import {
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
+  normalizeUSStateForAddressSafe,
+  normalizeZipCodeNewSafe,
+  USState,
+} from "@metriport/shared";
+import { normalizeSsn as normalizeSsnFromShared } from "@metriport/shared/domain/patient/ssn";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
@@ -172,11 +178,13 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const telephoneNumbers = (patient.data.contact ?? []).flatMap(c => {
     if (!c.phone) return [];
-    return [normalizeTelephone(c.phone)];
+    const phone = normalizePhoneNumberSafe(c.phone);
+    if (!phone) return [];
+    return [phone];
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    const email = normalizeEmail(c.email);
+    const email = normalizeEmailNewSafe(c.email);
     if (!email) return [];
     return [email];
   });
@@ -216,7 +224,12 @@ export function removeInvalidArrayValues(demographics: LinkDemographics): LinkDe
     }),
     addresses: demographics.addresses.filter(address => {
       const addressObj: LinkGenericAddress = JSON.parse(address);
-      return addressObj.line.length > 0 && addressObj.city !== "" && addressObj.zip !== "";
+      return (
+        addressObj.line.length > 0 &&
+        addressObj.state !== "" &&
+        addressObj.city !== "" &&
+        addressObj.zip !== ""
+      );
     }),
     telephoneNumbers: demographics.telephoneNumbers.filter(tn => tn !== ""),
     emails: demographics.emails.filter(email => email !== ""),
@@ -265,7 +278,9 @@ export function normalizeAddress({
   return {
     line:
       line
-        ?.filter(l => l !== "")
+        ?.filter(l => l !== undefined && l !== null)
+        .map(String)
+        .filter(l => l !== "")
         .map(l => {
           return l
             .trim()
@@ -276,38 +291,21 @@ export function normalizeAddress({
             .replaceAll("avenue", "ave");
         }) ?? [],
     city: city?.trim().toLowerCase() ?? "",
-    state: state?.trim().toLowerCase().slice(0, 2) ?? "",
-    zip: stripNonNumericChars(zip ?? "")
-      .trim()
-      .slice(0, 5),
+    state: normalizeUSStateForAddressSafe(state ?? "")?.toLowerCase() ?? "",
+    zip: normalizeZipCodeNewSafe(zip ?? "") ?? "",
     country:
       country
         ?.trim()
         .toLowerCase()
         .replaceAll("us", "usa")
         .replaceAll("united states", "usa")
+        .replaceAll("united", "usa")
         .slice(0, 3) ?? "usa",
   };
 }
 
 export function stringifyAddress(normalizedAddress: LinkGenericAddress): string {
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
-}
-
-/**
- * @deprecated use `normalizePhoneNumber` from `@metriport/shared` instead.
- */
-export function normalizeTelephone(telephone: string): string {
-  return normalizePhoneNumber(telephone);
-}
-
-export function normalizeEmail(email: string): string | undefined {
-  let normalEmail = email.trim().toLowerCase();
-  if (normalEmail.startsWith("mailto:")) {
-    normalEmail = normalEmail.slice(7);
-  }
-  const validEmail = emailSchema.safeParse(normalEmail);
-  return validEmail.success ? normalEmail : undefined;
 }
 
 export function normalizeAndStringifyDriversLicense({
@@ -319,13 +317,14 @@ export function normalizeAndStringifyDriversLicense({
 }): string {
   const normalizedDl = {
     value: value.trim().toLowerCase(),
-    state: state.trim().toLowerCase().slice(0, 2),
+    state: normalizeUSStateForAddressSafe(state)?.toLowerCase() ?? "",
   };
   return JSON.stringify(normalizedDl, Object.keys(normalizedDl).sort());
 }
 
+/** @deprecated Use Core's instead */
 export function normalizeSsn(ssn: string): string {
-  return stripNonNumericChars(ssn).slice(-9);
+  return normalizeSsnFromShared(ssn);
 }
 
 /**

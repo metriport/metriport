@@ -1,3 +1,4 @@
+import { getFileExtension } from "../../util/mime";
 import { createFileName, createFolderName } from "../filename";
 
 export const UPLOADS_FOLDER = "uploads";
@@ -17,4 +18,18 @@ export function createUploadMetadataFilePath(
 ): string {
   const uploadFilePath = createUploadFilePath(cxId, patientId, docName);
   return `${uploadFilePath}_metadata.xml`;
+}
+
+export function createAttachmentUploadFilePath({
+  filePath,
+  attachmentId,
+  mimeType,
+}: {
+  filePath: string;
+  attachmentId: string;
+  mimeType: string | undefined;
+}): string {
+  const extension = getFileExtension(mimeType);
+  const finalExtension = extension === "" ? ".unknown" : extension;
+  return `${filePath}_${attachmentId}${finalExtension}`;
 }

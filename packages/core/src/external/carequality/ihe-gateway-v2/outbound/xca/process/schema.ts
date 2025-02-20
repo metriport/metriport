@@ -9,17 +9,19 @@ import {
 } from "../../../schema";
 
 const name = z.object({
-  LocalizedString: z.object({
-    _charset: z.string().optional(),
-    _value: z.string(),
-  }),
+  LocalizedString: schemaOrEmpty(
+    z.object({
+      _charset: z.string().optional(),
+      _value: z.string(),
+    })
+  ),
 });
 export type Name = z.infer<typeof name>;
 
 const classification = z.object({
   Slot: schemaOrArray(slot).optional(),
   Name: name.optional(),
-  _classificationScheme: z.string(),
+  _classificationScheme: z.string().optional(),
   _classifiedObject: z.string().optional(),
   _id: z.string().optional(),
   _nodeRepresentation: z.string().optional(),
@@ -30,7 +32,7 @@ export type Classification = z.infer<typeof classification>;
 const externalIdentifier = z.object({
   Name: name.optional(),
   _id: z.string().optional(),
-  _identificationScheme: z.string(),
+  _identificationScheme: z.string().optional(),
   _objectType: z.string().optional(),
   _registryObject: z.string().optional(),
   _value: z.string().optional(),

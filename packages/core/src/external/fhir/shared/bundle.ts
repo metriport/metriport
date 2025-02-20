@@ -1,7 +1,9 @@
 import {
   AllergyIntolerance,
+  Binary,
   Bundle,
   BundleEntry,
+  BundleEntryRequest,
   Communication,
   Composition,
   Condition,
@@ -31,33 +33,38 @@ import {
   ResourceType,
   ServiceRequest,
 } from "@medplum/fhirtypes";
+import { filterTruthy } from "@metriport/shared/common/filter-map";
+import { isBinary } from ".";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { uniq } from "lodash";
+import { cloneDeep, uniq } from "lodash";
 import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
 import { isValidUuid } from "../../../util/uuid-v7";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 dayjs.extend(duration);
 
 const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
+const qualifyingBundleTypesForRequest = ["batch", "transaction", "history"];
 
-export type ReferenceWithIdAndType<T extends Resource = Resource> = Required<
-  Pick<Reference<T>, "id" | "type">
->;
+export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T> &
+  Required<Pick<Reference<T>, "id" | "type">>;
 
 /**
  * Returns the references found in the given resources, including the missing ones.
  *
  * @param resources
- * @param referencesToInclude Resource types to include in the result. If empty, references
- *        with all resource types will be included.
+ * @param referencesToInclude The resource types to include in the result. If not set,
+ *        references with all resource types will be included.
+ * @param referencesToExclude The resource types to exclude from the result. If not set,
+ *        no references will be excluded.
  * @returns References found in the given resources, including the missing ones.
  */
 export function getReferencesFromResources({
   resources,
-  referencesToInclude = [],
-  referencesToExclude = [],
+  referencesToInclude,
+  referencesToExclude,
 }: {
   resources: Resource[];
   referencesToInclude?: ResourceType[];
@@ -65,11 +72,11 @@ export function getReferencesFromResources({
 }): { references: Reference[]; missingReferences: ReferenceWithIdAndType[] } {
   if (resources.length <= 0) return { references: [], missingReferences: [] };
   const resourceIds = resources.flatMap(r => r.id ?? []);
-  const references = getReferencesFromRaw(
-    JSON.stringify(resources),
+  const references = getReferences({
+    resources,
     referencesToInclude,
-    referencesToExclude
-  );
+    referencesToExclude,
+  });
   const missingReferences: ReferenceWithIdAndType[] = [];
   for (const ref of references) {
     if (!ref.id) continue;
@@ -78,31 +85,63 @@ export function getReferencesFromResources({
   return { references, missingReferences };
 }
 
-function getReferencesFromRaw(
-  rawContents: string,
-  referencesToInclude: ResourceType[],
-  referencesToExclude: ResourceType[]
-): ReferenceWithIdAndType[] {
+// TODO 2355 Refactor this
+/**
+ * @deprecated This is not a proper implementation to return References. Those might be represented
+ * in different ways than the relative one "Patient/123". We should create a generic implementation
+ * based on `getPatientReferencesFromFhirBundle` so we can get all references from a list of
+ * resources (and update the patient's one to use it).
+ * @see https://github.com/metriport/metriport-internal/issues/2355
+ *
+ * Return the references found in the given resources.
+ *
+ * @param resources The resources to search for references
+ * @param referencesToInclude The resource types to include in the result. If not set,
+ *        references with all resource types will be included.
+ * @param referencesToExclude The resource types to exclude from the result. If not set,
+ *        no references will be excluded.
+ * @returns The references found in the given resources.
+ */
+export function getReferences({
+  resources,
+  referencesToInclude,
+  referencesToExclude = [],
+}: {
+  resources: Resource[] | undefined;
+  referencesToInclude?: ResourceType[] | undefined;
+  referencesToExclude?: ResourceType[] | undefined;
+}): ReferenceWithIdAndType[] {
+  if (!resources || resources.length <= 0) return [];
+  const rawContents = JSON.stringify(resources);
   const matches = rawContents.matchAll(referenceRegex);
-  const references = [];
+  const references: string[] = [];
   for (const match of matches) {
     const ref = match[1];
     if (ref) references.push(ref);
   }
   const uniqueRefs = uniq(references);
-  const preResult: ReferenceWithIdAndType[] = uniqueRefs.flatMap(r => {
-    const parts = r.split("/");
-    const type = parts[0] as ResourceType | undefined;
-    const id = parts[1];
-    if (!id || !type) return [];
-    return { type, id, reference: r };
-  });
-  if (referencesToInclude.length <= 0 && referencesToExclude.length <= 0) return preResult;
-  return preResult.filter(
-    r =>
-      (!referencesToInclude.length || referencesToInclude.includes(r.type as ResourceType)) &&
-      !referencesToExclude.includes(r.type as ResourceType)
-  );
+
+  const preResult: ReferenceWithIdAndType[] = uniqueRefs
+    .flatMap(buildReferenceFromStringRelative)
+    .flatMap(filterTruthy);
+
+  const includedRefs = !referencesToInclude
+    ? preResult
+    : preResult.filter(r => referencesToInclude.includes(r.type));
+
+  const remainingRefs = !referencesToExclude.length
+    ? includedRefs
+    : includedRefs.filter(r => !referencesToExclude.includes(r.type));
+
+  return remainingRefs;
+}
+
+function buildReferenceFromStringRelative(reference: string): ReferenceWithIdAndType | undefined {
+  const parts = reference.split("/");
+  const type = parts[0] as ResourceType | undefined;
+  const id = parts[1];
+  if (!id || !type) return undefined;
+  return { id, type, reference };
 }
 
 export function buildBundle({
@@ -130,13 +169,50 @@ export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T
     resource,
   };
 };
-export const buildFullUrl = <T extends Resource>(resource: T): string | undefined => {
+
+export function buildCompleteBundleEntry<T extends Resource>(
+  resource: T,
+  bundleType: string | undefined
+): BundleEntry<T> {
+  const fullUrl = buildFullUrl(resource);
+  const shouldAddRequest = !!bundleType && qualifyingBundleTypesForRequest.includes(bundleType);
+  const request = shouldAddRequest ? buildFhirRequest(resource) : undefined;
+
+  return {
+    ...(fullUrl ? { fullUrl } : {}),
+    resource,
+    ...(request ? { request } : {}),
+  };
+}
+
+export function createFullBundleEntries(bundle: Bundle<Resource>): Bundle<Resource> {
+  if (!bundle.entry) return bundle;
+  const updBundle = cloneDeep(bundle);
+  const entries = updBundle.entry;
+  if (!entries) return bundle;
+
+  updBundle.entry = entries?.flatMap(entry =>
+    entry.resource ? buildCompleteBundleEntry(entry.resource, bundle.type) : []
+  );
+  return updBundle;
+}
+
+export const buildFullUrl = <T extends Resource>(resource: T | undefined): string | undefined => {
   if (!resource || !resource.id) return undefined;
   if (isValidUuid(resource.id)) return wrapIdInUrnUuid(resource.id);
   return wrapIdInUrnId(resource.id);
 };
 
+export function buildFhirRequest(resource: Resource | undefined): BundleEntryRequest | undefined {
+  if (!resource?.id) return undefined;
+  return {
+    method: "PUT",
+    url: `${resource.resourceType}/${resource.id}`,
+  };
+}
+
 export type ExtractedFhirTypes = {
+  binaries: Binary[];
   diagnosticReports: DiagnosticReport[];
   patient: Patient;
   practitioners: Practitioner[];
@@ -184,6 +260,7 @@ export function initExtractedFhirTypes(patient: Patient): ExtractedFhirTypes {
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
+  const binaries: Binary[] = [];
   const diagnosticReports: DiagnosticReport[] = [];
   const compositions: Composition[] = [];
   const medicationAdministrations: MedicationAdministration[] = [];
@@ -217,6 +294,8 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
       const resource = entry.resource;
       if (resource?.resourceType === "Patient") {
         patient = resource as Patient;
+      } else if (isBinary(resource)) {
+        binaries.push(resource as Binary);
       } else if (resource?.resourceType === "DocumentReference") {
         documentReferences.push(resource as DocumentReference);
       } else if (resource?.resourceType === "Composition") {
@@ -298,6 +377,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   return {
     patient,
     practitioners,
+    binaries,
     compositions,
     diagnosticReports,
     medications,
@@ -309,7 +389,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     locations,
     procedures,
     observationSocialHistory,
-    observationVitals,
+    observationVitals: sortObservationsForDisplay(observationVitals),
     observationLaboratory,
     observationOther,
     encounters,

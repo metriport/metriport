@@ -3,10 +3,10 @@ import { Document } from "@metriport/commonwell-sdk";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentWithMetriportId } from "../../../external/commonwell/document/shared";
 import { Config } from "../../../shared/config";
-import { Util } from "../../../shared/util";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getMedicalDocumentsBucketName();
@@ -63,7 +63,7 @@ export async function getS3Info(
   documents: DocumentWithMetriportId[],
   patient: Pick<Patient, "cxId" | "id">
 ): Promise<S3Info[]> {
-  const { log } = Util.out(`getS3Info - patient ${patient.id}`);
+  const { log } = out(`getS3Info - patient ${patient.id}`);
 
   const errors: { error: unknown; message: string; docId: string }[] = [];
   const docToFile = getDocToFileFunction(patient);

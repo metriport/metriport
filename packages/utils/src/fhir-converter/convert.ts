@@ -1,12 +1,24 @@
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { Bundle, Resource } from "@medplum/fhirtypes";
+import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
+import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
+import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
+import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
+import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
-import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
+import { uuidv7 } from "../shared/uuid-v7";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
 
-const sourceUrl = "https://api.metriport.com/cda/to/fhir";
+export type ProcessingOptions = {
+  hydrate: boolean;
+  normalize: boolean;
+  processAttachments: boolean;
+};
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -15,7 +27,8 @@ export async function convertCDAsToFHIR(
   startedAt: number,
   api: AxiosInstance,
   fhirExtension: string,
-  outputFolderName: string
+  outputFolderName: string,
+  options?: ProcessingOptions
 ): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
@@ -24,7 +37,7 @@ export async function convertCDAsToFHIR(
     fileNames,
     async fileName => {
       try {
-        const conversionResult = await convert(baseFolderName, fileName, api, fhirExtension);
+        const conversionResult = await convert(baseFolderName, fileName, api, options);
         const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
         makeDirIfNeeded(destFileName);
         writeFileContents(destFileName, JSON.stringify(conversionResult));
@@ -55,123 +68,80 @@ export async function convert(
   baseFolderName: string,
   fileName: string,
   api: AxiosInstance,
-  fhirExtension: string
-) {
+  options?: ProcessingOptions
+): Promise<Bundle<Resource>> {
+  const cxId = uuidv7();
   const patientId = getPatientIdFromFileName(fileName);
+
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
     throw new Error(`File has nonXMLBody`);
   }
 
-  const noB64FileContents = removeBase64PdfEntries(fileContents);
+  const payloadClean = cleanUpPayload(fileContents);
+  const { documentContents: noB64FileContents, b64Attachments } =
+    removeBase64PdfEntries(payloadClean);
+
+  if (b64Attachments && options?.processAttachments) {
+    console.log(`Extracted ${b64Attachments.total} B64 attachments`);
+    await processAttachments({
+      b64Attachments,
+      cxId,
+      patientId,
+      filePath: fileName,
+      // Setting these to whatever, just to test the attachment processing flow
+      medicalDataSource: "any-source",
+      s3BucketName: "do-not-use-bucket",
+      fhirUrl: "do-not-process",
+    });
+  }
+  const payloads = partitionPayload(noB64FileContents);
 
   const unusedSegments = false;
   const invalidAccess = false;
-  const params = { patientId, fileName, unusedSegments, invalidAccess };
   const url = `/api/convert/cda/ccd.hbs`;
-  const payload = (noB64FileContents ?? "").trim();
-  const res = await api.post(url, payload, {
-    params,
-    headers: { "Content-Type": "text/plain" },
-  });
-  const conversionResult = res.data.fhirResource;
-  addMissingRequests(conversionResult);
 
-  const updatedConversionResult = replaceIDs(conversionResult, patientId);
-  addExtensionToConversion(updatedConversionResult, {
-    url: "http://metriport.com/fhir/extension/patientId",
-    valueString: fhirExtension,
-  });
-  removePatientFromConversion(updatedConversionResult);
+  // Process payloads sequentially and combine into single bundle
+  let combinedBundle: Bundle<Resource> = {
+    resourceType: "Bundle",
+    type: "batch",
+    entry: [],
+  };
+
+  const params = { patientId, fileName, unusedSegments, invalidAccess };
+  for (let index = 0; index < payloads.length; index++) {
+    const payload = payloads[index];
+    const res = await api.post(url, payload, {
+      params,
+      headers: { "Content-Type": "text/plain" },
+    });
+
+    const conversionResult = res.data.fhirResource as Bundle<Resource>;
+
+    if (conversionResult?.entry && conversionResult.entry.length > 0) {
+      combinedBundle.entry?.push(...conversionResult.entry);
+    }
+  }
+
+  if (options?.hydrate) {
+    combinedBundle = await hydrate({
+      cxId,
+      patientId,
+      bundle: combinedBundle,
+    });
+  }
+
+  if (options?.normalize) {
+    combinedBundle = await normalize({
+      cxId,
+      patientId,
+      bundle: combinedBundle,
+    });
+  }
+
+  // Making the value of the fileName short to prevent the insertion error on the FHIR test server.
+  const documentExtension = buildDocIdFhirExtension(fileName.split("-").pop() ?? ".json");
+  const updatedConversionResult = postProcessBundle(combinedBundle, patientId, documentExtension);
 
   return updatedConversionResult;
-}
-
-interface Entry {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  request?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  resource?: any;
-}
-
-// TODO: Move all the logic below to a shared file.
-// This is currently duplicated from the sqs to converter lambda
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function addMissingRequests(fhirBundle: any) {
-  if (!fhirBundle?.entry?.length) return;
-  fhirBundle.entry.forEach((e: Entry) => {
-    if (!e.request && e.resource) {
-      e.request = {
-        method: "PUT",
-        url: `${e.resource.resourceType}/${e.resource.id}`,
-      };
-    }
-  });
-}
-
-type FHIRExtension = {
-  url: string;
-  valueString: string;
-};
-
-export type FHIRBundle = {
-  resourceType: "Bundle";
-  type: "batch";
-  entry: {
-    fullUrl: string;
-    resource: {
-      resourceType: string;
-      id: string;
-      extension?: FHIRExtension[];
-      meta?: {
-        lastUpdated: string;
-        source: string;
-      };
-    };
-    request?: {
-      method: string;
-      url: string;
-    };
-  }[];
-};
-
-function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
-  const stringsToReplace: { old: string; new: string }[] = [];
-  for (const bundleEntry of fhirBundle.entry) {
-    if (!bundleEntry.resource) throw new Error(`Missing resource`);
-    if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
-    if (bundleEntry.resource.id === patientId) continue;
-    const idToUse = bundleEntry.resource.id;
-    const newId = uuid.v4();
-    bundleEntry.resource.id = newId;
-    stringsToReplace.push({ old: idToUse, new: newId });
-    // replace meta's source and profile
-    bundleEntry.resource.meta = {
-      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-      source: sourceUrl,
-    };
-  }
-  let fhirBundleStr = JSON.stringify(fhirBundle);
-  for (const stringToReplace of stringsToReplace) {
-    // doing this is apparently more efficient than just using replace
-    const regex = new RegExp(stringToReplace.old, "g");
-    fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
-  }
-  return JSON.parse(fhirBundleStr);
-}
-
-function removePatientFromConversion(fhirBundle: FHIRBundle) {
-  const entries = fhirBundle?.entry ?? [];
-  const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");
-  if (pos >= 0) fhirBundle.entry.splice(pos, 1);
-}
-
-function addExtensionToConversion(fhirBundle: FHIRBundle, extension: FHIRExtension) {
-  if (fhirBundle?.entry?.length) {
-    for (const bundleEntry of fhirBundle.entry) {
-      if (!bundleEntry.resource) continue;
-      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
-      bundleEntry.resource.extension.push(extension);
-    }
-  }
 }

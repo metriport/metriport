@@ -12,3 +12,11 @@ export function buildDocIdFhirExtension(docId: string): DocIdExtension {
     valueString: docId,
   };
 }
+
+export function findDocIdExtension(extensions: Extension[]): Extension | undefined {
+  return extensions.find(isDocIdExtension);
+}
+
+export function isDocIdExtension(e: Extension): e is DocIdExtension {
+  return e.url === DOC_ID_EXTENSION_URL;
+}

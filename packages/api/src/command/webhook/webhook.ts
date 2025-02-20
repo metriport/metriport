@@ -7,6 +7,7 @@ import { PingWebhookRequest, WebhookMetadata } from "@metriport/shared/medical";
 import Axios from "axios";
 import crypto from "crypto";
 import dayjs from "dayjs";
+import stringify from "json-stringify-safe";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import { z, ZodError } from "zod";
@@ -142,12 +143,12 @@ export async function processRequest(
           isE2eCx(webhookRequest.cxId),
         ]);
         if (isE2e) {
-          log(`[E2E] WH Payload: ${JSON.stringify(fullPayload)}`);
+          log(`[E2E] WH Payload: ${stringify(fullPayload)}`);
           log(
             `[E2E] Error details: ${
               "cause" in error && "response" in error.cause
-                ? JSON.stringify(error.cause.response)
-                : JSON.stringify(error)
+                ? stringify(error.cause.response)
+                : stringify(error)
             }`
           );
         }

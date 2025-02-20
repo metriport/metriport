@@ -1,18 +1,26 @@
-import { DocumentReference } from "@medplum/fhirtypes";
+import { Bundle } from "@medplum/fhirtypes";
+import { conversionBundleSuffix } from "@metriport/core/command/consolidated/consolidated-create";
+import { createFilePath } from "@metriport/core/domain/filename";
 import { Patient } from "@metriport/core/domain/patient";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
+import { parseRawBundleForFhirServer } from "@metriport/core/external/fhir/parse-bundle";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { out } from "@metriport/core/util";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { sleep } from "@metriport/shared";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
+import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
-import { Util } from "../../../shared/util";
-import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
-import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
+import { ContentMimeType, isConvertible } from "../../fhir-converter/converter";
+import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { sandboxSleepTime } from "./shared";
 
@@ -37,32 +45,30 @@ export async function sandboxGetDocRefsAndUpsert({
   patient: Patient;
   requestId: string;
 }): Promise<void> {
-  const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
-  const { id, cxId } = patient;
+  const { log } = out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
+  const { id: patientId, cxId } = patient;
 
   // Mimic Prod by waiting for docs to download
-  await Util.sleep(Math.random() * sandboxSleepTime);
+  await sleep(Math.random() * sandboxSleepTime.asMilliseconds());
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {
     await appendDocQueryProgress({
-      patient: { id, cxId },
+      patient,
       downloadProgress: {
         status: "completed",
       },
       reset: true,
       requestId,
     });
-
     processPatientDocumentRequest(
       cxId,
-      id,
+      patientId,
       "medical.document-download",
       MAPIWebhookStatus.completed,
       requestId,
       []
     );
-
     return;
   }
 
@@ -72,21 +78,22 @@ export async function sandboxGetDocRefsAndUpsert({
   const docsWithContent = entries.map(entry => {
     return {
       ...entry,
+      originalId: entry.docRef.id,
       content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
     };
   });
 
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
-  const existingFhirDocs = await getDocumentsFromFHIR({
+  const existingFhirDocs = await getDocuments({
     cxId,
-    patientId: id,
+    patientId,
   });
   const existingDocTitles = existingFhirDocs.flatMap(d => d.content?.[0]?.attachment?.title ?? []);
 
   // set initial download/convert totals
   await appendDocQueryProgress({
-    patient: { id, cxId },
+    patient,
     downloadProgress: {
       total: entries.length,
       status: "processing",
@@ -102,39 +109,26 @@ export async function sandboxGetDocRefsAndUpsert({
     requestId,
   });
 
-  let docsToConvert: number = convertibleDocCount;
-
   for (const entry of docsWithContent) {
     const fileTitle = entry.docRef.content?.[0]?.attachment?.title;
     // if it doesnt exist were adding it to the fhir server as a reference
     if (!fileTitle || !existingDocTitles.includes(fileTitle)) {
       const prevDocId = entry.docRef.id;
+      // Replace the docRef ID because the FHIR server doesn't allow more than one ID across the
+      // whole install - it's not per tenant.
       entry.docRef.id = uuidv7();
       try {
-        if (convertibleDocs.find(d => d.docRef.id === entry.docRef.id)) {
-          await convertCDAToFHIR({
-            patient,
-            document: {
-              id: entry.docRef.id,
-              content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
-            },
-            s3FileName: entry.s3Info.key,
-            s3BucketName: entry.s3Info.bucket,
-            requestId,
-          });
-        }
-
         const contained = entry.docRef.contained ?? [];
         const containsPatient = contained.filter(c => c.resourceType === "Patient").length > 0;
         if (!containsPatient) {
           contained.push({
             resourceType: "Patient",
-            id,
+            id: patientId,
           });
         }
         entry.docRef.subject = {
           type: "Patient",
-          reference: `Patient/${id}`,
+          reference: `Patient/${patientId}`,
         };
 
         entry.docRef.contained = contained;
@@ -144,52 +138,120 @@ export async function sandboxGetDocRefsAndUpsert({
         log(`Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${err}`);
       }
     } else {
-      log(`Skipping file ${fileTitle} as it already exists`);
-      const isDocConvertible = isConvertible(entry.content?.mimeType);
-
-      if (isDocConvertible) {
-        docsToConvert = docsToConvert - 1;
-      }
+      log(`Skipping inserting DocRef for ${fileTitle} on FHIR server as it already exists`);
+    }
+    // Always "converting" so any issues can be automatically fixed by running it again
+    if (convertibleDocs.find(d => d.originalId === entry.originalId)) {
+      await sandboxConvertCDAToFHIR({
+        patient,
+        document: {
+          id: entry.docRef.id,
+          content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
+        },
+        s3FileName: entry.s3Info.key,
+        s3BucketName: entry.s3Info.bucket,
+        requestId,
+      });
     }
   }
 
-  // update download progress to completed, convert progress will be updated async
-  // by the FHIR converter
+  // After docs are converted (and conversion bundles are stored in S3), we recreate the consolidated
+  // bundle to make sure it's up-to-date.
+  await recreateConsolidated({ patient });
+
   await appendDocQueryProgress({
-    patient: { id, cxId },
+    patient: { id: patientId, cxId },
     downloadProgress: {
       total: entries.length,
       status: "completed",
       successful: entries.length,
     },
-    convertProgress:
-      docsToConvert <= 0
-        ? {
-            total: 0,
-            status: "completed",
-          }
-        : {
-            total: docsToConvert,
-            status: "processing",
-          },
+    convertProgress: {
+      total: convertibleDocCount,
+      status: "completed",
+    },
     requestId,
   });
 
   const result = entries.map(d => d.docRef);
-
   processPatientDocumentRequest(
     cxId,
-    id,
+    patientId,
     "medical.document-download",
     MAPIWebhookStatus.completed,
     requestId,
     toDTO(result)
   );
+  processPatientDocumentRequest(
+    cxId,
+    patientId,
+    "medical.document-conversion",
+    MAPIWebhookStatus.completed,
+    ""
+  );
 
   return;
 }
 
-function addSandboxFields(docRef: DocumentReference): DocumentReference {
+/**
+ * Sandbox version of the convertCDAToFHIR() function.
+ */
+async function sandboxConvertCDAToFHIR(params: {
+  patient: { cxId: string; id: string };
+  document: { id: string; content?: ContentMimeType };
+  s3FileName: string;
+  s3BucketName: string;
+  requestId: string;
+}) {
+  const { patient, document, s3FileName, s3BucketName, requestId } = params;
+  const { log } = out(
+    `sandboxConvertCDAToFHIR, pat ${patient.id}, reqId ${requestId}, docId ${document.id}`
+  );
+  const sourceBucketName = s3BucketName;
+  const sourceFileName = s3FileName.replace(".xml", ".json");
+  const sourceFilePath = sourceFileName;
+  const destinationBucketName = Config.getCdaToFhirConversionBucketName();
+  const destinationFileName = sourceFileName.replace(".json", conversionBundleSuffix);
+  const destinationFilePath = createFilePath(patient.cxId, patient.id, destinationFileName);
+  const s3Params = { sourceBucketName, sourceFilePath, destinationBucketName, destinationFilePath };
+  log(
+    `Bypassing conversion, storing the pre-canned JSON on the conversion bucket` +
+      ` - ${JSON.stringify(s3Params)}`
+  );
+  await copyPrecannedBundleToConversionBucket({ patientId: patient.id, ...s3Params, log });
+}
+
+async function copyPrecannedBundleToConversionBucket({
+  patientId,
+  sourceBucketName,
+  sourceFilePath,
+  destinationBucketName,
+  destinationFilePath,
+  log,
+}: {
+  patientId: string;
+  sourceBucketName: string;
+  sourceFilePath: string;
+  destinationBucketName: string;
+  destinationFilePath: string;
+  log: typeof console.log;
+}) {
+  const s3Utils = new S3Utils(Config.getAWSRegion());
+  const payloadRaw = await executeWithRetriesS3(
+    () => s3Utils.getFileContentsAsString(sourceBucketName, sourceFilePath),
+    { log }
+  );
+  // We need to replace the placeholder patient ID with the actual patient ID
+  const payload: Bundle = parseRawBundleForFhirServer(payloadRaw, patientId);
+  await s3Utils.uploadFile({
+    bucket: destinationBucketName,
+    key: destinationFilePath,
+    file: Buffer.from(JSON.stringify(payload)),
+    contentType: "application/json",
+  });
+}
+
+function addSandboxFields(docRef: DocumentReferenceWithId): DocumentReferenceWithId {
   if (docRef.content) {
     const fileExt = getFileExtension(docRef.content[0]?.attachment?.contentType);
     const randomIndex = Math.floor(Math.random() * randomDates.length);

@@ -35,8 +35,9 @@ service:
         query-parameters:
           resources:
             docs: |
-              A comma separated, case sensitive list of resources to be returned.
-              If none are provided all resources will be included.
+              A comma separated, case sensitive list of resources to be returned. If none are provided all
+              resources will be included. Metriport will automatically hydrate the initially filtered 
+              resources with referenced ones to create bundle consistency.
             type: optional<string>
           dateFrom:
             docs: |
@@ -66,27 +67,54 @@ service:
       examples:
         - name: Example1
           path-parameters:
-            id: "12345678"
+            id: "00000000-0000-0000-0000-000000000000"
           response:
             body: $StartConsolidatedQueryResponse.Example0
 
     getConsolidatedQueryStatus:
-      display-name: Get Consolidated Data Query status
+      display-name: Get Consolidated Data Query Status
       docs: Get the status of querying for patient's consolidated data.
       method: GET
-      path: /patient/{id}/consolidated/query
+      path: /patient/{patientId}/consolidated/query
       path-parameters:
-        id:
+        patientId:
           type: string
           docs: The ID of the Patient
       response:
+        # TODO(lucas|2025-01-07): This response type is a subset of the fields _actually_ being returned by our implementation.
+        # See issue here: https://github.com/metriport/metriport-internal/issues/2565
         type: GetConsolidatedQueryStatusResponse
       examples:
         - name: Example1
           path-parameters:
-            id: "12345678"
+            patientId: "00000000-0000-0000-0000-000000000000"
           response:
             body: $GetConsolidatedQueryStatusResponse.Example0
+
+    getSingleConsolidatedQueryStatus:
+      display-name: Get Single Consolidated Data Query Status
+      docs: Get the status of a single query for patient's consolidated data.
+      method: GET
+      path: /patient/{patientId}/consolidated/query/{requestId}
+      path-parameters:
+        patientId:
+          type: string
+          docs: The ID of the Patient
+        requestId:
+          type: string
+          docs: The ID of the request to get the status of.
+      # TODO(lucas|2025-01-07): This response type is a subset of the fields _actually_ being returned by our implementation.
+      # See issue here: https://github.com/metriport/metriport-internal/issues/2565
+      response:
+        type: PatientConsolidatedDataStatus
+      examples:
+        - name: Example1
+          path-parameters:
+            patientId: "00000000-0000-0000-0000-000000000000"
+            requestId: "00000000-0000-0000-0000-000000000000"
+          response:
+            body: $PatientConsolidatedDataStatus.Example0
+
 
     createPatientConsolidated:
       display-name: Create Patient's Consolidated Data
@@ -104,7 +132,7 @@ service:
       examples:
         - name: Example1
           path-parameters:
-            id: "12345678"
+            id: "00000000-0000-0000-0000-000000000000"
           request: $ConsolidatedBundleUpload.Example1
           response:
             body:
@@ -188,7 +216,7 @@ types:
     examples:
       - name: Example0
         value:
-          requestId: "12345678"
+          requestId: "00000000-0000-0000-0000-000000000000"
           startedAt: "2023-07-27T21:29:31.491+00:00"
           dateFrom: "2023-07-27"
           dateTo: "2024-07-27"

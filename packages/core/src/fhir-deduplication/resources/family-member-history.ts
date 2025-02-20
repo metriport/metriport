@@ -1,5 +1,11 @@
 import { CodeableConcept, FamilyMemberHistory } from "@medplum/fhirtypes";
-import { DeduplicationResult, combineResources, createRef, fillMaps } from "../shared";
+import {
+  DeduplicationResult,
+  combineResources,
+  createRef,
+  deduplicateWithinMap,
+  fetchCodingCodeOrDisplayOrSystem,
+} from "../shared";
 
 export function deduplicateFamilyMemberHistories(
   famMemberHists: FamilyMemberHistory[]
@@ -54,7 +60,7 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
     // const date = getDateFromResource(famMemberHist, "date"); // We're currently not mapping the date for FamilyMemberHistory.hbs
     if (relationship) {
       const key = JSON.stringify({ relationship, dob });
-      fillMaps(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
+      deduplicateWithinMap(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
     } else {
       danglingReferences.add(createRef(famMemberHist));
     }
@@ -72,9 +78,9 @@ export function extractCode(concept: CodeableConcept | undefined): string | unde
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
-      const display = coding.display?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+      const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
       if (system && display) {
         if (display !== "unknown") return display;
         if (code !== "unk") return code;
