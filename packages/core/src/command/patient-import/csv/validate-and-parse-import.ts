@@ -2,9 +2,10 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import csv from "csv-parser";
 import * as stream from "stream";
 import { out } from "../../../util/log";
+import { NDJSON_FILE_EXTENSION } from "../../../util/mime";
 import { PatientPayload } from "../patient-import";
 import { createFileKeyRaw, getS3UtilsInstance } from "../patient-import-shared";
-import { createValidationFile } from "../record/create-validation-file";
+import { createValidationFile, ValidationFileContentType } from "../record/create-validation-file";
 import { mapCsvPatientToMetriportPatient } from "./convert-patient";
 
 export type RowError = { rowColumns: string[]; error: string };
@@ -33,9 +34,7 @@ export async function validateAndParsePatientImportCsvFromS3({
     const { patients, invalidRows, validRows, headers } = await validateAndParsePatientImportCsv({
       contents: csvAsString,
     });
-    const patientCreatesContents = patients
-      ? Buffer.from(getPatientCreatesContents(patients), "utf8")
-      : undefined;
+    const patientCreates = patients ? getPatientCreatesContents(patients) : undefined;
     const validRowsContents = validRows
       ? Buffer.from(getValidRowsContents(validRows, headers), "utf8")
       : undefined;
@@ -43,13 +42,14 @@ export async function validateAndParsePatientImportCsvFromS3({
       ? Buffer.from(getInvalidRowsContents(invalidRows, headers), "utf8")
       : undefined;
     await Promise.all([
-      patientCreatesContents
+      patientCreates
         ? createValidationFile({
             cxId,
             jobId,
             stage: "create",
-            contents: patientCreatesContents,
+            contents: Buffer.from(patientCreates.contents, "utf8"),
             s3BucketName,
+            contentType: patientCreates.type,
           })
         : async () => Promise<void>,
       validRowsContents
@@ -84,9 +84,13 @@ export async function validateAndParsePatientImportCsvFromS3({
   }
 }
 
-function getPatientCreatesContents(patients: PatientPayload[]): string {
+function getPatientCreatesContents(patients: PatientPayload[]): {
+  contents: string;
+  type: ValidationFileContentType;
+} {
   const rows: string[] = patients.map(p => JSON.stringify(p));
-  return rows.join("\n");
+  const contents = rows.join("\n");
+  return { contents, type: NDJSON_FILE_EXTENSION };
 }
 
 function getValidRowsContents(validRows: string[][], headers: string[]): string {
