@@ -43,6 +43,12 @@ dayjs.extend(duration);
 
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
+// In case there are too many, expoeted from the DB
+// Single ID per line
+// const patientIds: string[] = fs
+//   .readFileSync("", "utf-8")
+//   .split("\n")
+//   .filter(id => id.trim().length > 0);
 
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
