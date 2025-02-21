@@ -39,10 +39,11 @@ const nonStandardUnitNormalizationMap = new Map<string, Unit>([
 const unitConversionAndNormalizationMap = new Map<string, UnitWithCode>([
   ["C", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
   ["F", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-  ["kg", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-  ["lb", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-  ["in", { unit: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-  ["ft", { unit: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+  ["kg", { unit: "lb", code: "kg" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+  ["g", { unit: "kg", code: "kg" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+  ["lb", { unit: "kg", code: "kg" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+  ["in", { unit: "cm", code: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+  ["ft", { unit: "cm", code: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
 ]);
 
 const blacklistedValues = ["see below", "see text", "see comments", "see note"];
