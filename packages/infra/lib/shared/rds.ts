@@ -94,7 +94,7 @@ export function addDBClusterPerformanceAlarms(
   createAlarm({
     metric: dbCluster.metricDatabaseConnections(),
     name: "DatabaseConnectionsAlarm",
-    threshold: getMaxPostgresConnections(dbConfig.maxCapacity),
+    threshold: 0.8 * getMaxPostgresConnections(dbConfig.maxCapacity),
     evaluationPeriods: 1,
     comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
