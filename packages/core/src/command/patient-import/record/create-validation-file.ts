@@ -7,13 +7,13 @@ export async function createValidationFile({
   cxId,
   jobId,
   stage,
-  rows,
+  contents,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
   stage: FileStages;
-  rows: string[];
+  contents: Buffer;
   s3BucketName: string;
 }): Promise<void> {
   const { log } = out(
@@ -25,7 +25,7 @@ export async function createValidationFile({
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,
-      file: Buffer.from(rows.join("\n"), "utf8"),
+      file: contents,
       contentType: "text/csv",
     });
   } catch (error) {
