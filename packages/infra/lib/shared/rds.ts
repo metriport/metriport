@@ -4,9 +4,10 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import { Construct } from "constructs";
 import { mbToBytes } from "../shared/util";
 import { EnvConfig } from "../../config/env-config";
+
 const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
 
-const getMaxPostgresConnections = (maxAcu: number): number => {
+function getMaxPostgresConnections(maxAcu: number): number {
   if (maxAcu < 4) return 189;
   if (maxAcu < 8) return 823;
   if (maxAcu < 16) return 1_669;
@@ -14,7 +15,7 @@ const getMaxPostgresConnections = (maxAcu: number): number => {
 
   // 32+ ACUs all have 5000 max connections
   return 5_000;
-};
+}
 
 export function addDBClusterPerformanceAlarms(
   scope: Construct,
@@ -24,6 +25,7 @@ export function addDBClusterPerformanceAlarms(
   alarmAction?: SnsAction
 ) {
   if (!dbConfig.alarmThresholds) return;
+  const maxConnectionsAlarmThreshold = 0.8 * getMaxPostgresConnections(dbConfig.maxCapacity);
   const createAlarm = ({
     name,
     metric,
@@ -87,15 +89,15 @@ export function addDBClusterPerformanceAlarms(
     metric: dbCluster.metricACUUtilization(),
     name: "ACUUtilizationAlarm",
     threshold: dbConfig.alarmThresholds.acuUtilizationPct,
-    evaluationPeriods: 1,
+    evaluationPeriods: 2,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
   createAlarm({
     metric: dbCluster.metricDatabaseConnections(),
     name: "DatabaseConnectionsAlarm",
-    threshold: 0.8 * getMaxPostgresConnections(dbConfig.maxCapacity),
-    evaluationPeriods: 1,
+    threshold: maxConnectionsAlarmThreshold,
+    evaluationPeriods: 2,
     comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
