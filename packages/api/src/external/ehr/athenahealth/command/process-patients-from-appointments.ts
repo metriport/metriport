@@ -26,7 +26,11 @@ dayjs.extend(duration);
 
 const catupUpLookBack = dayjs.duration(12, "hours");
 
-export type LookupMode = "from-subscription" | "from-subscription-backfill" | "appointments";
+enum LookupMode {
+  FromSubscription = "from-subscription",
+  FromSubscriptionBackfill = "from-subscription-backfill",
+  Appointments = "appointments",
+}
 
 type GetAppointmentsParams = {
   cxId: string;

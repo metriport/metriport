@@ -2,7 +2,10 @@ import Router from "express-promise-router";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { processPatientsFromAppointments } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments";
+import {
+  processPatientsFromAppointments,
+  LookupMode,
+} from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
 const router = Router();
@@ -18,7 +21,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
     processPatientsFromAppointments(
-      catchUp ? "from-subscription-backfill" : "from-subscription"
+      catchUp ? LookupMode.FromSubscriptionBackfill : LookupMode.FromSubscription
     ).catch(processAsyncError("AthenaHealth processPatientsFromAppointments"));
     return res.sendStatus(httpStatus.OK);
   })
@@ -33,7 +36,7 @@ router.post(
   "/appointments-from-subscription",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    processPatientsFromAppointments("from-subscription").catch(
+    processPatientsFromAppointments(LookupMode.FromSubscription).catch(
       processAsyncError("AthenaHealth processPatientsFromAppointments from-subscription")
     );
     return res.sendStatus(httpStatus.OK);
@@ -49,7 +52,7 @@ router.post(
   "/appointments-from-subscription-backfill",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    processPatientsFromAppointments("from-subscription-backfill").catch(
+    processPatientsFromAppointments(LookupMode.FromSubscriptionBackfill).catch(
       processAsyncError("AthenaHealth processPatientsFromAppointments from-subscription-backfill")
     );
     return res.sendStatus(httpStatus.OK);
@@ -65,7 +68,7 @@ router.post(
   "/appointments",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    processPatientsFromAppointmentsSub("appointments").catch(
+    processPatientsFromAppointments(LookupMode.Appointments).catch(
       processAsyncError("AthenaHealth processPatientsFromAppointmentsSub appointments")
     );
     return res.sendStatus(httpStatus.OK);
