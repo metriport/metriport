@@ -7,10 +7,7 @@ type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityM
 
 export async function getFacilities({ cxId, ids }: GetFacilitiesQuery): Promise<FacilityModel[]> {
   const facilities = await FacilityModel.findAll({
-    where: {
-      ...(ids ? { id: ids } : undefined),
-      cxId,
-    },
+    where: { ...(ids ? { id: ids } : undefined), cxId },
     order: [["id", "ASC"]],
   });
   return facilities;

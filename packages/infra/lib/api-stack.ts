@@ -212,7 +212,7 @@ export class APIStack extends Stack {
       this,
       dbCluster,
       dbClusterName,
-      dbConfig.alarmThresholds,
+      dbConfig,
       slackNotification?.alarmAction
     );
 

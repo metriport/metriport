@@ -9,7 +9,7 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
  * Stores the scheduled patient discovery to be executed when the current patient discovery is completed.
  */
 export async function schedulePatientDiscovery({
-  patient,
+  patient: { id, cxId },
   source,
   requestId,
   facilityId,
@@ -29,23 +29,19 @@ export async function schedulePatientDiscovery({
   forceCarequality?: boolean;
   // END TODO #1572 - remove
 }): Promise<void> {
-  const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
+  const { log } = out(`${source} PD - requestId ${requestId}, patient ${id}`);
 
   log(`Scheduling patient discovery to be executed`);
 
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
-  return await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+  const patientFilter = { id, cxId };
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = patient.data.externalData ?? {};
 
     const updatedExternalData = {
       ...externalData,
@@ -63,16 +59,13 @@ export async function schedulePatientDiscovery({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData: updatedExternalData,
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
   });
 }
