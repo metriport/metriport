@@ -1,11 +1,11 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { MetriportError, NotFoundError } from "@metriport/shared";
+import { NotFoundError } from "@metriport/shared";
 import {
   PatientMapping,
   PatientMappingPerSource,
   PatientSourceIdentifierMap,
 } from "../../domain/patient-mapping";
-import { EhrSources } from "../../external/ehr/shared";
+import { EhrSources, parseExternalId } from "../../external/ehr/shared";
 import { PatientMappingModel } from "../../models/patient-mapping";
 
 export type PatientMappingParams = PatientMappingPerSource;
@@ -91,17 +91,4 @@ export async function getSourceMapForPatient({
     return acc;
   }, {} as PatientSourceIdentifierMap);
   return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
-}
-
-function parseExternalId(source: string, externalId: string): string {
-  if (source === EhrSources.athena) {
-    const patientId = externalId.split("-")[2];
-    if (!patientId) {
-      throw new MetriportError("AthenaHealth patient mapping externalId is malformed", undefined, {
-        externalId,
-      });
-    }
-    return patientId;
-  }
-  return externalId;
 }
