@@ -4,10 +4,11 @@ import {
   DocumentQueryStatus,
   ProgressType,
 } from "@metriport/core/domain/document-query";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
+import { MedicalDataSource, isMedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { ProcessDocQueryProgressWebhookParams } from "../../../command/medical/document/process-doc-query-webhook";
 import { getCQData } from "../../../external/carequality/patient";
 import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
@@ -45,6 +46,8 @@ export async function calculateDocumentConversionStatus({
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const docQueryProgress = patient.data.documentQueryProgress;
   log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
+
+  let dqWhParams: ProcessDocQueryProgressWebhookParams | undefined;
 
   if (hasSource) {
     const updatedPatient = await tallyDocQueryProgress({
@@ -99,6 +102,13 @@ export async function calculateDocumentConversionStatus({
       });
     }
 
+    dqWhParams = {
+      patient: updatedPatient,
+      documentQueryProgress: updatedPatient.data.documentQueryProgress,
+      requestId,
+      progressType: "convert",
+    };
+
     if (
       (hieTriggerConsolidated && isHieConversionCompleted) ||
       (globalTriggerConsolidated && isGlobalConversionCompleted)
@@ -111,12 +121,17 @@ export async function calculateDocumentConversionStatus({
         patient: updatedPatient,
         conversionType: "pdf",
         context: `Post-DQ getConsolidated ${source}`,
+        dqWhParams,
       });
     } else if (isGlobalConversionCompleted) {
+      log(
+        `Kicking off getConsolidated for patient ${updatedPatient.id} with global flag: ${globalTriggerConsolidated}`
+      );
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
         context: "Post-DQ getConsolidated GLOBAL",
+        dqWhParams,
       });
     }
   } else {

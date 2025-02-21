@@ -14,6 +14,13 @@ const isSandbox = Config.isSandbox();
 export const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
 export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 
+export type ProcessDocQueryProgressWebhookParams = {
+  patient: Pick<Patient, "id" | "cxId" | "externalId">;
+  documentQueryProgress: DocumentQueryProgress | undefined;
+  requestId: string;
+  progressType?: ProgressType;
+};
+
 /**
  * Processes the document query progress to determine if when to send the document download and conversion webhooks
  */
@@ -55,7 +62,7 @@ const handleDownloadWebhook = async (
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
 ): Promise<void> => {
-  const webhookSent = documentQueryProgress?.download?.webhookSent ?? false;
+  const webhookSent = documentQueryProgress.download?.webhookSent ?? false;
 
   const downloadStatus = documentQueryProgress.download?.status;
   const isDownloadFinished = downloadStatus === "completed" || downloadStatus === "failed";
