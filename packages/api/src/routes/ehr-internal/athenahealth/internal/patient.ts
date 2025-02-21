@@ -2,7 +2,7 @@ import Router from "express-promise-router";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { processPatientsFromAppointmentsSub } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments-sub";
+import { processPatientsFromAppointments } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
 const router = Router();
@@ -17,9 +17,9 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
-    processPatientsFromAppointmentsSub(
+    processPatientsFromAppointments(
       catchUp ? "from-subscription-backfill" : "from-subscription"
-    ).catch(processAsyncError("AthenaHealth processPatientsFromAppointmentsSub"));
+    ).catch(processAsyncError("AthenaHealth processPatientsFromAppointments"));
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -33,8 +33,8 @@ router.post(
   "/appointments-from-subscription",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    processPatientsFromAppointmentsSub("from-subscription").catch(
-      processAsyncError("AthenaHealth processPatientsFromAppointmentsSub from-subscription")
+    processPatientsFromAppointments("from-subscription").catch(
+      processAsyncError("AthenaHealth processPatientsFromAppointments from-subscription")
     );
     return res.sendStatus(httpStatus.OK);
   })
@@ -49,10 +49,8 @@ router.post(
   "/appointments-from-subscription-backfill",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    processPatientsFromAppointmentsSub("from-subscription-backfill").catch(
-      processAsyncError(
-        "AthenaHealth processPatientsFromAppointmentsSub from-subscription-backfill"
-      )
+    processPatientsFromAppointments("from-subscription-backfill").catch(
+      processAsyncError("AthenaHealth processPatientsFromAppointments from-subscription-backfill")
     );
     return res.sendStatus(httpStatus.OK);
   })
