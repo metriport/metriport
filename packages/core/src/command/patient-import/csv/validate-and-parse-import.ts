@@ -33,25 +33,40 @@ export async function validateAndParsePatientImportCsvFromS3({
     const { patients, invalidRows, validRows, headers } = await validateAndParsePatientImportCsv({
       contents: csvAsString,
     });
+    const patientCreatesContents = patients
+      ? Buffer.from(getPatientCreatesContents(patients), "utf8")
+      : undefined;
+    const validRowsContents = validRows
+      ? Buffer.from(getValidRowsContents(validRows, headers), "utf8")
+      : undefined;
+    const invalidRowsContents = invalidRows
+      ? Buffer.from(getInvalidRowsContents(invalidRows, headers), "utf8")
+      : undefined;
     await Promise.all([
-      validRows.length > 0
+      patientCreatesContents
+        ? createValidationFile({
+            cxId,
+            jobId,
+            stage: "create",
+            contents: patientCreatesContents,
+            s3BucketName,
+          })
+        : async () => Promise<void>,
+      validRowsContents
         ? createValidationFile({
             cxId,
             jobId,
             stage: "valid",
-            rows: [headers.join(","), ...validRows.map(rowColumn => rowColumn.join(","))],
+            contents: validRowsContents,
             s3BucketName,
           })
         : async () => Promise<void>,
-      invalidRows.length > 0
+      invalidRowsContents
         ? createValidationFile({
             cxId,
             jobId,
             stage: "invalid",
-            rows: [
-              [...headers, "error"].join(","),
-              ...invalidRows.map(row => [...row.rowColumns, stripCommas(row.error, ";")].join(",")),
-            ],
+            contents: invalidRowsContents,
             s3BucketName,
           })
         : async () => Promise<void>,
@@ -67,6 +82,24 @@ export async function validateAndParsePatientImportCsvFromS3({
       context: "patient-import.validateAndParsePatientImportCsvFromS3",
     });
   }
+}
+
+function getPatientCreatesContents(patients: PatientPayload[]): string {
+  const rows: string[] = patients.map(p => JSON.stringify(p));
+  return rows.join("\n");
+}
+
+function getValidRowsContents(validRows: string[][], headers: string[]): string {
+  const rows: string[] = [headers.join(","), ...validRows.map(rowColumn => rowColumn.join(","))];
+  return rows.join("\n");
+}
+
+function getInvalidRowsContents(invalidRows: RowError[], headers: string[]): string {
+  const rows: string[] = [
+    [...headers, "error"].join(","),
+    ...invalidRows.map(row => [...row.rowColumns, stripCommas(row.error, ";")].join(",")),
+  ];
+  return rows.join("\n");
 }
 
 /**
