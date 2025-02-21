@@ -55,7 +55,6 @@ export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
 export const stringValueFFsSchema = cxBasedFFsSchema.merge(
   z.object({
-    oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
     e2eCxIds: ffStringValuesSchema.nullish(),
   })
 );
