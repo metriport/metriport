@@ -144,7 +144,7 @@ function getPatientsSharedQueryUntilFTS(
         OR external_id ilike '%' || :filters || '%'
         OR id ilike '%' || :filters || '%'
         OR id IN (SELECT patient_id FROM patient_mapping WHERE cx_id = :cxId and external_id ilike '%' || :filters || '%')
-        OR facility_ids && (SELECT array_agg(id) FROM facility WHERE cx_id = :cxId and data->>'name' ilike '%' || :filters || '%' or id ilike '%' || :filters || '%')
+        OR facility_ids && (SELECT array_agg(id) FROM facility WHERE cx_id = :cxId and (data->>'name' ilike '%' || :filters || '%' or id ilike '%' || :filters || '%'))
       )`
       : "");
 
