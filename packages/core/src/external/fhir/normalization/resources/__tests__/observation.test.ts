@@ -53,7 +53,6 @@ describe("normalizeObservations", () => {
     const result = normalized[0];
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
-    console.log("result", JSON.stringify(result, null, 2));
     expect(result.valueQuantity?.unit).toBe("kg");
     expect(result.valueQuantity?.value).toBe(68);
   });
