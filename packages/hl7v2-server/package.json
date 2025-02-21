@@ -1,0 +1,41 @@
+{
+  "name": "hl7v2-server",
+  "version": "1.0.0",
+  "description": "MLLP server that reads HL7 messages off of a raw tcp connection",
+  "main": "app.js",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "dev": "ts-node src/app.ts",
+    "clean": "rimraf dist && rimraf node_modules",
+    "build": "tsc -p tsconfig.build.json",
+    "prettier-fix": "npx prettier '**/*.ts' --write"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/metriport/metriport.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
+  "homepage": "https://github.com/metriport/metriport#readme",
+  "dependencies": {
+    "@medplum/hl7": "^3.2.33",
+    "@metriport/core": "^1.6.7",
+    "@metriport/shared": "^0.12.2",
+    "@sentry/cli": "^2.42.1",
+    "dotenv": "^16.4.5",
+    "jest": "^29.7.0"
+  },
+  "devDependencies": {
+    "@sentry/node": "^9.1.0",
+    "@tsconfig/node18": "^18.2.4",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.13.5",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  hl7v2v2:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "2575:2575"
+    environment:
+      NODE_ENV: production
+      AWS_REGION: us-east-1
