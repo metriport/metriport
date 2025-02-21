@@ -17,7 +17,7 @@ import { PatientPayload } from "./patient-import";
 const globalPrefix = "patient-import";
 const region = Config.getAWSRegion();
 
-export type FileStages = "raw" | "valid" | "invalid";
+export type FileStages = "raw" | "valid" | "invalid" | "create";
 
 function createCxJobPrefix(cxId: string, jobId: string): string {
   return `cxid=${cxId}/jobid=${jobId}`;
