@@ -88,13 +88,16 @@ export type SlimProcedure = Omit<
   name?: string | undefined;
   status?: string | undefined;
   bodySite?: string | undefined;
-  reference?: Record<string, string | object>[];
+  reference?: Record<string, unknown>[];
   instances?: Instance[];
 };
 
 /**
  * This function applies filters to the resource based on its resourceType, and overwrites and/or creates new specific attributes,
  * making them into strings most of the time.
+ *
+ * Since this function generates input for an LLM that doesn't require any specific shape, some of the types aren't super structured
+ * and pretty, i.e. reference?: Record<string, unknown>
  *
  * TODO: #2510 - Break this function up into smaller functions, specific to each resourceType.
  *
@@ -222,7 +225,7 @@ export type SlimImmunization = Omit<Immunization, "vaccineCode" | "site" | "rout
   vaccineCode?: string | undefined;
   site?: string | undefined;
   route?: string | undefined;
-  reference?: Record<string, string | object>;
+  reference?: Record<string, unknown>;
 };
 
 function getSlimImmunization(res: Immunization): SlimImmunization | undefined {
@@ -310,7 +313,7 @@ export type SlimDiagnosticReport = Omit<
   category?: string | undefined;
   presentedForm?: string[] | undefined;
   status?: string | undefined;
-  reference?: Record<string, string | object>;
+  reference?: Record<string, unknown>;
 };
 
 function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | undefined {
@@ -528,7 +531,7 @@ export type SlimCondition = Omit<Condition, "name" | "category" | "clinicalStatu
   name?: string | undefined;
   category?: string | undefined;
   clinicalStatus?: string | undefined;
-  reference?: Record<string, string | Partial<SlimPractitioner>>;
+  reference?: Record<string, unknown>;
   instances?: {
     onsetPeriod?: Period | undefined;
   }[];
