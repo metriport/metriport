@@ -690,7 +690,7 @@ export class APIStack extends Stack {
         rateLimit: 50,
       },
       quota: {
-        limit: this.isProd(props) ? 10000 : 500,
+        limit: this.isProd(props) ? 100_000 : 501,
         period: apig.Period.DAY,
       },
     });
