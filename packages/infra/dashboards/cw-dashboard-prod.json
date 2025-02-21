@@ -781,7 +781,7 @@
             "properties": {
                 "metrics": [
                     [ "AWS/ApplicationELB", "RequestCount", "LoadBalancer", "app/APIInf-APIFa-Ad0ZjbBOQg4I/90128f3f5a57e5a7", { "label": "Total requests", "region": "us-west-1" } ],
-                    [ ".", "TargetResponseTime", ".", ".", { "label": "Response time", "region": "us-west-1", "yAxis": "right", "color": "#2ca02c" } ]
+                    [ ".", "TargetResponseTime", ".", ".", { "label": "Response time", "region": "us-west-1", "yAxis": "right", "color": "#2ca02c", "stat": "Maximum" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -799,7 +799,7 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "api-cluster" ]
+                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "api-cluster", { "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -807,7 +807,15 @@
                 "stat": "Average",
                 "period": 60,
                 "title": "API DB - Connections",
-                "liveData": false
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "MAX CONNECTIONS (based on max ACUs)",
+                            "value": 3360
+                        }
+                    ]
+                }
             }
         },
         {
