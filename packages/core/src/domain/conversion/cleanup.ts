@@ -1,9 +1,13 @@
 export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g;
 
+export const LESS_THAN = "&lt;";
+const AMPERSAND = "&amp;";
+
 export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoCdUnk = replaceCdUnkString(payloadRaw);
   const payloadNoAmpersand = replaceAmpersand(payloadNoCdUnk);
-  const payloadNoNullFlavor = replaceNullFlavor(payloadNoAmpersand);
+  const payloadNoLessThan = replaceLessThanChar(payloadNoAmpersand);
+  const payloadNoNullFlavor = replaceNullFlavor(payloadNoLessThan);
   const payloadCleanedCode = cleanUpTranslationCode(payloadNoNullFlavor);
   return payloadCleanedCode;
 }
@@ -22,8 +26,18 @@ function replaceNullFlavor(payloadRaw: string): string {
 
 function replaceAmpersand(payloadRaw: string): string {
   const stringToReplace = /\s&\s/g;
-  const replacement = " &amp; ";
+  const replacement = ` ${AMPERSAND} `;
   return payloadRaw.replace(stringToReplace, replacement);
+}
+
+/**
+ * Replacing some instances of `<` where it happens inside the string values of the XML.
+ *
+ * Not replacing `>X` and `> X` because those might happen naturally, i.e. in lists `<td>1.`, etc.
+ */
+export function replaceLessThanChar(payloadRaw: string): string {
+  const lessPattern = /\s<\s|\s*<\s*(?=\d)/g;
+  return payloadRaw.replace(lessPattern, ` ${LESS_THAN} `);
 }
 
 export function cleanUpTranslationCode(payloadRaw: string): string {
