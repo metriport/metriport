@@ -4,9 +4,9 @@ import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
-import { getPatientOrFail } from "./get-patient";
+import { getPatientModelOrFail } from "./get-patient";
 import { deleteAllPatientMappings } from "../../mapping/patient";
 
 const deleteContext = "cw.patient.delete";
@@ -22,7 +22,7 @@ export type DeleteOptions = {
 export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<void> => {
   const { id, cxId, facilityId: facilityIdParam, eTag } = patientDelete;
 
-  const patient = await getPatientOrFail({ id, cxId });
+  const patient = await getPatientModelOrFail({ id, cxId });
   validateVersionForUpdate(patient, eTag);
 
   const facilityId = getFacilityIdOrFail(patient, facilityIdParam);

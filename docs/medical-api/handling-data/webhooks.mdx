@@ -144,8 +144,11 @@ These are messages you can expect to receive in the following scenarios:
   },
   "patients": [
     {
-      "patientId": "<patient-id-1>",
-      "externalId": "<external-id-1>",
+      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
+      "additionalIds": { 
+        "athenahealth": ["99992"]
+      },
       "type": "document-download",
       "status": "completed",
       "documents": [
@@ -278,6 +281,9 @@ Example payload:
     {
       "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
       "externalId": "1234567890",
+      "additionalIds": { 
+        "athenahealth": ["99992"]
+      },
       "status": "completed",
       "filters": {
         "resources": "Encounter,Observation"
@@ -483,8 +489,11 @@ Here is an example payload:
   "patients": [
     {
       "status": "completed",
-      "patientId": "<patient-id-1>",
-      "externalId": "<external-id-1>",
+      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
+      "additionalIds": { 
+        "athenahealth": ["99992"]
+      },
       "documents": [
         {
           "id": "018c1b94-57dc-7950-b564-f74ab9b56cc4",

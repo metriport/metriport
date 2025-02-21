@@ -6,6 +6,7 @@ import {
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
 import { runOrScheduleCqPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
@@ -18,6 +19,7 @@ let schedulePatientDiscovery_mock: jest.SpyInstance;
 beforeEach(() => {
   mockStartTransaction();
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
+  jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
   cqDiscover_mock = jest.spyOn(cqPatient, "discover").mockImplementation(async () => {
     return;
   });
@@ -35,7 +37,7 @@ afterEach(() => {
 describe("run or schedule patient discovery", () => {
   it("runs with no previous patient discovery", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toRun",
@@ -66,7 +68,7 @@ describe("run or schedule patient discovery", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toRun",
@@ -91,7 +93,7 @@ describe("run or schedule patient discovery", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toRun",
@@ -116,7 +118,7 @@ describe("run or schedule patient discovery", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toBeScheduled",
@@ -152,7 +154,7 @@ describe("run or schedule patient discovery", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const params = {
       patient,
       facilityId: "toNotSchedule",

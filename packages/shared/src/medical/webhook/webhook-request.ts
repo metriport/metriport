@@ -64,6 +64,7 @@ export const filtersSchema = z.record(z.string(), z.string().or(z.boolean().null
 export const consolidatedWebhookPatientSchema = z.object({
   patientId: z.string(),
   externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
   status: z.enum(["completed", "failed"]),
   bundle: z.custom<SearchSetBundle | undefined>(),
   filters: filtersSchema.nullish(),
@@ -103,6 +104,7 @@ const documentsSchema = z.object({
 export const documentDownloadWebhookPatientSchema = z.object({
   patientId: z.string(),
   externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
   status: z.enum(["completed", "failed"]),
   documents: z.array(documentsSchema),
 });
@@ -117,6 +119,7 @@ export type DocumentDownloadWebhookRequest = z.infer<typeof documentDownloadWebh
 export const documentConversionWebhookPatientSchema = z.object({
   patientId: z.string(),
   externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
   status: z.enum(["completed", "failed"]),
 });
 export type DocumentConversionWebhookPatient = z.infer<
@@ -134,6 +137,7 @@ export type DocumentConversionWebhookRequest = z.infer<
 export const documentBulkDownloadWebhookPatientSchema = z.object({
   patientId: z.string(),
   externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
   status: z.enum(["completed", "failed"]),
   documents: z.array(documentsSchema.extend({ url: z.string() })),
 });
