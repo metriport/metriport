@@ -24,7 +24,7 @@ describe("mapCsvAddresses", () => {
       expect(result).toEqual(["123 Main St", "Apt 4"]);
     });
 
-    it("handles various unit indicators when splitting", () => {
+    describe("handles various unit indicators when splitting", () => {
       const inputs = [
         "123 Main St Apartment 4",
         "123 Main St Unit 4",
@@ -34,13 +34,17 @@ describe("mapCsvAddresses", () => {
         "123 Main St No 4",
         "123 Main St Floor 4",
         "123 Main St Fl 4",
+        "123 Main St Apt 4",
+        "123 Main St Apt. 4",
       ];
-
       inputs.forEach(input => {
-        const result = normalizeAddressLine(input, "address", true);
-        expect(result).toHaveLength(2);
-        expect(result[0]).toBe("123 Main St");
-        expect(result[1]).toContain("4");
+        it(`'${input}'`, () => {
+          const result = normalizeAddressLine(input, "address", true);
+          expect(result).toHaveLength(2);
+          expect(result[0]).toBe("123 Main St");
+          expect(result[0]).not.toContain("4");
+          expect(result[1]).toContain("4");
+        });
       });
     });
 
