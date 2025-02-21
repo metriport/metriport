@@ -82,6 +82,15 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
+  createAlarm({
+    metric: dbCluster.metricDatabaseConnections(),
+    name: "DatabaseConnectionsAlarm",
+    threshold: thresholds.databaseConnectionsCount,
+    evaluationPeriods: 1,
+    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+  });
+
   /**
    * For Aurora Serverless, this alarm is not important as it auto-scales. However, we always
    * create this alarm because of compliance controls (SOC2).

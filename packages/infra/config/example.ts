@@ -24,6 +24,7 @@ export const config: EnvConfigNonSandbox = {
       freeableMemoryMb: 1_000,
       volumeReadIops: 2_000,
       volumeWriteIops: 2_000,
+      databaseConnectionsCount: 2688,
     },
     poolSettings: {
       max: 200,
