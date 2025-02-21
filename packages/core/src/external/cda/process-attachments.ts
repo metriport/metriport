@@ -8,9 +8,9 @@ import {
   Identifier,
   Resource,
 } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries, toArray } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, toArray } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { MedicalDataSource, isMedicalDataSource } from "..";
+import { isMedicalDataSource, MedicalDataSource } from "..";
 import { createAttachmentUploadFilePath } from "../../domain/document/upload";
 import {
   CdaCodeCv,
@@ -22,11 +22,13 @@ import {
   ObservationMedia,
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
+import { capture } from "../../util";
 import { stringToBase64 } from "../../util/base64";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { detectFileType } from "../../util/file-type";
 import { out } from "../../util/log";
+import { OCTET_MIME_TYPE } from "../../util/mime";
 import { sizeInBytes } from "../../util/string";
 import { uuidv4 } from "../../util/uuid-v7";
 import { S3Utils, UploadParams } from "../aws/s3";
@@ -37,7 +39,6 @@ import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/conve
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
-import { OCTET_MIME_TYPE } from "../../util/mime";
 
 const region = Config.getAWSRegion();
 
@@ -68,87 +69,106 @@ export async function processAttachments({
   medicalDataSource?: string | undefined;
 }) {
   const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
-  const s3Utils = getS3UtilsInstance();
+  try {
+    const s3Utils = getS3UtilsInstance();
 
-  const extensions = [buildDocIdFhirExtension(filePath), getSourceExtension(medicalDataSource)]
-    .flat()
-    .filter(Boolean) as Extension[];
+    const extensions = [buildDocIdFhirExtension(filePath), getSourceExtension(medicalDataSource)]
+      .flat()
+      .filter(Boolean) as Extension[];
 
-  const docRefs: DocumentReference[] = [];
-  const uploadDetails: UploadParams[] = [];
+    const docRefs: DocumentReference[] = [];
+    const uploadDetails: UploadParams[] = [];
 
-  b64Attachments.acts.map(act => {
-    const fileDetails = getDetailsForAct(act.text, log);
-    if (!fileDetails) return;
-
-    const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
-    if (!docRef.id) throw new Error("Missing ID in DocRef");
-
-    const fileKey = createAttachmentUploadFilePath({
-      filePath,
-      attachmentId: docRef.id,
-      mimeType: fileDetails.mimeType,
-    });
-    const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
-
-    const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
-
-    if (docRef.date) attachment.creation = docRef.date;
-    docRef.content = [{ attachment }];
-    const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
-
-    uploadDetails.push(uploadParams);
-    docRefs.push(docRef);
-  });
-
-  b64Attachments.organizers.map(organizerEntry => {
-    const { mediaObservations } = groupObservations(organizerEntry);
-
-    mediaObservations.map(mediaEntry => {
-      const obsMedia = mediaEntry.observationMedia;
-      const fileDetails = getDetailsForMediaObs(obsMedia.value);
+    b64Attachments.acts.map(act => {
+      const fileDetails = getDetailsForAct(act.text, log);
       if (!fileDetails) return;
 
-      const docRef = buildDocumentReferenceFromObsMedia(
-        patientId,
-        extensions,
-        organizerEntry,
-        obsMedia
-      );
+      const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
       if (!docRef.id) throw new Error("Missing ID in DocRef");
+
       const fileKey = createAttachmentUploadFilePath({
         filePath,
         attachmentId: docRef.id,
         mimeType: fileDetails.mimeType,
       });
-
       const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
 
       const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
+
+      if (docRef.date) attachment.creation = docRef.date;
       docRef.content = [{ attachment }];
       const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
+
       uploadDetails.push(uploadParams);
       docRefs.push(docRef);
     });
-  });
 
-  log(`Extracted ${docRefs.length} attachments`);
-  const docRefBundleEntries = docRefs.map(dr => ({ resource: dr }));
-  const collectionBundle: Bundle = {
-    resourceType: "Bundle",
-    type: "collection",
-    entry: docRefBundleEntries,
-  };
+    b64Attachments.organizers.map(organizerEntry => {
+      const { mediaObservations } = groupObservations(organizerEntry);
 
-  const transactionBundle = convertCollectionBundleToTransactionBundle({
-    fhirBundle: collectionBundle,
-  });
+      mediaObservations.map(mediaEntry => {
+        const obsMedia = mediaEntry.observationMedia;
+        const fileDetails = getDetailsForMediaObs(obsMedia.value);
 
-  if (transactionBundle.entry?.length) {
-    await Promise.all([
-      handleFhirUpload(cxId, transactionBundle, fhirUrl, log),
-      handleS3Upload(uploadDetails, s3Utils, log),
-    ]);
+        if (!fileDetails) return;
+
+        const docRef = buildDocumentReferenceFromObsMedia(
+          patientId,
+          extensions,
+          organizerEntry,
+          obsMedia
+        );
+        if (!docRef.id) throw new Error("Missing ID in DocRef");
+        const fileKey = createAttachmentUploadFilePath({
+          filePath,
+          attachmentId: docRef.id,
+          mimeType: fileDetails.mimeType,
+        });
+
+        const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
+
+        const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
+        docRef.content = [{ attachment }];
+        const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
+        uploadDetails.push(uploadParams);
+        docRefs.push(docRef);
+      });
+    });
+
+    log(`Extracted ${docRefs.length} attachments`);
+    const docRefBundleEntries = docRefs.map(dr => ({ resource: dr }));
+    const collectionBundle: Bundle = {
+      resourceType: "Bundle",
+      type: "collection",
+      entry: docRefBundleEntries,
+    };
+
+    const transactionBundle = convertCollectionBundleToTransactionBundle({
+      fhirBundle: collectionBundle,
+    });
+
+    if (transactionBundle.entry?.length) {
+      await Promise.all([
+        handleFhirUpload(cxId, transactionBundle, fhirUrl, log),
+        handleS3Upload(uploadDetails, s3Utils, log),
+      ]);
+    }
+  } catch (error) {
+    const msg = `Failed to process attachments - not interrupting main flow`;
+    log(`${msg} - ${errorToString(error)}`);
+    capture.message(msg, {
+      extra: {
+        cxId,
+        patientId,
+        filePath,
+        s3BucketName,
+        fhirUrl,
+        medicalDataSource,
+        numberOfAttachments: b64Attachments.total,
+        error,
+      },
+      level: "warning",
+    });
   }
   log(`Done...`);
 }
@@ -159,11 +179,12 @@ async function handleFhirUpload(
   fhirUrl: string,
   log: typeof console.log
 ): Promise<void> {
-  log(`Transaction bundle: ${JSON.stringify(transactionBundle)}`);
+  log(`[handleFhirUpload] Transaction bundle: ${JSON.stringify(transactionBundle)}`);
   const fhirApi = makeFhirApi(cxId, fhirUrl);
   await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
     log,
   });
+  log(`[handleFhirUpload] Done`);
 }
 
 async function handleS3Upload(
