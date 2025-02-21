@@ -6,6 +6,7 @@ import { mbToBytes } from "../shared/util";
 import { EnvConfig } from "../../config/env-config";
 
 const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
+const EIGHTY_PCT = 0.8;
 
 function getMaxPostgresConnections(maxAcu: number): number {
   if (maxAcu < 4) return 189;
@@ -25,7 +26,7 @@ export function addDBClusterPerformanceAlarms(
   alarmAction?: SnsAction
 ) {
   if (!dbConfig.alarmThresholds) return;
-  const maxConnectionsAlarmThreshold = 0.8 * getMaxPostgresConnections(dbConfig.maxCapacity);
+
   const createAlarm = ({
     name,
     metric,
@@ -96,7 +97,7 @@ export function addDBClusterPerformanceAlarms(
   createAlarm({
     metric: dbCluster.metricDatabaseConnections(),
     name: "DatabaseConnectionsAlarm",
-    threshold: maxConnectionsAlarmThreshold,
+    threshold: EIGHTY_PCT * getMaxPostgresConnections(dbConfig.maxCapacity),
     evaluationPeriods: 2,
     comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
