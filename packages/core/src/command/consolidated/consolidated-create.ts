@@ -1,5 +1,7 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
@@ -10,10 +12,13 @@ import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { executeAsynchronously, out } from "../../util";
+import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
+dayjs.extend(duration);
+
+const AI_BRIEF_TIMEOUT = dayjs.duration(3, "minutes");
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
 export const conversionBundleSuffix = ".xml.json";
@@ -68,9 +73,33 @@ export async function createConsolidatedFromConversions({
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
   if (isAiBriefFeatureFlagEnabled) {
-    const binaryBundleEntry = await generateAiBriefBundleEntry(deduped, cxId, patientId, log);
-    if (binaryBundleEntry) {
-      deduped.entry?.push(binaryBundleEntry);
+    try {
+      const binaryBundleEntry = await Promise.race([
+        generateAiBriefBundleEntry(deduped, cxId, patientId, log),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("AI Brief generation timeout")),
+            AI_BRIEF_TIMEOUT.asMilliseconds()
+          )
+        ),
+      ]);
+
+      if (binaryBundleEntry) {
+        deduped.entry?.push(binaryBundleEntry);
+      }
+    } catch (error) {
+      const msg = "Failed to generate AI Brief";
+      log(`${msg}: ${error}`);
+      capture.message(msg, {
+        extra: {
+          error,
+          cxId,
+          patientId,
+          context: "createConsolidatedFromConversions",
+        },
+        level: "warning",
+      });
+      // Intentionally not failing the whole consolidation if AI Brief fails
     }
   }
 
