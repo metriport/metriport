@@ -25,7 +25,7 @@ import {
 
 dayjs.extend(duration);
 
-const catupUpLookBack = dayjs.duration(12, "hours");
+const subscriptionBackfillLookBack = dayjs.duration(12, "hours");
 const appointmentsLookForward = dayjs.duration(2, "weeks");
 
 type GetAppointmentsParams = {
@@ -192,17 +192,13 @@ async function getAppointmentsFromApi({
     });
   }
   if (lookupMode === LookupMode.FromSubscription) {
-    const { startRange, endRange } = { startRange: undefined, endRange: undefined };
-    return await api.getAppointmentsFromSubscription({
-      cxId,
-      departmentIds,
-      startProcessedDate: startRange,
-      endProcessedDate: endRange,
-    });
+    return await api.getAppointmentsFromSubscription({ cxId, departmentIds });
   }
   if (lookupMode === LookupMode.FromSubscriptionBackfill) {
-    const { startRange, endRange } = getLookBackTimeRange({ lookBack: catupUpLookBack });
-    log(`Getting appointments from ${startRange} to ${endRange}`);
+    const { startRange, endRange } = getLookBackTimeRange({
+      lookBack: subscriptionBackfillLookBack,
+    });
+    log(`Getting processedchanged events from ${startRange} to ${endRange}`);
     return await api.getAppointmentsFromSubscription({
       cxId,
       departmentIds,
