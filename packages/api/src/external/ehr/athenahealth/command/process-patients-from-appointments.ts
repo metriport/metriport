@@ -36,7 +36,7 @@ type GetAppointmentsParams = {
 };
 
 export async function processPatientsFromAppointments({ lookupMode }: { lookupMode: LookupMode }) {
-  const { log } = out(`AthenaHealth processPatientsFromAppointments - lookupMode: ${lookupMode}`);
+  const { log } = out(`AthenaHealth processPatientsFromAppointments - lookupMode ${lookupMode}`);
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 

@@ -45,7 +45,10 @@ import {
   MedicationReference,
   MedicationReferences,
   medicationReferencesSchema,
+  patientCustomFieldsSchema,
+  PatientCustomFields,
   VitalsCreateParams,
+  PatientCustomField,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import {
   Patient,
@@ -287,6 +290,36 @@ class AthenaHealthApi {
     const patient = entry[0]?.resource;
     if (!patient) throw new NotFoundError("No patient found in search", undefined, additionalInfo);
     return patient;
+  }
+
+  async getCustomFieldsForPatient({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<PatientCustomField[]> {
+    const { debug } = out(
+      `AthenaHealth getCustomFieldsForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const params = {
+      showprivacycustomfields: "true",
+      showcustomfields: "true",
+    };
+    const queryParams = new URLSearchParams(params);
+    const patientUrl = `/Patient/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const patientCustomFields = await this.makeRequest<PatientCustomFields>({
+      cxId,
+      patientId,
+      s3Path: "patient-athenaone",
+      method: "GET",
+      url: patientUrl,
+      schema: patientCustomFieldsSchema,
+      additionalInfo,
+      debug,
+    });
+    return patientCustomFields.customfields;
   }
 
   async createMedication({
