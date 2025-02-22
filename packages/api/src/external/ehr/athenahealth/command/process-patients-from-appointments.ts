@@ -13,10 +13,11 @@ import {
   EhrSources,
   delayBetweenPracticeBatches,
   getLookBackTimeRange,
+  getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
 } from "../../shared";
-import { createAthenaClient } from "../shared";
+import { LookupMode, createAthenaClient } from "../shared";
 import {
   SyncAthenaPatientIntoMetriportParams,
   syncAthenaPatientIntoMetriport,
@@ -25,12 +26,7 @@ import {
 dayjs.extend(duration);
 
 const catupUpLookBack = dayjs.duration(12, "hours");
-
-enum LookupMode {
-  FromSubscription = "from-subscription",
-  FromSubscriptionBackfill = "from-subscription-backfill",
-  Appointments = "appointments",
-}
+const appointmentsLookForward = dayjs.duration(2, "weeks");
 
 type GetAppointmentsParams = {
   cxId: string;
@@ -148,7 +144,7 @@ async function getAppointments({
   lookupMode,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
   const { log } = out(
-    `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}`
+    `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );
   const api = await createAthenaClient({ cxId, practiceId });
   try {
@@ -157,6 +153,7 @@ async function getAppointments({
       cxId,
       departmentIds,
       lookupMode,
+      log,
     });
     return {
       appointments: appointments.map(appointment => {
@@ -165,24 +162,28 @@ async function getAppointments({
       error: undefined,
     };
   } catch (error) {
-    log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
+    log(`Failed to get appointments. Cause: ${errorToString(error)}`);
     return { error };
   }
 }
 
-type GetAppointmentsFromApiParams = Omit<
-  GetAppointmentsParams,
-  "practiceId" | "environment" | "clientKey" | "clientSecret"
-> & { api: AthenaHealthApi };
+type GetAppointmentsFromApiParams = Omit<GetAppointmentsParams, "practiceId"> & {
+  api: AthenaHealthApi;
+  log: (message: string) => void;
+};
 
 async function getAppointmentsFromApi({
   api,
   cxId,
   departmentIds,
   lookupMode,
+  log,
 }: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
-  if (lookupMode === "appointments") {
-    const { startRange, endRange } = getLookBackTimeRange({ lookBack: catupUpLookBack });
+  if (lookupMode === LookupMode.Appointments) {
+    const { startRange, endRange } = getLookForwardTimeRange({
+      lookForward: appointmentsLookForward,
+    });
+    log(`Getting appointments from ${startRange} to ${endRange}`);
     return await api.getAppointments({
       cxId,
       departmentIds,
@@ -190,16 +191,26 @@ async function getAppointmentsFromApi({
       endAppointmentDate: endRange,
     });
   }
-  const { startRange, endRange } =
-    lookupMode === "from-subscription"
-      ? { startRange: undefined, endRange: undefined }
-      : getLookBackTimeRange({ lookBack: catupUpLookBack });
-  return await api.getAppointmentsFromSubscription({
-    cxId,
-    departmentIds,
-    startProcessedDate: startRange,
-    endProcessedDate: endRange,
-  });
+  if (lookupMode === LookupMode.FromSubscription) {
+    const { startRange, endRange } = { startRange: undefined, endRange: undefined };
+    return await api.getAppointmentsFromSubscription({
+      cxId,
+      departmentIds,
+      startProcessedDate: startRange,
+      endProcessedDate: endRange,
+    });
+  }
+  if (lookupMode === LookupMode.FromSubscriptionBackfill) {
+    const { startRange, endRange } = getLookBackTimeRange({ lookBack: catupUpLookBack });
+    log(`Getting appointments from ${startRange} to ${endRange}`);
+    return await api.getAppointmentsFromSubscription({
+      cxId,
+      departmentIds,
+      startProcessedDate: startRange,
+      endProcessedDate: endRange,
+    });
+  }
+  throw new MetriportError("Invalid lookup mode", undefined, { cxId, lookupMode });
 }
 
 async function syncPatient({
