@@ -4,6 +4,7 @@ import {
 } from "@metriport/core/command/patient-import/steps/create/patient-import-create";
 import { PatientImportCreateHandlerLocal } from "@metriport/core/command/patient-import/steps/create/patient-import-create-local";
 import { errorToString, MetriportError } from "@metriport/shared";
+import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -28,7 +29,7 @@ const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler(event: SQSEvent) {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   let errorHandled = false;
   const errorMsg = "Error processing event on " + lambdaName;
   const startedAt = new Date().getTime();
@@ -77,8 +78,10 @@ export async function handler(event: SQSEvent) {
     } catch (error) {
       errorHandled = true;
       log(`${errorMsg}: ${errorToString(error)}`);
-      capture.error(errorMsg, {
-        extra: { event, context: lambdaName, error },
+      capture.setExtra({
+        event,
+        context: lambdaName,
+        error,
       });
       throw new MetriportError(errorMsg, error, {
         ...{ ...parsedBody, patientPayload: undefined },
@@ -87,12 +90,14 @@ export async function handler(event: SQSEvent) {
   } catch (error) {
     if (errorHandled) throw error;
     console.log(`${errorMsg}: ${errorToString(error)}`);
-    capture.error(errorMsg, {
-      extra: { event, context: lambdaName, error },
+    capture.setExtra({
+      event,
+      context: lambdaName,
+      error,
     });
     throw new MetriportError(errorMsg, error);
   }
-}
+});
 
 function parseBody(body?: unknown): ProcessPatientCreateRequest {
   if (!body) throw new Error(`Missing message body`);

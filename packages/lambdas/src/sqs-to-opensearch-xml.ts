@@ -9,6 +9,7 @@ import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import * as Sentry from "@sentry/serverless";
 
 dayjs.extend(duration);
 
@@ -42,7 +43,7 @@ const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace
 type EventBody = FileIngestorSQSPayload;
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler(event: SQSEvent) {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   try {
     // Process messages from SQS
     const records = event.Records;
@@ -102,12 +103,14 @@ export async function handler(event: SQSEvent) {
   } catch (error) {
     const msg = "Error ingesting message into OpenSearch";
     console.log(`${msg}: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: { event, context: lambdaName, error },
+    capture.setExtra({
+      event,
+      context: lambdaName,
+      error,
     });
     throw new MetriportError(msg, error);
   }
-}
+});
 
 function parseBody(body: unknown): EventBody {
   const bodyString = typeof body === "string" ? (body as string) : undefined;
