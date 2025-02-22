@@ -3,7 +3,7 @@ import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { getPatientOrFail } from "./get-patient";
+import { getPatientModelOrFail } from "./get-patient";
 
 export type InitConsolidatedQueryCmd = {
   consolidatedQueries: ConsolidatedQuery[];
@@ -29,25 +29,24 @@ export type StoreQueryParams = {
   cmd: QueryInitCmd;
 };
 
-export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promise<Patient> => {
-  return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientOrFail({
+export async function storeQueryInit({ id, cxId, cmd }: StoreQueryParams): Promise<Patient> {
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientModelOrFail({
       id,
       cxId,
       lock: true,
       transaction,
     });
 
-    return (
-      await patient.update(
-        {
-          data: {
-            ...patient.data,
-            ...cmd,
-          },
+    return patient.update(
+      {
+        data: {
+          ...patient.dataValues.data,
+          ...cmd,
         },
-        { transaction }
-      )
-    ).dataValues;
+      },
+      { transaction }
+    );
   });
-};
+  return patient.dataValues;
+}

@@ -1,10 +1,10 @@
+import { FileStages } from "@metriport/core/command/patient-import/patient-import-shared";
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
-import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { S3EventSource, SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { IBucket } from "aws-cdk-lib/aws-s3";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -17,12 +17,12 @@ const waitTimePatientCreate = Duration.seconds(15);
 const waitTimePatientQuery = Duration.seconds(0);
 
 function settings() {
-  const fileImportLambdaTimeout = Duration.minutes(15).minus(Duration.seconds(5));
-  const fileImport = {
-    name: "PatientImportFile",
-    entry: "patient-import-file",
+  const fileParseLambdaTimeout = Duration.minutes(15).minus(Duration.seconds(5));
+  const fileParse = {
+    name: "PatientImportParse",
+    entry: "patient-import-parse",
     lambdaMemory: 2048,
-    lambdaTimeout: fileImportLambdaTimeout,
+    lambdaTimeout: fileParseLambdaTimeout,
   };
   // 25secs for processinng
   const patientCreateLambdaTimeout = waitTimePatientCreate.plus(Duration.seconds(25));
@@ -64,7 +64,7 @@ function settings() {
     waitTime: waitTimePatientQuery,
   };
   return {
-    fileImport,
+    fileParse,
     patientCreate,
     patientQuery,
   };
@@ -103,13 +103,13 @@ interface PatientImportNestedStackProps extends NestedStackProps {
 }
 
 export class PatientImportNestedStack extends NestedStack {
-  readonly bucket: IBucket;
+  readonly bucket: s3.Bucket;
   // TODO 2330 rename so it contains "parse" to represent the respective step
-  readonly importFileLambda: Lambda;
-  readonly patientCreateLambda: Lambda;
-  readonly patientCreateQueue: Queue;
-  readonly patientQueryLambda: Lambda;
-  readonly patientQueryQueue: Queue;
+  readonly parseLambda: Lambda;
+  readonly createLambda: Lambda;
+  readonly createQueue: Queue;
+  readonly queryLambda: Lambda;
+  readonly queryQueue: Queue;
 
   constructor(scope: Construct, id: string, props: PatientImportNestedStackProps) {
     super(scope, id, props);
@@ -121,7 +121,7 @@ export class PatientImportNestedStack extends NestedStack {
       bucketName: config.bucketName,
     });
 
-    const patientQuery = this.setupPatientQuery({
+    const query = this.setupPatientQuery({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -129,33 +129,44 @@ export class PatientImportNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     });
-    this.patientQueryLambda = patientQuery.lambda;
-    this.patientQueryQueue = patientQuery.queue;
+    this.queryLambda = query.lambda;
+    this.queryQueue = query.queue;
 
-    const patientCreate = this.setupPatientCreate({
+    const create = this.setupPatientCreate({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       bucket: this.bucket,
-      patientQueryQueue: this.patientQueryQueue,
+      patientQueryQueue: this.queryQueue,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     });
-    this.patientCreateLambda = patientCreate.lambda;
-    this.patientCreateQueue = patientCreate.queue;
+    this.createLambda = create.lambda;
+    this.createQueue = create.queue;
 
-    this.importFileLambda = this.setupLambdaImportFile({
+    this.parseLambda = this.setupFileParse({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       bucket: this.bucket,
-      patientCreateQueue: this.patientCreateQueue,
+      patientCreateQueue: this.createQueue,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+
+    // TODO  2330 Temp solution for MVP, to be merged into parseLambda
+    this.setupNotificationLambda({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      bucket: this.bucket,
+      notificationUrl: config.notificationUrl,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     });
   }
 
-  private setupBucket({ bucketName }: { bucketName: string }): IBucket {
+  private setupBucket({ bucketName }: { bucketName: string }): s3.Bucket {
     const bucket = new s3.Bucket(this, "PatientImportBucket", {
       bucketName: bucketName,
       publicReadAccess: false,
@@ -165,7 +176,7 @@ export class PatientImportNestedStack extends NestedStack {
     return bucket;
   }
 
-  private setupLambdaImportFile(ownProps: {
+  private setupFileParse(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     bucket: s3.IBucket;
@@ -176,7 +187,7 @@ export class PatientImportNestedStack extends NestedStack {
   }): Lambda {
     const { lambdaLayers, vpc, bucket, envType, patientCreateQueue, sentryDsn, alarmAction } =
       ownProps;
-    const { name, entry, lambdaMemory, lambdaTimeout } = settings().fileImport;
+    const { name, entry, lambdaMemory, lambdaTimeout } = settings().fileParse;
 
     const lambda = createLambda({
       stack: this,
@@ -266,6 +277,51 @@ export class PatientImportNestedStack extends NestedStack {
     patientQueryQueue.grantSendMessages(lambda);
 
     return { lambda, queue };
+  }
+
+  // TODO  2330 Temp solution for MVP, remove asap
+  private setupNotificationLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    bucket: s3.Bucket;
+    envType: EnvType;
+    notificationUrl: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda | undefined {
+    const { lambdaLayers, vpc, bucket, envType, notificationUrl, sentryDsn, alarmAction } =
+      ownProps;
+
+    const lambda = createLambda({
+      stack: this,
+      name: "PatientImportUploadNotification",
+      entry: "patient-import-upload-notification",
+      envType,
+      envVars: {
+        SLACK_NOTIFICATION_URL: notificationUrl,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.seconds(30),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    bucket.grantRead(lambda);
+
+    const fileName: FileStages = "raw";
+    const fileExtension = ".csv";
+    const suffix = fileName + fileExtension;
+
+    lambda.addEventSource(
+      new S3EventSource(bucket, {
+        events: [s3.EventType.OBJECT_CREATED],
+        filters: [{ suffix }],
+      })
+    );
+
+    return lambda;
   }
 
   private setupPatientQuery(ownProps: {

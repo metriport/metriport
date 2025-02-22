@@ -3,7 +3,7 @@ import {
   DeduplicationResult,
   combineResources,
   createRef,
-  fillMaps,
+  deduplicateWithinMap,
   getDateFromResource,
   pickMostDescriptiveStatus,
 } from "../shared";
@@ -74,7 +74,7 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
 
     if (medRef && datetime && dosage) {
       const key = JSON.stringify({ medRef, datetime, dosage });
-      fillMaps(
+      deduplicateWithinMap(
         medAdminsMap,
         key,
         medAdmin,
@@ -84,7 +84,7 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
       );
     } else if (medRef && datetime) {
       const key = JSON.stringify({ medRef, datetime });
-      fillMaps(
+      deduplicateWithinMap(
         medAdminsMap,
         key,
         medAdmin,

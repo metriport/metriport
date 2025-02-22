@@ -1,5 +1,5 @@
-import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/query/patient-import-query";
-import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/query/patient-import-query-local";
+import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/steps/query/patient-import-query";
+import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/steps/query/patient-import-query-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -7,10 +7,9 @@ import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import {
   parseCxIdAndJob,
-  parseDisableWebhooks,
-  parseJobStartedAt,
+  parseDisableWebhooksOrFail,
   parseRerunPdOnNewDemos,
-  parseTriggerConsolidated,
+  parseTriggerConsolidatedOrFail,
 } from "./shared/patient-import";
 import { getSingleMessageOrFail } from "./shared/sqs";
 
@@ -38,7 +37,6 @@ export async function handler(event: SQSEvent) {
     const {
       cxId,
       jobId,
-      jobStartedAt,
       patientId,
       triggerConsolidated,
       disableWebhooks,
@@ -56,7 +54,6 @@ export async function handler(event: SQSEvent) {
       const processPatientQueryRequest: ProcessPatientQueryRequest = {
         cxId,
         jobId,
-        jobStartedAt,
         patientId,
         triggerConsolidated,
         disableWebhooks,
@@ -98,27 +95,24 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
-  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
-  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
-  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
+  const triggerConsolidatedRaw = parseTriggerConsolidatedOrFail(bodyAsJson);
+  const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
+  const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientIdRaw = bodyAsJson.patientId;
   if (!patientIdRaw) throw new Error(`Missing patientId`);
   if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
 
-  const cxId = cxIdRaw as string;
-  const jobId = jobIdRaw as string;
-  const jobStartedAt = jobStartedAtRaw as string;
-  const patientId = patientIdRaw as string;
-  const triggerConsolidated = triggerConsolidatedRaw as boolean;
-  const disableWebhooks = disableWebhooksRaw as boolean;
-  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
+  const cxId = cxIdRaw;
+  const jobId = jobIdRaw;
+  const patientId = patientIdRaw;
+  const triggerConsolidated = triggerConsolidatedRaw;
+  const disableWebhooks = disableWebhooksRaw;
+  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw;
 
   return {
     cxId,
     jobId,
-    jobStartedAt,
     patientId,
     triggerConsolidated,
     disableWebhooks,

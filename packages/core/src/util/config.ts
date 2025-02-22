@@ -144,7 +144,8 @@ export class Config {
   static getPatientImportBucket(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_BUCKET_NAME");
   }
-  // TODO 2330 remove this, it will be triggered by S3
+  // TODO 2330 We should prob remove this as the cloud implementation of the parse step
+  // should only be triggered by S3, not the API.
   static getPatientImportLambdaName(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
   }

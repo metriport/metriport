@@ -1,15 +1,44 @@
-import { MetriportError } from "@metriport/shared";
+import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
+import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
+import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
+import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
+import {
+  findOrCreateJwtToken,
+  getLatestExpiringJwtTokenBySourceAndData,
+} from "../../command/jwt-token";
+import { athenaClientJwtTokenSource } from "./athenahealth/shared";
+import { canvasClientJwtTokenSource } from "./canvas/shared";
+import { elationClientJwtTokenSource } from "./elation/shared";
 
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const parallelPractices = 10;
 export const parallelPatients = 2;
 
+type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv;
+export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
+  environment: Env;
+  clientKey: string;
+  clientSecret: string;
+};
+
+type EhrClient = AthenaHealthApi | ElationApi | CanvasApi;
+export type EhrClientParams<Env extends EhrEnv> = {
+  twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  practiceId: string;
+} & EhrEnvAndClientCredentials<Env>;
+
+type EhrClientJwtTokenSource =
+  | typeof athenaClientJwtTokenSource
+  | typeof elationClientJwtTokenSource
+  | typeof canvasClientJwtTokenSource;
+
 export enum EhrSources {
   athena = "athenahealth",
   elation = "elation",
+  canvas = "canvas",
 }
 
 export type Appointment = {
@@ -44,29 +73,75 @@ export function getLookForwardTimeRange({ lookForward }: { lookForward: Duration
   };
 }
 
-const MAP_KEY_SEPARATOR = "|||";
+export type EhrPerPracticeParams = { cxId: string; practiceId: string };
 
-export function createPracticeMapKey(cxId: string, practiceId: string): string {
-  return `${cxId}${MAP_KEY_SEPARATOR}${practiceId}`;
+/**
+ * Expiration checks are handled by the clients themselves.
+ */
+async function getLatestClientJwtTokenInfo({
+  cxId,
+  practiceId,
+  source,
+}: EhrPerPracticeParams & { source: EhrClientJwtTokenSource }): Promise<JwtTokenInfo | undefined> {
+  const data = { cxId, practiceId, source };
+  const token = await getLatestExpiringJwtTokenBySourceAndData({ source, data });
+  if (!token) return undefined;
+  return {
+    access_token: token.token,
+    exp: token.exp,
+  };
 }
 
-export function parsePracticeMapKey(key: string): { cxId: string; practiceId: string } {
-  const [cxId, practiceId] = key.split(MAP_KEY_SEPARATOR);
-  if (!cxId || !practiceId) throw new MetriportError(`Invalid map key ${key}`, undefined, { key });
-  return { cxId, practiceId };
-}
+export type GetEnvParams<Env extends EhrEnv, EnvArgs> = {
+  params: EnvArgs;
+  getEnv: (params: EnvArgs) => EhrEnvAndClientCredentials<Env>;
+};
 
-export function createPracticeMap(appointments: Appointment[]): {
-  [k: string]: Appointment[];
-} {
-  const appointmentsByPractice: { [k: string]: Appointment[] } = {};
-  appointments.map(appointment => {
-    const key = createPracticeMapKey(appointment.cxId, appointment.practiceId);
-    if (appointmentsByPractice[key]) {
-      appointmentsByPractice[key].push(appointment);
-    } else {
-      appointmentsByPractice[key] = [appointment];
-    }
+export async function createEhrClient<
+  Env extends EhrEnv,
+  Client extends EhrClient,
+  EnvArgs = undefined
+>({
+  cxId,
+  practiceId,
+  source,
+  getEnv,
+  getClient,
+}: EhrPerPracticeParams & {
+  source: EhrClientJwtTokenSource;
+  getEnv: GetEnvParams<Env, EnvArgs>;
+  getClient: (params: EhrClientParams<Env>) => Promise<Client>;
+}): Promise<Client> {
+  const [environment, twoLeggedAuthTokenInfo] = await Promise.all([
+    getEnv.getEnv(getEnv.params),
+    getLatestClientJwtTokenInfo({ cxId, practiceId, source }),
+  ]);
+  const client = await getClient({
+    twoLeggedAuthTokenInfo,
+    practiceId,
+    ...environment,
   });
-  return appointmentsByPractice;
+  const newAuthInfo = client.getTwoLeggedAuthTokenInfo();
+  if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
+  const data = { cxId, practiceId, source };
+  await findOrCreateJwtToken({
+    token: newAuthInfo.access_token,
+    exp: newAuthInfo.exp,
+    source,
+    data,
+  });
+  return client;
+}
+
+export function parseExternalId(source: string, externalId: string): string {
+  if (source === EhrSources.athena) {
+    const patientId = externalId.split("-")[2];
+    if (!patientId) {
+      throw new MetriportError("AthenaHealth patient mapping externalId is malformed", undefined, {
+        externalId,
+      });
+    }
+    return patientId;
+  }
+  return externalId;
 }

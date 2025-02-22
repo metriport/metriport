@@ -1,22 +1,27 @@
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
-import { USStateForAddress } from "@metriport/shared";
+import { NotFoundError, USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
 import { Op, QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
-import NotFoundError from "../../../errors/not-found";
+import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
+import { paginationSqlExpressions } from "../../../shared/sql";
+import { getSourceMapForPatient } from "../../mapping/patient";
 import { Pagination, sortForPagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { sanitize, validate } from "./shared";
-import { paginationSqlExpressions } from "../../../shared/sql";
 
 export type PatientMatchCmd = PatientDemoData & { cxId: string };
 
-export async function matchPatient(patient: PatientMatchCmd): Promise<Patient | undefined> {
+export type PatientWithIdentifiers = Patient & { additionalIds?: PatientSourceIdentifierMap };
+
+export async function matchPatient(
+  patient: PatientMatchCmd
+): Promise<PatientWithIdentifiers | undefined> {
   const { cxId } = patient;
 
   const sanitized = sanitize(patient);
@@ -48,7 +53,7 @@ export async function getPatients({
   facilityId?: string;
   fullTextSearchFilters?: string | undefined;
   pagination?: Pagination;
-}): Promise<PatientModel[]> {
+}): Promise<PatientWithIdentifiers[]> {
   const sequelize = PatientModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
@@ -78,7 +83,10 @@ export async function getPatients({
     type: QueryTypes.SELECT,
   });
 
-  const sortedPatients = sortForPagination(patients, pagination);
+  const patientsWithIdentifiers = await Promise.all(
+    patients.map(patient => attatchPatientIdentifiers(patient.dataValues))
+  );
+  const sortedPatients = sortForPagination(patientsWithIdentifiers, pagination);
   return sortedPatients;
 }
 
@@ -131,7 +139,13 @@ function getPatientsSharedQueryUntilFTS(
   const queryFTS =
     queryPatientIds +
     (fullTextSearchFilters
-      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filters) OR external_id = :filters OR id = :filters)`
+      ? ` AND (
+        search_criteria @@ websearch_to_tsquery('english', :filters) 
+        OR external_id ilike '%' || :filters || '%'
+        OR id = :filters
+        OR id IN (SELECT patient_id FROM patient_mapping WHERE cx_id = :cxId and external_id ilike '%' || :filters || '%')
+        OR facility_ids && (SELECT array_agg(id) FROM facility WHERE cx_id = :cxId and (data->>'name' ilike '%' || :filters || '%' or id = :filters))
+      )`
       : "");
 
   return queryFTS;
@@ -169,7 +183,7 @@ export async function getPatientIds({
         : undefined),
     },
   });
-  return patients.map(p => p.id);
+  return patients.map(p => p.dataValues.id);
 }
 
 /**
@@ -185,9 +199,10 @@ export async function getPatientByDemo({
 }: {
   cxId: string;
   demo: PatientDemoData;
-}): Promise<Patient | undefined> {
+}): Promise<PatientWithIdentifiers | undefined> {
   const patientLoader = new PatientLoaderLocal();
-  return getPatientByDemoMPI({ cxId, demo, patientLoader });
+  const patient = await getPatientByDemoMPI({ cxId, demo, patientLoader });
+  return patient ? await attatchPatientIdentifiers(patient) : undefined;
 }
 
 export type GetPatient = {
@@ -218,6 +233,32 @@ export async function getPatient({
   cxId,
   transaction,
   lock,
+}: GetPatient): Promise<PatientWithIdentifiers | undefined> {
+  const patient = await PatientModel.findOne({
+    where: { cxId, id },
+    transaction,
+    lock,
+  });
+  return patient ? await attatchPatientIdentifiers(patient.dataValues) : undefined;
+}
+
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
+export async function getPatientOrFail(params: GetPatient): Promise<PatientWithIdentifiers> {
+  const patient = await getPatient(params);
+  if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
+  return patient;
+}
+
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
+export async function getPatientModel({
+  id,
+  cxId,
+  transaction,
+  lock,
 }: GetPatient): Promise<PatientModel | undefined> {
   const patient = await PatientModel.findOne({
     where: { cxId, id },
@@ -230,8 +271,8 @@ export async function getPatient({
 /**
  * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
  */
-export async function getPatientOrFail(params: GetPatient): Promise<PatientModel> {
-  const patient = await getPatient(params);
+export async function getPatientModelOrFail(params: GetPatient): Promise<PatientModel> {
+  const patient = await getPatientModel(params);
   if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
   return patient;
 }
@@ -243,7 +284,7 @@ export async function getPatientWithDependencies({
   id: string;
   cxId: string;
 }): Promise<{
-  patient: PatientModel;
+  patient: PatientWithIdentifiers;
   facilities: Facility[];
   organization: Organization;
 }> {
@@ -264,4 +305,15 @@ export async function getPatientStates({
   const patients = await getPatients({ cxId, patientIds });
   const nonUniqueStates = patients.flatMap(getStatesFromAddresses).filter(s => s);
   return uniq(nonUniqueStates);
+}
+
+export async function attatchPatientIdentifiers(patient: Patient): Promise<PatientWithIdentifiers> {
+  const additionalIds = await getSourceMapForPatient({
+    cxId: patient.cxId,
+    patientId: patient.id,
+  });
+  return {
+    ...patient,
+    ...(additionalIds ? { additionalIds } : {}),
+  };
 }

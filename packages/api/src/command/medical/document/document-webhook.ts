@@ -2,6 +2,7 @@ import { PatientData } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
 import { WebhookMetadata } from "@metriport/shared/medical";
+import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { patientEvents } from "../../../event/medical/patient-event";
@@ -27,6 +28,7 @@ type WebhookDocumentDataPayload = {
 type WebhookPatientPayload = {
   patientId: string;
   externalId?: string;
+  additionalIds?: PatientSourceIdentifierMap;
 } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadata;
@@ -63,6 +65,7 @@ export const processPatientDocumentRequest = async (
         {
           patientId,
           ...(patient.externalId ? { externalId: patient.externalId } : {}),
+          ...(patient.additionalIds ? { additionalIds: patient.additionalIds } : {}),
           documents,
           status,
         },

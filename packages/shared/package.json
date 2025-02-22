@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.19.2",
+  "version": "0.20.0",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -20,6 +20,8 @@
     ".": "./dist/index.js",
     "./api": "./dist/api/index.js",
     "./common/*": "./dist/common/*.js",
+    "./domain": "./dist/domain/index.js",
+    "./domain/*": "./dist/domain/*.js",
     "./interface/*": "./dist/interface/*.js",
     "./medical": "./dist/medical/index.js"
   },
@@ -36,6 +38,12 @@
       ],
       "common/*": [
         "dist/common/*"
+      ],
+      "domain": [
+        "dist/domain/index.d.ts"
+      ],
+      "domain/*": [
+        "dist/domain/*"
       ],
       "interface": [
         "dist/interface/index.d.ts"
