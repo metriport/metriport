@@ -1,22 +1,22 @@
-import { APIGatewayProxyEventV2 } from "aws-lambda";
-import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { errorToString } from "@metriport/shared";
+import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { processInboundDq } from "@metriport/core/external/carequality/dq/process-inbound-dq";
-import { processInboundDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dq-request";
 import { createInboundDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dq-response";
-import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
+import { processInboundDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dq-request";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
+import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { errorToString } from "@metriport/shared";
+import * as Sentry from "@sentry/serverless";
+import { APIGatewayProxyEventV2 } from "aws-lambda";
 import { getEnvOrFail } from "./shared/env";
-
 const region = getEnvVarOrFail("AWS_REGION");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const { log } = out(`ihe-gateway-v2-inbound-document-query`);
 
-export async function handler(event: APIGatewayProxyEventV2) {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProxyEventV2) => {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
     try {
@@ -60,7 +60,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
     log(`${msg}: ${errorToString(error)}`);
     return buildResponse(500, "Internal Server Error");
   }
-}
+});
 
 const buildResponse = (status: number, body?: unknown) => ({
   statusCode: status,

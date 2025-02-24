@@ -22,6 +22,7 @@ import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
 import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
@@ -88,7 +89,7 @@ type EventBody = {
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 // TODO: 2502 - Migrate most of the logic to the core to simplify the lambda handler as much as possible
-export async function handler(event: SQSEvent) {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   try {
     // Process messages from SQS
     const records = event.Records;
@@ -327,12 +328,14 @@ export async function handler(event: SQSEvent) {
   } catch (error) {
     const msg = "Error processing event on " + lambdaName;
     console.log(`${msg}: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: { event, context: lambdaName, error },
+    capture.setExtra({
+      event,
+      context: lambdaName,
+      error,
     });
     throw new MetriportError(msg, error);
   }
-}
+});
 
 async function convertPayloadToFHIR({
   converterUrl,

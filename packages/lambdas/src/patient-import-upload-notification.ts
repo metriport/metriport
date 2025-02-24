@@ -1,18 +1,17 @@
 import { sendToSlack } from "@metriport/core/external/slack/index";
 import { Config } from "@metriport/core/util/config";
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { S3Event } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
 // Keep this as early on the file as possible
 capture.init();
 
 const slackNotificationUrl = getEnvOrFail("SLACK_NOTIFICATION_URL");
 const isSandbox = Config.isSandbox();
 
-export async function handler(event: S3Event) {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: S3Event) => {
   for (const record of event.Records) {
     const sourceBucket = record.s3.bucket.name;
     const sourceKey = decodeURIComponent(record.s3.object.key);
@@ -40,10 +39,14 @@ export async function handler(event: S3Event) {
     } catch (error) {
       const msg = `Error processing new patient import file`;
       console.log(msg, sourceKey, errorToString(error));
-      capture.error(msg, {
-        extra: { context: `patient-import-upload-notification`, sourceBucket, sourceKey, error },
+      capture.setExtra({
+        context: `patient-import-upload-notification`,
+        sourceBucket,
+        sourceKey,
+        error,
       });
+      throw new MetriportError(msg, error);
     }
   }
   await Sentry.close();
-}
+});
