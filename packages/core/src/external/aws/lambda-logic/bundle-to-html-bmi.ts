@@ -789,6 +789,8 @@ function renderVitalsValue(observation: Observation) {
     const unit = observation.valueQuantity?.unit?.replace(/[{()}]/g, "");
 
     return `${value} ${unit}`;
+  } else if (observation.valueString) {
+    return observation.valueString;
   }
   return undefined;
 }
