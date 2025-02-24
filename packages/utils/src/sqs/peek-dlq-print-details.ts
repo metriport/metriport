@@ -82,7 +82,8 @@ async function peekIntoQueue() {
   const messageCount = await getMessageCountFromQueue(dlqUrl);
   console.log(`>>> Message count: ${messageCount}`);
 
-  const messageDetails: MessageDetails[] = [];
+  const messageDetailsMap = new Map<string, MessageDetails>();
+
   console.log(`>>> Getting messages from source queue...`);
   for (let i = 0; i < messageCount; i++) {
     const messagesOfRequest = await peekMessagesFromQueue(dlqUrl, {
@@ -95,7 +96,7 @@ async function peekIntoQueue() {
       return { messageCount: 0, first10Items: [] };
     }
 
-    messagesOfRequest.map(async m => {
+    messagesOfRequest.forEach(m => {
       const attr = m.MessageAttributes as DlqMessageAttributes | undefined;
       if (!attr) return;
       const startedAt = attr.jobStartedAt?.StringValue ?? attr.startedAt?.StringValue;
@@ -103,7 +104,7 @@ async function peekIntoQueue() {
       const body = m.Body ? JSON.parse(m.Body) : undefined;
       const s3FileName = body.s3FileName;
       const s3BucketName = body.s3BucketName;
-      if (!patientId || !startedAt || !s3FileName || !s3BucketName) return;
+      if (!patientId || !startedAt || !s3FileName || !s3BucketName || !m.MessageId) return;
 
       const details: MessageDetails = {
         messageId: m.MessageId,
@@ -115,11 +116,14 @@ async function peekIntoQueue() {
         patientId: patientId,
       };
 
-      messageDetails.push(details);
+      messageDetailsMap.set(m.MessageId, details);
     });
   }
 
-  fs.writeFileSync(`${dirName}/${outputFileName}.json`, JSON.stringify(messageDetails));
+  const uniqueMessageDetails = Array.from(messageDetailsMap.values());
+  fs.writeFileSync(`${dirName}/${outputFileName}.json`, JSON.stringify(uniqueMessageDetails));
+
+  console.log(`>>> Saved ${uniqueMessageDetails.length} unique messages to file`);
 }
 
 /**
