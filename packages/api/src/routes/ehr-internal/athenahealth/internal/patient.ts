@@ -8,6 +8,8 @@ import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
 const router = Router();
 
+const athenaAsyncMsg = "AthenaHealth processPatientsFromAppointments";
+
 /**
  * POST /internal/ehr/athenahealth/patient/from-appointments-subscription
  *
@@ -20,7 +22,7 @@ router.post(
     const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
     processPatientsFromAppointments({
       lookupMode: catchUp ? LookupMode.FromSubscriptionBackfill : LookupMode.FromSubscription,
-    }).catch(processAsyncError("AthenaHealth processPatientsFromAppointments"));
+    }).catch(processAsyncError(athenaAsyncMsg));
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -28,14 +30,14 @@ router.post(
 /**
  * POST /internal/ehr/athenahealth/patient/appointments-from-subscription
  *
- * Fetches appointments since last call creates all patients not already existing
+ * Fetches appointment change events since last call and creates all patients not already existing
  */
 router.post(
   "/appointments-from-subscription",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     processPatientsFromAppointments({ lookupMode: LookupMode.FromSubscription }).catch(
-      processAsyncError(`AthenaHealth processPatientsFromAppointments from-subscription`)
+      processAsyncError(`${athenaAsyncMsg} ${LookupMode.FromSubscription}`)
     );
     return res.sendStatus(httpStatus.OK);
   })
@@ -44,16 +46,14 @@ router.post(
 /**
  * POST /internal/ehr/athenahealth/patient/appointments-from-subscription-backfill
  *
- * Fetches appointments since last call creates all patients not already existing
+ * Fetches appointments change events already processed and creates all patients not already existing
  */
 router.post(
   "/appointments-from-subscription-backfill",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     processPatientsFromAppointments({ lookupMode: LookupMode.FromSubscriptionBackfill }).catch(
-      processAsyncError(
-        `AthenaHealth processPatientsFromAppointments ${LookupMode.FromSubscriptionBackfill}`
-      )
+      processAsyncError(`${athenaAsyncMsg} ${LookupMode.FromSubscriptionBackfill}`)
     );
     return res.sendStatus(httpStatus.OK);
   })
@@ -62,14 +62,14 @@ router.post(
 /**
  * POST /internal/ehr/athenahealth/patient/appointments
  *
- * Fetches appointments since last call creates all patients not already existing
+ * Fetches appointments in the future and creates all patients not already existing
  */
 router.post(
   "/appointments",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     processPatientsFromAppointments({ lookupMode: LookupMode.Appointments }).catch(
-      processAsyncError(`AthenaHealth processPatientsFromAppointments ${LookupMode.Appointments}`)
+      processAsyncError(`${athenaAsyncMsg} ${LookupMode.Appointments}`)
     );
     return res.sendStatus(httpStatus.OK);
   })

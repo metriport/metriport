@@ -152,7 +152,7 @@ async function getAppointments({
 
 type GetAppointmentsFromApiParams = Omit<GetAppointmentsParams, "practiceId"> & {
   api: AthenaHealthApi;
-  log: (message: string) => void;
+  log: typeof console.log;
 };
 
 async function getAppointmentsFromApi({
@@ -175,13 +175,14 @@ async function getAppointmentsFromApi({
     });
   }
   if (lookupMode === LookupMode.FromSubscription) {
+    log(`Getting change events since last call`);
     return await api.getAppointmentsFromSubscription({ cxId, departmentIds });
   }
   if (lookupMode === LookupMode.FromSubscriptionBackfill) {
     const { startRange, endRange } = getLookBackTimeRange({
       lookBack: subscriptionBackfillLookBack,
     });
-    log(`Getting processedchanged events from ${startRange} to ${endRange}`);
+    log(`Getting already-processed change events from ${startRange} to ${endRange}`);
     return await api.getAppointmentsFromSubscription({
       cxId,
       departmentIds,
