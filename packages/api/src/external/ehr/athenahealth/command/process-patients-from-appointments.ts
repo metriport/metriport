@@ -36,32 +36,15 @@ type GetAppointmentsParams = {
 };
 
 export async function processPatientsFromAppointments({ lookupMode }: { lookupMode: LookupMode }) {
-  const { log } = out(`AthenaHealth processPatientsFromAppointments - lookupMode ${lookupMode}`);
-
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
-    const cxId = mapping.cxId;
-    const practiceId = mapping.externalId;
-    const departmentIds = mapping.secondaryMappings?.departmentIds;
-    if (departmentIds && !Array.isArray(departmentIds)) {
-      const msg = "CxMapping departmentIds is malformed @ AthenaHealth";
-      log(
-        `${msg}. cxId ${cxId} practiceId ${practiceId} departmentIds ${JSON.stringify(
-          departmentIds
-        )}`
-      );
-      throw new MetriportError(msg, undefined, {
-        cxId,
-        practiceId,
-      });
-    }
     return {
-      cxId,
-      practiceId,
-      departmentIds,
+      cxId: mapping.cxId,
+      practiceId: mapping.externalId,
+      departmentIds: mapping.secondaryMappings?.departmentIds,
       lookupMode,
     };
   });
@@ -71,7 +54,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
     async (params: GetAppointmentsParams) => {
       const { appointments, error } = await getAppointments(params);
       if (appointments) allAppointments.push(...appointments);
-      if (error) getAppointmentsErrors.push({ error, ...params });
+      if (error) getAppointmentsErrors.push({ ...params, error });
     },
     {
       numberOfParallelExecutions: parallelPractices,
@@ -80,13 +63,13 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
   );
 
   if (getAppointmentsErrors.length > 0) {
-    const msg = "Failed to get some appointments from subscription @ AthenaHealth";
+    const msg = "Failed to get some appointments @ AthenaHealth";
     capture.message(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
         errors: getAppointmentsErrors,
-        context: "athenahealth.process-patients-from-appointments-sub",
+        context: "athenahealth.process-patients-from-appointments",
       },
       level: "warning",
     });
@@ -130,7 +113,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
         errors: syncPatientsErrors,
-        context: "athenahealth.process-patients-from-appointments-sub",
+        context: "athenahealth.process-patients-from-appointments",
       },
       level: "warning",
     });
@@ -206,7 +189,7 @@ async function getAppointmentsFromApi({
       endProcessedDate: endRange,
     });
   }
-  throw new MetriportError("Invalid lookup mode", undefined, { cxId, lookupMode });
+  throw new MetriportError("Invalid lookup mode @ AthenaHealth", undefined, { cxId, lookupMode });
 }
 
 async function syncPatient({
