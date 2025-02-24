@@ -35,6 +35,8 @@ const nonStandardUnitNormalizationMap = new Map<string, Unit>([
 
 /**
  * This map is used to convert standardized units to preferred units. i.e C -> F, lb -> g, in -> cm, etc.
+ *
+ * The reason to keep the mapping from X to X is to allow the mapping of both unit, and code (which are sometimes different).
  */
 const unitConversionAndNormalizationMap = new Map<string, UnitWithCode>([
   ["C", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
@@ -44,6 +46,7 @@ const unitConversionAndNormalizationMap = new Map<string, UnitWithCode>([
   ["lb", { unit: "kg", code: "kg" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
   ["in", { unit: "cm", code: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
   ["ft", { unit: "cm", code: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+  ["cm", { unit: "cm", code: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
 ]);
 
 const blacklistedValues = ["see below", "see text", "see comments", "see note"];
