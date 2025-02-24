@@ -13,6 +13,11 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
+import {
+  EventMessageV1,
+  EventTypes,
+  combineAndSendMetrics,
+} from "@metriport/core/external/analytics/posthog";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
@@ -242,23 +247,24 @@ export async function handler(event: SQSEvent) {
         await cloudWatchUtils.reportMemoryUsage();
 
         let hydratedBundle = conversionResult;
+        let hydrateMetrics: EventMessageV1 | undefined;
 
         // TODO: 2563 - Remove this after prod testing is done
         if (await isHydrationEnabledForCx(cxId)) {
           try {
-            const hydratedResult = await Promise.race<Bundle<Resource>>([
+            const result = await Promise.race([
               hydrate({
                 cxId,
                 patientId,
                 bundle: conversionResult,
-                postHogApiKey,
               }),
-              new Promise((_, reject) =>
+              new Promise<never>((_, reject) =>
                 setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
               ),
             ]);
 
-            hydratedBundle = hydratedResult;
+            hydratedBundle = result.bundle;
+            hydrateMetrics = result.metrics;
 
             await storeHydratedConversionResult({
               s3Utils,
@@ -287,12 +293,20 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
-        const normalizedBundle = await normalize({
+        const { bundle: normalizedBundle, metrics: normalizeMetrics } = await normalize({
           cxId,
           patientId,
           bundle: hydratedBundle,
-          postHogApiKey,
         });
+
+        if (postHogApiKey) {
+          await combineAndSendMetrics({
+            metrics: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
+            eventType: EventTypes.conversionPostProcess,
+            distinctId: cxId,
+            postHogApiKey,
+          });
+        }
 
         await storeNormalizedConversionResult({
           s3Utils,

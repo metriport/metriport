@@ -8,6 +8,7 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
+import { EventTypes, combineAndSendMetrics } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
@@ -50,19 +51,26 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       patientId
     );
 
-    const dedupedBundle = await deduplicate({
+    const { bundle: dedupedBundle, metrics: dedupMetrics } = await deduplicate({
       cxId,
       patientId,
       bundle: originalBundleWithoutContainedPatients,
-      postHogApiKey,
     });
 
-    const normalizedBundle = await normalize({
+    const { bundle: normalizedBundle, metrics: normalizeMetrics } = await normalize({
       cxId,
       patientId,
       bundle: dedupedBundle,
-      postHogApiKey,
     });
+
+    if (postHogApiKey) {
+      await combineAndSendMetrics({
+        metrics: [{ ...dedupMetrics.properties, ...normalizeMetrics.properties }],
+        eventType: EventTypes.consolidatedPostProcess,
+        distinctId: cxId,
+        postHogApiKey,
+      });
+    }
 
     try {
       checkBundle(normalizedBundle, cxId, patientId);

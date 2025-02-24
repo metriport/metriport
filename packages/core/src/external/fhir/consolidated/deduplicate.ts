@@ -2,19 +2,20 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { deduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes } from "../../analytics/posthog";
 
 export async function deduplicate({
   cxId,
   patientId,
   bundle,
-  postHogApiKey,
 }: {
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
-  postHogApiKey?: string | undefined;
-}): Promise<Bundle<Resource>> {
+}): Promise<{
+  bundle: Bundle<Resource>;
+  metrics: EventMessageV1;
+}> {
   const { log } = out(`Deduplicate. cx ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
   const dedupedBundle = deduplicateFhir(bundle, cxId, patientId);
@@ -24,17 +25,13 @@ export async function deduplicate({
     distinctId: cxId,
     event: EventTypes.fhirDeduplication,
     properties: {
-      patientId: patientId,
-      initialBundleLength: bundle.entry?.length,
-      finalBundleLength: dedupedBundle.entry?.length,
-      duration,
+      patientId,
+      preDedupBundleSize: bundle.entry?.length,
+      postDedupBundleSize: dedupedBundle.entry?.length,
+      dedupDuration: duration,
     },
   };
 
   log(`Finished deduplication in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
-  if (postHogApiKey) {
-    await analyticsAsync(metrics, postHogApiKey);
-  }
-
-  return dedupedBundle;
+  return { bundle: dedupedBundle, metrics };
 }

@@ -1,20 +1,21 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes } from "../../analytics/posthog";
 import { hydrateFhir } from "../hydration/hydrate-fhir";
 
 export async function hydrate({
   cxId,
   patientId,
   bundle,
-  postHogApiKey,
 }: {
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
-  postHogApiKey?: string | undefined;
-}): Promise<Bundle<Resource>> {
+}): Promise<{
+  bundle: Bundle<Resource>;
+  metrics: EventMessageV1;
+}> {
   const { log } = out(`Hydrate. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
@@ -23,7 +24,7 @@ export async function hydrate({
     event: EventTypes.fhirHydration,
     properties: {
       patientId: patientId,
-      bundleLength: bundle.entry?.length,
+      hydrateBundleSize: bundle.entry?.length,
     },
   };
 
@@ -32,15 +33,11 @@ export async function hydrate({
   if (metadata) {
     metrics.properties = {
       ...metrics.properties,
-      duration,
+      hydrateDurationMs: duration,
       ...metadata,
     };
   }
 
   log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
-  if (postHogApiKey) {
-    await analyticsAsync(metrics, postHogApiKey);
-  }
-
-  return hydratedBundle;
+  return { bundle: hydratedBundle, metrics };
 }
