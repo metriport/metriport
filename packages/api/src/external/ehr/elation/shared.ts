@@ -5,7 +5,7 @@ import {
   BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
   MetriportError,
-  normalizeEmailNewSafe,
+  normalizeEmailSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
@@ -13,14 +13,14 @@ import {
 } from "@metriport/shared";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrPerPracticeParams, EhrEnvAndClientCredentials } from "../shared";
+import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 
 export const elationClientJwtTokenSource = "elation-client";
 
 export function createContacts(patient: ElationPatient): Contact[] {
   return [
     ...(patient.emails ?? []).flatMap(e => {
-      const email = normalizeEmailNewSafe(e.email);
+      const email = normalizeEmailSafe(e.email);
       if (!email) return [];
       return { email };
     }),

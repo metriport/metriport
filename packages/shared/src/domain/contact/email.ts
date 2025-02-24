@@ -17,55 +17,47 @@ export function isEmailValid(email: string): boolean {
 }
 
 /**
- * @deprecated Use noramlizeEmailBase instead
+ * Converts to lowercase and removes the `mailto:` prefix from the email.
+ * @param email - The email to normalize
  */
-export function normalizeEmail(email: string): string {
-  const trimmedEmail = email.trim();
-  return trimmedEmail.toLowerCase();
-}
-
-/**
- * @deprecated Use normalizeEmailNew instead
- */
-export function normalizeEmailStrict(email: string): string {
-  const normalEmail = normalizeEmail(email);
-  if (!isEmailValid(normalEmail)) throw new Error("Invalid email.");
-  return normalEmail;
-}
-
-/**
- * Returns the base email without the `mailto:` prefix and in lowercase
- */
-export function noramlizeEmailBase(email: string): string {
-  return removeMailto(email.trim().toLowerCase());
-}
-
-function removeMailto(email: string): string {
-  if (email.startsWith(mailtoPrefix)) {
-    return email.slice(mailtoPrefix.length);
+export function normalizeEmailWithMailto(email: string): string {
+  const trimmedEmail = email.trim().toLowerCase();
+  if (trimmedEmail.startsWith(mailtoPrefix)) {
+    return trimmedEmail.slice(mailtoPrefix.length);
   }
-  return email;
+  return trimmedEmail;
+}
+
+/**
+ * Normalizes email. Converts to lowercase and removes the `mailto:` prefix.
+ * @param email - The email to normalize
+ */
+export function normalizeEmail(
+  email: string,
+  normalizeBase: (email: string) => string = normalizeEmailWithMailto
+): string {
+  const normalized = normalizeBase(email);
+  return normalized;
 }
 
 /**
  * Returns the base email without the mailto prefix and in lowercase
  * If the email is not valid, returns undefined
+ * @param email The email to normalize
  */
-export function normalizeEmailNewSafe(
-  email: string,
-  normalizeBase: (email: string) => string = noramlizeEmailBase
-): string | undefined {
-  const baseEmail = normalizeBase(email);
-  if (!isEmailValid(baseEmail)) return undefined;
-  return baseEmail;
+export function normalizeEmailSafe(email: string): string | undefined {
+  const normalEmail = normalizeEmail(email);
+  if (!isEmailValid(normalEmail)) return undefined;
+  return normalEmail;
 }
 
 /**
  * Returns the base email without the mailto prefix and in lowercase
  * If the email is not valid, throws an error
+ * @param email The email to normalize
  */
-export function normalizeEmailNew(email: string): string {
-  const emailOrUndefined = normalizeEmailNewSafe(email);
+export function normalizeEmailStrict(email: string): string {
+  const emailOrUndefined = normalizeEmailSafe(email);
   if (!emailOrUndefined) {
     throw new BadRequestError("Invalid email", undefined, { email });
   }
