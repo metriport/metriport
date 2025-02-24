@@ -49,6 +49,7 @@ const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace
 // TODO 1672 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
 
 const pdfOptions: WkOptions = {
+  grayscale: false,
   orientation: "Portrait",
   pageSize: "A4",
 };
