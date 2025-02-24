@@ -17,10 +17,16 @@ import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
+import { IHEGatewayProps } from "../config/ihe-gateway-config";
 
 const posthogSecretKey = "POST_HOG_API_KEY_SECRET";
 interface IHEStackProps extends StackProps {
-  config: EnvConfig;
+  config: EnvConfig & {
+    iheGateway: IHEGatewayProps & {
+      vpcAvailabilityZones: string[];
+      vpcPrivateSubnetIds: string[];
+    };
+  };
   version: string | undefined;
 }
 
@@ -30,7 +36,11 @@ export class IHEStack extends Stack {
 
     const vpcId = props.config.iheGateway?.vpcId;
     if (!vpcId) throw new Error("Missing VPC ID for IHE stack");
-    const vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
+    const vpc = ec2.Vpc.fromVpcAttributes(this, "APIVpc", {
+      vpcId,
+      availabilityZones: props.config.iheGateway?.vpcAvailabilityZones,
+      privateSubnetIds: props.config.iheGateway?.vpcPrivateSubnetIds,
+    });
 
     const alarmSnsAction = setupSlackNotifSnsTopic(this, props.config);
 
