@@ -70,6 +70,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
         errorCount: getAppointmentsErrors.length,
         errors: getAppointmentsErrors,
         context: "athenahealth.process-patients-from-appointments",
+        lookupMode,
       },
       level: "warning",
     });
@@ -114,6 +115,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
         errorCount: syncPatientsErrors.length,
         errors: syncPatientsErrors,
         context: "athenahealth.process-patients-from-appointments",
+        lookupMode,
       },
       level: "warning",
     });
