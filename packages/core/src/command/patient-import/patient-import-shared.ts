@@ -1,7 +1,7 @@
 import {
   BadRequestError,
   normalizeDob,
-  normalizeEmailNew,
+  normalizeEmailStrict,
   normalizeExternalId,
   normalizeGender,
   normalizePhoneNumberStrict,
@@ -95,9 +95,9 @@ export function createObjectFromCsv({
 
 export function createPatientPayload(patient: PatientImportPatient): PatientPayload {
   const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
-  const email1 = patient.email1 ? normalizeEmailNew(patient.email1) : undefined;
+  const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
   const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
-  const email2 = patient.email2 ? normalizeEmailNew(patient.email2) : undefined;
+  const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
   const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
   const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
   const contact = [contact1, contact2].flatMap(c => c ?? []);
