@@ -14,11 +14,14 @@ import {
   getPatientByDemo,
   getPatientOrFail,
 } from "../../../../command/medical/patient/get-patient";
+import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
 import { collapsePatientDemosFhir, createMetriportPatientDemosFhir } from "../../shared-fhir";
 import { createAthenaClient } from "../shared";
 
 const parallelPatientMatches = 5;
+
+const CUSTOM_FIELD_ID = Config.isProdEnv() ? "121" : "1269";
 
 export type SyncAthenaPatientIntoMetriportParams = {
   cxId: string;
@@ -67,9 +70,9 @@ export async function syncAthenaPatientIntoMetriport({
       cxId,
       patientId: athenaPatientId,
     });
-    const targetField = customFields.find(field => field.customfieldid === "TODO");
-    if (targetField && targetField.customfieldvalue === "true") {
-      throw new BadRequestError("Athena custom fields not valid for this patient - TODO");
+    const targetField = customFields.find(field => field.customfieldid === CUSTOM_FIELD_ID);
+    if (targetField && targetField.customfieldvalue === "TODO") {
+      throw new BadRequestError("Athena custom fields not valid for this patient");
     }
   }
 
