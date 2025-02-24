@@ -71,8 +71,8 @@ export async function syncAthenaPatientIntoMetriport({
       patientId: athenaPatientId,
     });
     const targetField = customFields.find(field => field.customfieldid === CUSTOM_FIELD_ID);
-    if (targetField && targetField.customfieldvalue === "TODO") {
-      throw new BadRequestError("Athena custom fields not valid for this patient");
+    if (!targetField || targetField.customfieldvalue !== "true") {
+      throw new BadRequestError("Athena custom field not found or not valid for this patient");
     }
   }
 

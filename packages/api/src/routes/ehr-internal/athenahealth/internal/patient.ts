@@ -46,7 +46,7 @@ router.post(
 /**
  * POST /internal/ehr/athenahealth/patient/appointments-from-subscription-backfill
  *
- * Fetches appointments change events already processed and creates all patients not already existing
+ * Fetches appointment change events already processed and creates all patients not already existing
  */
 router.post(
   "/appointments-from-subscription-backfill",
