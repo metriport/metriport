@@ -6,3 +6,4 @@ export * from "./subscription";
 export * from "./department";
 export * from "./problem";
 export * from "./vitals";
+export * from "./patient";

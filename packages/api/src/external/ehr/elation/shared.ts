@@ -13,7 +13,7 @@ import {
 } from "@metriport/shared";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrPerPracticeParams, EhrEnvAndClientCredentials } from "../shared";
+import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 
 export const elationClientJwtTokenSource = "elation-client";
 
