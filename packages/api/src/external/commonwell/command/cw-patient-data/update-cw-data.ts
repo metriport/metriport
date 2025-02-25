@@ -67,7 +67,7 @@ export async function updateCwPatientDataWithinDBTx(
   const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
 
   const validLinks = linksToInvalidate
-    ? updatedLinks.filter(link => isContainedAt(link, linksToInvalidate))
+    ? updatedLinks.filter(link => !isContainedAt(link, linksToInvalidate))
     : updatedLinks;
 
   const uniqueUpdatedLinks = uniqBy(validLinks, function (nl) {
@@ -92,10 +92,12 @@ export async function updateCwPatientDataWithinDBTx(
   );
 }
 
-function isContainedAt(link: CwLink, linksToInvalidate: CwLink[]): boolean {
+function isContainedAt(link: CwLink, linksArray: CwLink[]): boolean {
   const linkOid = getLinkOid(link);
-  const isInvalid = linksToInvalidate.some(function (invalidLink) {
-    return getLinkOid(invalidLink) === linkOid;
+
+  const containsLink = linksArray.some(function (arrLink) {
+    return getLinkOid(arrLink) === linkOid;
   });
-  return !isInvalid;
+
+  return containsLink;
 }

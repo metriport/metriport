@@ -45,7 +45,9 @@ export async function unlinkPatientFromOrganization({
   dryRun = false,
 }: UnlinkPatientFromOrganizationParams): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
-  const { log } = out(`${dryRunMsg}unlinkPatientFromOrganization - patient ${patientId}`);
+  const { log } = out(
+    `${dryRunMsg}unlinkPatientFromOrganization - patient ${patientId} - cxId ${cxId}`
+  );
   log(`Unlinking patient from organization ${oid}`);
 
   const documents = await getDocuments({ cxId, patientId });
@@ -77,7 +79,7 @@ export async function unlinkPatientFromOrganization({
   const errors: { documentId: string; error: unknown }[] = [];
 
   for (const document of documentsWithOid) {
-    const fileName = getS3FileNameFromDocument(document);
+    const fileName = getS3FileNameFromDocument(document, log);
     if (!fileName) {
       log(`Skipping document ${document.id} - no filename found`);
       continue;
@@ -168,12 +170,15 @@ function getDocumentsWithOid(
   return matchingDocumentRefs;
 }
 
-function getS3FileNameFromDocument(document: DocumentReferenceWithId): string | undefined {
+function getS3FileNameFromDocument(
+  document: DocumentReferenceWithId,
+  log: typeof console.log
+): string | undefined {
   const s3Attachment = getMetriportContent(document)?.attachment;
   const fileName = s3Attachment?.title;
 
   if (!fileName) {
-    console.error(`No file name found in document ${document.id}`);
+    log(`No file name found in document ${document.id}`);
     return undefined;
   }
 
@@ -202,7 +207,7 @@ async function findAndRemoveConversionResultsFromS3(
       });
     }
   } catch (error) {
-    log("Error removing conversion results from S3:", errorToString(error));
+    log("Error removing conversion results from S3:");
     throw error;
   }
 }
@@ -223,7 +228,7 @@ async function findAndRemoveMedicalDocumentFromS3(
       await s3Utils.deleteFile({ bucket: s3MedicalDocumentsBucketName, key: fileName });
     }
   } catch (error) {
-    log("Error removing medical document from S3:", errorToString(error));
+    log("Error removing medical document from S3:");
     throw error;
   }
 }
@@ -267,7 +272,7 @@ async function findAndRemoveConsolidatedDocumentFromS3(
       }
     }
   } catch (error) {
-    log("Error removing consolidated documents from S3:", errorToString(error));
+    log("Error removing consolidated documents from S3:");
     throw error;
   }
 }
@@ -298,7 +303,7 @@ async function findAndInvalidateLinks(
       updateCwPatientData({ id: patientId, cxId, invalidateLinks: invalidLinks.commonwell }),
     ]);
   } catch (error) {
-    log("Error invalidating links:", error);
+    log("Error invalidating links:");
     throw error;
   }
 }

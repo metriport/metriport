@@ -69,10 +69,9 @@ router.post(
       oid,
       dryRun,
     }).catch(err => {
-      console.log(
-        `Error unlinking patient from organization for cxId ${cxId}: ${errorToString(err)}`
-      );
-      capture.error(err);
+      const msg = `Error unlinking patient from organization`;
+      console.log(`${msg}: ${cxId}: ${patientId}: ${oid}: ${errorToString(err)}`);
+      capture.error(err, { extra: { msg, cxId, patientId, oid } });
     });
 
     return res.status(httpStatus.OK).json({
