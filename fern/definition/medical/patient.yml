@@ -90,12 +90,15 @@ service:
           filters:
             type: optional<string>
             docs: Optional filters to apply to the patient list.
-          page:
+          fromItem:
             type: optional<integer>
-            docs: Page number for pagination.
-          pageSize:
+            docs: Starting index of items to retrieve.
+          toItem:
             type: optional<integer>
-            docs: Number of items per page.
+            docs: Ending index of items to retrieve.
+          count:
+            type: optional<integer>
+            docs: Total number of items to retrieve.
       response: PaginatedPatientsResponse
 
     delete:
@@ -315,6 +318,16 @@ types:
 
   PaginationMeta:
     properties:
+      prevPage:
+        type: optional<string>
+        docs: The URL for the previous page of results.
+      nextPage:
+        type: optional<string>
+        docs: The URL for the next page of results.
       itemsOnPage:
         type: integer
         docs: Number of items on the current page.
+      itemsInTotal:
+        type: integer
+        docs: Total number of items across all pages.
+
