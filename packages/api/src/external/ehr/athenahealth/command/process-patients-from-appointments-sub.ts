@@ -128,10 +128,7 @@ async function getAppointments({
   const api = await createAthenaClient({ cxId, practiceId });
   const { startRange, endRange } = catchUp
     ? getLookBackTimeRange({ lookBack: catupUpLookBack })
-    : {
-        startRange: undefined,
-        endRange: undefined,
-      };
+    : { startRange: undefined, endRange: undefined };
   if (startRange || endRange) {
     log(`Getting appointments from ${startRange} to ${endRange}`);
   } else {

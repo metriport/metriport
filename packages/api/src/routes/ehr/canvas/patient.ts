@@ -9,7 +9,7 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../
 const router = Router();
 
 /**
- * GET /ehr/canvas/patient/:id
+ * GET /ehr/canvas/patient/:id or /ehr/webhook/canvas/patient/:id
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Canvas Patient.

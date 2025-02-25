@@ -9,7 +9,7 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../
 const router = Router();
 
 /**
- * GET /ehr/elation/patient/:id
+ * GET /ehr/webhook/elation/patient/:id
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Elation Patient.

@@ -13,13 +13,12 @@ const jwtTokenSource = [
   ...ehrDashJwtTokenSource,
   ...ehrWebhookJwtTokenSource,
 ] as const;
-
 export type JwtTokenSource = (typeof jwtTokenSource)[number];
 export function isJwtTokenSource(source: string): source is JwtTokenSource {
   return jwtTokenSource.includes(source as JwtTokenSource);
 }
 
-export type JwtTokenData = EhrDashJwtTokenData | EhrClientJwtTokenData | EhrWebhookJwtTokenData;
+export type JwtTokenData = EhrClientJwtTokenData | EhrDashJwtTokenData | EhrWebhookJwtTokenData;
 
 export type JwtTokenPerSource = {
   token: string;
