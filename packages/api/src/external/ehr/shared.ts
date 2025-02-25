@@ -22,6 +22,7 @@ import {
 import { athenaClientJwtTokenSource } from "./athenahealth/shared";
 import { canvasClientJwtTokenSource, canvasWebhookJwtTokenSource } from "./canvas/shared";
 import { elationClientJwtTokenSource } from "./elation/shared";
+import { CxMappingSource, isCxMappingSource } from "../../domain/cx-mapping";
 
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const parallelPractices = 10;
@@ -51,13 +52,13 @@ export function isEhrSource(source: string): source is EhrSource {
   return ehrSources.includes(source as EhrSource);
 }
 
-export const ehrOauthJwtTokenSource = [EhrSources.athena, EhrSources.canvas] as const;
-export type EhrOauthJwtTokenSource = (typeof ehrOauthJwtTokenSource)[number];
-export function isEhrOauthJwtTokenSource(source: string): source is EhrOauthJwtTokenSource {
-  return ehrOauthJwtTokenSource.includes(source as EhrOauthJwtTokenSource);
+export const ehrDashJwtTokenSource = [EhrSources.athena, EhrSources.canvas] as const;
+export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSource)[number];
+export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
+  return ehrDashJwtTokenSource.includes(source as EhrDashJwtTokenSource);
 }
 
-export type EhrOauthJwtTokenData = AthenaJwtTokenData | CanvasJwtTokenData;
+export type EhrDashJwtTokenData = AthenaJwtTokenData | CanvasJwtTokenData;
 
 export const ehrClientJwtTokenSource = [
   athenaClientJwtTokenSource,
@@ -82,20 +83,20 @@ export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhook
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
 
-export function getEhrSourceFromJwtTokenSource(source: string): EhrSource {
+export function getCxMappingSourceFromJwtTokenSource(source: string): CxMappingSource {
   const additionalDetails = { source };
-  if (isEhrOauthJwtTokenSource(source)) {
-    if (isEhrSource(source)) return source;
+  if (isEhrDashJwtTokenSource(source)) {
+    if (isCxMappingSource(source)) return source;
     throw new MetriportError("Invalid oauth source", undefined, additionalDetails);
   }
   if (isEhrClientJwtTokenSource(source)) {
     const sourceWithoutClient = source.replace("-client", "");
-    if (isEhrSource(sourceWithoutClient)) return sourceWithoutClient;
+    if (isCxMappingSource(sourceWithoutClient)) return sourceWithoutClient;
     throw new MetriportError("Invalid client source", undefined, additionalDetails);
   }
   if (isEhrWebhookJwtTokenSource(source)) {
     const sourceWithoutWebhook = source.replace("-webhook", "");
-    if (isEhrSource(sourceWithoutWebhook)) return sourceWithoutWebhook;
+    if (isCxMappingSource(sourceWithoutWebhook)) return sourceWithoutWebhook;
     throw new MetriportError("Invalid webhook source", undefined, additionalDetails);
   }
   throw new MetriportError("Invalid source", undefined, additionalDetails);
