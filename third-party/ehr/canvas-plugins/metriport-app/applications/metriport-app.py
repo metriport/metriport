@@ -2,6 +2,11 @@ from canvas_sdk.effects import Effect
 from canvas_sdk.effects.launch_modal import LaunchModalEffect
 from canvas_sdk.handlers.application import Application
 
+from shared import (
+  METRIPORT_DASH_URL,
+  get_metriport_token,
+  get_patient_id
+)
 
 class MetriportApp(Application):
     """An embeddable application that can load the Metriport patient data into the canvas patient modal."""
@@ -11,9 +16,7 @@ class MetriportApp(Application):
         # To be used once Ouath flow is implemented
         #oauth_client_id = self.secrets['OUATH_CLIENT_ID']
         #canvas_domain = self.secrets['CANVAS_DOMAIN']
-        metriport_token = self.secrets['METRIPORT_TOKEN']
-        if (metriport_token is None):
-          raise Exception("Metriport token not set")
-        if (metriport_token == ""):
-          raise Exception("Metriport token is empty")
-        return LaunchModalEffect(url=f"https://ehr.metriport.com/canvas/app#patient={self.context['patient']['id']}&access_token={metriport_token}", target=LaunchModalEffect.TargetType.RIGHT_CHART_PANE_LARGE).apply()
+        metriport_token = get_metriport_token(self.secrets)
+        patient_id = get_patient_id(self.context)
+
+        return LaunchModalEffect(url=f"{METRIPORT_DASH_URL}#patient={patient_id}&access_token={metriport_token}", target=LaunchModalEffect.TargetType.RIGHT_CHART_PANE_LARGE).apply()

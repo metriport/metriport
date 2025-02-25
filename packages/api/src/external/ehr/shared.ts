@@ -3,6 +3,16 @@ import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  AthenaClientJwtTokenData,
+  AthenaJwtTokenData,
+} from "@metriport/shared/src/interface/external/athenahealth/jwt-token";
+import {
+  CanvasClientJwtTokenData,
+  CanvasJwtTokenData,
+  CanvasWebhookJwtTokenData,
+} from "@metriport/shared/src/interface/external/canvas/jwt-token";
+import { ElationClientJwtTokenData } from "@metriport/shared/src/interface/external/elation/jwt-token";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
 import {
@@ -10,7 +20,7 @@ import {
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
 import { athenaClientJwtTokenSource } from "./athenahealth/shared";
-import { canvasClientJwtTokenSource } from "./canvas/shared";
+import { canvasClientJwtTokenSource, canvasWebhookJwtTokenSource } from "./canvas/shared";
 import { elationClientJwtTokenSource } from "./elation/shared";
 
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
@@ -30,15 +40,65 @@ export type EhrClientParams<Env extends EhrEnv> = {
   practiceId: string;
 } & EhrEnvAndClientCredentials<Env>;
 
-type EhrClientJwtTokenSource =
-  | typeof athenaClientJwtTokenSource
-  | typeof elationClientJwtTokenSource
-  | typeof canvasClientJwtTokenSource;
-
 export enum EhrSources {
   athena = "athenahealth",
   elation = "elation",
   canvas = "canvas",
+}
+export const ehrSources = [...Object.values(EhrSources)] as const;
+export type EhrSource = (typeof ehrSources)[number];
+export function isEhrSource(source: string): source is EhrSource {
+  return ehrSources.includes(source as EhrSource);
+}
+
+export const ehrOauthJwtTokenSource = [EhrSources.athena, EhrSources.canvas] as const;
+export type EhrOauthJwtTokenSource = (typeof ehrOauthJwtTokenSource)[number];
+export function isEhrOauthJwtTokenSource(source: string): source is EhrOauthJwtTokenSource {
+  return ehrOauthJwtTokenSource.includes(source as EhrOauthJwtTokenSource);
+}
+
+export type EhrOauthJwtTokenData = AthenaJwtTokenData | CanvasJwtTokenData;
+
+export const ehrClientJwtTokenSource = [
+  athenaClientJwtTokenSource,
+  elationClientJwtTokenSource,
+  canvasClientJwtTokenSource,
+] as const;
+export type EhrClientJwtTokenSource = (typeof ehrClientJwtTokenSource)[number];
+export function isEhrClientJwtTokenSource(source: string): source is EhrClientJwtTokenSource {
+  return ehrClientJwtTokenSource.includes(source as EhrClientJwtTokenSource);
+}
+
+export type EhrClientJwtTokenData =
+  | AthenaClientJwtTokenData
+  | ElationClientJwtTokenData
+  | CanvasClientJwtTokenData;
+
+export const ehrWebhookJwtTokenSource = [canvasWebhookJwtTokenSource] as const;
+export type EhrWebhookJwtTokenSource = (typeof ehrWebhookJwtTokenSource)[number];
+export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhookJwtTokenSource {
+  return ehrWebhookJwtTokenSource.includes(source as EhrWebhookJwtTokenSource);
+}
+
+export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
+
+export function getEhrSourceFromJwtTokenSource(source: string): EhrSource {
+  const additionalDetails = { source };
+  if (isEhrOauthJwtTokenSource(source)) {
+    if (isEhrSource(source)) return source;
+    throw new MetriportError("Invalid oauth source", undefined, additionalDetails);
+  }
+  if (isEhrClientJwtTokenSource(source)) {
+    const sourceWithoutClient = source.replace("-client", "");
+    if (isEhrSource(sourceWithoutClient)) return sourceWithoutClient;
+    throw new MetriportError("Invalid client source", undefined, additionalDetails);
+  }
+  if (isEhrWebhookJwtTokenSource(source)) {
+    const sourceWithoutWebhook = source.replace("-webhook", "");
+    if (isEhrSource(sourceWithoutWebhook)) return sourceWithoutWebhook;
+    throw new MetriportError("Invalid webhook source", undefined, additionalDetails);
+  }
+  throw new MetriportError("Invalid source", undefined, additionalDetails);
 }
 
 export type Appointment = {

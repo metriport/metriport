@@ -1,17 +1,18 @@
 import { Request } from "express";
-import { getAuthorizationToken } from "../util";
+import { BadRequestError } from "@metriport/shared";
 import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
-import {
-  PathDetails,
-  validatePath,
-  parseIdFromPathParams,
-  parseIdFromQueryParams,
-  replaceIdInQueryParams,
-} from "./util";
+import { getPatientMappingOrFail } from "../../command/mapping/patient";
 import { JwtTokenData } from "../../domain/jwt-token";
-import { EhrSources } from "../../external/ehr/shared";
+import { PatientMappingSource } from "../../domain/patient-mapping";
 import ForbiddenError from "../../errors/forbidden";
+import {
+  EhrOauthJwtTokenSource,
+  EhrWebhookJwtTokenSource,
+  getEhrSourceFromJwtTokenSource,
+} from "../../external/ehr/shared";
+import { getAuthorizationToken } from "../util";
+import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";
 
 export type ParseResponse = {
   externalId: string;
@@ -20,21 +21,16 @@ export type ParseResponse = {
 
 export async function processCxIdAsync(
   req: Request,
-  source: EhrSources.athena | EhrSources.canvas,
+  tokenSource: EhrOauthJwtTokenSource | EhrWebhookJwtTokenSource,
   parseExternalId: (tokenData: JwtTokenData) => ParseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
-  const authInfo = await getJwtToken({
-    token: accessToken,
-    source,
-  });
+  const authInfo = await getJwtToken({ token: accessToken, source: tokenSource });
   if (!authInfo) throw new ForbiddenError();
   if (authInfo.exp < new Date()) throw new ForbiddenError();
   const { externalId, queryParams } = parseExternalId(authInfo.data);
-  const customer = await getCxMappingOrFail({
-    externalId,
-    source,
-  });
+  const cxMappingSource = getEhrSourceFromJwtTokenSource(tokenSource);
+  const customer = await getCxMappingOrFail({ externalId, source: cxMappingSource });
   req.cxId = customer.cxId;
   if (queryParams) {
     req.query = {
@@ -85,7 +81,10 @@ export const validedDocumentPaths: PathDetails[] = [
   },
 ];
 
-export async function processPatientRouteAsync(req: Request, source: EhrSources): Promise<void> {
+export async function processPatientRouteAsync(
+  req: Request,
+  source: PatientMappingSource
+): Promise<void> {
   const path = validatePath(req, validPatientPaths);
   if (path.pathParamKey) {
     const externalId = parseIdFromPathParams(req, path.pathParamKey);
@@ -93,10 +92,27 @@ export async function processPatientRouteAsync(req: Request, source: EhrSources)
   }
 }
 
-export async function processDocumentRouteAsync(req: Request, source: EhrSources): Promise<void> {
+export async function processDocumentRouteAsync(
+  req: Request,
+  source: PatientMappingSource
+): Promise<void> {
   const path = validatePath(req, validedDocumentPaths);
   if (path.queryParamKey) {
     const externalId = parseIdFromQueryParams(req, path.queryParamKey);
     await replaceIdInQueryParams(req, source, externalId);
   }
+}
+
+export async function replaceIdInQueryParams(
+  req: Request,
+  source: PatientMappingSource,
+  externalId: string
+): Promise<void> {
+  if (!req.cxId) throw new BadRequestError("Trouble processisng request");
+  const patient = await getPatientMappingOrFail({
+    cxId: req.cxId,
+    externalId,
+    source,
+  });
+  req.query["patientId"] = patient.patientId;
 }

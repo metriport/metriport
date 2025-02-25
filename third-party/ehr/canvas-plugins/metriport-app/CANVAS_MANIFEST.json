@@ -16,6 +16,17 @@
                 "icon": "assets/logo300.png"
             }
         ],
+        "protocols": [
+            {
+                "class": "metriport-app.protocols.appointments_created:AppointmentCreatedProtocol",
+                "description": "Create patients asynchronously when appointments are scheduled in your Canvas instance.",
+                "data_access": {
+                    "event": "",
+                    "read": [],
+                    "write": []
+                }
+            }
+        ],
         "commands": [],
         "content": [],
         "effects": [],

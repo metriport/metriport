@@ -1,13 +1,19 @@
 import Router from "express-promise-router";
-import { processCxId as processCxIdAthena } from "./athenahealth/auth/middleware";
-import { processCxId as processCxIdCanvas } from "./canvas/auth/middleware";
 import { checkMAPIAccess } from "../middlewares/auth";
-import athena from "./athenahealth";
-import canvas from "./canvas";
+import { processCxId as processCxIdOauthAthena } from "./athenahealth/auth/middleware";
+import athenaOAuth from "./athenahealth/oauth-router";
+import {
+  processCxIdOauth as processCxIdCanvasOAuth,
+  processCxIdWebhooks as processCxIdCanvasWebhooks,
+} from "./canvas/auth/middleware";
+import canvasOAuth from "./canvas/oauth-router";
+import canvasWebhooks from "./canvas/webhook-router";
 
 const routes = Router();
 
-routes.use("/athenahealth", processCxIdAthena, checkMAPIAccess, athena);
-routes.use("/canvas", processCxIdCanvas, checkMAPIAccess, canvas);
+routes.use("/athenahealth", processCxIdOauthAthena, checkMAPIAccess, athenaOAuth);
+routes.use("/canvas", processCxIdCanvasOAuth, checkMAPIAccess, canvasOAuth);
+
+routes.use("/webhook/canvas", processCxIdCanvasWebhooks, checkMAPIAccess, canvasWebhooks);
 
 export default routes;

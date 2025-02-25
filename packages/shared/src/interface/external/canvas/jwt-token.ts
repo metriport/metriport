@@ -13,6 +13,12 @@ export type CanvasClientJwtTokenData = {
   source: "canvas-client";
 };
 
+export type CanvasWebhookJwtTokenData = {
+  practiceId: string;
+  cxId: string;
+  source: "canvas-webhook";
+};
+
 export const canvasClientJwtTokenResponseSchema = z.object({
   scope: z.string(),
   access_token: z.string(),
