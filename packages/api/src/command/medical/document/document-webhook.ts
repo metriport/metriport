@@ -12,8 +12,14 @@ import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
+import { RecreateConsolidatedParams, recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
-import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
+import {
+  CONVERSION_WEBHOOK_TYPE,
+  DOWNLOAD_WEBHOOK_TYPE,
+  ProcessDocQueryProgressWebhookParams,
+  processDocQueryProgressWebhook,
+} from "./process-doc-query-webhook";
 
 export enum MAPIWebhookStatus {
   completed = "completed",
@@ -137,5 +143,18 @@ function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
     return patientData.cxDownloadRequestMetadata;
   } else {
     return undefined;
+  }
+}
+
+export async function createConsolidatedAndProcessWebhook(
+  recreateParams: RecreateConsolidatedParams,
+  whParams: ProcessDocQueryProgressWebhookParams,
+  log: typeof console.log
+) {
+  await recreateConsolidated(recreateParams);
+  const dqProgress = whParams.documentQueryProgress;
+  if (dqProgress) {
+    log(`Sending DQ WH in recreateConsolidated...`);
+    await processDocQueryProgressWebhook({ ...whParams, documentQueryProgress: dqProgress });
   }
 }

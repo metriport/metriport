@@ -12,8 +12,9 @@ import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { capture, executeAsynchronously, out } from "../../util";
+import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
+import { controlDuration } from "../../util/race-control";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
 dayjs.extend(duration);
@@ -72,34 +73,14 @@ export async function createConsolidatedFromConversions({
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
-  if (isAiBriefFeatureFlagEnabled) {
-    try {
-      const binaryBundleEntry = await Promise.race([
-        generateAiBriefBundleEntry(deduped, cxId, patientId, log),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error("AI Brief generation timeout")),
-            AI_BRIEF_TIMEOUT.asMilliseconds()
-          )
-        ),
-      ]);
+  if (isAiBriefFeatureFlagEnabled && deduped.entry && deduped.entry.length > 0) {
+    const binaryBundleEntry = await Promise.race([
+      generateAiBriefBundleEntry(deduped, cxId, patientId, log),
+      controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), undefined),
+    ]);
 
-      if (binaryBundleEntry) {
-        deduped.entry?.push(binaryBundleEntry);
-      }
-    } catch (error) {
-      const msg = "Failed to generate AI Brief";
-      log(`${msg}: ${error}`);
-      capture.message(msg, {
-        extra: {
-          error,
-          cxId,
-          patientId,
-          context: "createConsolidatedFromConversions",
-        },
-        level: "warning",
-      });
-      // Intentionally not failing the whole consolidation if AI Brief fails
+    if (binaryBundleEntry) {
+      deduped.entry?.push(binaryBundleEntry);
     }
   }
 

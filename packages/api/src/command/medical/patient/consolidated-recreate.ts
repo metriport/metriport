@@ -3,12 +3,13 @@ import { deleteConsolidated } from "@metriport/core/command/consolidated/consoli
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import {
-  ProcessDocQueryProgressWebhookParams,
-  processDocQueryProgressWebhook,
-} from "../../../command/medical/document/process-doc-query-webhook";
 import { getConsolidated } from "../patient/consolidated-get";
 
+export type RecreateConsolidatedParams = {
+  patient: Patient;
+  conversionType?: ConsolidationConversionType;
+  context?: string;
+};
 /**
  * Recreates the consolidated bundle for a patient.
  *
@@ -19,17 +20,8 @@ import { getConsolidated } from "../patient/consolidated-get";
  * @param conversionType - The conversion type to use when converting to consolidatd.
  * @param context - Optional context to log.
  */
-export async function recreateConsolidated({
-  patient,
-  conversionType,
-  context,
-  dqWhParams,
-}: {
-  patient: Patient;
-  conversionType?: ConsolidationConversionType;
-  context?: string;
-  dqWhParams?: ProcessDocQueryProgressWebhookParams;
-}): Promise<void> {
+export async function recreateConsolidated(params: RecreateConsolidatedParams): Promise<void> {
+  const { patient, conversionType, context } = params;
   const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
   try {
     await deleteConsolidated({
@@ -41,11 +33,6 @@ export async function recreateConsolidated({
   }
   try {
     await getConsolidated({ patient, conversionType });
-    const dqProgress = dqWhParams?.documentQueryProgress;
-    if (dqProgress) {
-      log(`Sending DQ WH in recreateConsolidated...`);
-      await processDocQueryProgressWebhook({ ...dqWhParams, documentQueryProgress: dqProgress });
-    }
   } catch (err) {
     processAsyncError(`Post-DQ getConsolidated`, log)(err);
   }
