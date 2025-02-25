@@ -1,7 +1,7 @@
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -28,51 +28,20 @@ type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
   departmentIds?: string[];
-  fromDate?: Date;
-  toDate?: Date;
+  catchUp: boolean;
 };
 
 export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
-  const { log } = out(`AthenaHealth processPatientsFromAppointmentsSub - catchUp: ${catchUp}`);
-
-  const { startRange, endRange } = catchUp
-    ? getLookBackTimeRange({ lookBack: catupUpLookBack })
-    : {
-        startRange: undefined,
-        endRange: undefined,
-      };
-  if (startRange || endRange) {
-    log(`Getting appointments from ${startRange} to ${endRange}`);
-  } else {
-    log(`Getting appointments with no range`);
-  }
-
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
-    const cxId = mapping.cxId;
-    const practiceId = mapping.externalId;
-    const departmentIds = mapping.secondaryMappings?.departmentIds;
-    if (departmentIds && !Array.isArray(departmentIds)) {
-      const msg = "CxMapping departmentIds is malformed @ AthenaHealth";
-      log(
-        `${msg}. cxId ${cxId} practiceId ${practiceId} departmentIds ${JSON.stringify(
-          departmentIds
-        )}`
-      );
-      throw new MetriportError(msg, undefined, {
-        cxId,
-        practiceId,
-      });
-    }
     return {
-      cxId,
-      practiceId,
-      departmentIds,
-      fromDate: startRange,
-      toDate: endRange,
+      cxId: mapping.cxId,
+      practiceId: mapping.externalId,
+      departmentIds: mapping.secondaryMappings?.departmentIds,
+      catchUp,
     };
   });
 
@@ -151,19 +120,29 @@ async function getAppointments({
   cxId,
   practiceId,
   departmentIds,
-  fromDate,
-  toDate,
+  catchUp,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
   const { log } = out(
-    `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}`
+    `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} catchUp ${catchUp}`
   );
   const api = await createAthenaClient({ cxId, practiceId });
+  const { startRange, endRange } = catchUp
+    ? getLookBackTimeRange({ lookBack: catupUpLookBack })
+    : {
+        startRange: undefined,
+        endRange: undefined,
+      };
+  if (startRange || endRange) {
+    log(`Getting appointments from ${startRange} to ${endRange}`);
+  } else {
+    log(`Getting appointments with no range`);
+  }
   try {
     const appointments = await api.getAppointmentsFromSubscription({
       cxId,
       departmentIds,
-      startProcessedDate: fromDate,
-      endProcessedDate: toDate,
+      startProcessedDate: startRange,
+      endProcessedDate: endRange,
     });
     return {
       appointments: appointments.map(appointment => {
@@ -172,7 +151,7 @@ async function getAppointments({
       error: undefined,
     };
   } catch (error) {
-    log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
+    log(`Failed to get appointments. Cause: ${errorToString(error)}`);
     return { error };
   }
 }

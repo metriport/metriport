@@ -19,10 +19,10 @@ import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
+import { CxMappingSource, isCxMappingSource } from "../../domain/cx-mapping";
 import { athenaClientJwtTokenSource } from "./athenahealth/shared";
 import { canvasClientJwtTokenSource, canvasWebhookJwtTokenSource } from "./canvas/shared";
 import { elationClientJwtTokenSource } from "./elation/shared";
-import { CxMappingSource, isCxMappingSource } from "../../domain/cx-mapping";
 
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const parallelPractices = 10;

@@ -9,8 +9,8 @@ import {
 } from "../external/ehr/shared";
 
 const jwtTokenSource = [
-  ...ehrDashJwtTokenSource,
   ...ehrClientJwtTokenSource,
+  ...ehrDashJwtTokenSource,
   ...ehrWebhookJwtTokenSource,
 ] as const;
 
