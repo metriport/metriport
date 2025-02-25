@@ -87,7 +87,16 @@ service:
           facilityId:
             type: optional<string>
             docs: The ID of the Facility where the patient is receiving care.
-      response: ListPatientsResponse
+          filters:
+            type: optional<string>
+            docs: Optional filters to apply to the patient list.
+          page:
+            type: optional<integer>
+            docs: Page number for pagination.
+          pageSize:
+            type: optional<integer>
+            docs: Number of items per page.
+      response: PaginatedPatientsResponse
 
     delete:
       display-name: Delete Patient
@@ -297,6 +306,15 @@ types:
           facilityIds:
             - $FacilityId.Example1
 
-  ListPatientsResponse:
+  PaginatedPatientsResponse:
     properties:
-      patients: list<Patient>
+      meta:
+        type: PaginationMeta
+      patients:
+        type: list<Patient>
+
+  PaginationMeta:
+    properties:
+      itemsOnPage:
+        type: integer
+        docs: Number of items on the current page.
