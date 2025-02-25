@@ -10,7 +10,7 @@ import {
   processPatientRouteAsync,
 } from "../../shared";
 
-function parseCanvasPracticeIdOAuth(tokenData: JwtTokenData): ParseResponse {
+function parseCanvasPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
   if (tokenData.source !== EhrSources.canvas) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
   return {
@@ -32,8 +32,8 @@ function parseCanvasPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
   };
 }
 
-export function processCxIdOauth(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, EhrSources.canvas, parseCanvasPracticeIdOAuth)
+export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
+  processCxIdAsync(req, EhrSources.canvas, parseCanvasPracticeIdDash)
     .then(() => next())
     .catch(next);
 }

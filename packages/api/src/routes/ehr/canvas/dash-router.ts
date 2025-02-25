@@ -1,11 +1,11 @@
 import Router from "express-promise-router";
-import { patientAuthorization } from "../../middlewares/patient-authorization";
-import { processPatientRoute, processDocumentRoute } from "./auth/middleware";
 import { handleParams } from "../../helpers/handle-params";
-import patient from "./patient";
-import medicalPatient from "../../medical/patient";
 import medicalDocument from "../../medical/document";
+import medicalPatient from "../../medical/patient";
+import { patientAuthorization } from "../../middlewares/patient-authorization";
 import settings from "../../settings";
+import { processDocumentRoute, processPatientRoute } from "./auth/middleware";
+import patient from "./patient";
 
 const routes = Router();
 

@@ -9,7 +9,7 @@ import {
   processPatientRouteAsync,
 } from "../../shared";
 
-function parseAthenaHealthPracticeId(tokenData: JwtTokenData): ParseResponse {
+function parseAthenaHealthPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
   if (tokenData.source !== EhrSources.athena) throw new ForbiddenError();
   const practiceId = tokenData.ah_practice;
   const departmentId = tokenData.ah_department;
@@ -22,8 +22,8 @@ function parseAthenaHealthPracticeId(tokenData: JwtTokenData): ParseResponse {
   };
 }
 
-export function processCxId(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, EhrSources.athena, parseAthenaHealthPracticeId)
+export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
+  processCxIdAsync(req, EhrSources.athena, parseAthenaHealthPracticeIdDash)
     .then(() => next())
     .catch(next);
 }

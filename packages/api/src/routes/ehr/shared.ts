@@ -1,5 +1,5 @@
-import { Request } from "express";
 import { BadRequestError } from "@metriport/shared";
+import { Request } from "express";
 import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
 import { getPatientMappingOrFail } from "../../command/mapping/patient";
@@ -7,9 +7,9 @@ import { JwtTokenData } from "../../domain/jwt-token";
 import { PatientMappingSource } from "../../domain/patient-mapping";
 import ForbiddenError from "../../errors/forbidden";
 import {
-  EhrOauthJwtTokenSource,
+  EhrDashJwtTokenSource,
   EhrWebhookJwtTokenSource,
-  getEhrSourceFromJwtTokenSource,
+  getCxMappingSourceFromJwtTokenSource,
 } from "../../external/ehr/shared";
 import { getAuthorizationToken } from "../util";
 import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";
@@ -21,7 +21,7 @@ export type ParseResponse = {
 
 export async function processCxIdAsync(
   req: Request,
-  tokenSource: EhrOauthJwtTokenSource | EhrWebhookJwtTokenSource,
+  tokenSource: EhrDashJwtTokenSource | EhrWebhookJwtTokenSource,
   parseExternalId: (tokenData: JwtTokenData) => ParseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
@@ -29,7 +29,7 @@ export async function processCxIdAsync(
   if (!authInfo) throw new ForbiddenError();
   if (authInfo.exp < new Date()) throw new ForbiddenError();
   const { externalId, queryParams } = parseExternalId(authInfo.data);
-  const cxMappingSource = getEhrSourceFromJwtTokenSource(tokenSource);
+  const cxMappingSource = getCxMappingSourceFromJwtTokenSource(tokenSource);
   const customer = await getCxMappingOrFail({ externalId, source: cxMappingSource });
   req.cxId = customer.cxId;
   if (queryParams) {

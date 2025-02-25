@@ -12,7 +12,10 @@ import {
   CanvasJwtTokenData,
   CanvasWebhookJwtTokenData,
 } from "@metriport/shared/src/interface/external/canvas/jwt-token";
-import { ElationClientJwtTokenData } from "@metriport/shared/src/interface/external/elation/jwt-token";
+import {
+  ElationClientJwtTokenData,
+  ElationWebhookJwtTokenData,
+} from "@metriport/shared/src/interface/external/elation/jwt-token";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
 import {
@@ -22,7 +25,7 @@ import {
 import { CxMappingSource, isCxMappingSource } from "../../domain/cx-mapping";
 import { athenaClientJwtTokenSource } from "./athenahealth/shared";
 import { canvasClientJwtTokenSource, canvasWebhookJwtTokenSource } from "./canvas/shared";
-import { elationClientJwtTokenSource } from "./elation/shared";
+import { elationClientJwtTokenSource, elationWebhookJwtTokenSource } from "./elation/shared";
 
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const parallelPractices = 10;
@@ -75,13 +78,16 @@ export type EhrClientJwtTokenData =
   | ElationClientJwtTokenData
   | CanvasClientJwtTokenData;
 
-export const ehrWebhookJwtTokenSource = [canvasWebhookJwtTokenSource] as const;
+export const ehrWebhookJwtTokenSource = [
+  canvasWebhookJwtTokenSource,
+  elationWebhookJwtTokenSource,
+] as const;
 export type EhrWebhookJwtTokenSource = (typeof ehrWebhookJwtTokenSource)[number];
 export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhookJwtTokenSource {
   return ehrWebhookJwtTokenSource.includes(source as EhrWebhookJwtTokenSource);
 }
 
-export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
+export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData | ElationWebhookJwtTokenData;
 
 export function getCxMappingSourceFromJwtTokenSource(source: string): CxMappingSource {
   const additionalDetails = { source };

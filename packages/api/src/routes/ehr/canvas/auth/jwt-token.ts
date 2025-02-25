@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import z from "zod";
+import { canvasWebhookJwtTokenSource } from "../../../../external/ehr/canvas/shared";
 import { checkJwtToken, saveJwtToken } from "../../../../external/ehr/jwt-token";
 import { EhrSources } from "../../../../external/ehr/shared";
 import { requestLogger } from "../../../helpers/request-logger";
@@ -21,6 +22,22 @@ router.get(
     const tokenStatus = await checkJwtToken({
       token,
       source: EhrSources.canvas,
+    });
+    return res.status(httpStatus.OK).json(tokenStatus);
+  })
+);
+
+/**
+ * GET /internal/token/canvas-webhook
+ */
+router.get(
+  "/canvas-webhook",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const token = getAuthorizationToken(req);
+    const tokenStatus = await checkJwtToken({
+      token,
+      source: canvasWebhookJwtTokenSource,
     });
     return res.status(httpStatus.OK).json(tokenStatus);
   })
