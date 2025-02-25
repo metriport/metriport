@@ -36,7 +36,7 @@ import {
  * - If you want to run for the entire month, set this to undefined or 0.
  */
 
-const howManyDaysToRun = undefined;
+const howManyDaysToRun = 3;
 
 const baseResultsDir = `./runs/cq-monthly-stats`;
 const cqDirectoryPath = `${baseResultsDir}/cq-directory.json`;
@@ -48,12 +48,19 @@ async function main() {
     console.log("Using stored CQ directory");
     cqDirectory = JSON.parse(fs.readFileSync(cqDirectoryPath, "utf8"));
   } else {
-    const sqlCQDirectory = `SELECT * FROM cq_directory_entry`;
+    console.log("Fetching CQ directory from DB");
+    const sqlCQDirectory = `SELECT * FROM cq_directory_entry_new`;
     cqDirectory = await readOnlyDBPool.query(sqlCQDirectory, {
       type: QueryTypes.SELECT,
     });
 
-    fs.writeFileSync(cqDirectoryPath, JSON.stringify(cqDirectory, null, 2));
+    console.log("cqDirectory length:", typeof cqDirectory, cqDirectory.length);
+
+    const chunks = [];
+    for (const entry of cqDirectory) {
+      chunks.push(JSON.stringify(entry));
+    }
+    fs.writeFileSync(cqDirectoryPath, `[${chunks.join(",")}]`);
   }
 
   console.log("cqDirectory length:", cqDirectory.length);
