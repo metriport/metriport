@@ -1,14 +1,13 @@
-#!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
-import { ConnectWidgetStack } from "../lib/connect-widget-stack";
-import { IHEStack } from "../lib/ihe-stack";
+import { Hl7v2ApplicationStack } from "../lib/hl7v2-application-stack";
+import { Hl7v2NetworkStack } from "../lib/hl7v2-network-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
-import { getEnvVar, isSandbox } from "../lib/shared/util";
+import { getEnvVar } from "../lib/shared/util";
 
 const app = new cdk.App();
 
@@ -47,24 +46,23 @@ async function deploy(config: EnvConfig) {
   new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
-  // 4. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
+  // 4. Deploy the HL7v2 network stack.
   //---------------------------------------------------------------------------------
-  if (config.iheGateway) {
-    new IHEStack(app, "IHEStack", {
-      env,
-      config: config,
-      version,
-    });
-  }
+  const networkStack = new Hl7v2NetworkStack(app, "Hl7v2NetworkStack", {
+    config: config,
+  });
+
   //---------------------------------------------------------------------------------
-  // 5. Deploy the Connect widget stack.
+  // 5. Deploy the HL7v2 application stack.
   //---------------------------------------------------------------------------------
-  if (!isSandbox(config)) {
-    new ConnectWidgetStack(app, config.connectWidget.stackName, {
-      env: { ...env, region: config.connectWidget.region },
-      config: { ...config, connectWidget: config.connectWidget },
-    });
-  }
+  const applicationStack = new Hl7v2ApplicationStack(app, "Hl7v2ApplicationStack", {
+    config: config,
+    version: version,
+    networkStack: networkStack.output,
+  });
+
+  // Make the application stack depend on the network stack
+  applicationStack.addDependency(networkStack);
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS

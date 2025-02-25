@@ -1,0 +1,92 @@
+/* eslint-disable */
+// @ts-nocheck
+
+import * as cdk from "aws-cdk-lib";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { Construct } from "constructs";
+import { EnvConfig } from "../config/env-config";
+
+const NUM_AZS = 2;
+const MLLP_DEFAULT_PORT = 2575;
+
+interface Hl7v2NetworkStackProps extends cdk.StackProps {
+  config: EnvConfig;
+}
+
+export interface Hl7v2NetworkStackOutput {
+  vpc: ec2.Vpc;
+  nlb: elbv2.NetworkLoadBalancer;
+  serviceSecurityGroup: ec2.SecurityGroup;
+  eipAddresses: string[];
+}
+
+export class Hl7v2NetworkStack extends cdk.Stack {
+  public readonly output: Hl7v2NetworkStackOutput;
+
+  constructor(scope: Construct, id: string, props: Hl7v2NetworkStackProps) {
+    super(scope, id, props);
+
+    const vpc = new ec2.Vpc(this, "Hl7v2Vpc", {
+      maxAzs: NUM_AZS,
+    });
+
+    const eip1 = new ec2.CfnEIP(this, "Hl7v2Eip1");
+    const eip2 = new ec2.CfnEIP(this, "Hl7v2Eip2");
+
+    const nlb = new elbv2.NetworkLoadBalancer(this, "Hl7v2NLB", {
+      vpc,
+      internetFacing: true,
+      crossZoneEnabled: true,
+      ipAddressType: elbv2.IpAddressType.IPV4,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+    });
+
+    const cfnNLB = nlb.node.defaultChild as elbv2.CfnLoadBalancer;
+    cfnNLB.subnets = undefined;
+    cfnNLB.subnetMappings = [
+      {
+        subnetId: vpc.publicSubnets[0].subnetId,
+        allocationId: eip1.attrAllocationId,
+      },
+      {
+        subnetId: vpc.publicSubnets[1].subnetId,
+        allocationId: eip2.attrAllocationId,
+      },
+    ];
+
+    const serviceSecurityGroup = new ec2.SecurityGroup(this, "Hl7v2ServiceSG", {
+      vpc,
+      description: "Security group for HL7v2 Fargate service",
+      allowAllOutbound: true,
+    });
+
+    serviceSecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(MLLP_DEFAULT_PORT),
+      "Allow MLLP traffic"
+    );
+
+    this.output = {
+      vpc,
+      nlb,
+      serviceSecurityGroup,
+      eipAddresses: [eip1.ref, eip2.ref],
+    };
+
+    // Stack Outputs
+    new cdk.CfnOutput(this, "StaticIp1", {
+      value: eip1.ref,
+      description: "Static IP 1 for HL7v2 Server",
+    });
+
+    new cdk.CfnOutput(this, "StaticIp2", {
+      value: eip2.ref,
+      description: "Static IP 2 for HL7v2 Server",
+    });
+
+    new cdk.CfnOutput(this, "NlbDnsName", {
+      value: nlb.loadBalancerDnsName,
+    });
+  }
+}
