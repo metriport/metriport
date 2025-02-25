@@ -28,7 +28,7 @@ export async function deduplicate({
       patientId,
       preDedupBundleSize: bundle.entry?.length,
       postDedupBundleSize: dedupedBundle.entry?.length,
-      dedupDuration: duration,
+      dedupDurationMs: duration,
     },
   };
 

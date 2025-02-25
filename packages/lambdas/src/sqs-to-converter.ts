@@ -16,7 +16,7 @@ import {
 import {
   EventMessageV1,
   EventTypes,
-  combineAndSendMetrics,
+  analyticsAsync,
 } from "@metriport/core/external/analytics/posthog";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
@@ -300,12 +300,14 @@ export async function handler(event: SQSEvent) {
         });
 
         if (postHogApiKey) {
-          await combineAndSendMetrics({
-            metrics: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
-            eventType: EventTypes.conversionPostProcess,
-            distinctId: cxId,
-            postHogApiKey,
-          });
+          await analyticsAsync(
+            {
+              distinctId: cxId,
+              event: EventTypes.conversionPostProcess,
+              properties: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
+            },
+            postHogApiKey
+          );
         }
 
         await storeNormalizedConversionResult({

@@ -47,26 +47,6 @@ export async function analyticsAsync(params: EventMessageV1, postApiKey: string)
   await posthog.shutdown();
 }
 
-export async function combineAndSendMetrics({
-  metrics,
-  eventType,
-  distinctId,
-  postHogApiKey,
-}: {
-  metrics: Record<string, unknown>[];
-  eventType: EventTypes;
-  distinctId: string;
-  postHogApiKey: string;
-}) {
-  const eventMessage: EventMessageV1 = {
-    event: eventType,
-    distinctId,
-    properties: metrics,
-  };
-
-  await analyticsAsync(eventMessage, postHogApiKey);
-}
-
 export enum EventTypes {
   query = "query",
   webhook = "webhook",
