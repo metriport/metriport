@@ -6,7 +6,7 @@ import {
 import { z } from "zod";
 import { EhrSources, ehrSources } from "../external/ehr/shared";
 
-const cxMappingSource = ehrSources;
+const cxMappingSource = [...ehrSources] as const;
 export type CxMappingSource = (typeof cxMappingSource)[number];
 export function isCxMappingSource(source: string): source is CxMappingSource {
   return cxMappingSource.includes(source as CxMappingSource);

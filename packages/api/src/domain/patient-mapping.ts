@@ -5,7 +5,7 @@ export type PatientSourceIdentifierMap = {
   [key in string]: string[];
 };
 
-const patientMappingSource = ehrSources;
+const patientMappingSource = [...ehrSources] as const;
 export type PatientMappingSource = (typeof patientMappingSource)[number];
 export function isPatientMappingSource(source: string): source is PatientMappingSource {
   return patientMappingSource.includes(source as PatientMappingSource);
