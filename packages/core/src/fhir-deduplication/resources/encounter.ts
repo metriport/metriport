@@ -83,16 +83,16 @@ export function groupSameEncounters(encounters: Encounter[]): {
 
     const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
 
-    if (datetime && practitionerRefs.length > 0) {
-      const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
-      identifierKeys.push(...practitionerAndDateKeys);
-      matchCandidateKeys.push(...practitionerAndDateKeys);
-    }
-
-    if (datetime && practitionerRefs.length === 0) {
-      const dateKey = JSON.stringify({ datetime });
-      identifierKeys.push(dateKey);
-      matchCandidateKeys.push(dateKey);
+    if (datetime) {
+      if (practitionerRefs.length > 0) {
+        const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
+        identifierKeys.push(...practitionerAndDateKeys);
+        matchCandidateKeys.push(...practitionerAndDateKeys);
+      } else if (practitionerRefs.length === 0) {
+        const dateKey = JSON.stringify({ datetime });
+        identifierKeys.push(dateKey);
+        matchCandidateKeys.push(dateKey);
+      }
     }
 
     if (identifierKeys.length > 0) {
