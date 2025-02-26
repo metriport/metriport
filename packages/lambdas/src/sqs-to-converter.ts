@@ -13,15 +13,26 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
+import {
+  EventMessageV1,
+  EventTypes,
+  analyticsAsync,
+} from "@metriport/core/external/analytics/posthog";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
-import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
+import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import {
+  MetriportError,
+  errorToString,
+  executeWithNetworkRetries,
+  getEnvVarOrFail,
+} from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
@@ -40,6 +51,7 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
+const postHogSecretName = getEnvVarOrFail("POST_HOG_API_KEY_SECRET");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
@@ -197,13 +209,16 @@ export async function handler(event: SQSEvent) {
 
         const partitionedPayloads = partitionPayload(payloadClean);
 
-        const [conversionResult] = await Promise.all([
+        await cloudWatchUtils.reportMemoryUsage();
+
+        const [conversionResult, postHogApiKey] = await Promise.all([
           convertPayloadToFHIR({
             converterUrl,
             partitionedPayloads,
             converterParams,
             log,
           }),
+          getSecretValue(postHogSecretName, region),
           dealWithAttachments(),
           storePartitionedPayloadsInS3({
             s3Utils,
@@ -232,21 +247,24 @@ export async function handler(event: SQSEvent) {
         });
 
         let hydratedBundle = conversionResult;
+        let hydrateMetrics: EventMessageV1 | undefined;
+
         // TODO: 2563 - Remove this after prod testing is done
         if (await isHydrationEnabledForCx(cxId)) {
           try {
-            const hydratedResult = await Promise.race<Bundle<Resource>>([
+            const result = await Promise.race([
               hydrate({
                 cxId,
                 patientId,
                 bundle: conversionResult,
               }),
-              new Promise((_, reject) =>
+              new Promise<never>((_, reject) =>
                 setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
               ),
             ]);
 
-            hydratedBundle = hydratedResult;
+            hydratedBundle = result.bundle;
+            hydrateMetrics = result.metrics;
 
             await storeHydratedConversionResult({
               s3Utils,
@@ -273,11 +291,24 @@ export async function handler(event: SQSEvent) {
           }
         }
 
-        const normalizedBundle = await normalize({
+        await cloudWatchUtils.reportMemoryUsage();
+
+        const { bundle: normalizedBundle, metrics: normalizeMetrics } = await normalize({
           cxId,
           patientId,
           bundle: hydratedBundle,
         });
+
+        if (postHogApiKey) {
+          await analyticsAsync(
+            {
+              distinctId: cxId,
+              event: EventTypes.conversionPostProcess,
+              properties: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
+            },
+            postHogApiKey
+          );
+        }
 
         await storeNormalizedConversionResult({
           s3Utils,
