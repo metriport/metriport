@@ -38,12 +38,6 @@ export function deduplicateImmunizations(
   };
 }
 
-/**
- * Approach:
- * 1 map, where the key is made of:
- * - vaccineCode (ndcCode, cvxCode, display)
- * - date (occurenceDateTime or occurenceString)
- */
 export function groupSameImmunizations(immunizations: Immunization[]): {
   immunizationsMap: Map<string, Immunization>;
   refReplacementMap: Map<string, string>;
@@ -63,6 +57,9 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
     master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
   }
+
+  const hasDate = 1;
+  const hasNoDate = 0;
 
   for (const immunization of immunizations) {
     if (hasBlacklistedText(immunization.vaccineCode)) {
@@ -96,17 +93,17 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
       matchCandidateKeys.push(...createKeysFromObjectArray({ date }, identifiers));
 
       // flagging the vaccine to indicate having a date
-      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasDate]));
 
       // can dedup with a vaccine that has no date, as long as an identifier matches
-      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
     } else {
       // flagging the vaccine to indicate not having a date
-      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
 
       // can dedup with a vaccine that does or does not have a date
-      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
-      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasDate]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
     }
 
     if (identifierKeys.length > 0) {

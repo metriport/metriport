@@ -111,6 +111,9 @@ export function groupSameProcedures(procedures: Procedure[]): {
     return master;
   }
 
+  const hasDate = 1;
+  const hasNoDate = 0;
+
   for (const procedure of procedures) {
     if (hasBlacklistedText(procedure.code)) {
       danglingReferences.add(createRef(procedure));
@@ -142,17 +145,17 @@ export function groupSameProcedures(procedures: Procedure[]): {
       matchCandidateKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
 
       // flagging the procedure to indicate having a date
-      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasDate]));
 
       // can dedup with a procedure that has no date, as long as an identifier matches
-      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
     } else {
       // flagging the procedure to indicate not having a date
-      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
 
       // can dedup with a procedure that does or does not have a date
-      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
-      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasDate]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
     }
 
     if (identifierKeys.length > 0) {

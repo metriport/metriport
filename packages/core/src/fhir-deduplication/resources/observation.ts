@@ -31,13 +31,6 @@ export function deduplicateObservations(
   };
 }
 
-/**
- * Approach:
- * 1 map, where the key is made of:
- * - date
- * - code
- * - value
- */
 export function groupSameObservations(observations: Observation[]): {
   observationsMap: Map<string, Observation>;
   refReplacementMap: Map<string, string>;
@@ -49,6 +42,8 @@ export function groupSameObservations(observations: Observation[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
+  const hasDate = 1;
+  const hasNoDate = 0;
   for (const observation of observations) {
     if (hasBlacklistedText(observation.code)) {
       danglingReferences.add(createRef(observation));
@@ -86,7 +81,7 @@ export function groupSameObservations(observations: Observation[]): {
       identifierKeys.push(...completeKeysWithValue);
       matchCandidateKeys.push(...completeKeysWithValue);
 
-      const keysWithDateBit = createKeysFromObjectArrayAndBits(identifiers, [1]).map(
+      const keysWithDateBit = createKeysFromObjectArrayAndBits(identifiers, [hasDate]).map(
         k => `${k}, ${JSON.stringify({ value })}`
       );
       // flagging the observation to indicate having a date
@@ -94,9 +89,9 @@ export function groupSameObservations(observations: Observation[]): {
     }
 
     if (!date) {
-      const identifierKeysWithDateBit = createKeysFromObjectArrayAndBits(identifiers, [0]).map(
-        k => `${k}, ${JSON.stringify({ value })}`
-      );
+      const identifierKeysWithDateBit = createKeysFromObjectArrayAndBits(identifiers, [
+        hasNoDate,
+      ]).map(k => `${k}, ${JSON.stringify({ value })}`);
 
       // flagging the observation to indicate not having a date
       identifierKeys.push(...identifierKeysWithDateBit);
@@ -105,7 +100,7 @@ export function groupSameObservations(observations: Observation[]): {
       matchCandidateKeys.push(...identifierKeysWithDateBit);
       // with the getter keys with bit 1, it can dedup with other observations that have a date
       matchCandidateKeys.push(
-        ...createKeysFromObjectArrayAndBits(identifiers, [1]).map(
+        ...createKeysFromObjectArrayAndBits(identifiers, [hasDate]).map(
           k => `${k}, ${JSON.stringify({ value })}`
         )
       );
