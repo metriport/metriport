@@ -4,6 +4,7 @@ import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/p
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { makeProgress } from "../../../domain/medical/__tests__/document-query";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { getCQData } from "../../carequality/patient";
 import { setDocRetrieveStartAt } from "../set-doc-retrieve-start";
@@ -25,10 +26,11 @@ beforeEach(() => {
     },
   };
   patient = makePatient({ data: makePatientData({ externalData }) });
-  patientModel = patient as unknown as PatientModel;
+  patientModel = { dataValues: patient } as PatientModel;
   mockStartTransaction();
-  jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
+  jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 
 afterEach(() => {
