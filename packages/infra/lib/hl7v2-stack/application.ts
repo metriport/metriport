@@ -8,12 +8,12 @@ import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
-import { getConfig } from "./shared/config";
-import { vCPU } from "./shared/fargate";
-import { MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
-import { isProd } from "./shared/util";
-import { Hl7v2NetworkStackOutput } from "./hl7v2-network-stack";
+import { EnvConfig } from "../../config/env-config";
+import { getConfig } from "../shared/config";
+import { vCPU } from "../shared/fargate";
+import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { isProd } from "../shared/util";
+import { Hl7v2NetworkStackOutput } from "./network";
 
 const MLLP_DEFAULT_PORT = 2575;
 
@@ -37,7 +37,7 @@ interface Hl7v2ApplicationStackProps extends cdk.StackProps {
   networkStack: Hl7v2NetworkStackOutput;
 }
 
-export class Hl7v2ApplicationStack extends cdk.Stack {
+export class Hl7v2ApplicationStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: Hl7v2ApplicationStackProps) {
     super(scope, id, props);
 

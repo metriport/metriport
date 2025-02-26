@@ -144,6 +144,20 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   generalBucketName: "test-bucket",
+  hl7v2: {
+    vpnConfigs: [
+      {
+        customerName: "SampleHIE",
+        customerGatewayPublicIp: "200.54.1.1",
+        preSharedKeyTunnel1: "MY_SECRET_KEY_TUNNEL_1",
+        preSharedKeyTunnel2: "MY_SECRET_KEY_TUNNEL_2",
+        bgpAsn: 65001,
+        staticRoutesOnly: true,
+        phase1LifetimeSeconds: 3600,
+        phase2LifetimeSeconds: 3600, // max value
+      },
+    ],
+  },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",

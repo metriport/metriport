@@ -2,8 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
-import { Hl7v2ApplicationStack } from "../lib/hl7v2-application-stack";
-import { Hl7v2NetworkStack } from "../lib/hl7v2-network-stack";
+import { Hl7v2CompositeStack } from "../lib/hl7v2-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
@@ -46,23 +45,9 @@ async function deploy(config: EnvConfig) {
   new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
-  // 4. Deploy the HL7v2 network stack.
+  // 4. Deploy the HL7v2 composite stack.
   //---------------------------------------------------------------------------------
-  const networkStack = new Hl7v2NetworkStack(app, "Hl7v2NetworkStack", {
-    config: config,
-  });
-
-  //---------------------------------------------------------------------------------
-  // 5. Deploy the HL7v2 application stack.
-  //---------------------------------------------------------------------------------
-  const applicationStack = new Hl7v2ApplicationStack(app, "Hl7v2ApplicationStack", {
-    config: config,
-    version: version,
-    networkStack: networkStack.output,
-  });
-
-  // Make the application stack depend on the network stack
-  applicationStack.addDependency(networkStack);
+  new Hl7v2CompositeStack(app, "Hl7v2CompositeStack", { env, config, version });
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS

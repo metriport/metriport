@@ -5,8 +5,7 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
-
+import { EnvConfig } from "../../config/env-config";
 const NUM_AZS = 2;
 const MLLP_DEFAULT_PORT = 2575;
 
@@ -21,7 +20,7 @@ export interface Hl7v2NetworkStackOutput {
   eipAddresses: string[];
 }
 
-export class Hl7v2NetworkStack extends cdk.Stack {
+export class Hl7v2NetworkStack extends cdk.NestedStack {
   public readonly output: Hl7v2NetworkStackOutput;
 
   constructor(scope: Construct, id: string, props: Hl7v2NetworkStackProps) {
@@ -31,8 +30,22 @@ export class Hl7v2NetworkStack extends cdk.Stack {
       maxAzs: NUM_AZS,
     });
 
-    const eip1 = new ec2.CfnEIP(this, "Hl7v2Eip1");
-    const eip2 = new ec2.CfnEIP(this, "Hl7v2Eip2");
+    /**
+     * Our EIPs are retained after stack deletion to avoid disruption of existing connections with state HIEs.
+     * Losing our EIPs would create a nationwide ADT outage for us until all state HIEs re-register their gateways.
+     */
+    const eip1 = createEIPWithTags(
+      this,
+      "Hl7v2Eip1",
+      props.config.stackName,
+      props.config.environmentType
+    );
+    const eip2 = createEIPWithTags(
+      this,
+      "Hl7v2Eip2",
+      props.config.stackName,
+      props.config.environmentType
+    );
 
     const nlb = new elbv2.NetworkLoadBalancer(this, "Hl7v2NLB", {
       vpc,
@@ -89,4 +102,25 @@ export class Hl7v2NetworkStack extends cdk.Stack {
       value: nlb.loadBalancerDnsName,
     });
   }
+}
+
+function createEIPWithTags(scope: Construct, id: string, stackName: string, envType: string) {
+  const eip = new ec2.CfnEIP(scope, id, {
+    tags: [
+      {
+        key: "Name",
+        value: `${stackName}-${id.toLowerCase()}`,
+      },
+      {
+        key: "Environment",
+        value: envType,
+      },
+      {
+        key: "Purpose",
+        value: "HL7v2 NLB Static IP",
+      },
+    ],
+  });
+  eip.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
+  return eip;
 }
