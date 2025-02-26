@@ -7,6 +7,7 @@ import {
 } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
@@ -67,6 +68,13 @@ export async function tallyDocQueryProgress({
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
+  });
+
+  await processDocQueryProgressWebhook({
+    patient,
+    requestId,
+    progressType: type,
+    isConsolidatedComplete: false,
   });
 
   return patient;

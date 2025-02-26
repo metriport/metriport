@@ -155,9 +155,6 @@ export async function createConsolidatedAndProcessWebhook(
   log: typeof console.log
 ) {
   await recreateConsolidated(recreateParams);
-  const dqProgress = whParams.documentQueryProgress;
-  if (dqProgress) {
-    log(`Sending DQ WH in recreateConsolidated...`);
-    await processDocQueryProgressWebhook({ ...whParams, documentQueryProgress: dqProgress });
-  }
+  log(`Sending DQ WH in createConsolidatedAndProcessWebhook...`);
+  await processDocQueryProgressWebhook({ ...whParams, isConsolidatedComplete: true });
 }

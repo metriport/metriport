@@ -15,9 +15,9 @@ export const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
 export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 
 export type ProcessDocQueryProgressWebhookParams = {
-  patient: Pick<Patient, "id" | "cxId" | "externalId">;
-  documentQueryProgress: DocumentQueryProgress | undefined;
+  patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">;
   requestId: string;
+  isDoneConsolidated?: boolean;
   progressType?: ProgressType;
 };
 
@@ -26,20 +26,25 @@ export type ProcessDocQueryProgressWebhookParams = {
  */
 export const processDocQueryProgressWebhook = async ({
   patient,
-  documentQueryProgress,
   requestId,
+  isConsolidatedComplete = false,
   progressType,
 }: {
-  patient: Pick<Patient, "id" | "cxId" | "externalId">;
-  documentQueryProgress: DocumentQueryProgress;
+  patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">;
   requestId: string;
+  isConsolidatedComplete?: boolean;
   progressType?: ProgressType;
 }): Promise<void> => {
   const { id: patientId } = patient;
+  const { documentQueryProgress } = patient.data;
 
   try {
-    await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
-    await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
+    if (documentQueryProgress) {
+      await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
+      if (isConsolidatedComplete) {
+        await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
+      }
+    }
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
     const extra = {

@@ -88,7 +88,6 @@ export async function setDocQueryProgress({
 
   await processDocQueryProgressWebhook({
     patient,
-    documentQueryProgress: patient.data.documentQueryProgress,
     requestId,
   });
 
