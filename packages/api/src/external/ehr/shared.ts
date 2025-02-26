@@ -132,3 +132,16 @@ export async function createEhrClient<
   });
   return client;
 }
+
+export function parseExternalId(source: string, externalId: string): string {
+  if (source === EhrSources.athena) {
+    const patientId = externalId.split("-")[2];
+    if (!patientId) {
+      throw new MetriportError("AthenaHealth patient mapping externalId is malformed", undefined, {
+        externalId,
+      });
+    }
+    return patientId;
+  }
+  return externalId;
+}

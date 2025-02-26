@@ -20,20 +20,19 @@ export type PatientWithCWData = Patient & {
   data: { externalData: { COMMONWELL: PatientDataCommonwell } };
 };
 
-const _getPatientWithCWData = async ({
+async function _getPatientWithCWData({
   id,
   cxId,
-}: Pick<Patient, "id" | "cxId">): Promise<PatientWithCWData> => {
-  const patientDB = await getPatientOrFail({
+}: Pick<Patient, "id" | "cxId">): Promise<PatientWithCWData> {
+  const patient = await getPatientOrFail({
     id,
     cxId,
   });
 
-  const cwData = getCWData(patientDB.data.externalData);
+  const cwData = getCWData(patient.data.externalData);
   if (!cwData) throw new MetriportError(`Missing CW data on patient`);
   if (!cwData.patientId) throw new MetriportError(`Missing CW patientId`);
 
-  const patient = patientDB.dataValues;
   return {
     ...patient,
     data: {
@@ -44,7 +43,7 @@ const _getPatientWithCWData = async ({
       },
     },
   };
-};
+}
 
 export async function getPatientWithCWData(
   patient: Patient
@@ -76,27 +75,23 @@ export type SetCommonwellIdParams = CWParams & {
  *        bridge with CQ. If not provided, it will keep the current CQ link status.
  * @returns
  */
-export const updateCommonwellIdsAndStatus = async ({
-  patient,
+export async function updateCommonwellIdsAndStatus({
+  patient: { id, cxId },
   commonwellPatientId,
   commonwellPersonId,
   cqLinkStatus,
-}: SetCommonwellIdParams): Promise<Patient> => {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
+}: SetCommonwellIdParams): Promise<Patient> {
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(existingPatient.data.externalData);
+    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(patient.data.externalData);
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = patient.data.externalData ?? {};
 
     const updateCWExternalData = {
       ...externalData,
@@ -109,21 +104,18 @@ export const updateCommonwellIdsAndStatus = async ({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData: updateCWExternalData,
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
-};
+}
 
 /**
  * Sets the CommonWell (CW) integration status on the patient.
@@ -136,28 +128,24 @@ export const updateCommonwellIdsAndStatus = async ({
  * @param params.rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
  * @returns
  */
-export const updatePatientDiscoveryStatus = async ({
-  patient,
+export async function updatePatientDiscoveryStatus({
+  patient: { id, cxId },
   status,
   params,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: LinkStatus;
   params?: DiscoveryParams;
-}): Promise<Patient> => {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
-  return await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+}): Promise<Patient> {
+  const patientFilter = { id, cxId };
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = patient.data.externalData ?? {};
 
     if (!params && !externalData.COMMONWELL?.discoveryParams) {
       throw new Error(`Cannot update discovery status before assigning discovery params @ CW`);
@@ -173,18 +161,15 @@ export const updatePatientDiscoveryStatus = async ({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData: updatePatientDiscoveryStatus,
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
-};
+}

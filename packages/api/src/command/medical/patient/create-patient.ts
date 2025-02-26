@@ -5,16 +5,16 @@ import {
   PatientDemoData,
 } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { out } from "@metriport/core/util";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
+import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { getPatientByDemo } from "./get-patient";
+import { attatchPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
-import { out } from "@metriport/core/util";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -32,7 +32,7 @@ export async function createPatient({
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
-}): Promise<Patient> {
+}): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
 
@@ -93,5 +93,6 @@ export async function createPatient({
       forceCommonwell,
     }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
   }
-  return newPatient;
+  const patientWithIdentifiers = await attatchPatientIdentifiers(newPatient.dataValues);
+  return patientWithIdentifiers;
 }

@@ -138,7 +138,6 @@ export async function handler(event: SQSEvent) {
         const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
         const metrics: Metrics = {};
 
-        await cloudWatchUtils.reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
@@ -152,18 +151,22 @@ export async function handler(event: SQSEvent) {
         const { documentContents: payloadNoB64, b64Attachments } =
           removeBase64PdfEntries(payloadRaw);
 
-        if (b64Attachments) {
-          log(`Extracted ${b64Attachments.total} B64 attachments`);
-          await processAttachments({
-            b64Attachments,
-            cxId,
-            patientId,
-            filePath: s3FileName,
-            medicalDataSource,
-            s3BucketName: medicalDocumentsBucketName,
-            fhirUrl,
-          });
+        if (b64Attachments && b64Attachments.total > 0) {
+          log(`Extracted ${b64Attachments.total} B64 attachments - will process them soon`);
         }
+        const dealWithAttachments = async () => {
+          if (b64Attachments && b64Attachments.total > 0) {
+            await processAttachments({
+              b64Attachments,
+              cxId,
+              patientId,
+              filePath: s3FileName,
+              medicalDataSource,
+              s3BucketName: medicalDocumentsBucketName,
+              fhirUrl,
+            });
+          }
+        };
 
         const payloadClean = cleanUpPayload(payloadNoB64);
         metrics.download = {
@@ -177,7 +180,6 @@ export async function handler(event: SQSEvent) {
           continue;
         }
 
-        await cloudWatchUtils.reportMemoryUsage();
         const conversionStart = Date.now();
 
         const converterUrl = attrib.serverUrl?.stringValue;
@@ -216,8 +218,8 @@ export async function handler(event: SQSEvent) {
             converterParams,
             log,
           }),
-
           getSecretValue(postHogSecretName, region),
+          dealWithAttachments(),
           storePartitionedPayloadsInS3({
             s3Utils,
             partitionedPayloads,
@@ -243,8 +245,6 @@ export async function handler(event: SQSEvent) {
           lambdaParams,
           log,
         });
-
-        await cloudWatchUtils.reportMemoryUsage();
 
         let hydratedBundle = conversionResult;
         let hydrateMetrics: EventMessageV1 | undefined;
@@ -320,8 +320,6 @@ export async function handler(event: SQSEvent) {
           log,
         });
 
-        await cloudWatchUtils.reportMemoryUsage();
-
         const postProcessStart = Date.now();
         const updatedConversionResult = postProcessBundle(
           normalizedBundle,
@@ -344,7 +342,6 @@ export async function handler(event: SQSEvent) {
           log,
         });
 
-        await cloudWatchUtils.reportMemoryUsage();
         await cloudWatchUtils.reportMetrics(metrics);
       } catch (error) {
         await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
@@ -358,7 +355,7 @@ export async function handler(event: SQSEvent) {
     capture.error(msg, {
       extra: { event, context: lambdaName, error },
     });
-    throw new MetriportError(msg, error);
+    throw new MetriportError(msg);
   }
 }
 

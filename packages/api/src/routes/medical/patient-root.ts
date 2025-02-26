@@ -16,7 +16,6 @@ import { createPatientImportJob } from "../../command/medical/patient/patient-im
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import NotFoundError from "../../errors/not-found";
-import { PatientModel } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
@@ -62,7 +61,7 @@ router.post(
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
-      const numPatients = await PatientModel.count({ where: { cxId } });
+      const numPatients = await getPatientsCount({ cxId });
       const patientLimit = await getSandboxPatientLimitForCx(cxId);
       if (numPatients >= patientLimit) {
         return res.status(httpStatus.BAD_REQUEST).json({

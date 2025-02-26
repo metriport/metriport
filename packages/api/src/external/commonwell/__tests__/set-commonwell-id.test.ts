@@ -1,5 +1,7 @@
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientMappingModel } from "../../../models/patient-mapping";
+
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { CWParams, updateCommonwellIdsAndStatus } from "../patient-external-data";
 import { PatientDataCommonwell } from "../patient-shared";
@@ -11,6 +13,7 @@ beforeEach(() => {
   mockStartTransaction();
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
+  jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -38,7 +41,7 @@ describe("setCommonwellIdsAndStatus", () => {
   it("has CW externalData set to newValues when CW externalData is empty and we set newValues", async () => {
     const patient = makePatient();
 
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValue({ dataValues: patient });
 
     const newValues: CWParams = {
       commonwellPatientId: "commonwellPatientId",
@@ -72,7 +75,7 @@ describe("setCommonwellIdsAndStatus", () => {
       }),
     });
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
 
     const newValues: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
@@ -106,7 +109,7 @@ describe("setCommonwellIdsAndStatus", () => {
       }),
     });
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
 
     const newStatus: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
@@ -130,7 +133,7 @@ describe("setCommonwellIdsAndStatus", () => {
   it("has CW externalData set to onlyPatientId & cqLinkStatus = unlinked when CW externalData is empty and we set onlyPatientId", async () => {
     const patient = makePatient();
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
 
     const onlyPatientId: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",

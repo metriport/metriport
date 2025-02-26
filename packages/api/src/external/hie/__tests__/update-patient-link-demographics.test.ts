@@ -5,6 +5,7 @@ import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/p
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { linkDemographics } from "../../../domain/medical/__tests__/demographics.const";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { updatePatientLinkDemographics } from "../update-patient-link-demographics";
 
@@ -15,6 +16,7 @@ beforeEach(() => {
   mockStartTransaction();
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
+  jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -37,7 +39,7 @@ describe("update patient link demographics", () => {
   const newRequestId = "test";
   it("update patient with no existing link demographics", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const links: LinkDemographics[] = [linkDemographics];
     await updatePatientLinkDemographics({
       requestId: newRequestId,
@@ -80,7 +82,7 @@ describe("update patient link demographics", () => {
       consolidatedLinkDemographics: existingLinkDemographcsics,
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const links: LinkDemographics[] = [linkDemographics];
     await updatePatientLinkDemographics({
       requestId: newRequestId,

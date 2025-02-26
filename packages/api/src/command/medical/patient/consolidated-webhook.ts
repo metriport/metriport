@@ -1,6 +1,7 @@
 import { Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
 import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
+import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -17,7 +18,9 @@ export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[numbe
 
 type Filters = Record<string, string | boolean | undefined>;
 
-type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta">;
+type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta"> & {
+  additionalIds?: PatientSourceIdentifierMap;
+};
 
 /**
  * Sends a FHIR bundle with a Patient's consolidated data to the customer's
@@ -42,7 +45,7 @@ export async function processConsolidatedDataWebhook({
   filters?: Filters;
   isDisabled?: boolean;
 }): Promise<void> {
-  const { id: patientId, cxId, externalId } = patient;
+  const { id: patientId, cxId } = patient;
   try {
     const [settings, currentPatient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
@@ -53,7 +56,8 @@ export async function processConsolidatedDataWebhook({
       patients: [
         {
           patientId,
-          ...(externalId ? { externalId } : {}),
+          ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
+          ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
           status,
           bundle,
           filters,
@@ -95,7 +99,7 @@ export async function processConsolidatedDataWebhook({
       });
     }
     await updateConsolidatedQueryProgress({
-      patient,
+      patient: currentPatient,
       requestId,
       progress: { status },
     });
