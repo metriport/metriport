@@ -27,7 +27,7 @@ export type ProcessDocQueryProgressWebhookParams = {
 export const processDocQueryProgressWebhook = async ({
   patient,
   requestId,
-  isConsolidatedComplete = false,
+  isConsolidatedComplete = true,
   progressType,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">;

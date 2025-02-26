@@ -122,7 +122,6 @@ describe("processDocQueryProgressWebhook", () => {
           },
         },
         requestId,
-        isConsolidatedComplete: true,
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
@@ -172,7 +171,6 @@ describe("processDocQueryProgressWebhook", () => {
           },
         },
         requestId,
-        isConsolidatedComplete: true,
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(

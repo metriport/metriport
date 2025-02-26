@@ -77,6 +77,7 @@ export async function resetDocQueryProgress({
     await processDocQueryProgressWebhook({
       patient,
       requestId,
+      isConsolidatedComplete: false,
     });
   }
 }
