@@ -3,7 +3,8 @@ import { out } from "@metriport/core/util/log";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { createFolderName } from "@metriport/core/domain/filename";
+import { createMRSummaryFileNameWithNoExtension } from "@metriport/core/domain/medical-record-summary";
+import { createConsolidatedSnapshotFileNameWithNoExtension } from "@metriport/core/domain/consolidated/filename";
 import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/file-search-connector-factory";
 import { capture } from "@metriport/core/util";
 import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
@@ -241,8 +242,8 @@ async function findAndRemoveConsolidatedDocumentFromS3(
 ): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
   try {
-    const consolidatedPrefix = createConsolidatedPrefix(cxId, patientId);
-    const medicalRecordsPrefix = createMedicalRecordsPrefix(cxId, patientId);
+    const consolidatedPrefix = createConsolidatedSnapshotFileNameWithNoExtension(cxId, patientId);
+    const medicalRecordsPrefix = createMRSummaryFileNameWithNoExtension(cxId, patientId);
 
     const [existingConsolidatedFiles, existingMedicalRecordsFiles] = await Promise.all([
       s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedPrefix),
@@ -341,12 +342,4 @@ async function deleteFhirResource(
     log("Error deleting FHIR resource:", error);
     throw error;
   }
-}
-
-function createConsolidatedPrefix(cxId: string, patientId: string): string {
-  return `${createFolderName(cxId, patientId)}/${cxId}_${patientId}_consolidated`;
-}
-
-function createMedicalRecordsPrefix(cxId: string, patientId: string): string {
-  return `${createFolderName(cxId, patientId)}/${cxId}_${patientId}_MR`;
 }

@@ -16,6 +16,10 @@ export const createMRSummaryFileName = (
   return filePath;
 };
 
+export const createMRSummaryFileNameWithNoExtension = (cxId: string, patientId: string): string => {
+  return createFilePath(cxId, patientId, createFileSuffixBeforeExtension());
+};
+
 function createFileSuffixBeforeExtension(dedupEnabled?: boolean): string {
   return `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}`;
 }

@@ -2,6 +2,7 @@ import { ConsolidatedFileType } from "../../command/consolidated/consolidated-sh
 import { createFilePath } from "../filename";
 
 export const extension = ".json";
+export const CONSOLIDATED_SNAPSHOT_KEY = "consolidated";
 
 export function createConsolidatedDataFilePath(
   cxId: string,
@@ -22,8 +23,15 @@ export function createConsolidatedSnapshotFileName(
   return createFilePath(
     cxId,
     patientId,
-    `consolidated_${date}_${requestId}${getSuffixForType(type)}${extension}`
+    `${CONSOLIDATED_SNAPSHOT_KEY}_${date}_${requestId}${getSuffixForType(type)}${extension}`
   );
+}
+
+export function createConsolidatedSnapshotFileNameWithNoExtension(
+  cxId: string,
+  patientId: string
+): string {
+  return createFilePath(cxId, patientId, CONSOLIDATED_SNAPSHOT_KEY);
 }
 
 function getSuffixForType(type?: ConsolidatedFileType): string {
