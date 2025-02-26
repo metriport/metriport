@@ -78,3 +78,4 @@ export {
   patientUpdateSchema,
 } from "./medical/models/patient";
 export { PatientDTO } from "./medical/models/patientDTO";
+export { NetworkEntry } from "./medical/models/network-entry";

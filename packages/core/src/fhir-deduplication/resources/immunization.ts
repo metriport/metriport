@@ -6,9 +6,9 @@ import {
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
   createRef,
+  deduplicateAndTrackResource,
   extractDisplayFromConcept,
   fetchCodingCodeOrDisplayOrSystem,
-  fillL1L2Maps,
   getDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
@@ -49,8 +49,8 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const l1ImmunizationsMap = new Map<string, string>();
-  const l2ImmunizationsMap = new Map<string, Immunization>();
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Immunization>();
 
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
@@ -86,37 +86,38 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
       danglingReferences.add(createRef(immunization));
       continue;
     }
-    const getterKeys: string[] = [];
-    const setterKeys: string[] = [];
+
+    const identifierKeys: string[] = [];
+    const matchCandidateKeys: string[] = [];
 
     if (date) {
       // keys that match a code + date together
-      setterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
-      getterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+      identifierKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+      matchCandidateKeys.push(...createKeysFromObjectArray({ date }, identifiers));
 
       // flagging the vaccine to indicate having a date
-      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
 
       // can dedup with a vaccine that has no date, as long as an identifier matches
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
     } else {
       // flagging the vaccine to indicate not having a date
-      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
 
       // can dedup with a vaccine that does or does not have a date
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
     }
 
-    if (setterKeys.length > 0) {
-      fillL1L2Maps({
-        map1: l1ImmunizationsMap,
-        map2: l2ImmunizationsMap,
-        getterKeys,
-        setterKeys,
-        targetResource: immunization,
+    if (identifierKeys.length > 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        matchCandidateKeys,
+        identifierKeys,
+        incomingResource: immunization,
         refReplacementMap,
-        applySpecialModifications: assignMostDescriptiveStatus,
+        customMergeLogic: assignMostDescriptiveStatus,
       });
     } else {
       danglingReferences.add(createRef(immunization));
@@ -124,7 +125,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
   }
 
   return {
-    immunizationsMap: l2ImmunizationsMap,
+    immunizationsMap: dedupedResourcesMap,
     refReplacementMap,
     danglingReferences,
   };

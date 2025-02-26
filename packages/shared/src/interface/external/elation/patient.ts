@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 const address = z.object({
-  state: z.string(),
-  address_line1: z.string(),
-  address_line2: z.string(),
-  city: z.string(),
-  zip: z.string(),
+  state: z.string().nullable(),
+  address_line1: z.string().nullable(),
+  address_line2: z.string().nullable(),
+  city: z.string().nullable(),
+  zip: z.string().nullable(),
 });
 
 const phone = z.object({
@@ -16,19 +16,19 @@ const email = z.object({
   email: z.string(),
 });
 
-export const patientResourceSchema = z.object({
-  first_name: z.string(),
-  last_name: z.string(),
-  middle_name: z.string(),
+export const patientSchema = z.object({
+  first_name: z.string().nullable(),
+  last_name: z.string().nullable(),
+  middle_name: z.string().nullable(),
   sex: z.string(),
-  address,
+  address: address.nullable(),
   dob: z.string(),
-  phones: phone.array(),
-  emails: email.array(),
+  phones: phone.array().nullable(),
+  emails: email.array().nullable(),
   ssn: z.string().nullable(),
 });
 
-export type PatientResource = z.infer<typeof patientResourceSchema>;
+export type Patient = z.infer<typeof patientSchema>;
 
 const metadata = z.object({
   object_id: z.string(),

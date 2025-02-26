@@ -1,7 +1,7 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
+import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -13,6 +13,7 @@ import {
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -24,8 +25,10 @@ import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import {
+  ConsolidatedQueryParams,
   getConsolidated,
   getConsolidatedAndSendToCx,
+  startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
@@ -61,9 +64,11 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
-import { Config } from "../../shared/config";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import {
   nonEmptyStringListFromQuerySchema,
@@ -75,17 +80,16 @@ import {
   asyncHandler,
   getFrom,
   getFromParamsOrFail,
+  getFromQuery,
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { schemaCreateToPatientData } from "./schemas/patient";
-import { handleParams } from "../helpers/handle-params";
 
 dayjs.extend(duration);
 
@@ -289,44 +293,6 @@ router.delete(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /internal/patient/:patientId/link
- *
- * Builds and returns the current state of a patient's links across HIEs.
- *
- * @param req.params.patientId Patient ID for which to retrieve links.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to get links for patient.
- * @returns The patient's current and potential links.
- */
-router.get(
-  "/:patientId/link",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    const cwPersonLinks = await cwCommands.link.get(patientId, cxId, facilityId);
-    const cwConvertedLinks = dtoFromCW({
-      cwPotentialPersons: cwPersonLinks.potentialLinks,
-      cwCurrentPersons: cwPersonLinks.currentLinks,
-    });
-
-    const links: PatientLinksDTO & { networkLinks: unknown } = {
-      currentLinks: cwConvertedLinks.currentLinks,
-      potentialLinks: cwConvertedLinks.potentialLinks,
-      networkLinks: cwPersonLinks.networkLinks,
-    };
-
-    return res.status(status.OK).json(links);
-  })
-);
-
-/** ---------------------------------------------------------------------------
  * GET /internal/patient/duplicates
  * *
  * @param req.query.cxId The customer ID (optional, defaults to all customers).
@@ -338,7 +304,7 @@ router.get(
   "/duplicates",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await findDuplicatedPersons(cxId);
     console.log(`Result: ${stringify(result)}`);
     return res.status(status.OK).json(result);
@@ -442,6 +408,8 @@ const initEnhancedCoverageSchema = z.object({
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage
  *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
+ *
  * Trigger the job to enhance coverage of provided patients. Before doing that,
  * it also checks/fixes any stale enhanced coverage process.
  *
@@ -507,6 +475,8 @@ const cqLinkStatusSchema = z.enum(cqLinkStatus);
 /**
  * POST /internal/patient/enhance-coverage/set-cq-link-statuses
  *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
+ *
  * Sets the CQ link statuses to complete the enhanced coverage flow for a list of patients.
  * @param req.query.cxId The customer ID.
  * @param req.query.patientIds The IDs of the patients to complete the process for.
@@ -535,6 +505,8 @@ const updateECAfterIncludeListSchema = z.object({
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage/after-include-list
+ *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
  *
  * Store the result of running Enhanced Coverage from the local environment.
  *
@@ -567,6 +539,8 @@ const updateECAfterDocQuerySchema = z.object({
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/enhance-coverage/after-doc-query
+ *
+ * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
  *
  * Store the result of running Enhanced Coverage from the local environment.
  *
@@ -780,6 +754,7 @@ router.post(
   })
 );
 
+// TODO 2330 Review this
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/bulk/coverage-assessment
  *
@@ -864,7 +839,6 @@ router.post(
       requestId,
       conversionType,
       resources,
-      generateAiBrief,
       dateFrom,
       dateTo,
       bundleLocation,
@@ -882,7 +856,6 @@ router.post(
       bundle,
       requestId,
       conversionType,
-      generateAiBrief,
       resources,
       dateFrom,
       dateTo,
@@ -937,17 +910,23 @@ router.post(
   })
 );
 
+// TODO 2330 Rework this so it becomes an internal way to create a new bulk import job, maybe with
+// some custom/internal params (e.g., to avoid sending WHs, etc.), returning the upload URL and
+// removing the trigger of the actual import from here.
+// We prob want to have a LOCAL/dev way to trigger the import here by uploading the file in the
+// body, so we can skip the S3 trigger and have the process running local.
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/import
  *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @param req.query.facilityId The facility ID for running the patient import.
- * @param req.query.jobId The job Id of the fle. TEMPORARY.
+ * @param req.query.jobId The job Id of the fle.
  * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
  * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
  * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
- * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
+ * @param req.query.dryRun Whether to simply validate or run the assessment, overrides the cx
+ *                          provided one (optional, defaults to cx provided or false if none provides it).
  *
  */
 router.post(
@@ -955,28 +934,130 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getFrom("query").orFail("facilityId", req);
     const jobId = getFrom("query").orFail("jobId", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    const dryrun = getFromQueryAsBoolean("dryrun", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
 
-    await getFacilityOrFail({ cxId, id: facilityId });
-
-    const patientImportConnector = makePatientImportHandler();
-    await patientImportConnector.startPatientImport({
+    const patientImportParser = buildPatientImportParseHandler();
+    await patientImportParser.processJobParse({
       cxId,
-      facilityId,
       jobId,
-      processPatientImportLambda: Config.getPatientImportLambdaName(),
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,
-      dryrun,
+      dryRun,
     });
 
     return res.sendStatus(status.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/consolidated/query
+ *
+ * For each patient, get all consolidated queries that are older than 1 hour and are still processing, and:
+ * - update the status of the query to "failed"; and
+ * - start a new consolidated query with the same parameters.
+ *
+ * @param req.query.patientIds The patient IDs.
+ * @param req.query.minAgeInMinutes The minimum age in minutes for the queries to be processed (optional,
+ *        defaults to 60 minutes).
+ * @param req.query.dryRun Whether to simply return what would be done or actually execute the changes
+ *        and commands.
+ * @return The list of consolidated queries that where be executed (or would be executed, if dryRun is true).
+ */
+router.post(
+  "/consolidated/query",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+    const skipWebhooks = getFromQueryAsBoolean("skipWebhooks", req);
+    if (skipWebhooks === undefined) throw new BadRequestError("skipWebhooks is required");
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    if (dryRun === undefined) throw new BadRequestError("dryRun is required");
+    const minAgeRaw = getFromQuery("minAgeInMinutes", req);
+    const minAgeInMinutes = minAgeRaw ? parseInt(minAgeRaw) : 60;
+
+    // TODO move this to an ops/internal command
+
+    const patientsNotFound: string[] = [];
+    const patientsUpdated: string[] = [];
+    const patientsWithoutQueries: string[] = [];
+
+    const triggeredQueries: ConsolidatedQueryParams[] = [];
+    for (const patientId of patientIds) {
+      const { log } = out(`patientId ${patientId} minAge ${minAgeInMinutes} dryRun ${dryRun}`);
+      await executeOnDBTx(PatientModel.prototype, async transaction => {
+        const patient = await PatientModel.findOne({
+          where: { id: patientId },
+          transaction,
+        });
+        if (!patient) {
+          patientsNotFound.push(patientId);
+          log(`not found`);
+          return;
+        }
+        const consolidatedQueries = patient.data.consolidatedQueries ?? [];
+        const queriesToProcess = consolidatedQueries.filter(
+          query =>
+            query.status === "processing" &&
+            buildDayjs(query.startedAt).isBefore(
+              buildDayjs().subtract(minAgeInMinutes, "minutes").toISOString()
+            )
+        );
+        log(`queriesToProcess ${queriesToProcess.length}`);
+        if (queriesToProcess.length > 0) {
+          patientsUpdated.push(patientId);
+          queriesToProcess.forEach(query => {
+            query.status = "failed";
+          });
+          if (!dryRun) {
+            const data = {
+              ...patient.data,
+              consolidatedQueries,
+            };
+            patient.changed("data", true);
+            await patient.update({ data });
+          }
+        } else {
+          patientsWithoutQueries.push(patientId);
+        }
+        for (const query of queriesToProcess) {
+          const cxConsolidatedRequestMetadata = skipWebhooks ? { disableWHFlag: true } : undefined;
+          const startConsolidatedQueryParams: ConsolidatedQueryParams = {
+            cxId: patient.cxId,
+            patientId,
+            resources: query.resources,
+            dateFrom: query.dateFrom,
+            dateTo: query.dateTo,
+            conversionType: query.conversionType,
+            generateAiBrief: query.generateAiBrief,
+            cxConsolidatedRequestMetadata,
+          };
+          triggeredQueries.push(startConsolidatedQueryParams);
+          if (!dryRun) {
+            const query = await startConsolidatedQuery(startConsolidatedQueryParams);
+            log(`triggered query ${JSON.stringify(query)}`);
+          }
+        }
+      });
+    }
+
+    const { log } = out(`dryRun ${dryRun}`);
+
+    const response = {
+      dryRun,
+      skipWebhooks,
+      patientsNotFound,
+      patientsUpdated,
+      patientsWithoutQueries,
+      triggeredQueries,
+    };
+    log(`response ${JSON.stringify(response)}`);
+
+    return res.status(status.OK).json(response);
   })
 );
 

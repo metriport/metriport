@@ -8,8 +8,9 @@ import {
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction, BadRequestError } from "@metriport/shared";
+import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
@@ -20,7 +21,6 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
@@ -66,7 +66,7 @@ export async function queryDocumentsAcrossHIEs({
   cqManagingOrgName?: string;
   triggerConsolidated?: boolean;
 }): Promise<DocumentQueryProgress> {
-  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
+  const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
@@ -174,38 +174,36 @@ type UpdateResult = {
   convertResult: ConvertResult;
 };
 
-export const updateConversionProgress = async ({
-  patient,
+export async function updateConversionProgress({
+  patient: { id, cxId },
   convertResult,
-}: UpdateResult): Promise<Patient> => {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
+}: UpdateResult): Promise<Patient> {
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     const documentQueryProgress = calculateConversionProgress({
-      patient: existingPatient,
+      patient,
       convertResult,
     });
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         documentQueryProgress,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
-};
+}
 
 /**
  * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.

@@ -35,11 +35,11 @@ export const QueryByParameterSchema = z.object({
         _value: z.string(),
       }),
     }),
-    livingSubjectId: z
-      .object({
+    livingSubjectId: schemaOrArray(
+      z.object({
         value: schemaOrArrayOrEmpty(idSchema).optional(),
       })
-      .optional(),
+    ).optional(),
     livingSubjectName: schemaOrArray(
       z.object({
         value: nameSchema,

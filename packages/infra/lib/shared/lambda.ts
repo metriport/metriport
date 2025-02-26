@@ -108,6 +108,7 @@ export function createLambda(props: LambdaProps): Lambda {
     environment: {
       ...props.envVars,
       ENV_TYPE: props.envType,
+      METRICS_NAMESPACE,
       ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
     },
     retryAttempts: props.retryAttempts ?? 0,

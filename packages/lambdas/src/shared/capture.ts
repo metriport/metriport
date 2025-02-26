@@ -14,7 +14,6 @@ export type LambdaCapture = Capture & {
 };
 
 export const capture = {
-  // TODO #499 Review 'tracesSampleRate' based on the load on our app and Sentry's quotas
   /**
    * Initializes Sentry.
    * Requires the ENV_TYPE env var to be set or it breaks.
@@ -22,12 +21,13 @@ export const capture = {
    *
    * @param tracesSampleRate Sample rate to determine trace sampling.
    */
-  init: (tracesSampleRate = 0.1): void => {
+  init: (tracesSampleRate = 0.01): void => {
     Sentry.init({
       dsn: sentryDsn,
       enabled: sentryDsn != null,
       environment: getEnvType(),
-      tracesSampleRate,
+      sampleRate: 1.0, // error sample rate
+      tracesSampleRate, // transaction sample rate
     });
   },
 
@@ -48,8 +48,7 @@ export const capture = {
    * @param captureContext — Additional scope data to apply to exception event.
    * @returns — The generated eventId.
    */
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  error: (error: any, captureContext?: Partial<ScopeContext>): string => {
+  error: (error: unknown, captureContext?: Partial<ScopeContext>): string => {
     const extra = captureContext ? stringifyExtra(captureContext) : {};
     return Sentry.captureException(error, {
       ...captureContext,

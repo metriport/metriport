@@ -1,15 +1,15 @@
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import fs from "fs";
 
-// get xml file from this folder and bundle to html
+const bundleFilePath = "";
 
-const bundle = fs.readFileSync("input.json", "utf8");
+const bundle = fs.readFileSync(bundleFilePath, "utf8");
 const bundleParsed = JSON.parse(bundle);
 
 // FHIR Bundle
-const html = bundleToHtml(bundleParsed);
+const html = bundleToHtml(bundleParsed, undefined, false);
 
 // Response from FHIR Converter
-// const html = bundleToHtml(bundleParsed.fhirResource);
+// const html = bundleToHtml(bundleParsed.fhirResource, undefined, false);
 
-fs.writeFileSync("output.html", html);
+fs.writeFileSync("./runs/local-summary.html", html);

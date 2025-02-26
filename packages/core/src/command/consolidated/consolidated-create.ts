@@ -1,9 +1,11 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
+import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
+import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
@@ -45,9 +47,10 @@ export async function createConsolidatedFromConversions({
   const fhirPatient = patientToFhir(patient);
   const patientEntry = buildBundleEntry(fhirPatient);
 
-  const [conversions, docRefs] = await Promise.all([
+  const [conversions, docRefs, isAiBriefFeatureFlagEnabled] = await Promise.all([
     getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
+    isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
   log(`Got ${conversions.length} resources from conversions`);
 
@@ -59,8 +62,17 @@ export async function createConsolidatedFromConversions({
   );
 
   log(`Deduplicating consolidated bundle...`);
-  const deduped = deduplicate({ cxId, patientId, bundle: withDups });
+  const deduped = await deduplicate({ cxId, patientId, bundle: withDups });
   log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
+
+  log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
+
+  if (isAiBriefFeatureFlagEnabled) {
+    const binaryBundleEntry = await generateAiBriefBundleEntry(deduped, cxId, patientId, log);
+    if (binaryBundleEntry) {
+      deduped.entry?.push(binaryBundleEntry);
+    }
+  }
 
   const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
   const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);

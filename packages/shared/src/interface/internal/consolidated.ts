@@ -6,7 +6,6 @@ export const internalSendConsolidatedSchema = z.object({
   bundleFilename: z.string(),
   requestId: z.string(),
   conversionType: z.enum(consolidationConversionType).optional(),
-  generateAiBrief: z.boolean().optional(),
   resources: z.array(z.enum(resourceTypeForConsolidation)).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),

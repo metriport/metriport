@@ -13,9 +13,9 @@ import {
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
   createRef,
+  deduplicateAndTrackResource,
   extractDisplayFromConcept,
   fetchCodingCodeOrDisplayOrSystem,
-  fillL1L2Maps,
   getPerformedDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
@@ -67,8 +67,8 @@ export function groupSameProcedures(procedures: Procedure[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const l1ProceduresMap = new Map<string, string>();
-  const l2ProceduresMap = new Map<string, Procedure>();
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Procedure>();
 
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
@@ -133,37 +133,37 @@ export function groupSameProcedures(procedures: Procedure[]): {
       danglingReferences.add(createRef(procedure));
       continue;
     }
-    const getterKeys: string[] = [];
-    const setterKeys: string[] = [];
+    const identifierKeys: string[] = [];
+    const matchCandidateKeys: string[] = [];
 
     if (datetime) {
       // keys that match a code + date together
-      setterKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
-      getterKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
+      identifierKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
+      matchCandidateKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
 
       // flagging the procedure to indicate having a date
-      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
 
       // can dedup with a procedure that has no date, as long as an identifier matches
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
     } else {
       // flagging the procedure to indicate not having a date
-      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
 
       // can dedup with a procedure that does or does not have a date
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
     }
 
-    if (setterKeys.length > 0) {
-      fillL1L2Maps({
-        map1: l1ProceduresMap,
-        map2: l2ProceduresMap,
-        setterKeys,
-        getterKeys,
-        targetResource: procedure,
+    if (identifierKeys.length > 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        identifierKeys,
+        matchCandidateKeys,
+        incomingResource: procedure,
         refReplacementMap,
-        applySpecialModifications: removeCodesAndAssignStatus,
+        customMergeLogic: removeCodesAndAssignStatus,
       });
     } else {
       danglingReferences.add(createRef(procedure));
@@ -171,7 +171,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   }
 
   return {
-    proceduresMap: l2ProceduresMap,
+    proceduresMap: dedupedResourcesMap,
     refReplacementMap,
     danglingReferences,
   };

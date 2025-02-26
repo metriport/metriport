@@ -1,10 +1,10 @@
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
+import { out } from "@metriport/core/util/log";
+import { errorToString, sleep } from "@metriport/shared";
 import { chunk, groupBy } from "lodash";
 import { getErrorMessage } from "../../errors";
 import { UserData } from "../../mappings/garmin";
 import { Settings } from "../../models/settings";
-import { errorToString } from "../../shared/log";
-import { Util } from "../../shared/util";
 import { getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
@@ -17,7 +17,7 @@ import {
 import { processRequest } from "./webhook";
 import { buildWebhookRequestData } from "./webhook-request";
 
-const log = Util.log(`Garmin Webhook`);
+const { log } = out(`Garmin Webhook`);
 
 /**
  * Does the bulk of processing webhook incoming data, including storing and sending
@@ -134,7 +134,7 @@ const processOneCustomer = async (
     // send it to the customer and update the request status
     const success = await processRequest(webhookRequestData, settings);
     // give it some time to prevent flooding the customer
-    if (success) await Util.sleep(Math.random() * 200);
+    if (success) await sleep(Math.random() * 200);
   }
   return true;
 };

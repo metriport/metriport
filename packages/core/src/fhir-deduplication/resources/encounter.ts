@@ -4,7 +4,7 @@ import {
   combineResources,
   createKeysFromObjectArray,
   createRef,
-  fillL1L2Maps,
+  deduplicateAndTrackResource,
   getDateFromResource,
   pickMostDescriptiveStatus,
 } from "../shared";
@@ -57,8 +57,8 @@ export function groupSameEncounters(encounters: Encounter[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const l1EncountersMap = new Map<string, string>();
-  const l2EncountersMap = new Map<string, Encounter>();
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Encounter>();
 
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
@@ -68,8 +68,8 @@ export function groupSameEncounters(encounters: Encounter[]): {
 
     const practitionerRefsSet = new Set<string>();
 
-    const getterKeys: string[] = [];
-    const setterKeys: string[] = [];
+    const identifierKeys: string[] = [];
+    const matchCandidateKeys: string[] = [];
 
     encounter.participant?.forEach(participant => {
       const ref = participant.individual?.reference;
@@ -85,25 +85,25 @@ export function groupSameEncounters(encounters: Encounter[]): {
 
     if (datetime && practitionerRefs.length > 0) {
       const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
-      setterKeys.push(...practitionerAndDateKeys);
-      getterKeys.push(...practitionerAndDateKeys);
+      identifierKeys.push(...practitionerAndDateKeys);
+      matchCandidateKeys.push(...practitionerAndDateKeys);
     }
 
     if (datetime && practitionerRefs.length === 0) {
       const dateKey = JSON.stringify({ datetime });
-      setterKeys.push(dateKey);
-      getterKeys.push(dateKey);
+      identifierKeys.push(dateKey);
+      matchCandidateKeys.push(dateKey);
     }
 
-    if (setterKeys.length > 0) {
-      fillL1L2Maps({
-        map1: l1EncountersMap,
-        map2: l2EncountersMap,
-        setterKeys,
-        getterKeys,
-        targetResource: encounter,
+    if (identifierKeys.length > 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        identifierKeys,
+        matchCandidateKeys,
+        incomingResource: encounter,
         refReplacementMap,
-        applySpecialModifications: assignMostDescriptiveStatus,
+        customMergeLogic: assignMostDescriptiveStatus,
       });
     } else {
       danglingReferences.add(createRef(encounter));
@@ -111,7 +111,7 @@ export function groupSameEncounters(encounters: Encounter[]): {
   }
 
   return {
-    encountersMap: l2EncountersMap,
+    encountersMap: dedupedResourcesMap,
     refReplacementMap,
     danglingReferences,
   };

@@ -96,12 +96,14 @@ export function createAPIService({
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
   patientImportLambda,
+  patientImportBucket,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
   fhirToBundleLambda,
   fhirToMedicalRecordLambda,
+  fhirToMedicalRecordLambda2,
   fhirToCdaConverterLambda,
   rateLimitTable,
   searchIngestionQueue,
@@ -129,12 +131,14 @@ export function createAPIService({
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
   patientImportLambda: ILambda;
+  patientImportBucket: s3.IBucket;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
+  fhirToMedicalRecordLambda2: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
   searchIngestionQueue: IQueue;
@@ -252,10 +256,14 @@ export function createAPIService({
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
+          }),
+          ...(fhirToMedicalRecordLambda2 && {
+            FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME: fhirToMedicalRecordLambda2.functionName,
           }),
           ...(fhirToCdaConverterLambda && {
             FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
@@ -278,6 +286,9 @@ export function createAPIService({
           ...(props.config.carequality?.envVars?.CQ_URLS_TO_EXCLUDE && {
             CQ_URLS_TO_EXCLUDE: props.config.carequality.envVars.CQ_URLS_TO_EXCLUDE,
           }),
+          ...(props.config.carequality?.envVars?.CQ_ADDITIONAL_ORGS && {
+            CQ_ADDITIONAL_ORGS: JSON.stringify(props.config.carequality.envVars.CQ_ADDITIONAL_ORGS),
+          }),
           ...(props.config.locationService && {
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
@@ -298,9 +309,6 @@ export function createAPIService({
           }),
           ...(props.config.ehrIntegration && {
             EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
-            EHR_ATHENA_CLIENT_KEY_ARN: props.config.ehrIntegration.athenaHealth.athenaClientKeyArn,
-            EHR_ATHENA_CLIENT_SECRET_ARN:
-              props.config.ehrIntegration.athenaHealth.athenaClientSecretArn,
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
           }),
           ...(!isSandbox(props.config) && {
@@ -368,21 +376,6 @@ export function createAPIService({
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
-  // Access to EHR secrets
-  if (props.config.ehrIntegration) {
-    const athenaClientKey = secret.Secret.fromSecretCompleteArn(
-      stack,
-      "EhrAthenaClientKeySecret",
-      props.config.ehrIntegration.athenaHealth.athenaClientKeyArn
-    );
-    athenaClientKey.grantRead(fargateService.taskDefinition.taskRole);
-    const athenaClientSecret = secret.Secret.fromSecretCompleteArn(
-      stack,
-      "EhrAthenaClientSecretSecret",
-      props.config.ehrIntegration.athenaHealth.athenaClientSecretArn
-    );
-    athenaClientSecret.grantRead(fargateService.taskDefinition.taskRole);
-  }
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
@@ -397,6 +390,7 @@ export function createAPIService({
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for buckets
+  patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   if (ehrResponsesBucket) {
@@ -405,7 +399,9 @@ export function createAPIService({
 
   if (fhirToMedicalRecordLambda) {
     fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-    cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
+  }
+  if (fhirToMedicalRecordLambda2) {
+    fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
   }
 
   if (cookieStore) {

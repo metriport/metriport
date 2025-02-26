@@ -1,4 +1,5 @@
 import { DiagnosticReport } from "@medplum/fhirtypes";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
@@ -92,8 +93,10 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
 
   for (const diagReport of diagReports) {
     const datetime = getDateFromResource(diagReport, "datetime");
-    const isPresentedFormPresent = diagReport.presentedForm?.length;
-    const isResultPresent = diagReport.result?.length;
+    const isPresentedFormPresent = diagReport.presentedForm
+      ? diagReport.presentedForm?.length > 0
+      : false;
+    const isResultPresent = diagReport.result ? diagReport.result?.length > 0 : false;
 
     // If a diagnostic report does not contain any results or doctor's notes, it is useless and can be removed
     if (!isPresentedFormPresent && !isResultPresent) {
@@ -108,28 +111,39 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
 
     diagReport.performer?.forEach(perf => {
       const ref = perf.reference;
-      if (ref) {
-        if (ref.includes("Practitioner")) {
-          practitionerRefsSet.add(ref);
-          return;
-        }
+      if (ref && ref.includes("Practitioner")) {
+        practitionerRefsSet.add(ref);
+        return;
       }
     });
 
     const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
-    if (datetime && practitionerRefs.length > 0) {
-      const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
-      setterKeys.push(...practitionerAndDateKeys);
-      getterKeys.push(...practitionerAndDateKeys);
+
+    if (isResultPresent) {
+      const resultUuid = createUuidFromText(JSON.stringify(diagReport.result));
+      const key = JSON.stringify({ resultUuid });
+      setterKeys.push(key);
+      getterKeys.push(key);
     }
 
-    if (datetime && practitionerRefs.length === 0) {
-      const dateKey = JSON.stringify({ datetime });
-      setterKeys.push(dateKey);
-      getterKeys.push(dateKey);
+    if (isPresentedFormPresent) {
+      const presentedFormUuid = createUuidFromText(JSON.stringify(diagReport.presentedForm));
+      const key = JSON.stringify({ presentedFormUuid });
+      setterKeys.push(key);
+      getterKeys.push(key);
     }
 
-    if (!datetime) {
+    if (datetime) {
+      if (practitionerRefs.length > 0) {
+        const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
+        setterKeys.push(...practitionerAndDateKeys);
+        getterKeys.push(...practitionerAndDateKeys);
+      } else {
+        const dateKey = JSON.stringify({ datetime });
+        setterKeys.push(dateKey);
+        getterKeys.push(dateKey);
+      }
+    } else {
       const idKey = JSON.stringify({ id: diagReport.id });
       setterKeys.push(idKey);
       getterKeys.push(idKey);

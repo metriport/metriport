@@ -79,18 +79,16 @@ export class Config {
   static getCQOrgPrivateKey(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
   }
-
   static getCQOrgPrivateKeyPassword(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
   }
-
   static getCQOrgCertificate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
-
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }
+
   static getCqTrustBundleBucketName(): string {
     return getEnvVarOrFail("CQ_TRUST_BUNDLE_BUCKET_NAME");
   }
@@ -143,7 +141,22 @@ export class Config {
     return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
   }
 
-  static getPatientImportBucket(): string | undefined {
-    return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
+  static getPatientImportBucket(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_BUCKET_NAME");
+  }
+  // TODO 2330 We should prob remove this as the cloud implementation of the parse step
+  // should only be triggered by S3, not the API.
+  static getPatientImportLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
+  }
+  static getPatientImportCreateQueueUrl(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_CREATE_QUEUE_URL");
+  }
+  static getPatientImportQueryQueueUrl(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_QUERY_QUEUE_URL");
+  }
+
+  static getTermServerUrl(): string | undefined {
+    return getEnvVar("TERM_SERVER_URL");
   }
 }

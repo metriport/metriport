@@ -43,7 +43,6 @@ jobs:
               - "packages/ihe-gateway-sdk/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
-              - "packages/react-native-sdk/**"
               - "packages/shared/**"
               - "packages/utils/**"
 

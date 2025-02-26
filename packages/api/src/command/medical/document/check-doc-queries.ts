@@ -2,13 +2,13 @@ import { DocumentQueryStatus, Progress, ProgressType } from "@metriport/core/dom
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { capture } from "../../../shared/notifications";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";
@@ -117,21 +117,20 @@ export async function updateDocQueryStatus(patients: PatientsWithValidationResul
 async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: [
   string,
   GroupedValidationResult
-]) {
-  async function updatePatient() {
+]): Promise<void> {
+  async function updatePatient(): Promise<Patient | undefined> {
+    const patientFilter = { id: patientId, cxId };
     return executeOnDBTx(PatientModel.prototype, async transaction => {
-      const patientFilter = {
-        id: patientId,
-        cxId: cxId,
-      };
       const patient = await getPatientOrFail({
         ...patientFilter,
+        lock: true,
         transaction,
       });
+
       const docProgress = patient.data.documentQueryProgress;
       if (!docProgress) {
-        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
-        return;
+        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id}`);
+        return undefined;
       }
       if (whatToUpdate.convert) {
         const convert = docProgress.convert;
@@ -153,17 +152,17 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
             }
           : undefined;
       }
+
       const updatedPatient = {
-        ...patient.dataValues,
+        ...patient,
         data: {
           ...patient.data,
           documentQueryProgress: docProgress,
         },
       };
-      await PatientModel.update(updatedPatient, {
-        where: patientFilter,
-        transaction,
-      });
+
+      await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
       return updatedPatient;
     });
   }

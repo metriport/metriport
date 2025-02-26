@@ -1,0 +1,50 @@
+---
+title: "HIE Opt-Out"
+description: "Update a patient's HIE (Health Information Exchange) opt-out status"
+api: "PUT /medical/v1/patient/:id/hie-opt-out"
+---
+
+The HIE opt-out endpoint allows you to control whether a patient participates in data sharing and pulling through health information exchanges. When a patient is opted out, they will not participate in data exchange through the networks.
+
+## Query Params
+
+<ParamField query="hieOptOut" type="boolean" required>
+  Set to `true` to opt the patient out of HIE data sharing, or `false` to opt them in
+</ParamField>
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the patient whose HIE opt-out status should be updated
+</ParamField>
+
+### Response
+
+Returns a JSON object with the following properties:
+
+<ResponseField name="id" type="string">
+  The patient's ID
+</ResponseField>
+
+<ResponseField name="hieOptOut" type="boolean">
+  The patient's current opt-out status. `true` indicates the patient is opted out of HIE data
+  sharing
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  A human-readable message confirming the update
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patientId = "018a80c4-292a-7486-a1234-9uiu76yhe234";
+const hieOptOut = true;
+const { hieOptOut, message } = await metriport.updatePatientHieOptOut(patientId, hieOptOut);
+```
+
+</ResponseExample>

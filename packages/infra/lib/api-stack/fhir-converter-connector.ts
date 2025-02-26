@@ -7,7 +7,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { getConfig, METRICS_NAMESPACE } from "../shared/config";
+import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
@@ -18,6 +18,13 @@ export type FHIRConverterConnector = {
   dlq: IQueue;
   bucket: s3.IBucket;
 };
+
+/**
+ * Determines the ratio of lambdas to ECS cores. We want this lower than 1 to minimize sending more requests
+ * than the FHIR Converter can process in parallel, which would mean using it's worker thread's internal queue.
+ * See more here: https://metriport.slack.com/archives/C04DBBJSKGB/p1739719790818809?thread_ts=1739665734.719219&cid=C04DBBJSKGB
+ */
+const multiplier = 0.8;
 
 function settings() {
   const {
@@ -32,7 +39,7 @@ function settings() {
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: fhirConverterCPUAmount * fhirConverterTaskCountMin,
+    maxConcurrency: Math.ceil(fhirConverterCPUAmount * fhirConverterTaskCountMin * multiplier),
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
     // How long will it take before Axios returns a timeout error - should be less than the lambda timeout
@@ -102,8 +109,10 @@ export function createLambda({
   fhirConverterBucket,
   medicalDocumentsBucket,
   fhirServerUrl,
+  termServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
+  appConfigEnvVars,
 }: {
   lambdaLayers: LambdaLayers;
   envType: EnvType;
@@ -114,8 +123,13 @@ export function createLambda({
   fhirConverterBucket: s3.IBucket;
   medicalDocumentsBucket: s3.IBucket;
   fhirServerUrl: string;
+  termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
+  appConfigEnvVars: {
+    appId: string;
+    configId: string;
+  };
 }): Lambda {
   const config = getConfig();
   const {
@@ -136,15 +150,17 @@ export function createLambda({
     memory: lambdaMemory,
     envType,
     envVars: {
-      METRICS_NAMESPACE,
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
       FHIR_SERVER_URL: fhirServerUrl,
+      ...(termServerUrl && { TERM_SERVER_URL: termServerUrl }),
       MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
+      APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+      APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,

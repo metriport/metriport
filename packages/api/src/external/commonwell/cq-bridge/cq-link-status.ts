@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep } from "lodash";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientModelOrFail } from "../../../command/medical/patient/get-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getLinkStatusCQ } from "../patient";
@@ -47,7 +47,7 @@ export const setCQLinkStatus = async ({
 }): Promise<{ patient: Patient; updated: boolean }> => {
   const { log } = out(`setCQLinkStatus - patient ${patientId}`);
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const originalPatient = await getPatientOrFail({
+    const patient = await getPatientModelOrFail({
       id: patientId,
       cxId,
       lock: true,
@@ -55,13 +55,13 @@ export const setCQLinkStatus = async ({
     });
 
     // Important so we don't trigger WH notif if the CQ link was already done
-    const currentCQLinkStatus = getLinkStatusCQ(originalPatient.data.externalData);
+    const currentCQLinkStatus = getLinkStatusCQ(patient.dataValues.data.externalData);
     if (currentCQLinkStatus === cqLinkStatus) {
       log(`Patient already has CQ link status ${cqLinkStatus}, skipping update...`);
-      return { patient: originalPatient, updated: false };
+      return { patient: patient.dataValues, updated: false };
     }
 
-    const updatedData = cloneDeep(originalPatient.data);
+    const updatedData = cloneDeep(patient.dataValues.data);
     const cwData = {
       ...updatedData.externalData?.COMMONWELL,
       cqLinkStatus,
@@ -72,8 +72,8 @@ export const setCQLinkStatus = async ({
       COMMONWELL: cwData,
     };
 
-    const updatedPatient = await originalPatient.update({ data: updatedData }, { transaction });
+    const updatedPatient = await patient.update({ data: updatedData }, { transaction });
 
-    return { patient: updatedPatient, updated: true };
+    return { patient: updatedPatient.dataValues, updated: true };
   });
 };

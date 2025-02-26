@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "bin": {},
   "scripts": {
-    "preinstall": "npm i -g rimraf",
-    "prepare": "husky install",
+    "prepare-dev": "is-ci || husky install",
+    "preinstall": "npm i -g rimraf@5.0.10 is-ci@3.0.1 --no-fund && npm run prepare-dev",
+    "preci": "npm run preinstall",
+    "preinstall-deps": "npm run preci",
     "init": "npm i && SCRIPT='i' npm run lambdas:no-run",
     "clean": "npm run clean --workspaces --if-present && SCRIPT='clean' npm run lambdas",
     "deepclean": "npm run deepclean --workspaces --if-present && echo 'rimraf node_modules' && rimraf node_modules && SCRIPT='deepclean' npm run lambdas",
@@ -13,7 +15,7 @@
     "prep-deploy-staging": "npm run install-deps && npm run build:staging && npm run test && npm run prep-lambdas",
     "package": "npm run prep-deploy",
     "install-deps": "npm ci --ignore-scripts --no-fund && SCRIPT='ci --ignore-scripts --no-fund' npm run lambdas:no-run",
-    "build": "npm run build --workspaces && SCRIPT='build' npm run lambdas",
+    "build": "if npm run build --workspaces && SCRIPT='build' npm run lambdas; then echo '\n\\033[1;32mBuild successful\\033[0m'; else echo '\n\\033[1;31m>>> Build failed <<<\\033[0m' && exit 1; fi",
     "build:cloud": "npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
     "build:staging": "ENV_TYPE='staging' npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
     "typecheck": "npm run typecheck --workspaces --if-present && SCRIPT='typecheck' npm run lambdas",
@@ -45,7 +47,6 @@
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
     "packages/carequality-cert-runner",
-    "packages/react-native-sdk",
     "packages/api",
     "packages/infra",
     "packages/utils",
@@ -77,6 +78,10 @@
     "husky": "^8.0.3",
     "lerna": "^7.4.2",
     "lint-staged": "^13.1.0",
+    "mintlify": "^4.0.307",
     "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5"
   }
 }

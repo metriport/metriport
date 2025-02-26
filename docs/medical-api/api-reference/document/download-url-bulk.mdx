@@ -3,22 +3,25 @@ title: "Start Bulk Get Document URL"
 description: "Triggers a process to generate a list of download URLs for all of the patient's documents."
 api: "POST /medical/v1/document/download-url/bulk"
 ---
+
 When executed, this endpoint triggers a process to generate all download URLs for a patient's documents.
 This is an asynchronous process, and the status is returned in the response to the original request.
 
 Initially, the status will be `processing`, and when the process is finished, the status will be updated to
 `completed` or `failed`.
 
-Once completed, a webhook request will be sent [your configured URL](/home/api-reference/settings/post-settings)
+Once completed, a webhook request will be sent [your configured URL](/medical-api/api-reference/settings/post-settings)
 containing the document download URLs. The URL will be valid for 10 minutes after which it will expire.
 
-Webhook message type - see [the respective section on the webhooks page](/medical-api/more-info/webhooks#bulk-downloadable-url-generation)
+Webhook message type - see [the respective section on the webhooks page](/medical-api/handling-data/webhooks#bulk-downloadable-url-generation)
 for more details:
 
-- `medical.document-bulk-download`: list of download urls for a patient's documents.
+- `medical.document-bulk-download-urls`: list of download urls for a patient's documents.
 
 <Warning>
-  If you trigger this endpoint again while the process is still running, you will get a response that reflects the current progress. Essentially, only a single bulk URL generation process will be running for a patient at any given time.
+  If you trigger this endpoint again while the process is still running, you will get a response
+  that reflects the current progress. Essentially, only a single bulk URL generation process will be
+  running for a patient at any given time.
 </Warning>
 
 ## Query Params
@@ -31,21 +34,19 @@ for more details:
 
 <Snippet file="webhook-request-metadata.mdx" />
 
-
 <Snippet file="webhook-metadata-post-example.mdx" />
-
 
 ## Response
 
 <ResponseField name="status" type="string" required>
-      The status of the URL generation process - can be `processing`, `completed`, or `failed`.
+  The status of the URL generation process - can be `processing`, `completed`, or `failed`.
 </ResponseField>
 <Snippet file="request-id.mdx" />
 
 ```json
 {
-    "status": "processing",
-    "requestId": "018c1e9d-dfce-70cb-8c0e-edfbbd2a7f5f"
+  "status": "processing",
+  "requestId": "018c1e9d-dfce-70cb-8c0e-edfbbd2a7f5f"
 }
 ```
 
@@ -67,3 +68,4 @@ const status = await metriport.startBulkGetDocumentUrl(
 
 ```
 </ResponseExample>
+```

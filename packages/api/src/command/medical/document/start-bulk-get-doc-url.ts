@@ -1,17 +1,19 @@
 import {
   BulkGetDocumentsUrlProgress,
-  isBulkGetDocUrlProcessing,
   BulkGetDocUrlStatus,
+  isBulkGetDocUrlProcessing,
 } from "@metriport/core/domain/bulk-get-document-url";
-import { Util } from "../../../shared/util";
-import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-progress";
 import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document-signing/document-bulk-signer";
+import { out } from "@metriport/core/util";
+import { capture } from "@metriport/core/util/notifications";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { makeDocumentBulkSigner } from "../../../external/aws/document-bulk-signer-factory";
-import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
-import { capture } from "../../../shared/notifications";
+import {
+  appendBulkGetDocUrlProgress,
+  storeBulkGetDocumentUrlQueryInit,
+} from "../patient/bulk-get-doc-url-progress";
+import { getPatientOrFail } from "../patient/get-patient";
 
 /**
  * The function `startBulkGetDocumentUrls` triggers the bulk signing process lambda for a patient's documents and
@@ -25,7 +27,7 @@ export const startBulkGetDocumentUrls = async (
   patientId: string,
   cxDownloadRequestMetadata: unknown
 ): Promise<BulkGetDocumentsUrlProgress> => {
-  const { log } = Util.out(`startBulkGetDocumentUrls - M patient ${patientId}`);
+  const { log } = out(`startBulkGetDocumentUrls - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;

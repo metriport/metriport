@@ -1,15 +1,15 @@
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
-import { PatientModel } from "../../../models/medical/patient";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { InternalPatientDTO, internalDtoFromModel } from "../../../routes/medical/dtos/patientDTO";
-import { countResources } from "../../../external/fhir/patient/count-resources";
-import { Config } from "../../../shared/config";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { countResources } from "../../../external/fhir/patient/count-resources";
+import { InternalPatientDTO, internalDtoFromModel } from "../../../routes/medical/dtos/patientDTO";
+import { Config } from "../../../shared/config";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -38,7 +38,7 @@ export async function getCoverageAssessments({
   patients,
 }: {
   cxId: string;
-  patients: PatientModel[];
+  patients: Patient[];
 }): Promise<PatientWithCoverageAssessment[]> {
   const { log } = out(`getCoverageAssessments - cxId ${cxId}`);
   const patientsWithAssessment: PatientWithCoverageAssessment[] = [];
@@ -52,7 +52,7 @@ export async function getCoverageAssessments({
     log,
   }: {
     cxId: string;
-    patient: PatientModel;
+    patient: Patient;
     patientsWithAssessment: PatientWithCoverageAssessment[];
     errors: string[];
     log: typeof console.log;
@@ -100,7 +100,7 @@ async function getCoverageAssessment({
   log,
 }: {
   cxId: string;
-  patient: PatientModel;
+  patient: Patient;
   log: typeof console.log;
 }): Promise<CoverageAssessment> {
   const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "pdf");

@@ -63,6 +63,8 @@ export const filtersSchema = z.record(z.string(), z.string().or(z.boolean().null
 
 export const consolidatedWebhookPatientSchema = z.object({
   patientId: z.string(),
+  externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
   status: z.enum(["completed", "failed"]),
   bundle: z.custom<SearchSetBundle | undefined>(),
   filters: filtersSchema.nullish(),
@@ -75,23 +77,77 @@ export const consolidatedWebhookRequestSchema = z.object({
 });
 export type ConsolidatedWebhookRequest = z.infer<typeof consolidatedWebhookRequestSchema>;
 
-// TODO Implement
+const documentsSchema = z.object({
+  id: z.string(),
+  fileName: z.string(),
+  description: z.string().optional(),
+  status: z.string().optional(),
+  indexed: z.string().optional(), // ISO-8601
+  mimeType: z.string().optional(),
+  size: z.number().optional(), // bytes
+  type: z
+    .object({
+      coding: z
+        .array(
+          z.object({
+            system: z.string().optional().nullable(),
+            code: z.string().optional().nullable(),
+            display: z.string().optional().nullable(),
+          })
+        )
+        .optional(),
+      text: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const documentDownloadWebhookPatientSchema = z.object({
+  patientId: z.string(),
+  externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
+  status: z.enum(["completed", "failed"]),
+  documents: z.array(documentsSchema),
+});
+export type DocumentDownloadWebhookPatient = z.infer<typeof documentDownloadWebhookPatientSchema>;
+
 export const documentDownloadWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(docDownloadWebhookTypeSchema),
+  patients: documentDownloadWebhookPatientSchema.array(),
 });
 export type DocumentDownloadWebhookRequest = z.infer<typeof documentDownloadWebhookRequestSchema>;
 
-// TODO Implement
+export const documentConversionWebhookPatientSchema = z.object({
+  patientId: z.string(),
+  externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
+  status: z.enum(["completed", "failed"]),
+});
+export type DocumentConversionWebhookPatient = z.infer<
+  typeof documentConversionWebhookPatientSchema
+>;
+
 export const documentConversionWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(docConversionWebhookTypeSchema),
+  patients: documentConversionWebhookPatientSchema.array(),
 });
 export type DocumentConversionWebhookRequest = z.infer<
   typeof documentConversionWebhookRequestSchema
 >;
 
-// TODO Implement
+export const documentBulkDownloadWebhookPatientSchema = z.object({
+  patientId: z.string(),
+  externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
+  status: z.enum(["completed", "failed"]),
+  documents: z.array(documentsSchema.extend({ url: z.string() })),
+});
+export type DocumentBulkDownloadWebhookPatient = z.infer<
+  typeof documentBulkDownloadWebhookPatientSchema
+>;
+
 export const documentBulkDownloadWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(docBulkDownloadWebhookTypeSchema),
+  patients: z.array(documentBulkDownloadWebhookPatientSchema),
 });
 export type DocumentBulkDownloadWebhookRequest = z.infer<
   typeof documentBulkDownloadWebhookRequestSchema

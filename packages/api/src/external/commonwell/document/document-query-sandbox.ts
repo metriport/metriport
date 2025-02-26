@@ -3,11 +3,13 @@ import { conversionBundleSuffix } from "@metriport/core/command/consolidated/con
 import { createFilePath } from "@metriport/core/domain/filename";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { parseRawBundleForFhirServer } from "@metriport/core/external/fhir/parse-bundle";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { sleep } from "@metriport/shared";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -17,10 +19,8 @@ import { recreateConsolidated } from "../../../command/medical/patient/consolida
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
-import { Util } from "../../../shared/util";
 import { ContentMimeType, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
-import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { sandboxSleepTime } from "./shared";
 
@@ -45,11 +45,11 @@ export async function sandboxGetDocRefsAndUpsert({
   patient: Patient;
   requestId: string;
 }): Promise<void> {
-  const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
+  const { log } = out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
   const { id: patientId, cxId } = patient;
 
   // Mimic Prod by waiting for docs to download
-  await Util.sleep(Math.random() * sandboxSleepTime.asMilliseconds());
+  await sleep(Math.random() * sandboxSleepTime.asMilliseconds());
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {
@@ -85,7 +85,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
-  const existingFhirDocs = await getDocumentsFromFHIR({
+  const existingFhirDocs = await getDocuments({
     cxId,
     patientId,
   });

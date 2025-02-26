@@ -6,9 +6,9 @@ import {
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
   createRef,
+  deduplicateAndTrackResource,
   extractDisplayFromConcept,
   fetchCodingCodeOrDisplayOrSystem,
-  fillL1L2Maps,
   getDateFromResource,
   hasBlacklistedText,
   isUnknownCoding,
@@ -43,8 +43,8 @@ export function groupSameObservations(observations: Observation[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const l1ObservationsMap = new Map<string, string>();
-  const l2ObservationsMap = new Map<string, Observation>();
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Observation>();
 
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
@@ -55,8 +55,8 @@ export function groupSameObservations(observations: Observation[]): {
       continue;
     }
 
-    const getterKeys: string[] = [];
-    const setterKeys: string[] = [];
+    const identifierKeys: string[] = [];
+    const matchCandidateKeys: string[] = [];
 
     const { observation: newObservation, code } = filterOutUnknownCodings(observation);
 
@@ -83,14 +83,14 @@ export function groupSameObservations(observations: Observation[]): {
         k => `${k}, ${JSON.stringify({ value })}`
       );
 
-      setterKeys.push(...completeKeysWithValue);
-      getterKeys.push(...completeKeysWithValue);
+      identifierKeys.push(...completeKeysWithValue);
+      matchCandidateKeys.push(...completeKeysWithValue);
 
       const keysWithDateBit = createKeysFromObjectArrayAndBits(identifiers, [1]).map(
         k => `${k}, ${JSON.stringify({ value })}`
       );
       // flagging the observation to indicate having a date
-      setterKeys.push(...keysWithDateBit);
+      identifierKeys.push(...keysWithDateBit);
     }
 
     if (!date) {
@@ -99,27 +99,27 @@ export function groupSameObservations(observations: Observation[]): {
       );
 
       // flagging the observation to indicate not having a date
-      setterKeys.push(...identifierKeysWithDateBit);
+      identifierKeys.push(...identifierKeysWithDateBit);
 
       // with the getter keys with bit 0, it can dedup with other observations that don't have a date
-      getterKeys.push(...identifierKeysWithDateBit);
+      matchCandidateKeys.push(...identifierKeysWithDateBit);
       // with the getter keys with bit 1, it can dedup with other observations that have a date
-      getterKeys.push(
+      matchCandidateKeys.push(
         ...createKeysFromObjectArrayAndBits(identifiers, [1]).map(
           k => `${k}, ${JSON.stringify({ value })}`
         )
       );
     }
 
-    if (setterKeys.length > 0) {
-      fillL1L2Maps({
-        map1: l1ObservationsMap,
-        map2: l2ObservationsMap,
-        getterKeys,
-        setterKeys,
-        targetResource: observation,
+    if (identifierKeys.length > 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        matchCandidateKeys,
+        identifierKeys,
+        incomingResource: observation,
         refReplacementMap,
-        applySpecialModifications: postProcess,
+        customMergeLogic: postProcess,
       });
     } else {
       danglingReferences.add(createRef(observation));
@@ -128,7 +128,7 @@ export function groupSameObservations(observations: Observation[]): {
   }
 
   return {
-    observationsMap: l2ObservationsMap,
+    observationsMap: dedupedResourcesMap,
     refReplacementMap,
     danglingReferences,
   };

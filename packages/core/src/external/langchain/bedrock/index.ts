@@ -380,7 +380,7 @@ export class BedrockChat extends BaseBedrockChat {
 export {
   convertMessagesToPromptAnthropic,
   convertMessagesToPrompt,
-} from "./web.js";
+} from "./web";
 
 /**
  * @deprecated Use `BedrockChat` instead.

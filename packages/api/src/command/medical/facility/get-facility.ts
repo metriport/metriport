@@ -1,3 +1,5 @@
+import { BadRequestError } from "@metriport/shared";
+import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 
@@ -5,10 +7,7 @@ type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityM
 
 export async function getFacilities({ cxId, ids }: GetFacilitiesQuery): Promise<FacilityModel[]> {
   const facilities = await FacilityModel.findAll({
-    where: {
-      ...(ids ? { id: ids } : undefined),
-      cxId,
-    },
+    where: { ...(ids ? { id: ids } : undefined), cxId },
     order: [["id", "ASC"]],
   });
   return facilities;
@@ -27,7 +26,41 @@ export async function getFacilityOrFail({ cxId, id }: GetFacilityQuery): Promise
   return facility;
 }
 
-export async function getFaciltiyByOidOrFail(
+export async function getSingleFacilityOrFail(cxId: string): Promise<Facility> {
+  const facilities = await getFacilities({ cxId });
+  if (!facilities || facilities.length < 1) {
+    throw new NotFoundError(`Could not find facility`, undefined, { cxId });
+  }
+  if (facilities.length > 1) {
+    throw new BadRequestError(
+      `More than one facility found, please specify a facility ID`,
+      undefined,
+      { cxId }
+    );
+  }
+  return facilities[0];
+}
+
+/**
+ * Returns the facility for the given customer, if an ID is provided, or the single facility for the
+ * customer if no ID is provided.
+ *
+ * @param cxId - The customer ID.
+ * @param facilityId - The facility ID (optional).
+ * @returns the Facility
+ * @throws BadRequestError if no ID is provided and more than one facility is found for the customer.
+ */
+export async function getOptionalFacilityOrFail(
+  cxId: string,
+  facilityId: string | undefined
+): Promise<Facility> {
+  if (facilityId) {
+    return await getFacilityOrFail({ cxId, id: facilityId });
+  }
+  return await getSingleFacilityOrFail(cxId);
+}
+
+export async function getFacilityByOidOrFail(
   filter: GetFacilityQuery & { oid: string }
 ): Promise<FacilityModel> {
   const facility = await getFacilityOrFail(filter);

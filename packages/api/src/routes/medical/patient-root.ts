@@ -1,8 +1,10 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { PaginatedResponse, stringToBoolean } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import status from "http-status";
+import httpStatus from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import {
   getPatientOrFail,
@@ -10,17 +12,27 @@ import {
   getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
+import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import NotFoundError from "../../errors/not-found";
-import { PatientModel } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { isPaginated, paginated } from "../pagination";
-import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
+import {
+  asyncHandler,
+  getCxIdOrFail,
+  getFrom,
+  getFromQuery,
+  getFromQueryAsBoolean,
+  getFromQueryOrFail,
+} from "../util";
+import { PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
+
+dayjs.extend(duration);
 
 const router = Router();
 
@@ -49,10 +61,10 @@ router.post(
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
-      const numPatients = await PatientModel.count({ where: { cxId } });
+      const numPatients = await getPatientsCount({ cxId });
       const patientLimit = await getSandboxPatientLimitForCx(cxId);
       if (numPatients >= patientLimit) {
-        return res.status(status.BAD_REQUEST).json({
+        return res.status(httpStatus.BAD_REQUEST).json({
           message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
         });
       }
@@ -71,7 +83,7 @@ router.post(
       forceCarequality,
     });
 
-    return res.status(status.CREATED).json(dtoFromModel(patient));
+    return res.status(httpStatus.CREATED).json(dtoFromModel(patient));
   })
 );
 
@@ -86,7 +98,9 @@ router.post(
  * @param   req.query.fromItem    The minimum item to be included in the response, inclusive.
  * @param   req.query.toItem      The maximum item to be included in the response, inclusive.
  * @param   req.query.count       The number of items to be included in the response.
- * @return  The customer's patients associated with the given facility.
+ * @returns An object containing:
+ * - `patients` - A single page containing the patients corresponding to the given facility.
+ * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
   "/",
@@ -100,7 +114,7 @@ router.get(
     if (!isPaginated(req)) {
       const patients = await getPatients({ cxId, facilityId: facilityId, fullTextSearchFilters });
       const patientsData = patients.map(dtoFromModel);
-      return res.status(status.OK).json({ patients: patientsData });
+      return res.status(httpStatus.OK).json({ patients: patientsData });
     }
 
     const queryParams = {
@@ -119,7 +133,7 @@ router.get(
       meta,
       patients: items.map(dtoFromModel),
     };
-    return res.status(status.OK).json(response);
+    return res.status(httpStatus.OK).json(response);
   })
 );
 
@@ -145,9 +159,54 @@ router.post(
     if (patient) {
       // Authorization
       await getPatientOrFail({ cxId, id: patient.id });
-      return res.status(status.OK).json(dtoFromModel(patient));
+      return res.status(httpStatus.OK).json(dtoFromModel(patient));
     }
     throw new NotFoundError("Cannot find patient");
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/bulk
+ *
+ * Initiates a bulk patient create.
+ *
+ * @param req.query.facilityId The ID of the Facility the Patients should be associated with
+ *        (optional if there's only one facility for the customer, fails if not provided and
+ *        there's more than one facility for the customer).
+ * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
+ *        defaults to false).
+ * @returns an object containing the information about the bulk import job:s
+ * - `requestId` - the bulk import request ID
+ * - `facilityId` - the facility ID used to create the patients
+ * - `status` - the status of the bulk import job
+ * - `uploadUrl` - the URL to upload the CSV file
+ * - `params` - the parameters used to initiate the bulk patient create
+ */
+router.post(
+  "/bulk",
+  // TODO add this if/when we need to rate limit this endpoint
+  // checkRateLimit("..."),
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const facilityIdParam = getFromQuery("facilityId", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
+
+    const patientImportResponse = await createPatientImportJob({
+      cxId,
+      facilityId: facilityIdParam,
+      dryRun,
+    });
+
+    const { jobId, facilityId, status, uploadUrl, params } = patientImportResponse;
+    const respPayload: PatientImportDto = {
+      requestId: jobId,
+      facilityId,
+      status,
+      uploadUrl,
+      params,
+    };
+    return res.status(httpStatus.OK).json(respPayload);
   })
 );
 

@@ -1,121 +1,58 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Bundle, Resource } from "@medplum/fhirtypes";
-import {
-  createMRSummaryBriefFileName,
-  createMRSummaryFileName,
-} from "@metriport/core/domain/medical-record-summary";
-import { summarizeFilteredBundleWithAI } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
+import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
+import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
+import { generateAiBriefBundleEntry } from "@metriport/core/domain/ai-brief/generate";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
-import { S3Utils } from "@metriport/core/external/aws/s3";
-import { getEnvVarOrFail, MetriportError } from "@metriport/shared";
+import { out } from "@metriport/core/util/log";
 import fs from "fs";
-import { uuidv7 } from "../shared/uuid-v7";
 
 /**
  * Script to trigger MR Summary generation on a FHIR payload locally, with the AI Brief included in it.
  *
  * The summary is created in HTML format.
  *
- * The result is a file called `output.html` on the root of `packages/utils` - and optionally on S3
- * as well, if `storeMrSummaryAndBriefInS3` is not commented out.
+ * The result is a file called `output.html` on the root of `packages/utils`
  *
  * To run this script:
- * - Set the `patientId` const.
- * - If you don't want to store the output on S3, comment out the call to `storeMrSummaryAndBriefInS3()`.
- * - Populate a file named `input.json` on the root of `packages/utils` with the FHIR bundle/payload
- *   - the output of `GET /consolidated`).
+ * - Set the `patientId`, `cxId` consts.
+ * - Specify the path to the FHIR Bundle payload - the output of `GET /consolidated`).
  * - Make sure to set the env vars in addition the ones below this comment block:
  *   - BEDROCK_REGION
  *   - BEDROCK_VERSION
  *   - MR_BRIEF_MODEL_ID
  */
 
-const s3Client = new S3Utils(getEnvVarOrFail("AWS_REGION"));
-const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const cxId = getEnvVarOrFail("CX_ID");
+const sourceFilePath = "";
 
+const cxId = "";
 const patientId = "";
 // Update this to staging or local URL if you want to test the brief link
 const dashUrl = "http://dash.metriport.com";
 
 async function main() {
-  // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
-  const bundle = fs.readFileSync("input.json", "utf8");
-  const bundleParsed = JSON.parse(bundle);
-
-  const brief = await summarizeFilteredBundleWithAI(
-    bundleParsed as Bundle<Resource>,
-    cxId,
-    patientId
-  );
-  const briefId = uuidv7();
-
   if (!cxId || !patientId) throw new Error("cxId or patientId is missing");
-  const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
-  const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
+  const { log } = out(`MR with Brief Local - cx ${cxId}, pat ${patientId}`);
 
-  // Response from FHIR Converter
-  const html = bundleToHtml(
-    bundleParsed,
-    brief ? { content: brief, id: briefId, link: `${dashUrl}/feedback/${briefId}` } : undefined
-  );
-  await storeMrSummaryAndBriefInS3({
-    bucketName,
-    htmlFileName,
-    briefFileName,
-    html,
-    brief,
-  });
+  const rawBundle = fs.readFileSync(sourceFilePath, "utf8");
+  const bundle = JSON.parse(rawBundle);
 
+  const binaryBundleEntry = await generateAiBriefBundleEntry(bundle, cxId, patientId, log);
+  console.log("binaryBundleEntry", JSON.stringify(binaryBundleEntry));
+  console.log("bundle.leng bef", bundle.entry.length);
+  if (binaryBundleEntry) {
+    bundle.entry?.push(binaryBundleEntry);
+  }
+  console.log("bundle.leng aft", bundle.entry.length);
+
+  const aiBriefContent = getAiBriefContentFromBundle(bundle);
+  console.log("aiBriefContent", aiBriefContent);
+  const aiBrief = convertStringToBrief({ aiBrief: aiBriefContent, dashUrl });
+  console.log("aiBrief", aiBrief);
+
+  const html = bundleToHtml(bundle, aiBrief);
   fs.writeFileSync("output.html", html);
 }
 
 main();
-
-async function storeMrSummaryAndBriefInS3({
-  bucketName,
-  htmlFileName,
-  briefFileName,
-  html,
-  brief,
-}: {
-  bucketName: string;
-  htmlFileName: string;
-  briefFileName: string;
-  html: string;
-  brief: string | undefined;
-}): Promise<void> {
-  const promiseMrSummary = async () => {
-    return s3Client.uploadFile({
-      bucket: bucketName,
-      key: htmlFileName,
-      file: Buffer.from(html),
-      contentType: "application/html",
-    });
-  };
-
-  const promiseBriefSummary = async () => {
-    if (!brief) return;
-    return s3Client.uploadFile({
-      bucket: bucketName,
-      key: briefFileName,
-      file: Buffer.from(brief),
-      contentType: "text/plain",
-    });
-  };
-
-  const [mrResp, briefResp] = await Promise.allSettled([promiseMrSummary(), promiseBriefSummary()]);
-  if (mrResp.status === "rejected" || briefResp?.status === "rejected") {
-    const failed = [mrResp, briefResp].map(p => (p.status === "rejected" ? p.reason : []));
-    const message = "Failed to store MR Summary and/or Brief in S3";
-    const additionalInfo = { reason: failed.join("; "), bucketName, htmlFileName, briefFileName };
-    console.log(`${message}: ${JSON.stringify(additionalInfo)}`);
-    throw new MetriportError(message, null, additionalInfo);
-  }
-
-  const version = "VersionId" in mrResp.value ? (mrResp.value.VersionId as string) : undefined;
-  const res = { location: mrResp.value.Location, version };
-  console.log(`Stored MR Summary and Brief in S3: ${JSON.stringify(res)}`);
-}

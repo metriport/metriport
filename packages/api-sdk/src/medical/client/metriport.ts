@@ -32,10 +32,13 @@ import {
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
+import { NetworkEntry } from "../models/network-entry";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   GetConsolidatedQueryProgressResponse,
+  GetSingleConsolidatedQueryProgressResponse,
   PatientCreate,
+  PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
 } from "../models/patient";
@@ -46,6 +49,7 @@ const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
 const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
+const NETWORK_ENTRY_URL = `/network-entry`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
 const REQUEST_ID_HEADER_NAME = "x-metriport-request-id";
@@ -296,6 +300,42 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Returns the network entries supported by Metriport.
+   *
+   * @param filter Full text search filters, optional. If not provided, all network entries will be returned
+   *                (according to pagination settings).
+   *                See https://docs.metriport.com/medical-api/more-info/filters
+   * @param pagination Pagination settings, optional. If not provided, we paginate with a default page size of 100 items, and the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
+   * @returns An object containing:
+   * - `networkEntries` - The network entries in the current page.
+   * - `meta` - Pagination information, including how to get to the next page.
+   */
+  async listNetworkEntries({
+    filter,
+    pagination,
+  }: {
+    filter?: string | undefined;
+    pagination?: Pagination | undefined;
+  } = {}): Promise<PaginatedResponse<NetworkEntry, "networkEntries">> {
+    const resp = await this.api.get(`${NETWORK_ENTRY_URL}`, {
+      params: {
+        filter,
+        ...getPaginationParams(pagination),
+      },
+    });
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, networkEntries: [] };
+    return resp.data;
+  }
+
+  async listNetworkEntriesPage(
+    url: string
+  ): Promise<PaginatedResponse<NetworkEntry, "networkEntries">> {
+    const resp = await this.api.get(url);
+    return resp.data;
+  }
+
+  /**
    * Creates a new patient at Metriport and HIEs.
    *
    * @param data The data to be used to create a new patient.
@@ -368,6 +408,24 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
+  }
+
+  /**
+   * Updates a patient's HIE opt-out status.
+   *
+   * @param patientId The ID of the patient whose opt-out status should be updated
+   * @param hieOptOut Boolean indicating whether to opt the patient out (true) or in (false)
+   * @returns The updated opt-out status
+   */
+  async updatePatientHieOptOut(
+    patientId: string,
+    hieOptOut: boolean
+  ): Promise<PatientHieOptOutResponse> {
+    const resp = await this.api.put(`${PATIENT_URL}/${patientId}/hie-opt-out`, undefined, {
+      params: { hieOptOut },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
   }
 
   // TODO #870 remove this
@@ -453,6 +511,23 @@ export class MetriportMedicalApi {
   }
 
   /** ---------------------------------------------------------------------------
+   * Get the consolidated data query status for a given patient and requestId.
+   * The results to the query are sent through Webhook (see
+   * startConsolidatedQuery() and https://docs.metriport.com/medical-api/more-info/webhooks).
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @param requestId The ID of the request to get the status of.
+   * @return The single consolidated data query status.
+   */
+  async getSingleConsolidatedQueryStatus(
+    patientId: string,
+    requestId: string
+  ): Promise<GetSingleConsolidatedQueryProgressResponse> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query/${requestId}`);
+    return resp.data;
+  }
+
+  /** ---------------------------------------------------------------------------
    * Add patient data as FHIR resources. Those can later be queried with startConsolidatedQuery(),
    * and will be made available to HIEs.
    *
@@ -513,7 +588,9 @@ export class MetriportMedicalApi {
    *                See https://docs.metriport.com/medical-api/more-info/filters
    * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
    *                   See https://docs.metriport.com/medical-api/more-info/pagination
-   * @return The list of patients.
+   * @returns An object containing:
+   * - `patients` - A single page containing the patients corresponding to the given facility.
+   * - `meta` - Pagination information, including how to get to the next page.
    */
   async listPatients({
     facilityId,

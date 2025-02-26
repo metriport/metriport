@@ -7,11 +7,11 @@ import {
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { sleepRandom } from "@metriport/shared";
 import stringify from "json-stringify-safe";
 import { chunk, groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { Util } from "../../../shared/util";
 import { getCWAccessForPatient } from "./shared";
 
 const MAX_QUERIES_IN_PARALLEL = 10;
@@ -59,16 +59,14 @@ export type DuplicatedPersons = {
 /**
  * Checks for duplicated persons in CommonWell.
  */
-export async function findDuplicatedPersons(cxId?: string): Promise<DuplicatedPersons> {
+export async function findDuplicatedPersons(cxId: string): Promise<DuplicatedPersons> {
   const { log } = out(`findDuplicatedPersons`);
-  log(cxId ? `Querying patients of cxId ${cxId}...` : `Querying all patients...`);
+  log(`Querying patients of cxId ${cxId}...`);
 
   // TODO paginate this
   // Don't move this to a command as we shouldn't easily allow to search Patients for all cxs
   const patients = await PatientModel.findAll({
-    where: {
-      ...(cxId ? { cxId } : undefined),
-    },
+    where: { cxId },
   });
   const patientsByCustomer = groupBy(patients, "cxId");
 
@@ -215,9 +213,9 @@ const getLinkInfo = (person?: Person, links?: PatientLinkSearchResp) => ({
 });
 
 async function jitterInsideChunk(): Promise<void> {
-  return Util.sleepRandom(JITTER_DELAY_MAX_MS, JITTER_DELAY_MIN_PCT / 100);
+  return sleepRandom(JITTER_DELAY_MAX_MS, JITTER_DELAY_MIN_PCT / 100);
 }
 
 async function sleepBetweenChunks(): Promise<void> {
-  return Util.sleepRandom(CHUNK_DELAY_MAX_MS, CHUNK_DELAY_MIN_PCT / 100);
+  return sleepRandom(CHUNK_DELAY_MAX_MS, CHUNK_DELAY_MIN_PCT / 100);
 }

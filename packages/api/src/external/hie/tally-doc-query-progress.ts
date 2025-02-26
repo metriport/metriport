@@ -28,28 +28,24 @@ export type TallyDocQueryProgress = {
  * @returns
  */
 export async function tallyDocQueryProgress({
-  patient,
+  patient: { id, cxId },
   requestId,
   progress,
   type,
   source,
 }: TallyDocQueryProgress): Promise<Patient> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+  const patientFilter = { id, cxId };
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
     // Set the doc query progress for the chosen hie
-    const externalData = setHIETallyCount(existingPatient, progress, type, source);
+    const externalData = setHIETallyCount(patient, progress, type, source);
 
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+    const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
@@ -57,35 +53,32 @@ export async function tallyDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         requestId,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
 
   await processDocQueryProgressWebhook({
-    patient: result,
-    documentQueryProgress: result.data.documentQueryProgress,
+    patient,
+    documentQueryProgress: patient.data.documentQueryProgress,
     requestId,
     progressType: type,
   });
 
-  return result;
+  return patient;
 }
 
 export function setHIETallyCount(
-  patient: PatientModel,
+  patient: Patient,
   progress: DynamicProgress,
   type: ProgressType,
   source: MedicalDataSource

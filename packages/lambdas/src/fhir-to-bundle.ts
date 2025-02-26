@@ -12,7 +12,7 @@ import { getEnvOrFail } from "./shared/env";
 capture.init();
 
 // Set by us
-const apiURL = getEnvOrFail("API_URL");
+const apiUrl = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("BUCKET_NAME");
 
 export async function handler(
@@ -26,7 +26,7 @@ export async function handler(
       `Running with dateFrom: ${dateFrom}, dateTo: ${dateTo}, conversionType: ${conversionType}` +
         `, resources: ${resources}}`
     );
-    const conn = new ConsolidatedSnapshotConnectorLocal(bucketName, apiURL);
+    const conn = new ConsolidatedSnapshotConnectorLocal(bucketName, apiUrl);
     const result = await conn.execute(params);
     return result;
   } catch (error) {

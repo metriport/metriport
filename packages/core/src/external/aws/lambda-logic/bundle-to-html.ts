@@ -20,16 +20,19 @@ import {
   Resource,
   Task,
 } from "@medplum/fhirtypes";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { intersection, uniqWith } from "lodash";
-import { Brief } from "./bundle-to-brief";
+import { Brief } from "../../../command/ai-brief/brief";
 import {
+  buildEncounterSections,
+  createBrief,
+  createSection,
   EncounterSection,
+  formatDateForDisplay,
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
-  buildEncounterSections,
-  formatDateForDisplay,
 } from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
@@ -42,7 +45,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = true): string {
   const {
     patient,
     practitioners,
@@ -91,7 +94,11 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .logo-container {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
             justify-content: center;
             width: 100%;
           }
@@ -107,7 +114,11 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .header-tables {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
             flex: 1;
           }
 
@@ -155,14 +166,24 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .section-title {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
             align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
           .section-title a {
             text-decoration: none;
             color: black;
+          }
+
+          .section-title h3 {
+                white-space: nowrap;
           }
 
           .span_button {
@@ -178,13 +199,17 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #nav {
-            border: 1px solid;
-            border-radius: 5px;
-            padding: 20px;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+          }
+          table #nav {
+            padding: 10px;
             margin: 0;
             background-color: #f2f2f2;
-            display: flex;
-            justify-content: space-between;
           }
 
 
@@ -210,7 +235,11 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           #report .header {
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
           }
 
@@ -252,26 +281,58 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
             z-index: 1;
           }
 
+          #ai-brief {
+            margin-top: 20px;
+          }
+
           .brief-section-content {
             position: relative;
+          }
+
+          .brief-warning {
+            border: 2px solid #FFCC00;
+            background-color: #FFF8E1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+          }
+          .brief-warning-icon {
+            margin-right: 10px;
+          }
+          .brief-warning-contents {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+          }
+          .brief-warning-message {
+            margin-left: 37px;
+            margin-right: 10px;
+            -webkit-box-orient: vertical;
           }
 
         </style>
       </head>
 
       <body>
-        ${createMRHeader(patient)}
+        ${createMRHeader(patient, isLogoEnabled)}
         ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
           ${createMedicationSection(medications, medicationStatements)}
-          ${createDiagnosticReportsSection(
-            diagnosticReports,
-            practitioners,
-            aweVisits,
-            organizations
-          )}
+          ${
+            isLogoEnabled
+              ? createDiagnosticReportsSection(
+                  diagnosticReports,
+                  practitioners,
+                  aweVisits,
+                  organizations
+                )
+              : ""
+          }
           ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
@@ -422,12 +483,14 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   };
 }
 
-function createMRHeader(patient: Patient) {
+const metriportLogo = `<div class='logo-container'>
+        <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
+      </div>`;
+
+function createMRHeader(patient: Patient, isLogoEnabled: boolean) {
   return `
     <div id="mr-header">
-      <div class='logo-container'>
-        <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
-      </div>
+      ${isLogoEnabled ? metriportLogo : ""}
       <h1 class="title">
         Medical Record Summary (${formatDateForDisplay(new Date())})
       </h1>
@@ -456,67 +519,71 @@ function createMRHeader(patient: Patient) {
               </tbody>
             </table>
           </div>
-          <div>
-        </div>
         </div>
         <div class="header-table">
           <h4>Table of Contents</h4>
-          <ul id="nav">
-            <div class='half'>
-              <li>
-                <a href="#awe">Annual Wellness Exams</a>
-              </li>
-              <li>
-                <a href="#reports">Reports</a>
-              </li>
-              <li>
-                <a href="#medications">Medications</a>
-              </li>
-              <li>
-                <a href="#conditions">Conditions</a>
-              </li>
-              <li>
-                <a href="#allergies">Allergies</a>
-              </li>
-              <li>
-                <a href="#procedures"
-                  >Procedures</a
-                >
-              </li>
-              <li>
-                <a href="#social-history">Social History</a>
-              </li>
-              <li>
-                <a href="#vitals">Vitals</a>
-              </li>
-            </div>
-            <div class='half'>
-              <li>
-                <a href="#laboratory">Laboratory</a>
-              </li>
-              <li>
-                <a href="#other-observations">Other Observations</a>
-              </li>
-              <li>
-                <a href="#immunizations">Immunizations</a>
-              </li>
-              <li>
-                <a href="#family-member-history">Family Member History</a>
-              </li>
-              <li>
-                <a href="#related-persons">Related Persons</a>
-              </li>
-              <li>
-                <a href="#tasks">Tasks</a>
-              </li>
-              <li>
-                <a href="#coverage">Coverage</a>
-              </li>
-              <li>
-                <a href="#encounters">Encounters</a>
-              </li>
-            </div>
+          <table><tbody><tr><td>
+            <ul id="nav">
+              <div class='half'>
+                <li>
+                  <a href="#awe">Annual Wellness Exams</a>
+                </li>
+                ${
+                  isLogoEnabled
+                    ? `<li>
+                  <a href="#reports">Reports</a>
+                </li>`
+                    : ""
+                }
+                <li>
+                  <a href="#medications">Medications</a>
+                </li>
+                <li>
+                  <a href="#conditions">Conditions</a>
+                </li>
+                <li>
+                  <a href="#allergies">Allergies</a>
+                </li>
+                <li>
+                  <a href="#procedures"
+                    >Procedures</a
+                  >
+                </li>
+                <li>
+                  <a href="#social-history">Social History</a>
+                </li>
+                <li>
+                  <a href="#vitals">Vitals</a>
+                </li>
+              </div>
+              <div class='half'>
+                <li>
+                  <a href="#laboratory">Laboratory</a>
+                </li>
+                <li>
+                  <a href="#other-observations">Other Observations</a>
+                </li>
+                <li>
+                  <a href="#immunizations">Immunizations</a>
+                </li>
+                <li>
+                  <a href="#family-member-history">Family Member History</a>
+                </li>
+                <li>
+                  <a href="#related-persons">Related Persons</a>
+                </li>
+                <li>
+                  <a href="#tasks">Tasks</a>
+                </li>
+                <li>
+                  <a href="#coverage">Coverage</a>
+                </li>
+                <li>
+                  <a href="#encounters">Encounters</a>
+                </li>
+              </div>
             </ul>
+          </td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -534,35 +601,6 @@ function createHeaderTableRow(label: string, value: string) {
       </td>
     </tr>
   `;
-}
-
-export function createBrief(brief?: Brief): string {
-  if (!brief || !brief.content) return ``;
-  const { link, content } = brief;
-  const briefContents = `
-  <div class="brief-section-content">
-    <div class="beta-flag">BETA</div>
-    <table><tbody><tr><td>${content.replace(/\n/g, "<br/>")}</td></tr></tbody></table>
-    <div style="border: 2px solid #FFCC00; background-color: #FFF8E1; padding: 10px; border-radius: 5px; margin-top: 20px;">
-      <div style="display: flex; align-items: center;">
-        <div style="margin-right: 10px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C11.448 2 11 2.448 11 3V11C11 11.552 11.448 12 12 12C12.552 12 13 11.552 13 11V3C13 2.448 12.552 2 12 2ZM11 15C11 14.448 11.448 14 12 14C12.552 14 13 14.448 13 15V17C13 17.552 12.552 18 12 18C11.448 18 11 17.552 11 17V15Z" fill="#FFCC00"/>
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M22 20C22 21.1046 21.1046 22 20 22H4C2.89543 22 2 21.1046 2 20V4C2 2.89543 2.89543 2 4 2H20C21.1046 2 22 2.89543 22 4V20ZM20 4H4V20H20V4Z" fill="#FFCC00"/>
-          </svg>
-        </div>
-        <div>
-          <strong style="color: #FF6F00;">Warning:</strong>
-        </div>
-        <div style="margin-left: 10px;">
-          This Medical Record Brief was generated using AI technologies. The information contained within might contain errors. DO NOT use this as a single source of truth and verify this information with the data below.
-          Provide feedback about the AI-generated brief <a href="${link}" target="_blank">here</a>.
-        </div>
-      </div>
-    </div>
-  </div>
-  `;
-  return createSection("Brief (AI-generated)", briefContents);
 }
 
 function createAWESection(
@@ -1498,7 +1536,8 @@ function createObservationVitalsSection(observations: Observation[]) {
 }
 
 function createVitalsByDate(observations: Observation[]): string {
-  const filteredObservations = filterObservationsByDate(observations);
+  const orderedObservations = sortObservationsForDisplay(observations);
+  const filteredObservations = filterObservationsByDate(orderedObservations);
 
   return filteredObservations
     .map(tables => {
@@ -2236,20 +2275,6 @@ function getConditionDatesFromEncounters(
   });
 
   return conditionDates;
-}
-
-function createSection(title: string, tableContents: string) {
-  return `
-    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
-      <div class="section-title">
-        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-          ${tableContents}
-      </div>
-    </div>
-  `;
 }
 
 function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, ResourceType> {
