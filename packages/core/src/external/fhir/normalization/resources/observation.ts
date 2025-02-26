@@ -138,7 +138,10 @@ function normalizeValueQuantity(quantity: Quantity): Quantity {
 
   const value = normalizedQuantity.value;
   if (!value) return normalizedQuantity;
-  const convertedValue = convert(value)
+
+  const numericValue = typeof value === "string" ? parseFloat(value) : value;
+
+  const convertedValue = convert(numericValue)
     .from(normalizedQuantity.unit as Unit)
     .to(convertedUnit.unit);
 
