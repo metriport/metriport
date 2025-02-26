@@ -2,7 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
-import { Hl7v2CompositeStack } from "../lib/hl7v2-stack";
+import { Hl7NotificationRoutingStack } from "../lib/hl7-notification-routing-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
@@ -47,7 +47,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 4. Deploy the HL7v2 composite stack.
   //---------------------------------------------------------------------------------
-  new Hl7v2CompositeStack(app, "Hl7v2CompositeStack", { env, config, version });
+  new Hl7NotificationRoutingStack(app, "Hl7NotificationRoutingStack", { env, config, version });
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS

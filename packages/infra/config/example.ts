@@ -147,8 +147,8 @@ export const config: EnvConfigNonSandbox = {
   hl7v2: {
     vpnConfigs: [
       {
-        customerName: "SampleHIE",
-        customerGatewayPublicIp: "200.54.1.1",
+        partnerName: "SampleHIE",
+        partnerGatewayPublicIp: "200.54.1.1",
         preSharedKeyTunnel1: "MY_SECRET_KEY_TUNNEL_1",
         preSharedKeyTunnel2: "MY_SECRET_KEY_TUNNEL_2",
         bgpAsn: 65001,

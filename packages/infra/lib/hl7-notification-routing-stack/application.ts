@@ -2,18 +2,18 @@ import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
 import * as appscaling from "aws-cdk-lib/aws-autoscaling";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { vCPU } from "../shared/fargate";
 import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
 import { isProd } from "../shared/util";
-import { Hl7v2NetworkStackOutput } from "./network";
+import { NetworkStackOutput } from "./network";
 
 const MLLP_DEFAULT_PORT = 2575;
 
@@ -31,32 +31,32 @@ export function settings() {
   };
 }
 
-interface Hl7v2ApplicationStackProps extends cdk.StackProps {
+interface ApplicationStackProps extends cdk.StackProps {
   config: EnvConfig;
   version: string | undefined;
-  networkStack: Hl7v2NetworkStackOutput;
+  networkStack: NetworkStackOutput;
 }
 
-export class Hl7v2ApplicationStack extends cdk.NestedStack {
-  constructor(scope: Construct, id: string, props: Hl7v2ApplicationStackProps) {
+export class ApplicationStack extends cdk.NestedStack {
+  constructor(scope: Construct, id: string, props: ApplicationStackProps) {
     super(scope, id, props);
 
     const { cpu, memoryLimitMiB, taskCountMin, taskCountMax } = settings();
     const { vpc, nlb, serviceSecurityGroup } = props.networkStack;
 
-    const cluster = new ecs.Cluster(this, "Hl7v2Cluster", {
+    const cluster = new ecs.Cluster(this, "Cluster", {
       vpc,
       containerInsights: true,
     });
 
-    const dockerImage = new ecr_assets.DockerImageAsset(this, "Hl7v2Image", {
+    const dockerImage = new ecr_assets.DockerImageAsset(this, "Image", {
       directory: "../hl7v2-server",
       platform: ecr_assets.Platform.LINUX_AMD64,
     });
 
     const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
       this,
-      "HL7v2FargateService",
+      "FargateService",
       {
         cluster,
         cpu,
@@ -65,7 +65,7 @@ export class Hl7v2ApplicationStack extends cdk.NestedStack {
         taskImageOptions: {
           image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
           containerPort: MLLP_DEFAULT_PORT,
-          containerName: "HL7v2-Server",
+          containerName: "MllpServer",
           environment: {
             NODE_ENV: "production",
             ENV_TYPE: props.config.environmentType,

@@ -9,24 +9,24 @@ import { EnvConfig } from "../../config/env-config";
 const NUM_AZS = 2;
 const MLLP_DEFAULT_PORT = 2575;
 
-interface Hl7v2NetworkStackProps extends cdk.StackProps {
+interface NetworkStackProps extends cdk.StackProps {
   config: EnvConfig;
 }
 
-export interface Hl7v2NetworkStackOutput {
+export interface NetworkStackOutput {
   vpc: ec2.Vpc;
   nlb: elbv2.NetworkLoadBalancer;
   serviceSecurityGroup: ec2.SecurityGroup;
   eipAddresses: string[];
 }
 
-export class Hl7v2NetworkStack extends cdk.NestedStack {
-  public readonly output: Hl7v2NetworkStackOutput;
+export class NetworkStack extends cdk.NestedStack {
+  public readonly output: NetworkStackOutput;
 
-  constructor(scope: Construct, id: string, props: Hl7v2NetworkStackProps) {
+  constructor(scope: Construct, id: string, props: NetworkStackProps) {
     super(scope, id, props);
 
-    const vpc = new ec2.Vpc(this, "Hl7v2Vpc", {
+    const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
     });
 
@@ -36,18 +36,18 @@ export class Hl7v2NetworkStack extends cdk.NestedStack {
      */
     const eip1 = createEIPWithTags(
       this,
-      "Hl7v2Eip1",
+      "Eip1",
       props.config.stackName,
       props.config.environmentType
     );
     const eip2 = createEIPWithTags(
       this,
-      "Hl7v2Eip2",
+      "Eip2",
       props.config.stackName,
       props.config.environmentType
     );
 
-    const nlb = new elbv2.NetworkLoadBalancer(this, "Hl7v2NLB", {
+    const nlb = new elbv2.NetworkLoadBalancer(this, "NLB", {
       vpc,
       internetFacing: true,
       crossZoneEnabled: true,
@@ -68,7 +68,7 @@ export class Hl7v2NetworkStack extends cdk.NestedStack {
       },
     ];
 
-    const serviceSecurityGroup = new ec2.SecurityGroup(this, "Hl7v2ServiceSG", {
+    const serviceSecurityGroup = new ec2.SecurityGroup(this, "ServiceSG", {
       vpc,
       description: "Security group for HL7v2 Fargate service",
       allowAllOutbound: true,

@@ -1,10 +1,10 @@
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { Hl7v2VpnConfig } from "../../config/hl7v2-config";
+import { Hl7NotificationRoutingVpnConfig } from "../../config/hl7-notification-routing-config";
 export interface VpnStackProps extends cdk.NestedStackProps {
   vpc: ec2.IVpc;
-  vpnConfig: Hl7v2VpnConfig;
+  vpnConfig: Hl7NotificationRoutingVpnConfig;
 }
 
 export class VpnStack extends cdk.NestedStack {
@@ -26,7 +26,7 @@ export class VpnStack extends cdk.NestedStack {
     // 2. Create a Customer Gateway
     const customerGateway = new ec2.CfnCustomerGateway(this, "CustomerGateway", {
       bgpAsn: props.vpnConfig.bgpAsn,
-      ipAddress: props.vpnConfig.customerGatewayPublicIp,
+      ipAddress: props.vpnConfig.partnerGatewayPublicIp,
       type: "ipsec.1",
     });
 
@@ -63,7 +63,7 @@ export class VpnStack extends cdk.NestedStack {
     // Output the connection ID
     new cdk.CfnOutput(this, "VpnConnectionId", {
       value: vpnConnection.ref,
-      description: `VPN Connection for ${props.vpnConfig.customerName}`,
+      description: `VPN Connection for ${props.vpnConfig.partnerName}`,
     });
   }
 }
