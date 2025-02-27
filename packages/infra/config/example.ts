@@ -2,6 +2,7 @@ import { Duration } from "aws-cdk-lib";
 import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
 import { EnvConfigNonSandbox } from "./env-config";
+import { vCPU } from "../lib/shared/fargate";
 
 export const config: EnvConfigNonSandbox = {
   stackName: "MetriportInfraStack",
@@ -157,6 +158,12 @@ export const config: EnvConfigNonSandbox = {
         phase2LifetimeSeconds: 3600, // max value
       },
     ],
+    mllpServer: {
+      fargateCpu: 1 * vCPU,
+      fargateMemoryLimitMiB: 2048,
+      fargateTaskCountMin: 2,
+      fargateTaskCountMax: 4,
+    },
   },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
