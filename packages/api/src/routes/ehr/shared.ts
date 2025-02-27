@@ -1,16 +1,12 @@
 import { BadRequestError } from "@metriport/shared";
 import { Request } from "express";
 import { getJwtToken } from "../../command/jwt-token";
-import { getCxMappingOrFail } from "../../command/mapping/cx";
+import { getCxMappingOrFail, getCxMappingSourceFromJwtTokenSource } from "../../command/mapping/cx";
 import { getPatientMappingOrFail } from "../../command/mapping/patient";
 import { JwtTokenData } from "../../domain/jwt-token";
 import { PatientMappingSource } from "../../domain/patient-mapping";
 import ForbiddenError from "../../errors/forbidden";
-import {
-  EhrDashJwtTokenSource,
-  EhrWebhookJwtTokenSource,
-  getCxMappingSourceFromJwtTokenSource,
-} from "../../external/ehr/shared";
+import { EhrDashJwtTokenSource, EhrWebhookJwtTokenSource } from "../../external/ehr/shared";
 import { getAuthorizationToken } from "../util";
 import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";
 

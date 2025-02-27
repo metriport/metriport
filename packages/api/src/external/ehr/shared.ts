@@ -22,7 +22,6 @@ import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
-import { CxMappingSource, isCxMappingSource } from "../../domain/cx-mapping";
 import { athenaClientJwtTokenSource } from "./athenahealth/shared";
 import { canvasClientJwtTokenSource, canvasWebhookJwtTokenSource } from "./canvas/shared";
 import { elationClientJwtTokenSource, elationWebhookJwtTokenSource } from "./elation/shared";
@@ -88,25 +87,6 @@ export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhook
 }
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData | ElationWebhookJwtTokenData;
-
-export function getCxMappingSourceFromJwtTokenSource(source: string): CxMappingSource {
-  const additionalDetails = { source };
-  if (isEhrDashJwtTokenSource(source)) {
-    if (isCxMappingSource(source)) return source;
-    throw new MetriportError("Invalid oauth source", undefined, additionalDetails);
-  }
-  if (isEhrClientJwtTokenSource(source)) {
-    const sourceWithoutClient = source.replace("-client", "");
-    if (isCxMappingSource(sourceWithoutClient)) return sourceWithoutClient;
-    throw new MetriportError("Invalid client source", undefined, additionalDetails);
-  }
-  if (isEhrWebhookJwtTokenSource(source)) {
-    const sourceWithoutWebhook = source.replace("-webhook", "");
-    if (isCxMappingSource(sourceWithoutWebhook)) return sourceWithoutWebhook;
-    throw new MetriportError("Invalid webhook source", undefined, additionalDetails);
-  }
-  throw new MetriportError("Invalid source", undefined, additionalDetails);
-}
 
 export type Appointment = {
   cxId: string;
