@@ -63,17 +63,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       bundle: dedupedBundle,
     });
 
-    console.log("postHogApiKey in get-snapshot-local", postHogApiKey);
     if (postHogApiKey) {
-      console.log(
-        "SENDING ANALYTICS",
-        JSON.stringify({
-          distinctId: cxId,
-          event: EventTypes.consolidatedPostProcess,
-          properties: [{ ...dedupMetrics.properties, ...normalizeMetrics.properties }],
-        })
-      );
-
       await analyticsAsync(
         {
           distinctId: cxId,
@@ -82,7 +72,6 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         },
         postHogApiKey
       );
-      console.log("SENT ANALYTICS IN GET SNAPSHOT");
     }
 
     try {
