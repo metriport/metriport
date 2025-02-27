@@ -8,7 +8,7 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { captureAnalyticsAsync, EventTypes } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
@@ -62,7 +62,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       bundle: dedupedBundle,
     });
 
-    analytics({
+    await captureAnalyticsAsync({
       distinctId: cxId,
       event: EventTypes.consolidatedPostProcess,
       properties: [{ ...dedupMetrics.properties, ...normalizeMetrics.properties }],

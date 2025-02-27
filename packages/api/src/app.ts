@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else.
+import { initPostHog } from "@metriport/core/external/analytics/posthog";
 import { capture } from "@metriport/core/util";
 import { sleep } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
@@ -12,11 +13,11 @@ import helmet from "helmet";
 import { initEvents } from "./event";
 import { initFeatureFlags } from "./external/aws/app-config";
 import initDB from "./models/db";
-import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { VERSION_HEADER_NAME } from "./routes/header";
 import { errorHandler } from "./routes/helpers/default-error-handler";
 import { notFoundHandlers } from "./routes/helpers/not-found-handler";
 import mountRoutes from "./routes/index";
+import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
@@ -28,6 +29,7 @@ const version = Config.getVersion();
 
 // Must be before routes
 initSentry(app);
+initPostHog();
 
 app.use(helmet()); // needs to come before any route declaration, including cors()
 app.use(express.json({ limit: "20mb" }));

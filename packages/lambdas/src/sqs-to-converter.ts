@@ -16,7 +16,8 @@ import {
 import {
   EventMessageV1,
   EventTypes,
-  analyticsAsync,
+  captureAnalyticsAsync,
+  initPostHog,
 } from "@metriport/core/external/analytics/posthog";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
@@ -102,6 +103,9 @@ type EventBody = {
 // TODO: 2502 - Migrate most of the logic to the core to simplify the lambda handler as much as possible
 export async function handler(event: SQSEvent) {
   try {
+    const postHogApiKey = await getSecretValue(postHogSecretName, region);
+    initPostHog(postHogApiKey);
+
     // Process messages from SQS
     const records = event.Records;
     if (!records || records.length < 1) {
@@ -211,14 +215,13 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
-        const [conversionResult, postHogApiKey] = await Promise.all([
+        const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
             converterUrl,
             partitionedPayloads,
             converterParams,
             log,
           }),
-          getSecretValue(postHogSecretName, region),
           dealWithAttachments(),
           storePartitionedPayloadsInS3({
             s3Utils,
@@ -299,16 +302,11 @@ export async function handler(event: SQSEvent) {
           bundle: hydratedBundle,
         });
 
-        if (postHogApiKey) {
-          await analyticsAsync(
-            {
-              distinctId: cxId,
-              event: EventTypes.conversionPostProcess,
-              properties: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
-            },
-            postHogApiKey
-          );
-        }
+        await captureAnalyticsAsync({
+          distinctId: cxId,
+          event: EventTypes.conversionPostProcess,
+          properties: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
+        });
 
         await storeNormalizedConversionResult({
           s3Utils,

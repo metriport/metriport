@@ -4,6 +4,7 @@ import {
   ConsolidatedSnapshotResponse,
 } from "@metriport/core/command/consolidated/get-snapshot";
 import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
+import { initPostHog } from "@metriport/core/external/analytics/posthog";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
@@ -22,6 +23,8 @@ export async function handler(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<ConsolidatedSnapshotResponse | void> {
   const postHogApiKey = await getSecretValue(postHogSecretName, region);
+  initPostHog(postHogApiKey);
+
   const { patient, requestId, resources, dateFrom, dateTo } = params;
   const conversionType = params.isAsync ? params.conversionType : undefined;
   const { log } = out(`cx ${patient.cxId}, patient ${patient.id}, req ${requestId}`);
@@ -32,7 +35,7 @@ export async function handler(
         `, resources: ${resources}}`
     );
     const conn = new ConsolidatedSnapshotConnectorLocal(bucketName, apiUrl);
-    const result = await conn.execute({ ...params, postHogApiKey });
+    const result = await conn.execute(params);
     return result;
   } catch (error) {
     const msg = "Failed to get FHIR resources";
