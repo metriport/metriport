@@ -4,21 +4,18 @@ import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { analyticsAsync } from "../../external/analytics/posthog";
+import { captureAnalyticsAsync } from "../../external/analytics/posthog";
 import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
-import { getSecretValue } from "../../external/aws/secret-manager";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { capture, executeAsynchronously, out } from "../../util";
+import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
-const postHogSecretName = Config.getPostHogApiKey();
-const region = Config.getAWSRegion();
 
 export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
@@ -72,21 +69,9 @@ export async function createConsolidatedFromConversions({
     bundle: withDups,
   });
 
-  if (postHogSecretName) {
-    const postHogApiKey = await getSecretValue(postHogSecretName, region);
-    if (postHogApiKey) {
-      await analyticsAsync(dedupMetrics, postHogApiKey);
-    }
-  } else {
-    const msg = "Failed to retrieve postHogApiKey";
-    log(msg);
-    capture.message(msg, {
-      extra: {
-        cxId,
-        patientId,
-      },
-    });
-  }
+  console.log("STARTING ANALYTICS SEND ON CONS CREATE");
+  await captureAnalyticsAsync(dedupMetrics);
+  console.log("DONE ANALYTICS SEND ON CONS CREATE");
 
   log(`...done, from ${withDups.entry?.length} to ${dedupedBundle.entry?.length} resources`);
 

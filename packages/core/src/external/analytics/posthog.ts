@@ -18,7 +18,49 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
 
 const defaultPostHogApiKey = Config.getPostHogApiKey();
 const groupType = "customer";
+let posthogClient: PostHog | undefined;
 
+export function initPostHog(apiKey?: string): PostHog | undefined {
+  const postHogApiKey = apiKey ?? defaultPostHogApiKey;
+  if (!postHogApiKey) return undefined;
+
+  return new PostHog(postHogApiKey);
+}
+
+function getPosthogClientInstance(): PostHog | undefined {
+  return posthogClient ?? initPostHog(defaultPostHogApiKey);
+}
+
+export function captureAnalytics(params: EventMessageV1): void {
+  const posthogClient = getPosthogClientInstance();
+  if (!posthogClient) return;
+
+  const enrichedParams = {
+    ...params,
+    properties: {
+      ...(params.properties ?? {}),
+      environment: Config.getEnvType(),
+      platform: "oss-api",
+    },
+    groups: { [groupType]: params.distinctId },
+  };
+
+  posthogClient.capture(enrichedParams);
+}
+
+export async function captureAnalyticsAsync(params: EventMessageV1): Promise<void> {
+  if (!posthogClient) return;
+
+  captureAnalytics(params);
+
+  // Needed to send requests to PostHog in lambda
+  // https://posthog.com/docs/libraries/node#using-in-a-short-lived-process-like-aws-lambda
+  await posthogClient.shutdown();
+}
+
+/**
+ * @deprecated Use captureAnalytics() instead. This function creates a new PostHog instance on every call.
+ */
 export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
 
@@ -37,6 +79,9 @@ export function analytics(params: EventMessageV1, postApiKey?: string): PostHog 
   return posthog;
 }
 
+/**
+ * @deprecated Use captureAnalyticsAsync() instead. This function creates a new PostHog instance on every call.
+ */
 export async function analyticsAsync(params: EventMessageV1, postApiKey: string) {
   const posthog = analytics(params, postApiKey);
 
