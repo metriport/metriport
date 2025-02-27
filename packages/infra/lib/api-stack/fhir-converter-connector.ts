@@ -143,7 +143,7 @@ export function createLambda({
     maxConcurrency,
     axiosTimeout,
   } = settings();
-  const posthogSecretName = config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
+  const posthogSecretKeyName = config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
 
   const conversionLambda = defaultCreateLambda({
     stack,
@@ -166,8 +166,8 @@ export function createLambda({
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
       APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
       APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-      ...(posthogSecretName && {
-        POST_HOG_API_KEY_SECRET: posthogSecretName,
+      ...(posthogSecretKeyName && {
+        POST_HOG_API_KEY_SECRET: posthogSecretKeyName,
       }),
     },
     timeout: lambdaTimeout,
@@ -176,8 +176,8 @@ export function createLambda({
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
   medicalDocumentsBucket.grantReadWrite(conversionLambda);
-  if (posthogSecretName) {
-    secrets[posthogSecretName]?.grantRead(conversionLambda);
+  if (posthogSecretKeyName) {
+    secrets[posthogSecretKeyName]?.grantRead(conversionLambda);
   }
 
   conversionLambda.addEventSource(

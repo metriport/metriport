@@ -492,19 +492,18 @@ export class LambdasNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
+    bundleBucket.grantReadWrite(fhirToBundleLambda);
+    conversionsBucket.grantRead(fhirToBundleLambda);
+    if (posthogSecretName) {
+      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
+    }
+
     AppConfigUtils.allowReadConfig({
       scope: this,
       resourceName: "FhirToBundleLambda",
       resourceRole: fhirToBundleLambda.role,
       appConfigResources: ["*"],
     });
-
-    bundleBucket.grantReadWrite(fhirToBundleLambda);
-    conversionsBucket.grantRead(fhirToBundleLambda);
-
-    if (posthogSecretName) {
-      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
-    }
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],
