@@ -499,18 +499,12 @@ export class LambdasNestedStack extends NestedStack {
       appConfigResources: ["*"],
     });
 
-    if (posthogSecretName) {
-      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
-    }
     bundleBucket.grantReadWrite(fhirToBundleLambda);
     conversionsBucket.grantRead(fhirToBundleLambda);
 
-    const secretsManagerPolicyStatement = new iam.PolicyStatement({
-      actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-      resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`],
-    });
-
-    fhirToBundleLambda.addToRolePolicy(secretsManagerPolicyStatement);
+    if (posthogSecretName) {
+      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
+    }
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],
