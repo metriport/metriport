@@ -7,11 +7,9 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import * as iam from "aws-cdk-lib/aws-iam";
 import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
-import { Secrets } from "../shared/secrets";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { settings as settingsFhirConverter } from "./fhir-converter-service";
 
@@ -106,7 +104,6 @@ export function createLambda({
   envType,
   stack,
   vpc,
-  secrets,
   sourceQueue,
   dlq,
   fhirConverterBucket,
@@ -121,7 +118,6 @@ export function createLambda({
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
-  secrets: Secrets;
   sourceQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
@@ -144,8 +140,6 @@ export function createLambda({
     maxConcurrency,
     axiosTimeout,
   } = settings();
-  const posthogSecretName = config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
-
   const conversionLambda = defaultCreateLambda({
     stack,
     name: connectorName,
@@ -167,9 +161,6 @@ export function createLambda({
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
       APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
       APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-      ...(posthogSecretName && {
-        POST_HOG_API_KEY_SECRET: posthogSecretName,
-      }),
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
@@ -177,16 +168,6 @@ export function createLambda({
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
   medicalDocumentsBucket.grantReadWrite(conversionLambda);
-  if (posthogSecretName) {
-    secrets[posthogSecretName]?.grantRead(conversionLambda);
-  }
-
-  const secretsManagerPolicyStatement = new iam.PolicyStatement({
-    actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-    resources: [`arn:aws:secretsmanager:*:*:secret:*`],
-  });
-
-  conversionLambda.addToRolePolicy(secretsManagerPolicyStatement);
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {

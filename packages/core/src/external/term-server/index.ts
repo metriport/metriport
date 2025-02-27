@@ -62,9 +62,9 @@ export async function lookupMultipleCodes(
   ) as CodeSystemLookupOutput[];
 
   const metadata = {
-    hydrateNumParameters: params.length,
-    hydrateCodesFound: data.length,
-    hydrateLookupDuration: duration,
+    numParams: params.length,
+    numFound: data.length,
+    lookupDuration: duration,
   };
 
   return { metadata, data };
