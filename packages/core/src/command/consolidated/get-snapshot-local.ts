@@ -8,7 +8,7 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
@@ -34,7 +34,8 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
   async execute(
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
-    const { cxId, id: patientId } = params.patient;
+    const { patient, postHogApiKey } = params;
+    const { cxId, id: patientId } = patient;
 
     const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
@@ -62,11 +63,16 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       bundle: dedupedBundle,
     });
 
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.consolidatedPostProcess,
-      properties: [{ ...dedupMetrics.properties, ...normalizeMetrics.properties }],
-    });
+    if (postHogApiKey) {
+      await analyticsAsync(
+        {
+          distinctId: cxId,
+          event: EventTypes.consolidatedPostProcess,
+          properties: [{ ...dedupMetrics.properties, ...normalizeMetrics.properties }],
+        },
+        postHogApiKey
+      );
+    }
 
     try {
       checkBundle(normalizedBundle, cxId, patientId);
