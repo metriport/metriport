@@ -499,23 +499,18 @@ export class LambdasNestedStack extends NestedStack {
       appConfigResources: ["*"],
     });
 
-    console.log("posthogSecretName in nested stack is", posthogSecretName);
     if (posthogSecretName) {
-      console.log("secrets[posthogSecretName] in nested stack is", secrets[posthogSecretName]);
-      console.log("PostHog secret properties:", Object.values(secrets));
-      console.log("PostHog secret JSON properties:", JSON.stringify(secrets));
-      const res = secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
-      console.log("RES OF GRANT READ in nested stack is", res);
+      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
     }
     bundleBucket.grantReadWrite(fhirToBundleLambda);
     conversionsBucket.grantRead(fhirToBundleLambda);
 
-    // const secretsManagerPolicyStatement = new iam.PolicyStatement({
-    //   actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-    //   resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`],
-    // });
+    const secretsManagerPolicyStatement = new iam.PolicyStatement({
+      actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+      resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`],
+    });
 
-    // fhirToBundleLambda.addToRolePolicy(secretsManagerPolicyStatement);
+    fhirToBundleLambda.addToRolePolicy(secretsManagerPolicyStatement);
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],

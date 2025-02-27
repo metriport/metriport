@@ -7,6 +7,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
@@ -176,22 +177,16 @@ export function createLambda({
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
   medicalDocumentsBucket.grantReadWrite(conversionLambda);
-
-  console.log("posthogSecretName in conversion lambda is", posthogSecretName);
   if (posthogSecretName) {
-    console.log("secrets[posthogSecretName] in conversion lambda is", secrets[posthogSecretName]);
-    console.log("PostHog secret properties:", Object.values(secrets));
-    console.log("PostHog secret JSON properties:", JSON.stringify(secrets));
-    const res = secrets[posthogSecretName]?.grantRead(conversionLambda);
-    console.log("RES OF GRANT READ in conversion lambda is", res);
+    secrets[posthogSecretName]?.grantRead(conversionLambda);
   }
 
-  // const secretsManagerPolicyStatement = new iam.PolicyStatement({
-  //   actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-  //   resources: [`arn:aws:secretsmanager:*:*:secret:*`],
-  // });
+  const secretsManagerPolicyStatement = new iam.PolicyStatement({
+    actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+    resources: [`arn:aws:secretsmanager:*:*:secret:*`],
+  });
 
-  // conversionLambda.addToRolePolicy(secretsManagerPolicyStatement);
+  conversionLambda.addToRolePolicy(secretsManagerPolicyStatement);
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {
