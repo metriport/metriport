@@ -135,7 +135,6 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       envType: props.config.environmentType,
-      secrets: props.secrets,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       appId: props.appConfigEnvVars.appId,
@@ -436,7 +435,6 @@ export class LambdasNestedStack extends NestedStack {
     conversionsBucket,
     sentryDsn,
     envType,
-    secrets,
     alarmAction,
     appId,
     configId,
@@ -449,7 +447,6 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket: s3.IBucket;
     conversionsBucket: s3.IBucket;
     envType: EnvType;
-    secrets: Secrets;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     appId: string;
@@ -494,9 +491,6 @@ export class LambdasNestedStack extends NestedStack {
 
     bundleBucket.grantReadWrite(fhirToBundleLambda);
     conversionsBucket.grantRead(fhirToBundleLambda);
-    if (posthogSecretName) {
-      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
-    }
 
     AppConfigUtils.allowReadConfig({
       scope: this,
