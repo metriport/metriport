@@ -99,20 +99,38 @@ export class MllpStack extends cdk.NestedStack {
       scaleOutCooldown: Duration.seconds(60),
     });
 
+    const connectionsPerTaskMetric = new cloudwatch.MathExpression({
+      expression: "connections / tasks",
+      usingMetrics: {
+        connections: new cloudwatch.Metric({
+          namespace: "AWS/NetworkELB",
+          metricName: "ActiveFlowCount",
+          dimensionsMap: {
+            LoadBalancer: fargate.loadBalancer.loadBalancerFullName,
+          },
+          statistic: "Average",
+          period: Duration.minutes(1),
+        }),
+        tasks: new cloudwatch.Metric({
+          namespace: "ECS/ContainerInsights",
+          metricName: "RunningTaskCount",
+          dimensionsMap: {
+            ClusterName: cluster.clusterName,
+            ServiceName: fargate.service.serviceName,
+          },
+          statistic: "Average",
+          // This only changes when we establish a new HIE connection, so this can be updated infrequently
+          period: Duration.minutes(15),
+        }),
+      },
+    });
+
     scaling.scaleOnMetric("ConnectionCountScaling", {
-      metric: new cloudwatch.Metric({
-        namespace: "AWS/NetworkELB",
-        metricName: "ActiveFlowCount",
-        dimensionsMap: {
-          LoadBalancer: fargate.loadBalancer.loadBalancerFullName,
-        },
-        statistic: "Average",
-        period: Duration.minutes(1),
-      }),
+      metric: connectionsPerTaskMetric,
       scalingSteps: [
-        { upper: 100, change: -1 },
-        { lower: 500, change: +1 },
-        { lower: 1000, change: +2 },
+        { lower: 0, upper: 70, change: -1 },
+        { lower: 71, upper: 100, change: 0 },
+        { lower: 101, change: +1 },
       ],
       adjustmentType: appscaling.AdjustmentType.CHANGE_IN_CAPACITY,
     });

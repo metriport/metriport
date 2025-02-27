@@ -20,7 +20,6 @@ export class VpnStack extends cdk.NestedStack {
 
     const vpnGateway = new ec2.CfnVPNGateway(this, "VpnGateway", {
       type: IPSEC_1,
-      amazonSideAsn: 65000, // or remove to let AWS pick a default
     });
 
     // Attach the VGW to your VPC
@@ -35,6 +34,9 @@ export class VpnStack extends cdk.NestedStack {
       type: IPSEC_1,
     });
 
+    /**
+     * We use 2 tunnels here because state HIEs often have a failover to a backup IP..
+     */
     const vpnConnection = new ec2.CfnVPNConnection(this, "VpnConnection", {
       type: IPSEC_1,
       vpnGatewayId: vpnGateway.ref,

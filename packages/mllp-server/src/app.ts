@@ -5,7 +5,7 @@ import type { Logger } from "@metriport/core/util/log";
 
 dotenv.config();
 
-const MLLP_PORT = process.env.MLLP_PORT ? parseInt(process.env.MLLP_PORT) : 2575;
+const MLLP_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const server = new Hl7Server(connection => {
