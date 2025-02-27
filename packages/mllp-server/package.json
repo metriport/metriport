@@ -5,17 +5,23 @@
   "main": "app.js",
   "private": true,
   "scripts": {
-    "test": "jest",
     "dev": "ts-node src/app.ts",
-    "clean": "rimraf dist && rimraf node_modules",
+    "start": "node dist/app.js",
     "build": "tsc -p tsconfig.build.json",
-    "prettier-fix": "npx prettier '**/*.ts' --write"
+    "build:cloud": "tsc -p tsconfig.cloud.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "jest --runInBand",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/metriport/metriport.git"
   },
-  "author": "",
+  "author": "Metriport",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
@@ -23,7 +29,7 @@
   "homepage": "https://github.com/metriport/metriport#readme",
   "dependencies": {
     "@medplum/hl7": "^3.2.33",
-    "@metriport/core": "^1.6.7",
+    "@metriport/core": "file:packages/core",
     "@metriport/shared": "^0.12.2",
     "@sentry/cli": "^2.42.1",
     "dotenv": "^16.4.5",

@@ -1,35 +1,37 @@
 import { Hl7Server } from "@medplum/hl7";
 import * as dotenv from "dotenv";
-import { ConsoleLogger, Logger } from "./logger";
+import { out } from "@metriport/core/util/log";
+import type { Logger } from "@metriport/core/util/log";
+
 dotenv.config();
 
-const HL7_PORT = process.env.HL7_PORT ? parseInt(process.env.HL7_PORT) : 2575;
+const MLLP_PORT = process.env.MLLP_PORT ? parseInt(process.env.MLLP_PORT) : 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const server = new Hl7Server(connection => {
-    logger.info("Connection received");
+    logger.log("Connection received");
 
     connection.addEventListener("message", ({ message }) => {
-      logger.debug(
+      logger.log(
         `## New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort} ##`
       );
       message.segments.forEach(segment => {
-        logger.debug("Segment:", segment.toString());
+        logger.log("Segment:", segment.toString());
       });
-      logger.debug("\n\n");
+      logger.log("\n\n");
       connection.send(message.buildAck());
     });
 
     connection.addEventListener("error", error => {
       if (error instanceof Error) {
-        logger.error("Connection error:", error);
+        logger.log("Connection error:", error);
       } else {
-        logger.debug("Connection terminated by client");
+        logger.log("Connection terminated by client");
       }
     });
 
     connection.addEventListener("close", () => {
-      logger.info("Connection closed");
+      logger.log("Connection closed");
     });
   });
 
@@ -37,11 +39,9 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 }
 
 async function main() {
-  const logger = new ConsoleLogger();
-  logger.info("Starting HL7 server...");
-
+  const logger = out("MLLP Server");
   const server = await createHl7Server(logger);
-  server.start(HL7_PORT);
+  server.start(MLLP_PORT);
 }
 
 main();

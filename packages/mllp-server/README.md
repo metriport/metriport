@@ -1,14 +1,12 @@
-# HL7 Server
+# MLLP Server
 
 ## Overview
 
-This project provides a HL7 server that reads HL7 messages off of a raw tcp connection.
+This project provides an MLLP server that reads HL7 messages off of a raw tcp connection. It is built on top of the `@medplum/hl7` package.
 
-## Getting Started
+## Notes
 
-TODO
-
-In the near future, we are planning to add a route to do bulk crosswalks between systems. Stay tuned!
+See packages/infra/hl7-notification-routing-stack/ for the infra we use for deployment.
 
 ```
             ,▄,

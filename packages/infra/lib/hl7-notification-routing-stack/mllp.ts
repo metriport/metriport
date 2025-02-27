@@ -60,7 +60,7 @@ export class MllpStack extends cdk.NestedStack {
         environment: {
           NODE_ENV: "production",
           ENV_TYPE: props.config.environmentType,
-          HL7_PORT: MLLP_DEFAULT_PORT.toString(),
+          MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
         },
       },
       listenerPort: MLLP_DEFAULT_PORT,
@@ -76,10 +76,10 @@ export class MllpStack extends cdk.NestedStack {
     fargate.targetGroup.configureHealthCheck({
       port: MLLP_DEFAULT_PORT.toString(),
       protocol: elbv2.Protocol.TCP,
-      healthyThresholdCount: 5,
+      healthyThresholdCount: 3,
       unhealthyThresholdCount: 2,
       timeout: Duration.seconds(10),
-      interval: Duration.seconds(30),
+      interval: Duration.seconds(20),
     });
 
     const scaling = fargate.service.autoScaleTaskCount({

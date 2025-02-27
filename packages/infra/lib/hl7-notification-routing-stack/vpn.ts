@@ -10,11 +10,14 @@ export interface VpnStackProps extends cdk.NestedStackProps {
   vpnConfig: Hl7NotificationRoutingVpnConfig;
 }
 
+/**
+ * This stack creates all the infra to setup a VPN tunnel with an HIE sending us HL7 messages.
+ * @see https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html
+ */
 export class VpnStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    // 1. Create a Virtual Private Gateway (VGW)
     const vpnGateway = new ec2.CfnVPNGateway(this, "VpnGateway", {
       type: IPSEC_1,
       amazonSideAsn: 65000, // or remove to let AWS pick a default
@@ -26,14 +29,12 @@ export class VpnStack extends cdk.NestedStack {
       vpnGatewayId: vpnGateway.ref,
     });
 
-    // 2. Create a Customer Gateway
     const customerGateway = new ec2.CfnCustomerGateway(this, "CustomerGateway", {
       bgpAsn: props.vpnConfig.bgpAsn,
       ipAddress: props.vpnConfig.partnerGatewayPublicIp,
       type: IPSEC_1,
     });
 
-    // 3. Create the VPN Connection
     const vpnConnection = new ec2.CfnVPNConnection(this, "VpnConnection", {
       type: IPSEC_1,
       vpnGatewayId: vpnGateway.ref,
@@ -63,7 +64,6 @@ export class VpnStack extends cdk.NestedStack {
       });
     }
 
-    // Output the connection ID
     new cdk.CfnOutput(this, "VpnConnectionId", {
       value: vpnConnection.ref,
       description: `VPN Connection for ${props.vpnConfig.partnerName}`,
