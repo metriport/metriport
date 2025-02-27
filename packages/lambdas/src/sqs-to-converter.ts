@@ -15,7 +15,6 @@ import {
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
 import {
   EventMessageV1,
-  EventTypes,
   captureAnalyticsAsync,
   initPostHog,
 } from "@metriport/core/external/analytics/posthog";
@@ -302,11 +301,7 @@ export async function handler(event: SQSEvent) {
           bundle: hydratedBundle,
         });
 
-        await captureAnalyticsAsync({
-          distinctId: cxId,
-          event: EventTypes.conversionPostProcess,
-          properties: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
-        });
+        await captureAnalyticsAsync([hydrateMetrics, normalizeMetrics].flatMap(m => m ?? []));
 
         await storeNormalizedConversionResult({
           s3Utils,

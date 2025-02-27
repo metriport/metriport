@@ -441,7 +441,7 @@ export class LambdasNestedStack extends NestedStack {
     appId,
     configId,
     bedrock,
-    posthogSecretKeyName: posthogSecretName,
+    posthogSecretKeyName,
   }: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -480,8 +480,8 @@ export class LambdasNestedStack extends NestedStack {
           AI_BRIEF_MODEL_ID: bedrock?.modelId,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        ...(posthogSecretName && {
-          POST_HOG_API_KEY_SECRET: posthogSecretName,
+        ...(posthogSecretKeyName && {
+          POST_HOG_API_KEY_SECRET: posthogSecretKeyName,
         }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
@@ -499,18 +499,11 @@ export class LambdasNestedStack extends NestedStack {
       appConfigResources: ["*"],
     });
 
-    if (posthogSecretName) {
-      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
+    if (posthogSecretKeyName) {
+      secrets["POST_HOG_API_KEY_SECRET"]?.grantRead(fhirToBundleLambda);
     }
     bundleBucket.grantReadWrite(fhirToBundleLambda);
     conversionsBucket.grantRead(fhirToBundleLambda);
-
-    const secretsManagerPolicyStatement = new iam.PolicyStatement({
-      actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-      resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`],
-    });
-
-    fhirToBundleLambda.addToRolePolicy(secretsManagerPolicyStatement);
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],

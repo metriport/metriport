@@ -1,3 +1,4 @@
+import { toArray } from "@metriport/shared";
 import { PostHog } from "posthog-node";
 import { Config } from "../../util/config";
 
@@ -48,13 +49,17 @@ export function captureAnalytics(params: EventMessageV1): void {
   posthogClient.capture(enrichedParams);
 }
 
-export async function captureAnalyticsAsync(params: EventMessageV1): Promise<void> {
+/**
+ * Can send multiple analytics events in one bulk request when it calls to shutdown.
+ * @link - https://posthog.com/docs/libraries/node#using-in-a-short-lived-process-like-aws-lambda
+ */
+export async function captureAnalyticsAsync(
+  events: EventMessageV1 | EventMessageV1[]
+): Promise<void> {
   if (!posthogClient) return;
-
-  captureAnalytics(params);
+  toArray(events).forEach(captureAnalytics);
 
   // Needed to send requests to PostHog in lambda
-  // https://posthog.com/docs/libraries/node#using-in-a-short-lived-process-like-aws-lambda
   await posthogClient.shutdown();
 }
 
@@ -106,8 +111,6 @@ export enum EventTypes {
   documentConversion = "documentConversion",
   fhirDeduplication = "fhirDeduplication",
   fhirNormalization = "fhirNormalization",
-  conversionPostProcess = "conversionPostProcess",
-  consolidatedPostProcess = "consolidatedPostProcess",
   fhirHydration = "fhirHydration",
   consolidatedQuery = "consolidatedQuery",
   inboundPatientDiscovery = "inbound.patientDiscovery",
