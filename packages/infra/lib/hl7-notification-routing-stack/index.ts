@@ -18,22 +18,22 @@ export class Hl7NotificationRoutingStack extends MetriportCompositeStack {
   constructor(scope: Construct, id: string, props: Hl7NotificationRoutingStackProps) {
     super(scope, id, props);
 
-    this.networkStack = new NetworkStack(this, "NetworkStack", {
-      stackName: "NetworkStack",
+    this.networkStack = new NetworkStack(this, "NestedNetworkStack", {
+      stackName: "NestedNetworkStack",
       config: props.config,
       description: "HL7 Notification Routing Network Infrastructure",
     });
 
-    this.mllpStack = new MllpStack(this, "MllpStack", {
-      stackName: "MllpStack",
+    this.mllpStack = new MllpStack(this, "NestedMllpStack", {
+      stackName: "NestedMllpStack",
       config: props.config,
       version: props.version,
       networkStack: this.networkStack.output,
-      description: "HL7 Notification Routing MLLP Infrastructure",
+      description: "HL7 Notification Routing MLLP Server",
     });
 
     props.config.hl7NotificationRouting.vpnConfigs.forEach(hieSpecificConfig => {
-      new VpnStack(this, `VpnStack${hieSpecificConfig.partnerName}`, {
+      new VpnStack(this, `NestedVpnStack${hieSpecificConfig.partnerName}`, {
         vpc: this.networkStack.output.vpc,
         vpnConfig: hieSpecificConfig,
         description: `VPN Configuration for routing HL7 messages from ${hieSpecificConfig.partnerName}`,
