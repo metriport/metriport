@@ -9,6 +9,7 @@ export type ConsolidatedSnapshotRequest = {
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
   generateAiBrief?: boolean;
+  postHogApiKey?: string;
 };
 
 export type ConsolidatedSnapshotRequestAsync = ConsolidatedSnapshotRequest & {

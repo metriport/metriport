@@ -4,17 +4,21 @@ import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
+import { analyticsAsync } from "../../external/analytics/posthog";
 import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
+import { getSecretValue } from "../../external/aws/secret-manager";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { executeAsynchronously, out } from "../../util";
+import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
+const postHogSecretName = Config.getPostHogApiKey();
+const region = Config.getAWSRegion();
 
 export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
@@ -62,15 +66,36 @@ export async function createConsolidatedFromConversions({
   );
 
   log(`Deduplicating consolidated bundle...`);
-  const deduped = await deduplicate({ cxId, patientId, bundle: withDups });
-  log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
+  const { bundle: dedupedBundle, metrics: dedupMetrics } = await deduplicate({
+    cxId,
+    patientId,
+    bundle: withDups,
+  });
+
+  if (postHogSecretName) {
+    const postHogApiKey = await getSecretValue(postHogSecretName, region);
+    if (postHogApiKey) {
+      await analyticsAsync(dedupMetrics, postHogApiKey);
+    }
+  } else {
+    const msg = "Failed to retrieve postHogApiKey";
+    log(msg);
+    capture.message(msg, {
+      extra: {
+        cxId,
+        patientId,
+      },
+    });
+  }
+
+  log(`...done, from ${withDups.entry?.length} to ${dedupedBundle.entry?.length} resources`);
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
   if (isAiBriefFeatureFlagEnabled) {
-    const binaryBundleEntry = await generateAiBriefBundleEntry(deduped, cxId, patientId, log);
+    const binaryBundleEntry = await generateAiBriefBundleEntry(dedupedBundle, cxId, patientId, log);
     if (binaryBundleEntry) {
-      deduped.entry?.push(binaryBundleEntry);
+      dedupedBundle.entry?.push(binaryBundleEntry);
     }
   }
 
@@ -82,7 +107,7 @@ export async function createConsolidatedFromConversions({
     s3Utils.uploadFile({
       bucket: destinationBucketName,
       key: dedupDestFileName,
-      file: Buffer.from(JSON.stringify(deduped)),
+      file: Buffer.from(JSON.stringify(dedupedBundle)),
       contentType: "application/json",
     }),
     s3Utils.uploadFile({
@@ -94,7 +119,7 @@ export async function createConsolidatedFromConversions({
   ]);
 
   log(`Done`);
-  return deduped;
+  return dedupedBundle;
 }
 
 export function buildConsolidatedBundle(entries: BundleEntry[] = []): Bundle {

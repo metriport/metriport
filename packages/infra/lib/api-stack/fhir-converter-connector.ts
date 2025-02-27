@@ -161,6 +161,9 @@ export function createLambda({
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
       APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
       APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+      ...(config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET && {
+        POST_HOG_API_KEY_SECRET: config.analyticsSecretNames.POST_HOG_API_KEY_SECRET,
+      }),
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
