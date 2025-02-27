@@ -1,0 +1,14 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "source-bucket-name"
+        },
+        "object": {
+          "key": "path/to/your/file.pdf"
+        }
+      }
+    }
+  ]
+}
