@@ -78,7 +78,9 @@ service:
 
     list:
       display-name: List Patients at Facility
-      docs: Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.
+      docs: |
+        Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.
+        If the `count` query parameter is provided, the response will be paginated.
       method: GET
       path: ""
       request:
@@ -99,7 +101,8 @@ service:
           count:
             type: optional<integer>
             docs: Total number of items to retrieve.
-      response: PaginatedPatientsResponse
+      response:
+        type: ListPatientsResponse
 
     delete:
       display-name: Delete Patient
@@ -308,6 +311,17 @@ types:
             - $commons.Address.Example1
           facilityIds:
             - $FacilityId.Example1
+
+  ListPatientsResponse:
+    discriminated: false
+    union:
+      - PaginatedPatientsResponse
+      - UnpaginatedPatientsResponse
+
+  UnpaginatedPatientsResponse:
+    properties:
+      patients:
+        type: list<Patient>
 
   PaginatedPatientsResponse:
     properties:
