@@ -302,13 +302,11 @@ export async function handler(event: SQSEvent) {
           bundle: hydratedBundle,
         });
 
-        console.log("sending captureAnalyticsAsync from sqs-to-converter", postHogApiKey);
         await captureAnalyticsAsync({
           distinctId: cxId,
           event: EventTypes.conversionPostProcess,
           properties: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
         });
-        console.log("done sending captureAnalyticsAsync from sqs-to-converter", postHogApiKey);
 
         await storeNormalizedConversionResult({
           s3Utils,

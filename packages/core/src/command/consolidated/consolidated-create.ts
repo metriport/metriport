@@ -69,9 +69,7 @@ export async function createConsolidatedFromConversions({
     bundle: withDups,
   });
 
-  console.log("STARTING ANALYTICS SEND ON CONS CREATE");
   await captureAnalyticsAsync(dedupMetrics);
-  console.log("DONE ANALYTICS SEND ON CONS CREATE");
 
   log(`...done, from ${withDups.entry?.length} to ${dedupedBundle.entry?.length} resources`);
 

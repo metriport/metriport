@@ -23,13 +23,7 @@ export async function handler(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<ConsolidatedSnapshotResponse | void> {
   const postHogApiKey = await getSecretValue(postHogSecretName, region);
-  const instance = initPostHog(postHogApiKey); // TODO: remove instance const when done testing
-  console.log(
-    "initiated in fhir to bundle: postHogApiKey",
-    postHogApiKey,
-    "and instance is",
-    instance
-  );
+  initPostHog(postHogApiKey);
 
   const { patient, requestId, resources, dateFrom, dateTo } = params;
   const conversionType = params.isAsync ? params.conversionType : undefined;
