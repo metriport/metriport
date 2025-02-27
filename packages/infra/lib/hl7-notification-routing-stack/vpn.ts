@@ -2,6 +2,9 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { Hl7NotificationRoutingVpnConfig } from "../../config/hl7-notification-routing-config";
+
+const IPSEC_1 = "ipsec.1";
+
 export interface VpnStackProps extends cdk.NestedStackProps {
   vpc: ec2.IVpc;
   vpnConfig: Hl7NotificationRoutingVpnConfig;
@@ -13,7 +16,7 @@ export class VpnStack extends cdk.NestedStack {
 
     // 1. Create a Virtual Private Gateway (VGW)
     const vpnGateway = new ec2.CfnVPNGateway(this, "VpnGateway", {
-      type: "ipsec.1",
+      type: IPSEC_1,
       amazonSideAsn: 65000, // or remove to let AWS pick a default
     });
 
@@ -27,12 +30,12 @@ export class VpnStack extends cdk.NestedStack {
     const customerGateway = new ec2.CfnCustomerGateway(this, "CustomerGateway", {
       bgpAsn: props.vpnConfig.bgpAsn,
       ipAddress: props.vpnConfig.partnerGatewayPublicIp,
-      type: "ipsec.1",
+      type: IPSEC_1,
     });
 
     // 3. Create the VPN Connection
     const vpnConnection = new ec2.CfnVPNConnection(this, "VpnConnection", {
-      type: "ipsec.1",
+      type: IPSEC_1,
       vpnGatewayId: vpnGateway.ref,
       customerGatewayId: customerGateway.ref,
       staticRoutesOnly: props.vpnConfig.staticRoutesOnly,

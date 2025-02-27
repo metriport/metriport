@@ -6,7 +6,9 @@ import { Hl7NotificationRoutingStack } from "../lib/hl7-notification-routing-sta
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
-import { getEnvVar } from "../lib/shared/util";
+import { getEnvVar, isSandbox } from "../lib/shared/util";
+import { IHEStack } from "../lib/ihe-stack";
+import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 
 const app = new cdk.App();
 
@@ -45,9 +47,30 @@ async function deploy(config: EnvConfig) {
   new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
-  // 4. Deploy the HL7v2 composite stack.
+  // 4. Deploy the HL7 Notification Routing stack.
   //---------------------------------------------------------------------------------
   new Hl7NotificationRoutingStack(app, "Hl7NotificationRoutingStack", { env, config, version });
+
+  //---------------------------------------------------------------------------------
+  // 5. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
+  //---------------------------------------------------------------------------------
+  if (config.iheGateway) {
+    new IHEStack(app, "IHEStack", {
+      env,
+      config: config,
+      version,
+    });
+  }
+
+  //---------------------------------------------------------------------------------
+  // 6. Deploy the Connect widget stack.
+  //---------------------------------------------------------------------------------
+  if (!isSandbox(config)) {
+    new ConnectWidgetStack(app, config.connectWidget.stackName, {
+      env: { ...env, region: config.connectWidget.region },
+      config: { ...config, connectWidget: config.connectWidget },
+    });
+  }
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS

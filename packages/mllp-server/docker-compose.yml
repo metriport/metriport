@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  hl7v2v2:
+  mllp-server:
     build:
       context: ./
       dockerfile: Dockerfile

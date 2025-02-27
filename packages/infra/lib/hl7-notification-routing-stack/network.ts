@@ -6,8 +6,9 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { MLLP_DEFAULT_PORT } from "../shared/constants";
+
 const NUM_AZS = 2;
-const MLLP_DEFAULT_PORT = 2575;
 
 interface NetworkStackProps extends cdk.StackProps {
   config: EnvConfig;
@@ -30,23 +31,6 @@ export class NetworkStack extends cdk.NestedStack {
       maxAzs: NUM_AZS,
     });
 
-    /**
-     * Our EIPs are retained after stack deletion to avoid disruption of existing connections with state HIEs.
-     * Losing our EIPs would create a nationwide ADT outage for us until all state HIEs re-register their gateways.
-     */
-    const eip1 = createEIPWithTags(
-      this,
-      "Eip1",
-      props.config.stackName,
-      props.config.environmentType
-    );
-    const eip2 = createEIPWithTags(
-      this,
-      "Eip2",
-      props.config.stackName,
-      props.config.environmentType
-    );
-
     const nlb = new elbv2.NetworkLoadBalancer(this, "NLB", {
       vpc,
       internetFacing: true,
@@ -57,46 +41,25 @@ export class NetworkStack extends cdk.NestedStack {
 
     const cfnNLB = nlb.node.defaultChild as elbv2.CfnLoadBalancer;
     cfnNLB.subnets = undefined;
-    cfnNLB.subnetMappings = [
-      {
-        subnetId: vpc.publicSubnets[0].subnetId,
-        allocationId: eip1.attrAllocationId,
-      },
-      {
-        subnetId: vpc.publicSubnets[1].subnetId,
-        allocationId: eip2.attrAllocationId,
-      },
-    ];
+    cfnNLB.subnetMappings = vpc.publicSubnets.map((subnet, index) => {
+      const eip = createEipWithTags(
+        this,
+        `EipForAvailabilityZone${index + 1}`,
+        props.config.stackName,
+        props.config.environmentType
+      );
 
-    const serviceSecurityGroup = new ec2.SecurityGroup(this, "ServiceSG", {
-      vpc,
-      description: "Security group for HL7v2 Fargate service",
-      allowAllOutbound: true,
+      return {
+        subnetId: subnet.subnetId,
+        allocationId: eip.attrAllocationId,
+      };
     });
-
-    serviceSecurityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(MLLP_DEFAULT_PORT),
-      "Allow MLLP traffic"
-    );
 
     this.output = {
       vpc,
       nlb,
       serviceSecurityGroup,
-      eipAddresses: [eip1.ref, eip2.ref],
     };
-
-    // Stack Outputs
-    new cdk.CfnOutput(this, "StaticIp1", {
-      value: eip1.ref,
-      description: "Static IP 1 for HL7v2 Server",
-    });
-
-    new cdk.CfnOutput(this, "StaticIp2", {
-      value: eip2.ref,
-      description: "Static IP 2 for HL7v2 Server",
-    });
 
     new cdk.CfnOutput(this, "NlbDnsName", {
       value: nlb.loadBalancerDnsName,
@@ -104,7 +67,11 @@ export class NetworkStack extends cdk.NestedStack {
   }
 }
 
-function createEIPWithTags(scope: Construct, id: string, stackName: string, envType: string) {
+/**
+ * Our EIPs are retained after stack deletion to avoid disruption of existing connections with state HIEs.
+ * Losing our EIPs would create a nationwide ADT outage for us until all state HIEs re-register their gateways.
+ */
+function createEipWithTags(scope: Construct, id: string, stackName: string, envType: string) {
   const eip = new ec2.CfnEIP(scope, id, {
     tags: [
       {
@@ -117,10 +84,16 @@ function createEIPWithTags(scope: Construct, id: string, stackName: string, envT
       },
       {
         key: "Purpose",
-        value: "HL7v2 NLB Static IP",
+        value: "MLLP Server NLB Static IP",
       },
     ],
   });
   eip.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
+
+  new cdk.CfnOutput(scope, id, {
+    value: eip.ref,
+    description: "Static IP for MLLP Server NLB",
+  });
+
   return eip;
 }

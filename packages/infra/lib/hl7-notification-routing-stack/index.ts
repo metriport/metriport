@@ -2,7 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
-import { ApplicationStack } from "./application";
+import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
 import { VpnStack } from "./vpn";
 
@@ -13,7 +13,7 @@ export interface Hl7NotificationRoutingStackProps extends cdk.StackProps {
 
 export class Hl7NotificationRoutingStack extends MetriportCompositeStack {
   public readonly networkStack: NetworkStack;
-  public readonly applicationStack: ApplicationStack;
+  public readonly mllpStack: MllpStack;
 
   constructor(scope: Construct, id: string, props: Hl7NotificationRoutingStackProps) {
     super(scope, id, props);
@@ -24,12 +24,12 @@ export class Hl7NotificationRoutingStack extends MetriportCompositeStack {
       description: "HL7 Notification Routing Network Infrastructure",
     });
 
-    this.applicationStack = new ApplicationStack(this, "ApplicationStack", {
-      stackName: "ApplicationStack",
+    this.mllpStack = new MllpStack(this, "MllpStack", {
+      stackName: "MllpStack",
       config: props.config,
       version: props.version,
       networkStack: this.networkStack.output,
-      description: "HL7 Notification Routing Application Infrastructure",
+      description: "HL7 Notification Routing MLLP Infrastructure",
     });
 
     props.config.hl7NotificationRouting.vpnConfigs.forEach(hieSpecificConfig => {
