@@ -299,7 +299,17 @@ export async function handler(event: SQSEvent) {
           bundle: hydratedBundle,
         });
 
+        console.log("postHogApiKey INSIDE SQS-to-CONVERTER", postHogApiKey);
         if (postHogApiKey) {
+          console.log(
+            "WILL BE SENDING INSIDE SQS-to-CONVERTER",
+            JSON.stringify({
+              distinctId: cxId,
+              event: EventTypes.conversionPostProcess,
+              properties: [{ ...hydrateMetrics?.properties, ...normalizeMetrics.properties }],
+            })
+          );
+
           await analyticsAsync(
             {
               distinctId: cxId,
@@ -308,6 +318,7 @@ export async function handler(event: SQSEvent) {
             },
             postHogApiKey
           );
+          console.log("SENT ANALYTICS INSIDE SQS-to-CONVERTER");
         }
 
         await storeNormalizedConversionResult({
