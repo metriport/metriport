@@ -30,7 +30,7 @@
   "dependencies": {
     "@medplum/hl7": "^3.2.33",
     "@metriport/core": "file:packages/core",
-    "@metriport/shared": "^0.12.2",
+    "@metriport/shared": "file:packages/shared",
     "@sentry/cli": "^2.42.1",
     "dotenv": "^16.4.5",
     "jest": "^29.7.0"

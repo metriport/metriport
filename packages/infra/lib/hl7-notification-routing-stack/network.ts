@@ -17,8 +17,6 @@ interface NetworkStackProps extends cdk.StackProps {
 export interface NetworkStackOutput {
   vpc: ec2.Vpc;
   nlb: elbv2.NetworkLoadBalancer;
-  serviceSecurityGroup: ec2.SecurityGroup;
-  eipAddresses: string[];
 }
 
 export class NetworkStack extends cdk.NestedStack {
@@ -58,7 +56,6 @@ export class NetworkStack extends cdk.NestedStack {
     this.output = {
       vpc,
       nlb,
-      serviceSecurityGroup,
     };
 
     new cdk.CfnOutput(this, "NlbDnsName", {
@@ -90,7 +87,7 @@ function createEipWithTags(scope: Construct, id: string, stackName: string, envT
   });
   eip.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
 
-  new cdk.CfnOutput(scope, id, {
+  new cdk.CfnOutput(scope, `${id}Output`, {
     value: eip.ref,
     description: "Static IP for MLLP Server NLB",
   });
