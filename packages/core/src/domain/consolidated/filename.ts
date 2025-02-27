@@ -3,6 +3,7 @@ import { createFilePath } from "../filename";
 
 export const extension = ".json";
 export const CONSOLIDATED_SNAPSHOT_KEY = "consolidated";
+export const CONSOLIDATED_DATA_KEY = "CONSOLIDATED_DATA";
 
 export function createConsolidatedDataFilePath(
   cxId: string,
@@ -10,7 +11,13 @@ export function createConsolidatedDataFilePath(
   deduped = true
 ): string {
   const additionalSuffix = deduped ? "" : "_with-duplicates";
-  return createFilePath(cxId, patientId, `CONSOLIDATED_DATA${additionalSuffix}${extension}`);
+
+  const filePathWithSuffix = createConsolidatedDataFileNameWithSuffix(cxId, patientId);
+  return `${filePathWithSuffix}${additionalSuffix}${extension}`;
+}
+
+export function createConsolidatedDataFileNameWithSuffix(cxId: string, patientId: string): string {
+  return createFilePath(cxId, patientId, CONSOLIDATED_DATA_KEY);
 }
 
 export function createConsolidatedSnapshotFileName(
@@ -20,14 +27,12 @@ export function createConsolidatedSnapshotFileName(
   type?: ConsolidatedFileType
 ): string {
   const date = new Date().toISOString();
-  return createFilePath(
-    cxId,
-    patientId,
-    `${CONSOLIDATED_SNAPSHOT_KEY}_${date}_${requestId}${getSuffixForType(type)}${extension}`
-  );
+  const filePathWithSuffix = createConsolidatedSnapshotFileNameWithSuffix(cxId, patientId);
+
+  return `${filePathWithSuffix}_${date}_${requestId}${getSuffixForType(type)}${extension}`;
 }
 
-export function createConsolidatedSnapshotFileNameWithNoExtension(
+export function createConsolidatedSnapshotFileNameWithSuffix(
   cxId: string,
   patientId: string
 ): string {

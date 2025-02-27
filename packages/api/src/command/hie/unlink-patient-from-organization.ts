@@ -3,8 +3,11 @@ import { out } from "@metriport/core/util/log";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { createMRSummaryFileNameWithNoExtension } from "@metriport/core/domain/medical-record-summary";
-import { createConsolidatedSnapshotFileNameWithNoExtension } from "@metriport/core/domain/consolidated/filename";
+import { createMRSummaryFileNameWithSuffix } from "@metriport/core/domain/medical-record-summary";
+import {
+  createConsolidatedSnapshotFileNameWithSuffix,
+  createConsolidatedDataFileNameWithSuffix,
+} from "@metriport/core/domain/consolidated/filename";
 import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/file-search-connector-factory";
 import { capture } from "@metriport/core/util";
 import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
@@ -106,7 +109,9 @@ export async function unlinkPatientFromOrganization({
   }
 
   if (errors.length > 0) {
-    capture.error("Failed to process some documents during unlink", { extra: { errors } });
+    capture.error("Failed to process some documents during unlink", {
+      extra: { cxId, patientId, oid, errors },
+    });
   }
 
   log(`Completed unlinking patient from organization`);
@@ -199,7 +204,7 @@ async function findAndRemoveConversionResultsFromS3(
     const validFiles = objects.flatMap(obj => obj.Key ?? []);
     if (validFiles.length === 0) return;
 
-    log(`${dryRunMsg}Deleting ${validFiles.length} files from S3`);
+    log(`${dryRunMsg}Deleting ${validFiles.length} files from S3 for ${fileName}`);
 
     if (!dryRun) {
       await s3Utils.deleteFiles({
@@ -208,9 +213,11 @@ async function findAndRemoveConversionResultsFromS3(
       });
     }
   } catch (error) {
-    log("Error removing conversion results from S3:");
+    log(`Error removing conversion results from S3: ${errorToString(error)}`);
     throw error;
   }
+
+  log(`Successfully removed conversion results from S3 for ${fileName}`);
 }
 
 async function findAndRemoveMedicalDocumentFromS3(
@@ -232,6 +239,8 @@ async function findAndRemoveMedicalDocumentFromS3(
     log("Error removing medical document from S3:");
     throw error;
   }
+
+  log(`Successfully removed medical document from S3 for ${fileName}`);
 }
 
 async function findAndRemoveConsolidatedDocumentFromS3(
@@ -242,13 +251,16 @@ async function findAndRemoveConsolidatedDocumentFromS3(
 ): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
   try {
-    const consolidatedPrefix = createConsolidatedSnapshotFileNameWithNoExtension(cxId, patientId);
-    const medicalRecordsPrefix = createMRSummaryFileNameWithNoExtension(cxId, patientId);
+    const consolidatedPrefix = createConsolidatedSnapshotFileNameWithSuffix(cxId, patientId);
+    const medicalRecordsPrefix = createMRSummaryFileNameWithSuffix(cxId, patientId);
+    const consolidatedDataPrefix = createConsolidatedDataFileNameWithSuffix(cxId, patientId);
 
-    const [existingConsolidatedFiles, existingMedicalRecordsFiles] = await Promise.all([
-      s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedPrefix),
-      s3Utils.listObjects(s3MedicalDocumentsBucketName, medicalRecordsPrefix),
-    ]);
+    const [existingConsolidatedFiles, existingMedicalRecordsFiles, existingConsolidatedDataFiles] =
+      await Promise.all([
+        s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedPrefix),
+        s3Utils.listObjects(s3MedicalDocumentsBucketName, medicalRecordsPrefix),
+        s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedDataPrefix),
+      ]);
 
     const existingFilenames: string[] = [];
 
@@ -260,6 +272,13 @@ async function findAndRemoveConsolidatedDocumentFromS3(
     if (existingMedicalRecordsFiles) {
       const medicalRecordsFileNames = existingMedicalRecordsFiles.flatMap(file => file.Key ?? []);
       existingFilenames.push(...medicalRecordsFileNames);
+    }
+
+    if (existingConsolidatedDataFiles) {
+      const consolidatedDataFileNames = existingConsolidatedDataFiles.flatMap(
+        file => file.Key ?? []
+      );
+      existingFilenames.push(...consolidatedDataFileNames);
     }
 
     if (existingFilenames.length > 0) {
@@ -276,6 +295,8 @@ async function findAndRemoveConsolidatedDocumentFromS3(
     log("Error removing consolidated documents from S3:");
     throw error;
   }
+
+  log(`Successfully removed consolidated documents from S3 for ${cxId} and ${patientId}`);
 }
 
 async function findAndInvalidateLinks(
@@ -300,11 +321,11 @@ async function findAndInvalidateLinks(
 
     await Promise.all([
       createOrUpdateInvalidLinks({ id: patientId, cxId, invalidLinks }),
-      updateCQPatientData({ id: patientId, cxId, invalidateLinks: invalidLinks.carequality }),
-      updateCwPatientData({ id: patientId, cxId, invalidateLinks: invalidLinks.commonwell }),
+      updateCQPatientData({ id: patientId, cxId, cqLinksToInvalidate: invalidLinks.carequality }),
+      updateCwPatientData({ id: patientId, cxId, cwLinksToInvalidate: invalidLinks.commonwell }),
     ]);
   } catch (error) {
-    log("Error invalidating links:");
+    log(`Error invalidating links: ${errorToString(error)}`);
     throw error;
   }
 }
@@ -319,9 +340,11 @@ async function deleteFromOpenSearch(entryId: string, dryRun = false, log: typeof
       log(`${dryRunMsg}Would delete entry ${entryId} from OpenSearch`);
     }
   } catch (error) {
-    log("Error deleting from OpenSearch:", error);
+    log(`Error deleting from OpenSearch: ${errorToString(error)}`);
     throw error;
   }
+
+  log(`Successfully deleted entry ${entryId} from OpenSearch`);
 }
 
 async function deleteFhirResource(
@@ -339,7 +362,7 @@ async function deleteFhirResource(
       log(`${dryRunMsg}Would delete FHIR resource ${resourceId}`);
     }
   } catch (error) {
-    log("Error deleting FHIR resource:", error);
+    log(`Error deleting FHIR resource: ${errorToString(error)}`);
     throw error;
   }
 }

@@ -14,13 +14,13 @@ export async function updateCwPatientData({
   id,
   cxId,
   cwLinks,
-  invalidateLinks,
+  cwLinksToInvalidate,
   requestLinksDemographics,
 }: {
   id: string;
   cxId: string;
   cwLinks?: CwLink[];
-  invalidateLinks?: CwLink[];
+  cwLinksToInvalidate?: CwLink[];
   requestLinksDemographics?: {
     requestId: string;
     linksDemographics: LinkDemographics[];
@@ -51,7 +51,7 @@ export async function updateCwPatientData({
       cwPatientData,
       existingPatient,
       transaction,
-      invalidateLinks
+      cwLinksToInvalidate
     );
   });
   return updateResult.dataValues;

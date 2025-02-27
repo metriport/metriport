@@ -3,6 +3,7 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { capture } from "@metriport/core/util";
+import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
 import httpStatus from "http-status";
 import { z } from "zod";
@@ -63,6 +64,8 @@ router.post(
     const oid = getFrom("query").orFail("oid", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
 
+    const { log } = out(`unlinkPatientFromOrganization - patient ${patientId} - cxId ${cxId}`);
+
     unlinkPatientFromOrganization({
       cxId,
       patientId,
@@ -70,7 +73,7 @@ router.post(
       dryRun,
     }).catch(err => {
       const msg = `Error unlinking patient from organization`;
-      console.log(`${msg}: ${cxId}: ${patientId}: ${oid}: ${errorToString(err)}`);
+      log(`Error unlinking patient from organization: ${errorToString(err)}`);
       capture.error(err, { extra: { msg, cxId, patientId, oid } });
     });
 
