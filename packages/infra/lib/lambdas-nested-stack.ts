@@ -1,10 +1,10 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as rds from "aws-cdk-lib/aws-rds";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
@@ -13,7 +13,7 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
 import * as AppConfigUtils from "./shared/app-config";
-import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
 
@@ -499,18 +499,21 @@ export class LambdasNestedStack extends NestedStack {
       appConfigResources: ["*"],
     });
 
+    console.log("posthogSecretName in nested stack is", posthogSecretName);
     if (posthogSecretName) {
-      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
+      console.log("secrets[posthogSecretName] in nested stack is", secrets[posthogSecretName]);
+      const res = secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
+      console.log("RES OF GRANT READ in nested stack is", res);
     }
     bundleBucket.grantReadWrite(fhirToBundleLambda);
     conversionsBucket.grantRead(fhirToBundleLambda);
 
-    const secretsManagerPolicyStatement = new iam.PolicyStatement({
-      actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-      resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`],
-    });
+    // const secretsManagerPolicyStatement = new iam.PolicyStatement({
+    //   actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+    //   resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`],
+    // });
 
-    fhirToBundleLambda.addToRolePolicy(secretsManagerPolicyStatement);
+    // fhirToBundleLambda.addToRolePolicy(secretsManagerPolicyStatement);
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],
