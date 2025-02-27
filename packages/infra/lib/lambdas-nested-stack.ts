@@ -140,7 +140,6 @@ export class LambdasNestedStack extends NestedStack {
       appId: props.appConfigEnvVars.appId,
       configId: props.appConfigEnvVars.configId,
       bedrock: props.config.bedrock,
-      posthogSecretKeyName: props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET,
     });
   }
 
@@ -439,7 +438,6 @@ export class LambdasNestedStack extends NestedStack {
     appId,
     configId,
     bedrock,
-    posthogSecretKeyName: posthogSecretName,
   }: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -452,7 +450,6 @@ export class LambdasNestedStack extends NestedStack {
     appId: string;
     configId: string;
     bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
-    posthogSecretKeyName?: string;
   }): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -477,9 +474,6 @@ export class LambdasNestedStack extends NestedStack {
           AI_BRIEF_MODEL_ID: bedrock?.modelId,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        ...(posthogSecretName && {
-          POST_HOG_API_KEY_SECRET: posthogSecretName,
-        }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 4096,

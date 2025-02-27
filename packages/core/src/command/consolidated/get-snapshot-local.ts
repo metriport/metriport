@@ -8,7 +8,6 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
@@ -35,7 +34,6 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
     const { cxId, id: patientId } = params.patient;
-
     const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);
@@ -50,22 +48,16 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       patientId
     );
 
-    const { bundle: dedupedBundle, metrics: dedupMetrics } = await deduplicate({
+    const dedupedBundle = await deduplicate({
       cxId,
       patientId,
       bundle: originalBundleWithoutContainedPatients,
     });
 
-    const { bundle: normalizedBundle, metrics: normalizeMetrics } = await normalize({
+    const normalizedBundle = await normalize({
       cxId,
       patientId,
       bundle: dedupedBundle,
-    });
-
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.consolidatedPostProcess,
-      properties: [{ ...dedupMetrics.properties, ...normalizeMetrics.properties }],
     });
 
     try {

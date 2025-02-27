@@ -4,6 +4,7 @@ dotenv.config();
 import { Bundle } from "@medplum/fhirtypes";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { getFileContents, getFileNames } from "../shared/fs";
@@ -31,9 +32,13 @@ async function main() {
     const stringBundle = getFileContents(filePath);
     const bundle: Bundle = JSON.parse(stringBundle);
 
+    const startedAt = new Date();
+
     const cxId = uuidv4();
     const patientId = uuidv4();
-    const { bundle: resultingBundle } = await hydrate({ cxId, patientId, bundle });
+    const resultingBundle = await hydrate({ cxId, patientId, bundle });
+
+    console.log(`Hydrated bundle in ${elapsedTimeFromNow(startedAt)} ms.`);
 
     const lastSlash = filePath.lastIndexOf("/");
     const fileName = filePath.slice(lastSlash + 1).split(".json")[0];
