@@ -180,6 +180,8 @@ export function createLambda({
   console.log("posthogSecretName in conversion lambda is", posthogSecretName);
   if (posthogSecretName) {
     console.log("secrets[posthogSecretName] in conversion lambda is", secrets[posthogSecretName]);
+    console.log("PostHog secret properties:", Object.values(secrets));
+    console.log("PostHog secret JSON properties:", JSON.stringify(secrets));
     const res = secrets[posthogSecretName]?.grantRead(conversionLambda);
     console.log("RES OF GRANT READ in conversion lambda is", res);
   }
