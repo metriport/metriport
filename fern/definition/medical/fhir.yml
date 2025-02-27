@@ -53,7 +53,7 @@ service:
             type: optional<string>
           conversionType:
             docs: |
-              The doc type to convert to. Either `html` or `pdf`.
+              The doc type to convert to. `html`, `pdf`, or `json`.
             type: optional<string>
         body:
           docs: |
@@ -191,13 +191,10 @@ service:
 
 types:
   StartConsolidatedQueryResponse:
-    properties:
-      query: PatientConsolidatedDataStatus
-      message: optional<string>
+    type: PatientConsolidatedDataStatus
     examples:
       - name: Example0
-        value:
-          query: $PatientConsolidatedDataStatus.Example0
+        value: $PatientConsolidatedDataStatus.Example0
 
   PatientConsolidatedDataStatus:
     properties:
@@ -210,7 +207,7 @@ types:
       dateTo:
         type: optional<string>
       conversionType:
-        type: ConversionTypeFHIR
+        type: optional<ConversionTypeFHIR>
       status:
         type: DocumentQueryStatusFHIR
     examples:

@@ -18,6 +18,7 @@ def test_create_patient_consolidated():
         entry=[
             {
                 "resource": {
+                    "id": "00000000-0000-0000-0000-000000000000",
                     "resourceType": "Appointment",
                     "status": "booked",
                     "participant": [
