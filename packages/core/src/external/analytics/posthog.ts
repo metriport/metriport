@@ -48,6 +48,7 @@ export async function analyticsAsync(params: EventMessageV1, postApiKey: string)
 }
 
 export enum EventTypes {
+  patientCreate = "patientCreate",
   query = "query",
   webhook = "webhook",
   error = "error",
