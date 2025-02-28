@@ -4,6 +4,7 @@ import { out } from "../../../util";
 import { EventMessageV1, EventTypes } from "../../analytics/posthog";
 import { normalizeFhir } from "../normalization/normalize-fhir";
 
+// TODO: 2731 - Refactor metrics / analytics
 export async function normalize({
   cxId,
   patientId,

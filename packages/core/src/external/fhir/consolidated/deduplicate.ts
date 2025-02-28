@@ -4,6 +4,7 @@ import { deduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { out } from "../../../util";
 import { EventMessageV1, EventTypes } from "../../analytics/posthog";
 
+// TODO: 2731 - Refactor metrics / analytics
 export async function deduplicate({
   cxId,
   patientId,
