@@ -236,7 +236,7 @@ async function findAndRemoveMedicalDocumentFromS3(
       await s3Utils.deleteFile({ bucket: s3MedicalDocumentsBucketName, key: fileName });
     }
   } catch (error) {
-    log("Error removing medical document from S3:");
+    log(`Error removing medical document from S3: ${errorToString(error)}`);
     throw error;
   }
 
@@ -251,13 +251,16 @@ async function findAndRemoveConsolidatedDocumentFromS3(
 ): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
   try {
-    const consolidatedPrefix = createConsolidatedSnapshotFileNameWithSuffix(cxId, patientId);
+    const consolidatedSnapshotPrefix = createConsolidatedSnapshotFileNameWithSuffix(
+      cxId,
+      patientId
+    );
     const medicalRecordsPrefix = createMRSummaryFileNameWithSuffix(cxId, patientId);
     const consolidatedDataPrefix = createConsolidatedDataFileNameWithSuffix(cxId, patientId);
 
     const [existingConsolidatedFiles, existingMedicalRecordsFiles, existingConsolidatedDataFiles] =
       await Promise.all([
-        s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedPrefix),
+        s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedSnapshotPrefix),
         s3Utils.listObjects(s3MedicalDocumentsBucketName, medicalRecordsPrefix),
         s3Utils.listObjects(s3MedicalDocumentsBucketName, consolidatedDataPrefix),
       ]);
@@ -292,7 +295,7 @@ async function findAndRemoveConsolidatedDocumentFromS3(
       }
     }
   } catch (error) {
-    log("Error removing consolidated documents from S3:");
+    log(`Error removing consolidated documents from S3: ${errorToString(error)}`);
     throw error;
   }
 
