@@ -14,25 +14,33 @@ const isSandbox = Config.isSandbox();
 export const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
 export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 
+export type ProcessDocQueryProgressWebhookParams = {
+  patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">;
+  requestId: string;
+  isDoneConsolidated?: boolean;
+  progressType?: ProgressType;
+};
+
 /**
  * Processes the document query progress to determine if when to send the document download and conversion webhooks
  */
 export const processDocQueryProgressWebhook = async ({
   patient,
-  documentQueryProgress,
   requestId,
   progressType,
 }: {
-  patient: Pick<Patient, "id" | "cxId" | "externalId">;
-  documentQueryProgress: DocumentQueryProgress;
+  patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">;
   requestId: string;
   progressType?: ProgressType;
 }): Promise<void> => {
   const { id: patientId } = patient;
+  const { documentQueryProgress } = patient.data;
 
   try {
-    await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
-    await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
+    if (documentQueryProgress) {
+      await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
+      await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
+    }
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
     const extra = {
@@ -55,7 +63,7 @@ const handleDownloadWebhook = async (
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
 ): Promise<void> => {
-  const webhookSent = documentQueryProgress?.download?.webhookSent ?? false;
+  const webhookSent = documentQueryProgress.download?.webhookSent ?? false;
 
   const downloadStatus = documentQueryProgress.download?.status;
   const isDownloadFinished = downloadStatus === "completed" || downloadStatus === "failed";
@@ -90,9 +98,9 @@ const handleConversionWebhook = async (
 
   const convertStatus = documentQueryProgress.convert?.status;
   const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
-  const isTypeConversion = progressType ? progressType === "convert" : true;
+  const isTypeConsolidated = progressType ? progressType === "consolidated" : true;
 
-  const canProcessRequest = isConvertFinished && isTypeConversion && !webhookSent;
+  const canProcessRequest = isConvertFinished && isTypeConsolidated && !webhookSent;
 
   if (canProcessRequest) {
     const convertIsCompleted = convertStatus === "completed";

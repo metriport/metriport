@@ -11,7 +11,7 @@ export type Progress = {
 
 export type ProgressIntKeys = keyof Omit<Progress, "status">;
 
-export const progressTypes = ["convert", "download"] as const;
+export const progressTypes = ["convert", "download", "consolidated"] as const;
 export type ProgressType = (typeof progressTypes)[number];
 
 export type DocumentQueryProgress = Partial<
