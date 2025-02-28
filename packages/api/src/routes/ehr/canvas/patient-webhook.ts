@@ -9,14 +9,14 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../
 const router = Router();
 
 /**
- * GET /ehr/canvas/patient/:id
+ * GET /ehr/webhook/canvas/patient/:id/appointment-created
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Canvas Patient.
  * @returns Metriport Patient if found.
  */
-router.get(
-  "/:id",
+router.post(
+  "/:id/appointment-created",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
@@ -27,6 +27,7 @@ router.get(
       cxId,
       canvasPracticeId,
       canvasPatientId,
+      triggerDq: true,
     });
     return res.status(httpStatus.OK).json(patientId);
   })

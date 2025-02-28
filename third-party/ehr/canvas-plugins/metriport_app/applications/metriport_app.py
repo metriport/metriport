@@ -2,10 +2,10 @@ from canvas_sdk.effects import Effect
 from canvas_sdk.effects.launch_modal import LaunchModalEffect
 from canvas_sdk.handlers.application import Application
 
-from shared import (
+from metriport_app.utils.shared import (
   METRIPORT_DASH_URL,
   get_metriport_token,
-  get_patient_id
+  get_patient_id,
 )
 
 class MetriportApp(Application):
