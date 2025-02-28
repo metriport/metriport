@@ -4,7 +4,6 @@ import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { captureAnalyticsAsync } from "../../external/analytics/posthog";
 import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
@@ -63,13 +62,11 @@ export async function createConsolidatedFromConversions({
   );
 
   log(`Deduplicating consolidated bundle...`);
-  const { bundle: dedupedBundle, metrics: dedupMetrics } = await deduplicate({
+  const dedupedBundle = await deduplicate({
     cxId,
     patientId,
     bundle: withDups,
   });
-
-  await captureAnalyticsAsync(dedupMetrics);
 
   log(`...done, from ${withDups.entry?.length} to ${dedupedBundle.entry?.length} resources`);
 

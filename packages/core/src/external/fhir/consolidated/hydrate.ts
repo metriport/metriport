@@ -1,10 +1,9 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes, analytics } from "../../analytics/posthog";
 import { hydrateFhir } from "../hydration/hydrate-fhir";
 
-// TODO: 2731 - Refactor metrics / analytics
 export async function hydrate({
   cxId,
   patientId,
@@ -13,10 +12,7 @@ export async function hydrate({
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
-}): Promise<{
-  bundle: Bundle<Resource>;
-  metrics: EventMessageV1;
-}> {
+}): Promise<Bundle<Resource>> {
   const { log } = out(`Hydrate. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
@@ -40,5 +36,7 @@ export async function hydrate({
   }
 
   log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
-  return { bundle: hydratedBundle, metrics };
+  analytics(metrics);
+
+  return hydratedBundle;
 }

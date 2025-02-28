@@ -4,8 +4,8 @@ import {
   ConsolidatedSnapshotResponse,
 } from "@metriport/core/command/consolidated/get-snapshot";
 import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
-import { initPostHog } from "@metriport/core/external/analytics/posthog";
-import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
+import { initPostHog, shutdown } from "@metriport/core/external/analytics/posthog";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -22,8 +22,8 @@ const postHogSecretName = getEnvOrFail("POST_HOG_API_KEY_SECRET");
 export async function handler(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<ConsolidatedSnapshotResponse | void> {
-  const postHogApiKey = await getSecretValue(postHogSecretName, region);
-  initPostHog(postHogApiKey);
+  const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
+  initPostHog(postHogApiKey, "lambda");
 
   const { patient, requestId, resources, dateFrom, dateTo } = params;
   const conversionType = params.isAsync ? params.conversionType : undefined;
@@ -47,5 +47,7 @@ export async function handler(
     };
     log(`${msg}: ${JSON.stringify(filters)}`);
     throw error;
+  } finally {
+    await shutdown();
   }
 }

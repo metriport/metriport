@@ -26,10 +26,11 @@ dayjs.extend(duration);
 
 const app: Application = express();
 const version = Config.getVersion();
+const defaultPostHogApiKey = Config.getPostHogApiKey();
 
 // Must be before routes
 initSentry(app);
-initPostHog();
+initPostHog(defaultPostHogApiKey, "oss-api");
 
 app.use(helmet()); // needs to come before any route declaration, including cors()
 app.use(express.json({ limit: "20mb" }));

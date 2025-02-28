@@ -13,14 +13,10 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
-import {
-  EventMessageV1,
-  captureAnalyticsAsync,
-  initPostHog,
-} from "@metriport/core/external/analytics/posthog";
+import { initPostHog, shutdown } from "@metriport/core/external/analytics/posthog";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
-import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
@@ -101,10 +97,9 @@ type EventBody = {
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 // TODO: 2502 - Migrate most of the logic to the core to simplify the lambda handler as much as possible
 export async function handler(event: SQSEvent) {
+  const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
+  initPostHog(postHogApiKey, "lambda");
   try {
-    const postHogApiKey = await getSecretValue(postHogSecretName, region);
-    initPostHog(postHogApiKey);
-
     // Process messages from SQS
     const records = event.Records;
     if (!records || records.length < 1) {
@@ -249,7 +244,6 @@ export async function handler(event: SQSEvent) {
         });
 
         let hydratedBundle = conversionResult;
-        let hydrateMetrics: EventMessageV1 | undefined;
 
         // TODO: 2563 - Remove this after prod testing is done
         if (await isHydrationEnabledForCx(cxId)) {
@@ -265,8 +259,7 @@ export async function handler(event: SQSEvent) {
               ),
             ]);
 
-            hydratedBundle = result.bundle;
-            hydrateMetrics = result.metrics;
+            hydratedBundle = result;
 
             await storeHydratedConversionResult({
               s3Utils,
@@ -295,13 +288,11 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
-        const { bundle: normalizedBundle, metrics: normalizeMetrics } = await normalize({
+        const normalizedBundle = await normalize({
           cxId,
           patientId,
           bundle: hydratedBundle,
         });
-
-        await captureAnalyticsAsync([hydrateMetrics, normalizeMetrics].flatMap(m => m ?? []));
 
         await storeNormalizedConversionResult({
           s3Utils,
@@ -349,6 +340,8 @@ export async function handler(event: SQSEvent) {
       extra: { event, context: lambdaName, error },
     });
     throw new MetriportError(msg);
+  } finally {
+    await shutdown();
   }
 }
 

@@ -1,6 +1,7 @@
-import { toArray } from "@metriport/shared";
 import { PostHog } from "posthog-node";
 import { Config } from "../../util/config";
+
+const GROUP_TYPE = "customer";
 
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
 export interface IdentifyMessageV1 {
@@ -15,86 +16,6 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   groups?: Record<string, string | number>; // Mapping of group type to group id
   sendFeatureFlags?: boolean;
   timestamp?: Date;
-}
-
-const defaultPostHogApiKey = Config.getPostHogApiKey();
-const groupType = "customer";
-let posthogClient: PostHog | undefined;
-
-export function initPostHog(apiKey?: string): PostHog | undefined {
-  const postHogApiKey = apiKey ?? defaultPostHogApiKey;
-  if (!postHogApiKey) return undefined;
-
-  return new PostHog(postHogApiKey);
-}
-
-function getPosthogClientInstance(): PostHog | undefined {
-  return posthogClient ?? initPostHog(defaultPostHogApiKey);
-}
-
-export function captureAnalytics(params: EventMessageV1): void {
-  const posthogClient = getPosthogClientInstance();
-  if (!posthogClient) return;
-
-  const enrichedParams = {
-    ...params,
-    properties: {
-      ...(params.properties ?? {}),
-      environment: Config.getEnvType(),
-      platform: "oss-api",
-    },
-    groups: { [groupType]: params.distinctId },
-  };
-
-  posthogClient.capture(enrichedParams);
-}
-
-/**
- * Can send multiple analytics events in one bulk request when it calls to shutdown.
- * @link - https://posthog.com/docs/libraries/node#using-in-a-short-lived-process-like-aws-lambda
- */
-export async function captureAnalyticsAsync(
-  events: EventMessageV1 | EventMessageV1[]
-): Promise<void> {
-  if (!posthogClient) return;
-  toArray(events).forEach(captureAnalytics);
-
-  // Needed to send requests to PostHog in lambda
-  await posthogClient.shutdown();
-}
-
-/**
- * @deprecated Use captureAnalytics() instead. This function creates a new PostHog instance on every call.
- */
-export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
-  const apiKey = postApiKey ?? defaultPostHogApiKey;
-
-  if (!apiKey) return;
-
-  const posthog = new PostHog(apiKey);
-
-  params.properties = {
-    ...(params.properties ? { ...params.properties } : undefined),
-    environment: Config.getEnvType(),
-    platform: "oss-api",
-  };
-  params.groups = { [groupType]: params.distinctId };
-  posthog.capture(params);
-
-  return posthog;
-}
-
-/**
- * @deprecated Use captureAnalyticsAsync() instead. This function creates a new PostHog instance on every call.
- */
-export async function analyticsAsync(params: EventMessageV1, postApiKey: string) {
-  const posthog = analytics(params, postApiKey);
-
-  if (!posthog) return;
-
-  // Needed to send requests to PostHog in lambda
-  // https://posthog.com/docs/libraries/node#using-in-a-short-lived-process-like-aws-lambda
-  await posthog.shutdown();
 }
 
 export enum EventTypes {
@@ -120,4 +41,73 @@ export enum EventTypes {
 
 export enum EventErrMessage {
   no_access = "no access",
+}
+
+class PostHogAnalytics {
+  private static instance: PostHogAnalytics;
+  private client?: PostHog;
+  private platform: "oss-api" | "lambda" = "oss-api";
+
+  /**
+   * Initialize PostHog analytics - should be called once on API startup or Lambda init
+   */
+  static init(apiKey: string, platform: "oss-api" | "lambda" = "oss-api"): PostHogAnalytics {
+    if (!PostHogAnalytics.instance) {
+      PostHogAnalytics.instance = new PostHogAnalytics();
+      PostHogAnalytics.instance.client = new PostHog(apiKey);
+      PostHogAnalytics.instance.platform = platform;
+    }
+    return PostHogAnalytics.instance;
+  }
+
+  static getInstance(): PostHogAnalytics {
+    if (!PostHogAnalytics.instance) {
+      const apiKey = Config.getPostHogApiKey();
+      if (!apiKey) throw new Error("PostHog API key not configured");
+      return PostHogAnalytics.init(apiKey);
+    }
+    return PostHogAnalytics.instance;
+  }
+
+  capture(params: EventMessageV1): void {
+    if (!this.client) return;
+
+    const enrichedParams = {
+      ...params,
+      properties: {
+        ...(params.properties ?? {}),
+        environment: Config.getEnvType(),
+        platform: this.platform,
+      },
+      groups: { [GROUP_TYPE]: params.distinctId },
+    };
+
+    this.client.capture(enrichedParams);
+  }
+
+  async shutdown(): Promise<void> {
+    // Necessary for calls within an AWS Lambda
+    await this.client?.shutdown();
+  }
+}
+
+/**
+ * Initialize PostHog analytics - should be called once on API startup or Lambda init
+ */
+export function initPostHog(apiKey: string, platform: "oss-api" | "lambda"): void {
+  PostHogAnalytics.init(apiKey, platform);
+}
+
+/**
+ * Capture a single analytics event
+ */
+export function analytics(params: EventMessageV1): void {
+  PostHogAnalytics.getInstance().capture(params);
+}
+
+/**
+ * Allows to send bulk analytics requests from the AWS Lambdas
+ */
+export function shutdown(): Promise<void> {
+  return PostHogAnalytics.getInstance().shutdown();
 }

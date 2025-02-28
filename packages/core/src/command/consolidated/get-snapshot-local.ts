@@ -8,7 +8,6 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
-import { captureAnalyticsAsync } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
@@ -50,19 +49,17 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       patientId
     );
 
-    const { bundle: dedupedBundle, metrics: dedupMetrics } = await deduplicate({
+    const dedupedBundle = await deduplicate({
       cxId,
       patientId,
       bundle: originalBundleWithoutContainedPatients,
     });
 
-    const { bundle: normalizedBundle, metrics: normalizeMetrics } = await normalize({
+    const normalizedBundle = await normalize({
       cxId,
       patientId,
       bundle: dedupedBundle,
     });
-
-    await captureAnalyticsAsync([dedupMetrics, normalizeMetrics]);
 
     try {
       checkBundle(normalizedBundle, cxId, patientId);
