@@ -4,7 +4,7 @@ import {
   initPostHog,
   shutdown,
 } from "@metriport/core/external/analytics/posthog";
-import { getSecretValue, getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { processInboundDr } from "@metriport/core/external/carequality/dr/process-inbound-dr";
 import { createInboundDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dr-response";
 import { processInboundDrRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dr-request";
@@ -55,9 +55,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
       const xmlResponse = await createInboundDrResponse(result);
 
       if (result.documentReference && result.documentReference.length > 1 && postHogSecretName) {
-        const postHogApiKey = await getSecretValue(postHogSecretName, region);
-
-        if (postHogApiKey && engineeringCxId) {
+        if (engineeringCxId) {
           analytics({
             distinctId: engineeringCxId,
             event: EventTypes.inboundDocumentRetrieval,

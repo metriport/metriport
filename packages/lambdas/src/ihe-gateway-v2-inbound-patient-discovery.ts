@@ -4,7 +4,7 @@ import {
   initPostHog,
   shutdown,
 } from "@metriport/core/external/analytics/posthog";
-import { getSecretValue, getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { createInboundXcpdResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/create/xcpd-response";
 import { processInboundXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/process/xcpd-request";
 import { processInboundXcpd } from "@metriport/core/external/carequality/pd/process-inbound-pd";
@@ -46,9 +46,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
       });
 
       if (result.patientMatch && postHogSecretName) {
-        const postHogApiKey = await getSecretValue(postHogSecretName, region);
-
-        if (postHogApiKey && engineeringCxId) {
+        if (engineeringCxId) {
           analytics({
             distinctId: engineeringCxId,
             event: EventTypes.inboundPatientDiscovery,
