@@ -207,8 +207,6 @@ export async function handler(event: SQSEvent) {
 
         const partitionedPayloads = partitionPayload(payloadClean);
 
-        await cloudWatchUtils.reportMemoryUsage();
-
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
             converterUrl,

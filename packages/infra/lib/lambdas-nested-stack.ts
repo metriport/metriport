@@ -19,6 +19,7 @@ import { Secrets } from "./shared/secrets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
+const posthogEnvVarName = "POST_HOG_API_KEY_SECRET";
 const pollingBuffer = Duration.seconds(30);
 
 interface LambdasNestedStackProps extends NestedStackProps {
@@ -481,7 +482,7 @@ export class LambdasNestedStack extends NestedStack {
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         ...(posthogSecretKeyName && {
-          POST_HOG_API_KEY_SECRET: posthogSecretKeyName,
+          [posthogEnvVarName]: posthogSecretKeyName,
         }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
@@ -499,11 +500,9 @@ export class LambdasNestedStack extends NestedStack {
       appConfigResources: ["*"],
     });
 
-    if (posthogSecretKeyName) {
-      secrets["POST_HOG_API_KEY_SECRET"]?.grantRead(fhirToBundleLambda);
-    }
     bundleBucket.grantReadWrite(fhirToBundleLambda);
     conversionsBucket.grantRead(fhirToBundleLambda);
+    secrets[posthogEnvVarName]?.grantRead(fhirToBundleLambda);
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],

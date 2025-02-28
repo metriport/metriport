@@ -1,4 +1,9 @@
-import { EventTypes, initPostHog, shutdown } from "@metriport/core/external/analytics/posthog";
+import {
+  EventTypes,
+  analytics,
+  initPostHog,
+  shutdown,
+} from "@metriport/core/external/analytics/posthog";
 import { getSecretValue, getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { createInboundXcpdResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/create/xcpd-response";
 import { processInboundXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/process/xcpd-request";
