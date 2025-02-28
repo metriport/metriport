@@ -21,6 +21,7 @@ dayjs.extend(duration);
 
 const AI_BRIEF_TIMEOUT = dayjs.duration(1.5, "minutes");
 const s3Utils = new S3Utils(Config.getAWSRegion());
+const TIMED_OUT = Symbol("TIMED_OUT");
 
 export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
@@ -37,8 +38,6 @@ export type ConsolidatePatientDataCommand = {
 };
 
 type BundleLocation = { bucket: string; key: string };
-
-const TIMED_OUT = Symbol("TIMED_OUT");
 
 /**
  * Create a consolidated bundle from the existing conversion bundles.
