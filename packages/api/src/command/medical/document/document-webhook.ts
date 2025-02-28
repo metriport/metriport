@@ -156,5 +156,5 @@ export async function createConsolidatedAndProcessWebhook(
 ) {
   await recreateConsolidated(recreateParams);
   log(`Sending DQ WH in createConsolidatedAndProcessWebhook...`);
-  await processDocQueryProgressWebhook({ ...whParams, isConsolidatedComplete: true });
+  await processDocQueryProgressWebhook(whParams);
 }

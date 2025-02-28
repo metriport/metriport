@@ -12,14 +12,14 @@ import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { executeAsynchronously, out } from "../../util";
+import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { controlDuration } from "../../util/race-control";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
 dayjs.extend(duration);
 
-const AI_BRIEF_TIMEOUT = dayjs.duration(3, "minutes");
+const AI_BRIEF_TIMEOUT = dayjs.duration(1.5, "minutes");
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
 export const conversionBundleSuffix = ".xml.json";
@@ -37,6 +37,8 @@ export type ConsolidatePatientDataCommand = {
 };
 
 type BundleLocation = { bucket: string; key: string };
+
+const TIMED_OUT = Symbol("TIMED_OUT");
 
 /**
  * Create a consolidated bundle from the existing conversion bundles.
@@ -76,10 +78,16 @@ export async function createConsolidatedFromConversions({
   if (isAiBriefFeatureFlagEnabled && deduped.entry && deduped.entry.length > 0) {
     const binaryBundleEntry = await Promise.race([
       generateAiBriefBundleEntry(deduped, cxId, patientId, log),
-      controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), undefined),
+      controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
     ]);
 
-    if (binaryBundleEntry) {
+    if (binaryBundleEntry === TIMED_OUT) {
+      log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
+      capture.message("AI Brief generation timed out", {
+        extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },
+        level: "warning",
+      });
+    } else if (binaryBundleEntry) {
       deduped.entry?.push(binaryBundleEntry);
     }
   }

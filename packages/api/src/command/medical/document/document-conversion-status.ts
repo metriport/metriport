@@ -107,7 +107,7 @@ export async function calculateDocumentConversionStatus({
     const dqWhParams: ProcessDocQueryProgressWebhookParams | undefined = {
       patient: updatedPatient,
       requestId,
-      progressType: "convert",
+      progressType: "consolidated",
     };
 
     if (

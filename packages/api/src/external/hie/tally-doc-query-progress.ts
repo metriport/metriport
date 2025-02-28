@@ -74,7 +74,6 @@ export async function tallyDocQueryProgress({
     patient,
     requestId,
     progressType: type,
-    isConsolidatedComplete: false,
   });
 
   return patient;

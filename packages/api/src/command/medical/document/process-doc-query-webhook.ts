@@ -27,12 +27,10 @@ export type ProcessDocQueryProgressWebhookParams = {
 export const processDocQueryProgressWebhook = async ({
   patient,
   requestId,
-  isConsolidatedComplete = true,
   progressType,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">;
   requestId: string;
-  isConsolidatedComplete?: boolean;
   progressType?: ProgressType;
 }): Promise<void> => {
   const { id: patientId } = patient;
@@ -41,9 +39,7 @@ export const processDocQueryProgressWebhook = async ({
   try {
     if (documentQueryProgress) {
       await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
-      if (isConsolidatedComplete) {
-        await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
-      }
+      await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
     }
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
@@ -102,9 +98,9 @@ const handleConversionWebhook = async (
 
   const convertStatus = documentQueryProgress.convert?.status;
   const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
-  const isTypeConversion = progressType ? progressType === "convert" : true;
+  const isTypeConsolidated = progressType ? progressType === "consolidated" : true;
 
-  const canProcessRequest = isConvertFinished && isTypeConversion && !webhookSent;
+  const canProcessRequest = isConvertFinished && isTypeConsolidated && !webhookSent;
 
   if (canProcessRequest) {
     const convertIsCompleted = convertStatus === "completed";
