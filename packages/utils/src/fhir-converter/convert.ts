@@ -124,7 +124,7 @@ export async function convert(
   }
 
   if (options?.hydrate) {
-    const { bundle: hydratedBundle } = await hydrate({
+    const hydratedBundle = await hydrate({
       cxId,
       patientId,
       bundle: combinedBundle,
@@ -133,7 +133,7 @@ export async function convert(
   }
 
   if (options?.normalize) {
-    const { bundle: normalizedBundle } = await normalize({
+    const normalizedBundle = await normalize({
       cxId,
       patientId,
       bundle: combinedBundle,

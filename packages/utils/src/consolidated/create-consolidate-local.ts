@@ -81,13 +81,13 @@ export async function createConsolidatedFromLocal(
 
   withDups.entry?.push(patient);
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
-  const { bundle: dedupedBundle } = await deduplicate({
+  const dedupedBundle = await deduplicate({
     cxId,
     patientId,
     bundle: withDups,
   });
 
-  const { bundle: normalizedBundle } = await normalize({
+  const normalizedBundle = await normalize({
     cxId,
     patientId,
     bundle: dedupedBundle,

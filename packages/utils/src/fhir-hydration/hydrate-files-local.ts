@@ -33,7 +33,7 @@ async function main() {
 
     const cxId = uuidv4();
     const patientId = uuidv4();
-    const { bundle: resultingBundle } = await hydrate({ cxId, patientId, bundle });
+    const resultingBundle = await hydrate({ cxId, patientId, bundle });
 
     const lastSlash = filePath.lastIndexOf("/");
     const fileName = filePath.slice(lastSlash + 1).split(".json")[0];

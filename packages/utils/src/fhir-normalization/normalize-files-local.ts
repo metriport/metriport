@@ -33,7 +33,7 @@ async function main() {
 
     const cxId = uuidv4();
     const patientId = uuidv4();
-    const { bundle: normalizedBundle } = await normalize({
+    const normalizedBundle = await normalize({
       cxId,
       patientId,
       bundle,
