@@ -16,6 +16,7 @@ export async function hydrate({
   const { log } = out(`Hydrate. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
+  // TODO: 2731 - Create and use helper functions to create analytics events for Posthog
   const metrics: EventMessageV1 = {
     distinctId: cxId,
     event: EventTypes.fhirHydration,
@@ -30,7 +31,7 @@ export async function hydrate({
   if (metadata) {
     metrics.properties = {
       ...metrics.properties,
-      hydrateDurationMs: duration,
+      duration,
       ...metadata,
     };
   }

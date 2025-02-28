@@ -4,7 +4,7 @@ import {
   ConsolidatedSnapshotResponse,
 } from "@metriport/core/command/consolidated/get-snapshot";
 import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
-import { initPostHog, shutdown } from "@metriport/core/external/analytics/posthog";
+import { initPostHog, shutdownPostHog } from "@metriport/core/external/analytics/posthog";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
@@ -48,6 +48,6 @@ export async function handler(
     log(`${msg}: ${JSON.stringify(filters)}`);
     throw error;
   } finally {
-    await shutdown();
+    await shutdownPostHog();
   }
 }

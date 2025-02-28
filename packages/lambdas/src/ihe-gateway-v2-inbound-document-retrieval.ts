@@ -2,7 +2,7 @@ import {
   EventTypes,
   analytics,
   initPostHog,
-  shutdown,
+  shutdownPostHog,
 } from "@metriport/core/external/analytics/posthog";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { processInboundDr } from "@metriport/core/external/carequality/dr/process-inbound-dr";
@@ -78,7 +78,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
     log(`${msg}: ${errorToString(error)}`);
     return buildResponse(500, "Internal Server Error");
   } finally {
-    await shutdown();
+    await shutdownPostHog();
   }
 }
 

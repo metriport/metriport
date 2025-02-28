@@ -18,6 +18,8 @@ export async function deduplicate({
   const dedupedBundle = deduplicateFhir(bundle, cxId, patientId);
 
   const duration = elapsedTimeFromNow(startedAt);
+
+  // TODO: 2731 - Create and use helper functions to create analytics events for Posthog
   const metrics: EventMessageV1 = {
     distinctId: cxId,
     event: EventTypes.fhirDeduplication,
@@ -25,7 +27,7 @@ export async function deduplicate({
       patientId,
       preDedupBundleSize: bundle.entry?.length,
       postDedupBundleSize: dedupedBundle.entry?.length,
-      dedupDurationMs: duration,
+      duration,
     },
   };
 

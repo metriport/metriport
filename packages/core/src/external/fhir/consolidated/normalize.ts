@@ -18,6 +18,7 @@ export async function normalize({
 
   const normalizedBundle = normalizeFhir(bundle);
 
+  // TODO: 2731 - Create and use helper functions to create analytics events for Posthog
   const duration = elapsedTimeFromNow(startedAt);
   const metrics: EventMessageV1 = {
     distinctId: cxId,
@@ -25,7 +26,7 @@ export async function normalize({
     properties: {
       patientId: patientId,
       normalizeBundleSize: normalizedBundle.entry?.length,
-      normalizeDurationMs: duration,
+      duration,
     },
   };
 

@@ -3,6 +3,8 @@ import { Config } from "../../util/config";
 
 const GROUP_TYPE = "customer";
 
+// TODO: 2731 - Create helper functions to create analytics events
+
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
 export interface IdentifyMessageV1 {
   distinctId: string;
@@ -46,16 +48,19 @@ export enum EventErrMessage {
 class PostHogAnalytics {
   private static instance: PostHogAnalytics;
   private client?: PostHog;
-  private platform: "oss-api" | "lambda" = "oss-api";
+  private platform: "oss-api" | "lambda";
+
+  private constructor(apiKey: string, platform: "oss-api" | "lambda") {
+    this.client = new PostHog(apiKey);
+    this.platform = platform;
+  }
 
   /**
    * Initialize PostHog analytics - should be called once on API startup or Lambda init
    */
-  static init(apiKey: string, platform: "oss-api" | "lambda" = "oss-api"): PostHogAnalytics {
+  static init(apiKey: string, platform: "oss-api" | "lambda"): PostHogAnalytics {
     if (!PostHogAnalytics.instance) {
-      PostHogAnalytics.instance = new PostHogAnalytics();
-      PostHogAnalytics.instance.client = new PostHog(apiKey);
-      PostHogAnalytics.instance.platform = platform;
+      PostHogAnalytics.instance = new PostHogAnalytics(apiKey, platform);
     }
     return PostHogAnalytics.instance;
   }
@@ -64,7 +69,7 @@ class PostHogAnalytics {
     if (!PostHogAnalytics.instance) {
       const apiKey = Config.getPostHogApiKey();
       if (!apiKey) throw new Error("PostHog API key not configured");
-      return PostHogAnalytics.init(apiKey);
+      throw new Error("PostHog instance not initialized - call init() first");
     }
     return PostHogAnalytics.instance;
   }
@@ -108,6 +113,6 @@ export function analytics(params: EventMessageV1): void {
 /**
  * Allows to send bulk analytics requests from the AWS Lambdas
  */
-export function shutdown(): Promise<void> {
+export function shutdownPostHog(): Promise<void> {
   return PostHogAnalytics.getInstance().shutdown();
 }

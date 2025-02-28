@@ -13,7 +13,7 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
-import { initPostHog, shutdown } from "@metriport/core/external/analytics/posthog";
+import { initPostHog, shutdownPostHog } from "@metriport/core/external/analytics/posthog";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
@@ -284,8 +284,6 @@ export async function handler(event: SQSEvent) {
           }
         }
 
-        await cloudWatchUtils.reportMemoryUsage();
-
         const normalizedBundle = await normalize({
           cxId,
           patientId,
@@ -339,7 +337,7 @@ export async function handler(event: SQSEvent) {
     });
     throw new MetriportError(msg);
   } finally {
-    await shutdown();
+    await shutdownPostHog();
   }
 }
 
