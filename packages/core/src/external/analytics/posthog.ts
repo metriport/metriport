@@ -3,8 +3,6 @@ import { Config } from "../../util/config";
 
 const GROUP_TYPE = "customer";
 
-// TODO: 2731 - Create helper functions to create analytics events
-
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
 export interface IdentifyMessageV1 {
   distinctId: string;
@@ -45,6 +43,8 @@ export enum EventErrMessage {
   no_access = "no access",
 }
 
+// TODO: 2731 - Create helper functions to create analytics events
+
 class PostHogAnalytics {
   private static instance: PostHogAnalytics;
   private client?: PostHog;
@@ -67,8 +67,6 @@ class PostHogAnalytics {
 
   static getInstance(): PostHogAnalytics {
     if (!PostHogAnalytics.instance) {
-      const apiKey = Config.getPostHogApiKey();
-      if (!apiKey) throw new Error("PostHog API key not configured");
       throw new Error("PostHog instance not initialized - call init() first");
     }
     return PostHogAnalytics.instance;
