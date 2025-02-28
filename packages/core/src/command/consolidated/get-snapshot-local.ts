@@ -34,7 +34,6 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
     const { cxId, id: patientId } = params.patient;
-
     const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);

@@ -22,7 +22,7 @@ export async function hydrate({
     event: EventTypes.fhirHydration,
     properties: {
       patientId: patientId,
-      hydrateBundleSize: bundle.entry?.length,
+      bundleSize: bundle.entry?.length,
     },
   };
 

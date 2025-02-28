@@ -25,7 +25,7 @@ export async function normalize({
     event: EventTypes.fhirNormalization,
     properties: {
       patientId: patientId,
-      normalizeBundleSize: normalizedBundle.entry?.length,
+      bundleSize: normalizedBundle.entry?.length,
       duration,
     },
   };

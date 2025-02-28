@@ -1,8 +1,10 @@
+import { errorToString } from "@metriport/shared";
 import { PostHog } from "posthog-node";
+import { out } from "../../util";
 import { Config } from "../../util/config";
 
 const GROUP_TYPE = "customer";
-
+const { log } = out("posthog-analytics");
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
 export interface IdentifyMessageV1 {
   distinctId: string;
@@ -105,12 +107,21 @@ export function initPostHog(apiKey: string, platform: "oss-api" | "lambda"): voi
  * Capture a single analytics event
  */
 export function analytics(params: EventMessageV1): void {
-  PostHogAnalytics.getInstance().capture(params);
+  try {
+    PostHogAnalytics.getInstance().capture(params);
+  } catch (error) {
+    log(`Failed to capture analytics: ${errorToString(error)}`);
+  }
 }
 
 /**
  * Allows to send bulk analytics requests from the AWS Lambdas
  */
 export function shutdownPostHog(): Promise<void> {
-  return PostHogAnalytics.getInstance().shutdown();
+  try {
+    return PostHogAnalytics.getInstance().shutdown();
+  } catch (error) {
+    log(`Failed to shutdown PostHog: ${errorToString(error)}`);
+    return Promise.resolve();
+  }
 }

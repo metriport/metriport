@@ -24,9 +24,9 @@ export async function deduplicate({
     distinctId: cxId,
     event: EventTypes.fhirDeduplication,
     properties: {
-      patientId,
-      preDedupBundleSize: bundle.entry?.length,
-      postDedupBundleSize: dedupedBundle.entry?.length,
+      patientId: patientId,
+      initialBundleLength: bundle.entry?.length,
+      finalBundleLength: dedupedBundle.entry?.length,
       duration,
     },
   };
