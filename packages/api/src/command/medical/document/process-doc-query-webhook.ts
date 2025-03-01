@@ -98,7 +98,7 @@ const handleConversionWebhook = async (
 
   const convertStatus = documentQueryProgress.convert?.status;
   const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
-  const isTypeConsolidated = progressType ? progressType === "consolidated" : true;
+  const isTypeConsolidated = progressType ? progressType === "consolidated" : false;
 
   const canProcessRequest = isConvertFinished && isTypeConsolidated && !webhookSent;
 
