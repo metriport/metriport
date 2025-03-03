@@ -374,7 +374,7 @@ async function storeMrSummaryAndBriefInS3({
   const mrResp = await newS3Client.uploadFile({
     bucket: bucketName,
     key: htmlFileName,
-    file: Buffer.from(html),
+    content: Buffer.from(html),
     contentType: "application/html",
   });
 

@@ -45,7 +45,7 @@ export async function uploadConsolidatedSnapshotToS3({
   const uploadPayloadWithoutMeta = {
     bucket: s3BucketName,
     key,
-    file: Buffer.from(JSON.stringify(bundle)),
+    content: Buffer.from(JSON.stringify(bundle)),
     contentType: "application/json",
   };
   // Meta can have up to 2KB, so we'll fallback to simplified if fails to upload with full meta

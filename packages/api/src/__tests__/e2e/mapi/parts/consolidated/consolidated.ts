@@ -230,7 +230,7 @@ async function storeConversionOnS3(
   await s3Utils.uploadFile({
     bucket: s3BucketName,
     key,
-    file: Buffer.from(JSON.stringify(bundle)),
+    content: Buffer.from(JSON.stringify(bundle)),
     contentType: "application/json",
   });
 }

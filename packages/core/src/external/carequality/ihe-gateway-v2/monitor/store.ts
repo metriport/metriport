@@ -53,7 +53,7 @@ export async function storeXcpdResponses({
     await s3Utils.uploadFile({
       bucket: bucketOutbound,
       key,
-      file: Buffer.from(response),
+      content: Buffer.from(response),
       contentType: "application/xml",
     });
   } catch (error) {
@@ -87,7 +87,7 @@ export async function storeDqResponse({
     await s3Utils.uploadFile({
       bucket: bucketOutbound,
       key,
-      file: Buffer.from(response),
+      content: Buffer.from(response),
       contentType: "application/xml",
     });
   } catch (error) {
@@ -124,7 +124,7 @@ export async function storeDrResponse({
     await s3Utils.uploadFile({
       bucket: bucketOutbound,
       key,
-      file: response,
+      content: response,
       contentType: "application/xml",
     });
   } catch (error) {
@@ -155,7 +155,7 @@ export async function storeXcpdRequest({
     await s3Utils.uploadFile({
       bucket: bucketInbound,
       key,
-      file: Buffer.from(request),
+      content: Buffer.from(request),
       contentType: "application/xml",
     });
   } catch (error) {
@@ -190,7 +190,7 @@ export async function storeXcpdReqRespJson({
     await s3Utils.uploadFile({
       bucket: bucketInbound,
       key,
-      file: Buffer.from(JSON.stringify(jsonData)),
+      content: Buffer.from(JSON.stringify(jsonData)),
       contentType: "application/json",
     });
   } catch (error) {
@@ -221,7 +221,7 @@ export async function storeDqRequest({
     await s3Utils.uploadFile({
       bucket: bucketInbound,
       key,
-      file: Buffer.from(request),
+      content: Buffer.from(request),
       contentType: "application/xml",
     });
   } catch (error) {
@@ -252,7 +252,7 @@ export async function storeDrRequest({
     await s3Utils.uploadFile({
       bucket: bucketInbound,
       key,
-      file: Buffer.from(request),
+      content: Buffer.from(request),
       contentType: "application/xml",
     });
   } catch (error) {
