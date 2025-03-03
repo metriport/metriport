@@ -6,7 +6,7 @@ import z from "zod";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { isCommonwellEnabled, isCWEnabledForCx } from "../aws/app-config";
 import { Config } from "../../shared/config";
-
+import { CwLink } from "../commonwell/cw-patient-data";
 export async function getCwInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string
@@ -112,4 +112,9 @@ export async function validateCWEnabled({
 function isCommonwellEnabledForPatient(patient: Patient): boolean {
   if (patient.data.genderAtBirth === "U") return false;
   return true;
+}
+
+export function getLinkOid(link: CwLink): string | undefined {
+  return link.patient?.details.identifier?.find(identifier => identifier.assigner !== "Commonwell")
+    ?.system;
 }

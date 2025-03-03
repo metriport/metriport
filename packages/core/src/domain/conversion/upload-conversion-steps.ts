@@ -4,7 +4,10 @@ import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { capture } from "../../util";
 import { executeAsynchronously } from "../../util/concurrency";
 import { FHIR_APP_MIME_TYPE, XML_APP_MIME_TYPE } from "../../util/mime";
-import { buildDocumentNameForPartialConversions } from "./filename";
+import {
+  buildDocumentNameForNormalizedConversion,
+  buildDocumentNameForPartialConversions,
+} from "./filename";
 
 export const defaultS3RetriesConfig = {
   maxAttempts: 3,
@@ -200,7 +203,7 @@ export async function storeNormalizedConversionResult({
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
 }): Promise<void> {
-  const fileNameNormalization = `${fileName}_normalized.json`;
+  const fileNameNormalization = buildDocumentNameForNormalizedConversion(fileName);
   await storeInS3WithRetries({
     s3Utils,
     payload: JSON.stringify(bundle),
