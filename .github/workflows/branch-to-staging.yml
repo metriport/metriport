@@ -26,7 +26,7 @@ jobs:
     uses: ./.github/workflows/_deploy-mllp-server.yml
     with:
       deploy_env: "staging"
-      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_MLLP_SERVER_STAGING }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_STAGING }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}

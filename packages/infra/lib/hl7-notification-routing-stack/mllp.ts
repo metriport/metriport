@@ -3,7 +3,7 @@ import { Duration } from "aws-cdk-lib";
 import * as appscaling from "aws-cdk-lib/aws-autoscaling";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
+import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
@@ -31,9 +31,14 @@ export class MllpStack extends cdk.NestedStack {
       containerInsights: true,
     });
 
-    const dockerImage = new ecr_assets.DockerImageAsset(this, "MllpServerImage", {
-      directory: "../mllp-server",
-      platform: ecr_assets.Platform.LINUX_AMD64,
+    // Create ECR repo instead of using Docker asset
+    const ecrRepo = new Repository(this, "MllpRepo", {
+      repositoryName: "metriport/mllp-server",
+      lifecycleRules: [{ maxImageCount: 5000 }],
+    });
+    new cdk.CfnOutput(this, "MLLPECRRepoURI", {
+      description: "MLLP ECR repository URI",
+      value: ecrRepo.repositoryUri,
     });
 
     const mllpSecurityGroup = new ec2.SecurityGroup(this, "MllpServerSG", {
@@ -54,13 +59,14 @@ export class MllpStack extends cdk.NestedStack {
       memoryLimitMiB: fargateMemoryLimitMiB,
       desiredCount: fargateTaskCountMin,
       taskImageOptions: {
-        image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
+        image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
         containerPort: MLLP_DEFAULT_PORT,
         containerName: "MllpServer",
         environment: {
           NODE_ENV: "production",
           ENV_TYPE: props.config.environmentType,
           MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
+          ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
         },
       },
       listenerPort: MLLP_DEFAULT_PORT,
