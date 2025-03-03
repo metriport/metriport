@@ -1,0 +1,44 @@
+{
+    "sdk_version": "0.21.0",
+    "plugin_version": "0.0.2",
+    "name": "metripor-app",
+    "description": "Metriport App",
+    "origins": {
+      "urls": ["https://ehr.metriport.com", "https://api.metriport.com"]
+    },
+    "components": {
+        "applications": [
+            {
+                "class": "metriport-app.applications.metriport-app:MetriportApp",
+                "name": "Metriport",
+                "description": "Get instant access to comprehensive patient clinical history summaries, and more.",
+                "scope": "patient_specific",
+                "icon": "assets/logo300.png"
+            }
+        ],
+        "protocols": [
+            {
+                "class": "metriport-app.protocols.appointments_created:AppointmentCreatedProtocol",
+                "description": "Create patients asynchronously when appointments are scheduled in your Canvas instance.",
+                "data_access": {
+                    "event": "",
+                    "read": [],
+                    "write": []
+                }
+            }
+        ],
+        "commands": [],
+        "content": [],
+        "effects": [],
+        "views": []
+    },
+    "secrets": [
+      "METRIPORT_TOKEN",
+      "METRIPORT_WEBHOOK_TOKEN"
+    ],
+    "tags": {},
+    "references": [],
+    "license": "",
+    "diagram": false,
+    "readme": "./README.md"
+}
