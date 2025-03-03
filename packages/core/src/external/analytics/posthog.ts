@@ -57,6 +57,7 @@ export enum EventTypes {
   patientDiscovery = "patientDiscovery",
   rerunOnNewDemographics = "rerunOnNewDemographics",
   runScheduledPatientDiscovery = "runScheduledPatientDiscovery",
+  billableQuery = "billableQuery",
   documentQuery = "documentQuery",
   documentRetrieval = "documentRetrieval",
   documentConversion = "documentConversion",
