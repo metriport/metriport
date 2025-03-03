@@ -1,16 +1,16 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { Organization } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
-import { Organization } from "@metriport/carequality-sdk/models/organization";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
-import { TableResults } from "./athena-shared";
-import { QueryTypes } from "sequelize";
 import { mean } from "lodash";
+import { QueryTypes } from "sequelize";
+import { TableResults } from "./athena-shared";
 
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
@@ -30,7 +30,6 @@ export type CQDirectoryEntryData = {
   point?: string;
   rootOrganization?: string;
   managingOrganizationId?: string;
-  gateway: boolean;
   active: boolean;
   lastUpdatedAtCQ: string;
 };

@@ -1,10 +1,9 @@
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { Organization } from "@medplum/fhirtypes";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../../../models/_default";
 import { CQDirectoryEntry } from "../cq-directory";
 
-// TODO  2553 Rename this to root_organization on the second release
-export const rootOrgColumnName = "managing_organization";
+export const rootOrgColumnName = "root_organization";
 export const managingOrgIdColumnName = "managing_organization_id";
 export const urlXcpdColumnName = "url_xcpd";
 export const urlDqColumnName = "url_dq";
@@ -16,7 +15,7 @@ export class CQDirectoryEntryModel
   extends BaseModel<CQDirectoryEntryModel>
   implements CQDirectoryEntry
 {
-  static NAME = "cq_directory_entry";
+  static NAME = "cq_directory_entry_view";
   declare id: string; // Organization's OID
   declare name?: string;
   declare urlXCPD?: string;
@@ -42,6 +41,20 @@ export class CQDirectoryEntryModel
         name: {
           type: DataTypes.STRING,
         },
+        active: {
+          type: DataTypes.BOOLEAN,
+        },
+        rootOrganization: {
+          type: DataTypes.STRING,
+          field: rootOrgColumnName,
+        },
+        managingOrganizationId: {
+          type: DataTypes.STRING,
+          field: managingOrgIdColumnName,
+        },
+        data: {
+          type: DataTypes.JSONB,
+        },
         urlXCPD: {
           type: DataTypes.STRING,
           field: urlXcpdColumnName,
@@ -54,12 +67,6 @@ export class CQDirectoryEntryModel
         urlDR: {
           type: DataTypes.STRING,
           field: urlDrColumnName,
-        },
-        lat: {
-          type: DataTypes.FLOAT,
-        },
-        lon: {
-          type: DataTypes.FLOAT,
         },
         addressLine: {
           type: DataTypes.STRING,
@@ -74,22 +81,14 @@ export class CQDirectoryEntryModel
         zip: {
           type: DataTypes.STRING,
         },
-        data: {
-          type: DataTypes.JSONB,
+        lat: {
+          type: DataTypes.FLOAT,
+        },
+        lon: {
+          type: DataTypes.FLOAT,
         },
         point: {
           type: "CUBE",
-        },
-        rootOrganization: {
-          type: DataTypes.STRING,
-          field: rootOrgColumnName,
-        },
-        managingOrganizationId: {
-          type: DataTypes.STRING,
-          field: managingOrgIdColumnName,
-        },
-        active: {
-          type: DataTypes.BOOLEAN,
         },
         lastUpdatedAtCQ: {
           type: DataTypes.STRING,

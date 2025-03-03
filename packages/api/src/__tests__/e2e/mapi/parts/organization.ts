@@ -1,9 +1,8 @@
 import { faker } from "@faker-js/faker";
 import { Organization as FhirOrg } from "@medplum/fhirtypes";
-import { USState } from "@metriport/shared";
 import { Organization, OrganizationCreate, OrgType } from "@metriport/api-sdk";
-import { Organization as CqOrganization } from "@metriport/carequality-sdk";
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
+import { USState } from "@metriport/shared";
 
 export const createOrg: OrganizationCreate = {
   type: OrgType.postAcuteCare,
@@ -96,26 +95,5 @@ export function validateCwOrg(
     expect(org?.locations?.[0].state).toBeTruthy();
     expect(org?.locations?.[0].postalCode).toBeTruthy();
     expect(org?.locations?.[0].country).toBeTruthy();
-  }
-}
-
-export function validateCqOrg(
-  org: CqOrganization | undefined,
-  orgToCompare?: OrganizationCreate | Organization
-) {
-  expect(org).toBeTruthy();
-  expect(org?.identifier.value).toBeTruthy();
-  if (orgToCompare) {
-    expect(org?.name).toEqual(orgToCompare.name);
-    if (`oid` in orgToCompare) {
-      expect(org?.identifier.value).toEqual(orgToCompare.oid);
-    }
-    // TODO 1634 compare addresses
-    // TODO 1634 compare addresses
-    // TODO 1634 compare addresses
-    // TODO 1634 compare addresses
-    // TODO 1634 compare addresses
-  } else {
-    expect(org?.name).toBeTruthy();
   }
 }

@@ -1,15 +1,16 @@
 import { QueryTypes, Sequelize } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
-import { CQDirectoryEntry, CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntry, CQDirectoryEntryData } from "../../cq-directory";
 import {
   addressLineColumnName,
+  CQDirectoryEntryModel,
   lastUpdatedAtCqColumnName,
   managingOrgIdColumnName,
+  rootOrgColumnName,
   urlDqColumnName,
   urlDrColumnName,
   urlXcpdColumnName,
 } from "../../models/cq-directory";
-import { CQDirectoryEntryViewModel, rootOrgColumnName } from "../../models/cq-directory-view";
 
 // TODO 2553 To be updated to `cq_directory_entry` on a follow-up PR
 export const cqDirectoryEntry = `cq_directory_entry_new`;
@@ -26,7 +27,7 @@ const number_of_keys = keys.split(",").length;
 
 export async function insertCqDirectoryEntries(
   sequelize: Sequelize,
-  orgDataArray: CQDirectoryEntryData2[]
+  orgDataArray: CQDirectoryEntryData[]
 ): Promise<void> {
   if (orgDataArray.length === 0) return;
   const placeholders = orgDataArray
@@ -114,7 +115,7 @@ export async function deleteTempCqDirectoryTable(sequelize: Sequelize): Promise<
 }
 
 export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Promise<void> {
-  await executeOnDBTx(CQDirectoryEntryViewModel.prototype, async transaction => {
+  await executeOnDBTx(CQDirectoryEntryModel.prototype, async transaction => {
     async function runSql(sql: string): Promise<void> {
       await sequelize.query(sql, { type: QueryTypes.RAW, transaction });
     }
