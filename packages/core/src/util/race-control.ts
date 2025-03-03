@@ -20,7 +20,7 @@ export async function checkIfRaceIsComplete(
   return "";
 }
 
-export async function controlDuration<T>(durationMS: number, response: T): Promise<T> {
+export async function controlDuration(durationMS: number, msg: string): Promise<string> {
   await sleep(durationMS);
-  return response;
+  return msg;
 }
