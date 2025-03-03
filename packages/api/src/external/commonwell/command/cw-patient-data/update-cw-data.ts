@@ -7,18 +7,20 @@ import { CwPatientDataCreatePartial } from "../../cw-patient-data";
 import { CwLink, CwPatientData } from "../../cw-patient-data";
 import { CwPatientDataModel } from "../../models/cw-patient-data";
 import { getCwPatientDataOrFail } from "./get-cw-data";
-
+import { getLinkOid } from "../../shared";
 export type CwPatientDataUpdate = CwPatientDataCreatePartial & BaseUpdateCmdWithCustomer;
 
 export async function updateCwPatientData({
   id,
   cxId,
   cwLinks,
+  cwLinksToInvalidate,
   requestLinksDemographics,
 }: {
   id: string;
   cxId: string;
   cwLinks?: CwLink[];
+  cwLinksToInvalidate?: CwLink[];
   requestLinksDemographics?: {
     requestId: string;
     linksDemographics: LinkDemographics[];
@@ -45,7 +47,12 @@ export async function updateCwPatientData({
       lock: true,
     });
 
-    return updateCwPatientDataWithinDBTx(cwPatientData, existingPatient, transaction);
+    return updateCwPatientDataWithinDBTx(
+      cwPatientData,
+      existingPatient,
+      transaction,
+      cwLinksToInvalidate
+    );
   });
   return updateResult.dataValues;
 }
@@ -53,11 +60,17 @@ export async function updateCwPatientData({
 export async function updateCwPatientDataWithinDBTx(
   update: CwPatientDataUpdate,
   existing: CwPatientDataModel,
-  transaction: Transaction
+  transaction: Transaction,
+  linksToInvalidate?: CwLink[]
 ): Promise<CwPatientDataModel> {
   const { data: newData } = update;
   const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
-  const uniqueUpdatedLinks = uniqBy(updatedLinks, function (nl) {
+
+  const validLinks = linksToInvalidate
+    ? updatedLinks.filter(link => !isContainedAt(link, linksToInvalidate))
+    : updatedLinks;
+
+  const uniqueUpdatedLinks = uniqBy(validLinks, function (nl) {
     return nl.patient?.provider?.reference;
   });
   const updatedLinkDemographicsHistory = {
@@ -77,4 +90,14 @@ export async function updateCwPatientDataWithinDBTx(
     },
     { transaction }
   );
+}
+
+function isContainedAt(link: CwLink, linksArray: CwLink[]): boolean {
+  const linkOid = getLinkOid(link);
+
+  const containsLink = linksArray.some(function (arrLink) {
+    return getLinkOid(arrLink) === linkOid;
+  });
+
+  return containsLink;
 }
