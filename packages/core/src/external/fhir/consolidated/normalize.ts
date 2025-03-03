@@ -1,7 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
 import { normalizeFhir } from "../normalization/normalize-fhir";
 
 export async function normalize({
@@ -12,10 +12,7 @@ export async function normalize({
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
-}): Promise<{
-  bundle: Bundle<Resource>;
-  metrics: EventMessageV1;
-}> {
+}): Promise<Bundle<Resource>> {
   const { log } = out(`Normalize. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
@@ -27,11 +24,12 @@ export async function normalize({
     event: EventTypes.fhirNormalization,
     properties: {
       patientId: patientId,
-      normalizeBundleSize: normalizedBundle.entry?.length,
-      normalizeDurationMs: duration,
+      bundleLength: normalizedBundle.entry?.length,
+      duration,
     },
   };
-
   log(`Finished normalization in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
-  return { bundle: normalizedBundle, metrics };
+
+  await analyticsAsync(metrics);
+  return normalizedBundle;
 }

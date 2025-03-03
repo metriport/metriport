@@ -18,3 +18,15 @@ export const loincCodeAb = {
   ],
   text: "HIV 1/2 ANTIGEN AND ANTIBODIES",
 };
+
+// Fake SNOMED code
+export const snomedCodeAb = {
+  coding: [
+    {
+      system: "http://snomed.info/sct",
+      code: "1111111",
+      display: "HIV 1/2 ANTIGEN AND ANTIBODIES PROCEDURE",
+    },
+  ],
+  text: "HIV 1/2 ANTIGEN AND ANTIBODIES PROCEDURE",
+};

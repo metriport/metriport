@@ -135,13 +135,11 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       envType: props.config.environmentType,
-      secrets: props.secrets,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       appId: props.appConfigEnvVars.appId,
       configId: props.appConfigEnvVars.configId,
       bedrock: props.config.bedrock,
-      posthogSecretKeyName: props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET,
     });
   }
 
@@ -436,12 +434,10 @@ export class LambdasNestedStack extends NestedStack {
     conversionsBucket,
     sentryDsn,
     envType,
-    secrets,
     alarmAction,
     appId,
     configId,
     bedrock,
-    posthogSecretKeyName: posthogSecretName,
   }: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -449,13 +445,11 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket: s3.IBucket;
     conversionsBucket: s3.IBucket;
     envType: EnvType;
-    secrets: Secrets;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     appId: string;
     configId: string;
     bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
-    posthogSecretKeyName?: string;
   }): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -480,9 +474,6 @@ export class LambdasNestedStack extends NestedStack {
           AI_BRIEF_MODEL_ID: bedrock?.modelId,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        ...(posthogSecretName && {
-          POST_HOG_API_KEY_SECRET: posthogSecretName,
-        }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 4096,
@@ -492,25 +483,15 @@ export class LambdasNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
+    bundleBucket.grantReadWrite(fhirToBundleLambda);
+    conversionsBucket.grantRead(fhirToBundleLambda);
+
     AppConfigUtils.allowReadConfig({
       scope: this,
       resourceName: "FhirToBundleLambda",
       resourceRole: fhirToBundleLambda.role,
       appConfigResources: ["*"],
     });
-
-    if (posthogSecretName) {
-      secrets[posthogSecretName]?.grantRead(fhirToBundleLambda);
-    }
-    bundleBucket.grantReadWrite(fhirToBundleLambda);
-    conversionsBucket.grantRead(fhirToBundleLambda);
-
-    const secretsManagerPolicyStatement = new iam.PolicyStatement({
-      actions: ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-      resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`],
-    });
-
-    fhirToBundleLambda.addToRolePolicy(secretsManagerPolicyStatement);
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],

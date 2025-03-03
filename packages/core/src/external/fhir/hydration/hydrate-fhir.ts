@@ -77,9 +77,9 @@ export async function hydrateFhir(
   return {
     metadata: {
       ...result.metadata,
-      hydrateTotalBundleCodes: numCodes,
-      hydrateNumCodesReplaced: numReplaced,
-      hydratePercentReplaced: (numReplaced / numCodes) * 100,
+      totalBundleCodes: numCodes,
+      numReplaced,
+      percentReplaced: (numReplaced / numCodes) * 100,
     },
     data: hydratedBundle,
   };

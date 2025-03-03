@@ -76,7 +76,7 @@ export const processPatientDocumentRequest = async (
 
     // send it to the customer and update the request status
     if (!isWebhookDisabled(metadata)) {
-      log(`Sending WH... metadata: ${JSON.stringify(metadata)}`);
+      log(`Sending WH... metadata: ${metadata}`);
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,

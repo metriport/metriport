@@ -28,6 +28,12 @@ export const valueConceptTobacco = {
   ],
 };
 
+export const valueHeight = {
+  value: 150,
+  unit: "cm",
+  system: "http://unitsofmeasure.org",
+};
+
 export const valueQuantityTempCel = {
   value: 37.0,
   unit: "Cel",

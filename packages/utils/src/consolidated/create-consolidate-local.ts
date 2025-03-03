@@ -7,7 +7,6 @@ import {
   merge,
 } from "@metriport/core/command/consolidated/consolidated-create";
 import { deduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
-import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/shared";
@@ -30,7 +29,6 @@ const outputFolder = `${bundlesFolder}/consolidated`;
 
 // Not necessary - just used for logging / analytics on dedup
 const cxId = ``;
-const patientId = ``;
 
 const program = new Command();
 program
@@ -41,10 +39,10 @@ program
 
 // Need a patient resource for deduplication.
 const patient: BundleEntry<Patient> = {
-  fullUrl: `urn:uuid:${patientId}`,
+  fullUrl: "<uuid>",
   resource: {
     resourceType: "Patient",
-    id: patientId,
+    id: "<uuid>",
   },
 };
 
@@ -52,6 +50,7 @@ export async function createConsolidatedFromLocal(
   bundlesLocation: string,
   outputFolderName: string
 ) {
+  const startedAt = Date.now();
   initPatientIdRepository(outputFolderName);
   await sleep(100);
 
@@ -81,27 +80,18 @@ export async function createConsolidatedFromLocal(
 
   withDups.entry?.push(patient);
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
-  const { bundle: dedupedBundle } = await deduplicate({
-    cxId,
-    patientId,
-    bundle: withDups,
-  });
+  const deduped = await deduplicate({ cxId, patientId: patient.id!, bundle: withDups });
 
-  const { bundle: normalizedBundle } = await normalize({
-    cxId,
-    patientId,
-    bundle: dedupedBundle,
-  });
+  const duration = Date.now() - startedAt;
+  const durationMin = dayjs.duration(duration).asMinutes();
+  console.log(`Total time: ${duration} ms / ${durationMin} min`);
+  console.log(`File Location: ${outputFolderName}`);
 
-  console.log(`Output file Location: ${outputFolderName}`);
   fs.writeFileSync(
     `${outputFolderName}/consolidated_with_dups.json`,
     JSON.stringify(withDups, null, 2)
   );
-  fs.writeFileSync(
-    `${outputFolderName}/consolidated.json`,
-    JSON.stringify(normalizedBundle, null, 2)
-  );
+  fs.writeFileSync(`${outputFolderName}/consolidated.json`, JSON.stringify(deduped, null, 2));
   return;
 }
 
