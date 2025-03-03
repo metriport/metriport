@@ -55,13 +55,15 @@ export async function calculateDocumentConversionStatus({
   if (hasSource) {
     const updatedPatient = await tallyDocQueryProgress({
       patient: patient,
-      type: "convert",
+      requestId,
       progress: {
         ...(convertResult === "success" ? { successful: 1 } : { errors: 1 }),
       },
-      requestId,
+      type: "convert",
       source,
     });
+
+    log("updatedPatient", JSON.stringify(updatedPatient));
 
     const externalData =
       source === MedicalDataSource.COMMONWELL
@@ -77,11 +79,13 @@ export async function calculateDocumentConversionStatus({
     const hieTriggerConsolidated = externalData?.documentQueryProgress?.triggerConsolidated;
     log("hieTriggerConsolidated", JSON.stringify(hieTriggerConsolidated));
 
-    const isGlobalConversionCompleted = isProgressStatusValid({
-      documentQueryProgress: updatedPatient.data.documentQueryProgress,
-      progressType: "convert",
-      status: "completed",
-    });
+    // THIS NEEDS FIXING
+    const isGlobalConversionCompleted =
+      isProgressStatusValid({
+        documentQueryProgress: updatedPatient.data.documentQueryProgress,
+        progressType: "convert",
+        status: "completed",
+      }) ?? true;
     log(
       "updatedPatient.data.documentQueryProgress",
       JSON.stringify(updatedPatient.data.documentQueryProgress)

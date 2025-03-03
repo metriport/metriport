@@ -89,28 +89,53 @@ export function setHIETallyCount(
   const tallySuccessful = progress.successful ?? 0;
   const tallyErrors = progress.errors ?? 0;
 
+  console.log("[DEBUG] Input progress values:", {
+    tallySuccessful,
+    tallyErrors,
+    type,
+    source,
+  });
+
   const sourceData = externalData[source];
   const sourceProgress = sourceData?.documentQueryProgress ?? {};
   const sourceTotal = sourceProgress[type]?.total ?? 0;
   const sourceSuccessful = sourceProgress[type]?.successful ?? 0;
   const sourceErrors = sourceProgress[type]?.errors ?? 0;
 
+  console.log("[DEBUG] Source progress values:", {
+    sourceTotal,
+    sourceSuccessful,
+    sourceErrors,
+  });
+
   const totalSuccessful = sourceSuccessful + tallySuccessful;
   const totalErrors = sourceErrors + tallyErrors;
+
+  console.log("[DEBUG] Calculated totals:", {
+    totalSuccessful,
+    totalErrors,
+    sourceTotal,
+  });
+
+  const status = getStatusFromProgress({
+    successful: totalSuccessful,
+    errors: totalErrors,
+    total: sourceTotal,
+  });
+
+  console.log("[DEBUG] Calculated status:", status);
 
   const docQueryProgress: DocumentQueryProgress = {
     ...sourceProgress,
     [type]: {
       ...sourceProgress[type],
-      successful: sourceSuccessful + tallySuccessful,
-      errors: sourceErrors + tallyErrors,
-      status: getStatusFromProgress({
-        successful: totalSuccessful,
-        errors: totalErrors,
-        total: sourceTotal,
-      }),
+      successful: totalSuccessful,
+      errors: totalErrors,
+      status,
     },
   };
+
+  console.log("[DEBUG] Final progress:", docQueryProgress[type]);
 
   externalData[source] = {
     ...externalData[source],
