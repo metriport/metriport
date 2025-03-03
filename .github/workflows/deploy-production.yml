@@ -52,6 +52,15 @@ jobs:
               - "packages/core/**"
               - "packages/shared/**"
               - "package*.json"
+            mllp-server:
+              - "packages/shared/**"
+              - "packages/core/**"
+              - "packages/mllp-server/**"
+              - "package*.json"
+              - "packages/infra/**"
+              # We're going to set up VPC peering with the API vpc, but do we need to rebuild on _any_ changes to the infra stack?
+              # Would this be fine instead?
+              # - "packages/infra/lib/hl7-notification-routing-stack/**"
             fhir-converter:
               # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
               - "packages/fhir-converter/Dockerfile"
@@ -108,6 +117,43 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  mllp-server-prod:
+    if: needs.files-changed.outputs.mllp-server == 'true'
+    needs: files-changed
+    uses: ./.github/workflows/_deploy-mllp-server.yml
+    with:
+      deploy_env: "staging"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_STAGING }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  mllp-server-sandbox:
+    if: needs.files-changed.outputs.mllp-server == 'true'
+    needs: files-changed
+    uses: ./.github/workflows/_deploy-mllp-server.yml
+    with:
+      deploy_env: "sandbox"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_SANDBOX }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_SANDBOX }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_SANDBOX }}
+      AWS_REGION: ${{ vars.API_REGION_SANDBOX }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+
 
   infra-api-lambdas:
     uses: ./.github/workflows/_deploy-cdk.yml
