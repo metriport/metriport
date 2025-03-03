@@ -1,26 +1,22 @@
-import { PatientExternalData } from "@metriport/core/domain//patient";
-import {
-  DocumentQueryProgress,
-  DocumentQueryStatus,
-  Progress,
-  ProgressType,
-} from "@metriport/core/domain/document-query";
-import { Patient } from "@metriport/core/domain/patient";
+import { Progress, DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
+import { PatientExternalData } from "@metriport/core/domain//patient";
+import { progressTypes, ProgressType } from "@metriport/core/domain/document-query";
+import { DocumentQueryStatus } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import {
   SetDocQueryProgressBase,
   aggregateDocQueryProgress,
 } from "../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { PatientModel } from "../../models/medical/patient";
-import { executeOnDBTx } from "../../models/transaction-wrapper";
-import { getCQData } from "../carequality/patient";
 import { getCWData } from "../commonwell/patient";
+import { getCQData } from "../carequality/patient";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
 type StaticProgress = Pick<Progress, "status" | "total">;
 type RequiredProgress = Required<Omit<Progress, "webhookSent">>;
-type ProgressTracking = Exclude<ProgressType, "consolidated">;
 
 export type SetDocQueryProgress = {
   source: MedicalDataSource;
@@ -92,6 +88,7 @@ export async function setDocQueryProgress({
 
   await processDocQueryProgressWebhook({
     patient,
+    documentQueryProgress: patient.data.documentQueryProgress,
     requestId,
   });
 
@@ -172,48 +169,45 @@ export function aggregateDocProgress(
   download?: RequiredProgress;
   convert?: RequiredProgress;
 } {
-  const statuses: Record<ProgressTracking, DocumentQueryStatus[]> = {
+  const statuses: { [key in ProgressType]: DocumentQueryStatus[] } = {
     download: [],
     convert: [],
   };
 
-  type TallyAccumulator = {
-    download?: RequiredProgress;
-    convert?: RequiredProgress;
-  };
+  const tallyResults = hieDocProgresses.reduce(
+    (acc: { download?: RequiredProgress; convert?: RequiredProgress }, progress) => {
+      for (const type of progressTypes) {
+        const progressType = progress[type];
+        const existingProgressType = existingPatientDocProgress[type];
 
-  const relevantTypes: ProgressTracking[] = ["download", "convert"];
-  const tallyResults = hieDocProgresses.reduce((acc: TallyAccumulator, progress) => {
-    for (const type of relevantTypes) {
-      const progressType = progress[type];
-      const existingProgressType = existingPatientDocProgress[type];
+        if (!progressType && !existingProgressType) continue;
 
-      if (!progressType && !existingProgressType) continue;
+        const currTotal = progressType?.total ?? 0;
+        const currErrors = progressType?.errors ?? 0;
+        const currSuccessful = progressType?.successful ?? 0;
+        const accType = acc[type];
 
-      const currTotal = progressType?.total ?? 0;
-      const currErrors = progressType?.errors ?? 0;
-      const currSuccessful = progressType?.successful ?? 0;
-      const accType = acc[type];
+        statuses[type].push(progressType?.status ?? "completed");
 
-      statuses[type].push(progressType?.status ?? "completed");
-
-      if (accType) {
-        accType.total += currTotal;
-        accType.errors += currErrors;
-        accType.successful += currSuccessful;
-        accType.status = aggregateStatus(statuses[type]);
-      } else {
-        acc[type] = {
-          total: currTotal,
-          errors: currErrors,
-          successful: currSuccessful,
-          status: progressType?.status ?? "completed",
-        };
+        if (accType) {
+          accType.total += currTotal;
+          accType.errors += currErrors;
+          accType.successful += currSuccessful;
+          accType.status = aggregateStatus(statuses[type]);
+        } else {
+          acc[type] = {
+            total: currTotal,
+            errors: currErrors,
+            successful: currSuccessful,
+            status: progressType?.status ?? "completed",
+          };
+        }
       }
-    }
 
-    return acc;
-  }, {});
+      return acc;
+    },
+    {}
+  );
 
   return tallyResults;
 }

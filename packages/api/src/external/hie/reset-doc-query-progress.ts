@@ -74,7 +74,11 @@ export async function resetDocQueryProgress({
   });
 
   if (requestId && patient.data.documentQueryProgress) {
-    await processDocQueryProgressWebhook({ patient, requestId });
+    await processDocQueryProgressWebhook({
+      patient,
+      documentQueryProgress: patient.data.documentQueryProgress,
+      requestId,
+    });
   }
 }
 
