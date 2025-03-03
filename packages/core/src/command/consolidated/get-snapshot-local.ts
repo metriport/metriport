@@ -134,18 +134,18 @@ async function getBundle(
   log(`forceDataFromFhir: ${forceDataFromFhir}`);
   if (isGetFromS3) {
     const startedAt = new Date();
-    const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId });
-    if (consolidatedBundle) {
+    const consolidatedSnapshot = await getConsolidatedFromS3({ ...params, cxId });
+    if (consolidatedSnapshot) {
       log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
-      return consolidatedBundle;
+      return consolidatedSnapshot;
     }
     log(`(from S3) Not found/created`);
   }
   // Used for contributed data (shareback)
   const startedAt = new Date();
-  const originalBundle = await getConsolidatedFromFhirServer(params);
+  const consolidatedSnapshot = await getConsolidatedFromFhirServer(params);
   log(`(from FHIR) Took ${elapsedTimeFromNow(startedAt)}ms`);
-  return originalBundle;
+  return consolidatedSnapshot;
 }
 
 async function postSnapshotToApi({

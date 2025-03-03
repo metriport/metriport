@@ -37,13 +37,13 @@ export async function getConsolidatedFromS3({
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patient });
-  const consolidatedSearchset = toSearchSet(consolidated);
+  const fullConsolidatedBundle = await getOrCreateConsolidatedOnS3({ cxId, patient });
+  const consolidatedSearchset = toSearchSet(fullConsolidatedBundle);
 
   log(`Consolidated found with ${consolidatedSearchset.entry?.length} entries`);
-  const filtered = await filterConsolidated(consolidatedSearchset, params);
-  log(`Filtered to ${filtered?.entry?.length} entries`);
-  return filtered as SearchSetBundle;
+  const consolidatedSnapshot = await filterConsolidated(consolidatedSearchset, params);
+  log(`Filtered to ${consolidatedSnapshot?.entry?.length} entries`);
+  return consolidatedSnapshot as SearchSetBundle;
 }
 
 async function getOrCreateConsolidatedOnS3({

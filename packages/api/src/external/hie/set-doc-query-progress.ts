@@ -103,12 +103,15 @@ export function aggregateAndSetHIEProgresses(
   updatedExternalData: PatientExternalData
 ): DocumentQueryProgress {
   // Set the aggregated doc query progress for the patient
+  console.log("INSIDE aggregateAndSetHIEProgresses");
   const externalQueryProgresses = flattenDocQueryProgressWithExternal(updatedExternalData);
+  console.log("externalQueryProgresses", JSON.stringify(externalQueryProgresses));
 
   const aggregatedDocProgress = aggregateDocProgress(
     externalQueryProgresses,
     existingPatientDocProgress
   );
+  console.log("aggregatedDocProgress", JSON.stringify(aggregatedDocProgress));
 
   const updatedDocumentQueryProgress: DocumentQueryProgress = {
     ...existingPatientDocProgress,

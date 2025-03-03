@@ -47,13 +47,16 @@ export async function tallyDocQueryProgress({
 
     // Set the doc query progress for the chosen hie
     const externalData = setHIETallyCount(patient, progress, type, source);
+    console.log("externalData from setHIETallyCount", JSON.stringify(externalData));
 
     const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
+    console.log("existingPatientDocProgress", JSON.stringify(existingPatientDocProgress));
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
       externalData
     );
+    console.log("aggregatedDocProgresses", JSON.stringify(aggregatedDocProgresses));
 
     const updatedPatient = {
       ...patient,
@@ -89,12 +92,15 @@ export function setHIETallyCount(
   const tallySuccessful = progress.successful ?? 0;
   const tallyErrors = progress.errors ?? 0;
 
-  console.log("[DEBUG] Input progress values:", {
-    tallySuccessful,
-    tallyErrors,
-    type,
-    source,
-  });
+  console.log(
+    "[DEBUG] Input progress values:",
+    JSON.stringify({
+      tallySuccessful,
+      tallyErrors,
+      type,
+      source,
+    })
+  );
 
   const sourceData = externalData[source];
   const sourceProgress = sourceData?.documentQueryProgress ?? {};
@@ -102,20 +108,26 @@ export function setHIETallyCount(
   const sourceSuccessful = sourceProgress[type]?.successful ?? 0;
   const sourceErrors = sourceProgress[type]?.errors ?? 0;
 
-  console.log("[DEBUG] Source progress values:", {
-    sourceTotal,
-    sourceSuccessful,
-    sourceErrors,
-  });
+  console.log(
+    "[DEBUG] Source progress values:",
+    JSON.stringify({
+      sourceTotal,
+      sourceSuccessful,
+      sourceErrors,
+    })
+  );
 
   const totalSuccessful = sourceSuccessful + tallySuccessful;
   const totalErrors = sourceErrors + tallyErrors;
 
-  console.log("[DEBUG] Calculated totals:", {
-    totalSuccessful,
-    totalErrors,
-    sourceTotal,
-  });
+  console.log(
+    "[DEBUG] Calculated totals:",
+    JSON.stringify({
+      totalSuccessful,
+      totalErrors,
+      sourceTotal,
+    })
+  );
 
   const status = getStatusFromProgress({
     successful: totalSuccessful,
@@ -135,12 +147,19 @@ export function setHIETallyCount(
     },
   };
 
-  console.log("[DEBUG] Final progress:", docQueryProgress[type]);
+  console.log("[DEBUG] Final progress:", JSON.stringify(docQueryProgress[type]));
 
   externalData[source] = {
     ...externalData[source],
     documentQueryProgress: docQueryProgress,
   };
+
+  console.log(
+    "[DEBUG] Final External Data for source",
+    source,
+    ":",
+    JSON.stringify(externalData[source])
+  );
 
   return externalData;
 }
