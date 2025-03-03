@@ -51,6 +51,7 @@ export async function calculateDocumentConversionStatus({
   const docQueryProgress = patient.data.documentQueryProgress;
   log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
+  log("hasSource", hasSource);
   if (hasSource) {
     const updatedPatient = await tallyDocQueryProgress({
       patient: patient,
@@ -67,20 +68,32 @@ export async function calculateDocumentConversionStatus({
         ? getCWData(updatedPatient.data.externalData)
         : getCQData(updatedPatient.data.externalData);
 
+    log("externalData", JSON.stringify(externalData));
+
     const globalTriggerConsolidated =
       updatedPatient.data.documentQueryProgress?.triggerConsolidated;
+    log("globalTriggerConsolidated", JSON.stringify(globalTriggerConsolidated));
+
     const hieTriggerConsolidated = externalData?.documentQueryProgress?.triggerConsolidated;
+    log("hieTriggerConsolidated", JSON.stringify(hieTriggerConsolidated));
 
     const isGlobalConversionCompleted = isProgressStatusValid({
       documentQueryProgress: updatedPatient.data.documentQueryProgress,
       progressType: "convert",
       status: "completed",
     });
+    log(
+      "updatedPatient.data.documentQueryProgress",
+      JSON.stringify(updatedPatient.data.documentQueryProgress)
+    );
+    log("isGlobalConversionCompleted", JSON.stringify(isGlobalConversionCompleted));
+
     const isHieConversionCompleted = isProgressStatusValid({
       documentQueryProgress: externalData?.documentQueryProgress,
       progressType: "convert",
       status: "completed",
     });
+    log("isHieConversionCompleted", JSON.stringify(isHieConversionCompleted));
 
     if (isHieConversionCompleted) {
       const startedAt = updatedPatient.data.documentQueryProgress?.startedAt;
@@ -109,6 +122,7 @@ export async function calculateDocumentConversionStatus({
       requestId,
       progressType: "consolidated",
     };
+    log("dqWhParams", JSON.stringify(dqWhParams));
 
     if (
       (hieTriggerConsolidated && isHieConversionCompleted) ||
@@ -134,12 +148,15 @@ export async function calculateDocumentConversionStatus({
         `Kicking off getConsolidated for patient ${updatedPatient.id} with global flag: ${globalTriggerConsolidated}`
       );
       createConsolidatedAndProcessWebhook(consolidatedParams, dqWhParams, log);
+    } else {
+      log("NOTHING TO DO!");
     }
   } else {
     const expectedPatient = await updateConversionProgress({
       patient: { id: patientId, cxId },
       convertResult,
     });
+    log("No source! expectedPatient", JSON.stringify(expectedPatient));
 
     const isConversionCompleted = isProgressStatusValid({
       documentQueryProgress: expectedPatient.data.documentQueryProgress,
@@ -147,8 +164,10 @@ export async function calculateDocumentConversionStatus({
       status: "completed",
     });
 
+    log("isConversionCompleted?", isConversionCompleted);
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
+      log("Recreate cons");
       await recreateConsolidated({ patient, context: "calculate-no-source" });
 
       processPatientDocumentRequest(
