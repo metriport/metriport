@@ -1,12 +1,8 @@
-/* eslint-disable */
-// @ts-nocheck
-
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
-import { MLLP_DEFAULT_PORT } from "../shared/constants";
 
 const NUM_AZS = 2;
 

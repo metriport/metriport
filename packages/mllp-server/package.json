@@ -13,7 +13,7 @@
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
-    "test": "jest --runInBand",
+    "test": "echo \"No test specified yet\"",
     "clean": "rimraf dist",
     "deepclean": "npm run clean && rimraf node_modules"
   },

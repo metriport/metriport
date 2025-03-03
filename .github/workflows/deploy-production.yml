@@ -16,6 +16,7 @@ on:
       - "packages/infra/**"
       - "packages/lambdas/**"
       - "packages/terminology/**"
+      - "packages/mllp-server/**"
   workflow_dispatch: # manually executed by a user
 
 jobs:
@@ -123,11 +124,11 @@ jobs:
     needs: files-changed
     uses: ./.github/workflows/_deploy-mllp-server.yml
     with:
-      deploy_env: "staging"
-      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_STAGING }}
-      ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_STAGING }}
-      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+      deploy_env: "production"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_PRODUCTION }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_PRODUCTION }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_PRODUCTION }}
+      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
