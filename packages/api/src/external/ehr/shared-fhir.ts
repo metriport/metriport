@@ -5,7 +5,7 @@ import {
   BadRequestError,
   MetriportError,
   normalizeDob,
-  normalizeEmailNewSafe,
+  normalizeEmailSafe,
   normalizeGender,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
@@ -18,7 +18,7 @@ export function createContactsFromFhir(patient: Patient): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       if (!telecom.value) return [];
-      const email = normalizeEmailNewSafe(telecom.value);
+      const email = normalizeEmailSafe(telecom.value);
       if (!email) return [];
       return { email };
     } else if (telecom.system === "phone") {

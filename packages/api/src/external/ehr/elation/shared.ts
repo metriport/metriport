@@ -5,7 +5,7 @@ import {
   BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
   MetriportError,
-  normalizeEmailNewSafe,
+  normalizeEmailSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
@@ -20,7 +20,7 @@ export const elationClientJwtTokenSource = "elation-client";
 export function createContacts(patient: ElationPatient): Contact[] {
   return [
     ...(patient.emails ?? []).flatMap(e => {
-      const email = normalizeEmailNewSafe(e.email);
+      const email = normalizeEmailSafe(e.email);
       if (!email) return [];
       return { email };
     }),
