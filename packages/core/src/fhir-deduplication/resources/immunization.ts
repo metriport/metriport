@@ -3,13 +3,15 @@ import { CVX_CODE, CVX_OID, NDC_CODE, NDC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
   combineResources,
+  createKeysFromObjectArray,
+  createKeysFromObjectArrayAndBits,
   createRef,
+  deduplicateAndTrackResource,
   extractDisplayFromConcept,
-  deduplicateWithinMap,
+  fetchCodingCodeOrDisplayOrSystem,
   getDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
-  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const immunizationStatus = ["entered-in-error", "completed", "not-done"] as const;
@@ -25,38 +27,25 @@ export const statusRanking: Record<ImmunizationStatus, number> = {
 export function deduplicateImmunizations(
   immunizations: Immunization[]
 ): DeduplicationResult<Immunization> {
-  const {
-    immunizationsNdcMap,
-    immunizationsCvxMap,
-    displayMap,
-    refReplacementMap,
-    danglingReferences,
-  } = groupSameImmunizations(immunizations);
+  const { immunizationsMap, refReplacementMap, danglingReferences } =
+    groupSameImmunizations(immunizations);
   return {
     combinedResources: combineResources({
-      combinedMaps: [immunizationsNdcMap, immunizationsCvxMap, displayMap],
+      combinedMaps: [immunizationsMap],
     }),
     refReplacementMap,
     danglingReferences,
   };
 }
 
-/**
- * Approach:
- * 1 map, where the key is made of:
- * - date (occurenceDateTime or occurenceString)
- * - vaccineCode
- */
 export function groupSameImmunizations(immunizations: Immunization[]): {
-  immunizationsCvxMap: Map<string, Immunization>;
-  immunizationsNdcMap: Map<string, Immunization>;
-  displayMap: Map<string, Immunization>;
+  immunizationsMap: Map<string, Immunization>;
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const immunizationsCvxMap = new Map<string, Immunization>();
-  const immunizationsNdcMap = new Map<string, Immunization>();
-  const displayMap = new Map<string, Immunization>();
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Immunization>();
+
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
@@ -69,6 +58,9 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
     return master;
   }
 
+  const hasDate = 1;
+  const hasNoDate = 0;
+
   for (const immunization of immunizations) {
     if (hasBlacklistedText(immunization.vaccineCode)) {
       danglingReferences.add(createRef(immunization));
@@ -76,53 +68,61 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
     }
 
     const date = getDateFromResource(immunization, "datetime");
-    if (date && date !== "unknown") {
-      // TODO: should we keep date a mandatory field for dedup? If yes, then should we also add a default date to the FHIR encounter?
-      const { cvxCode, ndcCode } = extractCodes(immunization.vaccineCode);
 
-      if (cvxCode) {
-        const key = JSON.stringify({ date, cvxCode });
-        deduplicateWithinMap(
-          immunizationsCvxMap,
-          key,
-          immunization,
-          refReplacementMap,
-          undefined,
-          assignMostDescriptiveStatus
-        );
-      } else if (ndcCode) {
-        const key = JSON.stringify({ date, ndcCode });
-        deduplicateWithinMap(
-          immunizationsNdcMap,
-          key,
-          immunization,
-          refReplacementMap,
-          undefined,
-          assignMostDescriptiveStatus
-        );
-      } else {
-        const displayCode = extractDisplayFromConcept(immunization.vaccineCode);
-        if (displayCode) {
-          const key = JSON.stringify({ date, displayCode });
-          deduplicateWithinMap(
-            displayMap,
-            key,
-            immunization,
-            refReplacementMap,
-            undefined,
-            assignMostDescriptiveStatus
-          );
-        } else {
-          danglingReferences.add(createRef(immunization));
-        }
-      }
+    const { cvxCode, ndcCode } = extractCodes(immunization.vaccineCode);
+    const display = extractDisplayFromConcept(immunization.vaccineCode);
+
+    const identifiers = [
+      ...(cvxCode ? [{ cvxCode }] : []),
+      ...(ndcCode ? [{ ndcCode }] : []),
+      ...(display ? [{ displayCode: display }] : []),
+    ];
+    const hasIdentifier = identifiers.length > 0;
+
+    if (!hasIdentifier) {
+      danglingReferences.add(createRef(immunization));
+      continue;
+    }
+
+    const identifierKeys: string[] = [];
+    const matchCandidateKeys: string[] = [];
+
+    if (date) {
+      // keys that match a code + date together
+      identifierKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+      matchCandidateKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+
+      // flagging the vaccine to indicate having a date
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasDate]));
+
+      // can dedup with a vaccine that has no date, as long as an identifier matches
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
+    } else {
+      // flagging the vaccine to indicate not having a date
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
+
+      // can dedup with a vaccine that does or does not have a date
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasDate]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
+    }
+
+    if (identifierKeys.length > 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        matchCandidateKeys,
+        identifierKeys,
+        incomingResource: immunization,
+        refReplacementMap,
+        customMergeLogic: assignMostDescriptiveStatus,
+      });
+    } else {
+      danglingReferences.add(createRef(immunization));
     }
   }
 
   return {
-    immunizationsCvxMap,
-    immunizationsNdcMap,
-    displayMap,
+    immunizationsMap: dedupedResourcesMap,
     refReplacementMap,
     danglingReferences,
   };

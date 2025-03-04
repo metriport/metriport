@@ -9,12 +9,18 @@ export const createMRSummaryFileName = (
   extension: ConsolidationConversionType,
   dedupEnabled?: boolean
 ): string => {
-  const fileSuffixBeforeExtension = createFileSuffixBeforeExtension(dedupEnabled);
   const fileExtension = extension === "pdf" ? "html.pdf" : extension;
-  const fileSuffix = `${fileSuffixBeforeExtension}.${fileExtension}`;
-  const filePath = createFilePath(cxId, patientId, fileSuffix);
-  return filePath;
+  const filePath = createMRSummaryFileNameWithSuffix(cxId, patientId, dedupEnabled);
+  return `${filePath}.${fileExtension}`;
 };
+
+export function createMRSummaryFileNameWithSuffix(
+  cxId: string,
+  patientId: string,
+  dedupEnabled?: boolean
+): string {
+  return createFilePath(cxId, patientId, createFileSuffixBeforeExtension(dedupEnabled));
+}
 
 function createFileSuffixBeforeExtension(dedupEnabled?: boolean): string {
   return `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}`;
