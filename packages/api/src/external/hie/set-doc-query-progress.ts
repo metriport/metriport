@@ -24,7 +24,7 @@ export type SetDocQueryProgress = {
   triggerConsolidated?: boolean | undefined;
   downloadProgress?: StaticProgress | undefined;
   convertProgress?: StaticProgress | undefined;
-  isDataPipelineComplete?: boolean | undefined;
+  isDataPipelineComplete?: boolean;
 } & SetDocQueryProgressBase;
 
 /**
