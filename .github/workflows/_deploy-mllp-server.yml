@@ -7,7 +7,7 @@ on:
         description: "sub-directory where this workflow should execute lint and build "
         required: false
         type: string
-        default: "packages/api"
+        default: "packages/mllp-server"
       deploy_env:
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
         required: true

@@ -31,12 +31,11 @@ export class MllpStack extends cdk.NestedStack {
       containerInsights: true,
     });
 
-    // Create ECR repo instead of using Docker asset
-    const ecrRepo = new Repository(this, "MllpRepo", {
+    const ecrRepo = new Repository(this, "MllpServerRepo", {
       repositoryName: "metriport/mllp-server",
       lifecycleRules: [{ maxImageCount: 5000 }],
     });
-    new cdk.CfnOutput(this, "MLLPECRRepoURI", {
+    new cdk.CfnOutput(this, "MllpECRRepoURI", {
       description: "MLLP ECR repository URI",
       value: ecrRepo.repositoryUri,
     });
@@ -125,7 +124,6 @@ export class MllpStack extends cdk.NestedStack {
             ServiceName: fargate.service.serviceName,
           },
           statistic: "Average",
-          // This only changes when we establish a new HIE connection, so this can be updated infrequently
           period: Duration.minutes(15),
         }),
       },
