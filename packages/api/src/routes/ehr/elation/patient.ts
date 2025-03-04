@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { syncAthenaPatientIntoMetriport } from "../../../external/ehr/athenahealth/command/sync-patient";
+import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
@@ -9,10 +9,10 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../
 const router = Router();
 
 /**
- * GET /ehr/athenahealth/patient/:id
+ * GET /ehr/webhook/elation/patient/:id
  *
  * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of AthenaHealth Patient.
+ * @param req.params.id The ID of Elation Patient.
  * @returns Metriport Patient if found.
  */
 router.get(
@@ -21,12 +21,12 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const athenaPatientId = getFrom("params").orFail("id", req);
-    const athenaPracticeId = getFromQueryOrFail("practiceId", req);
-    const patientId = await syncAthenaPatientIntoMetriport({
+    const elationPatientId = getFrom("params").orFail("id", req);
+    const elationPracticeId = getFromQueryOrFail("practiceId", req);
+    const patientId = await syncElationPatientIntoMetriport({
       cxId,
-      athenaPracticeId,
-      athenaPatientId,
+      elationPracticeId,
+      elationPatientId,
     });
     return res.status(httpStatus.OK).json(patientId);
   })

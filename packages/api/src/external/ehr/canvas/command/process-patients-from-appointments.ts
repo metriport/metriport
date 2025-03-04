@@ -8,31 +8,29 @@ import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  EhrSources,
   delayBetweenPracticeBatches,
-  getLookBackTimeRange,
+  EhrSources,
+  getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
 } from "../../shared";
-import { createAthenaClient } from "../shared";
+import { createCanvasClient } from "../shared";
 import {
-  SyncAthenaPatientIntoMetriportParams,
-  syncAthenaPatientIntoMetriport,
+  syncCanvasPatientIntoMetriport,
+  SyncCanvasPatientIntoMetriportParams,
 } from "./sync-patient";
 
 dayjs.extend(duration);
 
-const catupUpLookBack = dayjs.duration(12, "hours");
+const lookForward = dayjs.duration(14, "days");
 
 type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
-  departmentIds?: string[];
-  catchUp: boolean;
 };
 
-export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
-  const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
+export async function processPatientsFromAppointments(): Promise<void> {
+  const cxMappings = await getCxMappingsBySource({ source: EhrSources.canvas });
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
@@ -40,8 +38,6 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     return {
       cxId: mapping.cxId,
       practiceId: mapping.externalId,
-      departmentIds: mapping.secondaryMappings?.departmentIds,
-      catchUp,
     };
   });
 
@@ -59,13 +55,13 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (getAppointmentsErrors.length > 0) {
-    const msg = "Failed to get some appointments from subscription @ AthenaHealth";
+    const msg = "Failed to get some appointments @ Canvas";
     capture.message(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
         errors: getAppointmentsErrors,
-        context: "athenahealth.process-patients-from-appointments-sub",
+        context: "canvas.process-patients-from-appointments",
       },
       level: "warning",
     });
@@ -76,15 +72,15 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   const syncPatientsErrors: {
     error: unknown;
     cxId: string;
-    athenaPracticeId: string;
-    athenaPatientId: string;
+    canvasPracticeId: string;
+    canvasPatientId: string;
   }[] = [];
-  const syncPatientsArgs: SyncAthenaPatientIntoMetriportParams[] = uniqueAppointments.map(
+  const syncPatientsArgs: SyncCanvasPatientIntoMetriportParams[] = uniqueAppointments.map(
     appointment => {
       return {
         cxId: appointment.cxId,
-        athenaPracticeId: appointment.practiceId,
-        athenaPatientId: appointment.patientId,
+        canvasPracticeId: appointment.practiceId,
+        canvasPatientId: appointment.patientId,
         triggerDq: true,
       };
     }
@@ -92,7 +88,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
 
   await executeAsynchronously(
     syncPatientsArgs,
-    async (params: SyncAthenaPatientIntoMetriportParams) => {
+    async (params: SyncCanvasPatientIntoMetriportParams) => {
       const { error } = await syncPatient(params);
       if (error) syncPatientsErrors.push({ ...params, error });
     },
@@ -103,13 +99,13 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (syncPatientsErrors.length > 0) {
-    const msg = "Failed to sync some patients @ AthenaHealth";
+    const msg = "Failed to sync some patients @ Canvas";
     capture.message(msg, {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
         errors: syncPatientsErrors,
-        context: "athenahealth.process-patients-from-appointments-sub",
+        context: "canvas.process-patients-from-appointments",
       },
       level: "warning",
     });
@@ -119,31 +115,20 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
 async function getAppointments({
   cxId,
   practiceId,
-  departmentIds,
-  catchUp,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
-  const { log } = out(
-    `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} catchUp ${catchUp}`
-  );
-  const api = await createAthenaClient({ cxId, practiceId });
-  const { startRange, endRange } = catchUp
-    ? getLookBackTimeRange({ lookBack: catupUpLookBack })
-    : { startRange: undefined, endRange: undefined };
-  if (startRange || endRange) {
-    log(`Getting appointments from ${startRange} to ${endRange}`);
-  } else {
-    log(`Getting appointments with no range`);
-  }
+  const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
+  const api = await createCanvasClient({ cxId, practiceId });
+  const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
+  log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
-    const appointments = await api.getAppointmentsFromSubscription({
+    const appointments = await api.getAppointments({
       cxId,
-      departmentIds,
-      startProcessedDate: startRange,
-      endProcessedDate: endRange,
+      fromDate: startRange,
+      toDate: endRange,
     });
     return {
       appointments: appointments.map(appointment => {
-        return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
+        return { cxId, practiceId, patientId: appointment.patient };
       }),
       error: undefined,
     };
@@ -155,19 +140,19 @@ async function getAppointments({
 
 async function syncPatient({
   cxId,
-  athenaPracticeId,
-  athenaPatientId,
+  canvasPracticeId,
+  canvasPatientId,
   triggerDq,
-}: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
+}: Omit<SyncCanvasPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
   const { log } = out(
-    `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
+    `Canvas syncPatient - cxId ${cxId} canvasPracticeId ${canvasPracticeId} canvasPatientId ${canvasPatientId}`
   );
-  const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
+  const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
   try {
-    await syncAthenaPatientIntoMetriport({
+    await syncCanvasPatientIntoMetriport({
       cxId,
-      athenaPracticeId,
-      athenaPatientId,
+      canvasPracticeId,
+      canvasPatientId,
       api,
       triggerDq,
     });

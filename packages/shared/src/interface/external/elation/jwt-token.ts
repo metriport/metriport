@@ -6,6 +6,12 @@ export type ElationClientJwtTokenData = {
   source: "elation-client";
 };
 
+export type ElationWebhookJwtTokenData = {
+  practiceId: string;
+  cxId: string;
+  source: "elation-webhook";
+};
+
 export const elationClientJwtTokenResponseSchema = z.object({
   scope: z.string(),
   access_token: z.string(),

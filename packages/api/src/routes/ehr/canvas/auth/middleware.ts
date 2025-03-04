@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
+import { canvasWebhookJwtTokenSource } from "../../../../external/ehr/canvas/shared";
 import { EhrSources } from "../../../../external/ehr/shared";
 import {
   ParseResponse,
@@ -9,7 +10,7 @@ import {
   processPatientRouteAsync,
 } from "../../shared";
 
-function parseCanvasPracticeId(tokenData: JwtTokenData): ParseResponse {
+function parseCanvasPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
   if (tokenData.source !== EhrSources.canvas) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
   return {
@@ -20,8 +21,25 @@ function parseCanvasPracticeId(tokenData: JwtTokenData): ParseResponse {
   };
 }
 
-export function processCxId(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, EhrSources.canvas, parseCanvasPracticeId)
+function parseCanvasPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
+  if (tokenData.source !== canvasWebhookJwtTokenSource) throw new ForbiddenError();
+  const practiceId = tokenData.practiceId;
+  return {
+    externalId: practiceId,
+    queryParams: {
+      practiceId,
+    },
+  };
+}
+
+export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
+  processCxIdAsync(req, EhrSources.canvas, parseCanvasPracticeIdDash)
+    .then(() => next())
+    .catch(next);
+}
+
+export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
+  processCxIdAsync(req, canvasWebhookJwtTokenSource, parseCanvasPracticeIdWebhook)
     .then(() => next())
     .catch(next);
 }
