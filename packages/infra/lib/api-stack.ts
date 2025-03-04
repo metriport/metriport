@@ -564,6 +564,7 @@ export class APIStack extends Stack {
       stack: this,
       lambdaLayers,
       vpc: this.vpc,
+      secrets,
       sourceQueue: fhirConverterQueue,
       dlq: fhirConverterDLQ,
       fhirConverterBucket,

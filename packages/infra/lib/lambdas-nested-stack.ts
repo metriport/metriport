@@ -1,10 +1,10 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as rds from "aws-cdk-lib/aws-rds";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
@@ -13,12 +13,13 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
 import * as AppConfigUtils from "./shared/app-config";
-import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
+const posthogEnvVarName = "POST_HOG_API_KEY_SECRET";
 const pollingBuffer = Duration.seconds(30);
 
 interface LambdasNestedStackProps extends NestedStackProps {
@@ -135,11 +136,13 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       envType: props.config.environmentType,
+      secrets: props.secrets,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       appId: props.appConfigEnvVars.appId,
       configId: props.appConfigEnvVars.configId,
       bedrock: props.config.bedrock,
+      posthogSecretKeyName: props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET,
     });
   }
 
@@ -434,10 +437,12 @@ export class LambdasNestedStack extends NestedStack {
     conversionsBucket,
     sentryDsn,
     envType,
+    secrets,
     alarmAction,
     appId,
     configId,
     bedrock,
+    posthogSecretKeyName,
   }: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -445,11 +450,13 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket: s3.IBucket;
     conversionsBucket: s3.IBucket;
     envType: EnvType;
+    secrets: Secrets;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     appId: string;
     configId: string;
     bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
+    posthogSecretKeyName?: string;
   }): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -474,6 +481,9 @@ export class LambdasNestedStack extends NestedStack {
           AI_BRIEF_MODEL_ID: bedrock?.modelId,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(posthogSecretKeyName && {
+          [posthogEnvVarName]: posthogSecretKeyName,
+        }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 4096,
@@ -483,15 +493,16 @@ export class LambdasNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    bundleBucket.grantReadWrite(fhirToBundleLambda);
-    conversionsBucket.grantRead(fhirToBundleLambda);
-
     AppConfigUtils.allowReadConfig({
       scope: this,
       resourceName: "FhirToBundleLambda",
       resourceRole: fhirToBundleLambda.role,
       appConfigResources: ["*"],
     });
+
+    bundleBucket.grantReadWrite(fhirToBundleLambda);
+    conversionsBucket.grantRead(fhirToBundleLambda);
+    secrets[posthogEnvVarName]?.grantRead(fhirToBundleLambda);
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],
