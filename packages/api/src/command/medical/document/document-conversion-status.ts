@@ -135,6 +135,10 @@ export async function calculateDocumentConversionStatus({
       status: "completed",
     });
 
+    log(
+      `Running calculateDocumentConversionStatus without "source" - isConversionCompleted: ${isConversionCompleted}`
+    );
+
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
       await recreateConsolidated({ patient: expectedPatient, context: "calculate-no-source" });

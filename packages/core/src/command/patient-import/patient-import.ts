@@ -1,21 +1,71 @@
+import {
+  PatientImportEntryStatusFailed,
+  PatientImportEntryStatusParsed,
+  PatientImportStatus,
+} from "@metriport/shared/domain/patient/patient-import/types";
 import { PatientDemoData } from "../../domain/patient";
-import { PatientImportStatus } from "../../domain/patient/patient-import";
 
-export type PatientRecordStatus = "processing" | "successful" | "failed";
-
-export type PatientRecord = {
-  patientId: string;
-  status: PatientRecordStatus;
+export type FailedPatientRecord = {
+  status: PatientImportEntryStatusFailed;
+  patientCreate?: PatientPayload | undefined;
+  reasonForCx: string;
+  reasonForDev: string;
 };
 
-export type PatientRecordUpdate = Omit<PatientRecord, "patientId">;
+export type ParsedPatientRecord = {
+  status: PatientImportEntryStatusParsed;
+  patientCreate: PatientPayload;
+  reason?: never | undefined;
+};
+
+export type PatientRecord = {
+  cxId: string;
+  jobId: string;
+  rowNumber: number;
+  rowCsv: string;
+  patientId?: string | undefined;
+} & (FailedPatientRecord | ParsedPatientRecord);
+
+export type PatientMapping = {
+  rowNumber: number;
+  patientId: string;
+};
 
 export type JobRecord = {
   cxId: string;
   facilityId: string;
-  jobStartedAt: string;
-  dryRun: boolean;
+  jobId: string;
+  createdAt: string;
+  startedAt?: string | undefined;
+  completedAt?: string | undefined;
   status: PatientImportStatus;
+  params: JobRecordParams;
+};
+
+export type JobRecordParams = {
+  dryRun: boolean;
+  rerunPdOnNewDemographics: boolean;
+  triggerConsolidated: boolean;
+  disableWebhooks: boolean;
 };
 
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
+
+export type ParsedPatientBase = { rowNumber: number; raw: string };
+
+export type ParsedPatientSuccess = ParsedPatientBase & {
+  parsed: PatientPayload;
+  error?: undefined;
+};
+
+export type ParsedPatientError = ParsedPatientBase & { parsed?: undefined; error: string };
+
+export type ParsedPatient = ParsedPatientSuccess | ParsedPatientError;
+
+export function isParsedPatientSuccess(parsed: ParsedPatient): parsed is ParsedPatientSuccess {
+  return parsed.parsed !== undefined;
+}
+
+export function isParsedPatientError(parsed: ParsedPatient): parsed is ParsedPatientError {
+  return parsed.parsed === undefined;
+}
