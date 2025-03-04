@@ -2,6 +2,7 @@ import { Duration } from "aws-cdk-lib";
 import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
 import { EnvConfigNonSandbox } from "./env-config";
+import { vCPU } from "../lib/shared/fargate";
 
 export const config: EnvConfigNonSandbox = {
   stackName: "MetriportInfraStack",
@@ -144,6 +145,26 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   generalBucketName: "test-bucket",
+  hl7NotificationRouting: {
+    vpnConfigs: [
+      {
+        partnerName: "SampleHIE",
+        partnerGatewayPublicIp: "200.54.1.1",
+        preSharedKeyTunnel1: "MY_SECRET_KEY_TUNNEL_1",
+        preSharedKeyTunnel2: "MY_SECRET_KEY_TUNNEL_2",
+        bgpAsn: 65001,
+        staticRoutesOnly: true,
+        phase1LifetimeSeconds: 3600,
+        phase2LifetimeSeconds: 3600, // max value
+      },
+    ],
+    mllpServer: {
+      fargateCpu: 1 * vCPU,
+      fargateMemoryLimitMiB: 2048,
+      fargateTaskCountMin: 2,
+      fargateTaskCountMax: 4,
+    },
+  },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
