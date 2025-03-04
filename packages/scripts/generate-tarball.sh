@@ -4,7 +4,7 @@
 
 if [[ $# -eq 0 ]]; then
   echo "Error: Package name is required as first argument"
-  echo "Usage: $0 <package-name>"
+  echo "Usage: $0 <package-name> [extra-dependencies]"
   exit 1
 fi
 
@@ -31,6 +31,16 @@ PACKAGE_NAME=$1
 PACKAGE_FOLDER=packages/$PACKAGE_NAME
 TARBALL_NAME=metriport-$PACKAGE_NAME.tar.gz
 PACKAGE_TARBALL=$PACKAGE_FOLDER/$TARBALL_NAME
+EXTRA_DEPS=${2:-} # Default to empty if not provided
+
+# Base dependencies that are always included
+BASE_DEPS="package.json package-lock.json \
+  packages/shared/package.json packages/shared/dist \
+  packages/core/package.json packages/core/dist \
+  ${PACKAGE_FOLDER}/package.json ${PACKAGE_FOLDER}/dist"
+
+# Combine base dependencies with any extra dependencies
+FINAL_DEPS="$BASE_DEPS $EXTRA_DEPS"
 
 rm -rf ${PACKAGE_TARBALL}
 
@@ -42,11 +52,4 @@ tar \
   --exclude='**/*.test*' \
   --exclude="**/${TARBALL_NAME}" \
   -czf ${PACKAGE_TARBALL} \
-  package.json \
-  package-lock.json \
-  packages/shared/package.json \
-  packages/shared/dist \
-  packages/core/package.json \
-  packages/core/dist \
-  ${PACKAGE_FOLDER}/package.json \
-  ${PACKAGE_FOLDER}/dist
+  $FINAL_DEPS

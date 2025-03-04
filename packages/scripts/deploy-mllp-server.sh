@@ -19,11 +19,6 @@ if [[ -z "${ECS_SERVICE}" ]]; then
   exit 1
 fi
 
-# Build mllp-server tarball
 source ./packages/scripts/generate-tarball.sh mllp-server
-
-# Build and push Docker images
 source ./packages/scripts/push-image.sh mllp-server
-
-# Restart ECS service
 source ./packages/scripts/restart-ecs.sh
