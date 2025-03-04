@@ -58,9 +58,9 @@ function parseAddress(
   const errors: ParsingError[] = [];
   const indexSuffix = index ? `-${index}` : "";
 
-  const addressLine1Name = `addressline1${indexSuffix}`;
+  const addressLine1Name = `addressLine1${indexSuffix}`;
   const addressLine1AlternativeName = `address1${indexSuffix}`;
-  const addressLine2Name = `addressline2${indexSuffix}`;
+  const addressLine2Name = `addressLine2${indexSuffix}`;
   const addressLine2AlternativeName = `address2${indexSuffix}`;
   const cityName = `city${indexSuffix}`;
   const stateName = `state${indexSuffix}`;
@@ -71,7 +71,9 @@ function parseAddress(
   let addressLine2: string | undefined = undefined;
   try {
     const res = normalizeAddressLine(
-      csvPatient[addressLine1Name] ?? csvPatient[addressLine1AlternativeName],
+      csvPatient[addressLine1Name] ??
+        csvPatient[addressLine1Name.toLowerCase()] ??
+        csvPatient[addressLine1AlternativeName],
       addressLine1Name,
       true
     );
@@ -85,7 +87,9 @@ function parseAddress(
 
   try {
     const dedicatedAddressLine2 = normalizeAddressLine(
-      csvPatient[addressLine2Name] ?? csvPatient[addressLine2AlternativeName],
+      csvPatient[addressLine2Name] ??
+        csvPatient[addressLine2Name.toLowerCase()] ??
+        csvPatient[addressLine2AlternativeName],
       addressLine2Name
     );
     if (dedicatedAddressLine2) {

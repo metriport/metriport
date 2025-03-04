@@ -6,12 +6,12 @@ export type ProcessPatientCreateRequest = {
   cxId: string;
   facilityId: string;
   jobId: string;
-  patientPayload: PatientPayload;
+  rowNumber: number;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
   rerunPdOnNewDemographics?: boolean | undefined;
 };
 
-export interface PatientImportCreateHandler {
+export interface PatientImportCreate {
   processPatientCreate(request: ProcessPatientCreateRequest): Promise<void>;
 }
