@@ -94,14 +94,22 @@ const handleConversionWebhook = async (
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
 ): Promise<void> => {
+  console.log("handleConversionWebhook", patient, requestId, documentQueryProgress, progressType);
   const webhookSent = documentQueryProgress?.convert?.webhookSent ?? false;
 
   const convertStatus = documentQueryProgress.convert?.status;
   const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
-  const isTypeConversion = progressType ? progressType === "convert" : true;
+  const isTypeConversion = progressType ? progressType === "convert" : false;
 
   const canProcessRequest = isConvertFinished && isTypeConversion && !webhookSent;
 
+  console.log(
+    "isConvertFinished, isTypeConversion, !webhookSent",
+    isConvertFinished,
+    isTypeConversion,
+    !webhookSent
+  );
+  console.log("therefore canProcessRequest", canProcessRequest);
   if (canProcessRequest) {
     const convertIsCompleted = convertStatus === "completed";
 

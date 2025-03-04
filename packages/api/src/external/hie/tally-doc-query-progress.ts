@@ -42,15 +42,19 @@ export async function tallyDocQueryProgress({
       transaction,
     });
 
+    console.log("Tally got patient", JSON.stringify(patient));
     // Set the doc query progress for the chosen hie
     const externalData = setHIETallyCount(patient, progress, type, source);
+    console.log("Tally externalData", JSON.stringify(externalData));
 
     const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
+    console.log("Tally existingPatientDocProgress", JSON.stringify(existingPatientDocProgress));
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
       externalData
     );
+    console.log("Tally aggregatedDocProgresses", JSON.stringify(aggregatedDocProgresses));
 
     const updatedPatient = {
       ...patient,
@@ -62,10 +66,20 @@ export async function tallyDocQueryProgress({
       },
     };
 
+    console.log("Tally updatedPatient", JSON.stringify(updatedPatient));
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
+
+  console.log(
+    "Tally calling processDocQueryProgressWebhook with",
+    JSON.stringify({
+      patient,
+      requestId,
+      progressType: type,
+    })
+  );
 
   await processDocQueryProgressWebhook({
     patient,
