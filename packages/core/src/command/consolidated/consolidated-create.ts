@@ -1,5 +1,7 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
@@ -10,11 +12,16 @@ import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { executeAsynchronously, out } from "../../util";
+import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
+import { controlDuration } from "../../util/race-control";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
+dayjs.extend(duration);
+
+const AI_BRIEF_TIMEOUT = dayjs.duration(1.5, "minutes");
 const s3Utils = new S3Utils(Config.getAWSRegion());
+const TIMED_OUT = Symbol("TIMED_OUT");
 
 export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
@@ -67,9 +74,19 @@ export async function createConsolidatedFromConversions({
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
-  if (isAiBriefFeatureFlagEnabled) {
-    const binaryBundleEntry = await generateAiBriefBundleEntry(deduped, cxId, patientId, log);
-    if (binaryBundleEntry) {
+  if (isAiBriefFeatureFlagEnabled && deduped.entry && deduped.entry.length > 0) {
+    const binaryBundleEntry = await Promise.race([
+      generateAiBriefBundleEntry(deduped, cxId, patientId, log),
+      controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
+    ]);
+
+    if (binaryBundleEntry === TIMED_OUT) {
+      log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
+      capture.message("AI Brief generation timed out", {
+        extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },
+        level: "warning",
+      });
+    } else if (binaryBundleEntry) {
       deduped.entry?.push(binaryBundleEntry);
     }
   }
