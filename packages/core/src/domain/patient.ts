@@ -68,7 +68,6 @@ export type PatientData = {
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
   externalData?: PatientExternalData | undefined;
   cxDocumentRequestMetadata?: unknown;
-  isDataPipelineComplete?: boolean;
   cxConsolidatedRequestMetadata?: unknown;
   cxDownloadRequestMetadata?: unknown;
 };

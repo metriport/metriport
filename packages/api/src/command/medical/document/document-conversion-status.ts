@@ -11,14 +11,10 @@ import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getCQData } from "../../../external/carequality/patient";
 import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
-import { RecreateConsolidatedParams, recreateConsolidated } from "../patient/consolidated-recreate";
+import { RecreateConsolidatedParams } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
-import { updateConversionProgress, updateDataPipelineProgress } from "./document-query";
-import {
-  MAPIWebhookStatus,
-  createConsolidatedAndProcessWebhook,
-  processPatientDocumentRequest,
-} from "./document-webhook";
+import { updateConversionProgress } from "./document-query";
+import { createConsolidatedAndProcessWebhook } from "./document-webhook";
 import { ProcessDocQueryProgressWebhookParams } from "./process-doc-query-webhook";
 
 export async function calculateDocumentConversionStatus({
@@ -107,7 +103,6 @@ export async function calculateDocumentConversionStatus({
     const dqWhParams: ProcessDocQueryProgressWebhookParams | undefined = {
       patient: updatedPatient,
       requestId,
-      progressType: "convert",
     };
 
     if (
@@ -134,6 +129,17 @@ export async function calculateDocumentConversionStatus({
         `Kicking off getConsolidated for patient ${updatedPatient.id} with global flag: ${globalTriggerConsolidated}`
       );
       createConsolidatedAndProcessWebhook(consolidatedParams, dqWhParams, log);
+    } else {
+      log("FALLING THRU WITHOUT A WH!");
+      log(
+        JSON.stringify({
+          updatedPatient,
+          externalData,
+          globalTriggerConsolidated,
+          isGlobalConversionCompleted,
+          isHieConversionCompleted,
+        })
+      );
     }
   } else {
     const expectedPatient = await updateConversionProgress({
@@ -148,23 +154,13 @@ export async function calculateDocumentConversionStatus({
     });
 
     if (isConversionCompleted) {
-      // we want to await here to ensure the consolidated bundle is created before we send the webhook
-      // TODO: Do we need to do these in parallel? Not sure..
-      await Promise.all([
-        recreateConsolidated({ patient, context: "calculate-no-source" }),
-        updateDataPipelineProgress({
-          patient,
-          isPipelineDone: true,
-        }),
-      ]);
-
-      processPatientDocumentRequest(
-        cxId,
-        patientId,
-        "medical.document-conversion",
-        MAPIWebhookStatus.completed,
-        ""
-      );
+      const dqWhParams: ProcessDocQueryProgressWebhookParams | undefined = {
+        patient,
+        requestId,
+      };
+      const consolidatedParams = { patient, context: "calculate-no-source" };
+      log("createConsolidatedAndProcessWebhook case 3");
+      await createConsolidatedAndProcessWebhook(consolidatedParams, dqWhParams, log);
     }
   }
 }

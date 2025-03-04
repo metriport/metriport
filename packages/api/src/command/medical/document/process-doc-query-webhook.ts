@@ -17,8 +17,6 @@ export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 export type ProcessDocQueryProgressWebhookParams = {
   patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">;
   requestId: string;
-  isDoneConsolidated?: boolean;
-  progressType?: ProgressType;
 };
 
 /**
@@ -37,10 +35,7 @@ export const processDocQueryProgressWebhook = async ({
   const { documentQueryProgress } = patient.data;
 
   try {
-    if (documentQueryProgress) {
-      await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
-      await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
-    }
+    await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
     const extra = {
@@ -60,12 +55,12 @@ export const processDocQueryProgressWebhook = async ({
 const handleDownloadWebhook = async (
   patient: Pick<Patient, "id" | "cxId" | "externalId">,
   requestId: string,
-  documentQueryProgress: DocumentQueryProgress,
+  documentQueryProgress?: DocumentQueryProgress,
   progressType?: ProgressType
 ): Promise<void> => {
-  const webhookSent = documentQueryProgress.download?.webhookSent ?? false;
+  const webhookSent = documentQueryProgress?.download?.webhookSent ?? false;
+  const downloadStatus = documentQueryProgress?.download?.status;
 
-  const downloadStatus = documentQueryProgress.download?.status;
   const isDownloadFinished = downloadStatus === "completed" || downloadStatus === "failed";
   const isTypeDownload = progressType ? progressType === "download" : true;
 
@@ -88,33 +83,16 @@ const handleDownloadWebhook = async (
   }
 };
 
-const handleConversionWebhook = async (
+export async function handleConversionWebhook(
   patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">,
-  requestId: string,
-  documentQueryProgress: DocumentQueryProgress,
-  progressType?: ProgressType
-): Promise<void> => {
-  console.log("handleConversionWebhook", patient, requestId, documentQueryProgress, progressType);
+  requestId: string
+): Promise<void> {
+  const { documentQueryProgress } = patient.data;
   const webhookSent = documentQueryProgress?.convert?.webhookSent ?? false;
+  const convertStatus = documentQueryProgress?.convert?.status;
 
-  const convertStatus = documentQueryProgress.convert?.status;
-  const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
-  const isTypeConversion = progressType ? progressType === "convert" : true;
-  const isPipelineComplete = patient.data.isDataPipelineComplete;
-  const canProcessRequest =
-    isConvertFinished && isTypeConversion && !webhookSent && isPipelineComplete;
-
-  console.log(
-    "isConvertFinished, isTypeConversion, !webhookSent, isConsolidatedDone",
-    isConvertFinished,
-    isTypeConversion,
-    !webhookSent,
-    isPipelineComplete
-  );
-  console.log("therefore canProcessRequest", canProcessRequest);
-  if (canProcessRequest) {
+  if (!webhookSent) {
     const convertIsCompleted = convertStatus === "completed";
-
     const whStatus = convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
 
     processPatientDocumentRequest(
@@ -125,7 +103,7 @@ const handleConversionWebhook = async (
       requestId
     );
   }
-};
+}
 
 export const composeDocRefPayload = async (
   patientId: string,

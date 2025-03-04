@@ -6,7 +6,7 @@ import {
   Progress,
 } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -196,37 +196,6 @@ export async function updateConversionProgress({
       data: {
         ...patient.data,
         documentQueryProgress,
-      },
-    };
-
-    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
-
-    return updatedPatient;
-  });
-}
-
-type UpdatePipelineProgress = {
-  patient: Pick<Patient, "id" | "cxId">;
-  isPipelineDone: boolean;
-};
-
-export async function updateDataPipelineProgress({
-  patient: { id, cxId },
-  isPipelineDone,
-}: UpdatePipelineProgress): Promise<Patient> {
-  const patientFilter = { id, cxId };
-  return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientOrFail({
-      ...patientFilter,
-      lock: true,
-      transaction,
-    });
-
-    const updatedPatient = {
-      ...patient,
-      data: {
-        ...patient.data,
-        isDataPipelineComplete: isPipelineDone,
       },
     };
 
