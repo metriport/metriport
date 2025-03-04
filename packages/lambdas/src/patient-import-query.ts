@@ -1,6 +1,7 @@
 import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/steps/query/patient-import-query";
-import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/steps/query/patient-import-query-local";
+import { PatientImportQueryLocal } from "@metriport/core/command/patient-import/steps/query/patient-import-query-local";
 import { errorToString, MetriportError } from "@metriport/shared";
+import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -23,8 +24,7 @@ const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
-// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler(event: SQSEvent) {
+export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event: SQSEvent) {
   let errorHandled = false;
   const errorMsg = "Error processing event on " + lambdaName;
   const startedAt = new Date().getTime();
@@ -34,16 +34,11 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const {
-      cxId,
-      jobId,
-      patientId,
-      triggerConsolidated,
-      disableWebhooks,
-      rerunPdOnNewDemographics,
-    } = parsedBody;
+    const { cxId, jobId, rowNumber, patientId } = parsedBody;
 
-    const log = prefixedLog(`cxId ${cxId}, job ${jobId}, patientId ${patientId}`);
+    const log = prefixedLog(
+      `cxId ${cxId}, job ${jobId}, rowNumber ${rowNumber}, patientId ${patientId}`
+    );
     try {
       log(
         `Parsed: ${JSON.stringify(
@@ -51,20 +46,11 @@ export async function handler(event: SQSEvent) {
         )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
       );
 
-      const processPatientQueryRequest: ProcessPatientQueryRequest = {
-        cxId,
-        jobId,
-        patientId,
-        triggerConsolidated,
-        disableWebhooks,
-        rerunPdOnNewDemographics,
-      };
-      const patientImportHandler = new PatientImportQueryHandlerLocal(
+      const patientImportHandler = new PatientImportQueryLocal(
         patientImportBucket,
         waitTimeInMillis
       );
-
-      await patientImportHandler.processPatientQuery(processPatientQueryRequest);
+      await patientImportHandler.processPatientQuery(parsedBody);
 
       const finishedAt = new Date().getTime();
       console.log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -83,8 +69,10 @@ export async function handler(event: SQSEvent) {
       extra: { event, context: lambdaName, error },
     });
     throw new MetriportError(errorMsg, error);
+  } finally {
+    await Sentry.close();
   }
-}
+});
 
 function parseBody(body?: unknown): ProcessPatientQueryRequest {
   if (!body) throw new Error(`Missing message body`);
@@ -99,12 +87,17 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
   const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
 
+  const rowNumberRaw = bodyAsJson.rowNumber;
+  if (!rowNumberRaw) throw new Error(`Missing rowNumber`);
+  if (typeof rowNumberRaw !== "number") throw new Error(`Invalid rowNumber`);
+
   const patientIdRaw = bodyAsJson.patientId;
   if (!patientIdRaw) throw new Error(`Missing patientId`);
   if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
 
   const cxId = cxIdRaw;
   const jobId = jobIdRaw;
+  const rowNumber = rowNumberRaw;
   const patientId = patientIdRaw;
   const triggerConsolidated = triggerConsolidatedRaw;
   const disableWebhooks = disableWebhooksRaw;
@@ -113,6 +106,7 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   return {
     cxId,
     jobId,
+    rowNumber,
     patientId,
     triggerConsolidated,
     disableWebhooks,

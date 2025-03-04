@@ -1,13 +1,13 @@
 import { Config } from "../../../../util/config";
-import { PatientImportCreateHandler } from "./patient-import-create";
+import { PatientImportCreate } from "./patient-import-create";
 import { PatientImportCreateCloud } from "./patient-import-create-cloud";
-import { PatientImportCreateHandlerLocal } from "./patient-import-create-local";
+import { PatientImportCreateLocal } from "./patient-import-create-local";
 
-export function buildPatientImportCreateHandler(): PatientImportCreateHandler {
+export function buildPatientImportCreateHandler(): PatientImportCreate {
   if (Config.isDev()) {
     const patientImportBucket = Config.getPatientImportBucket();
     const waitTimeAtTheEndInMillis = 0;
-    return new PatientImportCreateHandlerLocal(patientImportBucket, waitTimeAtTheEndInMillis);
+    return new PatientImportCreateLocal(patientImportBucket, waitTimeAtTheEndInMillis);
   }
   const patientCreateQueueUrl = Config.getPatientImportCreateQueueUrl();
   return new PatientImportCreateCloud(patientCreateQueueUrl);
