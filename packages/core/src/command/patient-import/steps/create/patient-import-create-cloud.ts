@@ -4,17 +4,17 @@ import { SQSClient } from "../../../../external/aws/sqs";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
-import { PatientImportCreateHandler, ProcessPatientCreateRequest } from "./patient-import-create";
+import { PatientImportCreate, ProcessPatientCreateRequest } from "./patient-import-create";
 
 const region = Config.getAWSRegion();
 const sqsClient = new SQSClient({ region });
 
-export class PatientImportCreateCloud implements PatientImportCreateHandler {
+export class PatientImportCreateCloud implements PatientImportCreate {
   constructor(private readonly patientCreateQueueUrl: string) {}
 
   async processPatientCreate(params: ProcessPatientCreateRequest): Promise<void> {
     const { cxId, jobId } = params;
-    const { log } = out(`processPatientCreate.cloud - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`PatientImport processPatientCreate.cloud - cxId ${cxId} jobId ${jobId}`);
     try {
       const payload = JSON.stringify(params);
       await sqsClient.sendMessageToQueue(this.patientCreateQueueUrl, payload, {

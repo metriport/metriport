@@ -1,4 +1,4 @@
-import { PatientImportStatus } from "@metriport/core/domain/patient/patient-import";
+import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/types";
 
 export type PatientImportParamsDto = {
   dryRun: boolean;
@@ -10,4 +10,5 @@ export type PatientImportDto = {
   status: PatientImportStatus;
   uploadUrl: string;
   params: PatientImportParamsDto;
+  createdAt: string;
 };

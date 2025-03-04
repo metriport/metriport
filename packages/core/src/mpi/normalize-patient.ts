@@ -48,7 +48,7 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
         const msg = `Failed to parse the address for MPI`;
         log(`${msg} - error ${errorToString(err)}`);
       }
-      return;
+      return undefined;
     }),
   };
   return normalizedPatient;

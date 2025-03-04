@@ -3,7 +3,11 @@ dotenv.config();
 // keep that ^ on top
 import { faker } from "@faker-js/faker";
 import { validateAndParsePatientImportCsv } from "@metriport/core/command/patient-import/csv/validate-and-parse-import";
-import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
+import {
+  isParsedPatientError,
+  isParsedPatientSuccess,
+  PatientPayload,
+} from "@metriport/core/command/patient-import/patient-import";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { DriversLicense, PersonalIdentifier } from "@metriport/core/domain/patient";
@@ -19,7 +23,7 @@ import dayjs from "dayjs";
 import fs from "fs";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { makeDir } from "../shared/fs";
-import { invalidToString, patientValidationToString, validToString } from "./shared";
+import { invalidToString, patientCreationToString, validToString } from "./shared";
 
 /**
  * Creates a mock CSV file with patient data for bulk import.
@@ -46,8 +50,8 @@ function getAmountOfContacts() {
 }
 
 // The order inside each of those matters!
-const mainHeaders = "externalId,firstname,lastname,dob,gender";
-const addressHeaders = "zip,city,state,addressLine1*,addressLine2";
+const mainHeaders = "externalId,firstName,lastName,dob,gender";
+const addressHeaders = "zip,city,state,addressLine1,addressLine2";
 const contactHeaders = "phone,email";
 const additionalIdentifiersHeaders = "ssn,driversLicenceNo,driversLicenceState";
 
@@ -71,19 +75,23 @@ async function main() {
   const fileContents = [headers, contents].join("\n");
   fs.writeFileSync(`./${outputFolderName}/${outputFileName}`, fileContents);
 
-  const {
-    validRows,
-    invalidRows,
-    patients: patientsFromParse,
-  } = await validateAndParsePatientImportCsv({ contents: fileContents });
+  const { patients: patientsFromValidation } = await validateAndParsePatientImportCsv({
+    contents: fileContents,
+  });
 
-  const outputValid = headers + "\n" + validRows.map(validToString).join("\n");
-  const outputInvalid = headers + ",error" + "\n" + invalidRows.map(invalidToString).join("\n");
-  const outputPatientsValidation = patientsFromParse.map(patientValidationToString).join("\n");
+  const validRows = patientsFromValidation.filter(isParsedPatientSuccess).map(validToString);
+  const invalidRows = patientsFromValidation.filter(isParsedPatientError).map(invalidToString);
+  const patientsForCreate: PatientPayload[] = patientsFromValidation
+    .filter(isParsedPatientSuccess)
+    .map(p => p.parsed);
+
+  const outputValid = headers + "\n" + validRows.join("\n");
+  const outputInvalid = headers + ",error" + "\n" + invalidRows.join("\n");
+  const outputPatientsCreation = patientsForCreate.map(patientCreationToString).join("\n");
 
   fs.writeFileSync(`./${outputFolderName}/valid.csv`, outputValid);
   fs.writeFileSync(`./${outputFolderName}/invalid.csv`, outputInvalid);
-  fs.writeFileSync(`./${outputFolderName}/patients-validation.csv`, outputPatientsValidation);
+  fs.writeFileSync(`./${outputFolderName}/creation.ndjson`, outputPatientsCreation);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
 }
