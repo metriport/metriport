@@ -1,11 +1,13 @@
 import { z } from "zod";
-import { normalizeUSStateForAddressSafe } from "../address";
-import { normalizeZipCodeNewSafe } from "../address/zip";
-import { isEmailValid } from "../contact/email";
-import { isPhoneValid } from "../contact/phone";
-import { normalizeDobSafe } from "../dob";
-import { normalizeGenderSafe } from "../gender";
+import { normalizeUSStateForAddressSafe } from "../../address";
+import { normalizeZipCodeNewSafe } from "../../address/zip";
+import { isEmailValid } from "../../contact/email";
+import { isPhoneValid } from "../../contact/phone";
+import { normalizeDobSafe } from "../../dob";
+import { normalizeGenderSafe } from "../../gender";
+import { patientImportStatus } from "./types";
 
+// TODO 2330 where is this used?
 export const patientImportPatientSchema = z.object({
   dob: z.string().refine(normalizeDobSafe, { message: "Invalid dob" }),
   gender: z.string().refine(normalizeGenderSafe, { message: "Invalid gender" }),
@@ -29,3 +31,9 @@ export type PatientImportPatient = z.infer<typeof patientImportPatientSchema>;
 export const patientImportSchema = z.object({
   patients: patientImportPatientSchema.array(),
 });
+
+export const updateJobSchema = z.object({
+  status: z.enum(patientImportStatus),
+  forceStatusUpdate: z.boolean().optional(),
+});
+export type UpdateJobSchema = z.infer<typeof updateJobSchema>;

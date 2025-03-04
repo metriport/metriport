@@ -1,5 +1,4 @@
 import {
-  BadRequestError,
   normalizeDob,
   normalizeEmailStrict,
   normalizeExternalId,
@@ -17,81 +16,69 @@ import { PatientPayload } from "./patient-import";
 const globalPrefix = "patient-import";
 const region = Config.getAWSRegion();
 
-export type FileStages = "raw" | "valid" | "invalid";
+const folderFiles = "files";
+const folderPatients = "patients";
+const folderMappings = "mappings";
+
+export type FileStages = "raw" | "headers" | "result";
 
 function createCxJobPrefix(cxId: string, jobId: string): string {
   return `cxid=${cxId}/jobid=${jobId}`;
 }
 
-function createFilePathPatients(cxId: string, jobId: string, patientId: string): string {
-  return `${createCxJobPrefix(cxId, jobId)}/patients/patientid=${patientId}/status.json`;
-}
-
-function createFilePathFiles(cxId: string, jobId: string, stage: FileStages): string {
-  return `${createCxJobPrefix(cxId, jobId)}/files/${stage}.csv`;
-}
-
 export function createFileKeyJob(cxId: string, jobId: string): string {
-  return `${globalPrefix}/${createCxJobPrefix(cxId, jobId)}/status.json`;
+  const prefix = createCxJobPrefix(cxId, jobId);
+  const fileName = `job.json`;
+  const key = `${globalPrefix}/${prefix}/${fileName}`;
+  return key;
 }
+
+export function createFilePathPatientRecords(cxId: string, jobId: string): string {
+  const prefix = createCxJobPrefix(cxId, jobId);
+  const fileName = `records`;
+  const key = `${globalPrefix}/${prefix}/${folderPatients}/${fileName}`;
+  return key;
+}
+export function createFileKeyPatientRecord(cxId: string, jobId: string, rowNumber: number): string {
+  const prefix = createFilePathPatientRecords(cxId, jobId);
+  const fileName = `${rowNumber}.json`;
+  const key = `${prefix}/${fileName}`;
+  return key;
+}
+
+export function createFileKeyPatientMapping(
+  cxId: string,
+  jobId: string,
+  patientId: string
+): string {
+  const prefix = createCxJobPrefix(cxId, jobId);
+  const fileName = `${patientId}.json`;
+  const key = `${globalPrefix}/${prefix}/${folderPatients}/${folderMappings}/${fileName}`;
+  return key;
+}
+
+export function createFileKeyStage(cxId: string, jobId: string, stage: FileStages): string {
+  const prefix = createCxJobPrefix(cxId, jobId);
+  const fileName = `${stage}.csv`;
+  const key = `${globalPrefix}/${prefix}/${folderFiles}/${fileName}`;
+  return key;
+}
+
 export function createFileKeyRaw(cxId: string, jobId: string): string {
-  return createFileKeyFiles(cxId, jobId, "raw");
+  return createFileKeyStage(cxId, jobId, "raw");
 }
-
-export function createFileKeyPatient(cxId: string, jobId: string, patientId: string): string {
-  const fileName = createFilePathPatients(cxId, jobId, patientId);
-  const key = `${globalPrefix}/${fileName}`;
-  return key;
+export function createFileKeyHeaders(cxId: string, jobId: string): string {
+  return createFileKeyStage(cxId, jobId, "headers");
 }
-
-export function createFileKeyFiles(cxId: string, jobId: string, stage: FileStages): string {
-  const fileName = createFilePathFiles(cxId, jobId, stage);
-  const key = `${globalPrefix}/${fileName}`;
-  return key;
-}
-
-const replaceCharacters = ["*"];
-
-// TODO gotta accept email, email1, phone, phone1, etc
-export function normalizeHeaders(headers: string[]): string[] {
-  let newHeaders = headers;
-  replaceCharacters.map(char => {
-    newHeaders = newHeaders.map(h => h.replace(char, "").toLowerCase());
-  });
-  return newHeaders;
+export function createFileKeyResults(cxId: string, jobId: string): string {
+  return createFileKeyStage(cxId, jobId, "result");
 }
 
 export function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export function compareCsvHeaders(headers: string[], input: string[], exact = false): boolean {
-  let newInput = input;
-  if (!exact) {
-    newInput = newInput.slice(0, headers.length);
-  }
-  return headers.toString() === newInput.toString();
-}
-
 export type GenericObject = { [key: string]: string | undefined };
-
-export function createObjectFromCsv({
-  rowColumns,
-  headers,
-}: {
-  rowColumns: string[];
-  headers: string[];
-}): GenericObject {
-  const object: GenericObject = {};
-  headers.forEach((header, columnIndex) => {
-    const value = rowColumns[columnIndex];
-    if (value === undefined) {
-      throw new BadRequestError("rowColumns and headers have different sizes");
-    }
-    object[header] = value.trim() === "" ? undefined : value;
-  });
-  return object;
-}
 
 export function createPatientPayload(patient: PatientImportPatient): PatientPayload {
   const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;

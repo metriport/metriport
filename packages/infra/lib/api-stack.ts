@@ -356,6 +356,7 @@ export class APIStack extends Stack {
       parseLambda: patientImportParseLambda,
       createLambda: patientImportCreateLambda,
       queryLambda: patientImportQueryLambda,
+      resultLambda: patientImportResultLambda,
       bucket: patientImportBucket,
     } = new PatientImportNestedStack(this, "PatientImportNestedStack", {
       config: props.config,
@@ -478,6 +479,7 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       patientImportLambda: patientImportParseLambda,
+      patientImportResultLambda,
       patientImportBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -579,14 +581,21 @@ export class APIStack extends Stack {
     });
 
     // Add ENV after the API service is created
-    fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    patientImportCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    const lambdasToGetApiUrl: (lambda.Function | undefined)[] = [
+      fhirToMedicalRecordLambda,
+      fhirToMedicalRecordLambda2,
+      outboundPatientDiscoveryLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
+      fhirToBundleLambda,
+      patientImportParseLambda,
+      patientImportResultLambda,
+      patientImportCreateLambda,
+      patientImportQueryLambda,
+    ];
+    lambdasToGetApiUrl.forEach(lambda =>
+      lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
+    );
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
