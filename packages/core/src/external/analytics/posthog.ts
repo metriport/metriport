@@ -52,7 +52,6 @@ export enum EventTypes {
   query = "query",
   webhook = "webhook",
   error = "error",
-  addressRelevance = "addressRelevance",
   aiBriefGeneration = "aiBriefGeneration",
   patientDiscovery = "patientDiscovery",
   rerunOnNewDemographics = "rerunOnNewDemographics",
