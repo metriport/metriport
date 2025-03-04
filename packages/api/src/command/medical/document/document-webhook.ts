@@ -2,6 +2,7 @@ import { PatientData } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
 import { WebhookMetadata } from "@metriport/shared/medical";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
@@ -121,6 +122,14 @@ export const processPatientDocumentRequest = async (
       whType === "medical.document-download";
 
     if (shouldReportUsage) {
+      analytics({
+        event: EventTypes.billableQuery,
+        distinctId: patientId,
+        properties: {
+          cxId,
+          patientId,
+        },
+      });
       reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
     }
   } catch (err) {
