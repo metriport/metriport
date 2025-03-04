@@ -20,6 +20,7 @@ import { buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
+import { updateDataPipelineProgress } from "../../../command/medical/document/document-query";
 import {
   getDocToFileFunction,
   getS3Info,
@@ -556,6 +557,14 @@ async function downloadDocsAndUpsertFHIR({
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
+  if (convertibleDocCount > 0) {
+    log("convertibleDocCount is more than 0, will upd pat");
+    const pat = await updateDataPipelineProgress({
+      patient: { id: patient.id, cxId },
+      isPipelineDone: false,
+    });
+    log(`updated pat is: ${JSON.stringify(pat)}`);
+  }
   // TODO move to executeAsynchronously() from core
   // split the list in chunks
   const chunks = chunk(docsToDownload, DOC_DOWNLOAD_CHUNK_SIZE);

@@ -63,6 +63,7 @@ export async function tallyDocQueryProgress({
         requestId,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,
+        isConsolidatedComplete: false,
       },
     };
 

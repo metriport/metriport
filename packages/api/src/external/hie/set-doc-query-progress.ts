@@ -24,6 +24,7 @@ export type SetDocQueryProgress = {
   triggerConsolidated?: boolean | undefined;
   downloadProgress?: StaticProgress | undefined;
   convertProgress?: StaticProgress | undefined;
+  isDataPipelineComplete?: boolean | undefined;
 } & SetDocQueryProgressBase;
 
 /**
@@ -43,6 +44,7 @@ export async function setDocQueryProgress({
   source,
   startedAt,
   triggerConsolidated,
+  isDataPipelineComplete,
 }: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = { id, cxId };
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -82,6 +84,7 @@ export async function setDocQueryProgress({
         ...patient.data,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,
+        ...({ isDataPipelineComplete } ?? undefined),
       },
     };
 

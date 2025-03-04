@@ -15,6 +15,7 @@ import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
 import { RecreateConsolidatedParams, recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
+import { updateDataPipelineProgress } from "./document-query";
 import {
   CONVERSION_WEBHOOK_TYPE,
   DOWNLOAD_WEBHOOK_TYPE,
@@ -154,7 +155,13 @@ export async function createConsolidatedAndProcessWebhook(
   whParams: ProcessDocQueryProgressWebhookParams,
   log: typeof console.log
 ) {
+  log(`Recreating consolidated thru createConsolidatedAndProcessWebhook...`);
   await recreateConsolidated(recreateParams);
+  const { patient } = whParams;
+  const patientFilter = { id: patient.id, cxId: patient.cxId };
+  const updPat = await updateDataPipelineProgress({ patient: patientFilter, isPipelineDone: true });
+  log(`Done with recreate. Updated patient is ${JSON.stringify(updPat)}`);
   log(`Sending DQ WH in createConsolidatedAndProcessWebhook...`);
   await processDocQueryProgressWebhook(whParams);
+  log(`Done Sending DQ WH`);
 }

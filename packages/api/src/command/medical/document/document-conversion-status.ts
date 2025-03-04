@@ -4,8 +4,8 @@ import {
   DocumentQueryStatus,
   ProgressType,
 } from "@metriport/core/domain/document-query";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
+import { MedicalDataSource, isMedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getCQData } from "../../../external/carequality/patient";
@@ -13,7 +13,7 @@ import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { RecreateConsolidatedParams, recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
-import { updateConversionProgress } from "./document-query";
+import { updateConversionProgress, updateDataPipelineProgress } from "./document-query";
 import {
   MAPIWebhookStatus,
   createConsolidatedAndProcessWebhook,
@@ -149,7 +149,14 @@ export async function calculateDocumentConversionStatus({
 
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
-      await recreateConsolidated({ patient, context: "calculate-no-source" });
+      // TODO: Do we need to do these in parallel? Not sure..
+      await Promise.all([
+        recreateConsolidated({ patient, context: "calculate-no-source" }),
+        updateDataPipelineProgress({
+          patient,
+          isPipelineDone: true,
+        }),
+      ]);
 
       processPatientDocumentRequest(
         cxId,

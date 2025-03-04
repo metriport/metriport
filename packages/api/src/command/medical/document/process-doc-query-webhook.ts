@@ -89,7 +89,7 @@ const handleDownloadWebhook = async (
 };
 
 const handleConversionWebhook = async (
-  patient: Pick<Patient, "id" | "cxId" | "externalId">,
+  patient: Pick<Patient, "id" | "cxId" | "externalId" | "data">,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
@@ -99,15 +99,17 @@ const handleConversionWebhook = async (
 
   const convertStatus = documentQueryProgress.convert?.status;
   const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
-  const isTypeConversion = progressType ? progressType === "convert" : false;
-
-  const canProcessRequest = isConvertFinished && isTypeConversion && !webhookSent;
+  const isTypeConversion = progressType ? progressType === "convert" : true;
+  const isPipelineComplete = patient.data.isDataPipelineComplete;
+  const canProcessRequest =
+    isConvertFinished && isTypeConversion && !webhookSent && isPipelineComplete;
 
   console.log(
-    "isConvertFinished, isTypeConversion, !webhookSent",
+    "isConvertFinished, isTypeConversion, !webhookSent, isConsolidatedDone",
     isConvertFinished,
     isTypeConversion,
-    !webhookSent
+    !webhookSent,
+    isPipelineComplete
   );
   console.log("therefore canProcessRequest", canProcessRequest);
   if (canProcessRequest) {

@@ -113,6 +113,7 @@ export async function processOutboundDocumentRetrievalResps({
           }),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
+      isDataPipelineComplete: false,
     });
 
     const seenMetriportIds = new Set<string>();

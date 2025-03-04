@@ -205,6 +205,37 @@ export async function updateConversionProgress({
   });
 }
 
+type UpdatePipelineProgress = {
+  patient: Pick<Patient, "id" | "cxId">;
+  isPipelineDone: boolean;
+};
+
+export async function updateDataPipelineProgress({
+  patient: { id, cxId },
+  isPipelineDone,
+}: UpdatePipelineProgress): Promise<Patient> {
+  const patientFilter = { id, cxId };
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
+      ...patientFilter,
+      lock: true,
+      transaction,
+    });
+
+    const updatedPatient = {
+      ...patient,
+      data: {
+        ...patient.data,
+        isDataPipelineComplete: isPipelineDone,
+      },
+    };
+
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
+    return updatedPatient;
+  });
+}
+
 /**
  * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.
  *
