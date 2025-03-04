@@ -15,10 +15,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       logger.log(
         `## New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort} ##`
       );
-      message.segments.forEach(segment => {
-        logger.log("Segment:", segment.toString());
-      });
-      logger.log("\n\n");
       connection.send(message.buildAck());
     });
 
