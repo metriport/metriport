@@ -1,4 +1,5 @@
 import { errorToString, MetriportError, NotFoundError } from "@metriport/shared";
+import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { JobRecord } from "../patient-import";
 import { createFileKeyJob, getS3UtilsInstance } from "../patient-import-shared";
@@ -13,19 +14,18 @@ import { checkJobRecordExistsOrFail } from "./check-job-record-exists";
 export async function fetchJobRecord({
   cxId,
   jobId,
-  s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  s3BucketName: string;
 }): Promise<JobRecord | undefined> {
   const { log } = out(`PatientImport fetchJobRecord - cxId ${cxId} jobId ${jobId} `);
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyJob(cxId, jobId);
   try {
-    const fileExists = await checkJobRecordExistsOrFail({ cxId, jobId, s3BucketName });
+    const bucketName = Config.getPatientImportBucket();
+    const fileExists = await checkJobRecordExistsOrFail({ cxId, jobId, s3BucketName: bucketName });
     if (!fileExists) return undefined;
-    const file = await s3Utils.getFileContentsAsString(s3BucketName, key);
+    const file = await s3Utils.getFileContentsAsString(bucketName, key);
     return JSON.parse(file);
   } catch (error) {
     const msg = `Failure while fetching job record @ PatientImport`;
@@ -42,18 +42,15 @@ export async function fetchJobRecord({
 export async function fetchJobRecordOrFail({
   cxId,
   jobId,
-  s3BucketName,
 }: {
   cxId: string;
   jobId: string;
-  s3BucketName: string;
 }): Promise<JobRecord> {
-  const jobRecord = await fetchJobRecord({ cxId, jobId, s3BucketName });
+  const jobRecord = await fetchJobRecord({ cxId, jobId });
   if (!jobRecord) {
     throw new NotFoundError(`Job record not found @ PatientImport`, {
       cxId,
       jobId,
-      s3BucketName,
       context: "patient-import.fetchJobRecordOrFail",
     });
   }

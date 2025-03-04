@@ -3,7 +3,14 @@ import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 
-// TODO 2330 add TSDoc
+/**
+ * Starts the document query for a patient.
+ *
+ * @param cxId - The customer ID.
+ * @param patientId - The patient ID.
+ * @param disableWebhooks - Whether to disable webhooks.
+ * @param triggerConsolidated - Whether to trigger consolidated to generate a PDF.
+ */
 export async function startDocumentQuery({
   cxId,
   patientId,
@@ -15,16 +22,12 @@ export async function startDocumentQuery({
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
 }): Promise<void> {
-  const { log, debug } = out(
-    `PatientImport startDocumentQuery - cxId ${cxId} patientId ${patientId}`
-  );
+  const { log } = out(`PatientImport startDocumentQuery - cxId ${cxId} patientId ${patientId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const dqUrl = buildDocumentQueryUrl(cxId, patientId, triggerConsolidated);
   const payload = disableWebhooks ? { metadata: { disableWHFlag: "true" } } : {};
   try {
-    const response = await api.post(dqUrl, payload);
-    if (!response.data) throw new Error(`No body returned from ${dqUrl}`);
-    debug(`${dqUrl} resp: ${JSON.stringify(response.data)}`);
+    await api.post(dqUrl, payload);
   } catch (error) {
     const msg = `Failure while starting document query @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
