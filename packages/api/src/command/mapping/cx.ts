@@ -12,6 +12,7 @@ import {
   isEhrWebhookJwtTokenSource,
 } from "../../external/ehr/shared";
 import { CxMappingModel } from "../../models/cx-mapping";
+
 export type CxMappingParams = CxMappingPerSource;
 
 export type CxMappingLookUpParams = Omit<CxMappingParams, "cxId" | "secondaryMappings">;
