@@ -52,6 +52,7 @@ export async function setDocQueryProgress({
       transaction,
     });
 
+    console.log("FETCHED PATIENT", JSON.stringify(patient));
     const existingExternalData = patient.data.externalData ?? {};
 
     const externalData = setHIEDocProgress(
@@ -64,6 +65,7 @@ export async function setDocQueryProgress({
       startedAt,
       triggerConsolidated
     );
+    console.log("externalData WILL BEEEE", JSON.stringify(externalData));
 
     const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
 
@@ -71,6 +73,8 @@ export async function setDocQueryProgress({
       existingPatientDocProgress,
       externalData
     );
+
+    console.log("aggregatedDocProgresses AREEEEE", JSON.stringify(aggregatedDocProgresses));
 
     const updatedPatient = {
       ...patient,
@@ -83,12 +87,12 @@ export async function setDocQueryProgress({
 
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
+    console.log("UPDATED PAT IS", JSON.stringify(updatedPatient));
     return updatedPatient;
   });
 
   await processDocQueryProgressWebhook({
     patient,
-    documentQueryProgress: patient.data.documentQueryProgress,
     requestId,
   });
 
