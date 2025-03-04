@@ -73,7 +73,7 @@ export class MllpStack extends cdk.NestedStack {
       taskSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
-      publicLoadBalancer: true,
+      publicLoadBalancer: false,
       loadBalancer: nlb,
       securityGroups: [mllpSecurityGroup],
     });
