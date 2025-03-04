@@ -4,7 +4,7 @@ from canvas_sdk.utils import Http
 from requests import Response
 from logger import log
 
-METRIPORT_WEBHOOK_URL = "https://844e3f1e501a.ngrok.app/ehr/webhook/canvas"
+METRIPORT_WEBHOOK_URL = "https://api.metriport.com/ehr/webhook/canvas"
 METRIPORT_WEBHOOK_NAME = 'appointment-created'
 METRIPORT_TOKEN_SECRET = "METRIPORT_WEBHOOK_TOKEN"
 

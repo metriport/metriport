@@ -2,7 +2,7 @@ from canvas_sdk.effects import Effect
 from canvas_sdk.effects.launch_modal import LaunchModalEffect
 from canvas_sdk.handlers.application import Application
 
-METRIPORT_DASH_URL = "http://0.0.0.0:3020/canvas/app"
+METRIPORT_DASH_URL = "https://ehr.metriport.com/canvas/app"
 METRIPORT_TOKEN_SECRET = "METRIPORT_TOKEN"
 
 class MetriportApp(Application):

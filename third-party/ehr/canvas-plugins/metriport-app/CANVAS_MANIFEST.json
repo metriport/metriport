@@ -4,7 +4,7 @@
     "name": "metriport-app",
     "description": "Metriport App",
     "origins": {
-      "urls": ["http://0.0.0.0:3020", "http://0.0.0.0:8080"]
+      "urls": ["https://ehr.metriport.com", "https://api.metriport.com"]
     },
     "components": {
         "applications": [
