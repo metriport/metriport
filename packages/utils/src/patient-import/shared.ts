@@ -1,12 +1,15 @@
-import { RowError } from "@metriport/core/command/patient-import/csv/validate-and-parse-import";
-import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
+import {
+  ParsedPatientError,
+  ParsedPatientSuccess,
+  PatientPayload,
+} from "@metriport/core/command/patient-import/patient-import";
 
-export function validToString(entry: string[]) {
-  return entry.join(",");
+export function validToString(parsed: ParsedPatientSuccess) {
+  return parsed.raw;
 }
 
-export function invalidToString(entry: RowError) {
-  return entry.rowColumns.map(escapeCsvValueIfNeeded).join(",") + "," + entry.error;
+export function invalidToString(parsed: ParsedPatientError) {
+  return escapeCsvValueIfNeeded(parsed.raw) + "," + parsed.error;
 }
 
 function escapeCsvValueIfNeeded(value: string) {

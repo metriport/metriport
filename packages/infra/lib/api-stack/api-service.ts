@@ -104,6 +104,7 @@ export function createAPIService({
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
   patientImportLambda,
+  patientImportResultLambda,
   patientImportBucket,
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
@@ -140,6 +141,7 @@ export function createAPIService({
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
   patientImportLambda: ILambda;
+  patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
@@ -270,6 +272,7 @@ export function createAPIService({
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
+          PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,

@@ -19,7 +19,7 @@ import {
   getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
-import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
+import { createPatientImport } from "../../command/medical/patient/patient-import-create-job";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
@@ -38,7 +38,6 @@ import {
 import { PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
-import { getFacilityFromOptionalParam } from "./shared";
 
 dayjs.extend(duration);
 
@@ -222,31 +221,37 @@ router.get(
  * - `status` - the status of the bulk import job
  * - `uploadUrl` - the URL to upload the CSV file
  * - `params` - the parameters used to initiate the bulk patient create
+ * - `createdAt` - the date and time the bulk import job was created, ISO format
  */
 router.post(
   "/bulk",
-  // TODO add this if/when we need to rate limit this endpoint
-  // checkRateLimit("..."),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityIdParam = getFromQuery("facilityId", req);
-    const dryRun = getFromQueryAsBoolean("dryRun", req);
-    const facility = await getFacilityFromOptionalParam(req);
+    const dryRunParam = getFromQueryAsBoolean("dryRun", req);
 
-    const patientImportResponse = await createPatientImportJob({
+    const patientImportResponse = await createPatientImport({
       cxId,
       facilityId: facilityIdParam,
-      dryRun,
+      params: { dryRun: dryRunParam },
     });
 
-    const { jobId, facilityId, status, uploadUrl, params } = patientImportResponse;
+    const {
+      jobId,
+      facilityId,
+      status,
+      params: { dryRun },
+      createdAt,
+      uploadUrl,
+    } = patientImportResponse;
     const respPayload: PatientImportDto = {
       requestId: jobId,
       facilityId,
       status,
       uploadUrl,
-      params,
+      params: { dryRun },
+      createdAt,
     };
     return res.status(httpStatus.OK).json(respPayload);
   })

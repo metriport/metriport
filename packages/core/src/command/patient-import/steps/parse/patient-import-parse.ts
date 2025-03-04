@@ -1,12 +1,13 @@
-export type StartPatientImportRequest = {
+export type PatientImportParseRequest = {
   cxId: string;
   jobId: string;
   triggerConsolidated?: boolean;
   disableWebhooks?: boolean;
   rerunPdOnNewDemographics?: boolean;
   dryRun?: boolean | undefined;
+  forceStatusUpdate?: boolean | undefined;
 };
 
-export interface PatientImportParseHandler {
-  processJobParse(request: StartPatientImportRequest): Promise<void>;
+export interface PatientImportParse {
+  processJobParse(request: PatientImportParseRequest): Promise<void>;
 }
