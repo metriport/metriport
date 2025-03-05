@@ -57,6 +57,11 @@ export function setGracefulShutdownHandler(
   };
 
   const waitForConnectionsToClose = async (timeout: number): Promise<void> => {
+    // Actively signal to all existing connections that they should close
+    for (const connection of connections) {
+      connection.end();
+    }
+
     const waitUntil = Date.now() + timeout;
     while (connections.size > 0 && Date.now() < waitUntil) {
       await new Promise(resolve => setTimeout(resolve, 1000));
