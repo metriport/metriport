@@ -224,51 +224,40 @@ function getDetailsForAct(
   document: CdaOriginalText | undefined,
   log: typeof console.log
 ): FileDetails | undefined {
-  return getFileDetails(document?.["#text"], document ?? {}, "Act", log);
+  const actLog = (msg: string) => log(`[Act] ${msg}`);
+  return getFileDetails(document?.["#text"], document ?? {}, actLog);
 }
 
 function getDetailsForMediaObs(
   value: CdaValueEd | undefined,
   log: typeof console.log
 ): FileDetails | undefined {
-  return getFileDetails(value?.["#text"], value ?? {}, "MediaObs", log);
+  const mediaObsLog = (msg: string) => log(`[MediaObs] ${msg}`);
+  return getFileDetails(value?.["#text"], value ?? {}, mediaObsLog);
 }
 
 function getFileDetails(
   fileB64Contents: string | undefined,
   mediaTypeProvider: MediaTypeProvider,
-  context: string,
-  log: typeof console.log
+  log: (msg: string) => void
 ): FileDetails | undefined {
   if (!fileB64Contents) return undefined;
 
   // Clean up the base64 string - remove any whitespace, newlines etc
   const cleanB64 = fileB64Contents.replace(/\s/g, "");
+  const fileBuffer = Buffer.from(cleanB64, "base64");
+  let mimeType = detectFileType(fileBuffer).mimeType;
+  log(`Detected mimetype: ${mimeType}`);
 
-  try {
-    const fileBuffer = Buffer.from(cleanB64, "base64");
-    let mimeType = detectFileType(fileBuffer).mimeType;
-    log(`${context} - Detected mimetype: ${mimeType}`);
-
-    if (mimeType === OCTET_MIME_TYPE && mediaTypeProvider._mediaType) {
-      log(`Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
-      mimeType = mediaTypeProvider._mediaType;
-    }
-
-    return {
-      fileB64Contents: cleanB64,
-      mimeType,
-    };
-  } catch (error) {
-    log(`Error processing base64 content: ${error}`);
-    if (mediaTypeProvider._mediaType) {
-      return {
-        fileB64Contents,
-        mimeType: mediaTypeProvider._mediaType,
-      };
-    }
-    return undefined;
+  if (mimeType === OCTET_MIME_TYPE && mediaTypeProvider._mediaType) {
+    log(`Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
+    mimeType = mediaTypeProvider._mediaType;
   }
+
+  return {
+    fileB64Contents: cleanB64,
+    mimeType,
+  };
 }
 
 function buildDocumentReferenceFromAct(
