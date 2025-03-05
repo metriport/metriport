@@ -23,19 +23,13 @@ function parseAthenaHealthPracticeIdDash(tokenData: JwtTokenData): ParseResponse
 }
 
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, EhrSources.athena, parseAthenaHealthPracticeIdDash)
-    .then(() => next())
-    .catch(next);
+  processCxIdAsync(req, EhrSources.athena, parseAthenaHealthPracticeIdDash).then(next).catch(next);
 }
 
 export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
-  processPatientRouteAsync(req, EhrSources.athena)
-    .then(() => next())
-    .catch(next);
+  processPatientRouteAsync(req, EhrSources.athena).then(next).catch(next);
 }
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
-  processDocumentRouteAsync(req, EhrSources.athena)
-    .then(() => next())
-    .catch(next);
+  processDocumentRouteAsync(req, EhrSources.athena).then(next).catch(next);
 }

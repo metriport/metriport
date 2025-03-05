@@ -17,6 +17,6 @@ function parseElationPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
 
 export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
   processCxIdAsync(req, elationWebhookJwtTokenSource, parseElationPracticeIdWebhook)
-    .then(() => next())
+    .then(next)
     .catch(next);
 }

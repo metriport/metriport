@@ -33,25 +33,19 @@ function parseCanvasPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
 }
 
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, EhrSources.canvas, parseCanvasPracticeIdDash)
-    .then(() => next())
-    .catch(next);
+  processCxIdAsync(req, EhrSources.canvas, parseCanvasPracticeIdDash).then(next).catch(next);
 }
 
 export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
   processCxIdAsync(req, canvasWebhookJwtTokenSource, parseCanvasPracticeIdWebhook)
-    .then(() => next())
+    .then(next)
     .catch(next);
 }
 
 export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
-  processPatientRouteAsync(req, EhrSources.canvas)
-    .then(() => next())
-    .catch(next);
+  processPatientRouteAsync(req, EhrSources.canvas).then(next).catch(next);
 }
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
-  processDocumentRouteAsync(req, EhrSources.canvas)
-    .then(() => next())
-    .catch(next);
+  processDocumentRouteAsync(req, EhrSources.canvas).then(next).catch(next);
 }

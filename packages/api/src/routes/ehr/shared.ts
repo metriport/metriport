@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared";
+import { MetriportError } from "@metriport/shared";
 import { Request } from "express";
 import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail, getCxMappingSourceFromJwtTokenSource } from "../../command/mapping/cx";
@@ -25,14 +25,18 @@ export async function processCxIdAsync(
   if (!authInfo) throw new ForbiddenError();
   if (authInfo.exp < new Date()) throw new ForbiddenError();
   const { externalId, queryParams } = parseExternalId(authInfo.data);
-  const cxMappingSource = getCxMappingSourceFromJwtTokenSource(tokenSource);
-  const customer = await getCxMappingOrFail({ externalId, source: cxMappingSource });
-  req.cxId = customer.cxId;
-  if (queryParams) {
-    req.query = {
-      ...req.query,
-      ...queryParams,
-    };
+  try {
+    const cxMappingSource = getCxMappingSourceFromJwtTokenSource(tokenSource);
+    const customer = await getCxMappingOrFail({ externalId, source: cxMappingSource });
+    req.cxId = customer.cxId;
+    if (queryParams) {
+      req.query = {
+        ...req.query,
+        ...queryParams,
+      };
+    }
+  } catch (error) {
+    throw new ForbiddenError();
   }
 }
 
@@ -104,7 +108,7 @@ export async function replaceIdInQueryParams(
   source: PatientMappingSource,
   externalId: string
 ): Promise<void> {
-  if (!req.cxId) throw new BadRequestError("Trouble processing request");
+  if (!req.cxId) throw new MetriportError("Trouble processing request");
   const patient = await getPatientMappingOrFail({
     cxId: req.cxId,
     externalId,
