@@ -1,8 +1,9 @@
 import { Hl7Server } from "@medplum/hl7";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import * as dotenv from "dotenv";
 import * as Sentry from "@sentry/node";
+import * as dotenv from "dotenv";
+import { setGracefulShutdownHandler } from "./graceful-shutdown-handler";
 import { initSentry } from "./sentry";
 
 dotenv.config();
@@ -44,7 +45,13 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 async function main() {
   const logger = out("MLLP Server");
   const server = await createHl7Server(logger);
+
   server.start(MLLP_DEFAULT_PORT);
+  if (!server.server) {
+    throw new Error("Error starting server");
+  }
+
+  setGracefulShutdownHandler(server.server);
 }
 
 main();
