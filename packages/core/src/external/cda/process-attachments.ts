@@ -55,6 +55,12 @@ type MediaTypeProvider = {
   _mediaType?: string;
 };
 
+type SentryParams = {
+  patientId: string;
+  cxId: string;
+  filePath: string;
+};
+
 export async function processAttachments({
   b64Attachments,
   cxId,
@@ -83,8 +89,9 @@ export async function processAttachments({
     const docRefs: DocumentReference[] = [];
     const uploadDetails: UploadParams[] = [];
 
+    const contextParams: SentryParams = { patientId, cxId, filePath };
     b64Attachments.acts.map(act => {
-      const fileDetails = getDetailsForAct(act.text, log);
+      const fileDetails = getDetailsForAct(act.text, log, contextParams);
       if (!fileDetails) return;
 
       const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
@@ -112,7 +119,7 @@ export async function processAttachments({
 
       mediaObservations.map(mediaEntry => {
         const obsMedia = mediaEntry.observationMedia;
-        const fileDetails = getDetailsForMediaObs(obsMedia.value, log);
+        const fileDetails = getDetailsForMediaObs(obsMedia.value, log, contextParams);
 
         if (!fileDetails) return;
 
@@ -223,24 +230,27 @@ function buildDocumentReferenceDraft(
 
 function getDetailsForAct(
   document: CdaOriginalText | undefined,
-  log: typeof console.log
+  log: typeof console.log,
+  contextParams: SentryParams
 ): FileDetails | undefined {
   const actLog = (msg: string) => log(`[Act] ${msg}`);
-  return getFileDetails(document?.["#text"], document ?? {}, actLog);
+  return getFileDetails(document?.["#text"], document ?? {}, actLog, contextParams);
 }
 
 function getDetailsForMediaObs(
   value: CdaValueEd | undefined,
-  log: typeof console.log
+  log: typeof console.log,
+  contextParams: SentryParams
 ): FileDetails | undefined {
   const mediaObsLog = (msg: string) => log(`[MediaObs] ${msg}`);
-  return getFileDetails(value?.["#text"], value ?? {}, mediaObsLog);
+  return getFileDetails(value?.["#text"], value ?? {}, mediaObsLog, contextParams);
 }
 
 function getFileDetails(
   fileB64Contents: string | undefined,
   mediaTypeProvider: MediaTypeProvider,
-  log: (msg: string) => void
+  log: (msg: string) => void,
+  contextParams: SentryParams
 ): FileDetails | undefined {
   if (!fileB64Contents) return undefined;
 
@@ -248,7 +258,13 @@ function getFileDetails(
   const cleanB64 = fileB64Contents.replace(/\s/g, "");
 
   if (!isValidBase64(cleanB64)) {
-    log("Invalid base64 string format");
+    const msg = `Invalid base64 string in attachment`;
+    log(msg);
+    capture.message(msg, {
+      extra: { ...contextParams },
+      level: "info",
+    });
+
     return undefined;
   }
 
