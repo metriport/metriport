@@ -10,13 +10,13 @@ function isValidCountry(country: string) {
   return true;
 }
 
-function noramlizeCountryBase(country: string): string {
+function normalizeCountryBase(country: string): string {
   return stripPeriods(country.trim().toUpperCase());
 }
 
 export function normalizeCountrySafe(
   country: string,
-  normalizeBase: (country: string) => string = noramlizeCountryBase
+  normalizeBase: (country: string) => string = normalizeCountryBase
 ): string | undefined {
   const baseCountry = normalizeBase(country);
   if (!isValidCountry(baseCountry)) return undefined;
