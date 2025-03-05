@@ -40,6 +40,7 @@ import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
+const BASE64_REGEX = /^[A-Za-z0-9+/]+={0,2}$/;
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -245,6 +246,12 @@ function getFileDetails(
 
   // Clean up the base64 string - remove any whitespace, newlines etc
   const cleanB64 = fileB64Contents.replace(/\s/g, "");
+
+  if (!isValidBase64(cleanB64)) {
+    log("Invalid base64 string format");
+    return undefined;
+  }
+
   const fileBuffer = Buffer.from(cleanB64, "base64");
   let mimeType = detectFileType(fileBuffer).mimeType;
   log(`Detected mimetype: ${mimeType}`);
@@ -258,6 +265,10 @@ function getFileDetails(
     fileB64Contents: cleanB64,
     mimeType,
   };
+}
+
+function isValidBase64(cleanBase64String: string): boolean {
+  return BASE64_REGEX.test(cleanBase64String);
 }
 
 function buildDocumentReferenceFromAct(
