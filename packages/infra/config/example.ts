@@ -152,10 +152,7 @@ export const config: EnvConfigNonSandbox = {
         partnerGatewayPublicIp: "200.54.1.1",
         preSharedKeyTunnel1: "MY_SECRET_KEY_TUNNEL_1",
         preSharedKeyTunnel2: "MY_SECRET_KEY_TUNNEL_2",
-        bgpAsn: 65001,
         staticRoutesOnly: true,
-        phase1LifetimeSeconds: 3600,
-        phase2LifetimeSeconds: 3600, // max value
       },
     ],
     mllpServer: {
