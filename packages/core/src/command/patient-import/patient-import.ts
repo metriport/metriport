@@ -15,7 +15,6 @@ export type FailedPatientRecord = {
 export type ParsedPatientRecord = {
   status: PatientImportEntryStatusParsed;
   patientCreate: PatientPayload;
-  reason?: never | undefined;
 };
 
 export type PatientRecord = {
