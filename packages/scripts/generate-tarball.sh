@@ -34,10 +34,14 @@ PACKAGE_TARBALL=$PACKAGE_FOLDER/$TARBALL_NAME
 EXTRA_DEPS=${2:-} # Default to empty if not provided
 
 # Base dependencies that are always included
-BASE_DEPS="package.json package-lock.json \
-  packages/shared/package.json packages/shared/dist \
-  packages/core/package.json packages/core/dist \
-  ${PACKAGE_FOLDER}/package.json ${PACKAGE_FOLDER}/dist"
+BASE_DEPS="package.json \
+  package-lock.json \
+  packages/shared/package.json \
+  packages/shared/dist \
+  packages/core/package.json \
+  packages/core/dist \
+  ${PACKAGE_FOLDER}/package.json \
+  ${PACKAGE_FOLDER}/dist"
 
 # Combine base dependencies with any extra dependencies
 FINAL_DEPS="$BASE_DEPS $EXTRA_DEPS"

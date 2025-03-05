@@ -20,10 +20,14 @@ if [[ -z "${ECS_SERVICE}" ]]; then
 fi
 
 # Define extra dependencies needed for API
-API_EXTRA_DEPS="packages/api-sdk/package.json packages/api-sdk/dist \
-  packages/commonwell-sdk/package.json packages/commonwell-sdk/dist \
-  packages/carequality-sdk/package.json packages/carequality-sdk/dist \
-  packages/ihe-gateway-sdk/package.json packages/ihe-gateway-sdk/dist"
+API_EXTRA_DEPS="packages/api-sdk/package.json \
+  packages/api-sdk/dist \
+  packages/commonwell-sdk/package.json \
+  packages/commonwell-sdk/dist \
+  packages/carequality-sdk/package.json \
+  packages/carequality-sdk/dist \
+  packages/ihe-gateway-sdk/package.json \
+  packages/ihe-gateway-sdk/dist"
 
 source ./packages/scripts/generate-tarball.sh api "$API_EXTRA_DEPS"
 source ./packages/scripts/push-image.sh api

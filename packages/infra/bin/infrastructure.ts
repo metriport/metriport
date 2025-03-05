@@ -52,7 +52,7 @@ async function deploy(config: EnvConfig) {
   new Hl7NotificationRoutingStack(app, "Hl7NotificationRoutingStack", { env, config, version });
 
   //---------------------------------------------------------------------------------
-  // 5. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
+  // 5. Deploy the IHE stack. Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
   if (config.iheGateway) {
     new IHEStack(app, "IHEStack", {

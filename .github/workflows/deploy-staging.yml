@@ -56,8 +56,8 @@ jobs:
               - "packages/core/**"
               - "packages/mllp-server/**"
               - "package*.json"
-              # We're going to set up VPC peering with the API vpc, but do we need to rebuild the entire infra stack? Is this fine?
               - "packages/infra/lib/hl7-notification-routing-stack/**"
+              - "packages/infra/bin/infrastructure.ts"
             # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
             fhir-converter:
               - "packages/fhir-converter/Dockerfile"

@@ -1,4 +1,4 @@
-name: Restart API - Staging
+name: Restart MLLP Server - STAGING
 
 on:
   workflow_dispatch:

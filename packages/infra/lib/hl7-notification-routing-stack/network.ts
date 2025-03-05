@@ -23,14 +23,14 @@ export class NetworkStack extends cdk.NestedStack {
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
+      natGateways: NUM_AZS,
     });
 
     const nlb = new elbv2.NetworkLoadBalancer(this, "NLB", {
       vpc,
-      internetFacing: true,
       crossZoneEnabled: true,
       ipAddressType: elbv2.IpAddressType.IPV4,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
     });
 
     const cfnNLB = nlb.node.defaultChild as elbv2.CfnLoadBalancer;

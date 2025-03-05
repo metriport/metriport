@@ -8,12 +8,13 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
-import { EnvConfig } from "../../config/env-config";
-import { MLLP_DEFAULT_PORT } from "../shared/constants";
+import { EnvConfigNonSandbox } from "../../config/env-config";
 import { NetworkStackOutput } from "./network";
 
+const MLLP_DEFAULT_PORT = 2575;
+
 interface MllpStackProps extends cdk.StackProps {
-  config: EnvConfig;
+  config: EnvConfigNonSandbox;
   version: string | undefined;
   networkStack: NetworkStackOutput;
 }
@@ -65,7 +66,7 @@ export class MllpStack extends cdk.NestedStack {
           NODE_ENV: "production",
           ENV_TYPE: props.config.environmentType,
           MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-          ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
+          ...(props.version ? { METRIPORT_HL7_SERVER_VERSION: props.version } : undefined),
         },
       },
       listenerPort: MLLP_DEFAULT_PORT,

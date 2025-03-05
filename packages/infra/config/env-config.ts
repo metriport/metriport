@@ -119,7 +119,6 @@ type EnvConfigBase = {
   systemRootOID: string;
   systemRootOrgName: string;
   generalBucketName: string;
-  hl7NotificationRouting: Hl7NotificationRoutingConfig;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   ehrResponsesBucketName?: string;
@@ -259,6 +258,7 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   };
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
+  hl7NotificationRouting: Hl7NotificationRoutingConfig;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

@@ -1,4 +1,4 @@
-name: Restart API - PRODUCTION
+name: Restart MLLP Server - PRODUCTION
 
 on:
   workflow_dispatch:
