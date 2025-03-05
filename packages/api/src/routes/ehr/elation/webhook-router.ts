@@ -1,8 +1,8 @@
 import Router from "express-promise-router";
-import patientWebhook from "./patient-webhook";
+import appointmentWebhook from "./appointment-webhook";
 
 const routes = Router();
 
-routes.use("/patient", patientWebhook);
+routes.use("/appointments", appointmentWebhook);
 
 export default routes;
