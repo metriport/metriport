@@ -22,7 +22,7 @@ import {
 
 dayjs.extend(duration);
 
-const lookForward = dayjs.duration(14, "days");
+const lookForward = dayjs.duration(1, "day");
 
 type GetAppointmentsParams = {
   cxId: string;
