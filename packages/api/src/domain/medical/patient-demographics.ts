@@ -295,7 +295,7 @@ export function normalizeAddress({
     city: city?.trim().toLowerCase() ?? "",
     state: normalizeUSStateForAddressSafe(state ?? "")?.toLowerCase() ?? "",
     zip: normalizeZipCodeNewSafe(zip ?? "") ?? "",
-    country: normalizeCountrySafe(country ?? "") ?? normalizedCountryUsa,
+    country: normalizeCountrySafe(country ?? "") ?? normalizedCountryUsa.toLowerCase(),
   };
 }
 
