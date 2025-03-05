@@ -104,7 +104,7 @@ export async function replaceIdInQueryParams(
   source: PatientMappingSource,
   externalId: string
 ): Promise<void> {
-  if (!req.cxId) throw new BadRequestError("Trouble processisng request");
+  if (!req.cxId) throw new BadRequestError("Trouble processing request");
   const patient = await getPatientMappingOrFail({
     cxId: req.cxId,
     externalId,

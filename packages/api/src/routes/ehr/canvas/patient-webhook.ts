@@ -9,9 +9,9 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../
 const router = Router();
 
 /**
- * GET /ehr/webhook/canvas/patient/:id/appointment-created
+ * POST /ehr/webhook/canvas/patient/:id/appointment-created
  *
- * Tries to retrieve the matching Metriport patient
+ * Tries to retrieve the matching Metriport patient on appointment created
  * @param req.params.id The ID of Canvas Patient.
  * @returns Metriport Patient if found.
  */

@@ -9,14 +9,14 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../
 const router = Router();
 
 /**
- * GET /ehr/webhook/elation/patient/:id
+ * POST /ehr/webhook/elation/patient/:id/appointment-created
  *
- * Tries to retrieve the matching Metriport patient
+ * Tries to retrieve the matching Metriport patient on appointment created
  * @param req.params.id The ID of Elation Patient.
  * @returns Metriport Patient if found.
  */
-router.get(
-  "/:id",
+router.post(
+  "/:id/appointment-created",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
@@ -27,6 +27,7 @@ router.get(
       cxId,
       elationPracticeId,
       elationPatientId,
+      triggerDq: true,
     });
     return res.status(httpStatus.OK).json(patientId);
   })
