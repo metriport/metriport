@@ -10,9 +10,7 @@ const router = Router();
 /**
  * POST /ehr/webhook/elation/appointments
  *
- * Tries to retrieve the matching Metriport patient on appointment created
- * @param req.params.id The ID of Elation Patient.
- * @returns Metriport Patient if found.
+ * Currently does nothing.
  */
 router.post(
   "/",
