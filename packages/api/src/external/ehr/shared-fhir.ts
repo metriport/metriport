@@ -10,6 +10,7 @@ import {
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
+  normalizeCountrySafe,
   toTitleCase,
 } from "@metriport/shared";
 import { Patient } from "@metriport/shared/interface/external/shared/ehr/patient";
@@ -45,8 +46,8 @@ export function createAddressesFromFhir(patient: Patient): Address[] {
     const city = address.city.trim();
     if (city === "") return [];
     if (!address.country) return [];
-    const country = address.country.trim();
-    if (country === "") return [];
+    const country = normalizeCountrySafe(address.country);
+    if (!country) return [];
     if (!address.state) return [];
     const state = normalizeUSStateForAddressSafe(address.state);
     if (!state) return [];
