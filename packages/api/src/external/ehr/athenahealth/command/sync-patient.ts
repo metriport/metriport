@@ -21,7 +21,8 @@ import { createAthenaClient } from "../shared";
 
 const parallelPatientMatches = 5;
 
-const CUSTOM_FIELD_ID = Config.isProdEnv() ? "121" : "1269";
+const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";
+const CUSTOM_FIELD_ID_OPT_OUT = Config.isProdEnv() ? "101" : "1289";
 
 export type SyncAthenaPatientIntoMetriportParams = {
   cxId: string;
@@ -64,17 +65,22 @@ export async function syncAthenaPatientIntoMetriport({
   }
 
   const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
-  const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
   if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
     const customFields = await athenaApi.getCustomFieldsForPatient({
       cxId,
       patientId: athenaPatientId,
     });
-    const targetField = customFields.find(field => field.customfieldid === CUSTOM_FIELD_ID);
-    if (!targetField || targetField.customfieldvalue !== "true") {
-      throw new BadRequestError("AthenaHealth custom field not found or invalid");
-    }
+    const targetFieldOptIn = customFields.find(
+      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_IN
+    );
+    const targetFieldOptOut = customFields.find(
+      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_OUT
+    );
+    const optedIn =
+      !targetFieldOptOut && targetFieldOptIn && targetFieldOptIn.customfieldvalue === "Y";
+    if (!optedIn) throw new BadRequestError("AthenaHealth patient opted out of data sharing");
   }
+  const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
 
   const demos = createMetriportPatientDemosFhir(athenaPatient);
 
