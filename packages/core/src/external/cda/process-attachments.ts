@@ -10,7 +10,7 @@ import {
 } from "@medplum/fhirtypes";
 import { errorToString, executeWithNetworkRetries, toArray } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { isMedicalDataSource, MedicalDataSource } from "..";
+import { MedicalDataSource, isMedicalDataSource } from "..";
 import { createAttachmentUploadFilePath } from "../../domain/document/upload";
 import {
   CdaCodeCv,
@@ -23,7 +23,6 @@ import {
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { capture } from "../../util";
-import { stringToBase64 } from "../../util/base64";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { detectFileType } from "../../util/file-type";
@@ -41,6 +40,7 @@ import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
+const BASE64_REGEX = /^[A-Za-z0-9+/]+={0,2}$/;
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -49,6 +49,16 @@ function getS3UtilsInstance(): S3Utils {
 type FileDetails = {
   fileB64Contents: string;
   mimeType: string | undefined;
+};
+
+type MediaTypeProvider = {
+  _mediaType?: string;
+};
+
+type SentryParams = {
+  patientId: string;
+  cxId: string;
+  filePath: string;
 };
 
 export async function processAttachments({
@@ -79,8 +89,9 @@ export async function processAttachments({
     const docRefs: DocumentReference[] = [];
     const uploadDetails: UploadParams[] = [];
 
+    const contextParams: SentryParams = { patientId, cxId, filePath };
     b64Attachments.acts.map(act => {
-      const fileDetails = getDetailsForAct(act.text, log);
+      const fileDetails = getDetailsForAct(act.text, log, contextParams);
       if (!fileDetails) return;
 
       const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
@@ -108,7 +119,7 @@ export async function processAttachments({
 
       mediaObservations.map(mediaEntry => {
         const obsMedia = mediaEntry.observationMedia;
-        const fileDetails = getDetailsForMediaObs(obsMedia.value);
+        const fileDetails = getDetailsForMediaObs(obsMedia.value, log, contextParams);
 
         if (!fileDetails) return;
 
@@ -219,23 +230,61 @@ function buildDocumentReferenceDraft(
 
 function getDetailsForAct(
   document: CdaOriginalText | undefined,
-  log: typeof console.log
+  log: typeof console.log,
+  contextParams: SentryParams
 ): FileDetails | undefined {
-  const fileB64Contents = document?.["#text"];
+  const actLog = (msg: string) => log(`[Act] ${msg}`);
+  return getFileDetails(document?.["#text"], document ?? {}, actLog, contextParams);
+}
+
+function getDetailsForMediaObs(
+  value: CdaValueEd | undefined,
+  log: typeof console.log,
+  contextParams: SentryParams
+): FileDetails | undefined {
+  const mediaObsLog = (msg: string) => log(`[MediaObs] ${msg}`);
+  return getFileDetails(value?.["#text"], value ?? {}, mediaObsLog, contextParams);
+}
+
+function getFileDetails(
+  fileB64Contents: string | undefined,
+  mediaTypeProvider: MediaTypeProvider,
+  log: (msg: string) => void,
+  contextParams: SentryParams
+): FileDetails | undefined {
   if (!fileB64Contents) return undefined;
 
-  let mimeType = detectFileType(stringToBase64(fileB64Contents)).mimeType;
+  // Clean up the base64 string - remove any whitespace, newlines etc
+  const cleanB64 = fileB64Contents.replace(/\s/g, "");
+
+  if (!isValidBase64(cleanB64)) {
+    const msg = `Invalid base64 string in attachment`;
+    log(msg);
+    capture.message(msg, {
+      extra: { ...contextParams },
+      level: "info",
+    });
+
+    return undefined;
+  }
+
+  const fileBuffer = Buffer.from(cleanB64, "base64");
+  let mimeType = detectFileType(fileBuffer).mimeType;
   log(`Detected mimetype: ${mimeType}`);
 
-  if (mimeType === OCTET_MIME_TYPE && document?._mediaType) {
-    log(`Will use specified mimetype: ${document._mediaType}`);
-    mimeType = document._mediaType;
+  if (mimeType === OCTET_MIME_TYPE && mediaTypeProvider._mediaType) {
+    log(`Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
+    mimeType = mediaTypeProvider._mediaType;
   }
 
   return {
-    fileB64Contents,
+    fileB64Contents: cleanB64,
     mimeType,
   };
+}
+
+function isValidBase64(cleanBase64String: string): boolean {
+  return BASE64_REGEX.test(cleanBase64String);
 }
 
 function buildDocumentReferenceFromAct(
@@ -332,17 +381,6 @@ function buildUploadParams(
     key: fileKey,
     file: Buffer.from(fileDetails.fileB64Contents, "base64"),
     ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
-  };
-}
-
-function getDetailsForMediaObs(value: CdaValueEd | undefined): FileDetails | undefined {
-  const fileB64Contents = value?.reference?._value;
-  if (!fileB64Contents) return undefined;
-
-  const mimeType = value?._mediaType;
-  return {
-    fileB64Contents,
-    mimeType,
   };
 }
 
