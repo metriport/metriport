@@ -87,7 +87,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
     });
   }
 
-  if (b64Attachments.total === 0) {
+  if (b64Attachments.total < 1) {
     return {
       documentContents: payloadRaw,
       b64Attachments: undefined,

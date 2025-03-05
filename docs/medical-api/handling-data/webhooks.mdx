@@ -388,7 +388,15 @@ being the main difference between each:
 - `completed`: the bulk create is completed;
 - `failed`: the bulk create failed (likely due to an uploaded file with invalid format).
 
-Here is an example payload:
+<Info>
+  If the Medical Record doesn't contain any information, the
+  `Bundle` will be empty (the `entry` array will have no
+  elements).
+</Info>
+
+<Info>The URL will only be valid for 180 seconds (3 minutes).</Info>
+
+Example payload:
 
 ```json
 {
@@ -476,6 +484,8 @@ An example of a result file can be accessed
 
 If you want to download all of a patient's documents, especially when they have a large volume of documents, you can start a [Bulk Get Document URL query](/medical-api/api-reference/document/download-url-bulk). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
 You can use the value of the `url` property in the returned `documents` objects to download the files.
+
+<Info>The URLs will only be valid for 600 seconds (10 minutes).</Info>
 
 Here is an example payload:
 

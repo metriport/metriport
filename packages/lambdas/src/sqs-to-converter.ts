@@ -13,15 +13,21 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
+import {
+  buildDocumentNameForConversionResult,
+  buildDocumentNameForFromConverter,
+  buildDocumentNameForPreConversion,
+  buildDocumentNameForCleanConversion,
+} from "@metriport/core/domain/conversion/filename";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
-import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
@@ -126,7 +132,6 @@ export async function handler(event: SQSEvent) {
         const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
         const metrics: Metrics = {};
 
-        await cloudWatchUtils.reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
@@ -140,18 +145,22 @@ export async function handler(event: SQSEvent) {
         const { documentContents: payloadNoB64, b64Attachments } =
           removeBase64PdfEntries(payloadRaw);
 
-        if (b64Attachments) {
-          log(`Extracted ${b64Attachments.total} B64 attachments`);
-          await processAttachments({
-            b64Attachments,
-            cxId,
-            patientId,
-            filePath: s3FileName,
-            medicalDataSource,
-            s3BucketName: medicalDocumentsBucketName,
-            fhirUrl,
-          });
+        if (b64Attachments && b64Attachments.total > 0) {
+          log(`Extracted ${b64Attachments.total} B64 attachments - will process them soon`);
         }
+        const dealWithAttachments = async () => {
+          if (b64Attachments && b64Attachments.total > 0) {
+            await processAttachments({
+              b64Attachments,
+              cxId,
+              patientId,
+              filePath: s3FileName,
+              medicalDataSource,
+              s3BucketName: medicalDocumentsBucketName,
+              fhirUrl,
+            });
+          }
+        };
 
         const payloadClean = cleanUpPayload(payloadNoB64);
         metrics.download = {
@@ -165,7 +174,6 @@ export async function handler(event: SQSEvent) {
           continue;
         }
 
-        await cloudWatchUtils.reportMemoryUsage();
         const conversionStart = Date.now();
 
         const converterUrl = attrib.serverUrl?.stringValue;
@@ -179,9 +187,9 @@ export async function handler(event: SQSEvent) {
           invalidAccess,
         };
 
-        const preConversionFilename = `${s3FileName}.pre_conversion.xml`;
-        const cleanFileName = `${s3FileName}.clean.xml`;
-        const conversionResultFilename = `${s3FileName}.from_converter.json`;
+        const preConversionFilename = buildDocumentNameForPreConversion(s3FileName);
+        const cleanFileName = buildDocumentNameForCleanConversion(s3FileName);
+        const conversionResultFilename = buildDocumentNameForFromConverter(s3FileName);
 
         await storePreprocessedPayloadInS3({
           s3Utils,
@@ -195,8 +203,6 @@ export async function handler(event: SQSEvent) {
 
         const partitionedPayloads = partitionPayload(payloadClean);
 
-        await cloudWatchUtils.reportMemoryUsage();
-
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
             converterUrl,
@@ -204,6 +210,7 @@ export async function handler(event: SQSEvent) {
             converterParams,
             log,
           }),
+          dealWithAttachments(),
           storePartitionedPayloadsInS3({
             s3Utils,
             partitionedPayloads,
@@ -229,8 +236,6 @@ export async function handler(event: SQSEvent) {
           lambdaParams,
           log,
         });
-
-        await cloudWatchUtils.reportMemoryUsage();
 
         let hydratedBundle = conversionResult;
         // TODO: 2563 - Remove this after prod testing is done
@@ -274,8 +279,6 @@ export async function handler(event: SQSEvent) {
           }
         }
 
-        await cloudWatchUtils.reportMemoryUsage();
-
         const normalizedBundle = await normalize({
           cxId,
           patientId,
@@ -291,8 +294,6 @@ export async function handler(event: SQSEvent) {
           lambdaParams,
           log,
         });
-
-        await cloudWatchUtils.reportMemoryUsage();
 
         const postProcessStart = Date.now();
         const updatedConversionResult = postProcessBundle(
@@ -316,7 +317,6 @@ export async function handler(event: SQSEvent) {
           log,
         });
 
-        await cloudWatchUtils.reportMemoryUsage();
         await cloudWatchUtils.reportMetrics(metrics);
       } catch (error) {
         await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
@@ -330,7 +330,7 @@ export async function handler(event: SQSEvent) {
     capture.error(msg, {
       extra: { event, context: lambdaName, error },
     });
-    throw new MetriportError(msg, error);
+    throw new MetriportError(msg);
   }
 }
 
@@ -444,7 +444,7 @@ async function sendConversionResult({
   medicalDataSource: string | undefined;
   log: Log;
 }) {
-  const fileName = `${sourceFileName}.json`;
+  const fileName = buildDocumentNameForConversionResult(sourceFileName);
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
 
   await executeWithRetriesS3(

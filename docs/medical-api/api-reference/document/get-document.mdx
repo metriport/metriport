@@ -4,7 +4,9 @@ description: "Gets a downloadable URL for downloading the specified document."
 api: "GET /medical/v1/document/download-url"
 ---
 
-This endpoint returns a URL which you can use to download the specified document and/or convert using the file name provided from the [List Documents endpoint](/medical-api/api-reference/document/list-documents), or from the `meta.source` field of the FHIR resource you are interested in.
+This endpoint returns a URL which you can use to download the specified document and/or convert
+using the file name provided from the [List Documents endpoint](/medical-api/api-reference/document/list-documents),
+or from the `meta.source` field of the FHIR resource you are interested in.
 
 <Info>The URL will only be valid for 60 seconds before you need to request a new one.</Info>
 
@@ -29,7 +31,9 @@ A JSON object containing the URL will be returned.
 </ResponseField>
 
 <Tip>
-  For patients with a large volume documents, you can use the [Bulk Get Document URL](/medical-api/api-reference/document/download-url-bulk to get all download URLs, instead of doing it one at a time.
+  For patients with a large volume of documents, you can use the
+  [Bulk Get Document URL endpoint](/medical-api/api-reference/document/download-url-bulk)
+  to get all download URLs instead of doing it one at a time.
 </Tip>
 
 <ResponseExample>

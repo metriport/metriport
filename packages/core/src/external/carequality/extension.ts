@@ -1,4 +1,4 @@
-import { Extension, DocumentReferenceContent } from "@medplum/fhirtypes";
+import { Extension, DocumentReferenceContent, DocumentReference } from "@medplum/fhirtypes";
 import { MedicalDataSource } from "@metriport/api-sdk";
 import { dataSourceExtensionDefaults } from "../fhir/shared/extensions/extension";
 import { MetriportDataSourceExtension } from "../fhir/shared/extensions/metriport";
@@ -17,4 +17,8 @@ export function isCarequalityExtension(e: Extension): boolean {
 
 export function isCarequalityContent(content: DocumentReferenceContent): boolean {
   return content.extension?.some(isCarequalityExtension) === true;
+}
+
+export function hasCarequalityExtension(doc: DocumentReference): boolean {
+  return doc.extension?.some(isCarequalityExtension) ?? false;
 }

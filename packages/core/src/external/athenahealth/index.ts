@@ -800,7 +800,11 @@ class AthenaHealthApi {
       return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      if (error.response?.status === 403) {
+      if (
+        error.message?.includes(
+          "Changed messages require setup (subscription) that has not been done."
+        )
+      ) {
         // 403 indicates no existing subscription so we create one
         log(`Subscribing to appointment event for cxId ${cxId}`);
         await this.subscribeToEvent({

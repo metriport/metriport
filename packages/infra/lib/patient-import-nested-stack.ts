@@ -13,7 +13,7 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createQueue } from "./shared/sqs";
 
-const waitTimePatientCreate = Duration.seconds(15);
+const waitTimePatientCreate = Duration.seconds(6); // 10 patients/min
 const waitTimePatientQuery = Duration.seconds(0);
 
 function settings() {
@@ -36,7 +36,7 @@ function settings() {
       reportBatchItemFailures: true,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: patientCreateLambdaTimeout.minus(Duration.seconds(10)),
+      alarmMaxAgeOfOldestMessage: Duration.days(2),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientCreateLambdaTimeout.toSeconds() * 2 + 1),
@@ -56,7 +56,7 @@ function settings() {
       reportBatchItemFailures: true,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: patientQueryLambdaTimeout.minus(Duration.seconds(10)),
+      alarmMaxAgeOfOldestMessage: Duration.minutes(5),
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientQueryLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
