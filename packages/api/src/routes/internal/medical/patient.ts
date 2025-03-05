@@ -85,6 +85,7 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
+  getFromQueryAsBooleanOrFail,
   getFromQueryOrFail,
 } from "../../util";
 import patientSettingsRoutes from "./patient-settings";
@@ -928,11 +929,12 @@ router.post(
  *        there's more than one facility for the customer).
  * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
  *        defaults to false).
- * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
- * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
+ * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation
+ *        on this PD run.
+ * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on
+ *        conversion finish.
  * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
- * @param req.query.dryRun Whether to simply validate or run the assessment, overrides the cx
- *                         provided one (optional, defaults to cx provided or false if none provides it).
+ * @param req.query.dryRun Whether to simply validate or run the assessment.
  *
  */
 router.post(
@@ -944,7 +946,7 @@ router.post(
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    const dryRun = getFromQueryAsBooleanOrFail("dryRun", req);
 
     const patientImportResponse = await createPatientImport({
       cxId,
