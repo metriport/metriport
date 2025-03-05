@@ -1,7 +1,5 @@
 import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
-import * as appscaling from "aws-cdk-lib/aws-autoscaling";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
@@ -102,41 +100,6 @@ export class MllpStack extends cdk.NestedStack {
       targetUtilizationPercent: 70,
       scaleInCooldown: Duration.seconds(60),
       scaleOutCooldown: Duration.seconds(60),
-    });
-
-    const connectionsPerTaskMetric = new cloudwatch.MathExpression({
-      expression: "connections / tasks",
-      usingMetrics: {
-        connections: new cloudwatch.Metric({
-          namespace: "AWS/NetworkELB",
-          metricName: "ActiveFlowCount",
-          dimensionsMap: {
-            LoadBalancer: fargate.loadBalancer.loadBalancerFullName,
-          },
-          statistic: "Average",
-          period: Duration.minutes(1),
-        }),
-        tasks: new cloudwatch.Metric({
-          namespace: "ECS/ContainerInsights",
-          metricName: "RunningTaskCount",
-          dimensionsMap: {
-            ClusterName: cluster.clusterName,
-            ServiceName: fargate.service.serviceName,
-          },
-          statistic: "Average",
-          period: Duration.minutes(15),
-        }),
-      },
-    });
-
-    scaling.scaleOnMetric("ConnectionCountScaling", {
-      metric: connectionsPerTaskMetric,
-      scalingSteps: [
-        { lower: 0, upper: 70, change: -1 },
-        { lower: 71, upper: 100, change: 0 },
-        { lower: 101, change: +1 },
-      ],
-      adjustmentType: appscaling.AdjustmentType.CHANGE_IN_CAPACITY,
     });
   }
 }

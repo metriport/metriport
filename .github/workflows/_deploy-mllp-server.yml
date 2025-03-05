@@ -1,4 +1,4 @@
-name: Reusable Deploy workflow for API
+name: Reusable Deploy workflow for MLLP Server
 
 on:
   workflow_call:
