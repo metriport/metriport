@@ -150,8 +150,6 @@ export const config: EnvConfigNonSandbox = {
       {
         partnerName: "SampleHIE",
         partnerGatewayPublicIp: "200.54.1.1",
-        preSharedKeyTunnel1: "MY_SECRET_KEY_TUNNEL_1",
-        preSharedKeyTunnel2: "MY_SECRET_KEY_TUNNEL_2",
         staticRoutesOnly: true,
       },
     ],

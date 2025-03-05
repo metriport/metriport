@@ -45,13 +45,13 @@ export class VpnStack extends cdk.NestedStack {
       staticRoutesOnly: props.vpnConfig.staticRoutesOnly,
       vpnTunnelOptionsSpecifications: [
         {
-          preSharedKey: props.vpnConfig.preSharedKeyTunnel1,
+          preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
           ikeVersions: [{ value: "ikev2" }],
           phase1LifetimeSeconds: props.vpnConfig.phase1LifetimeSeconds,
           phase2LifetimeSeconds: props.vpnConfig.phase2LifetimeSeconds,
         },
         {
-          preSharedKey: props.vpnConfig.preSharedKeyTunnel2,
+          preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
           ikeVersions: [{ value: "ikev2" }],
           phase1LifetimeSeconds: props.vpnConfig.phase1LifetimeSeconds,
           phase2LifetimeSeconds: props.vpnConfig.phase2LifetimeSeconds,
