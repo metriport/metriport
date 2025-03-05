@@ -31,6 +31,8 @@ export class VpnStack extends cdk.NestedStack {
     const customerGateway = new ec2.CfnCustomerGateway(this, "CustomerGateway", {
       ipAddress: props.vpnConfig.partnerGatewayPublicIp,
       type: IPSEC_1,
+      // Not using bgpAsn but "Invalid request provided: The key 'BgpAsn' is required"
+      bgpAsn: 65000,
     });
 
     /**
