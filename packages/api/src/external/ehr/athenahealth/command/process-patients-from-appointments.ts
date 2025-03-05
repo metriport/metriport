@@ -17,7 +17,7 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared";
-import { LookupMode, createAthenaClient } from "../shared";
+import { LookupMode, LookupModes, createAthenaClient } from "../shared";
 import {
   SyncAthenaPatientIntoMetriportParams,
   syncAthenaPatientIntoMetriport,
@@ -26,7 +26,7 @@ import {
 dayjs.extend(duration);
 
 const subscriptionBackfillLookBack = dayjs.duration(12, "hours");
-const appointmentsLookForward = dayjs.duration(2, "weeks");
+const appointmentsLookForward = dayjs.duration(1, "day");
 
 type GetAppointmentsParams = {
   cxId: string;
@@ -164,7 +164,7 @@ async function getAppointmentsFromApi({
   lookupMode,
   log,
 }: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
-  if (lookupMode === LookupMode.Appointments) {
+  if (lookupMode === LookupModes.Appointments) {
     const { startRange, endRange } = getLookForwardTimeRange({
       lookForward: appointmentsLookForward,
     });
@@ -176,11 +176,11 @@ async function getAppointmentsFromApi({
       endAppointmentDate: endRange,
     });
   }
-  if (lookupMode === LookupMode.FromSubscription) {
+  if (lookupMode === LookupModes.FromSubscription) {
     log(`Getting change events since last call`);
     return await api.getAppointmentsFromSubscription({ cxId, departmentIds });
   }
-  if (lookupMode === LookupMode.FromSubscriptionBackfill) {
+  if (lookupMode === LookupModes.FromSubscriptionBackfill) {
     const { startRange, endRange } = getLookBackTimeRange({
       lookBack: subscriptionBackfillLookBack,
     });

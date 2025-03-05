@@ -35,11 +35,13 @@ export async function createAthenaClient(
   });
 }
 
-export enum LookupMode {
+export enum LookupModes {
   FromSubscription = "from-subscription",
   FromSubscriptionBackfill = "from-subscription-backfill",
   Appointments = "appointments",
 }
+export const lookupModes = [...Object.values(LookupModes)] as const;
+export type LookupMode = (typeof lookupModes)[number];
 export function isLookupMode(value: string): value is LookupMode {
-  return Object.values(LookupMode).includes(value as LookupMode);
+  return lookupModes.includes(value as LookupMode);
 }
