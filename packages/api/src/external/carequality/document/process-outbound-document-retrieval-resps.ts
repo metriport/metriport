@@ -168,7 +168,8 @@ export async function processOutboundDocumentRetrievalResps({
       });
     }
 
-    await tallyDocQueryProgress({
+    log("tallyDocQueryProgress from process-dr-resps");
+    const updPat = await tallyDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       progress: {
         successful: successDocsRetrievedCount,
@@ -178,6 +179,7 @@ export async function processOutboundDocumentRetrievalResps({
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
+    log("upd pat from tallyDocQueryProgress in process-dr-resps", JSON.stringify(updPat));
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     log(`${msg}. Error: ${errorToString(error)}`);

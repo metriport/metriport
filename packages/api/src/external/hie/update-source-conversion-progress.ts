@@ -18,7 +18,12 @@ export const updateSourceConversionProgress = ({
   const sourceData = patientExternalData[source];
   const docQueryProgress = sourceData?.documentQueryProgress ?? {};
 
+  console.log("tallyDocQueryProgress in upd src conver progress");
   const talliedDocQueryProgress = tallyDocQueryProgress(docQueryProgress, convertResult);
+  console.log(
+    "tallyDocQueryProgress in upd src conver progress",
+    JSON.stringify(talliedDocQueryProgress)
+  );
 
   return talliedDocQueryProgress.convert;
 };

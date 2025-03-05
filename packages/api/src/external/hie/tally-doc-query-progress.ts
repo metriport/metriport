@@ -67,6 +67,7 @@ export async function tallyDocQueryProgress({
     return updatedPatient;
   });
 
+  console.log("processDocQueryProgressWebhook frm tally-doc-query-progress");
   await processDocQueryProgressWebhook({
     patient,
     documentQueryProgress: patient.data.documentQueryProgress,

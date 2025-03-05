@@ -715,7 +715,8 @@ async function downloadDocsAndUpsertFHIR({
             processFhirResponse(patient, doc.id, fhir);
           }
 
-          await tallyDocQueryProgress({
+          log("tallyDocQueryProgress case1 doc-query cw");
+          const updPat = await tallyDocQueryProgress({
             patient: { id: patient.id, cxId: patient.cxId },
             progress: {
               successful: 1,
@@ -725,9 +726,11 @@ async function downloadDocsAndUpsertFHIR({
             source: MedicalDataSource.COMMONWELL,
           });
 
+          log("tallyDocQueryProgress case1 doc-query cw pat", JSON.stringify(updPat));
           return fhirDocRef;
         } catch (error) {
-          await tallyDocQueryProgress({
+          log("tallyDocQueryProgress error case doc-query cw");
+          const updPat = await tallyDocQueryProgress({
             patient: { id: patient.id, cxId: patient.cxId },
             progress: {
               errors: 1,
@@ -736,6 +739,7 @@ async function downloadDocsAndUpsertFHIR({
             requestId,
             source: MedicalDataSource.COMMONWELL,
           });
+          log("tallyDocQueryProgress error case doc-query cw pat", JSON.stringify(updPat));
 
           const msg = `Error processing doc from CW`;
           log(`${msg}: ${error}; doc ${JSON.stringify(doc)}`);

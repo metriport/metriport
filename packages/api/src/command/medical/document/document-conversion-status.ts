@@ -47,6 +47,7 @@ export async function calculateDocumentConversionStatus({
   log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
   if (hasSource) {
+    console.log("tallyDocQueryProgress from doc-conversion-status");
     const updatedPatient = await tallyDocQueryProgress({
       patient: patient,
       type: "convert",
@@ -56,6 +57,10 @@ export async function calculateDocumentConversionStatus({
       requestId,
       source,
     });
+    console.log(
+      "updatedPatient from tallyDocQueryProgress from doc-conversion-status",
+      JSON.stringify(updatedPatient)
+    );
 
     const externalData =
       source === MedicalDataSource.COMMONWELL
@@ -113,11 +118,16 @@ export async function calculateDocumentConversionStatus({
         context: `Post-DQ getConsolidated ${source}`,
       });
     } else if (isGlobalConversionCompleted) {
+      log(
+        `Kicking off getConsolidated for patient isGlobalConversionCompleted ${isGlobalConversionCompleted}`
+      );
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
         context: "Post-DQ getConsolidated GLOBAL",
       });
+    } else {
+      log(`NOTHING TO DO!`);
     }
   } else {
     const expectedPatient = await updateConversionProgress({
@@ -132,6 +142,7 @@ export async function calculateDocumentConversionStatus({
     });
 
     if (isConversionCompleted) {
+      console.log("CASE 3");
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
       await recreateConsolidated({ patient, context: "calculate-no-source" });
 

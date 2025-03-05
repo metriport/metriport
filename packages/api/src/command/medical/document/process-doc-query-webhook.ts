@@ -30,6 +30,7 @@ export const processDocQueryProgressWebhook = async ({
 }): Promise<void> => {
   const { id: patientId } = patient;
 
+  console.log("TRIGGER WHS?");
   try {
     await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
     await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
@@ -64,6 +65,7 @@ const handleDownloadWebhook = async (
   const canProcessRequest = isDownloadFinished && isTypeDownload && !webhookSent;
 
   if (canProcessRequest && !isSandbox) {
+    console.log("SENDING DOC DOWNLOAD WH!!!!");
     const downloadIsCompleted = downloadStatus === "completed";
     const payload = await composeDocRefPayload(patient.id, patient.cxId, requestId);
 
@@ -86,6 +88,7 @@ const handleConversionWebhook = async (
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
 ): Promise<void> => {
+  console.log("handleConversionWebhook");
   const webhookSent = documentQueryProgress?.convert?.webhookSent ?? false;
 
   const convertStatus = documentQueryProgress.convert?.status;
@@ -95,6 +98,7 @@ const handleConversionWebhook = async (
   const canProcessRequest = isConvertFinished && isTypeConversion && !webhookSent;
 
   if (canProcessRequest) {
+    console.log("WILL SEND DOC CONV WH!!!");
     const convertIsCompleted = convertStatus === "completed";
 
     const whStatus = convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;

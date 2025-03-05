@@ -86,6 +86,7 @@ export async function setDocQueryProgress({
     return updatedPatient;
   });
 
+  console.log("processDocQueryProgressWebhook frm set-doc-query-progress");
   await processDocQueryProgressWebhook({
     patient,
     documentQueryProgress: patient.data.documentQueryProgress,
