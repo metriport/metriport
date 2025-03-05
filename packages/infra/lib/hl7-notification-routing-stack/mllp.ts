@@ -66,7 +66,7 @@ export class MllpStack extends cdk.NestedStack {
           NODE_ENV: "production",
           ENV_TYPE: props.config.environmentType,
           MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-          ...(props.version ? { METRIPORT_HL7_SERVER_VERSION: props.version } : undefined),
+          ...(props.version ? { RELEASE_SHA: props.version } : undefined),
         },
       },
       listenerPort: MLLP_DEFAULT_PORT,

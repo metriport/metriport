@@ -6,6 +6,6 @@ export class Config extends CoreConfig {
     return getEnvVar("SENTRY_DSN");
   }
   static getVersion(): string | undefined {
-    return getEnvVar("METRIPORT_HL7_SERVER_VERSION");
+    return getEnvVar("RELEASE_SHA");
   }
 }
