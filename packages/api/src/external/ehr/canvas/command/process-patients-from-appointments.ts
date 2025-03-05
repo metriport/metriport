@@ -115,7 +115,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 async function getAppointments({
   cxId,
   practiceId,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createCanvasClient({ cxId, practiceId });
   const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
@@ -130,7 +130,6 @@ async function getAppointments({
       appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: appointment.patientId };
       }),
-      error: undefined,
     };
   } catch (error) {
     log(`Failed to get appointments. Cause: ${errorToString(error)}`);
@@ -143,7 +142,7 @@ async function syncPatient({
   canvasPracticeId,
   canvasPatientId,
   triggerDq,
-}: Omit<SyncCanvasPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
+}: Omit<SyncCanvasPatientIntoMetriportParams, "api">): Promise<{ error?: unknown }> {
   const { log } = out(
     `Canvas syncPatient - cxId ${cxId} canvasPracticeId ${canvasPracticeId} canvasPatientId ${canvasPatientId}`
   );
@@ -156,7 +155,7 @@ async function syncPatient({
       api,
       triggerDq,
     });
-    return { error: undefined };
+    return {};
   } catch (error) {
     log(`Failed to sync patient. Cause: ${errorToString(error)}`);
     return { error };

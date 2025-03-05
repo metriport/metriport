@@ -13,6 +13,7 @@ import {
 function parseCanvasPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
   if (tokenData.source !== EhrSources.canvas) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
+  if (!practiceId) throw new ForbiddenError();
   return {
     externalId: practiceId,
     queryParams: {

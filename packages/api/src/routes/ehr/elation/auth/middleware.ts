@@ -7,6 +7,7 @@ import { ParseResponse, processCxIdAsync } from "../../shared";
 function parseElationPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
   if (tokenData.source !== elationWebhookJwtTokenSource) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
+  if (!practiceId) throw new ForbiddenError();
   return {
     externalId: practiceId,
     queryParams: {

@@ -12,7 +12,9 @@ import {
 function parseAthenaHealthPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
   if (tokenData.source !== EhrSources.athena) throw new ForbiddenError();
   const practiceId = tokenData.ah_practice;
+  if (!practiceId) throw new ForbiddenError();
   const departmentId = tokenData.ah_department;
+  if (!departmentId) throw new ForbiddenError();
   return {
     externalId: practiceId,
     queryParams: {
