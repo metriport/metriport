@@ -1,9 +1,13 @@
 import { Hl7Server } from "@medplum/hl7";
-import * as dotenv from "dotenv";
-import { out } from "@metriport/core/util/log";
 import type { Logger } from "@metriport/core/util/log";
+import { out } from "@metriport/core/util/log";
+import * as dotenv from "dotenv";
+import * as Sentry from "@sentry/node";
+import { initSentry } from "./sentry";
 
 dotenv.config();
+
+initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
 
@@ -21,6 +25,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener("error", error => {
       if (error instanceof Error) {
         logger.log("Connection error:", error);
+        Sentry.captureException(error);
       } else {
         logger.log("Connection terminated by client");
       }

@@ -11,8 +11,7 @@ export function initSentry(): void {
     release: Config.getVersion(),
     integrations: [],
     sampleRate: 1.0,
-    tracesSampler: samplingContext => {
-      const tx = samplingContext.transactionContext;
+    tracesSampler: tx => {
       const txName = tx.name;
       // Sample some OPTIONS for visibility
       if (txName.match(/^OPTIONS.*$/)) return 0.001;
