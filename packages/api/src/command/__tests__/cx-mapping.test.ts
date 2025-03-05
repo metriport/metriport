@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { getCxMappingSourceFromJwtTokenSource } from "../../command/mapping/cx";
 
-describe("cx-mapping command", () => {
+describe("Cx Mapping command", () => {
   describe("getCxMappingSourceFromJwtTokenSource", () => {
     const validSources = [
       "canvas",
