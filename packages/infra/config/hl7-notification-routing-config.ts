@@ -13,8 +13,7 @@ export type Hl7NotificationRoutingVpnConfig = {
   partnerGatewayPublicIp: string;
   preSharedKeyTunnel1: string;
   preSharedKeyTunnel2: string;
-  bgpAsn: number;
   staticRoutesOnly: boolean;
-  phase1LifetimeSeconds: number;
-  phase2LifetimeSeconds: number;
+  phase1LifetimeSeconds?: number;
+  phase2LifetimeSeconds?: number;
 };

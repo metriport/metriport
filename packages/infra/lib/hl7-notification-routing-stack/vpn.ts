@@ -29,7 +29,6 @@ export class VpnStack extends cdk.NestedStack {
     });
 
     const customerGateway = new ec2.CfnCustomerGateway(this, "CustomerGateway", {
-      bgpAsn: props.vpnConfig.bgpAsn,
       ipAddress: props.vpnConfig.partnerGatewayPublicIp,
       type: IPSEC_1,
     });
@@ -58,7 +57,6 @@ export class VpnStack extends cdk.NestedStack {
       ],
     });
 
-    // 4. (Optional) Add a static route for your VPC CIDR
     if (props.vpnConfig.staticRoutesOnly) {
       new ec2.CfnVPNConnectionRoute(this, "VpnConnectionRoute", {
         destinationCidrBlock: props.vpc.vpcCidrBlock,

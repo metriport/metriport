@@ -49,7 +49,13 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 4. Deploy the HL7 Notification Routing stack.
   //---------------------------------------------------------------------------------
-  new Hl7NotificationRoutingStack(app, "Hl7NotificationRoutingStack", { env, config, version });
+  if (!isSandbox(config)) {
+    new Hl7NotificationRoutingStack(app, "Hl7NotificationRoutingStack", {
+      env,
+      config,
+      version,
+    });
+  }
 
   //---------------------------------------------------------------------------------
   // 5. Deploy the IHE stack. Lambdas for IHE Inbound, and IHE API Gateway.
