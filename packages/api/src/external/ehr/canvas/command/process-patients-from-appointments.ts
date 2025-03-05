@@ -31,6 +31,10 @@ type GetAppointmentsParams = {
 
 export async function processPatientsFromAppointments(): Promise<void> {
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.canvas });
+  if (cxMappings.length === 0) {
+    out("processPatientsFromAppointments @ Canvas").log("No cx mappings found");
+    return;
+  }
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
