@@ -1,17 +1,17 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
 import {
   EhrClientJwtTokenData,
-  ehrClientJwtTokenSource,
+  ehrClientJwtTokenSources,
   EhrDashJwtTokenData,
-  ehrDashJwtTokenSource,
+  ehrDashJwtTokenSources,
   EhrWebhookJwtTokenData,
-  ehrWebhookJwtTokenSource,
+  ehrWebhookJwtTokenSources,
 } from "../external/ehr/shared";
 
 const jwtTokenSource = [
-  ...ehrClientJwtTokenSource,
-  ...ehrDashJwtTokenSource,
-  ...ehrWebhookJwtTokenSource,
+  ...ehrClientJwtTokenSources,
+  ...ehrDashJwtTokenSources,
+  ...ehrWebhookJwtTokenSources,
 ] as const;
 export type JwtTokenSource = (typeof jwtTokenSource)[number];
 export function isJwtTokenSource(source: string): source is JwtTokenSource {

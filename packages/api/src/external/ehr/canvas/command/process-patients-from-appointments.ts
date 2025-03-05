@@ -128,7 +128,7 @@ async function getAppointments({
     });
     return {
       appointments: appointments.map(appointment => {
-        return { cxId, practiceId, patientId: appointment.patient };
+        return { cxId, practiceId, patientId: appointment.patientId };
       }),
       error: undefined,
     };

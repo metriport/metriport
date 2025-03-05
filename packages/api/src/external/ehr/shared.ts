@@ -54,22 +54,22 @@ export function isEhrSource(source: string): source is EhrSource {
   return ehrSources.includes(source as EhrSource);
 }
 
-export const ehrDashJwtTokenSource = [EhrSources.athena, EhrSources.canvas] as const;
-export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSource)[number];
+export const ehrDashJwtTokenSources = [EhrSources.athena, EhrSources.canvas] as const;
+export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
-  return ehrDashJwtTokenSource.includes(source as EhrDashJwtTokenSource);
+  return ehrDashJwtTokenSources.includes(source as EhrDashJwtTokenSource);
 }
 
 export type EhrDashJwtTokenData = AthenaJwtTokenData | CanvasJwtTokenData;
 
-export const ehrClientJwtTokenSource = [
+export const ehrClientJwtTokenSources = [
   athenaClientJwtTokenSource,
   elationClientJwtTokenSource,
   canvasClientJwtTokenSource,
 ] as const;
-export type EhrClientJwtTokenSource = (typeof ehrClientJwtTokenSource)[number];
+export type EhrClientJwtTokenSource = (typeof ehrClientJwtTokenSources)[number];
 export function isEhrClientJwtTokenSource(source: string): source is EhrClientJwtTokenSource {
-  return ehrClientJwtTokenSource.includes(source as EhrClientJwtTokenSource);
+  return ehrClientJwtTokenSources.includes(source as EhrClientJwtTokenSource);
 }
 
 export type EhrClientJwtTokenData =
@@ -77,13 +77,13 @@ export type EhrClientJwtTokenData =
   | ElationClientJwtTokenData
   | CanvasClientJwtTokenData;
 
-export const ehrWebhookJwtTokenSource = [
+export const ehrWebhookJwtTokenSources = [
   canvasWebhookJwtTokenSource,
   elationWebhookJwtTokenSource,
 ] as const;
-export type EhrWebhookJwtTokenSource = (typeof ehrWebhookJwtTokenSource)[number];
+export type EhrWebhookJwtTokenSource = (typeof ehrWebhookJwtTokenSources)[number];
 export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhookJwtTokenSource {
-  return ehrWebhookJwtTokenSource.includes(source as EhrWebhookJwtTokenSource);
+  return ehrWebhookJwtTokenSources.includes(source as EhrWebhookJwtTokenSource);
 }
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData | ElationWebhookJwtTokenData;
