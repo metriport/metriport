@@ -10,13 +10,15 @@ import {
 import {
   DeduplicationResult,
   combineResources,
+  createKeysFromObjectArray,
+  createKeysFromObjectArrayAndBits,
   createRef,
+  deduplicateAndTrackResource,
   extractDisplayFromConcept,
-  deduplicateWithinMap,
+  fetchCodingCodeOrDisplayOrSystem,
   getPerformedDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
-  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const procedureStatus = [
@@ -65,7 +67,9 @@ export function groupSameProcedures(procedures: Procedure[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const proceduresMap = new Map<string, Procedure>();
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Procedure>();
+
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
@@ -75,7 +79,13 @@ export function groupSameProcedures(procedures: Procedure[]): {
     target: Procedure
   ): Procedure {
     const code = master.code;
+    const codings = code?.coding;
+
+    const isSingleCoding = codings && codings.length === 1;
+    const display = extractDisplayFromConcept(code);
+
     const filtered = code?.coding?.filter(coding => {
+      // If the condition only has one coding that provides insight with the `display` field, let's keep it
       const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
       return (
         system?.includes(CPT_CODE) ||
@@ -83,7 +93,8 @@ export function groupSameProcedures(procedures: Procedure[]): {
         system?.includes(LOINC_CODE) ||
         system?.includes(LOINC_OID) ||
         system?.includes(SNOMED_CODE) ||
-        system?.includes(SNOMED_OID)
+        system?.includes(SNOMED_OID) ||
+        (isSingleCoding && display)
       );
     });
     if (filtered && filtered.length > 0) {
@@ -100,14 +111,8 @@ export function groupSameProcedures(procedures: Procedure[]): {
     return master;
   }
 
-  function postProcessOnlyStatus(
-    master: Procedure,
-    existing: Procedure,
-    target: Procedure
-  ): Procedure {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
-  }
+  const hasDate = 1;
+  const hasNoDate = 0;
 
   for (const procedure of procedures) {
     if (hasBlacklistedText(procedure.code)) {
@@ -116,47 +121,60 @@ export function groupSameProcedures(procedures: Procedure[]): {
     }
 
     const datetime = getPerformedDateFromResource(procedure, "datetime");
-    if (!datetime) {
+    const { cptCode, loincCode, snomedCode } = extractCodes(procedure.code);
+    const display = extractDisplayFromConcept(procedure.code);
+
+    const identifiers = [
+      ...(cptCode ? [{ cptCode }] : []),
+      ...(loincCode ? [{ loincCode }] : []),
+      ...(snomedCode ? [{ snomedCode }] : []),
+      ...(display ? [{ display }] : []),
+    ];
+    const hasIdentifier = identifiers.length > 0;
+
+    if (!hasIdentifier) {
       danglingReferences.add(createRef(procedure));
       continue;
     }
+    const identifierKeys: string[] = [];
+    const matchCandidateKeys: string[] = [];
 
-    const { cptCode, loincCode, snomedCode } = extractCodes(procedure.code);
+    if (datetime) {
+      // keys that match a code + date together
+      identifierKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
+      matchCandidateKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
 
-    let key;
-    if (cptCode) key = JSON.stringify({ datetime, cptCode });
-    else if (loincCode) key = JSON.stringify({ datetime, loincCode });
-    else if (snomedCode) key = JSON.stringify({ datetime, snomedCode });
+      // flagging the procedure to indicate having a date
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasDate]));
 
-    if (key) {
-      deduplicateWithinMap(
-        proceduresMap,
-        key,
-        procedure,
-        refReplacementMap,
-        undefined,
-        removeCodesAndAssignStatus
-      );
+      // can dedup with a procedure that has no date, as long as an identifier matches
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
     } else {
-      const display = extractDisplayFromConcept(procedure.code);
-      if (display) {
-        const key = JSON.stringify({ datetime, display });
-        deduplicateWithinMap(
-          proceduresMap,
-          key,
-          procedure,
-          refReplacementMap,
-          undefined,
-          postProcessOnlyStatus
-        );
-      } else {
-        danglingReferences.add(createRef(procedure));
-      }
+      // flagging the procedure to indicate not having a date
+      identifierKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
+
+      // can dedup with a procedure that does or does not have a date
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasDate]));
+      matchCandidateKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [hasNoDate]));
+    }
+
+    if (identifierKeys.length > 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        identifierKeys,
+        matchCandidateKeys,
+        incomingResource: procedure,
+        refReplacementMap,
+        customMergeLogic: removeCodesAndAssignStatus,
+      });
+    } else {
+      danglingReferences.add(createRef(procedure));
     }
   }
 
   return {
-    proceduresMap,
+    proceduresMap: dedupedResourcesMap,
     refReplacementMap,
     danglingReferences,
   };

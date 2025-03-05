@@ -2,8 +2,9 @@ import { Encounter } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
   combineResources,
+  createKeysFromObjectArray,
   createRef,
-  deduplicateWithinMap,
+  deduplicateAndTrackResource,
   getDateFromResource,
   pickMostDescriptiveStatus,
 } from "../shared";
@@ -49,47 +50,78 @@ export function deduplicateEncounters(encounters: Encounter[]): DeduplicationRes
  * Approach:
  * 1 map, where the key is made of:
  * - date
- * - class.code
+ * - practitioner participant
  */
 export function groupSameEncounters(encounters: Encounter[]): {
   encountersMap: Map<string, Encounter>;
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const encountersMap = new Map<string, Encounter>();
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Encounter>();
+
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(
-    master: Encounter,
-    existing: Encounter,
-    target: Encounter
-  ): Encounter {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
-  }
-
   for (const encounter of encounters) {
     const datetime = getDateFromResource(encounter, "datetime");
-    // TODO: Improve the key. Just date is not sufficient.
+
+    const practitionerRefsSet = new Set<string>();
+
+    const identifierKeys: string[] = [];
+    const matchCandidateKeys: string[] = [];
+
+    encounter.participant?.forEach(participant => {
+      const ref = participant.individual?.reference;
+      if (ref) {
+        if (ref.includes("Practitioner")) {
+          practitionerRefsSet.add(ref);
+          return;
+        }
+      }
+    });
+
+    const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
+
     if (datetime) {
-      const key = JSON.stringify({ datetime });
-      deduplicateWithinMap(
-        encountersMap,
-        key,
-        encounter,
+      if (practitionerRefs.length > 0) {
+        const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
+        identifierKeys.push(...practitionerAndDateKeys);
+        matchCandidateKeys.push(...practitionerAndDateKeys);
+      } else if (practitionerRefs.length === 0) {
+        const dateKey = JSON.stringify({ datetime });
+        identifierKeys.push(dateKey);
+        matchCandidateKeys.push(dateKey);
+      }
+    }
+
+    if (identifierKeys.length > 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        identifierKeys,
+        matchCandidateKeys,
+        incomingResource: encounter,
         refReplacementMap,
-        undefined,
-        assignMostDescriptiveStatus
-      );
+        customMergeLogic: assignMostDescriptiveStatus,
+      });
     } else {
       danglingReferences.add(createRef(encounter));
     }
   }
 
   return {
-    encountersMap,
+    encountersMap: dedupedResourcesMap,
     refReplacementMap,
     danglingReferences,
   };
+}
+
+function assignMostDescriptiveStatus(
+  master: Encounter,
+  existing: Encounter,
+  target: Encounter
+): Encounter {
+  master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+  return master;
 }

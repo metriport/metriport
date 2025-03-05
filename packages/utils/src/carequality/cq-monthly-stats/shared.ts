@@ -20,19 +20,19 @@ export const readOnlyDBPool = initReadonlyDbPool(sqlDBCreds, sqlReadReplicaEndpo
 export type CQDirectoryEntryData = {
   id: string;
   name?: string;
-  urlXCPD?: string;
-  urlDQ?: string;
-  urlDR?: string;
+  url_xcpd?: string;
+  url_dq?: string;
+  url_dr?: string;
   lat?: number;
   lon?: number;
   state?: string;
   data?: Organization;
   point?: string;
-  rootOrganization?: string;
-  managingOrganizationId?: string;
+  root_organization?: string;
+  managing_organization_id?: string;
   gateway: boolean;
   active: boolean;
-  lastUpdatedAtCQ: string;
+  last_updated_at_cq: string;
 };
 
 export type RequestParams = {
@@ -190,8 +190,7 @@ export function getGwId(
 
 export function associateGwToImplementer(
   xcpdGWStats: GWWithStats[],
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cqDirectory: any[]
+  cqDirectory: CQDirectoryEntryData[]
 ): ImplementerWithGwStats[] {
   const implementerStats: ImplementerWithGwStats[] = [];
 
@@ -224,8 +223,7 @@ export function associateGwToImplementer(
 function findGWImplementer(
   gateway: string,
   stats: GWStats,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cqDirectory: any[]
+  cqDirectory: CQDirectoryEntryData[]
 ): { name: string; oid: string } | undefined {
   const cqDirectoryGW = cqDirectory.find(entry => entry.id === gateway);
 
@@ -235,12 +233,13 @@ function findGWImplementer(
 
   if (cqDirectoryGW) {
     const managingOrganizationId = cqDirectoryGW.managing_organization_id;
+    const name = cqDirectoryGW.name ?? "";
     const isItself = managingOrganizationId === cqDirectoryGW.id;
 
     if (!managingOrganizationId) {
-      return { name: cqDirectoryGW.name, oid: cqDirectoryGW.id };
+      return { name, oid: cqDirectoryGW.id };
     } else if (isItself && managingOrganizationId) {
-      return { name: cqDirectoryGW.name, oid: cqDirectoryGW.id };
+      return { name, oid: cqDirectoryGW.id };
     }
 
     return findGWImplementer(managingOrganizationId, stats, cqDirectory);
