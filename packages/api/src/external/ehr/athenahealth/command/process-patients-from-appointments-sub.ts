@@ -34,7 +34,7 @@ type GetAppointmentsParams = {
 export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
   if (cxMappings.length === 0) {
-    out("processPatientsFromAppointments @ AthenaHealth").log("No cx mappings found");
+    out("processPatientsFromAppointmentsSub @ AthenaHealth").log("No cx mappings found");
     return;
   }
 
