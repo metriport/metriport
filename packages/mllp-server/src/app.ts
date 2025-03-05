@@ -19,6 +19,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       logger.log(
         `## New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort} ##`
       );
+      // TODO(lucas|2757|2025-03-05): Write request log to S3
+      // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
       connection.send(message.buildAck());
     });
 

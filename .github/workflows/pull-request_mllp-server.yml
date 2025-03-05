@@ -1,4 +1,4 @@
-name: PR Check - API
+name: PR Check - MLLP Server
 
 on:
   pull_request:
