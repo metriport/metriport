@@ -25,8 +25,6 @@ set -x
 
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
 
-GITHUB_SHA=$(git rev-parse --short HEAD)
-
 PACKAGE_NAME=$1
 PACKAGE_FOLDER=packages/$PACKAGE_NAME
 TARBALL_NAME=metriport-$PACKAGE_NAME.tar.gz

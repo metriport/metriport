@@ -1,13 +1,13 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { EnvConfig } from "../../config/env-config";
+import { EnvConfigNonSandbox } from "../../config/env-config";
 import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
 import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
 import { VpnStack } from "./vpn";
 
 export interface Hl7NotificationRoutingStackProps extends cdk.StackProps {
-  config: EnvConfig;
+  config: EnvConfigNonSandbox;
   version: string | undefined;
 }
 

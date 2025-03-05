@@ -25,7 +25,7 @@ export class MllpStack extends cdk.NestedStack {
 
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7NotificationRouting.mllpServer;
-    const { vpc, nlb } = props.networkStack;
+    const { vpc } = props.networkStack;
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
@@ -75,7 +75,6 @@ export class MllpStack extends cdk.NestedStack {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       publicLoadBalancer: false,
-      loadBalancer: nlb,
       securityGroups: [mllpSecurityGroup],
     });
 
