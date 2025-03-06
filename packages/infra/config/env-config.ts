@@ -4,7 +4,7 @@ import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
-import { Hl7NotificationRoutingConfig } from "./hl7-notification-routing-config";
+import { Hl7NotificationConfig } from "./hl7-notification-config";
 export type ConnectWidgetConfig = {
   stackName: string;
   region: string;
@@ -258,7 +258,7 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   };
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
-  hl7NotificationRouting: Hl7NotificationRoutingConfig;
+  hl7Notification: Hl7NotificationConfig;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {
