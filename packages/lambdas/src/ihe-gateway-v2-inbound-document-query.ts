@@ -1,9 +1,4 @@
-import {
-  EventTypes,
-  analytics,
-  initPostHog,
-  shutdownPostHog,
-} from "@metriport/core/external/analytics/posthog";
+import { EventTypes, analytics, initPostHog } from "@metriport/core/external/analytics/posthog";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { processInboundDq } from "@metriport/core/external/carequality/dq/process-inbound-dq";
 import { createInboundDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dq-response";
@@ -23,7 +18,7 @@ const { log } = out(`ihe-gateway-v2-inbound-document-query`);
 
 export async function handler(event: APIGatewayProxyEventV2) {
   const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
-  initPostHog(postHogApiKey, "lambda");
+  const postHog = initPostHog(postHogApiKey, "lambda");
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
     try {
@@ -62,7 +57,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
     log(`${msg}: ${errorToString(error)}`);
     return buildResponse(500, "Internal Server Error");
   } finally {
-    await shutdownPostHog();
+    await postHog.shutdown();
   }
 }
 

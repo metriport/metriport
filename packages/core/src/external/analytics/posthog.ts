@@ -2,6 +2,7 @@ import { errorToString } from "@metriport/shared";
 import { PostHog } from "posthog-node";
 import { out } from "../../util";
 import { Config } from "../../util/config";
+import { MetriportError } from "../../util/error/metriport-error";
 
 const GROUP_TYPE = "customer";
 const { log } = out("posthog-analytics");
@@ -61,17 +62,17 @@ class PostHogAnalytics {
    * Initialize PostHog analytics - should be called once on API startup or Lambda init
    */
   static init(apiKey: string, platform: "oss-api" | "lambda"): PostHogAnalytics {
-    if (!PostHogAnalytics.instance) {
-      PostHogAnalytics.instance = new PostHogAnalytics(apiKey, platform);
+    if (!this.instance) {
+      this.instance = new PostHogAnalytics(apiKey, platform);
     }
-    return PostHogAnalytics.instance;
+    return this.instance;
   }
 
   static getInstance(): PostHogAnalytics {
-    if (!PostHogAnalytics.instance) {
-      throw new Error("PostHog instance not initialized - call init() first");
+    if (!this.instance) {
+      throw new MetriportError("PostHog instance not initialized - call init() first");
     }
-    return PostHogAnalytics.instance;
+    return this.instance;
   }
 
   capture(params: EventMessageV1): void {
@@ -99,8 +100,9 @@ class PostHogAnalytics {
 /**
  * Initialize PostHog analytics - should be called once on API startup or Lambda init
  */
-export function initPostHog(apiKey: string, platform: "oss-api" | "lambda"): void {
+export function initPostHog(apiKey: string, platform: "oss-api" | "lambda"): PostHogAnalytics {
   PostHogAnalytics.init(apiKey, platform);
+  return PostHogAnalytics.getInstance();
 }
 
 /**
@@ -111,17 +113,5 @@ export function analytics(params: EventMessageV1): void {
     PostHogAnalytics.getInstance().capture(params);
   } catch (error) {
     log(`Failed to capture analytics: ${errorToString(error)}`);
-  }
-}
-
-/**
- * Allows to send bulk analytics requests from the AWS Lambdas
- */
-export function shutdownPostHog(): Promise<void> {
-  try {
-    return PostHogAnalytics.getInstance().shutdown();
-  } catch (error) {
-    log(`Failed to shutdown PostHog: ${errorToString(error)}`);
-    return Promise.resolve();
   }
 }

@@ -4,7 +4,7 @@ import {
   ConsolidatedSnapshotResponse,
 } from "@metriport/core/command/consolidated/get-snapshot";
 import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
-import { initPostHog, shutdownPostHog } from "@metriport/core/external/analytics/posthog";
+import { initPostHog } from "@metriport/core/external/analytics/posthog";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
@@ -23,7 +23,7 @@ export async function handler(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<ConsolidatedSnapshotResponse | void> {
   const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
-  initPostHog(postHogApiKey, "lambda");
+  const postHog = initPostHog(postHogApiKey, "lambda");
 
   const { patient, requestId, resources, dateFrom, dateTo } = params;
   const conversionType = params.isAsync ? params.conversionType : undefined;
@@ -48,6 +48,6 @@ export async function handler(
     log(`${msg}: ${JSON.stringify(filters)}`);
     throw error;
   } finally {
-    await shutdownPostHog();
+    await postHog.shutdown();
   }
 }

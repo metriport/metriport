@@ -6,6 +6,12 @@ import {
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import {
+  buildDocumentNameForCleanConversion,
+  buildDocumentNameForConversionResult,
+  buildDocumentNameForFromConverter,
+  buildDocumentNameForPreConversion,
+} from "@metriport/core/domain/conversion/filename";
+import {
   defaultS3RetriesConfig,
   storeHydratedConversionResult,
   storeNormalizedConversionResult,
@@ -13,13 +19,7 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
-import {
-  buildDocumentNameForConversionResult,
-  buildDocumentNameForFromConverter,
-  buildDocumentNameForPreConversion,
-  buildDocumentNameForCleanConversion,
-} from "@metriport/core/domain/conversion/filename";
-import { initPostHog, shutdownPostHog } from "@metriport/core/external/analytics/posthog";
+import { initPostHog } from "@metriport/core/external/analytics/posthog";
 import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
@@ -104,7 +104,7 @@ type EventBody = {
 // TODO: 2502 - Migrate most of the logic to the core to simplify the lambda handler as much as possible
 export async function handler(event: SQSEvent) {
   const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
-  initPostHog(postHogApiKey, "lambda");
+  const postHog = initPostHog(postHogApiKey, "lambda");
   try {
     // Process messages from SQS
     const records = event.Records;
@@ -343,7 +343,7 @@ export async function handler(event: SQSEvent) {
     });
     throw new MetriportError(msg);
   } finally {
-    await shutdownPostHog();
+    await postHog.shutdown();
   }
 }
 
