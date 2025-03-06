@@ -115,6 +115,23 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
+  infra-hl7-notification-routing-stack-staging:
+    if: needs.files-changed.outputs.infra-hl7-notification-routing-stack == 'true'
+    uses: ./.github/workflows/_deploy-hl7-notification-routing-cdk.yml
+    needs: files-changed
+    with:
+      deploy_env: "staging"
+      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_STAGING }}
+      cdk_stack: ${{ vars.HL7_NOTIFICATION_ROUTING_STACK_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-api-lambdas:
     uses: ./.github/workflows/_deploy-cdk.yml
