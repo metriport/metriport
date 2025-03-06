@@ -44,3 +44,28 @@ export type PatientImportEntryStatusParsed = "waiting" | "processing" | "success
 export type PatientImportEntryStatus =
   | PatientImportEntryStatusFailed
   | PatientImportEntryStatusParsed;
+
+const isDevKey = "isDev";
+
+export type PatientImportMetadata = {
+  [isDevKey]?: boolean;
+};
+
+export function metaToRecord(
+  metadata: PatientImportMetadata
+): Record<keyof PatientImportMetadata, string> {
+  return {
+    [isDevKey]: metadata[isDevKey] ? "true" : "false",
+  };
+}
+
+export function recordToMeta(record: Record<string, string>): PatientImportMetadata {
+  return {
+    ...(record[isDevKey] ? { [isDevKey]: record[isDevKey] === "true" } : {}),
+  };
+}
+
+export function isPatientImportRunningOnDev(metadata: PatientImportMetadata | undefined): boolean {
+  const isDevProp = metadata?.[isDevKey];
+  return isDevProp ? [true, "true"].includes(isDevProp) : false;
+}

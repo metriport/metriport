@@ -5,6 +5,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { sendToSlack } from "@metriport/core/external/slack/index";
 import { Config } from "@metriport/core/util/config";
 import { errorToString } from "@metriport/shared";
+import { isPatientImportRunningOnDev } from "@metriport/shared/domain/patient/patient-import/types";
 import * as Sentry from "@sentry/serverless";
 import { S3Event } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -32,7 +33,7 @@ export async function handler(event: S3Event) {
       try {
         const s3Utils = new S3Utils(region);
         const { metadata } = await s3Utils.getFileInfoFromS3(sourceBucket, sourceKey);
-        const isDev = metadata && metadata["isDev"] === "true";
+        const isDev = isPatientImportRunningOnDev(metadata);
 
         // e.g.: patient-import/cxid=<UUID>/date=2025-01-01/jobid=<UUID>/files/raw.csv
         const sourceParts = sourceKey.split("/");
@@ -43,9 +44,10 @@ export async function handler(event: S3Event) {
             `Missing cxId or jobId in sourceKey ${sourceKey} - cxId: ${cxId}, jobId: ${jobId}`
           );
         }
+
+        // Load from S3 so we can run local w/o relying on the lambda finding our local API
+        // to get job related info
         const jobRecord = await fetchJobRecordOrFail({ cxId, jobId });
-        const { triggerConsolidated, disableWebhooks, rerunPdOnNewDemographics, dryRun } =
-          jobRecord.params;
 
         const subjectSuffix = isSandbox
           ? " - :package: `SANDBOX` :package:"
@@ -70,10 +72,7 @@ export async function handler(event: S3Event) {
           const payload: PatientImportParseRequest = {
             cxId,
             jobId,
-            triggerConsolidated,
-            disableWebhooks,
-            rerunPdOnNewDemographics,
-            dryRun,
+            ...jobRecord.params,
           };
           await parseCloud.processJobParse(payload);
         }

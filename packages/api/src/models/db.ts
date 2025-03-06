@@ -32,6 +32,7 @@ import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
+import { PatientImportModel } from "./medical/patient-import";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
@@ -50,6 +51,7 @@ const models: ModelSetup[] = [
   CwPatientDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
+  PatientImportModel.setup,
   HIEDirectoryEntryViewModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,

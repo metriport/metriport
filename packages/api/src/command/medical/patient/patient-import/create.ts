@@ -1,24 +1,25 @@
-import { JobRecordParams } from "@metriport/core/command/patient-import/patient-import";
 import { createFileKeyRaw } from "@metriport/core/command/patient-import/patient-import-shared";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { Config } from "@metriport/core/util/config";
+import { out } from "@metriport/core/util/log";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  createJobRecord,
-  CreateJobRecordParams,
-} from "@metriport/core/command/patient-import/record/create-job-record";
-import {
+  metaToRecord,
+  PatientImport,
+  PatientImportMetadata,
   PatientImportParams,
   PatientImportStatus,
 } from "@metriport/shared/domain/patient/patient-import/types";
-import { S3Utils } from "@metriport/core/external/aws/s3";
-import { out } from "@metriport/core/util/log";
-import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { Config } from "../../../shared/config";
-import { getOptionalFacilityOrFail } from "../facility/get-facility";
+import { PatientImportModel } from "../../../../models/medical/patient-import";
+import { getOptionalFacilityOrFail } from "../../facility/get-facility";
 
 dayjs.extend(duration);
 
 const presignedUploadUrlDuration = dayjs.duration(10, "minutes");
+// const bucketName = Config.getPatientImportBucket();
 
 export type PatientImportCreateCmd = {
   cxId: string;
@@ -26,15 +27,8 @@ export type PatientImportCreateCmd = {
   params?: Partial<PatientImportParams>;
 };
 
-export type PatientImportCreateResponse = {
-  jobId: string;
-  facilityId: string;
-  status: PatientImportStatus;
-  createdAt: string;
+export type PatientImportCreateResponse = PatientImport & {
   uploadUrl: string;
-  params: {
-    dryRun: boolean;
-  };
 };
 
 /**
@@ -62,7 +56,7 @@ export async function createPatientImport({
     triggerConsolidated = false,
     disableWebhooks = false,
   } = params;
-  const initializedParams: JobRecordParams = {
+  const initializedParams: PatientImportParams = {
     dryRun,
     rerunPdOnNewDemographics,
     triggerConsolidated,
@@ -71,45 +65,51 @@ export async function createPatientImport({
   const facility = await getOptionalFacilityOrFail(cxId, facilityIdParam);
   const facilityId = facility.id;
 
-  const createdAt = buildDayjs().toISOString();
+  const jobId = uuidv7();
   const status: PatientImportStatus = "waiting";
+  const createdAt = buildDayjs().toDate();
 
-  const createParams: CreateJobRecordParams = {
+  const jobToCreate: PatientImport = {
+    id: jobId,
     cxId,
     facilityId,
-    createdAt,
     status,
+    reason: undefined,
+    createdAt,
+    startedAt: undefined,
+    finishedAt: undefined,
+    total: undefined,
+    successful: undefined,
+    failed: undefined,
     params: initializedParams,
   };
-  const { jobId, bucketName, key } = await createJobRecord(createParams);
 
-  const uploadUrl = await createUploadUrl({ cxId, jobId, bucketName });
+  const [job, uploadUrl] = await Promise.all([
+    storeAtDb(jobToCreate),
+    createUploadUrl({ cxId, jobId }),
+  ]);
 
-  log(`Initialized job ${jobId} for facility ${facility.id}, key ${key}`);
+  log(`Initialized job ${jobId} for facility ${facility.id}`);
 
   const resp: PatientImportCreateResponse = {
-    ...createParams,
-    jobId,
+    ...job,
     uploadUrl,
   };
   return resp;
 }
 
-async function createUploadUrl({
-  cxId,
-  jobId,
-  bucketName,
-}: {
-  cxId: string;
-  jobId: string;
-  bucketName: string;
-}) {
+async function storeAtDb(jobCreate: PatientImport): Promise<PatientImport> {
+  const newPatientImport = await PatientImportModel.create(jobCreate);
+  return newPatientImport.dataValues;
+}
+
+async function createUploadUrl({ cxId, jobId }: { cxId: string; jobId: string }) {
   const s3Utils = new S3Utils(Config.getAWSRegion());
-  // const s3BucketName = CoreConfig.getPatientImportBucket();
+  const s3BucketName = Config.getPatientImportBucket();
   const key = createFileKeyRaw(cxId, jobId);
-  const metadata = getMetadata();
+  const metadata = metaToRecord(getMetadata());
   const s3Url = await s3Utils.getPresignedUploadUrl({
-    bucket: bucketName,
+    bucket: s3BucketName,
     key,
     durationSeconds: presignedUploadUrlDuration.asSeconds(),
     metadata,
@@ -117,10 +117,7 @@ async function createUploadUrl({
   return s3Url;
 }
 
-function getMetadata(): Record<string, string> {
-  if (Config.isDev()) {
-    // TODO 2330: Move this to core so we can point to it from here and lambda - single source of truth
-    return { isDev: "true" };
-  }
+function getMetadata(): PatientImportMetadata {
+  if (Config.isDev()) return { isDev: true };
   return {};
 }
