@@ -14,3 +14,7 @@ export function limitStringLength<T extends string | undefined>(
 export function stripNonNumericChars(str: string): string {
   return str.trim().replace(/\D/g, "");
 }
+
+export function stripPeriods(str: string): string {
+  return str.trim().replace(/\./g, "");
+}
