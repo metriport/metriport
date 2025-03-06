@@ -31,7 +31,7 @@ jobs:
       fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       terminology: ${{ steps.changes.outputs.terminology }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
-      infra-hl7-notification-routing-stack: ${{ steps.changes.outputs.infra-hl7-notification-routing-stack }}
+      infra-hl7-notification-routing: ${{ steps.changes.outputs.infra-hl7-notification-routing }}
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -83,7 +83,7 @@ jobs:
               - "packages/lambdas/**"
               - "packages/shared/**"
               - "package*.json"
-            infra-hl7-notification-routing-stack:
+            infra-hl7-notification-routing:
               - "packages/infra/lib/hl7-notification-routing-stack/**"
               - "packages/infra/bin/infrastructure.ts"
               - "package*.json"
@@ -141,8 +141,8 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  infra-hl7-notification-routing-stack:
-    if: needs.files-changed.outputs.infra-hl7-notification-routing-stack == 'true'
+  infra-hl7-notification-routing:
+    if: needs.files-changed.outputs.infra-hl7-notification-routing == 'true'
     uses: ./.github/workflows/_deploy-hl7-notification-routing-cdk.yml
     needs: files-changed
     with:
