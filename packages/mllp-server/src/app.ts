@@ -1,8 +1,9 @@
 import { Hl7Server } from "@medplum/hl7";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import * as dotenv from "dotenv";
 import * as Sentry from "@sentry/node";
+import * as dotenv from "dotenv";
+import { setGracefulShutdownHandler } from "./graceful-shutdown-handler";
 import { initSentry } from "./sentry";
 
 dotenv.config();
@@ -13,7 +14,8 @@ const MLLP_DEFAULT_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const server = new Hl7Server(connection => {
-    logger.log("Connection received");
+    const clientId = `${connection.socket.remoteAddress}:${connection.socket.remotePort}`;
+    logger.log(`Connection received from ${clientId}`);
 
     connection.addEventListener("message", ({ message }) => {
       logger.log(
@@ -26,15 +28,15 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
     connection.addEventListener("error", error => {
       if (error instanceof Error) {
-        logger.log("Connection error:", error);
+        logger.log(`Connection error from ${clientId}:`, error);
         Sentry.captureException(error);
       } else {
-        logger.log("Connection terminated by client");
+        logger.log(`Connection terminated by client ${clientId}`);
       }
     });
 
     connection.addEventListener("close", () => {
-      logger.log("Connection closed");
+      logger.log(`Connection closed by ${clientId}`);
     });
   });
 
@@ -43,8 +45,15 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
 async function main() {
   const logger = out("MLLP Server");
+  logger.log(`[bootup] Starting server on port ${MLLP_DEFAULT_PORT}`);
+
   const server = await createHl7Server(logger);
   server.start(MLLP_DEFAULT_PORT);
+  if (!server.server) {
+    throw new Error("Error starting server");
+  }
+
+  setGracefulShutdownHandler(server.server);
 }
 
 main();
