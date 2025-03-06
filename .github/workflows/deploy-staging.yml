@@ -116,7 +116,7 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  infra-hl7-notification-routing-stack-staging:
+  infra-hl7-notification-routing-stack:
     if: needs.files-changed.outputs.infra-hl7-notification-routing-stack == 'true'
     uses: ./.github/workflows/_deploy-hl7-notification-routing-cdk.yml
     needs: files-changed

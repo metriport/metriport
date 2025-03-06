@@ -32,10 +32,6 @@ on:
         required: false
         type: string
         description: "the name of the IHE CDK stack we're deploying"
-      hl7_notification_routing_stack:
-        required: false
-        type: string
-        description: "the name of the HL7 Notification Routing CDK stack we're deploying"
       add_sentry_release:
         description: "the name of the CDK stack we're deploying"
         required: false
