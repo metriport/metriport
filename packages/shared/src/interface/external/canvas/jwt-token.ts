@@ -13,11 +13,13 @@ export type CanvasClientJwtTokenData = {
   source: "canvas-client";
 };
 
-export type CanvasWebhookJwtTokenData = {
-  practiceId: string;
-  cxId: string;
-  source: "canvas-webhook";
-};
+export const canvasWebhookJwtTokenDataSchema = z.object({
+  practiceId: z.string(),
+  cxId: z.string(),
+  source: z.literal("canvas-webhook"),
+});
+
+export type CanvasWebhookJwtTokenData = z.infer<typeof canvasWebhookJwtTokenDataSchema>;
 
 export const canvasClientJwtTokenResponseSchema = z.object({
   scope: z.string(),

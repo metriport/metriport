@@ -1,4 +1,7 @@
-import { canvasJwtTokenDataSchema } from "@metriport/shared/interface/external/canvas/jwt-token";
+import {
+  canvasJwtTokenDataSchema,
+  canvasWebhookJwtTokenDataSchema,
+} from "@metriport/shared/interface/external/canvas/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -28,10 +31,10 @@ router.get(
 );
 
 /**
- * GET /internal/token/canvas-webhook
+ * GET /internal/token/canvas/canvas-webhook
  */
 router.get(
-  "/canvas-webhook",
+  "/webhook",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const token = getAuthorizationToken(req);
@@ -60,6 +63,29 @@ router.post(
     await saveJwtToken({
       token,
       source: EhrSources.canvas,
+      ...data,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+const createWebhookJwtSchema = z.object({
+  exp: z.number(),
+  data: canvasWebhookJwtTokenDataSchema,
+});
+
+/**
+ * POST /internal/token/canvas/webhook
+ */
+router.post(
+  "/webhook",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const token = getAuthorizationToken(req);
+    const data = createWebhookJwtSchema.parse(req.body);
+    await saveJwtToken({
+      token,
+      source: canvasWebhookJwtTokenSource,
       ...data,
     });
     return res.sendStatus(httpStatus.OK);
