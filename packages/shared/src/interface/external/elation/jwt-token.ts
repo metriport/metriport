@@ -1,5 +1,12 @@
 import z from "zod";
 
+export const elationJwtTokenDataSchema = z.object({
+  practiceId: z.string(),
+  source: z.literal("elation"),
+});
+
+export type ElationJwtTokenData = z.infer<typeof elationJwtTokenDataSchema>;
+
 export type ElationClientJwtTokenData = {
   practiceId: string;
   cxId: string;

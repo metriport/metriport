@@ -7,7 +7,10 @@ import {
   CanvasClientJwtTokenData,
   CanvasJwtTokenData,
 } from "@metriport/shared/src/interface/external/canvas/jwt-token";
-import { ElationClientJwtTokenData } from "@metriport/shared/src/interface/external/elation/jwt-token";
+import {
+  ElationJwtTokenData,
+  ElationClientJwtTokenData,
+} from "@metriport/shared/src/interface/external/elation/jwt-token";
 import { athenaClientJwtTokenSource } from "../external/ehr/athenahealth/shared";
 import { elationClientJwtTokenSource } from "../external/ehr/elation/shared";
 import { canvasClientJwtTokenSource } from "../external/ehr/canvas/shared";
@@ -16,6 +19,7 @@ import { EhrSources } from "../external/ehr/shared";
 const jwtTokenSource = [
   EhrSources.athena,
   athenaClientJwtTokenSource,
+  EhrSources.elation,
   elationClientJwtTokenSource,
   EhrSources.canvas,
   canvasClientJwtTokenSource,
@@ -29,6 +33,7 @@ export function isJwtTokenSource(source: string): source is JwtTokenSource {
 export type JwtTokenData =
   | AthenaJwtTokenData
   | AthenaClientJwtTokenData
+  | ElationJwtTokenData
   | ElationClientJwtTokenData
   | CanvasJwtTokenData
   | CanvasClientJwtTokenData;
