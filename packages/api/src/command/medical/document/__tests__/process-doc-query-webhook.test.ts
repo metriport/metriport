@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { Patient } from "@metriport/core/domain/patient";
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
+import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
+import { makeSettingModel } from "../../../../models/__tests__/settings";
+import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { Settings } from "../../../../models/settings";
 import { WebhookRequest } from "../../../../models/webhook-request";
-import { makeSettingModel } from "../../../../models/__tests__/settings";
-import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { DocumentReferenceDTO } from "../../../../routes/medical/dtos/documentDTO";
 import * as getSettings from "../../../settings/getSettings";
 import * as reportUsageCmd from "../../../usage/report-usage";
@@ -50,11 +51,12 @@ describe("processDocQueryProgressWebhook", () => {
   describe("process", () => {
     it("handles download progress processing", async () => {
       const downloadProgress = { status: "processing" as const };
+      const documentQueryProgress = { download: downloadProgress };
+      const updPatient = appendDocQueryProgressToPatient(patient, documentQueryProgress);
 
-      await processDocQueryWebhook.processDocQueryProgressWebhook({
-        patient,
+      await processDocQueryWebhook.processDataPipelineCheckpoints({
+        patient: updPatient,
         requestId,
-        documentQueryProgress: { download: downloadProgress },
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
@@ -62,11 +64,12 @@ describe("processDocQueryProgressWebhook", () => {
 
     it("handles convert progress processing", async () => {
       const convertProgress = { status: "processing" as const };
+      const documentQueryProgress = { convert: convertProgress };
+      const updPatient = appendDocQueryProgressToPatient(patient, documentQueryProgress);
 
-      await processDocQueryWebhook.processDocQueryProgressWebhook({
-        patient,
+      await processDocQueryWebhook.processDataPipelineCheckpoints({
+        patient: updPatient,
         requestId,
-        documentQueryProgress: { convert: convertProgress },
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
@@ -75,11 +78,15 @@ describe("processDocQueryProgressWebhook", () => {
     it("handles download progress completed - webhook not sent", async () => {
       const downloadProgress = { status: "completed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
+      const documentQueryProgress = { download: downloadProgress };
+      const updPatient = appendDocQueryProgressToPatient(
+        { id: patient.id, cxId: patient.cxId } as Patient,
+        documentQueryProgress
+      );
 
-      await processDocQueryWebhook.processDocQueryProgressWebhook({
-        patient: { id: patient.id, cxId: patient.cxId },
+      await processDocQueryWebhook.processDataPipelineCheckpoints({
+        patient: updPatient,
         requestId,
-        documentQueryProgress: { download: downloadProgress },
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
@@ -95,11 +102,12 @@ describe("processDocQueryProgressWebhook", () => {
     it("handles convert progress completed - webhook not sent", async () => {
       const convertProgress = { status: "completed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
+      const documentQueryProgress = { convert: convertProgress };
+      const updPatient = appendDocQueryProgressToPatient(patient, documentQueryProgress);
 
-      await processDocQueryWebhook.processDocQueryProgressWebhook({
-        patient,
+      await processDocQueryWebhook.processDataPipelineCheckpoints({
+        patient: updPatient,
         requestId,
-        documentQueryProgress: { convert: convertProgress },
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
@@ -114,11 +122,12 @@ describe("processDocQueryProgressWebhook", () => {
     it("handles download progress failed", async () => {
       const downloadProgress = { status: "failed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
+      const documentQueryProgress = { download: downloadProgress };
+      const updPatient = appendDocQueryProgressToPatient(patient, documentQueryProgress);
 
-      await processDocQueryWebhook.processDocQueryProgressWebhook({
-        patient,
+      await processDocQueryWebhook.processDataPipelineCheckpoints({
+        patient: updPatient,
         requestId,
-        documentQueryProgress: { download: downloadProgress },
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
@@ -134,11 +143,12 @@ describe("processDocQueryProgressWebhook", () => {
     it("handles convert progress failed", async () => {
       const convertProgress = { status: "failed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
+      const documentQueryProgress = { convert: convertProgress };
+      const updPatient = appendDocQueryProgressToPatient(patient, documentQueryProgress);
 
-      await processDocQueryWebhook.processDocQueryProgressWebhook({
-        patient,
+      await processDocQueryWebhook.processDataPipelineCheckpoints({
+        patient: updPatient,
         requestId,
-        documentQueryProgress: { convert: convertProgress },
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
@@ -153,11 +163,12 @@ describe("processDocQueryProgressWebhook", () => {
     it("handles download progress - webhook exists", async () => {
       const downloadProgress = { status: "completed" as const, webhookSent: true as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
+      const documentQueryProgress = { download: downloadProgress };
+      const updPatient = appendDocQueryProgressToPatient(patient, documentQueryProgress);
 
-      await processDocQueryWebhook.processDocQueryProgressWebhook({
-        patient,
+      await processDocQueryWebhook.processDataPipelineCheckpoints({
+        patient: updPatient,
         requestId,
-        documentQueryProgress: { download: downloadProgress },
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
@@ -165,14 +176,28 @@ describe("processDocQueryProgressWebhook", () => {
 
     it("handles convert progress - webhook exists", async () => {
       const downloadProgress = { status: "completed" as const, webhookSent: true as const };
+      const documentQueryProgress = { convert: downloadProgress };
+      const updPatient = appendDocQueryProgressToPatient(patient, documentQueryProgress);
 
-      await processDocQueryWebhook.processDocQueryProgressWebhook({
-        patient,
+      await processDocQueryWebhook.processDataPipelineCheckpoints({
+        patient: updPatient,
         requestId,
-        documentQueryProgress: { convert: downloadProgress },
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
     });
   });
 });
+
+function appendDocQueryProgressToPatient(
+  patient: Patient,
+  documentQueryProgress: DocumentQueryProgress
+): Patient {
+  return {
+    ...patient,
+    data: {
+      ...patient.data,
+      documentQueryProgress,
+    },
+  };
+}
