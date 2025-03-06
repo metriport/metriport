@@ -44,6 +44,7 @@ export class VpnStack extends cdk.NestedStack {
       customerGatewayId: customerGateway.ref,
       staticRoutesOnly: props.vpnConfig.staticRoutesOnly,
       vpnTunnelOptionsSpecifications: [
+        // TODO(lucas|2754|2025-03-05): Replace placeholders with preshared keys loaded from AWS Secrets Manager
         {
           preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
           ikeVersions: [{ value: "ikev2" }],
