@@ -13,7 +13,8 @@ on:
 
 jobs:
   api:
-    if: contains(github.event.inputs.jobs_to_run, 'api')
+    # can't use contains(github.event.inputs.jobs_to_run, 'api') because this would trigger on 'redeploy-api-gw' or 'infra-api-lambdas'
+    if: contains(format(',{0},', github.event.inputs.jobs_to_run), ',api,')
     uses: ./.github/workflows/_deploy-api.yml
     with:
       deploy_env: "staging"
