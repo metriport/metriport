@@ -1,4 +1,5 @@
 import { createFileKeyRaw } from "@metriport/core/command/patient-import/patient-import-shared";
+import { createJobRecord } from "@metriport/core/command/patient-import/record/create-job-record";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
@@ -87,6 +88,7 @@ export async function createPatientImport({
   const [job, uploadUrl] = await Promise.all([
     storeAtDb(jobToCreate),
     createUploadUrl({ cxId, jobId }),
+    createJobRecord(jobToCreate),
   ]);
 
   log(`Initialized job ${jobId} for facility ${facility.id}`);

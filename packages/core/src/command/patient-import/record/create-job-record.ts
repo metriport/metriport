@@ -1,11 +1,9 @@
 import { errorToString, MetriportError } from "@metriport/shared";
+import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { uuidv7 } from "../../../util/uuid-v7";
 import { JobRecord } from "../patient-import";
 import { createFileKeyJob, getS3UtilsInstance } from "../patient-import-shared";
-
-export type CreateJobRecordParams = Omit<JobRecord, "jobId">;
 
 /**
  * Creates the Job record on S3, the file that represents the bulk patient import parameters
@@ -14,19 +12,21 @@ export type CreateJobRecordParams = Omit<JobRecord, "jobId">;
  * @returns the jobId andS3 info of the created file
  */
 export async function createJobRecord(
-  jobRecord: CreateJobRecordParams
+  jobCreate: PatientImport
 ): Promise<{ jobId: string; key: string; bucketName: string }> {
-  const { cxId, facilityId } = jobRecord;
+  const { cxId, facilityId, id: jobId } = jobCreate;
   const { log } = out(`PatientImport createJobRecord - cxId ${cxId} facilityId ${facilityId}`);
   const s3Utils = getS3UtilsInstance();
-  const jobId = uuidv7();
   const key = createFileKeyJob(cxId, jobId);
   try {
     const bucketName = Config.getPatientImportBucket();
     log(`Creating job record jobId ${jobId}, key ${key}`);
     const payload: JobRecord = {
-      ...jobRecord,
+      cxId,
+      facilityId,
       jobId,
+      createdAt: jobCreate.createdAt.toISOString(),
+      params: jobCreate.params,
     };
     await s3Utils.uploadFile({
       bucket: bucketName,
