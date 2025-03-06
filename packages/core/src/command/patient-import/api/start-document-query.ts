@@ -1,5 +1,6 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
+import { disableWHMetadata } from "../../../domain/document-query/trigger-and-query";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 
@@ -25,7 +26,7 @@ export async function startDocumentQuery({
   const { log } = out(`PatientImport startDocumentQuery - cxId ${cxId} patientId ${patientId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const dqUrl = buildDocumentQueryUrl(cxId, patientId, triggerConsolidated);
-  const payload = disableWebhooks ? { metadata: { disableWHFlag: "true" } } : {};
+  const payload = disableWebhooks ? { metadata: disableWHMetadata } : {};
   try {
     await api.post(dqUrl, payload);
   } catch (error) {

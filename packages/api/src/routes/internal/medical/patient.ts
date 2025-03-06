@@ -4,7 +4,6 @@ import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "@metriport/core/command/feature-flags/domain-ffs";
-import { fetchJobRecordOrFail } from "@metriport/core/command/patient-import/record/fetch-job-record";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import {
@@ -56,8 +55,9 @@ import {
   getPatients,
   getPatientStates,
 } from "../../../command/medical/patient/get-patient";
-import { createPatientImport } from "../../../command/medical/patient/patient-import-create-job";
-import { updatePatientImport } from "../../../command/medical/patient/patient-import-update-job";
+import { createPatientImport } from "../../../command/medical/patient/patient-import/create";
+import { getPatientImportJobOrFail } from "../../../command/medical/patient/patient-import/get";
+import { updatePatientImport } from "../../../command/medical/patient/patient-import/update";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
@@ -1140,9 +1140,9 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromParamsOrFail("id", req);
 
-    const jobRecord = await fetchJobRecordOrFail({ cxId, jobId });
+    const patientImport = await getPatientImportJobOrFail({ cxId, id: jobId });
 
-    return res.status(status.OK).json(jobRecord);
+    return res.status(status.OK).json(patientImport);
   })
 );
 
