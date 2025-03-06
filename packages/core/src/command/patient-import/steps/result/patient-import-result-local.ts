@@ -54,7 +54,9 @@ export class PatientImportResultLocal implements PatientImportResult {
         bucketName: this.patientImportBucket,
       });
 
-      if (!dryRun) {
+      if (dryRun) {
+        await updateJobStatus({ cxId, jobId, status: "waiting" });
+      } else {
         await updateJobStatus({ cxId, jobId, status: "completed" });
       }
 
