@@ -5,14 +5,14 @@ import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { startDocumentQuery } from "../../api/start-document-query";
 import { startPatientQuery } from "../../api/start-patient-query";
-import { creatOrUpdatePatientRecord } from "../../record/create-or-update-patient-record";
-import { PatientImportQueryHandler, ProcessPatientQueryRequest } from "./patient-import-query";
+import { updatePatientRecord } from "../../record/create-or-update-patient-record";
+import { PatientImportQuery, ProcessPatientQueryRequest } from "./patient-import-query";
 
 dayjs.extend(duration);
 
 const waitTimeBetweenPdAndDq = dayjs.duration(100, "milliseconds");
 
-export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler {
+export class PatientImportQueryLocal implements PatientImportQuery {
   constructor(
     private readonly patientImportBucket: string,
     private readonly waitTimeAtTheEndInMillis: number
@@ -21,13 +21,14 @@ export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler
   async processPatientQuery({
     cxId,
     jobId,
+    rowNumber,
     patientId,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,
   }: ProcessPatientQueryRequest) {
     const { log } = out(
-      `processPatientQuery.local - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+      `PatientImport processPatientQuery.local - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
     );
     try {
       await startPatientQuery({
@@ -42,17 +43,11 @@ export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler
         triggerConsolidated,
         disableWebhooks,
       });
-      await creatOrUpdatePatientRecord({
-        cxId,
-        jobId,
-        patientId,
-        data: { status: "successful" },
-        s3BucketName: this.patientImportBucket,
-      });
       if (this.waitTimeAtTheEndInMillis > 0) await sleep(this.waitTimeAtTheEndInMillis);
     } catch (error) {
       const msg = `Failure while processing patient query @ PatientImport`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
+      const errorMsg = errorToString(error);
+      log(`${msg}. Cause: ${errorMsg}`);
       capture.error(msg, {
         extra: {
           cxId,
@@ -62,6 +57,16 @@ export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler
           error,
         },
       });
+      await updatePatientRecord({
+        cxId,
+        jobId,
+        rowNumber,
+        status: "failed",
+        reasonForCx: "internal error",
+        reasonForDev: errorMsg,
+        bucketName: this.patientImportBucket,
+      });
+
       throw error;
     }
   }

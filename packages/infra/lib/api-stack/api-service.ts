@@ -96,6 +96,7 @@ export function createAPIService({
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
   patientImportLambda,
+  patientImportResultLambda,
   patientImportBucket,
   generalBucket,
   conversionBucket,
@@ -131,6 +132,7 @@ export function createAPIService({
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
   patientImportLambda: ILambda;
+  patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
@@ -258,6 +260,7 @@ export function createAPIService({
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
+          PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,

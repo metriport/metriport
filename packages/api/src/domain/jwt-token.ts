@@ -2,12 +2,12 @@ import { BaseDomain } from "@metriport/core/domain/base-domain";
 import {
   AthenaClientJwtTokenData,
   AthenaJwtTokenData,
-} from "@metriport/shared/src/interface/external/athenahealth/jwt-token";
+} from "@metriport/shared/interface/external/athenahealth/jwt-token";
 import {
   CanvasClientJwtTokenData,
   CanvasJwtTokenData,
-} from "@metriport/shared/src/interface/external/canvas/jwt-token";
-import { ElationClientJwtTokenData } from "@metriport/shared/src/interface/external/elation/jwt-token";
+} from "@metriport/shared/interface/external/canvas/jwt-token";
+import { ElationClientJwtTokenData } from "@metriport/shared/interface/external/elation/jwt-token";
 import { athenaClientJwtTokenSource } from "../external/ehr/athenahealth/shared";
 import { elationClientJwtTokenSource } from "../external/ehr/elation/shared";
 import { canvasClientJwtTokenSource } from "../external/ehr/canvas/shared";
