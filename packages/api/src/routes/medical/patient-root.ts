@@ -19,7 +19,7 @@ import {
   getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
-import { createPatientImport } from "../../command/medical/patient/patient-import-create-job";
+import { createPatientImport } from "../../command/medical/patient/patient-import/create";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
@@ -238,7 +238,7 @@ router.post(
     });
 
     const {
-      jobId,
+      id: jobId,
       facilityId,
       status,
       params: { dryRun },
@@ -251,7 +251,7 @@ router.post(
       status,
       uploadUrl,
       params: { dryRun },
-      createdAt,
+      createdAt: createdAt.toISOString(),
     };
     return res.status(httpStatus.OK).json(respPayload);
   })
