@@ -20,71 +20,81 @@ const patientImportParseLambdaName = getEnvOrFail("PATIENT_IMPORT_PARSE_LAMBDA_N
 const isSandbox = Config.isSandbox();
 
 export async function handler(event: S3Event) {
-  try {
-    for (const record of event.Records) {
-      const sourceBucket = record.s3.bucket.name;
-      const sourceKey = decodeURIComponent(record.s3.object.key);
-      console.log(
-        "Running the bulk import upload notification with sourceBucket:",
-        sourceBucket,
-        "sourceKey:",
-        sourceKey
-      );
-      try {
-        const s3Utils = new S3Utils(region);
-        const { metadata } = await s3Utils.getFileInfoFromS3(sourceBucket, sourceKey);
-        const isDev = isPatientImportRunningOnDev(metadata);
+  const errors: unknown[] = [];
+  for (const record of event.Records) {
+    const sourceBucket = record.s3.bucket.name;
+    const sourceKey = decodeURIComponent(record.s3.object.key);
+    // TODO 2330 Check record.s3.object.size against limit and update docs
+    const sourceSizeInBytes = record.s3.object.size;
+    console.log(
+      "Running the bulk import upload notification with sourceBucket:",
+      sourceBucket,
+      "sourceKey:",
+      sourceKey,
+      "sourceSize:",
+      sourceSizeInBytes,
+      "bytes"
+    );
+    try {
+      const s3Utils = new S3Utils(region);
+      const { metadata } = await s3Utils.getFileInfoFromS3(sourceBucket, sourceKey);
+      const isDev = isPatientImportRunningOnDev(metadata);
 
-        // e.g.: patient-import/cxid=<UUID>/date=2025-01-01/jobid=<UUID>/files/raw.csv
-        const sourceParts = sourceKey.split("/");
-        const cxId = sourceParts.find(s => s.startsWith("cxid="))?.split("=")[1];
-        const jobId = sourceParts.find(s => s.startsWith("jobid="))?.split("=")[1];
-        if (!cxId || !jobId) {
-          throw new Error(
-            `Missing cxId or jobId in sourceKey ${sourceKey} - cxId: ${cxId}, jobId: ${jobId}`
-          );
-        }
-
-        // Load from S3 so we can run local w/o relying on the lambda finding our local API
-        // to get job related info
-        const jobRecord = await fetchJobRecordOrFail({ cxId, jobId });
-
-        const subjectSuffix = isSandbox
-          ? " - :package: `SANDBOX` :package:"
-          : isDev
-          ? " - :nerd_face: `Dev` :nerd_face:"
-          : "";
-        const msgPrefix = isDev ? "[:warning: To continue, call the internal endpoint]\n" : "";
-        await sendToSlack(
-          {
-            subject: `New bulk patient import initiated` + subjectSuffix,
-            message:
-              msgPrefix +
-              `Customer: ${cxId}\nJob ID: ${jobId}\nS3 bucket: ${sourceBucket}\nS3 key (file): ${sourceKey}`,
-            emoji: ":info:",
-          },
-          slackNotificationUrl
+      // e.g.: patient-import/cxid=<UUID>/date=2025-01-01/jobid=<UUID>/files/raw.csv
+      const sourceParts = sourceKey.split("/");
+      const cxId = sourceParts.find(s => s.startsWith("cxid="))?.split("=")[1];
+      const jobId = sourceParts.find(s => s.startsWith("jobid="))?.split("=")[1];
+      if (!cxId || !jobId) {
+        throw new Error(
+          `Missing cxId or jobId in sourceKey ${sourceKey} - cxId: ${cxId}, jobId: ${jobId}`
         );
-
-        if (!isDev) {
-          console.log(`Calling the parse lambda`);
-          const parseCloud = new PatientImportParseCloud(patientImportParseLambdaName);
-          const payload: PatientImportParseRequest = {
-            cxId,
-            jobId,
-            ...jobRecord.params,
-          };
-          await parseCloud.processJobParse(payload);
-        }
-      } catch (error) {
-        const msg = `Error processing new patient import file`;
-        console.log(msg, sourceKey, errorToString(error));
-        capture.error(msg, {
-          extra: { context: `patient-import-upload-notification`, sourceBucket, sourceKey, error },
-        });
       }
+
+      // Load from S3 so we can run local w/o relying on the lambda finding our local API
+      // to get job related info
+      const jobRecord = await fetchJobRecordOrFail({ cxId, jobId });
+
+      const subjectSuffix = isSandbox
+        ? " - :package: `SANDBOX` :package:"
+        : isDev
+        ? " - :nerd_face: `Dev` :nerd_face:"
+        : "";
+      const msgPrefix = isDev ? "[:warning: To continue, call the internal endpoint]\n" : "";
+      await sendToSlack(
+        {
+          subject: `New bulk patient import initiated` + subjectSuffix,
+          message:
+            msgPrefix +
+            `Customer: ${cxId}\nJob ID: ${jobId}\nS3 bucket: ${sourceBucket}\nS3 key (file): ${sourceKey}`,
+          emoji: ":info:",
+        },
+        slackNotificationUrl
+      );
+
+      if (!isDev) {
+        console.log(`Calling the parse lambda`);
+        const parseCloud = new PatientImportParseCloud(patientImportParseLambdaName);
+        const payload: PatientImportParseRequest = {
+          cxId,
+          jobId,
+          ...jobRecord.params,
+        };
+        await parseCloud.processJobParse(payload);
+      }
+    } catch (error) {
+      const msg = `Error processing new patient import file`;
+      console.log(msg, sourceKey, errorToString(error));
+      Sentry.setExtras({
+        context: `patient-import-upload-notification`,
+        sourceBucket,
+        sourceKey,
+        sourceSizeInBytes,
+        error,
+      });
+      errors.push(error);
     }
-  } finally {
-    await Sentry.close();
+  }
+  if (errors.length > 0) {
+    throw new Error(`Error processing new patient import file`);
   }
 }
