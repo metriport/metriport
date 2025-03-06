@@ -31,7 +31,7 @@ router.get(
 );
 
 /**
- * GET /internal/token/canvas/canvas-webhook
+ * GET /internal/token/canvas/webhook
  */
 router.get(
   "/webhook",
