@@ -161,7 +161,7 @@ async function getDownloadUrl(req: Request): Promise<string> {
     throw new ForbiddenError(message); // This should be 404
   }
 
-  const url = await downloadDocument({ fileName: fileNameString, conversionType });
+  const url = await downloadDocument({ cxId, fileName: fileNameString, conversionType });
   return url;
 }
 
