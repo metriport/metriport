@@ -236,17 +236,6 @@ export class PatientImportNestedStack extends NestedStack {
     bucket.grantReadWrite(lambda);
     patientCreateQueue.grantSendMessages(lambda);
 
-    const fileName: FileStages = "raw";
-    const fileExtension = ".csv";
-    const suffix = fileName + fileExtension;
-
-    lambda.addEventSource(
-      new S3EventSource(bucket, {
-        events: [s3.EventType.OBJECT_CREATED],
-        filters: [{ suffix }],
-      })
-    );
-
     return lambda;
   }
 

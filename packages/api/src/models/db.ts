@@ -1,9 +1,9 @@
 import {
   DbCreds,
   DbCredsReadOnly,
-  DbPoolSettings,
   dbCredsSchema,
   dbCredsSchemaReadOnly,
+  DbPoolSettings,
   dbPoolSettingsSchema,
 } from "@metriport/shared";
 import * as AWS from "aws-sdk";
@@ -20,7 +20,6 @@ import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
-import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { CxMappingModel } from "./cx-mapping";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
@@ -33,11 +32,13 @@ import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
+import { PatientImportModel } from "./medical/patient-import";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -51,6 +52,7 @@ const models: ModelSetup[] = [
   CwPatientDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
+  PatientImportModel.setup,
   HIEDirectoryEntryViewModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,

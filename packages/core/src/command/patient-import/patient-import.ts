@@ -1,9 +1,17 @@
 import {
   PatientImportEntryStatusFailed,
   PatientImportEntryStatusParsed,
-  PatientImportStatus,
+  PatientImportParams,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import { PatientDemoData } from "../../domain/patient";
+
+export type JobRecord = {
+  cxId: string;
+  facilityId: string;
+  jobId: string;
+  createdAt: string;
+  params: PatientImportParams;
+};
 
 export type FailedPatientRecord = {
   status: PatientImportEntryStatusFailed;
@@ -28,24 +36,6 @@ export type PatientRecord = {
 export type PatientMapping = {
   rowNumber: number;
   patientId: string;
-};
-
-export type JobRecord = {
-  cxId: string;
-  facilityId: string;
-  jobId: string;
-  createdAt: string;
-  startedAt?: string | undefined;
-  completedAt?: string | undefined;
-  status: PatientImportStatus;
-  params: JobRecordParams;
-};
-
-export type JobRecordParams = {
-  dryRun: boolean;
-  rerunPdOnNewDemographics: boolean;
-  triggerConsolidated: boolean;
-  disableWebhooks: boolean;
 };
 
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
