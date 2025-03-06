@@ -65,12 +65,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
   } catch (error) {
     if (errorHandled) throw error;
     console.log(`${errorMsg}: ${errorToString(error)}`);
-    capture.error(errorMsg, {
-      extra: { event, context: lambdaName, error },
-    });
+    Sentry.setExtras({ event, context: lambdaName, error });
     throw new MetriportError(errorMsg, error);
-  } finally {
-    await Sentry.close();
   }
 });
 
