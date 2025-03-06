@@ -3,10 +3,18 @@ name: Branch to Staging
 # Used to manually deploy a branch to staging
 
 on:
-  workflow_dispatch: # manually executed by a user
+  workflow_dispatch:
+    inputs:
+      jobs_to_run:
+        description: 'Select jobs to run (comma-separated): api,mllp-server,infra-api-lambdas,redeploy-api-gw,e2e-tests'
+        required: true
+        default: 'api,mllp-server,infra-api-lambdas,redeploy-api-gw,e2e-tests'
+        type: string
 
 jobs:
   api:
+    # can't use contains(github.event.inputs.jobs_to_run, 'api') because this would trigger on 'redeploy-api-gw' or 'infra-api-lambdas'
+    if: contains(format(',{0},', github.event.inputs.jobs_to_run), ',api,')
     uses: ./.github/workflows/_deploy-api.yml
     with:
       deploy_env: "staging"
@@ -22,7 +30,25 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
+  mllp-server:
+    if: contains(github.event.inputs.jobs_to_run, 'mllp-server')
+    uses: ./.github/workflows/_deploy-mllp-server.yml
+    with:
+      deploy_env: "staging"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_MLLP_SERVER_STAGING }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_STAGING }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   infra-api-lambdas:
+    if: contains(github.event.inputs.jobs_to_run, 'infra-api-lambdas')
     uses: ./.github/workflows/_deploy-cdk.yml
     with:
       deploy_env: "staging"
@@ -42,6 +68,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   redeploy-api-gw:
+    if: contains(github.event.inputs.jobs_to_run, 'redeploy-api-gw')
     uses: ./.github/workflows/_redeploy_api-gw.yml
     needs: [infra-api-lambdas]
     with:
@@ -55,12 +82,12 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   e2e-tests:
+    if: |
+      contains(github.event.inputs.jobs_to_run, 'e2e-tests') && 
+      !failure() && 
+      (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.redeploy-api-gw.result == 'success')
     uses: ./.github/workflows/_e2e-tests.yml
     needs: [api, infra-api-lambdas, redeploy-api-gw]
-    # run even if one of the dependencies didn't
-    # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
-    # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.redeploy-api-gw.result == 'success') }}
     with:
       deploy_env: "staging"
       api_url: ${{ vars.API_URL_STAGING }}
