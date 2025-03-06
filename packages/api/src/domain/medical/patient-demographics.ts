@@ -20,6 +20,8 @@ import {
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
+  normalizeCountrySafe,
+  normalizedCountryUsa,
   USState,
 } from "@metriport/shared";
 import { normalizeSsn as normalizeSsnFromShared } from "@metriport/shared/domain/patient/ssn";
@@ -293,14 +295,7 @@ export function normalizeAddress({
     city: city?.trim().toLowerCase() ?? "",
     state: normalizeUSStateForAddressSafe(state ?? "")?.toLowerCase() ?? "",
     zip: normalizeZipCodeNewSafe(zip ?? "") ?? "",
-    country:
-      country
-        ?.trim()
-        .toLowerCase()
-        .replaceAll("us", "usa")
-        .replaceAll("united states", "usa")
-        .replaceAll("united", "usa")
-        .slice(0, 3) ?? "usa",
+    country: (normalizeCountrySafe(country ?? "") ?? normalizedCountryUsa).toLowerCase(),
   };
 }
 
