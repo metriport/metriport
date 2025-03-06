@@ -6,7 +6,7 @@ This project provides an MLLP server that reads HL7 messages off of a raw tcp co
 
 ## Notes
 
-See packages/infra/hl7-notification-routing-stack/ for the infra we use for deployment.
+See packages/infra/hl7-notification-stack/ for the infra we use for deployment.
 
 ```
             ,▄,

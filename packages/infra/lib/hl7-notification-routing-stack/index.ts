@@ -6,16 +6,16 @@ import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
 import { VpnStack } from "./vpn";
 
-export interface Hl7NotificationRoutingStackProps extends cdk.StackProps {
+export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
 }
 
-export class Hl7NotificationRoutingStack extends MetriportCompositeStack {
+export class Hl7NotificationStack extends MetriportCompositeStack {
   public readonly networkStack: NetworkStack;
   public readonly mllpStack: MllpStack;
 
-  constructor(scope: Construct, id: string, props: Hl7NotificationRoutingStackProps) {
+  constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
     super(scope, id, props);
 
     this.networkStack = new NetworkStack(this, "NestedNetworkStack", {
@@ -32,7 +32,7 @@ export class Hl7NotificationRoutingStack extends MetriportCompositeStack {
       description: "HL7 Notification Routing MLLP Server",
     });
 
-    props.config.hl7NotificationRouting.vpnConfigs.forEach(hieSpecificConfig => {
+    props.config.hl7Notification.vpnConfigs.forEach(hieSpecificConfig => {
       new VpnStack(this, `NestedVpnStack${hieSpecificConfig.partnerName}`, {
         vpc: this.networkStack.output.vpc,
         vpnConfig: hieSpecificConfig,

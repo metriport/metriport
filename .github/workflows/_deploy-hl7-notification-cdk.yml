@@ -15,7 +15,7 @@ on:
         required: true
         type: string
         description: "the name of the Secrets CDK stack we're deploying"
-      hl7_notification_routing_stack:
+      hl7_notification_stack:
         required: false
         type: string
         description: "the name of the HL7 Notification Routing CDK stack we're deploying"
@@ -44,7 +44,7 @@ jobs:
     # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
     # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
     concurrency:
-      group: ${{ format('{0}-{1}', inputs.hl7_notification_routing_stack, inputs.deploy_env) }}
+      group: ${{ format('{0}-{1}', inputs.hl7_notification_stack, inputs.deploy_env) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.deploy_env }}
     steps:
@@ -156,11 +156,11 @@ jobs:
 
       - name: Diff HL7 Notification Routing Stack CDK
         uses: metriport/deploy-with-cdk@master
-        if: inputs.hl7_notification_routing_stack != null
+        if: inputs.hl7_notification_stack != null
         with:
           cdk_action: "diff"
           cdk_version: "2.122.0"
-          cdk_stack: "${{ inputs.hl7_notification_routing_stack }}"
+          cdk_stack: "${{ inputs.hl7_notification_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
           INPUT_PATH: "metriport/packages/infra"
@@ -169,11 +169,11 @@ jobs:
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
       - name: Deploy HL7 Notification Routing Stack CDK
         uses: metriport/deploy-with-cdk@master
-        if: inputs.hl7_notification_routing_stack != null
+        if: inputs.hl7_notification_stack != null
         with:
           cdk_action: "deploy --verbose --require-approval never"
           cdk_version: "2.122.0"
-          cdk_stack: "${{ inputs.hl7_notification_routing_stack }}"
+          cdk_stack: "${{ inputs.hl7_notification_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
           INPUT_PATH: "metriport/packages/infra"

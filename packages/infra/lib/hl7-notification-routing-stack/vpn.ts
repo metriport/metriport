@@ -1,13 +1,13 @@
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { Hl7NotificationRoutingVpnConfig } from "../../config/hl7-notification-routing-config";
+import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
 
 const IPSEC_1 = "ipsec.1";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
   vpc: ec2.IVpc;
-  vpnConfig: Hl7NotificationRoutingVpnConfig;
+  vpnConfig: Hl7NotificationVpnConfig;
 }
 
 /**

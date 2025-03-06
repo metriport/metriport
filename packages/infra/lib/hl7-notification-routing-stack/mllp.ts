@@ -22,7 +22,7 @@ export class MllpStack extends cdk.NestedStack {
     super(scope, id, props);
 
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
-      props.config.hl7NotificationRouting.mllpServer;
+      props.config.hl7Notification.mllpServer;
     const { vpc } = props.networkStack;
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {

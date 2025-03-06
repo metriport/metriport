@@ -145,7 +145,7 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   generalBucketName: "test-bucket",
-  hl7NotificationRouting: {
+  hl7Notification: {
     vpnConfigs: [
       {
         partnerName: "SampleHIE",

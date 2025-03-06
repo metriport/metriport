@@ -1,5 +1,5 @@
-export interface Hl7NotificationRoutingConfig {
-  vpnConfigs: Hl7NotificationRoutingVpnConfig[];
+export interface Hl7NotificationConfig {
+  vpnConfigs: Hl7NotificationVpnConfig[];
   mllpServer: {
     fargateCpu: number;
     fargateMemoryLimitMiB: number;
@@ -8,7 +8,7 @@ export interface Hl7NotificationRoutingConfig {
   };
 }
 
-export type Hl7NotificationRoutingVpnConfig = {
+export type Hl7NotificationVpnConfig = {
   partnerName: string;
   partnerGatewayPublicIp: string;
   staticRoutesOnly: boolean;
