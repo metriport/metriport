@@ -10,7 +10,7 @@ import {
   RXNORM_URL,
   SNOMED_URL,
 } from "../../../util/constants";
-import { isUsefulDisplay, isValidCoding } from "../codeable-concept";
+import { isCodeableConcept, isUsefulDisplay, isValidCoding } from "../codeable-concept";
 
 export function sortCodings(bundle: Bundle<Resource>): Bundle<Resource> {
   const updatedBundle = cloneDeep(bundle);
@@ -24,7 +24,6 @@ export function sortCodings(bundle: Bundle<Resource>): Bundle<Resource> {
 }
 
 function normalizeResource(resource: Resource): void {
-  if (!resource) return;
   for (const [key, value] of Object.entries(resource)) {
     if (!value) continue;
 
@@ -39,10 +38,6 @@ function normalizeResource(resource: Resource): void {
       });
     }
   }
-}
-
-function isCodeableConcept(value: unknown): value is CodeableConcept {
-  return typeof value === "object" && value !== null && "coding" in value;
 }
 
 export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConcept {
