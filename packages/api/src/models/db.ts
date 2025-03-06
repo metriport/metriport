@@ -12,22 +12,23 @@ import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
-import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { CxMappingModel } from "./cx-mapping";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { FacilityMappingModel } from "./facility-mapping";
 import { FeedbackModel } from "./feedback";
 import { FeedbackEntryModel } from "./feedback-entry";
+import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
+import { PatientImportModel } from "./medical/patient-import";
 import { PatientMappingModel } from "./patient-mapping";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { InvalidLinksModel } from "./invalid-links";
+import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -41,6 +42,7 @@ const models: ModelSetup[] = [
   CwPatientDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
+  PatientImportModel.setup,
   HIEDirectoryEntryViewModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,
