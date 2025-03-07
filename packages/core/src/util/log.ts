@@ -4,7 +4,6 @@ import { getRequestIdSafe } from "./request";
 
 type LogParamBasic = string | number | boolean | unknown | null | undefined;
 export type LogParam = LogParamBasic | (() => LogParamBasic);
-export type Logger = ReturnType<typeof out>;
 
 export function log(prefix?: string, suffix?: string) {
   return (msg: string, ...optionalParams: LogParam[]): void => {
