@@ -51,7 +51,7 @@ type Settings = EnvSpecificSettings & {
 function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
-      desiredTaskCount: 6,
+      desiredTaskCount: 12,
       maxTaskCount: 40,
       memoryLimitMiB: 4096,
     };
@@ -435,6 +435,16 @@ export function createAPIService({
         new iam.PolicyStatement({
           actions: ["geo:SearchPlaceIndexForText"],
           resources: [`arn:aws:geo:*`],
+          effect: iam.Effect.ALLOW,
+        }),
+        // TODO: 2711 - Remove when data pipeline webhook is migrated
+        new iam.PolicyStatement({
+          actions: ["bedrock:InvokeModel"],
+          resources: [
+            `arn:aws:bedrock:*:*:foundation-model/*`,
+            `arn:aws:bedrock:*:*:inference-profile/*`,
+            `arn:aws:bedrock:*:*:application-inference-profile/*`,
+          ],
           effect: iam.Effect.ALLOW,
         }),
       ],
