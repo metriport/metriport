@@ -9,16 +9,16 @@ Get instant access to comprehensive patient clinical history summaries, and more
 Requirements:
 
 1. [Canvas CLI](https://docs.canvasmedical.com/sdk/canvas_cli/)
-2. Metriport Token
+2. Metriport Modal Token
 3. Metriport Webhook Token
 
-Please reach out to support@metriport.com to get a Metriport Token and Webhook Token if not already provided.
+Please reach out to support@metriport.com to get a Metriport Modal Token and Webhook Token if not already provided.
 
 Steps:
 
 1. Install the plugin: `canvas install metriport_app`
-2. Set `METRIPORT_TOKEN` in the plugin settings to be the token from Requirements (2).
-3. Set `METRIPORT_WEBHOOK_TOKEN` in the plugin settings to be the token from Requirements (3).
+2. Set `METRIPORT_MODAL_TOKEN` in the plugin settings to be the token from Requirements.
+3. Set `METRIPORT_WEBHOOK_TOKEN` in the plugin settings to be the token from Requirements.
 
 ### In Canvas App Usage
 

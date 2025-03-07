@@ -33,7 +33,7 @@
         "views": []
     },
     "secrets": [
-      "METRIPORT_TOKEN",
+      "METRIPORT_MODAL_TOKEN",
       "METRIPORT_WEBHOOK_TOKEN"
     ],
     "tags": {},
