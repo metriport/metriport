@@ -104,12 +104,18 @@ jobs:
       # INSTALL DEPENDENCIES
       - name: Install dependencies for relevant packages
         run: |
-          npm ci --ignore-scripts --no-fund
+          npm ci --ignore-scripts --no-fund --workspace=packages/shared \
+                                            --workspace=packages/core \
+                                            --workspace=packages/mllp-server \
+                                            --workspace=packages/infra
         working-directory: "metriport/"
 
       - name: Build relevant packages
         run: |
-          npm run build:cloud 
+          npm run build:cloud --workspace=packages/shared
+          npm run build:cloud --workspace=packages/core
+          npm run build:cloud --workspace=packages/mllp-server
+          npm run build:cloud --workspace=packages/infra
         working-directory: "metriport/"
 
       # TESTS
