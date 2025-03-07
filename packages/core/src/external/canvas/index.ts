@@ -13,17 +13,17 @@ import {
 import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  Appointments,
-  appointmentsSchema,
-  BookedAppointment,
-  bookedAppointmentSchema,
+  BookedAppointments,
+  bookedAppointmentsSchema,
   canvasClientJwtTokenResponseSchema,
+  SlimBookedAppointment,
+  slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/canvas/index";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/shared/ehr/patient";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import { RXNORM_URL as RXNORM_SYSTEM } from "../../util/constants";
 import { out } from "../../util/log";
 import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared/ehr";
-import { RXNORM_URL as RXNORM_SYSTEM } from "../../util/constants";
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -321,7 +321,7 @@ class CanvasApi {
 
   async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
-      `Elation getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `Canvas getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/Patient/${patientId}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
@@ -347,7 +347,7 @@ class CanvasApi {
     cxId: string;
     fromDate: Date;
     toDate: Date;
-  }): Promise<BookedAppointment[]> {
+  }): Promise<SlimBookedAppointment[]> {
     const { debug } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
     const params = {
       status: "booked",
@@ -362,20 +362,22 @@ class CanvasApi {
       fromDate: fromDate.toISOString(),
       toDate: toDate.toISOString(),
     };
-    const appointments = await this.makeRequest<Appointments>({
+    const bookedAppointments = await this.makeRequest<BookedAppointments>({
       cxId,
       s3Path: "appointments",
       method: "GET",
       url: appointmentUrl,
-      schema: appointmentsSchema,
+      schema: bookedAppointmentsSchema,
       additionalInfo,
       debug,
       useFhir: true,
     });
-    const bookedAppointments = appointments.results.filter(
-      app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
-    );
-    return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
+    const slimBookedAppointments = bookedAppointments.entry.flatMap(app => {
+      const patient = app.resource.participant.find(p => p.actor.type === "Patient");
+      if (!patient) return [];
+      return { patientId: patient.actor.reference.replace("Patient/", "") };
+    });
+    return slimBookedAppointments.map(a => slimBookedAppointmentSchema.parse(a));
   }
 
   private async makeRequest<T>({

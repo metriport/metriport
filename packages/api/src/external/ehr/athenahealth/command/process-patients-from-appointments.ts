@@ -37,6 +37,10 @@ type GetAppointmentsParams = {
 
 export async function processPatientsFromAppointments({ lookupMode }: { lookupMode: LookupMode }) {
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
+  if (cxMappings.length === 0) {
+    out("processPatientsFromAppointmentsSub @ AthenaHealth").log("No cx mappings found");
+    return;
+  }
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
@@ -127,7 +131,7 @@ async function getAppointments({
   practiceId,
   departmentIds,
   lookupMode,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );
@@ -144,7 +148,6 @@ async function getAppointments({
       appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
       }),
-      error: undefined,
     };
   } catch (error) {
     log(`Failed to get appointments. Cause: ${errorToString(error)}`);
@@ -200,7 +203,7 @@ async function syncPatient({
   athenaPracticeId,
   athenaPatientId,
   triggerDq,
-}: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
+}: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error?: unknown }> {
   const { log } = out(
     `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
@@ -213,7 +216,7 @@ async function syncPatient({
       api,
       triggerDq,
     });
-    return { error: undefined };
+    return {};
   } catch (error) {
     log(`Failed to sync patient. Cause: ${errorToString(error)}`);
     return { error };

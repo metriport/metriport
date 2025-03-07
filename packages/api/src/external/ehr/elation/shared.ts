@@ -16,6 +16,7 @@ import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 
 export const elationClientJwtTokenSource = "elation-client";
+export const elationWebhookJwtTokenSource = "elation-webhook";
 
 export function createContacts(patient: ElationPatient): Contact[] {
   return [
