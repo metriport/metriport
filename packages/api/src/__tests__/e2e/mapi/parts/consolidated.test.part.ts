@@ -44,6 +44,12 @@ export function runConsolidatedTests(e2e: E2eContext) {
   it("counts consolidated data", async () => {
     if (!e2e.patient) throw new Error("Missing patient");
     const expectedCount = getExpectedConsolidatedCount(e2e);
+    await medicalApi.startConsolidatedQuery(e2e.patient.id);
+    await waitAndCheckConversion();
+
+    const whRequest = getConsolidatedWebhookRequest();
+    checkWebhookRequestMeta(whRequest, "medical.consolidated-data");
+
     const count = await medicalApi.countPatientConsolidated(e2e.patient.id);
     expect(count.total).toEqual(expectedCount);
   });
