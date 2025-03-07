@@ -11,12 +11,12 @@ import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import { cloneDeep } from "lodash";
 import { getPatientIds } from "./patient/get-ids";
 import { initFile } from "./shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 import { logErrorToFile } from "./shared/log";
-import { cloneDeep } from "lodash";
 
 dayjs.extend(duration);
 
@@ -38,6 +38,12 @@ dayjs.extend(duration);
 
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
+// In case there are too many, expoeted from the DB
+// Single ID per line
+// const patientIds: string[] = fs
+//   .readFileSync("", "utf-8")
+//   .split("\n")
+//   .filter(id => id.trim().length > 0);
 
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
@@ -45,6 +51,7 @@ const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const sdk = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
+  timeout: 50_000,
 });
 const api = axios.create({ baseURL: apiUrl });
 
