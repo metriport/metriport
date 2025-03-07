@@ -10,8 +10,11 @@ import { EnvType } from "../env-type";
 import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
+import { Secrets } from "../shared/secrets";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { settings as settingsFhirConverter } from "./fhir-converter-service";
+
+const posthogEnvVarName = "POST_HOG_API_KEY_SECRET";
 
 export type FHIRConverterConnector = {
   queue: IQueue;
@@ -104,6 +107,7 @@ export function createLambda({
   envType,
   stack,
   vpc,
+  secrets,
   sourceQueue,
   dlq,
   fhirConverterBucket,
@@ -118,6 +122,7 @@ export function createLambda({
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
+  secrets: Secrets;
   sourceQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
@@ -140,6 +145,8 @@ export function createLambda({
     maxConcurrency,
     axiosTimeout,
   } = settings();
+  const posthogSecretKeyName = config.analyticsSecretNames?.[posthogEnvVarName];
+
   const conversionLambda = defaultCreateLambda({
     stack,
     name: connectorName,
@@ -161,6 +168,9 @@ export function createLambda({
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
       APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
       APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+      ...(posthogSecretKeyName && {
+        [posthogEnvVarName]: posthogSecretKeyName,
+      }),
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
@@ -168,6 +178,7 @@ export function createLambda({
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
   medicalDocumentsBucket.grantReadWrite(conversionLambda);
+  secrets[posthogEnvVarName]?.grantRead(conversionLambda);
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {
