@@ -21,6 +21,7 @@ let patientModel_findOne: jest.SpyInstance;
 jest.mock("../../../../models/medical/patient");
 
 beforeEach(() => {
+  jest.restoreAllMocks();
   documentQueryProgress = {
     download: makeProgress(),
     convert: makeProgress(),
