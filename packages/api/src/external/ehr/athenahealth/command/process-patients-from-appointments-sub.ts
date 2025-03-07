@@ -13,6 +13,7 @@ import {
   Appointment,
   EhrSources,
   delayBetweenPracticeBatches,
+  delayBetweenPatientBatches,
   getLookBackTimeRange,
   parallelPatients,
   parallelPractices,
@@ -128,7 +129,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     },
     {
       numberOfParallelExecutions: parallelPatients,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
+      delay: delayBetweenPatientBatches.asMilliseconds(),
     }
   );
 

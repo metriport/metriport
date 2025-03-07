@@ -12,6 +12,7 @@ import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
   delayBetweenPracticeBatches,
+  delayBetweenPatientBatches,
   EhrSources,
   getLookForwardTimeRange,
   parallelPatients,
@@ -105,7 +106,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
     },
     {
       numberOfParallelExecutions: parallelPatients,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
+      delay: delayBetweenPatientBatches.asMilliseconds(),
     }
   );
 
