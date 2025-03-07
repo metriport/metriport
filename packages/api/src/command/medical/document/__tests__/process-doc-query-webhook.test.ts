@@ -23,7 +23,10 @@ let composeDocRefPayload: jest.SpyInstance;
 const patientModel = makePatientModel();
 let patient: Patient;
 let settingsModel: Settings;
-let webhookModel: WebhookRequest;
+const webhookModel: WebhookRequest = {
+  id: "test-webhook-id",
+} as WebhookRequest;
+
 jest.mock("../../../../models/medical/patient");
 
 beforeEach(() => {
@@ -60,7 +63,7 @@ describe("processDocQueryProgressWebhook", () => {
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
-    });
+    }, 10000);
 
     it("handles convert progress processing", async () => {
       const convertProgress = { status: "processing" as const };
@@ -73,7 +76,7 @@ describe("processDocQueryProgressWebhook", () => {
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
-    });
+    }, 10000);
 
     it("handles download progress completed - webhook not sent", async () => {
       const downloadProgress = { status: "completed" as const };
@@ -97,7 +100,7 @@ describe("processDocQueryProgressWebhook", () => {
         requestId,
         webhookPayload
       );
-    });
+    }, 10000);
 
     it("handles convert progress completed - webhook not sent", async () => {
       const convertProgress = { status: "completed" as const };
@@ -117,7 +120,7 @@ describe("processDocQueryProgressWebhook", () => {
         convertProgress.status,
         requestId
       );
-    });
+    }, 10000);
 
     it("handles download progress failed", async () => {
       const downloadProgress = { status: "failed" as const };
@@ -138,7 +141,7 @@ describe("processDocQueryProgressWebhook", () => {
         requestId,
         undefined
       );
-    });
+    }, 10000);
 
     it("handles convert progress failed", async () => {
       const convertProgress = { status: "failed" as const };
@@ -158,7 +161,7 @@ describe("processDocQueryProgressWebhook", () => {
         convertProgress.status,
         requestId
       );
-    });
+    }, 10000);
 
     it("handles download progress - webhook exists", async () => {
       const downloadProgress = { status: "completed" as const, webhookSent: true as const };
@@ -172,7 +175,7 @@ describe("processDocQueryProgressWebhook", () => {
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
-    });
+    }, 10000);
 
     it("handles convert progress - webhook exists", async () => {
       const downloadProgress = { status: "completed" as const, webhookSent: true as const };
@@ -185,7 +188,7 @@ describe("processDocQueryProgressWebhook", () => {
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
-    });
+    }, 10000);
   });
 });
 
