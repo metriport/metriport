@@ -1,7 +1,10 @@
+import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -15,10 +18,7 @@ import {
   parallelPractices,
 } from "../../shared";
 import { createElationClient } from "../shared";
-import {
-  syncElationPatientIntoMetriport,
-  SyncElationPatientIntoMetriportParams,
-} from "./sync-patient";
+import { SyncElationPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -153,23 +153,25 @@ async function syncPatient({
   cxId,
   elationPracticeId,
   elationPatientId,
-  triggerDq,
-}: Omit<SyncElationPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
+}: Omit<SyncElationPatientIntoMetriportParams, "api" | "triggerDq">): Promise<{ error: unknown }> {
   const { log } = out(
     `Elation syncPatient - cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}`
   );
-  const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   try {
-    await syncElationPatientIntoMetriport({
-      cxId,
-      elationPracticeId,
-      elationPatientId,
-      api,
-      triggerDq,
+    const payload = JSON.stringify({
+      ehrId: EhrSources.elation,
+      ehrPracticeId: elationPracticeId,
+      ehrPatientId: elationPatientId,
+    });
+    const sqsClient = new SQSClient({ region: Config.getAWSRegion() });
+    await sqsClient.sendMessageToQueue(Config.getEhrSyncPatientQueueUrl(), payload, {
+      fifo: true,
+      messageDeduplicationId: createUuidFromText(payload),
+      messageGroupId: cxId,
     });
     return { error: undefined };
   } catch (error) {
-    log(`Failed to sync patient. Cause: ${errorToString(error)}`);
+    log(`Failed to put sync patient message on queue. Cause: ${errorToString(error)}`);
     return { error };
   }
 }
