@@ -1,0 +1,47 @@
+{
+  "name": "mllp-server",
+  "version": "0.1.0",
+  "description": "MLLP server that reads HL7 messages off of a raw tcp connection",
+  "main": "app.js",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/app.ts",
+    "start": "node dist/app.js",
+    "build": "tsc -p tsconfig.build.json",
+    "build:cloud": "tsc -p tsconfig.cloud.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "echo \"No test specified yet\"",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/metriport/metriport.git"
+  },
+  "author": "Metriport",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
+  "homepage": "https://github.com/metriport/metriport#readme",
+  "dependencies": {
+    "@medplum/hl7": "^3.2.33",
+    "@metriport/core": "file:packages/core",
+    "@metriport/shared": "file:packages/shared",
+    "@sentry/cli": "^2.42.1",
+    "dotenv": "^16.4.5",
+    "jest": "^29.7.0"
+  },
+  "devDependencies": {
+    "@sentry/node": "^9.1.0",
+    "@tsconfig/node18": "^18.2.4",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.13.5",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}
