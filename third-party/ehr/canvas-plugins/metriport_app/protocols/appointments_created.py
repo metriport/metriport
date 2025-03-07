@@ -38,7 +38,7 @@ def create_webhook_payload(wh_type: str, patient_id: str) -> dict:
 
 def create_webhook_headers(metriport_token: str) -> dict:
     return {
-        "Authorization": f"Bearer {metriport_token}",
+        "authorization": f"Bearer {metriport_token}",
     }
 
 def make_webhok_request(url: str, payload: dict, headers: dict) -> Response:
