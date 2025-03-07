@@ -16,7 +16,6 @@ on:
       - "packages/infra/**"
       - "packages/lambdas/**"
       - "packages/terminology/**"
-      - "packages/mllp-server/**"
   workflow_dispatch: # manually executed by a user
 
 jobs:
@@ -27,11 +26,9 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
-      mllp-server: ${{ steps.changes.outputs.mllp-server }}
       fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       terminology: ${{ steps.changes.outputs.terminology }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
-      infra-hl7-notification: ${{ steps.changes.outputs.infra-hl7-notification }}
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -55,13 +52,6 @@ jobs:
               - "packages/core/**"
               - "packages/shared/**"
               - "package*.json"
-            mllp-server:
-              - "packages/shared/**"
-              - "packages/core/**"
-              - "packages/mllp-server/**"
-              - "packages/infra/lib/hl7-notification-stack/**"
-              - "packages/infra/bin/infrastructure.ts"
-              - "package*.json"
             fhir-converter:
               # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
               - "packages/fhir-converter/Dockerfile"
@@ -82,10 +72,6 @@ jobs:
               - "packages/infra/**"
               - "packages/lambdas/**"
               - "packages/shared/**"
-              - "package*.json"
-            infra-hl7-notification:
-              - "packages/infra/lib/hl7-notification-stack/**"
-              - "packages/infra/bin/infrastructure.ts"
               - "package*.json"
 
   api-prod:
@@ -116,42 +102,6 @@ jobs:
       ECS_SERVICE: ${{ vars.ECS_SERVICE_SANDBOX }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX }}
     secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  mllp-server:
-    if: needs.files-changed.outputs.mllp-server == 'true'
-    needs: files-changed
-    uses: ./.github/workflows/_deploy-mllp-server.yml
-    with:
-      deploy_env: "production"
-      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_MLLP_SERVER_PRODUCTION }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_PRODUCTION }}
-      ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_PRODUCTION }}
-      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  infra-hl7-notification:
-    if: needs.files-changed.outputs.infra-hl7-notification == 'true'
-    uses: ./.github/workflows/_deploy-hl7-notification-cdk.yml
-    needs: files-changed
-    with:
-      deploy_env: "production"
-      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_PRODUCTION }}
-      hl7_notification_stack: ${{ vars.HL7_NOTIFICATION_STACK_NAME_PRODUCTION }}
-      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
-    secrets:
-      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
