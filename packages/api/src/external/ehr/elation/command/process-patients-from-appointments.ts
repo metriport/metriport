@@ -27,28 +27,17 @@ const lookForward = dayjs.duration(14, "days");
 type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
-  fromDate: Date;
-  toDate: Date;
 };
 
 export async function processPatientsFromAppointments(): Promise<void> {
-  const { log } = out(`Elation processPatientsFromAppointments`);
-
-  const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
-  log(`Getting appointments from ${startRange} to ${endRange}`);
-
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.elation });
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
-    const cxId = mapping.cxId;
-    const practiceId = mapping.externalId;
     return {
-      cxId,
-      practiceId,
-      fromDate: startRange,
-      toDate: endRange,
+      cxId: mapping.cxId,
+      practiceId: mapping.externalId,
     };
   });
 
@@ -57,7 +46,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
     async (params: GetAppointmentsParams) => {
       const { appointments, error } = await getAppointments(params);
       if (appointments) allAppointments.push(...appointments);
-      if (error) getAppointmentsErrors.push({ error, ...params });
+      if (error) getAppointmentsErrors.push({ ...params, error });
     },
     {
       numberOfParallelExecutions: parallelPractices,
@@ -126,16 +115,16 @@ export async function processPatientsFromAppointments(): Promise<void> {
 async function getAppointments({
   cxId,
   practiceId,
-  fromDate,
-  toDate,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createElationClient({ cxId, practiceId });
+  const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
+  log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
     const appointments = await api.getAppointments({
       cxId,
-      fromDate,
-      toDate,
+      fromDate: startRange,
+      toDate: endRange,
     });
     return {
       appointments: appointments.map(appointment => {
@@ -144,7 +133,7 @@ async function getAppointments({
       error: undefined,
     };
   } catch (error) {
-    log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
+    log(`Failed to get appointments. Cause: ${errorToString(error)}`);
     return { error };
   }
 }
