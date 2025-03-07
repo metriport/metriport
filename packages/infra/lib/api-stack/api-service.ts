@@ -51,7 +51,7 @@ type Settings = EnvSpecificSettings & {
 function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
-      desiredTaskCount: 8,
+      desiredTaskCount: 12,
       maxTaskCount: 40,
       memoryLimitMiB: 4096,
     };

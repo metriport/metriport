@@ -50,7 +50,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
     async (params: GetAppointmentsParams) => {
       const { appointments, error } = await getAppointments(params);
       if (appointments) allAppointments.push(...appointments);
-      if (error) getAppointmentsErrors.push({ error, ...params });
+      if (error) getAppointmentsErrors.push({ ...params, error });
     },
     {
       numberOfParallelExecutions: parallelPractices,
@@ -119,7 +119,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 async function getAppointments({
   cxId,
   practiceId,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createElationClient({ cxId, practiceId });
   const { startRange, endRange } = getLookForwardTimeRange({ lookForward });

@@ -1,10 +1,11 @@
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
+import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
+import { BadRequestError, errorToString } from "@metriport/shared";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -13,11 +14,15 @@ import {
   getPatientByDemo,
   getPatientOrFail,
 } from "../../../../command/medical/patient/get-patient";
+import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
 import { collapsePatientDemosFhir, createMetriportPatientDemosFhir } from "../../shared-fhir";
 import { createAthenaClient } from "../shared";
 
 const parallelPatientMatches = 5;
+
+const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";
+const CUSTOM_FIELD_ID_OPT_OUT = Config.isProdEnv() ? "101" : "1289";
 
 export type SyncAthenaPatientIntoMetriportParams = {
   cxId: string;
@@ -54,6 +59,21 @@ export async function syncAthenaPatientIntoMetriport({
   }
 
   const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+  if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
+    const customFields = await athenaApi.getCustomFieldsForPatient({
+      cxId,
+      patientId: athenaPatientId,
+    });
+    const targetFieldOptIn = customFields.find(
+      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_IN
+    );
+    const targetFieldOptOut = customFields.find(
+      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_OUT
+    );
+    const optedIn =
+      !targetFieldOptOut && targetFieldOptIn && targetFieldOptIn.customfieldvalue === "Y";
+    if (!optedIn) throw new BadRequestError("AthenaHealth patient opted out of data sharing");
+  }
   const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
 
   const demos = createMetriportPatientDemosFhir(athenaPatient);
