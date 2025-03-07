@@ -1,4 +1,4 @@
-# metriport-app
+# metriport_app
 
 ## Description
 
@@ -16,7 +16,7 @@ Please reach out to support@metriport.com to get a Metriport Token and Webhook T
 
 Steps:
 
-1. Install the plugin: `canvas install metriport-app`
+1. Install the plugin: `canvas install metriport_app`
 2. Set `METRIPORT_TOKEN` in the plugin settings to be the token from Requirements (2).
 3. Set `METRIPORT_WEBHOOK_TOKEN` in the plugin settings to be the token from Requirements (3).
 
