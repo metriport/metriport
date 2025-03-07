@@ -131,7 +131,7 @@ async function getAppointments({
   practiceId,
   departmentIds,
   lookupMode,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );

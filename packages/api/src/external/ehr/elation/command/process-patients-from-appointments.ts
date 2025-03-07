@@ -119,7 +119,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 async function getAppointments({
   cxId,
   practiceId,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createElationClient({ cxId, practiceId });
   const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
