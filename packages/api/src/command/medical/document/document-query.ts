@@ -6,7 +6,7 @@ import {
   Progress,
 } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
