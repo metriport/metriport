@@ -1,6 +1,10 @@
 const validEhrs = ["athenahealth", "elation", "canvas"];
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseEhrIds(bodyAsJson: any) {
+  const cxIdRaw = bodyAsJson.cxId;
+  if (!cxIdRaw) throw new Error(`Missing cxId`);
+  if (typeof cxIdRaw !== "string") throw new Error(`Invalid cxId`);
+
   const ehrIdRaw = bodyAsJson.ehrId;
   if (!ehrIdRaw) throw new Error(`Missing ehrId`);
   if (typeof ehrIdRaw !== "string") throw new Error(`Invalid ehrId`);
@@ -14,5 +18,5 @@ export function parseEhrIds(bodyAsJson: any) {
   if (!ehrPatientIdRaw) throw new Error(`Missing ehrPatientId`);
   if (typeof ehrPatientIdRaw !== "string") throw new Error(`Invalid ehrPatientId`);
 
-  return { ehrIdRaw, ehrPracticeIdRaw, ehrPatientIdRaw };
+  return { cxIdRaw, ehrIdRaw, ehrPracticeIdRaw, ehrPatientIdRaw };
 }

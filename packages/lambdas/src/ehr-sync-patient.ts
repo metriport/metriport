@@ -30,10 +30,10 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { ehrId, ehrPracticeId, ehrPatientId } = parsedBody;
+    const { cxId, ehrId, ehrPracticeId, ehrPatientId } = parsedBody;
 
     const log = prefixedLog(
-      `ehrId ${ehrId}, ehrPracticeId ${ehrPracticeId}, ehrPatientId ${ehrPatientId}`
+      `cxId ${cxId}, ehrId ${ehrId}, ehrPracticeId ${ehrPracticeId}, ehrPatientId ${ehrPatientId}`
     );
     try {
       log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
@@ -73,6 +73,7 @@ export async function handler(event: SQSEvent) {
 }
 
 function parseBody(body?: unknown): {
+  cxId: string;
   ehrId: string;
   ehrPracticeId: string;
   ehrPatientId: string;
@@ -84,13 +85,15 @@ function parseBody(body?: unknown): {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  const { ehrIdRaw, ehrPracticeIdRaw, ehrPatientIdRaw } = parseEhrIds(bodyAsJson);
+  const { cxIdRaw, ehrIdRaw, ehrPracticeIdRaw, ehrPatientIdRaw } = parseEhrIds(bodyAsJson);
 
+  const cxId = cxIdRaw;
   const ehrId = ehrIdRaw;
   const ehrPracticeId = ehrPracticeIdRaw;
   const ehrPatientId = ehrPatientIdRaw;
 
   return {
+    cxId,
     ehrId,
     ehrPracticeId,
     ehrPatientId,

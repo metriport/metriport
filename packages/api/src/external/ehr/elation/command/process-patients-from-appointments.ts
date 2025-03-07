@@ -159,6 +159,7 @@ async function syncPatient({
   );
   try {
     const payload = JSON.stringify({
+      cxId,
       ehrId: EhrSources.elation,
       ehrPracticeId: elationPracticeId,
       ehrPatientId: elationPatientId,
