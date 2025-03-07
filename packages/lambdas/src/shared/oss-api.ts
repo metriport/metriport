@@ -16,9 +16,17 @@ export type NotificationParams = {
   source?: string;
 };
 
+export type SyncPatientParams = {
+  cxId: string;
+  ehrId: string;
+  ehrPracticeId: string;
+  ehrPatientId: string;
+};
+
 type OssApiClient = {
   internal: {
     notifyApi(params: NotificationParams, log: Log): Promise<void>;
+    ehrSyncPatient(params: SyncPatientParams): Promise<AxiosResponse>;
     createFeedback(params: CreateFeedback & { id: string }): Promise<AxiosResponse>;
   };
 };
@@ -30,9 +38,31 @@ export function apiClient(apiURL: string): OssApiClient {
     return `${apiURL}/internal/feedback/${id}`;
   }
 
+  function getSyncPatientUrl(
+    cxId: string,
+    ehrId: string,
+    ehrPatientId: string,
+    ehrPracticeId: string
+  ): string {
+    return `${apiURL}/internal/ehr/${ehrId}/patient/${ehrPatientId}?cxId=${cxId}&practiceId=${ehrPracticeId}`;
+  }
+
   async function notifyApi(params: NotificationParams, log: Log): Promise<void> {
     log(`Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
     await executeWithNetworkRetries(() => ossApi.post(docProgressURL, null, { params }), {
+      retryOnTimeout: true,
+      maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
+    });
+  }
+
+  async function ehrSyncPatient(params: SyncPatientParams): Promise<AxiosResponse> {
+    const url = getSyncPatientUrl(
+      params.cxId,
+      params.ehrId,
+      params.ehrPatientId,
+      params.ehrPracticeId
+    );
+    return await executeWithNetworkRetries(() => ossApi.get(url), {
       retryOnTimeout: true,
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
     });
@@ -46,6 +76,7 @@ export function apiClient(apiURL: string): OssApiClient {
   return {
     internal: {
       notifyApi,
+      ehrSyncPatient,
       createFeedback,
     },
   };

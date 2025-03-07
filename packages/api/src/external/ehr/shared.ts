@@ -14,8 +14,9 @@ import { canvasClientJwtTokenSource } from "./canvas/shared";
 import { elationClientJwtTokenSource } from "./elation/shared";
 
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
+export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
-export const parallelPatients = 2;
+export const parallelPatients = 200;
 
 type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv;
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {

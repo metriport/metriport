@@ -1,7 +1,10 @@
+import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { MetriportError, errorToString } from "@metriport/shared";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -10,15 +13,13 @@ import {
   Appointment,
   EhrSources,
   delayBetweenPracticeBatches,
+  delayBetweenPatientBatches,
   getLookBackTimeRange,
   parallelPatients,
   parallelPractices,
 } from "../../shared";
 import { createAthenaClient } from "../shared";
-import {
-  SyncAthenaPatientIntoMetriportParams,
-  syncAthenaPatientIntoMetriport,
-} from "./sync-patient";
+import { SyncAthenaPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -116,7 +117,6 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
         cxId: appointment.cxId,
         athenaPracticeId: appointment.practiceId,
         athenaPatientId: appointment.patientId,
-        triggerDq: true,
       };
     }
   );
@@ -129,7 +129,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     },
     {
       numberOfParallelExecutions: parallelPatients,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
+      delay: delayBetweenPatientBatches.asMilliseconds(),
     }
   );
 
@@ -181,23 +181,26 @@ async function syncPatient({
   cxId,
   athenaPracticeId,
   athenaPatientId,
-  triggerDq,
 }: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error: unknown }> {
   const { log } = out(
     `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
-  const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   try {
-    await syncAthenaPatientIntoMetriport({
+    const payload = JSON.stringify({
       cxId,
-      athenaPracticeId,
-      athenaPatientId,
-      api,
-      triggerDq,
+      ehrId: EhrSources.athena,
+      ehrPracticeId: athenaPracticeId,
+      ehrPatientId: athenaPatientId,
+    });
+    const sqsClient = new SQSClient({ region: Config.getAWSRegion() });
+    await sqsClient.sendMessageToQueue(Config.getEhrSyncPatientQueueUrl(), payload, {
+      fifo: true,
+      messageDeduplicationId: createUuidFromText(payload),
+      messageGroupId: cxId,
     });
     return { error: undefined };
   } catch (error) {
-    log(`Failed to sync patient. Cause: ${errorToString(error)}`);
+    log(`Failed to put sync patient message on queue. Cause: ${errorToString(error)}`);
     return { error };
   }
 }
