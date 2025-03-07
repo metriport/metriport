@@ -50,7 +50,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
     async (params: GetAppointmentsParams) => {
       const { appointments, error } = await getAppointments(params);
       if (appointments) allAppointments.push(...appointments);
-      if (error) getAppointmentsErrors.push({ error, ...params });
+      if (error) getAppointmentsErrors.push({ ...params, error });
     },
     {
       numberOfParallelExecutions: parallelPractices,
