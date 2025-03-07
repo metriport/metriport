@@ -48,7 +48,6 @@
     "packages/commonwell-jwt-maker",
     "packages/carequality-cert-runner",
     "packages/api",
-    "packages/mllp-server",
     "packages/infra",
     "packages/utils",
     "packages/tester-node"
