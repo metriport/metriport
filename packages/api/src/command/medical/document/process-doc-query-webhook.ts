@@ -33,7 +33,7 @@ export async function processDataPipelineCheckpoints({
   try {
     if (documentQueryProgress) {
       await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
-      await finishDataPipeline(patient, requestId, documentQueryProgress, progressType);
+      await checkAndFinishDataPipeline(patient, requestId, documentQueryProgress, progressType);
     }
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
@@ -85,7 +85,7 @@ const handleDownloadWebhook = async (
 /**
  * Depending on the input, decides whether it's time to create the Consolidated Bundle and send the `conversion` webhook.
  */
-async function finishDataPipeline(
+async function checkAndFinishDataPipeline(
   patient: Patient,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress,

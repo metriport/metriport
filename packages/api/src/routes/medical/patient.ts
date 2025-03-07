@@ -4,7 +4,7 @@ import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-reco
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
-import { isTrue, stringToBoolean, NotFoundError, BadRequestError } from "@metriport/shared";
+import { BadRequestError, NotFoundError, isTrue, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -19,14 +19,14 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { setHieOptOut, getHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import { countResources } from "../../external/fhir/patient/count-resources";
+import { countResourcesOnExistingConsolidatedSnapshot } from "../../external/fhir/patient/count-resources-on-s3";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
@@ -38,9 +38,9 @@ import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
+  PatientHieOptOutResponse,
   patientUpdateSchema,
   schemaUpdateToPatientData,
-  PatientHieOptOutResponse,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -372,6 +372,7 @@ async function putConsolidated(req: Request, res: Response) {
  * GET /patient/:id/consolidated/count
  *
  * Returns the amount of resources a patient has on the FHIR server, total and per resource.
+ * If the Consolidated Bundle hasn't been generated yet, the count will be 0.
  *
  * USED WITHIN EHR INTEGRATION.
  *
@@ -390,7 +391,7 @@ router.get(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const resourceCount = await countResources({
+    const resourceCount = await countResourcesOnExistingConsolidatedSnapshot({
       patient,
       resources,
       dateFrom,

@@ -14,15 +14,15 @@ import { out } from "../../util";
 import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
-import { getConsolidated } from "./consolidated-get";
+import { getFullExistingConsolidatedBundleFromS3 } from "./consolidated-get";
 const maxHydrationIterations = 5;
 
 /**
- * Get the patient's consolidated from S3 and filters the resources based on the given parameters.
- * If the consolidated bundle doesn't exist it will be created from the existing conversion
+ * Gets the patient's consolidated from S3 and filters the resources based on the given parameters.
+ * If the consolidated bundle doesn't exist, it will be created from the existing conversion
  * (CDA>FHIR) bundles.
  */
-export async function getConsolidatedFromS3({
+export async function getOrCreateConsolidatedSnapshot({
   cxId,
   patient,
   ...params
@@ -37,13 +37,13 @@ export async function getConsolidatedFromS3({
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patient });
-  const consolidatedSearchset = toSearchSet(consolidated);
+  const fullConsolidatedBundle = await getOrCreateConsolidatedOnS3({ cxId, patient });
+  const consolidatedSearchSet = toSearchSet(fullConsolidatedBundle);
 
-  log(`Consolidated found with ${consolidatedSearchset.entry?.length} entries`);
-  const filtered = await filterConsolidated(consolidatedSearchset, params);
-  log(`Filtered to ${filtered?.entry?.length} entries`);
-  return filtered as SearchSetBundle;
+  log(`Consolidated found with ${consolidatedSearchSet.entry?.length} entries`);
+  const snapshotBundle = await filterConsolidated(consolidatedSearchSet, params);
+  log(`Filtered to ${snapshotBundle?.entry?.length} entries`);
+  return snapshotBundle as SearchSetBundle;
 }
 
 async function getOrCreateConsolidatedOnS3({
@@ -55,13 +55,13 @@ async function getOrCreateConsolidatedOnS3({
 }): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
-  const preGenerated = await getConsolidated({
+  const fullConsolidatedBundle = await getFullExistingConsolidatedBundleFromS3({
     cxId,
     patientId,
   });
-  if (preGenerated.bundle) {
+  if (fullConsolidatedBundle) {
     log(`Found pre-generated consolidated, returning...`);
-    return preGenerated.bundle;
+    return fullConsolidatedBundle;
   }
   log(`Did not found pre-generated consolidated, creating a new one...`);
   const newConsolidated = await createConsolidatedFromConversions({ cxId, patient });

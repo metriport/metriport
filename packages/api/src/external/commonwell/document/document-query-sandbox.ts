@@ -156,7 +156,7 @@ export async function sandboxGetDocRefsAndUpsert({
   }
 
   // After docs are converted (and conversion bundles are stored in S3), we recreate the consolidated
-  // bundle to make sure it's up-to-date.
+  // bundle to make sure it's up-to-date - used for Sandbox
   await recreateConsolidated({ patient });
 
   await appendDocQueryProgress({
