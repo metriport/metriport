@@ -321,7 +321,7 @@ class CanvasApi {
 
   async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
-      `Elation getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `Canvas getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/Patient/${patientId}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
