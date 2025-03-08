@@ -14,15 +14,15 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared";
-import { createElationClient } from "../shared";
+import { createCanvasClient } from "../shared";
 import {
-  syncElationPatientIntoMetriport,
-  SyncElationPatientIntoMetriportParams,
+  syncCanvasPatientIntoMetriport,
+  SyncCanvasPatientIntoMetriportParams,
 } from "./sync-patient";
 
 dayjs.extend(duration);
 
-const lookForward = dayjs.duration(14, "days");
+const lookForward = dayjs.duration(1, "day");
 
 type GetAppointmentsParams = {
   cxId: string;
@@ -30,9 +30,9 @@ type GetAppointmentsParams = {
 };
 
 export async function processPatientsFromAppointments(): Promise<void> {
-  const cxMappings = await getCxMappingsBySource({ source: EhrSources.elation });
+  const cxMappings = await getCxMappingsBySource({ source: EhrSources.canvas });
   if (cxMappings.length === 0) {
-    out("processPatientsFromAppointments @ Elation").log("No cx mappings found");
+    out("processPatientsFromAppointments @ Canvas").log("No cx mappings found");
     return;
   }
 
@@ -59,13 +59,13 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (getAppointmentsErrors.length > 0) {
-    const msg = "Failed to get some appointments @ Elation";
+    const msg = "Failed to get some appointments @ Canvas";
     capture.message(msg, {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
         errors: getAppointmentsErrors,
-        context: "elation.process-patients-from-appointments",
+        context: "canvas.process-patients-from-appointments",
       },
       level: "warning",
     });
@@ -76,15 +76,15 @@ export async function processPatientsFromAppointments(): Promise<void> {
   const syncPatientsErrors: {
     error: unknown;
     cxId: string;
-    elationPracticeId: string;
-    elationPatientId: string;
+    canvasPracticeId: string;
+    canvasPatientId: string;
   }[] = [];
-  const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = uniqueAppointments.map(
+  const syncPatientsArgs: SyncCanvasPatientIntoMetriportParams[] = uniqueAppointments.map(
     appointment => {
       return {
         cxId: appointment.cxId,
-        elationPracticeId: appointment.practiceId,
-        elationPatientId: appointment.patientId,
+        canvasPracticeId: appointment.practiceId,
+        canvasPatientId: appointment.patientId,
         triggerDq: true,
       };
     }
@@ -92,7 +92,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   await executeAsynchronously(
     syncPatientsArgs,
-    async (params: SyncElationPatientIntoMetriportParams) => {
+    async (params: SyncCanvasPatientIntoMetriportParams) => {
       const { error } = await syncPatient(params);
       if (error) syncPatientsErrors.push({ ...params, error });
     },
@@ -103,13 +103,13 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (syncPatientsErrors.length > 0) {
-    const msg = "Failed to sync some patients @ Elation";
+    const msg = "Failed to sync some patients @ Canvas";
     capture.message(msg, {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,
         errors: syncPatientsErrors,
-        context: "elation.process-patients-from-appointments",
+        context: "canvas.process-patients-from-appointments",
       },
       level: "warning",
     });
@@ -120,8 +120,8 @@ async function getAppointments({
   cxId,
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
-  const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const api = await createElationClient({ cxId, practiceId });
+  const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
+  const api = await createCanvasClient({ cxId, practiceId });
   const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
   log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
@@ -132,7 +132,7 @@ async function getAppointments({
     });
     return {
       appointments: appointments.map(appointment => {
-        return { cxId, practiceId, patientId: appointment.patient };
+        return { cxId, practiceId, patientId: appointment.patientId };
       }),
     };
   } catch (error) {
@@ -143,19 +143,19 @@ async function getAppointments({
 
 async function syncPatient({
   cxId,
-  elationPracticeId,
-  elationPatientId,
+  canvasPracticeId,
+  canvasPatientId,
   triggerDq,
-}: Omit<SyncElationPatientIntoMetriportParams, "api">): Promise<{ error?: unknown }> {
+}: Omit<SyncCanvasPatientIntoMetriportParams, "api">): Promise<{ error?: unknown }> {
   const { log } = out(
-    `Elation syncPatient - cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}`
+    `Canvas syncPatient - cxId ${cxId} canvasPracticeId ${canvasPracticeId} canvasPatientId ${canvasPatientId}`
   );
-  const api = await createElationClient({ cxId, practiceId: elationPracticeId });
+  const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
   try {
-    await syncElationPatientIntoMetriport({
+    await syncCanvasPatientIntoMetriport({
       cxId,
-      elationPracticeId,
-      elationPatientId,
+      canvasPracticeId,
+      canvasPatientId,
       api,
       triggerDq,
     });

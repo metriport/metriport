@@ -34,3 +34,14 @@ export async function createAthenaClient(
     getClient: AthenaHealthApi.create,
   });
 }
+
+export enum LookupModes {
+  FromSubscription = "from-subscription",
+  FromSubscriptionBackfill = "from-subscription-backfill",
+  Appointments = "appointments",
+}
+export const lookupModes = [...Object.values(LookupModes)] as const;
+export type LookupMode = (typeof lookupModes)[number];
+export function isLookupMode(value: string): value is LookupMode {
+  return lookupModes.includes(value as LookupMode);
+}

@@ -45,6 +45,9 @@ import {
   MedicationReference,
   MedicationReferences,
   medicationReferencesSchema,
+  PatientCustomField,
+  PatientsCustomFields,
+  patientsCustomFieldsSchema,
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import {
@@ -277,16 +280,60 @@ class AthenaHealthApi {
       useFhir: true,
     });
     const entry = patientSearch.entry;
-    if (!entry) throw new NotFoundError("No patient found in search", undefined, additionalInfo);
-    if (entry.length > 1) {
-      throw new BadRequestError("More than one patients found in search", undefined, {
+    if (!entry) {
+      throw new BadRequestError("Search array undefined", undefined, {
         ...additionalInfo,
-        patientSearch: entry.map(e => JSON.stringify(e.resource)).join(","),
+        patientSearch: JSON.stringify(patientSearch),
+      });
+    }
+    if (entry.length > 1) {
+      throw new BadRequestError("Multiple entries found in search array", undefined, {
+        ...additionalInfo,
+        patientSearch: entry.map(e => JSON.stringify(e)).join(","),
       });
     }
     const patient = entry[0]?.resource;
-    if (!patient) throw new NotFoundError("No patient found in search", undefined, additionalInfo);
+    if (!patient) throw new NotFoundError("Patient not found", undefined, additionalInfo);
     return patient;
+  }
+
+  async getCustomFieldsForPatient({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<PatientCustomField[]> {
+    const { debug } = out(
+      `AthenaHealth getCustomFieldsForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const params = {
+      showprivacycustomfields: "true",
+      showcustomfields: "true",
+    };
+    const queryParams = new URLSearchParams(params);
+    const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const patientsCustomFields = await this.makeRequest<PatientsCustomFields>({
+      cxId,
+      patientId,
+      s3Path: "patients-athena-one",
+      method: "GET",
+      url: patientsUrl,
+      schema: patientsCustomFieldsSchema,
+      additionalInfo,
+      debug,
+    });
+    if (patientsCustomFields.length > 1) {
+      throw new BadRequestError("Multiple patients found in athena-one patients array", undefined, {
+        ...additionalInfo,
+        patientsCustomFields: patientsCustomFields.map(p => JSON.stringify(p)).join(","),
+      });
+    }
+    const patientCustomFields = patientsCustomFields[0]?.customfields;
+    if (!patientCustomFields)
+      throw new NotFoundError("Patient not found", undefined, additionalInfo);
+    return patientCustomFields;
   }
 
   async createMedication({

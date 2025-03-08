@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { syncAthenaPatientIntoMetriport } from "../../../external/ehr/athenahealth/command/sync-patient";
+import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
@@ -9,24 +9,25 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../
 const router = Router();
 
 /**
- * GET /ehr/athenahealth/patient/:id
+ * POST /ehr/webhook/canvas/patient/:id/appointment-created
  *
- * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of AthenaHealth Patient.
+ * Tries to retrieve the matching Metriport patient on appointment created
+ * @param req.params.id The ID of Canvas Patient.
  * @returns Metriport Patient if found.
  */
-router.get(
-  "/:id",
+router.post(
+  "/:id/appointment-created",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const athenaPatientId = getFrom("params").orFail("id", req);
-    const athenaPracticeId = getFromQueryOrFail("practiceId", req);
-    const patientId = await syncAthenaPatientIntoMetriport({
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const patientId = await syncCanvasPatientIntoMetriport({
       cxId,
-      athenaPracticeId,
-      athenaPatientId,
+      canvasPracticeId,
+      canvasPatientId,
+      triggerDq: true,
     });
     return res.status(httpStatus.OK).json(patientId);
   })
