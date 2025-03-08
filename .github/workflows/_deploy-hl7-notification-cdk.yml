@@ -107,6 +107,10 @@ jobs:
           npm ci --ignore-scripts --no-fund
         working-directory: "metriport/"
 
+      - name: Build lambdas shared layer
+        run: npm run prep-deploy
+        working-directory: "metriport/packages/lambdas/"
+
       - name: Build relevant packages
         run: |
           npm run build:cloud 
