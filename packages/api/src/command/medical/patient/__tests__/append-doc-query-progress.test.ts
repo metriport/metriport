@@ -103,6 +103,8 @@ describe("appendDocQueryProgress", () => {
       checkUnchanged("convert");
     });
     it("removes download when its null", async () => {
+      // THIS ONE FAILS
+      console.log("documentQueryProgress IS", JSON.stringify(documentQueryProgress));
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: documentQueryProgress.convert,
@@ -112,10 +114,12 @@ describe("appendDocQueryProgress", () => {
       const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
         | PatientModel
         | undefined;
+      console.log("patientModel_update IS", JSON.stringify(patientModel_update.mock.calls));
+      console.log("patientSentToUpdate IS", JSON.stringify(patientSentToUpdate));
       expect(patientSentToUpdate).toBeTruthy();
       expect(patientSentToUpdate?.data).toBeTruthy();
       expect(patientSentToUpdate?.data.documentQueryProgress).toBeTruthy();
-      expect(patientSentToUpdate?.data.documentQueryProgress?.download).toBeFalsy();
+      expect(patientSentToUpdate?.data.documentQueryProgress?.download).toBeFalsy(); // RECIEVES AN OBJECT
       checkUnchanged("convert");
     });
     it("resets convert while setting download", async () => {
