@@ -106,13 +106,8 @@ describe("appendDocQueryProgress", () => {
       checkUnchanged("convert");
     });
     it("removes download when its null", async () => {
-      // Clear any previous calls to the mock
       patientModel_update.mockClear();
 
-      console.log(
-        "patientModel_update.mock.calls BEFORE",
-        JSON.stringify(patientModel_update.mock.calls)
-      );
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: documentQueryProgress.convert,
@@ -120,18 +115,12 @@ describe("appendDocQueryProgress", () => {
         requestId,
       });
 
-      // Check number of calls
       expect(patientModel_update).toHaveBeenCalledTimes(1);
 
       const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
         | PatientModel
         | undefined;
 
-      console.log(
-        "patientModel_update.mock.calls AFTER",
-        JSON.stringify(patientModel_update.mock.calls)
-      );
-      console.log("patientSentToUpdate", JSON.stringify(patientSentToUpdate));
       expect(patientSentToUpdate).toBeTruthy();
       expect(patientSentToUpdate?.data).toBeTruthy();
       expect(patientSentToUpdate?.data.documentQueryProgress).toBeTruthy();
@@ -172,6 +161,8 @@ describe("appendDocQueryProgress", () => {
       checkUnchanged("download");
     });
     it("removes convert when its null", async () => {
+      patientModel_update.mockClear();
+
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: null,
