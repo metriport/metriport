@@ -73,7 +73,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: metriport/metriport-internal
-          ref: ${{ (inputs.deploy_env == 'production') && 'master' || 'develop' }}
+          ref: ${{ ((inputs.deploy_env == 'production') && 'master') || 'develop' }}
           token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
           path: metriport-internal
           sparse-checkout: |
