@@ -31,7 +31,10 @@ beforeEach(() => {
   patient = makePatient({ data: makePatientData({ documentQueryProgress }) });
   patientModel = { dataValues: patient } as PatientModel;
   patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
-  patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
+  patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async (...args) => {
+    console.log("PatientModel.update called with:", JSON.stringify(args));
+    return [1];
+  });
   jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 
@@ -103,23 +106,36 @@ describe("appendDocQueryProgress", () => {
       checkUnchanged("convert");
     });
     it("removes download when its null", async () => {
-      // THIS ONE FAILS
-      console.log("documentQueryProgress IS", JSON.stringify(documentQueryProgress));
+      // Clear any previous calls to the mock
+      patientModel_update.mockClear();
+
+      console.log(
+        "patientModel_update.mock.calls BEFORE",
+        JSON.stringify(patientModel_update.mock.calls)
+      );
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: documentQueryProgress.convert,
         downloadProgress: null,
         requestId,
       });
+
+      // Check number of calls
+      expect(patientModel_update).toHaveBeenCalledTimes(1);
+
       const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
         | PatientModel
         | undefined;
-      console.log("patientModel_update IS", JSON.stringify(patientModel_update.mock.calls));
-      console.log("patientSentToUpdate IS", JSON.stringify(patientSentToUpdate));
+
+      console.log(
+        "patientModel_update.mock.calls AFTER",
+        JSON.stringify(patientModel_update.mock.calls)
+      );
+      console.log("patientSentToUpdate", JSON.stringify(patientSentToUpdate));
       expect(patientSentToUpdate).toBeTruthy();
       expect(patientSentToUpdate?.data).toBeTruthy();
       expect(patientSentToUpdate?.data.documentQueryProgress).toBeTruthy();
-      expect(patientSentToUpdate?.data.documentQueryProgress?.download).toBeFalsy(); // RECIEVES AN OBJECT
+      expect(patientSentToUpdate?.data.documentQueryProgress?.download).toBeFalsy();
       checkUnchanged("convert");
     });
     it("resets convert while setting download", async () => {
