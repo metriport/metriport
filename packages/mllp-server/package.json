@@ -32,15 +32,12 @@
     "@metriport/core": "file:packages/core",
     "@metriport/shared": "file:packages/shared",
     "@sentry/cli": "^2.42.1",
-    "dotenv": "^16.4.5",
-    "jest": "^29.7.0"
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@sentry/node": "^9.1.0",
     "@tsconfig/node18": "^18.2.4",
-    "@types/jest": "^29.5.12",
     "@types/node": "^22.13.5",
-    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   }

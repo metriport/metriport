@@ -1,9 +1,16 @@
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { getConsolidatedFromS3 } from "@metriport/core/command/consolidated/consolidated-filter";
+import {
+  filterConsolidated,
+  getOrCreateConsolidatedSnapshot,
+} from "@metriport/core/command/consolidated/consolidated-filter";
+import { getFullExistingConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-get";
 import { Patient } from "@metriport/core/domain/patient";
-import { countBy } from "lodash";
+import { out } from "@metriport/core/util";
+import { toSearchSet } from "@metriport/shared/medical";
+import { Dictionary, countBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ResourceCount } from "./count-resources-shared";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 
 export type CountResourcesParams = {
   patient: Pick<Patient, "cxId" | "id">;
@@ -12,26 +19,76 @@ export type CountResourcesParams = {
   dateTo?: string;
 };
 
-export async function countResourcesOnS3({
+export async function countResourcesOnNewOrExistingConsolidatedSnapshot({
   patient: partialPatient,
   resources = [],
   dateFrom,
   dateTo,
 }: CountResourcesParams): Promise<ResourceCount> {
   const patient = await getPatientOrFail({ id: partialPatient.id, cxId: partialPatient.cxId });
-  const res = await getConsolidatedFromS3({
+  const snapshotBundle = await getOrCreateConsolidatedSnapshot({
     cxId: patient.cxId,
     patient,
     resources,
     dateFrom,
     dateTo,
   });
-  const resultingResources = (res.entry ?? []).flatMap(e => (e && e.resource ? e.resource : []));
+
+  return countResourcesInBundle(snapshotBundle);
+}
+
+export async function countResourcesOnExistingConsolidatedSnapshot({
+  patient: partialPatient,
+  resources = [],
+  dateFrom,
+  dateTo,
+}: CountResourcesParams): Promise<ResourceCount> {
+  const cxId = partialPatient.cxId;
+  const patientId = partialPatient.id;
+  const params = { resources, dateFrom, dateTo };
+
+  const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
+  const patient = await getPatientOrFail({ id: patientId, cxId });
+
+  const fullConsolidatedBundle = await getFullExistingConsolidatedBundleFromS3({
+    cxId: patient.cxId,
+    patientId,
+  });
+
+  if (!fullConsolidatedBundle) {
+    log(`Did not find pre-generated consolidated. Returning empty counts`);
+    return buildEmptyCounts();
+  }
+
+  const consolidatedSearchset = toSearchSet(fullConsolidatedBundle);
+  log(`Found consolidated with ${consolidatedSearchset.entry?.length} entries`);
+
+  const filtered = await filterConsolidated(consolidatedSearchset, params);
+  log(`Filtered to ${filtered?.entry?.length} entries with: ${JSON.stringify(params)}`);
+
+  return countResourcesInBundle(filtered);
+}
+
+export function countResourcesInBundle(bundle: Bundle<Resource>): ResourceCount {
+  const resultingResources = (bundle?.entry ?? []).flatMap(e =>
+    e && e.resource ? e.resource : []
+  );
 
   const counted = countBy(resultingResources, r => r.resourceType);
 
+  return buildResourceCount(resultingResources.length, counted);
+}
+
+function buildEmptyCounts(): ResourceCount {
   return {
-    total: resultingResources.length,
-    resources: counted,
+    total: 0,
+    resources: {},
+  };
+}
+
+function buildResourceCount(bundleSize: number, counts: Dictionary<number>): ResourceCount {
+  return {
+    total: bundleSize,
+    resources: counts,
   };
 }

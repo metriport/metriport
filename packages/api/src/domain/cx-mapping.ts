@@ -4,9 +4,9 @@ import {
   athenaSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/athenahealth/cx-mapping";
 import { z } from "zod";
-import { EhrSources } from "../external/ehr/shared";
+import { EhrSources, ehrSources } from "../external/ehr/shared";
 
-const cxMappingSource = [EhrSources.athena, EhrSources.elation, EhrSources.canvas] as const;
+const cxMappingSource = [...ehrSources] as const;
 export type CxMappingSource = (typeof cxMappingSource)[number];
 export function isCxMappingSource(source: string): source is CxMappingSource {
   return cxMappingSource.includes(source as CxMappingSource);

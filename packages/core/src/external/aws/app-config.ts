@@ -50,6 +50,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
   cxsWithHydrationFeatureFlag: ffStringValuesSchema, // TODO: 2563 - Remove this after prod testing is done
   cxsUsingWkhtmltopdfInsteadOfPuppeteer: ffStringValuesSchema, // TODO: 2510 - Remove this when ready to rollout to all customers
+  cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
@@ -290,4 +291,13 @@ export async function isWkhtmltopdfEnabledForCx(cxId: string): Promise<boolean> 
 }
 export async function getCxsUsingWkhtmltopdfInsteadOfPuppeteer(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsUsingWkhtmltopdfInsteadOfPuppeteer");
+}
+
+export async function isAthenaCustomFieldsEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithAthenaCustomFieldsEnabled = await getCxsWithAthenaCustomFieldsEnabled();
+  return cxsWithAthenaCustomFieldsEnabled.includes(cxId);
+}
+
+export async function getCxsWithAthenaCustomFieldsEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAthenaCustomFieldsEnabled");
 }

@@ -1,7 +1,7 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
 import BadRequestError from "../../../../errors/bad-request";
-import { countResources } from "../../../../external/fhir/patient/count-resources";
+import { countResourcesOnNewOrExistingConsolidatedSnapshot } from "../../../../external/fhir/patient/count-resources-on-s3";
 import { Bundle as ValidBundle } from "../../../../routes/medical/schemas/fhir";
 import { Config } from "../../../../shared/config";
 
@@ -20,7 +20,7 @@ export function normalizeBundle<T extends Bundle | ValidBundle>(bundle: T): T {
  */
 export async function checkResourceLimit(incomingAmount: number, patient: Patient) {
   if (!Config.isCloudEnv() || Config.isSandbox()) {
-    const { total: currentAmount } = await countResources({
+    const { total: currentAmount } = await countResourcesOnNewOrExistingConsolidatedSnapshot({
       patient: { id: patient.id, cxId: patient.cxId },
     });
     if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
