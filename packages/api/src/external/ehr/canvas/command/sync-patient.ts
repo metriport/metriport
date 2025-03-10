@@ -3,7 +3,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
-import { EhrSources } from "../../shared";
+import { EhrSources } from "@metriport/core/external/shared/ehr";
 import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,

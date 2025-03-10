@@ -8,7 +8,7 @@ import httpStatus from "http-status";
 import z from "zod";
 import { canvasWebhookJwtTokenSource } from "../../../../external/ehr/canvas/shared";
 import { checkJwtToken, saveJwtToken } from "../../../../external/ehr/jwt-token";
-import { EhrSources } from "../../../../external/ehr/shared";
+import { EhrSources } from "@metriport/core/external/shared/ehr";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getAuthorizationToken } from "../../../util";
 
