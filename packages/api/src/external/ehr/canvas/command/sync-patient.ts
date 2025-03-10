@@ -1,5 +1,7 @@
 import CanvasApi from "@metriport/core/external/canvas/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
+import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
 import { createMetriportPatientDemosFhir, getMetriportPatientFhir } from "../../shared-fhir";
@@ -43,8 +45,13 @@ export async function syncCanvasPatientIntoMetriport({
     practiceId: canvasPracticeId,
     possibleDemographics,
     externalId: canvasPatientId,
-    triggerDq,
   });
+  if (triggerDq) {
+    queryDocumentsAcrossHIEs({
+      cxId,
+      patientId: metriportPatient.id,
+    }).catch(processAsyncError(`Canvas queryDocumentsAcrossHIEs`));
+  }
   await findOrCreatePatientMapping({
     cxId,
     patientId: metriportPatient.id,

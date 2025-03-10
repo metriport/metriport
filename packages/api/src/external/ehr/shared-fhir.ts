@@ -23,7 +23,7 @@ import {
   getPatientByDemo,
   PatientWithIdentifiers,
 } from "../../command/medical/patient/get-patient";
-import { handleMetriportSync, HandleMetriportSyncParams } from "./shared";
+import { handleMetriportSync, HandleMetriportSyncParams } from "./patient";
 
 const parallelPatientMatches = 5;
 
@@ -148,7 +148,6 @@ export async function getMetriportPatientFhir({
   practiceId,
   externalId,
   possibleDemographics,
-  triggerDq,
 }: Omit<HandleMetriportSyncParams, "demographics"> & {
   possibleDemographics: PatientDemoData[];
 }): Promise<PatientWithIdentifiers> {
@@ -216,7 +215,6 @@ export async function getMetriportPatientFhir({
       practiceId,
       demographics: collapsePatientDemosFhir(possibleDemographics),
       externalId,
-      triggerDq,
     });
   }
 }

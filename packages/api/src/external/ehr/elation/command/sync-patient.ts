@@ -1,15 +1,18 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/elation/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { normalizeDob, normalizeGender } from "@metriport/shared";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
+import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {
   getPatientByDemo,
   getPatientOrFail,
   PatientWithIdentifiers,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
-import { EhrSources, handleMetriportSync, HandleMetriportSyncParams } from "../../shared";
+import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
+import { EhrSources } from "../../shared";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
 
 export type SyncElationPatientIntoMetriportParams = {
@@ -49,8 +52,13 @@ export async function syncElationPatientIntoMetriport({
     practiceId: elationPracticeId,
     demographics,
     externalId: elationPatientId,
-    triggerDq,
   });
+  if (triggerDq) {
+    queryDocumentsAcrossHIEs({
+      cxId,
+      patientId: metriportPatient.id,
+    }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
+  }
   const dashUrl = Config.getDashUrl();
   await Promise.all([
     findOrCreatePatientMapping({
@@ -92,7 +100,6 @@ async function getMetriportPatient({
   practiceId,
   demographics,
   externalId,
-  triggerDq,
 }: Omit<HandleMetriportSyncParams, "source">): Promise<PatientWithIdentifiers> {
   const metriportPatient = await getPatientByDemo({ cxId, demo: demographics });
   if (metriportPatient) return metriportPatient;
@@ -102,6 +109,5 @@ async function getMetriportPatient({
     practiceId,
     demographics,
     externalId,
-    triggerDq,
   });
 }

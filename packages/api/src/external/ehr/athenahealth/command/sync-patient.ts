@@ -7,6 +7,8 @@ import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
 import { createMetriportPatientDemosFhir, getMetriportPatientFhir } from "../../shared-fhir";
 import { createAthenaClient } from "../shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 
 const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";
 const CUSTOM_FIELD_ID_OPT_OUT = Config.isProdEnv() ? "101" : "1289";
@@ -64,8 +66,13 @@ export async function syncAthenaPatientIntoMetriport({
     practiceId: athenaPracticeId,
     possibleDemographics,
     externalId: athenaApi.stripPatientId(athenaPatientId),
-    triggerDq,
   });
+  if (triggerDq) {
+    queryDocumentsAcrossHIEs({
+      cxId,
+      patientId: metriportPatient.id,
+    }).catch(processAsyncError(`AthenaHealth queryDocumentsAcrossHIEs`));
+  }
   await findOrCreatePatientMapping({
     cxId,
     patientId: metriportPatient.id,
