@@ -262,7 +262,7 @@ async function getFacilityId({
   for (const state of states) {
     const stateFacilityId = await getFacilityMapping({
       cxId,
-      externalId: `${practiceId}-${state}`,
+      externalId: createFacilityStateExternalId(practiceId, state),
       source,
     });
     if (stateFacilityId) return stateFacilityId.facilityId;
@@ -273,4 +273,8 @@ async function getFacilityId({
     source,
   });
   return facilityMapping.facilityId;
+}
+
+function createFacilityStateExternalId(practiceId: string, state: string): string {
+  return `${practiceId}-${state}`;
 }
