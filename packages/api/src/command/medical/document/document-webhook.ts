@@ -13,8 +13,14 @@ import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
+import { RecreateConsolidatedParams, recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
-import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
+import {
+  CONVERSION_WEBHOOK_TYPE,
+  DOWNLOAD_WEBHOOK_TYPE,
+  ProcessDocQueryProgressWebhookParams,
+  handleConversionWebhook,
+} from "./process-doc-query-webhook";
 
 export enum MAPIWebhookStatus {
   completed = "completed",
@@ -141,4 +147,16 @@ function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
   } else {
     return undefined;
   }
+}
+
+export async function createConsolidatedAndProcessWebhook(
+  recreateParams: RecreateConsolidatedParams,
+  whParams: ProcessDocQueryProgressWebhookParams,
+  log: typeof console.log
+) {
+  log(`Recreating consolidated thru createConsolidatedAndProcessWebhook...`);
+  await recreateConsolidated(recreateParams);
+  log(`Sending DQ WH in createConsolidatedAndProcessWebhook...`);
+  await handleConversionWebhook(whParams.patient, whParams.requestId);
+  log(`Done Sending DQ WH`);
 }

@@ -5,6 +5,12 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { getConsolidated } from "../patient/consolidated-get";
 
+export type RecreateConsolidatedParams = {
+  patient: Patient;
+  conversionType?: ConsolidationConversionType;
+  context?: string;
+};
+
 /**
  * Recreates the consolidated bundle for a patient.
  *
@@ -15,15 +21,8 @@ import { getConsolidated } from "../patient/consolidated-get";
  * @param conversionType - The conversion type to use when converting to consolidatd.
  * @param context - Optional context to log.
  */
-export async function recreateConsolidated({
-  patient,
-  conversionType,
-  context,
-}: {
-  patient: Patient;
-  conversionType?: ConsolidationConversionType;
-  context?: string;
-}): Promise<void> {
+export async function recreateConsolidated(params: RecreateConsolidatedParams): Promise<void> {
+  const { patient, conversionType, context } = params;
   const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
   try {
     await deleteConsolidated({

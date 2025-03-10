@@ -24,6 +24,7 @@ export type SetDocQueryProgress = {
   triggerConsolidated?: boolean | undefined;
   downloadProgress?: StaticProgress | undefined;
   convertProgress?: StaticProgress | undefined;
+  isDataPipelineComplete?: boolean;
 } & SetDocQueryProgressBase;
 
 /**
@@ -43,6 +44,7 @@ export async function setDocQueryProgress({
   source,
   startedAt,
   triggerConsolidated,
+  isDataPipelineComplete,
 }: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = { id, cxId };
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -52,6 +54,7 @@ export async function setDocQueryProgress({
       transaction,
     });
 
+    console.log("FETCHED PATIENT", JSON.stringify(patient));
     const existingExternalData = patient.data.externalData ?? {};
 
     const externalData = setHIEDocProgress(
@@ -64,6 +67,7 @@ export async function setDocQueryProgress({
       startedAt,
       triggerConsolidated
     );
+    console.log("externalData WILL BEEEE", JSON.stringify(externalData));
 
     const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
 
@@ -72,23 +76,26 @@ export async function setDocQueryProgress({
       externalData
     );
 
+    console.log("aggregatedDocProgresses AREEEEE", JSON.stringify(aggregatedDocProgresses));
+
     const updatedPatient = {
       ...patient,
       data: {
         ...patient.data,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,
+        ...({ isDataPipelineComplete } ?? undefined),
       },
     };
 
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
+    console.log("UPDATED PAT IS", JSON.stringify(updatedPatient));
     return updatedPatient;
   });
 
   await processDocQueryProgressWebhook({
     patient,
-    documentQueryProgress: patient.data.documentQueryProgress,
     requestId,
   });
 
