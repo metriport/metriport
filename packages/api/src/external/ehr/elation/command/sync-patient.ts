@@ -47,7 +47,7 @@ export async function syncElationPatientIntoMetriport({
   const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
   const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
   const demographics = createMetriportPatientDemographics(elationPatient);
-  const metriportPatient = await getMetriportPatient({
+  const metriportPatient = await getOrCreateMetriportPatient({
     cxId,
     practiceId: elationPracticeId,
     demographics,
@@ -95,7 +95,7 @@ function createMetriportPatientDemographics(patient: ElationPatient): PatientDem
   };
 }
 
-async function getMetriportPatient({
+async function getOrCreateMetriportPatient({
   cxId,
   practiceId,
   demographics,

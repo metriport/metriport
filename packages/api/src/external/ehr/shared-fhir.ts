@@ -142,7 +142,7 @@ export function collapsePatientDemosFhir(demos: PatientDemoData[]): PatientDemoD
   }, firstDemo);
 }
 
-export async function getMetriportPatientFhir({
+export async function getOrCreateMetriportPatientFhir({
   cxId,
   source,
   practiceId,

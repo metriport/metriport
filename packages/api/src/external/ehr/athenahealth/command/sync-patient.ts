@@ -5,7 +5,10 @@ import { findOrCreatePatientMapping, getPatientMapping } from "../../../../comma
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
-import { createMetriportPatientDemosFhir, getMetriportPatientFhir } from "../../shared-fhir";
+import {
+  createMetriportPatientDemosFhir,
+  getOrCreateMetriportPatientFhir,
+} from "../../shared-fhir";
 import { createAthenaClient } from "../shared";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -60,7 +63,7 @@ export async function syncAthenaPatientIntoMetriport({
   }
   const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
   const possibleDemographics = createMetriportPatientDemosFhir(athenaPatient);
-  const metriportPatient = await getMetriportPatientFhir({
+  const metriportPatient = await getOrCreateMetriportPatientFhir({
     cxId,
     source: EhrSources.athena,
     practiceId: athenaPracticeId,

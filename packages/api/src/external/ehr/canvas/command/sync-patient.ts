@@ -4,7 +4,10 @@ import { findOrCreatePatientMapping, getPatientMapping } from "../../../../comma
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
-import { createMetriportPatientDemosFhir, getMetriportPatientFhir } from "../../shared-fhir";
+import {
+  createMetriportPatientDemosFhir,
+  getOrCreateMetriportPatientFhir,
+} from "../../shared-fhir";
 import { createCanvasClient } from "../shared";
 
 export type SyncCanvasPatientIntoMetriportParams = {
@@ -39,7 +42,7 @@ export async function syncCanvasPatientIntoMetriport({
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
   const canvasPatient = await canvasApi.getPatient({ cxId, patientId: canvasPatientId });
   const possibleDemographics = createMetriportPatientDemosFhir(canvasPatient);
-  const metriportPatient = await getMetriportPatientFhir({
+  const metriportPatient = await getOrCreateMetriportPatientFhir({
     cxId,
     source: EhrSources.canvas,
     practiceId: canvasPracticeId,
