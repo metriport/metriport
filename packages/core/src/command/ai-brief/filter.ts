@@ -37,8 +37,6 @@ const relevantResources = [
   "Organization",
 ];
 
-import fs from "fs";
-
 export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof console.log) {
   const startedAt = Date.now();
   const latestReportDate = findDiagnosticReportResources(bundle)
@@ -64,7 +62,6 @@ export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof cons
   log(`Bundle filtering metrics: ${JSON.stringify(metrics)}`);
 
   const inputString = JSON.stringify(slimPayloadBundle);
-  fs.writeFileSync("slimBundle.json", inputString);
   return inputString;
 }
 
