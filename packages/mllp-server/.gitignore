@@ -1,9 +1,0 @@
-dist
-node_modules
-# dotenv environment variable files
-.env*
-# include this one
-!.env.example
-
-# Sentry Config File
-.sentryclirc
