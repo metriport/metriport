@@ -19,7 +19,6 @@ const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler(event: SQSEvent) {
-  let errorHandled = false;
   const errorMsg = "Error processing event on " + lambdaName;
   const startedAt = new Date().getTime();
   try {
@@ -33,26 +32,14 @@ export async function handler(event: SQSEvent) {
     const log = prefixedLog(
       `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`
     );
-    try {
-      log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
+    log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-      const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
+    const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
+    await ehrSyncPatientHandler.processSyncPatient(parsedBody);
 
-      await ehrSyncPatientHandler.processSyncPatient(parsedBody);
-
-      const finishedAt = new Date().getTime();
-      log(`Done local duration: ${finishedAt - startedAt}ms`);
-    } catch (error) {
-      errorHandled = true;
-      capture.error(errorMsg, {
-        extra: { event, context: lambdaName, error },
-      });
-      throw new MetriportError(errorMsg, error, {
-        ...{ ...parsedBody, patientPayload: undefined },
-      });
-    }
+    const finishedAt = new Date().getTime();
+    log(`Done local duration: ${finishedAt - startedAt}ms`);
   } catch (error) {
-    if (errorHandled) throw error;
     console.log(`${errorMsg}: ${errorToString(error)}`);
     capture.error(errorMsg, {
       extra: { event, context: lambdaName, error },
