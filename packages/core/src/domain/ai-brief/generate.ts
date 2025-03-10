@@ -3,6 +3,7 @@ import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { summarizeFilteredBundleWithAI } from "../../command/ai-brief/create";
+import { prepareBundleForAiSummarization } from "../../command/ai-brief/filter";
 import { generateAiBriefFhirResource } from "../../command/ai-brief/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture } from "../../util";
@@ -12,7 +13,6 @@ dayjs.extend(duration);
 const maxAttempts = 3;
 const waitTimeBetweenAttempts = dayjs.duration({ seconds: 0.2 });
 
-// TODO: 2526 - Refactor the retry with networks to only be used on the call to Bedrock
 export async function generateAiBriefBundleEntry(
   bundle: Bundle<Resource>,
   cxId: string,
@@ -23,14 +23,11 @@ export async function generateAiBriefBundleEntry(
   let attemptNumber = 1;
 
   try {
+    const filteredBundle = prepareBundleForAiSummarization(bundle, log);
     await executeWithNetworkRetries(
       async () => {
-        aiBriefContent = await summarizeFilteredBundleWithAI(
-          bundle,
-          cxId,
-          patientId,
-          attemptNumber.toString()
-        );
+        log(`Attempt #: ${attemptNumber}`);
+        aiBriefContent = await summarizeFilteredBundleWithAI(cxId, patientId, filteredBundle);
         attemptNumber++;
       },
       {
