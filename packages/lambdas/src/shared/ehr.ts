@@ -1,13 +1,8 @@
-import { EhrSource, isEhrSource } from "@metriport/core/src/external/shared/ehr";
+import { ProcessSyncPatientRequest } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient";
+import { isEhrSource } from "@metriport/core/src/external/shared/ehr";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseSyncPatient(bodyAsJson: any): {
-  cxIdRaw: string;
-  ehrRaw: EhrSource;
-  practiceIdRaw: string;
-  patientIdRaw: string;
-  triggerDqRaw: boolean;
-} {
+export function parseSyncPatient(bodyAsJson: any): ProcessSyncPatientRequest {
   const cxIdRaw = bodyAsJson.cxId;
   if (!cxIdRaw) throw new Error(`Missing cxId`);
   if (typeof cxIdRaw !== "string") throw new Error(`Invalid cxId`);
@@ -29,5 +24,11 @@ export function parseSyncPatient(bodyAsJson: any): {
   if (triggerDqRaw === undefined) throw new Error(`Missing triggerDq`);
   if (typeof triggerDqRaw !== "boolean") throw new Error(`Invalid triggerDq`);
 
-  return { cxIdRaw, ehrRaw, practiceIdRaw, patientIdRaw, triggerDqRaw };
+  return {
+    cxId: cxIdRaw,
+    ehr: ehrRaw,
+    practiceId: practiceIdRaw,
+    patientId: patientIdRaw,
+    triggerDq: triggerDqRaw,
+  };
 }

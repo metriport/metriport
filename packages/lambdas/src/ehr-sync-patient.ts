@@ -19,9 +19,8 @@ const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler(event: SQSEvent) {
-  const errorMsg = "Error processing event on " + lambdaName;
-  const startedAt = new Date().getTime();
   try {
+    const startedAt = new Date().getTime();
     const message = getSingleMessageOrFail(event.Records, lambdaName);
     if (!message) return;
 
@@ -40,11 +39,10 @@ export async function handler(event: SQSEvent) {
     const finishedAt = new Date().getTime();
     log(`Done local duration: ${finishedAt - startedAt}ms`);
   } catch (error) {
-    console.log(`${errorMsg}: ${errorToString(error)}`);
-    capture.error(errorMsg, {
-      extra: { event, context: lambdaName, error },
-    });
-    throw new MetriportError(errorMsg, error);
+    const msg = "Error processing event on " + lambdaName;
+    console.log(`${msg}: ${errorToString(error)}`);
+    capture.error(msg, { extra: { event, context: lambdaName, error } });
+    throw new MetriportError(msg, error);
   }
 }
 
@@ -56,20 +54,5 @@ function parseBody(body?: unknown): ProcessSyncPatientRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  const { cxIdRaw, ehrRaw, practiceIdRaw, patientIdRaw, triggerDqRaw } =
-    parseSyncPatient(bodyAsJson);
-
-  const cxId = cxIdRaw;
-  const ehr = ehrRaw;
-  const practiceId = practiceIdRaw;
-  const patientId = patientIdRaw;
-  const triggerDq = triggerDqRaw;
-
-  return {
-    cxId,
-    ehr,
-    practiceId,
-    patientId,
-    triggerDq,
-  };
+  return parseSyncPatient(bodyAsJson);
 }
