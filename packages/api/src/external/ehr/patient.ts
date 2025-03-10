@@ -1,5 +1,4 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { getFacilityMapping, getFacilityMappingOrFail } from "../../command/mapping/facility";
 import { createPatient } from "../../command/medical/patient/create-patient";
 import { PatientWithIdentifiers } from "../../command/medical/patient/get-patient";
@@ -21,14 +20,6 @@ export async function handleMetriportSync({
   externalId,
 }: HandleMetriportSyncParams): Promise<PatientWithIdentifiers> {
   const state = demographics.address?.[0]?.state;
-  if (!state) {
-    throw new MetriportError("No state found for patient", undefined, {
-      cxId,
-      source,
-      practiceId,
-      externalId,
-    });
-  }
   const facilityId = await getFacilityId({
     cxId,
     source,
@@ -54,14 +45,16 @@ async function getFacilityId({
   cxId: string;
   source: EhrSource;
   practiceId: string;
-  state: string;
+  state?: string;
 }): Promise<string> {
-  const stateFacilityId = await getFacilityMapping({
-    cxId,
-    externalId: createFacilityStateExternalId(practiceId, state),
-    source,
-  });
-  if (stateFacilityId) return stateFacilityId.facilityId;
+  if (state) {
+    const stateFacilityId = await getFacilityMapping({
+      cxId,
+      externalId: createFacilityStateExternalId(practiceId, state),
+      source,
+    });
+    if (stateFacilityId) return stateFacilityId.facilityId;
+  }
   const facilityMapping = await getFacilityMappingOrFail({
     cxId,
     externalId: practiceId,
