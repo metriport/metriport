@@ -1,10 +1,10 @@
-import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
-import { Hl7NotificationConfig } from "./hl7-notification-config";
+import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
+
 export type ConnectWidgetConfig = {
   stackName: string;
   region: string;
@@ -258,7 +258,6 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   };
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
-  hl7Notification: Hl7NotificationConfig;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {
