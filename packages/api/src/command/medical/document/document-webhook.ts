@@ -1,6 +1,7 @@
 import { PatientData } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 import { WebhookMetadata } from "@metriport/shared/medical";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
@@ -123,10 +124,11 @@ export const processPatientDocumentRequest = async (
     if (shouldReportUsage) {
       reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
     }
-  } catch (err) {
-    log(`Error on processPatientDocumentRequest: ${err}`);
-    capture.error(err, {
-      extra: { patientId, context: `webhook.processPatientDocumentRequest`, err },
+  } catch (error) {
+    const msg = `Error on processPatientDocumentRequest`;
+    log(`${msg}: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: { patientId, context: `webhook.processPatientDocumentRequest`, error },
     });
   }
 };
