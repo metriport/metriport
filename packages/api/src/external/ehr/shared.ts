@@ -267,11 +267,10 @@ async function getFacilityId({
     });
     if (stateFacilityId) return stateFacilityId.facilityId;
   }
-  return (
-    await getFacilityMappingOrFail({
-      cxId,
-      externalId: practiceId,
-      source,
-    })
-  ).facilityId;
+  const facilityMapping = await getFacilityMappingOrFail({
+    cxId,
+    externalId: practiceId,
+    source,
+  });
+  return facilityMapping.facilityId;
 }
