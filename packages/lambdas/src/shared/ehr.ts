@@ -1,7 +1,7 @@
 import { EhrSource, isEhrSource } from "@metriport/core/src/external/shared/ehr";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseEhrIds(bodyAsJson: any): {
+export function parseSyncPatient(bodyAsJson: any): {
   cxIdRaw: string;
   ehrRaw: EhrSource;
   practiceIdRaw: string;

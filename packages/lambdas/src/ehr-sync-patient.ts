@@ -1,10 +1,9 @@
 import { ProcessSyncPatientRequest } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient";
 import { EhrSyncPatientLocal } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient-local";
-import { EhrSource } from "@metriport/core/src/external/shared/ehr";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
-import { parseEhrIds } from "./shared/ehr";
+import { parseSyncPatient } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -29,7 +28,7 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { ehr, cxId, practiceId, patientId, triggerDq } = parsedBody;
+    const { ehr, cxId, practiceId, patientId } = parsedBody;
 
     const log = prefixedLog(
       `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`
@@ -37,16 +36,9 @@ export async function handler(event: SQSEvent) {
     try {
       log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-      const processSyncPatientRequest: ProcessSyncPatientRequest = {
-        ehr,
-        cxId,
-        practiceId,
-        patientId,
-        triggerDq,
-      };
       const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
 
-      await ehrSyncPatientHandler.processSyncPatient(processSyncPatientRequest);
+      await ehrSyncPatientHandler.processSyncPatient(parsedBody);
 
       const finishedAt = new Date().getTime();
       log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -69,13 +61,7 @@ export async function handler(event: SQSEvent) {
   }
 }
 
-function parseBody(body?: unknown): {
-  cxId: string;
-  ehr: EhrSource;
-  practiceId: string;
-  patientId: string;
-  triggerDq: boolean;
-} {
+function parseBody(body?: unknown): ProcessSyncPatientRequest {
   if (!body) throw new Error(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -83,7 +69,8 @@ function parseBody(body?: unknown): {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  const { cxIdRaw, ehrRaw, practiceIdRaw, patientIdRaw, triggerDqRaw } = parseEhrIds(bodyAsJson);
+  const { cxIdRaw, ehrRaw, practiceIdRaw, patientIdRaw, triggerDqRaw } =
+    parseSyncPatient(bodyAsJson);
 
   const cxId = cxIdRaw;
   const ehr = ehrRaw;
