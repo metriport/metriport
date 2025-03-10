@@ -16,7 +16,7 @@ import duration from "dayjs/plugin/duration";
 import { groupBy } from "lodash";
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
 import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
-import { countResources } from "../../../external/fhir/patient/count-resources";
+import { countResourcesOnExistingConsolidatedSnapshot } from "../../../external/fhir/patient/count-resources-on-s3";
 import { Config } from "../../../shared/config";
 import { getDocRefMappings } from "../docref-mapping/get-docref-mapping";
 import { deleteConsolidated as deleteConsolidatedOnFHIRServer } from "../patient/consolidated-delete";
@@ -300,7 +300,7 @@ async function countAndLogConsolidated({
   const consolidatedBeforeMap: Record<string, number> = {};
 
   const countPatientResources = async (patientId: string) => {
-    const resourceCount = await countResources({
+    const resourceCount = await countResourcesOnExistingConsolidatedSnapshot({
       patient: { id: patientId, cxId },
       resources: resourcesToDelete,
     });

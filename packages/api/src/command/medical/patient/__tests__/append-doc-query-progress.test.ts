@@ -21,11 +21,12 @@ let patientModel_findOne: jest.SpyInstance;
 jest.mock("../../../../models/medical/patient");
 
 beforeEach(() => {
+  jest.restoreAllMocks();
   documentQueryProgress = {
     download: makeProgress(),
     convert: makeProgress(),
   };
-  jest.spyOn(webhooks, "processDocQueryProgressWebhook").mockImplementation();
+  jest.spyOn(webhooks, "processDataPipelineCheckpoints").mockImplementation();
   mockStartTransaction();
   patient = makePatient({ data: makePatientData({ documentQueryProgress }) });
   patientModel = { dataValues: patient } as PatientModel;
@@ -102,15 +103,21 @@ describe("appendDocQueryProgress", () => {
       checkUnchanged("convert");
     });
     it("removes download when its null", async () => {
+      patientModel_update.mockClear();
+
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: documentQueryProgress.convert,
         downloadProgress: null,
         requestId,
       });
+
+      expect(patientModel_update).toHaveBeenCalledTimes(1);
+
       const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
         | PatientModel
         | undefined;
+
       expect(patientSentToUpdate).toBeTruthy();
       expect(patientSentToUpdate?.data).toBeTruthy();
       expect(patientSentToUpdate?.data.documentQueryProgress).toBeTruthy();
@@ -151,6 +158,8 @@ describe("appendDocQueryProgress", () => {
       checkUnchanged("download");
     });
     it("removes convert when its null", async () => {
+      patientModel_update.mockClear();
+
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: null,
