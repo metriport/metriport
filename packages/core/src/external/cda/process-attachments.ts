@@ -30,7 +30,7 @@ import { out } from "../../util/log";
 import { OCTET_MIME_TYPE } from "../../util/mime";
 import { sizeInBytes } from "../../util/string";
 import { uuidv4 } from "../../util/uuid-v7";
-import { S3Utils, UploadParams } from "../aws/s3";
+import { S3Utils, UploadParamsBuffer } from "../aws/s3";
 import { cqExtension } from "../carequality/extension";
 import { cwExtension } from "../commonwell/extension";
 import { makeFhirApi } from "../fhir/api/api-factory";
@@ -86,8 +86,8 @@ export async function processAttachments({
       .flat()
       .filter(Boolean) as Extension[];
 
-    const docRefs: DocumentReference[] = [];
-    const uploadDetails: UploadParams[] = [];
+  const docRefs: DocumentReference[] = [];
+  const uploadDetails: UploadParamsBuffer[] = [];
 
     const contextParams: SentryParams = { patientId, cxId, filePath };
     b64Attachments.acts.map(act => {
@@ -199,14 +199,12 @@ async function handleFhirUpload(
 }
 
 async function handleS3Upload(
-  uploadDetails: UploadParams[],
+  uploadDetails: UploadParamsBuffer[],
   s3Utils: S3Utils,
   log: typeof console.log
 ): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const detailsToLog = uploadDetails.map(({ file, ...d }) => d);
-  log(`[handleS3Upload] Upload details: ${JSON.stringify(detailsToLog)}`);
-  await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
+  log(`Upload details: ${JSON.stringify(uploadDetails)}`);
+  await executeAsynchronously(uploadDetails, async (uploadParams: UploadParamsBuffer) => {
     await s3Utils.uploadFile(uploadParams);
   });
   log(`[handleS3Upload] Done`);
@@ -375,11 +373,11 @@ function buildUploadParams(
   fileDetails: FileDetails,
   bucketName: string,
   fileKey: string
-): UploadParams {
+): UploadParamsBuffer {
   return {
     bucket: bucketName,
     key: fileKey,
-    file: Buffer.from(fileDetails.fileB64Contents, "base64"),
+    content: Buffer.from(fileDetails.fileB64Contents, "base64"),
     ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
   };
 }

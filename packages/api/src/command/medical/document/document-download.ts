@@ -4,6 +4,7 @@ import {
   Output as ConvertDocOutput,
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
+import { isWkhtmltopdfEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
 import dayjs from "dayjs";
 import BadRequestError from "../../../errors/bad-request";
@@ -16,14 +17,17 @@ const URL_EXPIRATION_TIME = dayjs.duration(5, "minutes");
 const s3client = makeS3Client();
 const lambdaClient = makeLambdaClient();
 const conversionLambdaName = Config.getConvertDocLambdaName();
+const conversionLambdaName3 = Config.getConvertDocLambda3Name();
 
-export const downloadDocument = async ({
+export async function downloadDocument({
+  cxId,
   fileName,
   conversionType,
 }: {
+  cxId: string;
   fileName: string;
   conversionType?: ConversionType;
-}): Promise<string> => {
+}): Promise<string> {
   const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
@@ -34,43 +38,72 @@ export const downloadDocument = async ({
     );
 
   if (conversionType && validConversionTypes.includes(conversionType) && bucketName) {
-    return getConversionUrl({ fileName, conversionType, bucketName });
+    return getConversionUrl({ cxId, fileName: fileName, conversionType, bucketName });
   }
   return getSignedURL({ fileName, bucketName });
-};
+}
 
-const getConversionUrl = async ({
-  fileName,
+async function getConversionUrl({
+  cxId,
+  fileName: fileName,
   conversionType,
   bucketName,
-}: ConvertDocInput): Promise<string> => {
+}: ConvertDocInput): Promise<string> {
   const convertedFileName = fileName.concat(`.${conversionType}`);
   const { exists, bucketName: bucketContainingObj } = await doesObjExist({
     fileName: convertedFileName,
   });
 
   if (exists) return getSignedURL({ fileName: convertedFileName, bucketName: bucketContainingObj });
-  else return convertDoc({ fileName, conversionType, bucketName });
-};
+  else return convertDoc({ cxId, fileName: fileName, conversionType, bucketName });
+}
 
-export const convertDoc = async ({
-  fileName,
+async function convertDoc({
+  cxId,
+  fileName: fileName,
   conversionType,
   bucketName,
-}: ConvertDocInput): Promise<string> => {
-  if (!conversionLambdaName) throw new Error("Conversion Lambda Name is undefined");
+}: ConvertDocInput): Promise<string> {
+  const isWkhtmltopdfEnabled = await isWkhtmltopdfEnabledForCx(cxId);
+  const [activeLambdaName, inactiveLambdaName, inactiveSuffix] = isWkhtmltopdfEnabled
+    ? [conversionLambdaName3, conversionLambdaName, "_puppeteer"]
+    : [conversionLambdaName, conversionLambdaName3, "_wkhtmltopdf"];
 
-  const result = await lambdaClient
-    .invoke({
-      FunctionName: conversionLambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify({ fileName, conversionType, bucketName }),
-    })
-    .promise();
+  if (!activeLambdaName) throw new Error("Conversion Lambda Name is undefined");
+
+  const activeLambdaPayload: ConvertDocInput = {
+    cxId,
+    fileName: fileName,
+    conversionType,
+    bucketName,
+  };
+  const inactiveLambdaPayload: ConvertDocInput = {
+    ...activeLambdaPayload,
+    resultFileNameSuffix: inactiveSuffix,
+  };
+
+  const [result] = await Promise.all([
+    lambdaClient
+      .invoke({
+        FunctionName: activeLambdaName,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify(activeLambdaPayload),
+      })
+      .promise(),
+    inactiveLambdaName &&
+      lambdaClient
+        .invoke({
+          FunctionName: inactiveLambdaName,
+          InvocationType: "RequestResponse",
+          Payload: JSON.stringify(inactiveLambdaPayload),
+        })
+        .promise(),
+  ]);
+
   const resultPayload = getLambdaResultPayload({ result, lambdaName: conversionLambdaName });
   const parsedResult = JSON.parse(resultPayload) as ConvertDocOutput;
   return parsedResult.url;
-};
+}
 
 const doesObjExist = async ({
   fileName,

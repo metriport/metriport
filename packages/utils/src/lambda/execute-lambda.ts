@@ -28,6 +28,7 @@ const lambdaName = "CdaToVisualizationLambda_v2";
 const lambdaClient = makeLambdaClient(region);
 
 const payload: Input = {
+  cxId: "123",
   fileName: s3Key,
   bucketName,
   conversionType,

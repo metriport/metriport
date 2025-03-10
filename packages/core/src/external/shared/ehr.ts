@@ -120,7 +120,7 @@ export async function makeRequest<T>({
           .uploadFile({
             bucket: responsesBucket,
             key,
-            file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
+            content: JSON.stringify({ error, message }),
             contentType: "application/json",
           })
           .catch(processAsyncError(`Error saving error to s3 @ ${ehr} - ${method} ${url}`));
@@ -156,7 +156,7 @@ export async function makeRequest<T>({
       .uploadFile({
         bucket: responsesBucket,
         key,
-        file: Buffer.from(JSON.stringify(response.data), "utf8"),
+        content: JSON.stringify(response.data),
         contentType: "application/json",
       })
       .catch(processAsyncError(`Error saving to s3 @ ${ehr} - ${method} ${url}`));
