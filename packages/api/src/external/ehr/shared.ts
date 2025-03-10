@@ -1,6 +1,8 @@
+import { PatientDemoData } from "@metriport/core/domain/patient";
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -22,6 +24,10 @@ import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
+import { getFacilityMapping, getFacilityMappingOrFail } from "../../command/mapping/facility";
+import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
+import { createPatient } from "../../command/medical/patient/create-patient";
+import { PatientWithIdentifiers } from "../../command/medical/patient/get-patient";
 import { athenaClientJwtTokenSource } from "./athenahealth/shared";
 import { canvasClientJwtTokenSource, canvasWebhookJwtTokenSource } from "./canvas/shared";
 import { elationClientJwtTokenSource, elationWebhookJwtTokenSource } from "./elation/shared";
@@ -191,4 +197,81 @@ export function parseExternalId(source: string, externalId: string): string {
     return patientId;
   }
   return externalId;
+}
+
+export type HandleMetriportSyncParams = {
+  cxId: string;
+  source: EhrSource;
+  practiceId: string;
+  demographics: PatientDemoData;
+  externalId: string;
+  triggerDq: boolean;
+};
+
+export async function handleMetriportSync({
+  cxId,
+  source,
+  practiceId,
+  demographics,
+  externalId,
+  triggerDq,
+}: HandleMetriportSyncParams): Promise<PatientWithIdentifiers> {
+  const states = demographics.address.map(address => address.state);
+  if (states.length === 0) {
+    throw new MetriportError("No states found for patient", undefined, {
+      cxId,
+      source,
+      practiceId,
+      externalId,
+    });
+  }
+  const facilityId = await getFacilityId({
+    cxId,
+    source,
+    practiceId,
+    states,
+  });
+  const metriportPatient = await createPatient({
+    patient: {
+      cxId,
+      facilityId,
+      externalId,
+      ...demographics,
+    },
+  });
+  if (triggerDq) {
+    queryDocumentsAcrossHIEs({
+      cxId,
+      patientId: metriportPatient.id,
+    }).catch(processAsyncError(`${source} queryDocumentsAcrossHIEs`));
+  }
+  return metriportPatient;
+}
+
+async function getFacilityId({
+  cxId,
+  source,
+  practiceId,
+  states,
+}: {
+  cxId: string;
+  source: EhrSource;
+  practiceId: string;
+  states: string[];
+}): Promise<string> {
+  for (const state of states) {
+    const stateFacilityId = await getFacilityMapping({
+      cxId,
+      externalId: `${practiceId}-${state}`,
+      source,
+    });
+    if (stateFacilityId) return stateFacilityId.facilityId;
+  }
+  return (
+    await getFacilityMappingOrFail({
+      cxId,
+      externalId: practiceId,
+      source,
+    })
+  ).facilityId;
 }
