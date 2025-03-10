@@ -1,4 +1,6 @@
+import { buildEhrSyncPatientHandler } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient-factory";
 import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
+import { EhrSources } from "@metriport/core/external/shared/ehr";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -10,7 +12,7 @@ import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  EhrSources,
+  delayBetweenPatientBatches,
   delayBetweenPracticeBatches,
   getLookBackTimeRange,
   getLookForwardTimeRange,
@@ -18,10 +20,7 @@ import {
   parallelPractices,
 } from "../../shared";
 import { LookupMode, LookupModes, createAthenaClient } from "../shared";
-import {
-  SyncAthenaPatientIntoMetriportParams,
-  syncAthenaPatientIntoMetriport,
-} from "./sync-patient";
+import { SyncAthenaPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -82,48 +81,20 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
 
   const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
 
-  const syncPatientsErrors: {
-    error: unknown;
-    cxId: string;
-    athenaPracticeId: string;
-    athenaPatientId: string;
-  }[] = [];
   const syncPatientsArgs: SyncAthenaPatientIntoMetriportParams[] = uniqueAppointments.map(
     appointment => {
       return {
         cxId: appointment.cxId,
         athenaPracticeId: appointment.practiceId,
         athenaPatientId: appointment.patientId,
-        triggerDq: true,
       };
     }
   );
 
-  await executeAsynchronously(
-    syncPatientsArgs,
-    async (params: SyncAthenaPatientIntoMetriportParams) => {
-      const { error } = await syncPatient(params);
-      if (error) syncPatientsErrors.push({ ...params, error });
-    },
-    {
-      numberOfParallelExecutions: parallelPatients,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
-    }
-  );
-
-  if (syncPatientsErrors.length > 0) {
-    const msg = "Failed to sync some patients @ AthenaHealth";
-    capture.message(msg, {
-      extra: {
-        syncPatientsArgsCount: uniqueAppointments.length,
-        errorCount: syncPatientsErrors.length,
-        errors: syncPatientsErrors,
-        context: "athenahealth.process-patients-from-appointments",
-        lookupMode,
-      },
-      level: "warning",
-    });
-  }
+  await executeAsynchronously(syncPatientsArgs, syncPatient, {
+    numberOfParallelExecutions: parallelPatients,
+    delay: delayBetweenPatientBatches.asMilliseconds(),
+  });
 }
 
 async function getAppointments({
@@ -202,23 +173,13 @@ async function syncPatient({
   cxId,
   athenaPracticeId,
   athenaPatientId,
-  triggerDq,
-}: Omit<SyncAthenaPatientIntoMetriportParams, "api">): Promise<{ error?: unknown }> {
-  const { log } = out(
-    `AthenaHealth syncPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
-  );
-  const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
-  try {
-    await syncAthenaPatientIntoMetriport({
-      cxId,
-      athenaPracticeId,
-      athenaPatientId,
-      api,
-      triggerDq,
-    });
-    return {};
-  } catch (error) {
-    log(`Failed to sync patient. Cause: ${errorToString(error)}`);
-    return { error };
-  }
+}: Omit<SyncAthenaPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
+  const handler = buildEhrSyncPatientHandler();
+  await handler.processSyncPatient({
+    ehr: EhrSources.athena,
+    cxId,
+    practiceId: athenaPracticeId,
+    patientId: athenaPatientId,
+    triggerDq: true,
+  });
 }

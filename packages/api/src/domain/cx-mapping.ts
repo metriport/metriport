@@ -1,10 +1,10 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
+import { EhrSources, ehrSources } from "@metriport/core/external/shared/ehr";
 import {
   AthenaSecondaryMappings,
   athenaSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/athenahealth/cx-mapping";
 import { z } from "zod";
-import { EhrSources, ehrSources } from "../external/ehr/shared";
 
 const cxMappingSource = [...ehrSources] as const;
 export type CxMappingSource = (typeof cxMappingSource)[number];

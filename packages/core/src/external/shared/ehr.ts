@@ -19,6 +19,17 @@ import { S3Utils } from "../aws/s3";
 const region = Config.getAWSRegion();
 const responsesBucket = Config.getEhrResponsesBucketName();
 
+export enum EhrSources {
+  athena = "athenahealth",
+  elation = "elation",
+  canvas = "canvas",
+}
+export const ehrSources = [...Object.values(EhrSources)] as const;
+export type EhrSource = (typeof ehrSources)[number];
+export function isEhrSource(source: string): source is EhrSource {
+  return ehrSources.includes(source as EhrSource);
+}
+
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
@@ -45,7 +56,7 @@ export function formatDate(date: string | undefined, format: string): string | u
 }
 
 export type MakeRequestParams<T> = {
-  ehr: string;
+  ehr: EhrSource;
   cxId: string;
   practiceId: string;
   patientId?: string | undefined;

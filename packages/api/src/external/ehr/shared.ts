@@ -3,6 +3,7 @@ import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { EhrSources } from "@metriport/core/external/shared/ehr";
 import {
   AthenaClientJwtTokenData,
   AthenaJwtTokenData,
@@ -27,8 +28,9 @@ import { canvasClientJwtTokenSource, canvasWebhookJwtTokenSource } from "./canva
 import { elationClientJwtTokenSource, elationWebhookJwtTokenSource } from "./elation/shared";
 
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
+export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
-export const parallelPatients = 2;
+export const parallelPatients = 200;
 
 type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv;
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
@@ -42,17 +44,6 @@ export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   practiceId: string;
 } & EhrEnvAndClientCredentials<Env>;
-
-export enum EhrSources {
-  athena = "athenahealth",
-  elation = "elation",
-  canvas = "canvas",
-}
-export const ehrSources = [...Object.values(EhrSources)] as const;
-export type EhrSource = (typeof ehrSources)[number];
-export function isEhrSource(source: string): source is EhrSource {
-  return ehrSources.includes(source as EhrSource);
-}
 
 export const ehrDashJwtTokenSources = [EhrSources.athena, EhrSources.canvas] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];

@@ -1,8 +1,8 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
+import { EhrSource } from "@metriport/core/external/shared/ehr";
 import { getFacilityMapping, getFacilityMappingOrFail } from "../../command/mapping/facility";
 import { createPatient } from "../../command/medical/patient/create-patient";
 import { PatientWithIdentifiers } from "../../command/medical/patient/get-patient";
-import { EhrSource } from "./shared";
 
 export type HandleMetriportSyncParams = {
   cxId: string;

@@ -1,10 +1,10 @@
+import { EhrSources } from "@metriport/core/external/shared/ehr";
 import { athenaJwtTokenDataSchema } from "@metriport/shared/interface/external/athenahealth/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import z from "zod";
 import { checkJwtToken, saveJwtToken } from "../../../../external/ehr/jwt-token";
-import { EhrSources } from "../../../../external/ehr/shared";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getAuthorizationToken } from "../../../util";
 

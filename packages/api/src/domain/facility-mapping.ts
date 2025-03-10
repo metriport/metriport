@@ -1,5 +1,5 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { ehrSources } from "../external/ehr/shared";
+import { ehrSources } from "@metriport/core/external/shared/ehr";
 
 const facilityMappingSource = [...ehrSources] as const;
 export type FacilityMappingSource = (typeof facilityMappingSource)[number];

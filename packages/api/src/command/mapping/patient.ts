@@ -1,3 +1,4 @@
+import { EhrSources } from "@metriport/core/external/shared/ehr";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
 import {
@@ -5,7 +6,7 @@ import {
   PatientMappingPerSource,
   PatientSourceIdentifierMap,
 } from "../../domain/patient-mapping";
-import { EhrSources, parseExternalId } from "../../external/ehr/shared";
+import { parseExternalId } from "../../external/ehr/shared";
 import { PatientMappingModel } from "../../models/patient-mapping";
 
 export type PatientMappingParams = PatientMappingPerSource;

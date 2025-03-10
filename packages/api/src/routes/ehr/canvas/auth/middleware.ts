@@ -1,8 +1,8 @@
+import { EhrSources } from "@metriport/core/external/shared/ehr";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
 import { canvasWebhookJwtTokenSource } from "../../../../external/ehr/canvas/shared";
-import { EhrSources } from "../../../../external/ehr/shared";
 import {
   ParseResponse,
   processCxIdAsync,
