@@ -1,7 +1,9 @@
 import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
+import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
@@ -10,8 +12,6 @@ import {
   getOrCreateMetriportPatientFhir,
 } from "../../shared-fhir";
 import { createAthenaClient } from "../shared";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 
 const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";
 const CUSTOM_FIELD_ID_OPT_OUT = Config.isProdEnv() ? "101" : "1289";
