@@ -1,14 +1,14 @@
+#!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
-import { Hl7NotificationStack } from "../lib/hl7-notification-stack";
+import { ConnectWidgetStack } from "../lib/connect-widget-stack";
+import { IHEStack } from "../lib/ihe-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar, isSandbox } from "../lib/shared/util";
-import { IHEStack } from "../lib/ihe-stack";
-import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 
 const app = new cdk.App();
 
@@ -47,18 +47,7 @@ async function deploy(config: EnvConfig) {
   new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
-  // 4. Deploy the HL7 Notification Routing stack.
-  //---------------------------------------------------------------------------------
-  if (!isSandbox(config)) {
-    new Hl7NotificationStack(app, "Hl7NotificationStack", {
-      env,
-      config,
-      version,
-    });
-  }
-
-  //---------------------------------------------------------------------------------
-  // 5. Deploy the IHE stack. Lambdas for IHE Inbound, and IHE API Gateway.
+  // 4. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
   if (config.iheGateway) {
     new IHEStack(app, "IHEStack", {
@@ -67,9 +56,8 @@ async function deploy(config: EnvConfig) {
       version,
     });
   }
-
   //---------------------------------------------------------------------------------
-  // 6. Deploy the Connect widget stack.
+  // 5. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
   if (!isSandbox(config)) {
     new ConnectWidgetStack(app, config.connectWidget.stackName, {
