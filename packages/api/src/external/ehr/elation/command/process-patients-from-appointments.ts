@@ -1,19 +1,17 @@
-import { SQSClient } from "@metriport/core/external/aws/sqs";
+import { buildEhrSyncPatientHandler } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient-factory";
+import { EhrSources } from "@metriport/core/external/shared/ehr";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  delayBetweenPracticeBatches,
   delayBetweenPatientBatches,
-  EhrSources,
+  delayBetweenPracticeBatches,
   getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
@@ -28,28 +26,21 @@ const lookForward = dayjs.duration(14, "days");
 type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
-  fromDate: Date;
-  toDate: Date;
 };
 
 export async function processPatientsFromAppointments(): Promise<void> {
-  const { log } = out(`Elation processPatientsFromAppointments`);
-
-  const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
-  log(`Getting appointments from ${startRange} to ${endRange}`);
-
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.elation });
+  if (cxMappings.length === 0) {
+    out("processPatientsFromAppointments @ Elation").log("No cx mappings found");
+    return;
+  }
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
-    const cxId = mapping.cxId;
-    const practiceId = mapping.externalId;
     return {
-      cxId,
-      practiceId,
-      fromDate: startRange,
-      toDate: endRange,
+      cxId: mapping.cxId,
+      practiceId: mapping.externalId,
     };
   });
 
@@ -58,7 +49,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
     async (params: GetAppointmentsParams) => {
       const { appointments, error } = await getAppointments(params);
       if (appointments) allAppointments.push(...appointments);
-      if (error) getAppointmentsErrors.push({ error, ...params });
+      if (error) getAppointmentsErrors.push({ ...params, error });
     },
     {
       numberOfParallelExecutions: parallelPractices,
@@ -81,71 +72,43 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
 
-  const syncPatientsErrors: {
-    error: unknown;
-    cxId: string;
-    elationPracticeId: string;
-    elationPatientId: string;
-  }[] = [];
   const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = uniqueAppointments.map(
     appointment => {
       return {
         cxId: appointment.cxId,
         elationPracticeId: appointment.practiceId,
         elationPatientId: appointment.patientId,
-        triggerDq: true,
       };
     }
   );
 
-  await executeAsynchronously(
-    syncPatientsArgs,
-    async (params: SyncElationPatientIntoMetriportParams) => {
-      const { error } = await syncPatient(params);
-      if (error) syncPatientsErrors.push({ ...params, error });
-    },
-    {
-      numberOfParallelExecutions: parallelPatients,
-      delay: delayBetweenPatientBatches.asMilliseconds(),
-    }
-  );
-
-  if (syncPatientsErrors.length > 0) {
-    const msg = "Failed to sync some patients @ Elation";
-    capture.message(msg, {
-      extra: {
-        syncPatientsArgsCount: uniqueAppointments.length,
-        errorCount: syncPatientsErrors.length,
-        errors: syncPatientsErrors,
-        context: "elation.process-patients-from-appointments",
-      },
-      level: "warning",
-    });
-  }
+  await executeAsynchronously(syncPatientsArgs, syncPatient, {
+    numberOfParallelExecutions: parallelPatients,
+    delay: delayBetweenPatientBatches.asMilliseconds(),
+  });
 }
 
 async function getAppointments({
   cxId,
   practiceId,
-  fromDate,
-  toDate,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createElationClient({ cxId, practiceId });
+  const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
+  log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
     const appointments = await api.getAppointments({
       cxId,
-      fromDate,
-      toDate,
+      fromDate: startRange,
+      toDate: endRange,
     });
     return {
       appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: appointment.patient };
       }),
-      error: undefined,
     };
   } catch (error) {
-    log(`Failed to get appointments from ${fromDate} to ${toDate}. Cause: ${errorToString(error)}`);
+    log(`Failed to get appointments. Cause: ${errorToString(error)}`);
     return { error };
   }
 }
@@ -154,26 +117,13 @@ async function syncPatient({
   cxId,
   elationPracticeId,
   elationPatientId,
-}: Omit<SyncElationPatientIntoMetriportParams, "api" | "triggerDq">): Promise<{ error: unknown }> {
-  const { log } = out(
-    `Elation syncPatient - cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}`
-  );
-  try {
-    const payload = JSON.stringify({
-      cxId,
-      ehrId: EhrSources.elation,
-      ehrPracticeId: elationPracticeId,
-      ehrPatientId: elationPatientId,
-    });
-    const sqsClient = new SQSClient({ region: Config.getAWSRegion() });
-    await sqsClient.sendMessageToQueue(Config.getEhrSyncPatientQueueUrl(), payload, {
-      fifo: true,
-      messageDeduplicationId: createUuidFromText(payload),
-      messageGroupId: cxId,
-    });
-    return { error: undefined };
-  } catch (error) {
-    log(`Failed to put sync patient message on queue. Cause: ${errorToString(error)}`);
-    return { error };
-  }
+}: Omit<SyncElationPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
+  const handler = buildEhrSyncPatientHandler();
+  await handler.processSyncPatient({
+    ehr: EhrSources.elation,
+    cxId,
+    practiceId: elationPracticeId,
+    patientId: elationPatientId,
+    triggerDq: true,
+  });
 }

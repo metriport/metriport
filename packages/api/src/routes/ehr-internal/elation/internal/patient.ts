@@ -2,11 +2,11 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { getUUIDFrom } from "../../../schemas/uuid";
-import { syncElationPatientIntoMetriport } from "../../../../external/ehr/elation/command/sync-patient";
 import { processPatientsFromAppointments } from "../../../../external/ehr/elation/command/process-patients-from-appointments";
+import { syncElationPatientIntoMetriport } from "../../../../external/ehr/elation/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler, getFrom, getFromQueryOrFail } from "../../../util";
+import { getUUIDFrom } from "../../../schemas/uuid";
+import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
 
 const router = Router();
 
@@ -27,26 +27,43 @@ router.post(
 );
 
 /**
- * GET /internal/ehr/elation/patient/:id
+ * POST /internal/ehr/elation/patient/appointments
+ *
+ * Fetches appointments in the future and creates all patients not already existing
+ */
+router.post(
+  "/appointments",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    processPatientsFromAppointments().catch(
+      processAsyncError("Elation processPatientsFromAppointments")
+    );
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/elation/patient/:id
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Elation Patient.
  * @returns Metriport Patient if found.
  */
-router.get(
+router.post(
   "/:id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const elationPatientId = getFrom("params").orFail("id", req);
+    const elationPatientId = getFromQueryOrFail("patientId", req);
     const elationPracticeId = getFromQueryOrFail("practiceId", req);
-    const patientId = await syncElationPatientIntoMetriport({
+    const triggerDq = getFromQueryAsBoolean("triggerDq", req);
+    syncElationPatientIntoMetriport({
       cxId,
       elationPracticeId,
       elationPatientId,
-      triggerDq: true,
-    });
-    return res.status(httpStatus.OK).json(patientId);
+      triggerDq,
+    }).catch(processAsyncError("Elation syncElationPatientIntoMetriport"));
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

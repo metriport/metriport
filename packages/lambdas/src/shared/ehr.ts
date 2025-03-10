@@ -1,22 +1,33 @@
-const validEhrs = ["athenahealth", "elation", "canvas"];
+import { EhrSource, isEhrSource } from "@metriport/core/src/external/shared/ehr";
+
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseEhrIds(bodyAsJson: any) {
+export function parseEhrIds(bodyAsJson: any): {
+  cxIdRaw: string;
+  ehrRaw: EhrSource;
+  practiceIdRaw: string;
+  patientIdRaw: string;
+  triggerDqRaw: boolean;
+} {
   const cxIdRaw = bodyAsJson.cxId;
   if (!cxIdRaw) throw new Error(`Missing cxId`);
   if (typeof cxIdRaw !== "string") throw new Error(`Invalid cxId`);
 
-  const ehrIdRaw = bodyAsJson.ehrId;
-  if (!ehrIdRaw) throw new Error(`Missing ehrId`);
-  if (typeof ehrIdRaw !== "string") throw new Error(`Invalid ehrId`);
-  if (!validEhrs.includes(ehrIdRaw)) throw new Error(`Invalid ehrId`);
+  const ehrRaw = bodyAsJson.ehr;
+  if (!ehrRaw) throw new Error(`Missing ehr`);
+  if (typeof ehrRaw !== "string") throw new Error(`Invalid ehr`);
+  if (!isEhrSource(ehrRaw)) throw new Error(`Invalid ehr`);
 
-  const ehrPracticeIdRaw = bodyAsJson.ehrPracticeId;
-  if (!ehrPracticeIdRaw) throw new Error(`Missing ehrPracticeId`);
-  if (typeof ehrPracticeIdRaw !== "string") throw new Error(`Invalid ehrPracticeId`);
+  const practiceIdRaw = bodyAsJson.practiceId;
+  if (!practiceIdRaw) throw new Error(`Missing practiceId`);
+  if (typeof practiceIdRaw !== "string") throw new Error(`Invalid practiceId`);
 
-  const ehrPatientIdRaw = bodyAsJson.ehrPatientId;
-  if (!ehrPatientIdRaw) throw new Error(`Missing ehrPatientId`);
-  if (typeof ehrPatientIdRaw !== "string") throw new Error(`Invalid ehrPatientId`);
+  const patientIdRaw = bodyAsJson.patientId;
+  if (!patientIdRaw) throw new Error(`Missing patientId`);
+  if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
 
-  return { cxIdRaw, ehrIdRaw, ehrPracticeIdRaw, ehrPatientIdRaw };
+  const triggerDqRaw = bodyAsJson.triggerDq;
+  if (triggerDqRaw === undefined) throw new Error(`Missing triggerDq`);
+  if (typeof triggerDqRaw !== "boolean") throw new Error(`Invalid triggerDq`);
+
+  return { cxIdRaw, ehrRaw, practiceIdRaw, patientIdRaw, triggerDqRaw };
 }
