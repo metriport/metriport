@@ -36,7 +36,7 @@ export async function countResourcesOnNewOrExistingConsolidatedSnapshot({
   return countResourcesInBundle(snapshotBundle);
 }
 
-export async function countResourcesOnSnapshotFromExistingConsolidated({
+export async function countResourcesOnSnapshotFromExistingFullBundle({
   patient: partialPatient,
   resources = [],
   dateFrom,

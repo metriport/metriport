@@ -26,7 +26,7 @@ import { getPatientFacilityMatches } from "../../command/medical/patient/get-pat
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import { countResourcesOnSnapshotFromExistingConsolidated } from "../../external/fhir/patient/count-resources-on-s3";
+import { countResourcesOnSnapshotFromExistingFullBundle } from "../../external/fhir/patient/count-resources-on-s3";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
@@ -391,7 +391,7 @@ router.get(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const resourceCount = await countResourcesOnSnapshotFromExistingConsolidated({
+    const resourceCount = await countResourcesOnSnapshotFromExistingFullBundle({
       patient,
       resources,
       dateFrom,
