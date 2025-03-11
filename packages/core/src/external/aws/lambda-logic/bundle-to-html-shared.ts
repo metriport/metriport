@@ -139,14 +139,14 @@ export function createSection(title: string, tableContents: string, id?: string)
 
 export const getDeceasedStatus = (familyMemberHistory: FamilyMemberHistory): string => {
   const deceasedBoolean = familyMemberHistory.deceasedBoolean;
-  const contributedToDeath = familyMemberHistory.condition?.find(condition => {
+  const conditionContributedToDeath = familyMemberHistory.condition?.find(condition => {
     return condition.contributedToDeath;
   });
 
   if (deceasedBoolean !== undefined) {
     return deceasedBoolean ? "yes" : "no";
-  } else if (contributedToDeath !== undefined) {
-    return contributedToDeath ? "yes" : "no";
+  } else if (conditionContributedToDeath?.contributedToDeath !== undefined) {
+    return conditionContributedToDeath?.contributedToDeath ? "yes" : "no";
   }
   return "";
 };
