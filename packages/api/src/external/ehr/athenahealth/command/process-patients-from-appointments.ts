@@ -1,4 +1,5 @@
 import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
+import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -8,6 +9,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
+import { Config } from "../../../../shared/config";
 import {
   Appointment,
   EhrSources,
@@ -24,6 +26,10 @@ import {
 } from "./sync-patient";
 
 dayjs.extend(duration);
+
+const CUSTOM_APPOINTMENT_TYPE_IDS = Config.isProdEnv()
+  ? ["81", "181", "141", "4", "201", "13", "221", "223", "222", "281", "21", "23"]
+  : ["2", "1472"];
 
 const subscriptionBackfillLookBack = dayjs.duration(12, "hours");
 const appointmentsLookForward = dayjs.duration(1, "day");
@@ -137,13 +143,18 @@ async function getAppointments({
   );
   const api = await createAthenaClient({ cxId, practiceId });
   try {
-    const appointments = await getAppointmentsFromApi({
+    let appointments = await getAppointmentsFromApi({
       api,
       cxId,
       departmentIds,
       lookupMode,
       log,
     });
+    if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
+      appointments = appointments.filter(appointment =>
+        CUSTOM_APPOINTMENT_TYPE_IDS.includes(appointment.appointmenttypeid)
+      );
+    }
     return {
       appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
