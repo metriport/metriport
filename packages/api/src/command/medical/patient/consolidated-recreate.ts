@@ -12,7 +12,7 @@ export async function manageRecreateConsolidated(patient: Patient): Promise<void
     patient.data.externalData?.["CAREQUALITY"]?.documentQueryProgress?.triggerConsolidated;
   const globalTriggerConsolidated = patient.data.documentQueryProgress?.triggerConsolidated;
 
-  const triggerConsolidated = !!cwTrigger ?? !!cqTrigger ?? !!globalTriggerConsolidated;
+  const triggerConsolidated = !!cwTrigger || !!cqTrigger || !!globalTriggerConsolidated;
   await recreateConsolidated({
     patient,
     ...(triggerConsolidated ? { conversionType: "pdf" } : undefined),
