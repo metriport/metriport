@@ -10,7 +10,7 @@ import {
   Patient,
   patientSchema,
 } from "@metriport/shared/interface/external/ehr/elation";
-import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
+import { EhrSources } from "@metriport/shared/src/interface/external/ehr";
 import axios, { AxiosInstance } from "axios";
 import { out } from "../../../util/log";
 import {

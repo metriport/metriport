@@ -5,7 +5,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
 import { BookedAppointment } from "@metriport/shared/src/interface/external/ehr/athenahealth";
-import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
+import { EhrSources } from "@metriport/shared/src/interface/external/ehr";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";

@@ -1,6 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
-import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
+import { EhrSources } from "@metriport/shared/src/interface/external/ehr";
 import {
   PatientMapping,
   PatientMappingPerSource,

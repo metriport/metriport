@@ -1,5 +1,5 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { ehrSources } from "@metriport/shared/src/interface/external/ehr/source";
+import { ehrSources } from "@metriport/shared/src/interface/external/ehr";
 import { z } from "zod";
 import {
   EhrCxMappingSecondaryMappings,
