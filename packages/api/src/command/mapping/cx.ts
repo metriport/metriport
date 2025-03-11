@@ -3,7 +3,7 @@ import { MetriportError, NotFoundError } from "@metriport/shared";
 import {
   removeClientSource,
   removeWebhookSource,
-} from "@metriport/shared/src/interface/external/ehr/source";
+} from "@metriport/shared/src/interface/external/ehr";
 import {
   CxMapping,
   CxMappingPerSource,

@@ -18,7 +18,7 @@ import {
   normalizeZipCodeNewSafe,
   toTitleCase,
 } from "@metriport/shared";
-import { Patient } from "@metriport/shared/interface/external/ehr/patient";
+import { Patient } from "@metriport/shared/src/interface/external/ehr";
 import {
   getPatientByDemo,
   PatientWithIdentifiers,
