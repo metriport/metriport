@@ -37,7 +37,7 @@ const relevantResources = [
   "Organization",
 ];
 
-export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof console.log) {
+export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof console.log): string {
   const startedAt = Date.now();
   const latestReportDate = findDiagnosticReportResources(bundle)
     .flatMap(report => {
