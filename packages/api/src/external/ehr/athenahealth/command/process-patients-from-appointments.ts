@@ -1,4 +1,4 @@
-import { buildEhrSyncPatientHandler } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient-factory";
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
