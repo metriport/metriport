@@ -1,6 +1,6 @@
 import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
 import { MetriportError } from "@metriport/shared";
-import { isEhrSource } from "@metriport/shared/src/interface/external/ehr/source";
+import { isEhrSource } from "@metriport/shared/src/interface/external/ehr";
 
 interface SyncPatientPayload {
   cxId: unknown;
