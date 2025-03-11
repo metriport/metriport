@@ -18,56 +18,58 @@ export class VpnStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const vpnGateway = new ec2.CfnVPNGateway(this, "VpnGateway", {
+    const vpnGateway = new ec2.CfnVPNGateway(this, `${props.vpnConfig.partnerName}VpnGateway`, {
       type: IPSEC_1,
     });
 
     // Attach the VGW to your VPC
-    new ec2.CfnVPCGatewayAttachment(this, "VpcVpnAttachment", {
+    new ec2.CfnVPCGatewayAttachment(this, `${props.vpnConfig.partnerName}VpcVpnAttachment`, {
       vpcId: props.vpc.vpcId,
       vpnGatewayId: vpnGateway.ref,
     });
 
-    const customerGateway = new ec2.CfnCustomerGateway(this, "CustomerGateway", {
-      ipAddress: props.vpnConfig.partnerGatewayPublicIp,
-      type: IPSEC_1,
-      // Not using bgpAsn but "Invalid request provided: The key 'BgpAsn' is required"
-      bgpAsn: 65000,
-    });
+    const customerGateway = new ec2.CfnCustomerGateway(
+      this,
+      `${props.vpnConfig.partnerName}CustomerGateway`,
+      {
+        ipAddress: props.vpnConfig.partnerGatewayPublicIp,
+        type: IPSEC_1,
+        // Not using bgpAsn but "Invalid request provided: The key 'BgpAsn' is required"
+        bgpAsn: 65000,
+      }
+    );
 
     /**
      * We use 2 tunnels here because state HIEs often have a failover to a backup IP..
      */
-    const vpnConnection = new ec2.CfnVPNConnection(this, "VpnConnection", {
-      type: IPSEC_1,
-      vpnGatewayId: vpnGateway.ref,
-      customerGatewayId: customerGateway.ref,
-      staticRoutesOnly: props.vpnConfig.staticRoutesOnly,
-      vpnTunnelOptionsSpecifications: [
-        // TODO(lucas|2754|2025-03-05): Replace placeholders with preshared keys loaded from AWS Secrets Manager
-        {
-          preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
-          ikeVersions: [{ value: "ikev2" }],
-          phase1LifetimeSeconds: props.vpnConfig.phase1LifetimeSeconds,
-          phase2LifetimeSeconds: props.vpnConfig.phase2LifetimeSeconds,
-        },
-        {
-          preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
-          ikeVersions: [{ value: "ikev2" }],
-          phase1LifetimeSeconds: props.vpnConfig.phase1LifetimeSeconds,
-          phase2LifetimeSeconds: props.vpnConfig.phase2LifetimeSeconds,
-        },
-      ],
-    });
+    const vpnConnection = new ec2.CfnVPNConnection(
+      this,
+      `${props.vpnConfig.partnerName}VpnConnection`,
+      {
+        type: IPSEC_1,
+        vpnGatewayId: vpnGateway.ref,
+        customerGatewayId: customerGateway.ref,
+        staticRoutesOnly: props.vpnConfig.staticRoutesOnly,
+        vpnTunnelOptionsSpecifications: [
+          // TODO(lucas|2754|2025-03-05): Replace placeholders with preshared keys loaded from AWS Secrets Manager
+          {
+            preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
+          },
+          {
+            preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
+          },
+        ],
+      }
+    );
 
     if (props.vpnConfig.staticRoutesOnly) {
-      new ec2.CfnVPNConnectionRoute(this, "VpnConnectionRoute", {
+      new ec2.CfnVPNConnectionRoute(this, `${props.vpnConfig.partnerName}VpnConnectionRoute`, {
         destinationCidrBlock: props.vpc.vpcCidrBlock,
         vpnConnectionId: vpnConnection.ref,
       });
     }
 
-    new cdk.CfnOutput(this, "VpnConnectionId", {
+    new cdk.CfnOutput(this, `${props.vpnConfig.partnerName}VpnConnectionId`, {
       value: vpnConnection.ref,
       description: `VPN Connection for ${props.vpnConfig.partnerName}`,
     });
