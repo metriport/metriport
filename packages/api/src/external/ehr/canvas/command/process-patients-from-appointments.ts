@@ -120,7 +120,7 @@ async function syncPatient({
 }: Omit<SyncCanvasPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
-    ehr: EhrSources.elation,
+    ehr: EhrSources.canvas,
     cxId,
     practiceId: canvasPracticeId,
     patientId: canvasPatientId,
