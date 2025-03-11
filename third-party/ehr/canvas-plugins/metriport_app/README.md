@@ -13,11 +13,12 @@ Providers can have the information they need to stay up-to-date with their patie
 
 1. Navigate to a patient in Canvas, click the Apps menu from the User Action Panel, and click the Metriport App icon
 2. The Metriport App will open in the right chart pane and load the patient data
+3. If the patient does not exist in Metriport, the Metriport App will create a patient and fetch their medical data
 
 ### Appointment Workflow
 
 1. Schedule an Appointment for a patient in Canvas
-2. The Metriport Appointments Created Protocol will send a webhook to Metriport that will create a patient in the background and fetch their medical data for future use in the Canvas patient app
+2. The Metriport Appointments Created Protocol will send a webhook to Metriport that will create a patient in the background and fetch their medical data for future use in the Metriport App
 
 ### Installation
 
