@@ -31,3 +31,5 @@ Steps:
 2. The Metriport Appointments Created Protocol will send a webhook to the Metriport API that will create a patient in the background and fetch their medical data for future use in the Canvas patient modal.
 
 If you do not want to use the Appointments Created Protocol, simply leave the Metriport Webhook Token blank in the plugin settings.
+
+See our [documentation](https://docs.metriport.com/ehr-apps/canvas) for more information.
