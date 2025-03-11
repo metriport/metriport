@@ -94,7 +94,7 @@ export async function calculateDocumentConversionStatus({
       convertResult,
     });
 
-    processDataPipelineCheckpoints({
+    await processDataPipelineCheckpoints({
       patient: expectedPatient,
       requestId,
       progressType: "convert",

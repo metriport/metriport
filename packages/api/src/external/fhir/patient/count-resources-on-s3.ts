@@ -79,10 +79,7 @@ export function countResourcesInBundle(bundle: Bundle<Resource>): ResourceCount 
 }
 
 function buildEmptyCounts(): ResourceCount {
-  return {
-    total: 0,
-    resources: {},
-  };
+  return buildResourceCount(0, {});
 }
 
 function buildResourceCount(bundleSize: number, counts: Dictionary<number>): ResourceCount {
