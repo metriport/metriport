@@ -57,21 +57,22 @@ import {
   patientSearchSchema,
 } from "@metriport/shared/interface/external/shared/ehr/patient";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
+import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import { uniqBy } from "lodash";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
-import { executeAsynchronously } from "../../util/concurrency";
-import { SNOMED_CODE } from "../../util/constants";
-import { out } from "../../util/log";
-import { capture } from "../../util/notifications";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
+import { executeAsynchronously } from "../../../util/concurrency";
+import { SNOMED_CODE } from "../../../util/constants";
+import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
   createDataParams,
   formatDate,
   makeRequest,
   MakeRequestParamsInEhr,
-} from "../shared/ehr";
+} from "../shared";
 
 const parallelRequests = 5;
 const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
@@ -832,7 +833,7 @@ class AthenaHealthApi {
   }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhir : this.axiosInstanceProprietary;
     return await makeRequest<T>({
-      ehr: "athenahealth",
+      ehr: EhrSources.athena,
       cxId,
       practiceId: this.practiceId,
       patientId,

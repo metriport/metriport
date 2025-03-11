@@ -1,9 +1,11 @@
-import { elationWebhookJwtTokenDataSchema } from "@metriport/shared/interface/external/elation/jwt-token";
+import {
+  elationWebhookJwtTokenDataSchema,
+  elationWebhookSource,
+} from "@metriport/shared/interface/external/elation/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import z from "zod";
-import { elationWebhookJwtTokenSource } from "../../../../external/ehr/elation/shared";
 import { checkJwtToken, saveJwtToken } from "../../../../external/ehr/jwt-token";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getAuthorizationToken } from "../../../util";
@@ -20,7 +22,7 @@ router.get(
     const token = getAuthorizationToken(req);
     const tokenStatus = await checkJwtToken({
       token,
-      source: elationWebhookJwtTokenSource,
+      source: elationWebhookSource,
     });
     return res.status(httpStatus.OK).json(tokenStatus);
   })
@@ -42,7 +44,7 @@ router.post(
     const data = createWebhookJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
-      source: elationWebhookJwtTokenSource,
+      source: elationWebhookSource,
       ...data,
     });
     return res.sendStatus(httpStatus.OK);

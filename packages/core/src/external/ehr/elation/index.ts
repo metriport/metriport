@@ -10,15 +10,16 @@ import {
   Patient,
   patientSchema,
 } from "@metriport/shared/interface/external/elation/index";
+import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import axios, { AxiosInstance } from "axios";
-import { out } from "../../util/log";
+import { out } from "../../../util/log";
 import {
   ApiConfig,
   createDataParams,
   formatDate,
   makeRequest,
   MakeRequestParamsInEhr,
-} from "../shared/ehr";
+} from "../shared";
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
@@ -199,7 +200,7 @@ class ElationApi {
     debug,
   }: MakeRequestParamsInEhr<T>): Promise<T> {
     return await makeRequest<T>({
-      ehr: "elation",
+      ehr: EhrSources.elation,
       cxId,
       practiceId: this.practiceId,
       patientId,

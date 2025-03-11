@@ -1,31 +1,35 @@
-import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
-import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
-import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
+import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
+import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth";
+import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { EhrSources } from "@metriport/core/external/shared/ehr";
 import {
   AthenaClientJwtTokenData,
-  AthenaJwtTokenData,
+  athenaClientSource,
+  AthenaDashJwtTokenData,
+  athenaDashSource,
 } from "@metriport/shared/src/interface/external/athenahealth/jwt-token";
 import {
   CanvasClientJwtTokenData,
-  CanvasJwtTokenData,
+  canvasClientSource,
+  CanvasDashJwtTokenData,
+  canvasDashSource,
   CanvasWebhookJwtTokenData,
+  canvasWebhookSource,
 } from "@metriport/shared/src/interface/external/canvas/jwt-token";
 import {
   ElationClientJwtTokenData,
+  elationClientSource,
   ElationWebhookJwtTokenData,
+  elationWebhookSource,
 } from "@metriport/shared/src/interface/external/elation/jwt-token";
+import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
-import { athenaClientJwtTokenSource } from "./athenahealth/shared";
-import { canvasClientJwtTokenSource, canvasWebhookJwtTokenSource } from "./canvas/shared";
-import { elationClientJwtTokenSource, elationWebhookJwtTokenSource } from "./elation/shared";
 
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
@@ -45,18 +49,18 @@ export type EhrClientParams<Env extends EhrEnv> = {
   practiceId: string;
 } & EhrEnvAndClientCredentials<Env>;
 
-export const ehrDashJwtTokenSources = [EhrSources.athena, EhrSources.canvas] as const;
+export const ehrDashJwtTokenSources = [athenaDashSource, canvasDashSource] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
   return ehrDashJwtTokenSources.includes(source as EhrDashJwtTokenSource);
 }
 
-export type EhrDashJwtTokenData = AthenaJwtTokenData | CanvasJwtTokenData;
+export type EhrDashJwtTokenData = AthenaDashJwtTokenData | CanvasDashJwtTokenData;
 
 export const ehrClientJwtTokenSources = [
-  athenaClientJwtTokenSource,
-  elationClientJwtTokenSource,
-  canvasClientJwtTokenSource,
+  athenaClientSource,
+  elationClientSource,
+  canvasClientSource,
 ] as const;
 export type EhrClientJwtTokenSource = (typeof ehrClientJwtTokenSources)[number];
 export function isEhrClientJwtTokenSource(source: string): source is EhrClientJwtTokenSource {
@@ -68,10 +72,7 @@ export type EhrClientJwtTokenData =
   | ElationClientJwtTokenData
   | CanvasClientJwtTokenData;
 
-export const ehrWebhookJwtTokenSources = [
-  canvasWebhookJwtTokenSource,
-  elationWebhookJwtTokenSource,
-] as const;
+export const ehrWebhookJwtTokenSources = [canvasWebhookSource, elationWebhookSource] as const;
 export type EhrWebhookJwtTokenSource = (typeof ehrWebhookJwtTokenSources)[number];
 export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhookJwtTokenSource {
   return ehrWebhookJwtTokenSources.includes(source as EhrWebhookJwtTokenSource);

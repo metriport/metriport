@@ -20,10 +20,11 @@ import {
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/canvas/index";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/shared/ehr/patient";
+import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
-import { RXNORM_URL as RXNORM_SYSTEM } from "../../util/constants";
-import { out } from "../../util/log";
-import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared/ehr";
+import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
+import { out } from "../../../util/log";
+import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -395,7 +396,7 @@ class CanvasApi {
   }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
     return await makeRequest<T>({
-      ehr: "canvas",
+      ehr: EhrSources.canvas,
       cxId,
       practiceId: this.practiceId,
       patientId,

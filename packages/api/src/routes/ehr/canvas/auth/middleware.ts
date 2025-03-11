@@ -1,8 +1,10 @@
-import { EhrSources } from "@metriport/core/external/shared/ehr";
+import {
+  canvasDashSource,
+  canvasWebhookSource,
+} from "@metriport/shared/interface/external/canvas/jwt-token";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
-import { canvasWebhookJwtTokenSource } from "../../../../external/ehr/canvas/shared";
 import {
   ParseResponse,
   processCxIdAsync,
@@ -11,7 +13,7 @@ import {
 } from "../../shared";
 
 function parseCanvasPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
-  if (tokenData.source !== EhrSources.canvas) throw new ForbiddenError();
+  if (tokenData.source !== canvasDashSource) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
   if (!practiceId) throw new ForbiddenError();
   return {
@@ -23,8 +25,9 @@ function parseCanvasPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
 }
 
 function parseCanvasPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
-  if (tokenData.source !== canvasWebhookJwtTokenSource) throw new ForbiddenError();
+  if (tokenData.source !== canvasWebhookSource) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
+  if (!practiceId) throw new ForbiddenError();
   return {
     externalId: practiceId,
     queryParams: {
@@ -34,19 +37,17 @@ function parseCanvasPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
 }
 
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, EhrSources.canvas, parseCanvasPracticeIdDash).then(next).catch(next);
+  processCxIdAsync(req, canvasDashSource, parseCanvasPracticeIdDash).then(next).catch(next);
 }
 
 export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, canvasWebhookJwtTokenSource, parseCanvasPracticeIdWebhook)
-    .then(next)
-    .catch(next);
+  processCxIdAsync(req, canvasWebhookSource, parseCanvasPracticeIdWebhook).then(next).catch(next);
 }
 
 export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
-  processPatientRouteAsync(req, EhrSources.canvas).then(next).catch(next);
+  processPatientRouteAsync(req, canvasDashSource).then(next).catch(next);
 }
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
-  processDocumentRouteAsync(req, EhrSources.canvas).then(next).catch(next);
+  processDocumentRouteAsync(req, canvasDashSource).then(next).catch(next);
 }

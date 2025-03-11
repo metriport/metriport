@@ -1,5 +1,5 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient-factory";
-import { EhrSources } from "@metriport/core/external/shared/ehr";
+import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";

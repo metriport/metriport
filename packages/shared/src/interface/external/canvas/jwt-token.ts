@@ -1,24 +1,27 @@
 import z from "zod";
+import { EhrSources, clientSourceSuffix, webhookSourceSuffix } from "../shared/ehr/source";
 
-export const canvasJwtTokenDataSchema = z.object({
+export const canvasDashSource = EhrSources.canvas as const;
+export const canvasDashJwtTokenDataSchema = z.object({
   practiceId: z.string(),
-  source: z.literal("canvas"),
+  source: z.literal(`${canvasDashSource}`),
 });
+export type CanvasDashJwtTokenData = z.infer<typeof canvasDashJwtTokenDataSchema>;
 
-export type CanvasJwtTokenData = z.infer<typeof canvasJwtTokenDataSchema>;
+export const canvasClientSource = `${EhrSources.canvas}${clientSourceSuffix}` as const;
+export const canvasClientJwtTokenDataSchema = z.object({
+  practiceId: z.string(),
+  cxId: z.string(),
+  source: z.literal(`${canvasClientSource}`),
+});
+export type CanvasClientJwtTokenData = z.infer<typeof canvasClientJwtTokenDataSchema>;
 
-export type CanvasClientJwtTokenData = {
-  practiceId: string;
-  cxId: string;
-  source: "canvas-client";
-};
-
+export const canvasWebhookSource = `${EhrSources.canvas}${webhookSourceSuffix}` as const;
 export const canvasWebhookJwtTokenDataSchema = z.object({
   practiceId: z.string(),
   cxId: z.string(),
-  source: z.literal("canvas-webhook"),
+  source: z.literal(`${canvasWebhookSource}`),
 });
-
 export type CanvasWebhookJwtTokenData = z.infer<typeof canvasWebhookJwtTokenDataSchema>;
 
 export const canvasClientJwtTokenResponseSchema = z.object({

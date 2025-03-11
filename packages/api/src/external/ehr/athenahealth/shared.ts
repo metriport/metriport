@@ -1,7 +1,4 @@
-import AthenaHealthApi, {
-  AthenaEnv,
-  isAthenaEnv,
-} from "@metriport/core/external/athenahealth/index";
+import AthenaHealthApi, { AthenaEnv, isAthenaEnv } from "@metriport/core/external/ehr/athenahealth";
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";

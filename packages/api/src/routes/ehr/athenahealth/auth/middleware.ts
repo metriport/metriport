@@ -1,4 +1,4 @@
-import { EhrSources } from "@metriport/core/external/shared/ehr";
+import { athenaDashSource } from "@metriport/shared/src/interface/external/athenahealth/jwt-token";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
@@ -10,7 +10,7 @@ import {
 } from "../../shared";
 
 function parseAthenaHealthPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
-  if (tokenData.source !== EhrSources.athena) throw new ForbiddenError();
+  if (tokenData.source !== athenaDashSource) throw new ForbiddenError();
   const practiceId = tokenData.ah_practice;
   if (!practiceId) throw new ForbiddenError();
   const departmentId = tokenData.ah_department;
@@ -25,13 +25,13 @@ function parseAthenaHealthPracticeIdDash(tokenData: JwtTokenData): ParseResponse
 }
 
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, EhrSources.athena, parseAthenaHealthPracticeIdDash).then(next).catch(next);
+  processCxIdAsync(req, athenaDashSource, parseAthenaHealthPracticeIdDash).then(next).catch(next);
 }
 
 export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
-  processPatientRouteAsync(req, EhrSources.athena).then(next).catch(next);
+  processPatientRouteAsync(req, athenaDashSource).then(next).catch(next);
 }
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
-  processDocumentRouteAsync(req, EhrSources.athena).then(next).catch(next);
+  processDocumentRouteAsync(req, athenaDashSource).then(next).catch(next);
 }

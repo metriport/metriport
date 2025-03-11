@@ -1,14 +1,14 @@
 import CanvasApi from "@metriport/core/external/canvas/index";
 import { createFullNote } from "@metriport/core/external/canvas/note";
 import { out } from "@metriport/core/util/log";
-import { getEnvVarOrFail, getEnvVar } from "@metriport/shared";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
+import { CONVERSION_WEBHOOK_TYPE } from "../../../command/medical/document/process-doc-query-webhook";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import {
+  CanvasIntegrationEvent,
   PatientEvents,
   patientEvents,
-  CanvasIntegrationEvent,
 } from "../../../event/medical/patient-event";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { CONVERSION_WEBHOOK_TYPE } from "../../../command/medical/document/process-doc-query-webhook";
 import { Config } from "../../../shared/config";
 
 const { log } = out("CANVAS EVENT LISTENER");

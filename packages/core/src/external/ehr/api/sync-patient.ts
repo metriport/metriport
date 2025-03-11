@@ -1,6 +1,6 @@
 import { errorToString, MetriportError } from "@metriport/shared";
+import { EhrSource } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import axios from "axios";
-import { EhrSource } from "../../../external/shared/ehr";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 

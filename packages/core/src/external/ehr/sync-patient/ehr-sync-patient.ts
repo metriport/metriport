@@ -1,4 +1,4 @@
-import { EhrSource } from "../../../external/shared/ehr";
+import { EhrSource } from "@metriport/shared/src/interface/external/shared/ehr/source";
 
 export type ProcessSyncPatientRequest = {
   ehr: EhrSource;

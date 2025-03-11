@@ -1,4 +1,4 @@
-import { MedicationWithRefs } from "@metriport/core/external/athenahealth/index";
+import { MedicationWithRefs } from "@metriport/core/external/ehr/athenahealth";
 import { CreatedMedicationSuccess } from "@metriport/shared/interface/external/athenahealth/medication";
 import { createAthenaClient } from "../shared";
 

@@ -1,11 +1,11 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient-factory";
-import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
-import { EhrSources } from "@metriport/core/external/shared/ehr";
+import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
 import { BookedAppointment } from "@metriport/shared/src/interface/external/athenahealth/index";
+import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";

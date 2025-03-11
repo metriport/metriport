@@ -1,8 +1,9 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
-import ElationApi from "@metriport/core/external/elation/index";
+import ElationApi from "@metriport/core/external/ehr/elation";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { normalizeDob, normalizeGender } from "@metriport/shared";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
+import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {
@@ -12,7 +13,6 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
-import { EhrSources } from "@metriport/core/external/shared/ehr";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
 
 export type SyncElationPatientIntoMetriportParams = {

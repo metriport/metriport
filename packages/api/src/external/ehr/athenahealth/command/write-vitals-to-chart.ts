@@ -1,4 +1,4 @@
-import { GroupedVitals } from "@metriport/core/external/athenahealth/index";
+import { GroupedVitals } from "@metriport/core/external/ehr/athenahealth";
 import { CreatedVitalsSuccess } from "@metriport/shared/interface/external/athenahealth/vitals";
 import { createAthenaClient } from "../shared";
 

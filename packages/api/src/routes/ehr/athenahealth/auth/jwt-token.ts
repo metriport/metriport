@@ -1,5 +1,7 @@
-import { EhrSources } from "@metriport/core/external/shared/ehr";
-import { athenaJwtTokenDataSchema } from "@metriport/shared/interface/external/athenahealth/jwt-token";
+import {
+  athenaDashSource,
+  athenaDashJwtTokenDataSchema,
+} from "@metriport/shared/interface/external/athenahealth/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -20,7 +22,7 @@ router.get(
     const token = getAuthorizationToken(req);
     const tokenStatus = await checkJwtToken({
       token,
-      source: EhrSources.athena,
+      source: athenaDashSource,
     });
     return res.status(httpStatus.OK).json(tokenStatus);
   })
@@ -28,7 +30,7 @@ router.get(
 
 const createJwtSchema = z.object({
   exp: z.number(),
-  data: athenaJwtTokenDataSchema,
+  data: athenaDashJwtTokenDataSchema,
 });
 
 /**
@@ -42,7 +44,7 @@ router.post(
     const data = createJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
-      source: EhrSources.athena,
+      source: athenaDashSource,
       ...data,
     });
     return res.sendStatus(httpStatus.OK);
