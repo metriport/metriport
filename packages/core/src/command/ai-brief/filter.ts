@@ -61,8 +61,8 @@ export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof cons
 
   log(`Bundle filtering metrics: ${JSON.stringify(metrics)}`);
 
-  const inputString = JSON.stringify(slimPayloadBundle);
-  return inputString;
+  const bundleText = JSON.stringify(slimPayloadBundle);
+  return bundleText;
 }
 
 function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
