@@ -1,5 +1,9 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { NotFoundError, MetriportError } from "@metriport/shared";
+import { MetriportError, NotFoundError } from "@metriport/shared";
+import {
+  removeClientSource,
+  removeWebhookSource,
+} from "@metriport/shared/src/interface/external/ehr/source";
 import {
   CxMapping,
   CxMappingPerSource,
@@ -130,12 +134,12 @@ export function getCxMappingSourceFromJwtTokenSource(source: string): CxMappingS
     throw new MetriportError("Invalid dash source", undefined, additionalDetails);
   }
   if (isEhrClientJwtTokenSource(source)) {
-    const sourceWithoutClient = source.replace("-client", "");
+    const sourceWithoutClient = removeClientSource(source);
     if (isCxMappingSource(sourceWithoutClient)) return sourceWithoutClient;
     throw new MetriportError("Invalid client source", undefined, additionalDetails);
   }
   if (isEhrWebhookJwtTokenSource(source)) {
-    const sourceWithoutWebhook = source.replace("-webhook", "");
+    const sourceWithoutWebhook = removeWebhookSource(source);
     if (isCxMappingSource(sourceWithoutWebhook)) return sourceWithoutWebhook;
     throw new MetriportError("Invalid webhook source", undefined, additionalDetails);
   }
