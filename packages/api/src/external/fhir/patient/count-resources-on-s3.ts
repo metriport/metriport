@@ -1,16 +1,15 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import {
-  filterConsolidated,
-  getOrCreateConsolidatedSnapshot,
+  createConsolidatedSnapshotFromFullBundle,
+  getOrCreateConsolidatedSnapshotFromS3,
 } from "@metriport/core/command/consolidated/consolidated-filter";
 import { getFullExistingConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-get";
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util";
-import { toSearchSet } from "@metriport/shared/medical";
 import { Dictionary, countBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ResourceCount } from "./count-resources-shared";
-import { Bundle, Resource } from "@medplum/fhirtypes";
 
 export type CountResourcesParams = {
   patient: Pick<Patient, "cxId" | "id">;
@@ -26,7 +25,7 @@ export async function countResourcesOnNewOrExistingConsolidatedSnapshot({
   dateTo,
 }: CountResourcesParams): Promise<ResourceCount> {
   const patient = await getPatientOrFail({ id: partialPatient.id, cxId: partialPatient.cxId });
-  const snapshotBundle = await getOrCreateConsolidatedSnapshot({
+  const snapshotBundle = await getOrCreateConsolidatedSnapshotFromS3({
     cxId: patient.cxId,
     patient,
     resources,
@@ -59,14 +58,12 @@ export async function countResourcesOnExistingConsolidatedSnapshot({
     log(`Did not find pre-generated consolidated. Returning empty counts`);
     return buildEmptyCounts();
   }
+  log(`Found consolidated with ${fullConsolidatedBundle.entry?.length} entries`);
 
-  const consolidatedSearchset = toSearchSet(fullConsolidatedBundle);
-  log(`Found consolidated with ${consolidatedSearchset.entry?.length} entries`);
+  const snapshotBundle = createConsolidatedSnapshotFromFullBundle(fullConsolidatedBundle, params);
+  log(`Filtered to ${snapshotBundle?.entry?.length} entries with: ${JSON.stringify(params)}`);
 
-  const filtered = await filterConsolidated(consolidatedSearchset, params);
-  log(`Filtered to ${filtered?.entry?.length} entries with: ${JSON.stringify(params)}`);
-
-  return countResourcesInBundle(filtered);
+  return countResourcesInBundle(snapshotBundle);
 }
 
 export function countResourcesInBundle(bundle: Bundle<Resource>): ResourceCount {

@@ -16,7 +16,7 @@ import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion"
 import { isPatient } from "../../external/fhir/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture, out } from "../../util";
-import { getOrCreateConsolidatedSnapshot as getOrCreateConsolidatedSnapshotFromS3 } from "./consolidated-filter";
+import { getOrCreateConsolidatedSnapshotFromS3 } from "./consolidated-filter";
 import {
   ConsolidatedSnapshotConnector,
   ConsolidatedSnapshotRequestAsync,

@@ -22,7 +22,7 @@ const maxHydrationIterations = 5;
  * If the consolidated bundle doesn't exist, it will be created from the existing conversion
  * (CDA>FHIR) bundles.
  */
-export async function getOrCreateConsolidatedSnapshot({
+export async function getOrCreateConsolidatedSnapshotFromS3({
   cxId,
   patient,
   ...params
@@ -38,10 +38,9 @@ export async function getOrCreateConsolidatedSnapshot({
   log(`Running with params: ${JSON.stringify(params)}`);
 
   const fullConsolidatedBundle = await getOrCreateConsolidatedOnS3({ cxId, patient });
-  const consolidatedSearchSet = toSearchSet(fullConsolidatedBundle);
+  log(`Consolidated found with ${fullConsolidatedBundle.entry?.length} entries`);
 
-  log(`Consolidated found with ${consolidatedSearchSet.entry?.length} entries`);
-  const snapshotBundle = await filterConsolidated(consolidatedSearchSet, params);
+  const snapshotBundle = createConsolidatedSnapshotFromFullBundle(fullConsolidatedBundle, params);
   log(`Filtered to ${snapshotBundle?.entry?.length} entries`);
   return snapshotBundle as SearchSetBundle;
 }
@@ -68,7 +67,21 @@ async function getOrCreateConsolidatedOnS3({
   return newConsolidated;
 }
 
-export async function filterConsolidated(
+export function createConsolidatedSnapshotFromFullBundle(
+  consolidatedBundle: Bundle,
+  params: {
+    resources?: ResourceTypeForConsolidation[] | undefined;
+    dateFrom?: string | undefined;
+    dateTo?: string | undefined;
+  }
+): Bundle {
+  const consolidatedSearchset = toSearchSet(consolidatedBundle);
+  const filtered = filterConsolidated(consolidatedSearchset, params);
+
+  return filtered;
+}
+
+export function filterConsolidated(
   bundle: Bundle,
   {
     resources = [],
@@ -80,7 +93,7 @@ export async function filterConsolidated(
     dateTo?: string | undefined;
   },
   addMissingReferencesFn = addMissingReferences
-): Promise<Bundle> {
+): Bundle {
   const { log } = out(`filterConsolidated`);
   log(`Got ${bundle.entry?.length} entries to filter...`);
 

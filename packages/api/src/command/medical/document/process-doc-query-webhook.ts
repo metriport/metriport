@@ -30,11 +30,10 @@ export async function processDataPipelineCheckpoints({
 }): Promise<void> {
   const { id: patientId } = patient;
   const documentQueryProgress = patient.data.documentQueryProgress;
+  if (!documentQueryProgress) return;
   try {
-    if (documentQueryProgress) {
-      await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
-      await checkAndFinishDataPipeline(patient, requestId, documentQueryProgress, progressType);
-    }
+    await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
+    await checkAndFinishDataPipeline(patient, requestId, documentQueryProgress, progressType);
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
     const extra = {
@@ -91,7 +90,10 @@ async function checkAndFinishDataPipeline(
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
 ): Promise<void> {
-  const canCompleteDataPipeline = isConversionCompleted(documentQueryProgress, progressType);
+  const canCompleteDataPipeline = isDataPipelineReadyForCompletion(
+    documentQueryProgress,
+    progressType
+  );
   if (canCompleteDataPipeline) {
     const { log } = out(`Data Pipeline wrap up. cx: ${patient.cxId}, pt: ${patient.id}`);
     const startedAt = Date.now();
@@ -127,7 +129,7 @@ async function checkAndFinishDataPipeline(
   }
 }
 
-function isConversionCompleted(
+function isDataPipelineReadyForCompletion(
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
 ) {

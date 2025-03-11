@@ -87,10 +87,7 @@ describe("processDocQueryProgressWebhook", () => {
       const downloadProgress = { status: "completed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
       const documentQueryProgress = { download: downloadProgress };
-      const updPatient = appendDocQueryProgressToPatient(
-        { id: patient.id, cxId: patient.cxId } as Patient,
-        documentQueryProgress
-      );
+      const updPatient = appendDocQueryProgressToPatient(patient, documentQueryProgress);
 
       await processDocQueryWebhook.processDataPipelineCheckpoints({
         patient: updPatient,
