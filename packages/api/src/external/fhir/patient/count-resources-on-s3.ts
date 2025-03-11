@@ -36,7 +36,7 @@ export async function countResourcesOnNewOrExistingConsolidatedSnapshot({
   return countResourcesInBundle(snapshotBundle);
 }
 
-export async function countResourcesOnExistingConsolidatedSnapshot({
+export async function countResourcesOnSnapshotFromExistingConsolidated({
   patient: partialPatient,
   resources = [],
   dateFrom,
@@ -46,7 +46,9 @@ export async function countResourcesOnExistingConsolidatedSnapshot({
   const patientId = partialPatient.id;
   const params = { resources, dateFrom, dateTo };
 
-  const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
+  const { log } = out(
+    `countResourcesOnSnapshotFromExistingConsolidated - cx ${cxId}, pat ${patientId}`
+  );
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const fullConsolidatedBundle = await getFullExistingConsolidatedBundleFromS3({

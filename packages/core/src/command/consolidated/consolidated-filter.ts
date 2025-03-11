@@ -54,13 +54,13 @@ async function getOrCreateConsolidatedOnS3({
 }): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
-  const fullConsolidatedBundle = await getFullExistingConsolidatedBundleFromS3({
+  const existingConsolidated = await getFullExistingConsolidatedBundleFromS3({
     cxId,
     patientId,
   });
-  if (fullConsolidatedBundle) {
+  if (existingConsolidated) {
     log(`Found pre-generated consolidated, returning...`);
-    return fullConsolidatedBundle;
+    return existingConsolidated;
   }
   log(`Did not found pre-generated consolidated, creating a new one...`);
   const newConsolidated = await createConsolidatedFromConversions({ cxId, patient });
