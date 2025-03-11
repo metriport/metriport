@@ -16,6 +16,7 @@ on:
       - "packages/carequality-sdk/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
+      - "packages/mllp-server/**"
   workflow_dispatch: # manually executed by a user
 
 jobs:
