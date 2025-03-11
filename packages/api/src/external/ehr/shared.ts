@@ -1,8 +1,9 @@
-import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth";
+import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { athenaSecondaryMappingsSchema } from "@metriport/shared/interface/external/athenahealth/cx-mapping";
 import {
   AthenaClientJwtTokenData,
   athenaClientSource,
@@ -23,14 +24,14 @@ import {
   ElationWebhookJwtTokenData,
   elationWebhookSource,
 } from "@metriport/shared/src/interface/external/elation/jwt-token";
-import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
+import { EhrSource, EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
+import { z } from "zod";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
-
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
@@ -79,6 +80,14 @@ export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhook
 }
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData | ElationWebhookJwtTokenData;
+
+export const ehrCxMappingSecondaryMappingsSchemaMap: {
+  [key in EhrSource]: z.Schema | undefined;
+} = {
+  [EhrSources.athena]: athenaSecondaryMappingsSchema,
+  [EhrSources.elation]: undefined,
+  [EhrSources.canvas]: undefined,
+};
 
 export type Appointment = {
   cxId: string;

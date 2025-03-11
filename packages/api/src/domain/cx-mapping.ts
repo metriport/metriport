@@ -1,10 +1,7 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import {
-  AthenaSecondaryMappings,
-  athenaSecondaryMappingsSchema,
-} from "@metriport/shared/interface/external/athenahealth/cx-mapping";
-import { EhrSources, ehrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
+import { ehrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
 import { z } from "zod";
+import { ehrCxMappingSecondaryMappingsSchemaMap } from "../external/ehr/shared";
 
 const cxMappingSource = [...ehrSources] as const;
 export type CxMappingSource = (typeof cxMappingSource)[number];
@@ -12,11 +9,11 @@ export function isCxMappingSource(source: string): source is CxMappingSource {
   return cxMappingSource.includes(source as CxMappingSource);
 }
 
-export type CxMappingSecondaryMappings = AthenaSecondaryMappings | null;
-export const secondaryMappingsSchemaMap: { [key in CxMappingSource]: z.Schema | undefined } = {
-  [EhrSources.athena]: athenaSecondaryMappingsSchema,
-  [EhrSources.elation]: undefined,
-  [EhrSources.canvas]: undefined,
+export type CxMappingSecondaryMappings = {
+  [key in CxMappingSource]: z.Schema | undefined;
+};
+export const secondaryMappingsSchemaMap: CxMappingSecondaryMappings = {
+  ...ehrCxMappingSecondaryMappingsSchemaMap,
 };
 
 export type CxMappingPerSource = {

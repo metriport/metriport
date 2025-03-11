@@ -1,5 +1,5 @@
 import { ProcessSyncPatientRequest } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient";
-import { isEhrSource } from "@metriport/core/src/external/shared/ehr";
+import { isEhrSource } from "@metriport/shared/src/interface/external/shared/ehr/source";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseSyncPatient(bodyAsJson: any): ProcessSyncPatientRequest {
