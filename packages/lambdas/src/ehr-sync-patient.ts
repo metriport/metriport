@@ -1,5 +1,5 @@
-import { ProcessSyncPatientRequest } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient";
-import { EhrSyncPatientLocal } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient-local";
+import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
+import { EhrSyncPatientLocal } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
