@@ -4,7 +4,15 @@ import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 
-// TODO 2330 add TSDoc
+/**
+ * Sends a request to the API to sync a patient with Metriport.
+ *
+ * @param ehr - The EHR source.
+ * @param cxId - The CX ID.
+ * @param practiceId - The practice ID.
+ * @param patientId - The patient ID.
+ * @param triggerDq - Whether to trigger DQ.
+ */
 export async function syncPatient({
   ehr,
   cxId,
