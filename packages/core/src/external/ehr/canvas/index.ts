@@ -19,7 +19,7 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas";
-import { EhrSources, Patient, patientSchema } from "@metriport/shared/src/interface/external/ehr";
+import { EhrSources, Patient, patientSchema } from "@metriport/shared/interface/external/ehr";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";

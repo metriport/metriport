@@ -1,9 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError, NotFoundError } from "@metriport/shared";
-import {
-  removeClientSource,
-  removeWebhookSource,
-} from "@metriport/shared/src/interface/external/ehr";
+import { removeClientSource, removeWebhookSource } from "@metriport/shared/interface/external/ehr";
 import {
   CxMapping,
   CxMappingPerSource,

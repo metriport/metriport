@@ -12,7 +12,7 @@ import {
   athenaClientSource,
   AthenaDashJwtTokenData,
   athenaDashSource,
-} from "@metriport/shared/src/interface/external/ehr/athenahealth/jwt-token";
+} from "@metriport/shared/interface/external/ehr/athenahealth/jwt-token";
 import {
   CanvasClientJwtTokenData,
   canvasClientSource,
@@ -20,14 +20,14 @@ import {
   canvasDashSource,
   CanvasWebhookJwtTokenData,
   canvasWebhookSource,
-} from "@metriport/shared/src/interface/external/ehr/canvas/jwt-token";
+} from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import {
   ElationClientJwtTokenData,
   elationClientSource,
   ElationWebhookJwtTokenData,
   elationWebhookSource,
-} from "@metriport/shared/src/interface/external/ehr/elation/jwt-token";
-import { EhrSource, EhrSources } from "@metriport/shared/src/interface/external/ehr";
+} from "@metriport/shared/interface/external/ehr/elation/jwt-token";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
 import { z } from "zod";
