@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const bookedAppointmentSchema = z.object({
   patientid: z.string(),
+  appointmenttypeid: z.string(),
 });
 export type BookedAppointment = z.infer<typeof bookedAppointmentSchema>;
 export const bookedAppointmentsSchema = z.object({
@@ -12,6 +13,7 @@ export type BookedAppointments = z.infer<typeof bookedAppointmentsSchema>;
 const appointmentEventSchema = z.object({
   patientid: z.string().optional(),
   appointmentstatus: z.string(),
+  appointmenttypeid: z.string(),
 });
 export type AppointmentEvent = z.infer<typeof appointmentEventSchema>;
 export const appointmentEventsSchema = z.object({

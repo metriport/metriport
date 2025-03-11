@@ -1,15 +1,17 @@
-import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
 import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth";
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
-import { BookedAppointment } from "@metriport/shared/src/interface/external/ehr/athenahealth";
 import { EhrSources } from "@metriport/shared/src/interface/external/ehr";
+import { BookedAppointment } from "@metriport/shared/src/interface/external/ehr/athenahealth";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
+import { Config } from "../../../../shared/config";
 import {
   Appointment,
   delayBetweenPatientBatches,
@@ -23,6 +25,10 @@ import { LookupMode, LookupModes, createAthenaClient } from "../shared";
 import { SyncAthenaPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
+
+const CUSTOM_APPOINTMENT_TYPE_IDS = Config.isProdEnv()
+  ? ["81", "181", "141", "4", "201", "13", "221", "223", "222", "281", "21", "23"]
+  : ["2", "1472"];
 
 const subscriptionBackfillLookBack = dayjs.duration(12, "hours");
 const appointmentsLookForward = dayjs.duration(1, "day");
@@ -108,13 +114,18 @@ async function getAppointments({
   );
   const api = await createAthenaClient({ cxId, practiceId });
   try {
-    const appointments = await getAppointmentsFromApi({
+    let appointments = await getAppointmentsFromApi({
       api,
       cxId,
       departmentIds,
       lookupMode,
       log,
     });
+    if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
+      appointments = appointments.filter(appointment =>
+        CUSTOM_APPOINTMENT_TYPE_IDS.includes(appointment.appointmenttypeid)
+      );
+    }
     return {
       appointments: appointments.map(appointment => {
         return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
