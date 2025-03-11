@@ -1,6 +1,6 @@
 import {
-  canvasDashSource,
   canvasDashJwtTokenDataSchema,
+  canvasDashSource,
   canvasWebhookJwtTokenDataSchema,
   canvasWebhookSource,
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";

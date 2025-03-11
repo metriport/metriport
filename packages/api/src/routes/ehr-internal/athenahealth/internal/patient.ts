@@ -86,7 +86,7 @@ router.post(
  * @returns Metriport Patient if found.
  */
 router.post(
-  "/:id",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

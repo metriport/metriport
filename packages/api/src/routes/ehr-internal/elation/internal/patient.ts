@@ -43,14 +43,14 @@ router.post(
 );
 
 /**
- * POST /internal/ehr/elation/patient/:id
+ * POST /internal/ehr/elation/patient
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Elation Patient.
  * @returns Metriport Patient if found.
  */
 router.post(
-  "/:id",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

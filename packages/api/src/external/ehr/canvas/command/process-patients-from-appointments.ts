@@ -1,9 +1,9 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/command/ehr/sync-patient/ehr-sync-patient-factory";
-import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
+import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";

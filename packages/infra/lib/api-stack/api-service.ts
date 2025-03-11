@@ -97,7 +97,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda,
   patientImportLambda,
   patientImportBucket,
-  syncPatientQueue,
+  ehrSyncPatientQueue,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
@@ -133,7 +133,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda: ILambda;
   patientImportLambda: ILambda;
   patientImportBucket: s3.IBucket;
-  syncPatientQueue: IQueue;
+  ehrSyncPatientQueue: IQueue;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -260,7 +260,7 @@ export function createAPIService({
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
-          EHR_SYNC_PATIENT_QUEUE_URL: syncPatientQueue.queueUrl,
+          EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
@@ -412,10 +412,9 @@ export function createAPIService({
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
   }
 
-  // EHR Sync Patient Queue
   provideAccessToQueue({
     accessType: "send",
-    queue: syncPatientQueue,
+    queue: ehrSyncPatientQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
 

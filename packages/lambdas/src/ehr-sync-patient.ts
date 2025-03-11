@@ -6,6 +6,7 @@ import { capture } from "./shared/capture";
 import { parseSyncPatient } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import * as Sentry from "@sentry/serverless";
 import { getSingleMessageOrFail } from "./shared/sqs";
 
 // Keep this as early on the file as possible
@@ -17,8 +18,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
-// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler(event: SQSEvent) {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   try {
     const startedAt = new Date().getTime();
     const message = getSingleMessageOrFail(event.Records, lambdaName);
@@ -41,16 +41,20 @@ export async function handler(event: SQSEvent) {
   } catch (error) {
     const msg = "Error processing event on " + lambdaName;
     console.log(`${msg}: ${errorToString(error)}`);
-    capture.error(msg, { extra: { event, context: lambdaName, error } });
+    capture.setExtra({
+      event,
+      context: lambdaName,
+      error,
+    });
     throw new MetriportError(msg, error);
   }
-}
+});
 
 function parseBody(body?: unknown): ProcessSyncPatientRequest {
-  if (!body) throw new Error(`Missing message body`);
+  if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
-  if (!bodyString) throw new Error(`Invalid body`);
+  if (!bodyString) throw new MetriportError(`Invalid body`);
 
   const bodyAsJson = JSON.parse(bodyString);
 

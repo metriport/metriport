@@ -4,8 +4,8 @@ import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  athenaSecondaryMappingsSchema,
   AthenaSecondaryMappings,
+  athenaSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
 import {
   AthenaClientJwtTokenData,
