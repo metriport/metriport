@@ -137,16 +137,23 @@ export function createSection(title: string, tableContents: string, id?: string)
   `;
 }
 
-export const getDeceasedStatus = (familyMemberHistory: FamilyMemberHistory): string => {
-  const deceasedBoolean = familyMemberHistory.deceasedBoolean;
-  const conditionContributedToDeath = familyMemberHistory.condition?.find(condition => {
-    return condition.contributedToDeath;
-  });
+function asYesNo(value: boolean): "yes" | "no" {
+  return value ? ("yes" as const) : ("no" as const);
+}
 
+export const getDeceasedStatus = (familyMemberHistory: FamilyMemberHistory): "yes" | "no" | "" => {
+  const deceasedBoolean = familyMemberHistory.deceasedBoolean;
   if (deceasedBoolean !== undefined) {
-    return deceasedBoolean ? "yes" : "no";
-  } else if (conditionContributedToDeath?.contributedToDeath !== undefined) {
-    return conditionContributedToDeath?.contributedToDeath ? "yes" : "no";
+    return asYesNo(deceasedBoolean);
   }
+
+  const conditionContributedToDeath = familyMemberHistory.condition?.find(
+    condition => condition.contributedToDeath
+  );
+
+  if (conditionContributedToDeath?.contributedToDeath !== undefined) {
+    return asYesNo(conditionContributedToDeath.contributedToDeath);
+  }
+
   return "";
 };
