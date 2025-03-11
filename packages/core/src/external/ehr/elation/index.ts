@@ -9,8 +9,8 @@ import {
   Metadata,
   Patient,
   patientSchema,
-} from "@metriport/shared/interface/external/elation/index";
-import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
+} from "@metriport/shared/interface/external/ehr/elation";
+import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { out } from "../../../util/log";
 import {

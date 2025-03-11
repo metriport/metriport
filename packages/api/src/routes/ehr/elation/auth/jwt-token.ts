@@ -1,7 +1,7 @@
 import {
   elationWebhookJwtTokenDataSchema,
   elationWebhookSource,
-} from "@metriport/shared/interface/external/elation/jwt-token";
+} from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";

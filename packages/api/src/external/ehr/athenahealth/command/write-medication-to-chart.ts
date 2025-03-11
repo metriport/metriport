@@ -1,5 +1,5 @@
 import { MedicationWithRefs } from "@metriport/core/external/ehr/athenahealth";
-import { CreatedMedicationSuccess } from "@metriport/shared/interface/external/athenahealth/medication";
+import { CreatedMedicationSuccess } from "@metriport/shared/interface/external/ehr/athenahealth/medication";
 import { createAthenaClient } from "../shared";
 
 export async function writeMedicationToChart({

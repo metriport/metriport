@@ -1,5 +1,5 @@
 import z from "zod";
-import { EhrSources, clientSourceSuffix } from "../shared/ehr/source";
+import { EhrSources, clientSourceSuffix } from "../source";
 
 export const athenaDashSource = EhrSources.athena as const;
 export const athenaDashJwtTokenDataSchema = z.object({

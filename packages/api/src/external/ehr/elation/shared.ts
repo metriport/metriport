@@ -11,7 +11,7 @@ import {
   normalizeZipCodeNew,
   toTitleCase,
 } from "@metriport/shared";
-import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
+import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 

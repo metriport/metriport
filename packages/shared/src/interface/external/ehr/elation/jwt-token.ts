@@ -1,5 +1,5 @@
 import z from "zod";
-import { EhrSources, clientSourceSuffix, webhookSourceSuffix } from "../shared/ehr/source";
+import { EhrSources, clientSourceSuffix, webhookSourceSuffix } from "../source";
 
 export const elationClientSource = `${EhrSources.elation}${clientSourceSuffix}` as const;
 export const elationClientJwtTokenDataSchema = z.object({

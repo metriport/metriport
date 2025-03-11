@@ -49,15 +49,15 @@ import {
   PatientsCustomFields,
   patientsCustomFieldsSchema,
   VitalsCreateParams,
-} from "@metriport/shared/interface/external/athenahealth/index";
+} from "@metriport/shared/interface/external/ehr/athenahealth";
 import {
   Patient,
   patientSchema,
   PatientSearch,
   patientSearchSchema,
-} from "@metriport/shared/interface/external/shared/ehr/patient";
+} from "@metriport/shared/interface/external/ehr/patient";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
-import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
+import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import { uniqBy } from "lodash";

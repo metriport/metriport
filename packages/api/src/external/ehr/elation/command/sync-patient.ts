@@ -2,8 +2,8 @@ import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/ehr/elation";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { normalizeDob, normalizeGender } from "@metriport/shared";
-import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
-import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
+import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
+import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {

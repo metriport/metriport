@@ -3,7 +3,7 @@ import {
   canvasDashJwtTokenDataSchema,
   canvasWebhookJwtTokenDataSchema,
   canvasWebhookSource,
-} from "@metriport/shared/interface/external/canvas/jwt-token";
+} from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";

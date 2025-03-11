@@ -18,9 +18,9 @@ import {
   canvasClientJwtTokenResponseSchema,
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
-} from "@metriport/shared/interface/external/canvas/index";
-import { Patient, patientSchema } from "@metriport/shared/interface/external/shared/ehr/patient";
-import { EhrSources } from "@metriport/shared/src/interface/external/shared/ehr/source";
+} from "@metriport/shared/interface/external/ehr/canvas";
+import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
+import { EhrSources } from "@metriport/shared/src/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";

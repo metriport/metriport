@@ -1,4 +1,4 @@
-import { athenaDashSource } from "@metriport/shared/src/interface/external/athenahealth/jwt-token";
+import { athenaDashSource } from "@metriport/shared/src/interface/external/ehr/athenahealth/jwt-token";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";

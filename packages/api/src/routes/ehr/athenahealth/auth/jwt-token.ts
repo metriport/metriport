@@ -1,7 +1,7 @@
 import {
-  athenaDashSource,
   athenaDashJwtTokenDataSchema,
-} from "@metriport/shared/interface/external/athenahealth/jwt-token";
+  athenaDashSource,
+} from "@metriport/shared/interface/external/ehr/athenahealth/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";

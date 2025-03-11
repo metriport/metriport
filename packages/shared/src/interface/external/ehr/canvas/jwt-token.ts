@@ -1,5 +1,5 @@
 import z from "zod";
-import { EhrSources, clientSourceSuffix, webhookSourceSuffix } from "../shared/ehr/source";
+import { EhrSources, clientSourceSuffix, webhookSourceSuffix } from "../source";
 
 export const canvasDashSource = EhrSources.canvas as const;
 export const canvasDashJwtTokenDataSchema = z.object({

@@ -1,4 +1,4 @@
-import { elationWebhookSource } from "@metriport/shared/interface/external/elation/jwt-token";
+import { elationWebhookSource } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";

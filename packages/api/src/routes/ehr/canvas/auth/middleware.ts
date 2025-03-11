@@ -1,7 +1,7 @@
 import {
   canvasDashSource,
   canvasWebhookSource,
-} from "@metriport/shared/interface/external/canvas/jwt-token";
+} from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
