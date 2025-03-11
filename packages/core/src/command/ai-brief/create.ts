@@ -23,7 +23,7 @@ const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
 export async function summarizeFilteredBundleWithAI(
   cxId: string,
   patientId: string,
-  inputString: string
+  bundleText: string
 ): Promise<string | undefined> {
   const startedAt = new Date();
   const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
@@ -34,7 +34,7 @@ export async function summarizeFilteredBundleWithAI(
       chunkSize: CHUNK_SIZE,
       chunkOverlap: CHUNK_OVERLAP,
     });
-    const docs = await textSplitter.createDocuments([inputString ?? ""]);
+    const docs = await textSplitter.createDocuments([bundleText ?? ""]);
     const totalTokensUsed = {
       input: 0,
       output: 0,
