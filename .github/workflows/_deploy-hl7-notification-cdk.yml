@@ -1,4 +1,4 @@
-name: Deploy workflow for HL7 Notification Routing CDK
+name: Deploy workflow for HL7 Notification CDK
 
 # This workflow checks out both the OSS and Internal repos.
 # Because of that, the each step has to indicate the folder in which it should run at - different
@@ -18,7 +18,7 @@ on:
       hl7_notification_stack:
         required: false
         type: string
-        description: "the name of the HL7 Notification Routing CDK stack we're deploying"
+        description: "the name of the HL7 Notification CDK stack we're deploying"
       AWS_REGION:
         required: true
         type: string
@@ -152,7 +152,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}
 
-      - name: Diff HL7 Notification Routing Stack CDK
+      - name: Diff HL7 Notification Stack CDK
         uses: metriport/deploy-with-cdk@master
         if: inputs.hl7_notification_stack != null
         with:
@@ -165,7 +165,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
-      - name: Deploy HL7 Notification Routing Stack CDK
+      - name: Deploy HL7 Notification Stack CDK
         uses: metriport/deploy-with-cdk@master
         if: inputs.hl7_notification_stack != null
         with:
