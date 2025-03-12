@@ -1,5 +1,5 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
-import { EhrSource } from "@metriport/shared/interface/external/ehr";
+import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { getFacilityMapping, getFacilityMappingOrFail } from "../../command/mapping/facility";
 import { createPatient } from "../../command/medical/patient/create-patient";
 import { PatientWithIdentifiers } from "../../command/medical/patient/get-patient";

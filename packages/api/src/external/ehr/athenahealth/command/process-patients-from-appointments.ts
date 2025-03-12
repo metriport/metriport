@@ -5,7 +5,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { BookedAppointment } from "@metriport/shared/interface/external/ehr/athenahealth";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";

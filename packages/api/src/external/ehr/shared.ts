@@ -27,7 +27,7 @@ import {
   ElationWebhookJwtTokenData,
   elationWebhookSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
-import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
 import { z } from "zod";

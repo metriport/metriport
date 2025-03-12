@@ -1,6 +1,6 @@
 import CanvasApi from "@metriport/core/external/ehr/canvas";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";

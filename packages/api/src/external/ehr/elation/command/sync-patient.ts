@@ -3,7 +3,7 @@ import ElationApi from "@metriport/core/external/ehr/elation";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { normalizeDob, normalizeGender } from "@metriport/shared";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
-import { EhrSources } from "@metriport/shared/interface/external/ehr";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {

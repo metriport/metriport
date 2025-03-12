@@ -1,5 +1,5 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { ehrSources } from "@metriport/shared/interface/external/ehr";
+import { ehrSources } from "@metriport/shared/interface/external/ehr/source";
 
 export type PatientSourceIdentifierMap = {
   [key in string]: string[];

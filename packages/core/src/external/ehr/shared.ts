@@ -7,7 +7,7 @@ import {
   errorToString,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { EhrSource } from "@metriport/shared/interface/external/ehr";
+import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";

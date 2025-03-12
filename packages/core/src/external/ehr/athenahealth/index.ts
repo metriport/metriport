@@ -14,12 +14,13 @@ import {
   NotFoundError,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
   Patient,
   patientSchema,
   PatientSearch,
   patientSearchSchema,
-} from "@metriport/shared/interface/external/ehr";
+} from "@metriport/shared/interface/external/ehr/patient";
 import {
   AppointmentEvents,
   appointmentEventsSchema,
@@ -57,7 +58,6 @@ import {
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
-import { EhrSources } from "@metriport/shared/interface/external/ehr";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import { uniqBy } from "lodash";
