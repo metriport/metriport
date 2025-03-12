@@ -1,10 +1,10 @@
-import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { processDataPipelineCheckpoints } from "../../command/medical/document/process-doc-query-webhook";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
 /**
  * Resets the doc query progress for the given HIE
@@ -74,8 +74,9 @@ export async function resetDocQueryProgress({
   });
 
   if (requestId && patient.data.documentQueryProgress) {
-    await processDataPipelineCheckpoints({
+    await processDocQueryProgressWebhook({
       patient,
+      documentQueryProgress: patient.data.documentQueryProgress,
       requestId,
     });
   }

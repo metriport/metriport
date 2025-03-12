@@ -168,7 +168,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
   }
   const patient = await updatePatient();
   if (!patient) return;
-  // we want to await here to ensure the consolidated bundle is created before we send the webhook - used by internal ops
+  // we want to await here to ensure the consolidated bundle is created before we send the webhook
   await recreateConsolidated({ patient, context: "check-queries" });
 }
 
