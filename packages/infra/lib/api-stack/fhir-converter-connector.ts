@@ -24,7 +24,7 @@ export type FHIRConverterConnector = {
  * than the FHIR Converter can process in parallel, which would mean using it's worker thread's internal queue.
  * See more here: https://metriport.slack.com/archives/C04DBBJSKGB/p1739719790818809?thread_ts=1739665734.719219&cid=C04DBBJSKGB
  */
-const multiplier = 0.8;
+const multiplier = 0.4;
 
 function settings() {
   const {
