@@ -5,6 +5,20 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { getConsolidated } from "../patient/consolidated-get";
 
+export async function manageRecreateConsolidated(patient: Patient): Promise<void> {
+  const cwTrigger =
+    patient.data.externalData?.["COMMONWELL"]?.documentQueryProgress?.triggerConsolidated;
+  const cqTrigger =
+    patient.data.externalData?.["CAREQUALITY"]?.documentQueryProgress?.triggerConsolidated;
+  const globalTriggerConsolidated = patient.data.documentQueryProgress?.triggerConsolidated;
+
+  const triggerConsolidated = !!cwTrigger || !!cqTrigger || !!globalTriggerConsolidated;
+  await recreateConsolidated({
+    patient,
+    ...(triggerConsolidated ? { conversionType: "pdf" } : undefined),
+  });
+}
+
 /**
  * Recreates the consolidated bundle for a patient.
  *
