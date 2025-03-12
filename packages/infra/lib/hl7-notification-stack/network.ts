@@ -22,6 +22,7 @@ export class NetworkStack extends cdk.NestedStack {
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
       natGateways: NUM_AZS,
+      ipAddresses: ec2.IpAddresses.cidr("10.1.0.0/16"),
     });
 
     this.output = {
