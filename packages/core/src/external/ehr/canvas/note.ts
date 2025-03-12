@@ -1,7 +1,7 @@
-import CanvasApi from "./index";
+import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import { generateFakeBundleFemale, generateFakeBundleMale } from "./data";
-import { out } from "../../util/log";
-import { capture } from "../../util/notifications";
+import CanvasApi from "./index";
 
 const { log } = out("CANVAS NOTE");
 

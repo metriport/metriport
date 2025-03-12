@@ -156,6 +156,10 @@ export class Config {
     return getEnvVarOrFail("PATIENT_IMPORT_QUERY_QUEUE_URL");
   }
 
+  static getEhrSyncPatientQueueUrl(): string {
+    return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
+  }
+
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }

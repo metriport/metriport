@@ -3,9 +3,12 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processPatientsFromAppointments } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments";
+import { syncAthenaPatientIntoMetriport } from "../../../../external/ehr/athenahealth/command/sync-patient";
 import { LookupModes } from "../../../../external/ehr/athenahealth/shared";
 import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
+import { getUUIDFrom } from "../../../schemas/uuid";
+import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
+
 const router = Router();
 
 const athenaAsyncMsg = "AthenaHealth processPatientsFromAppointments";
@@ -71,6 +74,31 @@ router.post(
     processPatientsFromAppointments({ lookupMode: LookupModes.Appointments }).catch(
       processAsyncError(`${athenaAsyncMsg} ${LookupModes.Appointments}`)
     );
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/athenahealth/patient
+ *
+ * Tries to retrieve the matching Metriport patient
+ * @param req.params.id The ID of AthenaHealth Patient.
+ * @returns Metriport Patient if found.
+ */
+router.post(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const athenaPatientId = getFromQueryOrFail("patientId", req);
+    const athenaPracticeId = getFromQueryOrFail("practiceId", req);
+    const triggerDq = getFromQueryAsBoolean("triggerDq", req);
+    syncAthenaPatientIntoMetriport({
+      cxId,
+      athenaPracticeId,
+      athenaPatientId,
+      triggerDq,
+    }).catch(processAsyncError("AthenaHealth syncAthenaPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
   })
 );

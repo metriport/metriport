@@ -1,11 +1,11 @@
+import { elationWebhookSource } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
-import { elationWebhookJwtTokenSource } from "../../../../external/ehr/elation/shared";
 import { ParseResponse, processCxIdAsync } from "../../shared";
 
 function parseElationPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
-  if (tokenData.source !== elationWebhookJwtTokenSource) throw new ForbiddenError();
+  if (tokenData.source !== elationWebhookSource) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
   if (!practiceId) throw new ForbiddenError();
   return {
@@ -17,7 +17,5 @@ function parseElationPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
 }
 
 export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, elationWebhookJwtTokenSource, parseElationPracticeIdWebhook)
-    .then(next)
-    .catch(next);
+  processCxIdAsync(req, elationWebhookSource, parseElationPracticeIdWebhook).then(next).catch(next);
 }

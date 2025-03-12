@@ -1,6 +1,6 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import ElationApi, { ElationEnv, isElationEnv } from "@metriport/core/external/elation/index";
+import ElationApi, { ElationEnv, isElationEnv } from "@metriport/core/external/ehr/elation/index";
 import {
   BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
@@ -11,7 +11,7 @@ import {
   normalizeZipCodeNew,
   toTitleCase,
 } from "@metriport/shared";
-import { Patient as ElationPatient } from "@metriport/shared/interface/external/elation/patient";
+import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 

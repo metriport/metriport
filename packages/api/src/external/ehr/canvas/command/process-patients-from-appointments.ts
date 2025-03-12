@@ -1,24 +1,23 @@
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
+  delayBetweenPatientBatches,
   delayBetweenPracticeBatches,
-  EhrSources,
   getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
 } from "../../shared";
 import { createCanvasClient } from "../shared";
-import {
-  syncCanvasPatientIntoMetriport,
-  SyncCanvasPatientIntoMetriportParams,
-} from "./sync-patient";
+import { SyncCanvasPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -73,47 +72,20 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
 
-  const syncPatientsErrors: {
-    error: unknown;
-    cxId: string;
-    canvasPracticeId: string;
-    canvasPatientId: string;
-  }[] = [];
   const syncPatientsArgs: SyncCanvasPatientIntoMetriportParams[] = uniqueAppointments.map(
     appointment => {
       return {
         cxId: appointment.cxId,
         canvasPracticeId: appointment.practiceId,
         canvasPatientId: appointment.patientId,
-        triggerDq: true,
       };
     }
   );
 
-  await executeAsynchronously(
-    syncPatientsArgs,
-    async (params: SyncCanvasPatientIntoMetriportParams) => {
-      const { error } = await syncPatient(params);
-      if (error) syncPatientsErrors.push({ ...params, error });
-    },
-    {
-      numberOfParallelExecutions: parallelPatients,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
-    }
-  );
-
-  if (syncPatientsErrors.length > 0) {
-    const msg = "Failed to sync some patients @ Canvas";
-    capture.message(msg, {
-      extra: {
-        syncPatientsArgsCount: uniqueAppointments.length,
-        errorCount: syncPatientsErrors.length,
-        errors: syncPatientsErrors,
-        context: "canvas.process-patients-from-appointments",
-      },
-      level: "warning",
-    });
-  }
+  await executeAsynchronously(syncPatientsArgs, syncPatient, {
+    numberOfParallelExecutions: parallelPatients,
+    delay: delayBetweenPatientBatches.asMilliseconds(),
+  });
 }
 
 async function getAppointments({
@@ -145,23 +117,13 @@ async function syncPatient({
   cxId,
   canvasPracticeId,
   canvasPatientId,
-  triggerDq,
-}: Omit<SyncCanvasPatientIntoMetriportParams, "api">): Promise<{ error?: unknown }> {
-  const { log } = out(
-    `Canvas syncPatient - cxId ${cxId} canvasPracticeId ${canvasPracticeId} canvasPatientId ${canvasPatientId}`
-  );
-  const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
-  try {
-    await syncCanvasPatientIntoMetriport({
-      cxId,
-      canvasPracticeId,
-      canvasPatientId,
-      api,
-      triggerDq,
-    });
-    return {};
-  } catch (error) {
-    log(`Failed to sync patient. Cause: ${errorToString(error)}`);
-    return { error };
-  }
+}: Omit<SyncCanvasPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
+  const handler = buildEhrSyncPatientHandler();
+  await handler.processSyncPatient({
+    ehr: EhrSources.canvas,
+    cxId,
+    practiceId: canvasPracticeId,
+    patientId: canvasPatientId,
+    triggerDq: true,
+  });
 }
