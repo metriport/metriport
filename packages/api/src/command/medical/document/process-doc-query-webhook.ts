@@ -1,6 +1,5 @@
 import { DocumentQueryProgress, ProgressType } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
-import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -8,7 +7,6 @@ import { errorToString } from "@metriport/shared";
 import { DocumentReferenceDTO, toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
-import { manageRecreateConsolidated } from "../patient/consolidated-recreate";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 const { log } = out(`Doc Query Webhook`);
@@ -19,21 +17,22 @@ export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 /**
  * Processes the document query progress to determine if when to send the document download and conversion webhooks
  */
-export async function processDataPipelineCheckpoints({
+export const processDocQueryProgressWebhook = async ({
   patient,
+  documentQueryProgress,
   requestId,
   progressType,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId" | "externalId">;
+  documentQueryProgress: DocumentQueryProgress;
   requestId: string;
   progressType?: ProgressType;
-}): Promise<void> {
+}): Promise<void> => {
   const { id: patientId } = patient;
-  const documentQueryProgress = patient.data.documentQueryProgress;
-  if (!documentQueryProgress) return;
+
   try {
     await handleDownloadWebhook(patient, requestId, documentQueryProgress, progressType);
-    await checkAndFinishDataPipeline(patient, requestId, documentQueryProgress, progressType);
+    await handleConversionWebhook(patient, requestId, documentQueryProgress, progressType);
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
     const extra = {
@@ -48,7 +47,7 @@ export async function processDataPipelineCheckpoints({
     log(`${msg}: ${errorToString(error)} - ${JSON.stringify(extra)}`);
     capture.error(error, { extra });
   }
-}
+};
 
 const handleDownloadWebhook = async (
   patient: Pick<Patient, "id" | "cxId" | "externalId">,
@@ -81,43 +80,24 @@ const handleDownloadWebhook = async (
   }
 };
 
-/**
- * Depending on the input, decides whether it's time to create the Consolidated Bundle and send the `conversion` webhook.
- */
-async function checkAndFinishDataPipeline(
-  patient: Patient,
+const handleConversionWebhook = async (
+  patient: Pick<Patient, "id" | "cxId" | "externalId">,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
-): Promise<void> {
-  const canCompleteDataPipeline = isDataPipelineReadyForCompletion(
-    documentQueryProgress,
-    progressType
-  );
-  if (canCompleteDataPipeline) {
-    const { log } = out(`Data Pipeline wrap up. cx: ${patient.cxId}, pt: ${patient.id}`);
-    const startedAt = Date.now();
+): Promise<void> => {
+  const webhookSent = documentQueryProgress?.convert?.webhookSent ?? false;
 
-    log(`Starting Consolidated Bundle creation...`);
-    await manageRecreateConsolidated(patient);
-    const duration = Date.now() - startedAt;
-    log(`Consolidated Bundle created in ${duration} ms. Will process conversion webhook...`);
+  const convertStatus = documentQueryProgress.convert?.status;
+  const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
+  const isTypeConversion = progressType ? progressType === "convert" : true;
 
-    const convertStatus = documentQueryProgress.convert?.status;
+  const canProcessRequest = isConvertFinished && isTypeConversion && !webhookSent;
+
+  if (canProcessRequest) {
     const convertIsCompleted = convertStatus === "completed";
-    const whStatus = convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
 
-    analytics({
-      event: EventTypes.documentQuery,
-      distinctId: patient.cxId,
-      properties: {
-        requestId,
-        patientId: patient.id,
-        progressType,
-        convertStatus,
-        consolidateDurationMs: duration,
-      },
-    });
+    const whStatus = convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
 
     processPatientDocumentRequest(
       patient.cxId,
@@ -127,21 +107,7 @@ async function checkAndFinishDataPipeline(
       requestId
     );
   }
-}
-
-function isDataPipelineReadyForCompletion(
-  documentQueryProgress: DocumentQueryProgress,
-  progressType?: ProgressType
-) {
-  const webhookSent = documentQueryProgress.convert?.webhookSent ?? false;
-  const convertStatus = documentQueryProgress.convert?.status;
-
-  const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
-  const isTypeConversion = progressType ? progressType === "convert" : true;
-
-  const canProcessRequest = isConvertFinished && isTypeConversion && !webhookSent;
-  return canProcessRequest;
-}
+};
 
 export const composeDocRefPayload = async (
   patientId: string,

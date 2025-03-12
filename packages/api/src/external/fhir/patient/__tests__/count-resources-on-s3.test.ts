@@ -1,22 +1,22 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import * as getFullConsolidatedBundle from "@metriport/core/command/consolidated/consolidated-get";
+import * as getConsolidatedFromS3File from "@metriport/core/command/consolidated/consolidated-filter";
 import { makeAllergyIntollerance } from "@metriport/core/external/fhir/__tests__/allergy-intolerance";
 import { makeBundle } from "@metriport/core/external/fhir/__tests__/bundle";
 import { makeMedicationRequest } from "@metriport/core/fhir-deduplication/__tests__/examples/medication-related";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import * as getPatient from "../../../../command/medical/patient/get-patient";
 import { makePatientModelSafe } from "../../../../models/medical/__tests__/patient";
-import { countResourcesOnNewOrExistingConsolidatedSnapshot } from "../count-resources-on-s3";
+import { countResourcesOnS3 } from "../count-resources-on-s3";
 
-let getFullExistingConsolidatedBundleFromS3_mock: jest.SpyInstance;
+let getConsolidatedFromS3_mock: jest.SpyInstance;
 let getPatientOrFail_mock: jest.SpyInstance;
 
 beforeEach(() => {
   jest.restoreAllMocks();
-  getFullExistingConsolidatedBundleFromS3_mock = jest
-    .spyOn(getFullConsolidatedBundle, "getFullExistingConsolidatedBundleFromS3")
+  getConsolidatedFromS3_mock = jest
+    .spyOn(getConsolidatedFromS3File, "getConsolidatedFromS3")
     .mockImplementation(async () => ({} as SearchSetBundle));
   getPatientOrFail_mock = jest
     .spyOn(getPatient, "getPatientOrFail")
@@ -36,8 +36,8 @@ describe("countResourcesOnS3", () => {
   it(`returns 0 when no entries on bundle`, async () => {
     const bundle = makeBundle();
     expect(bundle.entry).toBeFalsy();
-    getFullExistingConsolidatedBundleFromS3_mock.mockResolvedValueOnce(bundle);
-    const res = await countResourcesOnNewOrExistingConsolidatedSnapshot({
+    getConsolidatedFromS3_mock.mockResolvedValueOnce(bundle);
+    const res = await countResourcesOnS3({
       patient: { cxId: "123", id: "456" },
     });
     expect(res).toBeTruthy();
@@ -51,8 +51,8 @@ describe("countResourcesOnS3", () => {
     const bundle = makeBundle({ entries: [] });
     expect(bundle.entry).toBeTruthy();
     expect(bundle.entry?.length).toEqual(0);
-    getFullExistingConsolidatedBundleFromS3_mock.mockResolvedValueOnce(bundle);
-    const res = await countResourcesOnNewOrExistingConsolidatedSnapshot({
+    getConsolidatedFromS3_mock.mockResolvedValueOnce(bundle);
+    const res = await countResourcesOnS3({
       patient: { cxId: "123", id: "456" },
     });
     expect(res).toBeTruthy();
@@ -67,8 +67,8 @@ describe("countResourcesOnS3", () => {
     const bundle = makeBundle({ entries: [resource] });
     expect(bundle.entry).toBeTruthy();
     expect(bundle.entry?.length).toEqual(1);
-    getFullExistingConsolidatedBundleFromS3_mock.mockResolvedValueOnce(bundle);
-    const res = await countResourcesOnNewOrExistingConsolidatedSnapshot({
+    getConsolidatedFromS3_mock.mockResolvedValueOnce(bundle);
+    const res = await countResourcesOnS3({
       patient: { cxId: "123", id: "456" },
     });
     expect(res).toBeTruthy();
@@ -91,8 +91,8 @@ describe("countResourcesOnS3", () => {
     const bundle = makeBundle({ entries: resources });
     expect(bundle.entry).toBeTruthy();
     expect(bundle.entry?.length).toEqual(resources.length);
-    getFullExistingConsolidatedBundleFromS3_mock.mockResolvedValueOnce(bundle);
-    const res = await countResourcesOnNewOrExistingConsolidatedSnapshot({
+    getConsolidatedFromS3_mock.mockResolvedValueOnce(bundle);
+    const res = await countResourcesOnS3({
       patient: { cxId: "123", id: "456" },
     });
     expect(res).toBeTruthy();
@@ -117,8 +117,8 @@ describe("countResourcesOnS3", () => {
     const bundle = makeBundle({ entries: resources });
     expect(bundle.entry).toBeTruthy();
     expect(bundle.entry?.length).toEqual(resources.length);
-    getFullExistingConsolidatedBundleFromS3_mock.mockResolvedValueOnce(bundle);
-    const res = await countResourcesOnNewOrExistingConsolidatedSnapshot({
+    getConsolidatedFromS3_mock.mockResolvedValueOnce(bundle);
+    const res = await countResourcesOnS3({
       patient: { cxId: "123", id: "456" },
     });
     expect(res).toBeTruthy();
@@ -136,24 +136,27 @@ describe("countResourcesOnS3", () => {
     expect(resMedicationReqs).toEqual(medRequests.length);
   });
 
-  it(`forwards params to getFullConsolidatedBundleFromS3`, async () => {
+  it(`forwards params to getConsolidatedFromS3`, async () => {
     const bundle = makeBundle();
     const patient = makePatientModelSafe();
     const dateFrom = faker.date.past().toISOString();
     const dateTo = faker.date.recent().toISOString();
     const resources: ResourceTypeForConsolidation[] = ["MedicationRequest", "Encounter"];
-    getFullExistingConsolidatedBundleFromS3_mock.mockResolvedValueOnce(bundle);
+    getConsolidatedFromS3_mock.mockResolvedValueOnce(bundle);
     getPatientOrFail_mock.mockResolvedValueOnce(patient);
-    await countResourcesOnNewOrExistingConsolidatedSnapshot({
+    await countResourcesOnS3({
       patient,
       dateFrom,
       dateTo,
       resources,
     });
-    expect(getFullExistingConsolidatedBundleFromS3_mock).toHaveBeenCalledTimes(1);
-    expect(getFullExistingConsolidatedBundleFromS3_mock).toHaveBeenCalledWith({
+    expect(getConsolidatedFromS3_mock).toHaveBeenCalledTimes(1);
+    expect(getConsolidatedFromS3_mock).toHaveBeenCalledWith({
       cxId: patient.cxId,
-      patientId: patient.id,
+      patient,
+      dateFrom,
+      dateTo,
+      resources,
     });
   });
 });
