@@ -56,7 +56,7 @@ export async function createAndUploadDocumentMetadataFile({
   await s3Utils.uploadFile({
     bucket: destinationBucket,
     key: metadataFileName,
-    file: Buffer.from(extrinsicObjectXml),
+    content: Buffer.from(extrinsicObjectXml),
     contentType: XML_APP_MIME_TYPE,
   });
 }

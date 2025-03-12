@@ -216,7 +216,7 @@ export async function createSignSendProcessXCPDRequest({
         await s3Utils.uploadFile({
           bucket: parsedResponsesBucket,
           key,
-          file: Buffer.from(JSON.stringify(extendedResult), "utf8"),
+          content: Buffer.from(JSON.stringify(extendedResult), "utf8"),
           contentType: "application/json",
         });
       } catch (error) {

@@ -1,16 +1,13 @@
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { wkHtmlToPdf, WkOptions } from "@metriport/core/external/wk-html-to-pdf";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
-import chromium from "@sparticuz/chromium";
-import AWS from "aws-sdk";
-import fs from "fs";
-import puppeteer from "puppeteer-core";
+import { logDuration } from "@metriport/shared/common/duration";
 import SaxonJS from "saxon-js";
-import * as uuid from "uuid";
+import { Readable } from "stream";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
-import { sleep } from "./shared/sleep";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const styleSheetText = require("./cda-to-visualization/stylesheet.js");
@@ -23,20 +20,23 @@ const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvVarOrFail("METRICS_NAMESPACE");
-const cdaToVisTimeoutInMillis = getEnvVarOrFail("CDA_TO_VIS_TIMEOUT_MS");
-const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
 const SIGNED_URL_DURATION_SECONDS = 60;
 
 let cda10: unknown;
 let narrative: unknown;
 const styleSheetTextStringified = JSON.stringify(styleSheetText);
 
-const s3client = new AWS.S3({
-  signatureVersion: "v4",
-});
+const s3Client = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
 // TODO #2619 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
+
+const pdfOptions: WkOptions = {
+  orientation: "Portrait",
+  pageSize: "A4",
+};
+
+// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler({
   cxId,
   fileName: inputFileName,
@@ -58,18 +58,7 @@ export async function handler({
         : undefined;
     const outputFileName = fileNameSuffix ? `${inputFileName}${fileNameSuffix}` : inputFileName;
 
-    const originalDocument = await downloadDocumentFromS3({
-      fileName: inputFileName,
-      bucketName,
-    });
-
-    if (!originalDocument) {
-      throw new MetriportError(`Document not found in S3`, undefined, {
-        fileName: inputFileName,
-      });
-    }
-
-    const document = cleanUpPayload(originalDocument);
+    const document = await s3Client.getFileContentsAsString(bucketName, inputFileName);
 
     if (conversionType === "html") {
       const url = await convertStoreAndReturnHtmlDocUrl({
@@ -109,23 +98,6 @@ export async function handler({
   }
 }
 
-const downloadDocumentFromS3 = async ({
-  fileName,
-  bucketName,
-}: {
-  fileName: string;
-  bucketName: string;
-}): Promise<string | undefined> => {
-  const file = await s3client
-    .getObject({
-      Bucket: bucketName,
-      Key: fileName,
-    })
-    .promise();
-  const data = file.Body?.toString("utf-8");
-  return data;
-};
-
 const convertStoreAndReturnHtmlDocUrl = async ({
   fileName,
   document,
@@ -139,26 +111,23 @@ const convertStoreAndReturnHtmlDocUrl = async ({
   metrics: Metrics;
   log: typeof console.log;
 }) => {
-  const convertDoc = await convertToHtml(document, metrics, log);
+  const htmlContents = await convertToHtml(document, metrics, log);
 
   const newFileName = fileName.concat(".html");
 
   const uploadStartedAt = Date.now();
-  await s3client
-    .putObject({
-      Bucket: bucketName,
-      Key: newFileName,
-      Body: convertDoc,
-      ContentType: "text/html",
-    })
-    .promise();
+  await s3Client.uploadFile({
+    bucket: bucketName,
+    key: newFileName,
+    content: htmlContents,
+    contentType: "text/html",
+  });
   metrics.htmlUpload = {
     duration: Date.now() - uploadStartedAt,
     timestamp: new Date(),
   };
 
   const urlHtml = await getSignedUrl({ fileName: newFileName, bucketName });
-
   return urlHtml;
 };
 
@@ -174,107 +143,46 @@ const convertStoreAndReturnPdfDocUrl = async ({
   bucketName: string;
   metrics: Metrics;
   log: typeof console.log;
-}) => {
-  const convertDoc = await convertToHtml(document, metrics, log);
+}): Promise<string> => {
+  const htmlContents = await convertToHtml(document, metrics, log);
+
+  const pdfFilename = fileName.concat(".pdf");
 
   const startedAt = Date.now();
   log(`Converting to PDF...`);
+  const pdfData = await logDuration(
+    async () => {
+      const stream = Readable.from(Buffer.from(htmlContents));
+      const pdfData = await wkHtmlToPdf(pdfOptions, stream, log);
+      return pdfData;
+    },
+    { log, withMinutes: false }
+  );
+  await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostPdf" });
+  metrics.pdfConversion = {
+    duration: Date.now() - startedAt,
+    timestamp: new Date(),
+  };
 
-  const tmpFileName = uuid.v4();
+  log(`Storing on S3...`);
+  const uploadStartedAt = Date.now();
+  await s3Client.uploadFile({
+    bucket: bucketName,
+    key: fileName,
+    content: pdfData,
+    contentType: "application/pdf",
+  });
+  metrics.pdfUpload = {
+    duration: Date.now() - uploadStartedAt,
+    timestamp: new Date(),
+  };
+  log(`Done storing on S3`);
 
-  const htmlFilepath = `/tmp/${tmpFileName}`;
-
-  fs.writeFileSync(htmlFilepath, convertDoc);
-
-  // Defines filename + path for downloaded HTML file
-  const pdfFilename = fileName.concat(".pdf");
-  const tmpPDFFileName = tmpFileName.concat(".pdf");
-  const pdfFilepath = `/tmp/${tmpPDFFileName}`;
-
-  // Define
-  let browser: puppeteer.Browser | null = null;
-
-  try {
-    const puppeteerTimeoutInMillis =
-      parseInt(cdaToVisTimeoutInMillis) - GRACEFUL_SHUTDOWN_ALLOWANCE_MS;
-    // Defines browser
-    browser = await puppeteer.launch({
-      pipe: true,
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
-      timeout: puppeteerTimeoutInMillis,
-    });
-
-    // Defines page
-    const page = await browser.newPage();
-
-    await page.setDefaultNavigationTimeout(puppeteerTimeoutInMillis);
-
-    await page.setContent(convertDoc);
-
-    // Wait 2.5 seconds
-    await sleep(2_500);
-
-    // Generate PDF from page in puppeteer
-    const before = Date.now();
-    await page.pdf({
-      path: pdfFilepath,
-      printBackground: true,
-      format: "A4",
-      timeout: puppeteerTimeoutInMillis,
-      margin: {
-        top: "20px",
-        left: "20px",
-        right: "20px",
-        bottom: "20px",
-      },
-    });
-    log(`Finished generating the PDF, took ${Date.now() - before}ms`);
-    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPostPdf" });
-    metrics.pdfConversion = {
-      duration: Date.now() - startedAt,
-      timestamp: new Date(),
-    };
-
-    // Upload generated PDF to S3 bucket
-    const uploadStartedAt = Date.now();
-    await s3client
-      .putObject({
-        Bucket: bucketName,
-        Key: pdfFilename,
-        Body: fs.readFileSync(pdfFilepath),
-        ContentType: "application/pdf",
-      })
-      .promise();
-    metrics.pdfUpload = {
-      duration: Date.now() - uploadStartedAt,
-      timestamp: new Date(),
-    };
-    log(`Done storing on S3`);
-  } catch (error) {
-    log(`Error while converting to pdf: `, error);
-
-    capture.error(error, {
-      extra: { context: "convertStoreAndReturnPdfDocUrl", lambdaName, error },
-    });
-    throw error;
-  } finally {
-    // Close the puppeteer browser
-    if (browser !== null) {
-      await browser.close();
-    }
-  }
-
-  // Logs "shutdown" statement
-  log("generate-pdf -> shutdown");
   const urlPdf = await getSignedUrl({ fileName: pdfFilename, bucketName });
-
   return urlPdf;
 };
 
-export async function convertToHtml(
+async function convertToHtml(
   document: string,
   metrics: Metrics,
   log: typeof console.log
@@ -346,10 +254,10 @@ async function getNarrative() {
 }
 
 async function getSignedUrl({ fileName, bucketName }: { fileName: string; bucketName: string }) {
-  const url = s3client.getSignedUrl("getObject", {
-    Bucket: bucketName,
-    Key: fileName,
-    Expires: SIGNED_URL_DURATION_SECONDS,
+  const url = s3Client.getSignedUrl({
+    bucketName,
+    fileName,
+    durationSeconds: SIGNED_URL_DURATION_SECONDS,
   });
   return url;
 }

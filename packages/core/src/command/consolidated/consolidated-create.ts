@@ -99,13 +99,13 @@ export async function createConsolidatedFromConversions({
     s3Utils.uploadFile({
       bucket: destinationBucketName,
       key: dedupDestFileName,
-      file: Buffer.from(JSON.stringify(deduped)),
+      content: Buffer.from(JSON.stringify(deduped)),
       contentType: "application/json",
     }),
     s3Utils.uploadFile({
       bucket: destinationBucketName,
       key: withDupsDestFileName,
-      file: Buffer.from(JSON.stringify(withDups)),
+      content: Buffer.from(JSON.stringify(withDups)),
       contentType: "application/json",
     }),
   ]);

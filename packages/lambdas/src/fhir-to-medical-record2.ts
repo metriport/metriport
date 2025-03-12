@@ -23,7 +23,7 @@ import { JSDOM } from "jsdom";
 import { Readable } from "stream";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
-import { getEnvOrFail } from "./shared/env";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { apiClient } from "./shared/oss-api";
 
 // Keep this as early on the file as possible
@@ -31,22 +31,22 @@ capture.init();
 dayjs.extend(duration);
 
 // Automatically set by AWS
-const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
-const region = getEnvOrFail("AWS_REGION");
+const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
+const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
-const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const apiUrl = getEnvOrFail("API_URL");
-const dashUrl = getEnvOrFail("DASH_URL");
-const appConfigAppId = getEnvOrFail("APPCONFIG_APPLICATION_ID");
-const appConfigConfigId = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
-const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
+const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+const apiUrl = getEnvVarOrFail("API_URL");
+const dashUrl = getEnvVarOrFail("DASH_URL");
+const appConfigAppId = getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
+const appConfigConfigId = getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+const metricsNamespace = getEnvVarOrFail("METRICS_NAMESPACE");
 
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
 const ossApi = apiClient(apiUrl);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
-// TODO 1672 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
+// TODO #2602 Move this lambda's code to Core w/ a factory so we can reuse when on our local env
 
 const pdfOptions: WkOptions = {
   grayscale: false,
@@ -338,7 +338,7 @@ async function storeMrSummaryAndBriefInS3({
   const mrResp = await newS3Client.uploadFile({
     bucket: bucketName,
     key: htmlFileName,
-    file: Buffer.from(html),
+    content: Buffer.from(html),
     contentType: "application/html",
   });
 

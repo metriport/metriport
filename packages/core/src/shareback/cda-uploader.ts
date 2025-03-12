@@ -36,7 +36,7 @@ export async function cdaDocumentUploaderHandler({
     await s3Utils.uploadFile({
       bucket: medicalDocumentsBucket,
       key: destinationKey,
-      file: Buffer.from(bundle),
+      content: Buffer.from(bundle),
       contentType: XML_APP_MIME_TYPE,
     });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);

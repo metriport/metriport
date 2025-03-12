@@ -30,7 +30,7 @@ export async function createJobRecord({
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,
-      file: Buffer.from(JSON.stringify(data), "utf8"),
+      content: JSON.stringify(data),
       contentType: "application/json",
     });
     return { key, bucket: s3BucketName };

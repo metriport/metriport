@@ -1,10 +1,10 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as rds from "aws-cdk-lib/aws-rds";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
@@ -39,7 +39,9 @@ interface LambdasNestedStackProps extends NestedStackProps {
 
 export class LambdasNestedStack extends NestedStack {
   readonly lambdaLayers: LambdaLayers;
+  // TODO 1672 Remove this
   readonly cdaToVisualizationLambda: Lambda;
+  readonly cdaToVisualizationLambda3: Lambda;
   readonly documentDownloaderLambda: lambda.Function;
   readonly fhirToCdaConverterLambda: lambda.Function;
   readonly outboundPatientDiscoveryLambda: lambda.Function;
@@ -55,7 +57,17 @@ export class LambdasNestedStack extends NestedStack {
 
     this.lambdaLayers = setupLambdasLayers(this);
 
+    // TODO 1672 Remove this
     this.cdaToVisualizationLambda = this.setupCdaToVisualization({
+      lambdaLayers: this.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      medicalDocumentsBucket: props.medicalDocumentsBucket,
+      sandboxSeedDataBucket: props.sandboxSeedDataBucket,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+    this.cdaToVisualizationLambda3 = this.setupCdaToVisualization3({
       lambdaLayers: this.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -171,6 +183,55 @@ export class LambdasNestedStack extends NestedStack {
       envType,
       envVars: {
         CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [
+        lambdaLayers.shared,
+        lambdaLayers.chromium,
+        lambdaLayers.puppeteer,
+        lambdaLayers.saxon,
+      ],
+      memory: 1024,
+      timeout: CDA_TO_VIS_TIMEOUT,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+
+    if (sandboxSeedDataBucket) {
+      sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
+    }
+
+    return cdaToVisualizationLambda;
+  }
+
+  private setupCdaToVisualization3(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    medicalDocumentsBucket: s3.Bucket;
+    sandboxSeedDataBucket: s3.IBucket | undefined;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
+    } = ownProps;
+
+    const cdaToVisualizationLambda = createLambda({
+      stack: this,
+      name: "CdaToVisualization",
+      nameSuffix: "v3",
+      entry: "cda-to-visualization3",
+      envType,
+      envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [
