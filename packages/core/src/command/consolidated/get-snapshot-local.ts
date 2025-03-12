@@ -16,7 +16,7 @@ import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion"
 import { isPatient } from "../../external/fhir/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture, out } from "../../util";
-import { getConsolidatedFromS3 } from "./consolidated-filter";
+import { getOrCreateConsolidatedSnapshotFromS3 } from "./consolidated-filter";
 import {
   ConsolidatedSnapshotConnector,
   ConsolidatedSnapshotRequestAsync,
@@ -36,15 +36,15 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     const { cxId, id: patientId } = params.patient;
     const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
-    const originalBundle = await getBundle(params);
+    const snapshotBundle = await getBundle(params);
 
     const fhirPatient = patientToFhir(params.patient);
     const patientEntry = buildBundleEntry(fhirPatient);
-    originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
-    originalBundle.total = originalBundle.entry.length;
+    snapshotBundle.entry = [patientEntry, ...(snapshotBundle.entry ?? [])];
+    snapshotBundle.total = snapshotBundle.entry.length;
 
     const originalBundleWithoutContainedPatients = removeContainedPatients(
-      originalBundle,
+      snapshotBundle,
       patientId
     );
 
@@ -134,10 +134,10 @@ async function getBundle(
   log(`forceDataFromFhir: ${forceDataFromFhir}`);
   if (isGetFromS3) {
     const startedAt = new Date();
-    const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId });
-    if (consolidatedBundle) {
+    const consolidatedSnapshot = await getOrCreateConsolidatedSnapshotFromS3({ ...params, cxId });
+    if (consolidatedSnapshot) {
       log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
-      return consolidatedBundle;
+      return consolidatedSnapshot;
     }
     log(`(from S3) Not found/created`);
   }
