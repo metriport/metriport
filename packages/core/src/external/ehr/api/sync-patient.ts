@@ -26,7 +26,7 @@ export async function syncPatient({
   patientId: string;
   triggerDq: boolean;
 }): Promise<void> {
-  const { log, debug } = out(`PatientImport createPatient - cxId ${cxId}`);
+  const { log, debug } = out(`Ehr syncPatient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
