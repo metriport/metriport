@@ -1,7 +1,7 @@
 import Router from "express-promise-router";
 import athena from "./athenahealth/internal";
-import elation from "./elation/internal";
 import canvas from "./canvas/internal";
+import elation from "./elation/internal";
 
 const routes = Router();
 

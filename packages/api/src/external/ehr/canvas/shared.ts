@@ -1,4 +1,4 @@
-import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
+import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import { cxClientKeyAndSecretMapSecretSchema, MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";

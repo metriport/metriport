@@ -1,12 +1,12 @@
-import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
+import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
-import { EhrSources } from "../../shared";
 import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,

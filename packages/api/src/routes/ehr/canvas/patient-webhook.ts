@@ -1,7 +1,8 @@
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
@@ -23,13 +24,15 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const patientId = await syncCanvasPatientIntoMetriport({
+    const handler = buildEhrSyncPatientHandler();
+    await handler.processSyncPatient({
+      ehr: EhrSources.canvas,
       cxId,
-      canvasPracticeId,
-      canvasPatientId,
+      practiceId: canvasPracticeId,
+      patientId: canvasPatientId,
       triggerDq: true,
     });
-    return res.status(httpStatus.OK).json(patientId);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

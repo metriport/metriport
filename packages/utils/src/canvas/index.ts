@@ -1,8 +1,8 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import CanvasApi from "@metriport/core/external/canvas/index";
-import { createFullNote } from "@metriport/core/external/canvas/note";
+import CanvasApi from "@metriport/core/external/ehr/canvas/index";
+import { createFullNote } from "@metriport/core/external/ehr/canvas/note";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
