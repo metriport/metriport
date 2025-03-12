@@ -1,4 +1,4 @@
-import CanvasApi from "@metriport/core/external/ehr/canvas";
+import CanvasApi from "@metriport/core/external/ehr/canvas/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";

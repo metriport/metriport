@@ -18,7 +18,7 @@ import {
   canvasClientJwtTokenResponseSchema,
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
-} from "@metriport/shared/interface/external/ehr/canvas";
+} from "@metriport/shared/interface/external/ehr/canvas/index";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";

@@ -1,5 +1,5 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
-import ElationApi from "@metriport/core/external/ehr/elation";
+import ElationApi from "@metriport/core/external/ehr/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { normalizeDob, normalizeGender } from "@metriport/shared";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";

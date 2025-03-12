@@ -1,6 +1,5 @@
 import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
   Appointments,
   appointmentsSchema,
@@ -10,7 +9,8 @@ import {
   Metadata,
   Patient,
   patientSchema,
-} from "@metriport/shared/interface/external/ehr/elation";
+} from "@metriport/shared/interface/external/ehr/elation/index";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { out } from "../../../util/log";
 import {

@@ -1,5 +1,5 @@
 import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
-import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth";
+import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";

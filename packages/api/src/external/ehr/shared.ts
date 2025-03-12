@@ -1,6 +1,6 @@
-import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth";
+import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
-import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation";
+import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
