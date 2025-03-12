@@ -1,23 +1,19 @@
-import { PatientExternalData } from "@metriport/core/domain//patient";
-import {
-  DocumentQueryProgress,
-  DocumentQueryStatus,
-  Progress,
-  ProgressType,
-  progressTypes,
-} from "@metriport/core/domain/document-query";
-import { Patient } from "@metriport/core/domain/patient";
+import { Progress, DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { processDataPipelineCheckpoints } from "../../command/medical/document/process-doc-query-webhook";
+import { PatientExternalData } from "@metriport/core/domain//patient";
+import { progressTypes, ProgressType } from "@metriport/core/domain/document-query";
+import { DocumentQueryStatus } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import {
   SetDocQueryProgressBase,
   aggregateDocQueryProgress,
 } from "../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { PatientModel } from "../../models/medical/patient";
-import { executeOnDBTx } from "../../models/transaction-wrapper";
-import { getCQData } from "../carequality/patient";
 import { getCWData } from "../commonwell/patient";
+import { getCQData } from "../carequality/patient";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
 type StaticProgress = Pick<Progress, "status" | "total">;
 type RequiredProgress = Required<Omit<Progress, "webhookSent">>;
@@ -90,8 +86,9 @@ export async function setDocQueryProgress({
     return updatedPatient;
   });
 
-  await processDataPipelineCheckpoints({
+  await processDocQueryProgressWebhook({
     patient,
+    documentQueryProgress: patient.data.documentQueryProgress,
     requestId,
   });
 

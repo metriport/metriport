@@ -7,7 +7,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { countResourcesOnSnapshotFromExistingFullBundle } from "../../../external/fhir/patient/count-resources-on-s3";
+import { countResources } from "../../../external/fhir/patient/count-resources";
 import { InternalPatientDTO, internalDtoFromModel } from "../../../routes/medical/dtos/patientDTO";
 import { Config } from "../../../shared/config";
 
@@ -105,7 +105,7 @@ async function getCoverageAssessment({
 }): Promise<CoverageAssessment> {
   const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "pdf");
   const [fhirResources, mrSummaryUrl] = await Promise.all([
-    countResourcesOnSnapshotFromExistingFullBundle({ patient }),
+    countResources({ patient }),
     getMrSummaryUrl(mrSummaryFileName, log),
   ]);
 
