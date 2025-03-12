@@ -1,4 +1,4 @@
-import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+//import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -17,7 +17,10 @@ import {
   parallelPractices,
 } from "../../shared";
 import { createCanvasClient } from "../shared";
-import { SyncCanvasPatientIntoMetriportParams } from "./sync-patient";
+import {
+  SyncCanvasPatientIntoMetriportParams,
+  syncCanvasPatientIntoMetriport,
+} from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -118,6 +121,13 @@ async function syncPatient({
   canvasPracticeId,
   canvasPatientId,
 }: Omit<SyncCanvasPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
+  await syncCanvasPatientIntoMetriport({
+    cxId,
+    canvasPracticeId,
+    canvasPatientId,
+    triggerDq: true,
+  });
+  /*
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
     ehr: EhrSources.canvas,
@@ -126,4 +136,5 @@ async function syncPatient({
     patientId: canvasPatientId,
     triggerDq: true,
   });
+  */
 }

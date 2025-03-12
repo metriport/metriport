@@ -1,6 +1,6 @@
 import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
 import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
-import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+//import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -22,7 +22,10 @@ import {
   parallelPractices,
 } from "../../shared";
 import { LookupMode, LookupModes, createAthenaClient } from "../shared";
-import { SyncAthenaPatientIntoMetriportParams } from "./sync-patient";
+import {
+  SyncAthenaPatientIntoMetriportParams,
+  syncAthenaPatientIntoMetriport,
+} from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -185,6 +188,13 @@ async function syncPatient({
   athenaPracticeId,
   athenaPatientId,
 }: Omit<SyncAthenaPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
+  await syncAthenaPatientIntoMetriport({
+    cxId,
+    athenaPracticeId,
+    athenaPatientId,
+    triggerDq: true,
+  });
+  /*
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
     ehr: EhrSources.athena,
@@ -193,4 +203,5 @@ async function syncPatient({
     patientId: athenaPatientId,
     triggerDq: true,
   });
+  */
 }
