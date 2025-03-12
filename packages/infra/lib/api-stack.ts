@@ -367,12 +367,13 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // EHR
     //-------------------------------------------
-    const { syncPatientQueue: ehrSyncPatientQueue } = new EhrNestedStack(this, "EhrNestedStack", {
-      config: props.config,
-      lambdaLayers,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-    });
+    const { syncPatientQueue: ehrSyncPatientQueue, syncPatientLambda: ehrSyncPatientLambda } =
+      new EhrNestedStack(this, "EhrNestedStack", {
+        config: props.config,
+        lambdaLayers,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+      });
 
     //-------------------------------------------
     // Rate Limiting
@@ -598,6 +599,7 @@ export class APIStack extends Stack {
     fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     patientImportCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
