@@ -49,13 +49,18 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
-  const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
-    return {
-      cxId: mapping.cxId,
-      practiceId: mapping.externalId,
-      departmentIds: mapping.secondaryMappings?.departmentIds,
-      lookupMode,
-    };
+  const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.flatMap(mapping => {
+    if (mapping.secondaryMappings?.backgroundAppointmentsDisabled) {
+      return [];
+    }
+    return [
+      {
+        cxId: mapping.cxId,
+        practiceId: mapping.externalId,
+        departmentIds: mapping.secondaryMappings?.departmentIds,
+        lookupMode,
+      },
+    ];
   });
 
   await executeAsynchronously(

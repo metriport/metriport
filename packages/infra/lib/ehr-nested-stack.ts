@@ -11,7 +11,7 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createQueue } from "./shared/sqs";
 
-const waitTimePatientSync = Duration.seconds(6); // 10 patients/min
+const waitTimePatientSync = Duration.seconds(60); // 1 patient/min
 
 function settings() {
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));

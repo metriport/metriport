@@ -24,7 +24,7 @@ export type FHIRConverterConnector = {
  * than the FHIR Converter can process in parallel, which would mean using it's worker thread's internal queue.
  * See more here: https://metriport.slack.com/archives/C04DBBJSKGB/p1739719790818809?thread_ts=1739665734.719219&cid=C04DBBJSKGB
  */
-const multiplier = 0.8;
+const multiplier = 0.4;
 
 function settings() {
   const {
@@ -39,7 +39,10 @@ function settings() {
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: Math.ceil(fhirConverterCPUAmount * fhirConverterTaskCountMin * multiplier),
+    maxConcurrency: Math.max(
+      2,
+      Math.ceil(fhirConverterCPUAmount * fhirConverterTaskCountMin * multiplier)
+    ),
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
     // How long will it take before Axios returns a timeout error - should be less than the lambda timeout

@@ -14,7 +14,7 @@ const router = Router();
  *
  * Tries to retrieve the matching Metriport patient on appointment created
  * @param req.params.id The ID of Canvas Patient.
- * @returns Metriport Patient if found.
+ * @returns HTTP 200 OK on successful processing.
  */
 router.post(
   "/:id/appointment-created",
