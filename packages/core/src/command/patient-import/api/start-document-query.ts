@@ -14,18 +14,20 @@ import { out } from "../../../util/log";
  */
 export async function startDocumentQuery({
   cxId,
+  jobId,
   patientId,
   triggerConsolidated,
   disableWebhooks,
 }: {
   cxId: string;
+  jobId: string;
   patientId: string;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
 }): Promise<void> {
   const { log } = out(`PatientImport startDocumentQuery - cxId ${cxId} patientId ${patientId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const dqUrl = buildDocumentQueryUrl(cxId, patientId, triggerConsolidated);
+  const dqUrl = buildDocumentQueryUrl(cxId, jobId, patientId, triggerConsolidated);
   const payload = disableWebhooks ? { metadata: disableWHMetadata } : {};
   try {
     await api.post(dqUrl, payload);
@@ -44,10 +46,17 @@ export async function startDocumentQuery({
   }
 }
 
-function buildDocumentQueryUrl(cxId: string, patientId: string, triggerConsolidated: boolean) {
+function buildDocumentQueryUrl(
+  cxId: string,
+  jobId: string,
+  patientId: string,
+  triggerConsolidated: boolean
+) {
   const urlParams = new URLSearchParams({
     cxId,
     patientId,
+    // Sending jobId as requestId so we can find the job at the end of DQ
+    requestId: jobId,
     triggerConsolidated: triggerConsolidated.toString(),
     forceQuery: "false",
   });

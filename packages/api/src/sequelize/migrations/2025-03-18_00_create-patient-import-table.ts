@@ -46,15 +46,18 @@ export const up: Migration = async ({ context: queryInterface }) => {
         },
         total: {
           type: DataTypes.INTEGER,
-          allowNull: true,
+          allowNull: false,
+          defaultValue: 0,
         },
         successful: {
           type: DataTypes.INTEGER,
-          allowNull: true,
+          allowNull: false,
+          defaultValue: 0,
         },
         failed: {
           type: DataTypes.INTEGER,
-          allowNull: true,
+          allowNull: false,
+          defaultValue: 0,
         },
         params: {
           type: DataTypes.JSONB,

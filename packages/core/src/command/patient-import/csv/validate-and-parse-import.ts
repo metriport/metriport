@@ -1,4 +1,5 @@
 import { errorToString, MetriportError } from "@metriport/shared";
+import { PatientImportEntryStatus } from "@metriport/shared/domain/patient/patient-import/types";
 import csv from "csv-parser";
 import * as stream from "stream";
 import { executeAsynchronously } from "../../../util/concurrency";
@@ -21,7 +22,7 @@ const commaRegex = new RegExp(/,/g);
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
  * @param s3BucketName - The S3 bucket name.
- * @returns An array with the row nmbers from the original file that were successfully parsed.
+ * @returns An array with the row nmbers from the original file, indicating the status of parsing each row.
  */
 export async function validateAndParsePatientImportCsvFromS3({
   cxId,
@@ -31,7 +32,7 @@ export async function validateAndParsePatientImportCsvFromS3({
   cxId: string;
   jobId: string;
   s3BucketName: string;
-}): Promise<{ rowNumber: number }[]> {
+}): Promise<{ rowNumber: number; status: PatientImportEntryStatus }[]> {
   const { log } = out(
     `PatientImport validateAndParsePatientImportCsvFromS3 - cxId ${cxId} jobId ${jobId}`
   );
@@ -84,7 +85,10 @@ export async function validateAndParsePatientImportCsvFromS3({
       }
     );
 
-    return patients.flatMap(p => (p.parsed ? { rowNumber: p.rowNumber } : []));
+    return patients.map(p => ({
+      rowNumber: p.rowNumber,
+      status: p.parsed ? "processing" : "failed",
+    }));
   } catch (error) {
     const msg = `Failure validating and parsing import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);

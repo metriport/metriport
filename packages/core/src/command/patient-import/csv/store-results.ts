@@ -42,10 +42,10 @@ export async function storeResults({
   try {
     const headersFileKey = createFileKeyHeaders(cxId, jobId);
     const headers = await s3Utils.getFileContentsAsString(bucketName, headersFileKey);
-    const headersWithResultColumns = headers + ",status,patientId,reason";
+    const headersWithResultColumns = headers + ",metriportId,status,reason";
     const sortedEntries = resultEntries.sort((a, b) => a.rowNumber - b.rowNumber);
     const entriesAsCsv = sortedEntries
-      .map(e => `${e.rowCsv},${e.status},${e.patientId ?? ""},${e.reason ?? ""}`)
+      .map(e => `${e.rowCsv},${e.patientId ?? ""},${e.status},${e.reason ?? ""}`)
       .join("\n");
     const csvContents = [headersWithResultColumns, entriesAsCsv].join("\n");
 

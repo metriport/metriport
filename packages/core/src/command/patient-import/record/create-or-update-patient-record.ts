@@ -69,7 +69,7 @@ export async function updatePatientRecord({
   bucketName = Config.getPatientImportBucket(),
   ...patientRecord
 }: UpdatePatientRecord): Promise<PatientRecord> {
-  const { cxId, jobId, rowNumber } = patientRecord;
+  const { cxId, jobId, rowNumber, patientId } = patientRecord;
   const { log } = out(
     `PatientImport updatePatientRecord - cxId ${cxId} jobId ${jobId} rowNumber ${rowNumber}`
   );
@@ -87,11 +87,16 @@ export async function updatePatientRecord({
             status: patientRecord.status,
             reasonForCx: patientRecord.reasonForCx,
             reasonForDev: patientRecord.reasonForDev,
+            ...(patientId != undefined ? { patientId } : {}),
           }
         : {
             ...existingRecord,
             status: patientRecord.status,
+            ...(patientId != undefined ? { patientId } : {}),
           };
+    log(
+      `Updating patient record on S3, id ${patientId} key ${key}, status ${updatedRecord.status}`
+    );
     await s3Utils.uploadFile({
       bucket: bucketName,
       key,
