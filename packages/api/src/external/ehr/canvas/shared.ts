@@ -1,9 +1,10 @@
-import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
+import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import { cxClientKeyAndSecretMapSecretSchema, MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrPerPracticeParams, EhrEnvAndClientCredentials } from "../shared";
+import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 
 export const canvasClientJwtTokenSource = "canvas-client";
+export const canvasWebhookJwtTokenSource = "canvas-webhook";
 
 export function getCanvasEnv({
   cxId,

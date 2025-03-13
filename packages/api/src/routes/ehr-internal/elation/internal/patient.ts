@@ -3,8 +3,11 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processPatientsFromAppointments } from "../../../../external/ehr/elation/command/process-patients-from-appointments";
+import { syncElationPatientIntoMetriport } from "../../../../external/ehr/elation/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler } from "../../../util";
+import { getUUIDFrom } from "../../../schemas/uuid";
+import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
+
 const router = Router();
 
 /**
@@ -19,6 +22,47 @@ router.post(
     processPatientsFromAppointments().catch(
       processAsyncError("Elation processPatientsFromAppointments")
     );
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/elation/patient/appointments
+ *
+ * Fetches appointments in the future and creates all patients not already existing
+ */
+router.post(
+  "/appointments",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    processPatientsFromAppointments().catch(
+      processAsyncError("Elation processPatientsFromAppointments")
+    );
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/elation/patient
+ *
+ * Tries to retrieve the matching Metriport patient
+ * @param req.params.id The ID of Elation Patient.
+ * @returns Metriport Patient if found.
+ */
+router.post(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const elationPatientId = getFromQueryOrFail("patientId", req);
+    const elationPracticeId = getFromQueryOrFail("practiceId", req);
+    const triggerDq = getFromQueryAsBoolean("triggerDq", req);
+    syncElationPatientIntoMetriport({
+      cxId,
+      elationPracticeId,
+      elationPatientId,
+      triggerDq,
+    }).catch(processAsyncError("Elation syncElationPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
   })
 );

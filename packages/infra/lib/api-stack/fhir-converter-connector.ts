@@ -39,7 +39,10 @@ function settings() {
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: Math.ceil(fhirConverterCPUAmount * fhirConverterTaskCountMin * multiplier),
+    maxConcurrency: Math.max(
+      2,
+      Math.ceil(fhirConverterCPUAmount * fhirConverterTaskCountMin * multiplier)
+    ),
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
     // How long will it take before Axios returns a timeout error - should be less than the lambda timeout

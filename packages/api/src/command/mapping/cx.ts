@@ -1,6 +1,20 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { NotFoundError } from "@metriport/shared";
-import { CxMapping, CxMappingPerSource, CxMappingSource } from "../../domain/cx-mapping";
+import { MetriportError, NotFoundError } from "@metriport/shared";
+import {
+  removeClientSource,
+  removeWebhookSource,
+} from "@metriport/shared/interface/external/ehr/source";
+import {
+  CxMapping,
+  CxMappingPerSource,
+  CxMappingSource,
+  isCxMappingSource,
+} from "../../domain/cx-mapping";
+import {
+  isEhrClientJwtTokenSource,
+  isEhrDashJwtTokenSource,
+  isEhrWebhookJwtTokenSource,
+} from "../../external/ehr/shared";
 import { CxMappingModel } from "../../models/cx-mapping";
 
 export type CxMappingParams = CxMappingPerSource;
@@ -111,4 +125,23 @@ export async function setExternalIdOnCxMapping({
 export async function deleteCxMapping({ cxId, id }: CxMappingLookupByIdParams): Promise<void> {
   const existing = await getCxMappingModelByIdOrFail({ cxId, id });
   await existing.destroy();
+}
+
+export function getCxMappingSourceFromJwtTokenSource(source: string): CxMappingSource {
+  const additionalDetails = { source };
+  if (isEhrDashJwtTokenSource(source)) {
+    if (isCxMappingSource(source)) return source;
+    throw new MetriportError("Invalid dash source", undefined, additionalDetails);
+  }
+  if (isEhrClientJwtTokenSource(source)) {
+    const sourceWithoutClient = removeClientSource(source);
+    if (isCxMappingSource(sourceWithoutClient)) return sourceWithoutClient;
+    throw new MetriportError("Invalid client source", undefined, additionalDetails);
+  }
+  if (isEhrWebhookJwtTokenSource(source)) {
+    const sourceWithoutWebhook = removeWebhookSource(source);
+    if (isCxMappingSource(sourceWithoutWebhook)) return sourceWithoutWebhook;
+    throw new MetriportError("Invalid webhook source", undefined, additionalDetails);
+  }
+  throw new MetriportError("Invalid source", undefined, additionalDetails);
 }

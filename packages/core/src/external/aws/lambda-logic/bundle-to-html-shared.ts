@@ -1,4 +1,4 @@
-import { DiagnosticReport } from "@medplum/fhirtypes";
+import { DiagnosticReport, FamilyMemberHistory } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { Brief } from "../../../command/ai-brief/brief";
 
@@ -136,3 +136,24 @@ export function createSection(title: string, tableContents: string, id?: string)
     </div>
   `;
 }
+
+function asYesNo(value: boolean): "yes" | "no" {
+  return value ? ("yes" as const) : ("no" as const);
+}
+
+export const getDeceasedStatus = (familyMemberHistory: FamilyMemberHistory): "yes" | "no" | "" => {
+  const deceasedBoolean = familyMemberHistory.deceasedBoolean;
+  if (deceasedBoolean !== undefined) {
+    return asYesNo(deceasedBoolean);
+  }
+
+  const conditionContributedToDeath = familyMemberHistory.condition?.find(
+    condition => condition.contributedToDeath
+  );
+
+  if (conditionContributedToDeath?.contributedToDeath !== undefined) {
+    return asYesNo(conditionContributedToDeath.contributedToDeath);
+  }
+
+  return "";
+};
