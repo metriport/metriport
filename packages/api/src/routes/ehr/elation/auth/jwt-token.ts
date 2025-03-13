@@ -36,7 +36,7 @@ const createJwtSchema = z.object({
 });
 
 /**
- * POST /internal/token/canvas
+ * POST /internal/token/elation
  */
 router.post(
   "/",

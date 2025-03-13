@@ -12,14 +12,19 @@ import {
   processPatientRouteAsync,
 } from "../../shared";
 
+export const tokenEhrPatientIdQueryParam = "elationPatientIdFromToken";
+
 function parseElationPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
   if (tokenData.source !== elationDashSource) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
   if (!practiceId) throw new ForbiddenError();
+  const patientId = tokenData.patientId;
+  if (!patientId) throw new ForbiddenError();
   return {
     externalId: practiceId,
     queryParams: {
       practiceId,
+      [tokenEhrPatientIdQueryParam]: patientId,
     },
   };
 }

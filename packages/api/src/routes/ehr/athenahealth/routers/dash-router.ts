@@ -10,8 +10,8 @@ import patient from "../patient";
 
 const routes = Router();
 
-routes.use("/patient", patient);
-routes.use("/chart", chart);
+routes.use("/patient", handleParams, patient);
+routes.use("/chart", handleParams, chart);
 routes.use(
   "/medical/v1/patient/:id",
   handleParams,

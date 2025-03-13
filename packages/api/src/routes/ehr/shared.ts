@@ -1,5 +1,5 @@
 import { MetriportError } from "@metriport/shared";
-import { Request } from "express";
+import { NextFunction, Request, Response } from "express";
 import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail, getCxMappingSourceFromJwtTokenSource } from "../../command/mapping/cx";
 import { getPatientMappingOrFail } from "../../command/mapping/patient";
@@ -7,7 +7,7 @@ import { JwtTokenData } from "../../domain/jwt-token";
 import { PatientMappingSource } from "../../domain/patient-mapping";
 import ForbiddenError from "../../errors/forbidden";
 import { EhrDashJwtTokenSource, EhrWebhookJwtTokenSource } from "../../external/ehr/shared";
-import { getAuthorizationToken } from "../util";
+import { getAuthorizationToken, getFromParamsOrFail, getFromQueryOrFail } from "../util";
 import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";
 
 export type ParseResponse = {
@@ -115,4 +115,21 @@ export async function replaceIdInQueryParams(
     source,
   });
   req.query["patientId"] = patient.patientId;
+  req.query["patientEhrId"] = patient.externalId;
+}
+
+export function processEhrPatientId(
+  tokenEhrPatientIdQueryParam: string,
+  context: "query" | "params" = "params"
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const tokenEhrPatientId = getFromQueryOrFail(tokenEhrPatientIdQueryParam, req);
+    const requestEhrPatientId =
+      context === "query"
+        ? getFromQueryOrFail("patientExternalId", req)
+        : getFromParamsOrFail("id", req);
+    if (requestEhrPatientId !== tokenEhrPatientId) throw new ForbiddenError();
+
+    next();
+  };
 }

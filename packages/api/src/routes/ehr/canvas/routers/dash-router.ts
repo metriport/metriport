@@ -9,7 +9,7 @@ import patient from "../patient";
 
 const routes = Router();
 
-routes.use("/patient", patient);
+routes.use("/patient", handleParams, patient);
 routes.use(
   "/medical/v1/patient/:id",
   handleParams,
