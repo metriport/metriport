@@ -163,6 +163,11 @@ export async function queryAndProcessDocuments({
       (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
+      log(
+        `Scheduling document query for patient ${patientId}, hasNoCWStatus ${hasNoCWStatus}, ` +
+          `isProcessing ${isProcessing}, forcePatientDiscovery ${forcePatientDiscovery}, ` +
+          `isStale ${isStale}`
+      );
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },

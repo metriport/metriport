@@ -1,8 +1,11 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
+import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -47,6 +50,7 @@ import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../../external/aws/app-config";
+import { getCQData } from "../../../external/carequality/patient";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../../external/commonwell";
 import { findDuplicatedPersons } from "../../../external/commonwell/admin/find-patient-duplicates";
@@ -56,6 +60,7 @@ import { checkStaleEnhancedCoverage } from "../../../external/commonwell/cq-brid
 import { initEnhancedCoverage } from "../../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { setCQLinkStatuses } from "../../../external/commonwell/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../../external/commonwell/cq-bridge/ec-updater-local";
+import { getCWData } from "../../../external/commonwell/patient";
 import { cqLinkStatus } from "../../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
@@ -1026,18 +1031,21 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromParamsOrFail("id", req);
     const updateParams = updateJobSchema.parse(req.body);
-    const forceStatusUpdate = getFromQueryAsBoolean("forceStatusUpdate", req);
 
     const patientImport = await updatePatientImport({
       jobId,
       cxId,
       status: updateParams.status,
-      forceStatusUpdate,
+      total: updateParams.total,
+      failed: updateParams.failed,
+      forceStatusUpdate: updateParams.forceStatusUpdate,
     });
 
     return res.status(status.OK).json(patientImport);
   })
 );
+
+const detailSchema = z.enum(["info", "debug"]).optional().default("info");
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/bulk/:id
@@ -1046,6 +1054,8 @@ router.post(
  *
  * @param req.params.id The patient import job ID.
  * @param req.query.cxId The customer ID.
+ * @param req.quer.debug Whether to include status detail FOR EACH PATIENT if the job if the
+ *        job is `processin`, can be either `info` or `debug`. Optional, defailts to 'info'
  * @return The patient import job.
  */
 router.get(
@@ -1054,8 +1064,49 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromParamsOrFail("id", req);
+    const detail = detailSchema.parse(req.query.level);
 
     const patientImport = await getPatientImportJobOrFail({ cxId, id: jobId });
+
+    if (patientImport.status === "processing" && detail === "debug") {
+      const details: Record<string, string | number | null>[] = [];
+      const resultEntries = await getResultEntries({
+        cxId,
+        jobId,
+        patientImportBucket: Config.getPatientImportBucket(),
+      });
+      await executeAsynchronously(resultEntries, async entry => {
+        if (entry.patientId) {
+          const patient = await getPatientOrFail({ id: entry.patientId, cxId });
+          const cqData = getCQData(patient.data.externalData);
+          const cwData = getCWData(patient.data.externalData);
+          details.push({
+            patientId: patient.id,
+            rowNumber: entry.rowNumber,
+            status: entry.status,
+            globalDownloadStatus: patient.data.documentQueryProgress?.download?.status ?? null,
+            globalConvertStatus: patient.data.documentQueryProgress?.convert?.status ?? null,
+            cqPqStatus: cqData?.discoveryStatus ?? null,
+            cqDownloadStatus: cqData?.documentQueryProgress?.download?.status ?? null,
+            cqConvertStatus: cqData?.documentQueryProgress?.convert?.status ?? null,
+            cwPqStatus: cwData?.status ?? null,
+            cwDownloadStatus: cwData?.documentQueryProgress?.download?.status ?? null,
+            cwConvertStatus: cwData?.documentQueryProgress?.convert?.status ?? null,
+          });
+        } else {
+          details.push({
+            patientId: null,
+            rowNumber: entry.rowNumber,
+            status: entry.status,
+          });
+        }
+      });
+      const detailedResponse = {
+        ...patientImport,
+        details,
+      };
+      return res.status(status.OK).json(detailedResponse);
+    }
 
     return res.status(status.OK).json(patientImport);
   })
