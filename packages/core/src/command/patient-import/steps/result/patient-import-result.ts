@@ -9,5 +9,5 @@ export type ProcessPatientResult = {
 };
 
 export interface PatientImportResult {
-  processPatientResult(request: ProcessPatientResult): Promise<void>;
+  processJobResult(request: ProcessPatientResult): Promise<void>;
 }

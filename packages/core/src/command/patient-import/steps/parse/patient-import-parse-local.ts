@@ -1,9 +1,9 @@
 import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { chunk } from "lodash";
+import { chunk, partition } from "lodash";
 import { capture, out } from "../../../../util";
-import { updateJobStatus } from "../../api/update-job-status";
+import { updateJobAtApi } from "../../api/update-job-status";
 import { validateAndParsePatientImportCsvFromS3 } from "../../csv/validate-and-parse-import";
 import { PatientImportCreate, ProcessPatientCreateRequest } from "../create/patient-import-create";
 import { buildPatientImportCreateHandler } from "../create/patient-import-create-factory";
@@ -37,7 +37,7 @@ export class PatientImportParseLocal implements PatientImportParse {
     try {
       const s3BucketName = this.patientImportBucket;
 
-      const job = await updateJobStatus({ cxId, jobId, status: "processing", forceStatusUpdate });
+      const job = await updateJobAtApi({ cxId, jobId, status: "processing", forceStatusUpdate });
 
       const { facilityId, params } = job;
       const { dryRun: dryRunFromCreate } = params;
@@ -48,15 +48,25 @@ export class PatientImportParseLocal implements PatientImportParse {
         jobId,
         s3BucketName,
       });
+      const [successful, failed] = partition(patients, p => (p.status !== "failed" ? true : false));
+
+      await updateJobAtApi({
+        cxId,
+        jobId,
+        status: "processing",
+        total: successful.length + failed.length,
+        failed: failed.length,
+        forceStatusUpdate,
+      });
 
       if (dryRun) {
         log(`dryRun is true, calling result...`);
-        await this.result.processPatientResult({ cxId, jobId, dryRun });
+        await this.result.processJobResult({ cxId, jobId, dryRun });
         return;
       }
 
       const errors: unknown[] = [];
-      const patientChunks = chunk(patients, patientCreateChunk);
+      const patientChunks = chunk(successful, patientCreateChunk);
       for (const patientChunk of patientChunks) {
         await Promise.allSettled(
           patientChunk.map(async parsedPatient => {
@@ -108,7 +118,7 @@ export class PatientImportParseLocal implements PatientImportParse {
           error,
         },
       });
-      await updateJobStatus({ cxId, jobId, status: "failed" });
+      await updateJobAtApi({ cxId, jobId, status: "failed" });
       throw error;
     }
   }
