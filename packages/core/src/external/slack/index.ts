@@ -1,20 +1,24 @@
+import { errorToString } from "@metriport/shared";
 import axios from "axios";
 import stringify from "json-stringify-safe";
 import { Config } from "../../util/config";
+import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
 
 const slackAlertUrl = Config.getSlackAlertUrl();
 const slackNotificationUrl = Config.getSlackNotificationUrl();
+const slackSecurityNotificationUrl = Config.getSlackSecurityNotificationUrl();
 
 export interface SlackMessage {
-  message: string;
   subject: string;
+  message?: string;
   emoji?: string;
 }
 
-export const sendToSlack = async (
+export async function sendToSlack(
   notif: SlackMessage | string,
   url: string | undefined
-): Promise<void> => {
+): Promise<void> {
   let subject: string;
   let message: string | undefined = undefined;
   let emoji: string | undefined = undefined;
@@ -39,10 +43,35 @@ export const sendToSlack = async (
   return axios.post(url, payload, {
     headers: { "Content-Type": "application/json" },
   });
-};
+}
 
-export const sendNotification = async (notif: SlackMessage | string): Promise<void> =>
-  sendToSlack(notif, slackNotificationUrl);
+export function sendNotification(notif: SlackMessage | string): Promise<void> {
+  return sendToSlack(notif, slackNotificationUrl);
+}
 
-export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
-  sendToSlack(notif, slackAlertUrl);
+export function sendAlert(notif: SlackMessage | string): Promise<void> {
+  return sendToSlack(notif, slackAlertUrl);
+}
+
+export async function sendSecurityNotification(notif: SlackMessage): Promise<void> {
+  const context = "sendSecurityNotification";
+  const { log } = out(context);
+  try {
+    if (!slackSecurityNotificationUrl) {
+      const msg = "Could not send security notification to Slack, missing URL";
+      log(`${msg} - subject: ${notif.subject}`);
+      capture.message(msg, {
+        extra: { subject: notif.subject, context },
+        level: "warning",
+      });
+      return;
+    }
+    return await sendToSlack(notif, slackSecurityNotificationUrl);
+  } catch (error) {
+    const msg = `Error sending security notification to Slack`;
+    log(`${msg} - subject: ${notif.subject} - error: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: { subject: notif.subject, context, error },
+    });
+  }
+}

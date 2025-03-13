@@ -41,6 +41,9 @@ export class Config {
   static getSlackSensitiveDataChannelUrl(): string | undefined {
     return getEnvVar("SLACK_SENSITIVE_DATA_URL");
   }
+  static getSlackSecurityNotificationUrl(): string | undefined {
+    return getEnvVar("SLACK_SECURITY_NOTIFICATION_URL");
+  }
 
   static getAWSRegion(): string {
     return getEnvVarOrFail("AWS_REGION");
