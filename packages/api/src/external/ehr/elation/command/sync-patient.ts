@@ -1,12 +1,13 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/ehr/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { normalizeDob, normalizeGender } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { findOrCreateJwtToken } from "../../../../command/jwt-token";
+import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {
   getPatientByDemo,
@@ -16,7 +17,6 @@ import {
 import { Config } from "../../../../shared/config";
 import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 export type SyncElationPatientIntoMetriportParams = {
   cxId: string;
@@ -44,6 +44,17 @@ export async function syncElationPatientIntoMetriport({
       id: existingPatient.patientId,
     });
     const metriportPatientId = metriportPatient.id;
+    const ehrDashUrl = await createElationPatientLink({ elationPracticeId, elationPatientId });
+    if (!ehrDashUrl) return metriportPatientId;
+    const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
+    await elationApi.updatePatientMetadata({
+      cxId,
+      patientId: elationPatientId,
+      metadata: {
+        object_id: metriportPatient.id,
+        object_web_link: ehrDashUrl,
+      },
+    });
     return metriportPatientId;
   }
 
@@ -62,10 +73,7 @@ export async function syncElationPatientIntoMetriport({
       patientId: metriportPatient.id,
     }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
   }
-  const ehrDashUrl = await createElationPatientLink({
-    elationPracticeId,
-    elationPatientId,
-  });
+  const ehrDashUrl = await createElationPatientLink({ elationPracticeId, elationPatientId });
   await Promise.all([
     findOrCreatePatientMapping({
       cxId,

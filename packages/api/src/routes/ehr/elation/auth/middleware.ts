@@ -4,13 +4,16 @@ import {
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
+import { getJwtToken, updateTokenExpiration } from "../../../../command/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
+import { buildDayjs } from "@metriport/shared";
 import {
   ParseResponse,
   processCxIdAsync,
   processDocumentRouteAsync,
   processPatientRouteAsync,
 } from "../../shared";
+import { getAuthorizationToken } from "../../../util";
 
 export const tokenEhrPatientIdQueryParam = "elationPatientIdFromToken";
 
@@ -41,8 +44,24 @@ function parseElationPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
   };
 }
 
+async function updateTokenExpirationAsync(req: Request): Promise<void> {
+  const accessToken = getAuthorizationToken(req);
+  const authInfo = await getJwtToken({ token: accessToken, source: elationDashSource });
+  if (!authInfo) throw new ForbiddenError();
+  const oneHourFromNow = buildDayjs().add(1, "hour").toDate();
+  if (authInfo.exp < oneHourFromNow) return;
+  try {
+    await updateTokenExpiration({ id: authInfo.id, exp: oneHourFromNow });
+  } catch (error) {
+    throw new ForbiddenError();
+  }
+}
+
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, elationDashSource, parseElationPracticeIdDash).then(next).catch(next);
+  processCxIdAsync(req, elationDashSource, parseElationPracticeIdDash)
+    .then(() => updateTokenExpirationAsync(req))
+    .then(next)
+    .catch(next);
 }
 
 export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
