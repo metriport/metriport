@@ -4,7 +4,7 @@ import duration from "dayjs/plugin/duration";
 import { executeAsynchronously } from "../../../../util/concurrency";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
-import { updateJobStatus } from "../../api/update-job-status";
+import { updateJobAtApi } from "../../api/update-job-status";
 import { ResultEntry, storeResults } from "../../csv/store-results";
 import { PatientRecord } from "../../patient-import";
 import { getS3UtilsInstance } from "../../patient-import-shared";
@@ -17,35 +17,15 @@ const numberOfParallelExecutions = 20;
 export class PatientImportResultLocal implements PatientImportResult {
   constructor(private readonly patientImportBucket: string) {}
 
-  async processPatientResult({ cxId, jobId, dryRun = false }: ProcessPatientResult) {
+  async processJobResult({ cxId, jobId, dryRun = false }: ProcessPatientResult) {
     const { log } = out(
-      `PatientImport processPatientResult.local - cxId ${cxId} jobId ${jobId} dryRun ${dryRun}`
+      `PatientImport processJobResult.local - cxId ${cxId} jobId ${jobId} dryRun ${dryRun}`
     );
     try {
-      const patientRecordKeys = await listPatientRecords({
+      const resultEntries = await getResultEntries({
         cxId,
         jobId,
-        bucketName: this.patientImportBucket,
-      });
-      const records: PatientRecord[] = [];
-      await executeAsynchronously(
-        patientRecordKeys,
-        async key => {
-          const patientRecord = await this.loadPatientRecord(key);
-          records.push(patientRecord);
-        },
-        {
-          numberOfParallelExecutions,
-        }
-      );
-      const resultEntries: ResultEntry[] = records.map(r => {
-        return {
-          rowNumber: r.rowNumber,
-          rowCsv: r.rowCsv,
-          status: r.status,
-          patientId: r.patientId,
-          reason: r.status === "failed" ? r.reasonForCx : undefined,
-        };
+        patientImportBucket: this.patientImportBucket,
       });
       await storeResults({
         cxId,
@@ -54,32 +34,69 @@ export class PatientImportResultLocal implements PatientImportResult {
         bucketName: this.patientImportBucket,
       });
 
-      if (dryRun) {
-        await updateJobStatus({ cxId, jobId, status: "waiting" });
-      } else {
-        await updateJobStatus({ cxId, jobId, status: "completed" });
-      }
+      await updateJobAtApi({ cxId, jobId, status: "completed" });
+
+      // TODO: Send webhook notification
+      // processPatientImportWebhook(cxId, patientImport.id, "completed");
+      log(`>>>> Would send webhook notification here <<<<`);
 
       log(`Result completed successfully`);
     } catch (error) {
-      const msg = `Failure while processing patient result @ PatientImport`;
+      const msg = `Failure while processing job result @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           cxId,
           jobId,
-          context: "patient-import-result-local.processPatientResult",
+          context: "patient-import-result-local.processJobResult",
           error,
         },
       });
-      await updateJobStatus({ cxId, jobId, status: "failed" });
-      // TODO 2330 expected state to not have the result file when status is failed?
+      await updateJobAtApi({ cxId, jobId, status: "failed" });
       throw error;
     }
   }
-  private async loadPatientRecord(key: string): Promise<PatientRecord> {
-    const s3Utils = getS3UtilsInstance();
-    const file = await s3Utils.getFileContentsAsString(this.patientImportBucket, key);
-    return JSON.parse(file);
-  }
+}
+
+export async function getResultEntries({
+  cxId,
+  jobId,
+  patientImportBucket,
+}: {
+  cxId: string;
+  jobId: string;
+  patientImportBucket: string;
+}): Promise<ResultEntry[]> {
+  const patientRecordKeys = await listPatientRecords({
+    cxId,
+    jobId,
+    bucketName: patientImportBucket,
+  });
+  const records: PatientRecord[] = [];
+  await executeAsynchronously(
+    patientRecordKeys,
+    async key => {
+      const patientRecord = await loadPatientRecord(key, patientImportBucket);
+      records.push(patientRecord);
+    },
+    {
+      numberOfParallelExecutions,
+    }
+  );
+  const resultEntries: ResultEntry[] = records.map(r => {
+    return {
+      rowNumber: r.rowNumber,
+      rowCsv: r.rowCsv,
+      status: r.status,
+      patientId: r.patientId,
+      reason: r.status === "failed" ? r.reasonForCx : undefined,
+    };
+  });
+  return resultEntries;
+}
+
+async function loadPatientRecord(key: string, bucketName: string): Promise<PatientRecord> {
+  const s3Utils = getS3UtilsInstance();
+  const file = await s3Utils.getFileContentsAsString(bucketName, key);
+  return JSON.parse(file);
 }
