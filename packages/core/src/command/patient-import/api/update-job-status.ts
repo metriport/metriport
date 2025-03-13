@@ -15,24 +15,27 @@ import { out } from "../../../util/log";
  * @param jobId - The bulk import job ID.
  * @param status - The new status of the job.
  */
-export async function updateJobStatus({
+export async function updateJobAtApi({
   cxId,
   jobId,
   status,
+  total,
+  failed,
   forceStatusUpdate,
 }: {
   cxId: string;
   jobId: string;
-  status: PatientImportStatus;
+  status: PatientImportStatus | "completed";
+  total?: number | undefined;
+  failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
 }): Promise<PatientImport> {
-  const { log } = out(
-    `PatientImport updateJobStatus - cxId ${cxId} jobId ${jobId} status ${status}`
-  );
+  const { log } = out(`PatientImport updateJobStatus - cxId ${cxId} jobId ${jobId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const url = buildUrl(cxId, jobId);
-  const payload: UpdateJobSchema = { status, forceStatusUpdate };
+  const payload: UpdateJobSchema = { status, total, failed, forceStatusUpdate };
   try {
+    log(`Updating API w/ status ${status}, paylaod ${JSON.stringify(payload)}`);
     const response = await api.post(url, payload);
     if (!response.data) {
       throw new MetriportError(`No body returned from updateJobStatus`, undefined, { url });
@@ -50,8 +53,9 @@ export async function updateJobStatus({
       status,
       context: "patient-import.updateJobStatus",
     };
-    if (error.status === 404) throw new NotFoundError(msg, error, additionalInfo);
-    if (error.status === 400) throw new BadRequestError(msg, error, additionalInfo);
+    const detailMsg = error.response.data.detail ?? msg;
+    if (error.response.status === 404) throw new NotFoundError(detailMsg, error, additionalInfo);
+    if (error.response.status === 400) throw new BadRequestError(detailMsg, error, additionalInfo);
     throw new MetriportError(msg, error, additionalInfo);
   }
 }

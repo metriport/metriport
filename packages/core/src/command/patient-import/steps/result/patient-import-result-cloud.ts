@@ -15,7 +15,7 @@ const lambdaClient = makeLambdaClient(region);
 export class PatientImportResultHandlerCloud implements PatientImportResult {
   constructor(private readonly patientResultLambdaName: string) {}
 
-  async processPatientResult(params: ProcessPatientResult): Promise<void> {
+  async processJobResult(params: ProcessPatientResult): Promise<void> {
     const { cxId, jobId } = params;
     const { log } = out(`PatientImport processPatientResult.cloud - cxId ${cxId} jobId ${jobId}`);
     try {

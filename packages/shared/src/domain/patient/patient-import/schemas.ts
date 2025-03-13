@@ -28,6 +28,8 @@ import { patientImportStatus } from "./types";
 
 export const updateJobSchema = z.object({
   status: z.enum(patientImportStatus),
+  total: z.number().optional(),
+  failed: z.number().optional(),
   forceStatusUpdate: z.boolean().optional(),
 });
 export type UpdateJobSchema = z.infer<typeof updateJobSchema>;
