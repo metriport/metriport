@@ -2,9 +2,11 @@ import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/ehr/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { normalizeDob, normalizeGender } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
+import { findOrCreateJwtToken } from "../../../../command/jwt-token";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {
   getPatientByDemo,
@@ -14,6 +16,7 @@ import {
 import { Config } from "../../../../shared/config";
 import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 export type SyncElationPatientIntoMetriportParams = {
   cxId: string;
@@ -59,7 +62,10 @@ export async function syncElationPatientIntoMetriport({
       patientId: metriportPatient.id,
     }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
   }
-  const dashUrl = Config.getDashUrl();
+  const ehrDashUrl = await createElationPatientLink({
+    elationPracticeId,
+    elationPatientId,
+  });
   await Promise.all([
     findOrCreatePatientMapping({
       cxId,
@@ -67,13 +73,13 @@ export async function syncElationPatientIntoMetriport({
       externalId: elationPatientId,
       source: EhrSources.elation,
     }),
-    dashUrl &&
+    ehrDashUrl &&
       elationApi.updatePatientMetadata({
         cxId,
         patientId: elationPatientId,
         metadata: {
           object_id: metriportPatient.id,
-          object_web_link: `${dashUrl}/patient/${metriportPatient.id}`,
+          object_web_link: ehrDashUrl,
         },
       }),
   ]);
@@ -110,4 +116,27 @@ async function getOrCreateMetriportPatient({
     demographics,
     externalId,
   });
+}
+
+async function createElationPatientLink({
+  elationPracticeId,
+  elationPatientId,
+}: {
+  elationPracticeId: string;
+  elationPatientId: string;
+}): Promise<string | undefined> {
+  const ehrDashUrl = Config.getEhrDashUrl();
+  if (!ehrDashUrl) return undefined;
+  const source = EhrSources.elation;
+  const jwtToken = await findOrCreateJwtToken({
+    token: uuidv7(),
+    data: {
+      practiceId: elationPracticeId,
+      patientId: elationPatientId,
+      source,
+    },
+    source,
+    exp: buildDayjs().add(10, "year").toDate(),
+  });
+  return `${ehrDashUrl}/elation/app#patient=${elationPatientId}&access_token=${jwtToken.token}`;
 }

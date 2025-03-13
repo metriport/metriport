@@ -93,6 +93,10 @@ export class Config {
     return getEnvVar("DASH_URL");
   }
 
+  static getEhrDashUrl(): string | undefined {
+    return getEnvVar("EHR_DASH_URL");
+  }
+
   static getApiGatewayUsagePlanId(): string | undefined {
     return getEnvVar("API_GW_USAGE_PLAN_ID");
   }
