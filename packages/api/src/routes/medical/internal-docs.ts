@@ -7,6 +7,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { emptyFunction } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -40,8 +41,8 @@ import { documentQueryProgressSchema } from "../schemas/internal";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
-import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { toDTO } from "./dtos/document-bulk-downloadDTO";
+import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
 const upload = multer();
@@ -406,7 +407,7 @@ router.post(
       requestId: requestId,
     });
 
-    // trigger the webhook
+    // intentionally async - trigger the webhook
     processPatientDocumentRequest(
       cxId,
       patientId,
@@ -414,7 +415,7 @@ router.post(
       status as MAPIWebhookStatus,
       requestId,
       toDTO(docs)
-    );
+    ).catch(emptyFunction);
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
   })

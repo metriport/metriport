@@ -107,7 +107,6 @@ export async function summarizeFilteredBundleWithAI(
   } catch (err) {
     const msg = `AI brief generation failure`;
     log(`${msg} - ${errorToString(err)}`);
-    // Intentionally not throwing the error to avoid breaking the MR Summary generation flow
     throw err;
   }
 }
