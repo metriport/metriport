@@ -340,16 +340,18 @@ export class MetriportMedicalApi {
    *
    * @param data The data to be used to create a new patient.
    * @param facilityId The facility providing the NPI to support this operation.
+   * @param adtSubscription Whether to enable or disable ADT subscription. Optional, defaults to false.
    * @param additionalQueryParams Optional, additional query parameters to be sent with the request.
    * @return The newly created patient.
    */
   async createPatient(
     data: PatientCreate,
     facilityId: string,
+    adtSubscription: boolean,
     additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
-      params: { facilityId, ...additionalQueryParams },
+      params: { facilityId, adtSubscription, ...additionalQueryParams },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
