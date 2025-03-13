@@ -20,7 +20,6 @@ import { getOptionalFacilityOrFail } from "../../facility/get-facility";
 dayjs.extend(duration);
 
 const presignedUploadUrlDuration = dayjs.duration(10, "minutes");
-// const bucketName = Config.getPatientImportBucket();
 
 export type PatientImportCreateCmd = {
   cxId: string;
