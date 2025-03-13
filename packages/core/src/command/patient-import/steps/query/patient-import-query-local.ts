@@ -39,6 +39,7 @@ export class PatientImportQueryLocal implements PatientImportQuery {
       await sleep(waitTimeBetweenPdAndDq.asMilliseconds());
       await startDocumentQuery({
         cxId,
+        jobId,
         patientId,
         triggerConsolidated,
         disableWebhooks,

@@ -19,10 +19,7 @@ export function validateNewStatus(
 ): PatientImportStatus {
   switch (newStatus) {
     case "waiting":
-      if (currentStatus !== "processing") {
-        throw new BadRequestError(`Import job is not processing, cannot update to waiting`);
-      }
-      break;
+      throw new BadRequestError(`Waiting is not a valid status to update`);
     case "processing":
       if (currentStatus !== "waiting") {
         throw new BadRequestError(`Import job is not waiting, cannot update to processing`);
