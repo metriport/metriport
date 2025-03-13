@@ -57,6 +57,7 @@ router.post(
     );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const adtSubscription = stringToBoolean(getFrom("query").optional("adtSubscription", req));
     const payload = patientCreateSchema.parse(req.body);
 
     if (Config.isSandbox()) {
@@ -81,6 +82,7 @@ router.post(
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
+      adtSubscription,
     });
 
     return res.status(httpStatus.CREATED).json(dtoFromModel(patient));

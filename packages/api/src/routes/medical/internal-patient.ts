@@ -32,13 +32,14 @@ import {
 } from "../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createOrUpdatePatientSettings } from "../../command/medical/patient/create-patient-settings";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
+  getPatients,
 } from "../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -907,6 +908,34 @@ router.post(
     });
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/settings
+ *
+ * Creates or updates patient settings.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.patientIds List of patient IDs to update. Optional. If not provided, all patients for the CX will be updated.
+ * @param req.query.adtSubscription Whether to enable or disable ADT subscription. Optional, defaults to false.
+ * @returns 200 with the results of the operation.
+ */
+router.post(
+  "/settings",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientIds = getFromQueryAsArray("patientIds", req);
+    const adtSubscription = getFromQueryAsBoolean("adtSubscription", req) ?? false;
+
+    const result = await createOrUpdatePatientSettings({
+      cxId,
+      patientIds,
+      adtSubscription,
+    });
+
+    return res.status(status.OK).json(result);
   })
 );
 
