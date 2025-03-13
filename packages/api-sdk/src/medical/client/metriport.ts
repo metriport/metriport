@@ -347,7 +347,7 @@ export class MetriportMedicalApi {
   async createPatient(
     data: PatientCreate,
     facilityId: string,
-    adtSubscription: boolean,
+    adtSubscription = false,
     additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
