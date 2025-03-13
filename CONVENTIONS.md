@@ -34,7 +34,8 @@
 - Use truthy syntax instead of `in` - i.e., `if (data.link)` not `if ('link' in data)`
 - Error handling
   - Pass the original error as the new one’s `cause` so the stack trace is persisted
-  - Error messages should have a static message - add dynamic data to MetriportError's `additionalInfo` prop
+  - Error messages should have a static message - add dynamic data to MetriportError's `additionalInfo`
+    prop and make sure the error object is the last parameter
   - Avoid sending multiple events to Sentry for a single error
 - Global constants and variables
   - Move literals to constants declared after imports when possible (avoid magic numbers)
