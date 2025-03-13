@@ -33,7 +33,7 @@ import {
 import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
 import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
-import { createOrUpdatePatientSettings } from "../../command/medical/patient/create-patient-settings";
+import { bulkUpsertPatientSettings } from "../../command/medical/patient/create-patient-settings";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -926,13 +926,15 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIds = getFromQueryAsArray("patientIds", req);
+    const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
     const adtSubscription = getFromQueryAsBoolean("adtSubscription", req) ?? false;
 
-    const result = await createOrUpdatePatientSettings({
+    const result = await bulkUpsertPatientSettings({
       cxId,
       patientIds,
-      adtSubscription,
+      subscribeTo: {
+        adt: adtSubscription,
+      },
     });
 
     return res.status(status.OK).json(result);

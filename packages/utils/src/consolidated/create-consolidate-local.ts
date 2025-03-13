@@ -8,6 +8,7 @@ import {
 } from "@metriport/core/command/consolidated/consolidated-create";
 import { deduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { controlDuration } from "@metriport/core/util/race-control";
 import { getFileContents } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
@@ -17,16 +18,22 @@ import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { initPatientIdRepository } from "../bulk-insert-patients";
 import { getFileNames } from "../shared/fs";
+import { generateAiBriefBundleEntry } from "@metriport/core/domain/ai-brief/generate";
+import { out } from "@metriport/core/util";
 
 dayjs.extend(duration);
+
+const AI_BRIEF_TIMEOUT = dayjs.duration(1.5, "minutes");
+const TIMED_OUT = Symbol("TIMED_OUT");
 
 /**
  * Creates a consolidated bundle from a collection of converted JSONs locally. Requires a folder with FHIR JSON files.
  */
 
-const bundlesFolder = ``;
+const bundlesFolder = `/Users/ramilgaripov/Desktop/metriport/full_stack/metriport/packages/utils/runs/fhir-converter-integration/FOR_TESTS_ONLY_CONVERTED/output/batch1_large/018a82ac-6c5a-7095-8c5a-0e38cae57db1`;
 const outputFolder = `${bundlesFolder}/consolidated`;
 
+const createAiBrief = true;
 // Not necessary - just used for logging / analytics on dedup
 const cxId = ``;
 
@@ -50,11 +57,12 @@ export async function createConsolidatedFromLocal(
   bundlesLocation: string,
   outputFolderName: string
 ) {
+  const { log } = out(`Consolidated Create - LOCAL`);
   const startedAt = Date.now();
   initPatientIdRepository(outputFolderName);
   await sleep(100);
 
-  console.log(`Creating consolidated bundle - started at ${new Date().toISOString()}`);
+  log(`Started at ${new Date().toISOString()}`);
 
   const jsonFileNames = getFileNames({
     folder: bundlesLocation,
@@ -81,6 +89,20 @@ export async function createConsolidatedFromLocal(
   withDups.entry?.push(patient);
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
   const deduped = await deduplicate({ cxId, patientId: patient.id!, bundle: withDups });
+
+  if (createAiBrief && deduped.entry && deduped.entry.length > 0) {
+    const binaryBundleEntry = await Promise.race([
+      /* eslint-disable @typescript-eslint/no-non-null-assertion */
+      generateAiBriefBundleEntry(deduped, cxId, patient.id!, log),
+      controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
+    ]);
+
+    if (binaryBundleEntry === TIMED_OUT) {
+      log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
+    } else if (binaryBundleEntry) {
+      deduped.entry?.push(binaryBundleEntry);
+    }
+  }
 
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();

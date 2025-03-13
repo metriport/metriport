@@ -3,7 +3,9 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const patientSettingsTableName = "patient_settings";
-const adtSubscriptionColumn = "adt_subscription";
+const adtSubscriptionColumn = "subscribe_to";
+const patientSettingsTableConstraintName = "patient_settings_cxId_patientId_constraint";
+const patientSettingsTableIdFields = ["patient_id", "cx_id"];
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -12,34 +14,46 @@ export const up: Migration = async ({ context: queryInterface }) => {
       patientSettingsTableName,
       {
         id: {
-          type: DataTypes.STRING,
+          type: DataTypes.UUID,
           primaryKey: true,
           allowNull: false,
         },
         patientId: {
-          type: DataTypes.STRING,
+          type: DataTypes.UUID,
           field: "patient_id",
           allowNull: false,
         },
         cxId: {
-          type: DataTypes.STRING,
+          type: DataTypes.UUID,
           field: "cx_id",
           allowNull: false,
         },
-        adtSubscription: {
-          type: DataTypes.BOOLEAN,
+        subscribeTo: {
+          type: DataTypes.JSONB,
           field: adtSubscriptionColumn,
-          allowNull: false,
-          defaultValue: false,
+          allowNull: true,
         },
       },
       { transaction, addVersion: true }
     );
+    await queryInterface.addConstraint(patientSettingsTableName, {
+      name: patientSettingsTableConstraintName,
+      fields: patientSettingsTableIdFields,
+      type: "unique",
+      transaction,
+    });
   });
 };
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.dropTable(patientSettingsTableName, { transaction });
+    await queryInterface.removeConstraint(
+      patientSettingsTableName,
+      patientSettingsTableConstraintName,
+      {
+        transaction,
+      }
+    );
   });
 };
