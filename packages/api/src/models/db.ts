@@ -19,15 +19,16 @@ import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { FacilityMappingModel } from "./facility-mapping";
 import { FeedbackModel } from "./feedback";
 import { FeedbackEntryModel } from "./feedback-entry";
+import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
+import { PatientModelReadOnly } from "./medical/patient-readonly";
 import { PatientMappingModel } from "./patient-mapping";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { InvalidLinksModel } from "./invalid-links";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -57,6 +58,8 @@ const models: ModelSetup[] = [
   InvalidLinksModel.setup,
 ];
 
+const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
+
 export type DbPoolProps = {
   max: number;
   min: number;
@@ -66,6 +69,7 @@ export type DbPoolProps = {
 
 export type MetriportDB = {
   sequelize: Sequelize;
+  sequelizeReadOnly: Sequelize;
   doc: AWS.DynamoDB.DocumentClient;
 };
 
@@ -105,14 +109,25 @@ async function initDB(): Promise<void> {
     logging: logDBOperations,
     logQueryParameters: logDBOperations,
   });
+  const readerEndpoint = getReaderEndpoint();
+  if (!readerEndpoint) console.log("[server]: reader instance not set, using primary instance");
+  const sequelizeReadOnly = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
+    host: readerEndpoint?.host ?? dbCreds.host,
+    port: readerEndpoint?.port ?? dbCreds.port,
+    dialect: dbCreds.engine,
+    pool: dbPoolSettings,
+    logging: logDBOperations,
+    logQueryParameters: logDBOperations,
+  });
   try {
-    await sequelize.authenticate();
+    await Promise.all([sequelize.authenticate(), sequelizeReadOnly.authenticate()]);
 
     // run DB migrations - update the DB to the expected state
     await updateDB(sequelize);
 
     // define all models
     for (const setup of models) setup(sequelize);
+    for (const setup of modelsReadOnly) setup(sequelizeReadOnly);
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client
@@ -125,7 +140,7 @@ async function initDB(): Promise<void> {
       await initLocalCxAccount();
     }
     // set db object for external references
-    db = { sequelize, doc };
+    db = { sequelize, sequelizeReadOnly, doc };
     console.log("[server]: connecting to db success!");
   } catch (err) {
     console.log("[server]: connecting to db failed :(");
@@ -164,6 +179,21 @@ function getOptionalInteger(prop: string | undefined): number | undefined {
   const resp = parseInt(prop);
   if (isNaN(resp)) return undefined;
   return resp;
+}
+
+function getReaderEndpoint():
+  | {
+      host: string;
+      port: number;
+    }
+  | undefined {
+  const sqlDbReaderEndpoint = Config.getDbReadReplicaEndpoint();
+  if (!sqlDbReaderEndpoint) return undefined;
+  const readerEndpoint = JSON.parse(sqlDbReaderEndpoint);
+  return {
+    host: readerEndpoint.host,
+    port: readerEndpoint.port,
+  };
 }
 
 export default initDB;
