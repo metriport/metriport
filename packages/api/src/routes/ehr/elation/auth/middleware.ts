@@ -10,9 +10,9 @@ import ForbiddenError from "../../../../errors/forbidden";
 import { getAuthorizationToken } from "../../../util";
 import {
   ParseResponse,
-  processCxIdAsync,
-  processDocumentRouteAsync,
-  processPatientRouteAsync,
+  processCxId as processCxIdShared,
+  processDocumentRoute as processDocumentRouteShared,
+  processPatientRoute as processPatientRouteShared,
 } from "../../shared";
 import dayjs from "dayjs";
 
@@ -47,7 +47,7 @@ function parseElationPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
   };
 }
 
-async function updateTokenExpirationAsync(req: Request): Promise<void> {
+async function shortenLongDurationToken(req: Request): Promise<void> {
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({ token: accessToken, source: elationDashSource });
   if (!authInfo) throw new ForbiddenError();
@@ -61,20 +61,22 @@ async function updateTokenExpirationAsync(req: Request): Promise<void> {
 }
 
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, elationDashSource, parseElationPracticeIdDash)
-    .then(() => updateTokenExpirationAsync(req))
+  processCxIdShared(req, elationDashSource, parseElationPracticeIdDash)
+    .then(() => shortenLongDurationToken(req))
     .then(next)
     .catch(next);
 }
 
 export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, elationWebhookSource, parseElationPracticeIdWebhook).then(next).catch(next);
+  processCxIdShared(req, elationWebhookSource, parseElationPracticeIdWebhook)
+    .then(next)
+    .catch(next);
 }
 
 export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
-  processPatientRouteAsync(req, elationDashSource).then(next).catch(next);
+  processPatientRouteShared(req, elationDashSource).then(next).catch(next);
 }
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
-  processDocumentRouteAsync(req, elationDashSource).then(next).catch(next);
+  processDocumentRouteShared(req, elationDashSource).then(next).catch(next);
 }

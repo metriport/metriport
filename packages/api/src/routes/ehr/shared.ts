@@ -15,7 +15,7 @@ export type ParseResponse = {
   queryParams?: { [k: string]: string };
 };
 
-export async function processCxIdAsync(
+export async function processCxId(
   req: Request,
   tokenSource: EhrDashJwtTokenSource | EhrWebhookJwtTokenSource,
   parseExternalId: (tokenData: JwtTokenData) => ParseResponse
@@ -81,7 +81,7 @@ export const validedDocumentPaths: PathDetails[] = [
   },
 ];
 
-export async function processPatientRouteAsync(
+export async function processPatientRoute(
   req: Request,
   source: PatientMappingSource
 ): Promise<void> {
@@ -92,7 +92,7 @@ export async function processPatientRouteAsync(
   }
 }
 
-export async function processDocumentRouteAsync(
+export async function processDocumentRoute(
   req: Request,
   source: PatientMappingSource
 ): Promise<void> {
