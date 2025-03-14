@@ -4,6 +4,7 @@ import { Chronicity } from "../chronicity-map";
 import { BASE_EXTENSION_URL } from "./base-extension";
 
 export const CHRONICITY_EXTENSION_URL = `${BASE_EXTENSION_URL}/condition-chronicity.json`;
+export const CONDITION_RELATED_URL = "http://hl7.org/fhir/StructureDefinition/condition-related";
 
 export type ChronicityCode = "C" | "NC" | "U";
 
@@ -20,7 +21,7 @@ export function buildChronicityExtension(chronicity: Chronicity): ChronicityExte
   const display = toTitleCase(chronicity);
 
   return {
-    url: CHRONICITY_EXTENSION_URL,
+    url: CONDITION_RELATED_URL,
     valueCoding: {
       code,
       display,
@@ -34,7 +35,7 @@ export function findChronicityExtension(extensions: Extension[]): Extension | un
 }
 
 export function isChronicityExtension(e: Extension): e is ChronicityExtension {
-  return e.url === CHRONICITY_EXTENSION_URL;
+  return e.url === CONDITION_RELATED_URL;
 }
 
 function getChronicityCode(chronicity: Chronicity): ChronicityCode {
