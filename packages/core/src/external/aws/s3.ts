@@ -448,11 +448,25 @@ export class S3Utils {
     }
   }
 
-  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {
-    const res = await executeWithRetriesS3(() =>
-      this._s3.listObjectsV2({ Bucket: bucket, Prefix: prefix }).promise()
-    );
-    return res.Contents;
+  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList> {
+    const allObjects: AWS.S3.Object[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const res = await executeWithRetriesS3(() =>
+        this._s3
+          .listObjectsV2({
+            Bucket: bucket,
+            Prefix: prefix,
+            ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+          })
+          .promise()
+      );
+      if (res.Contents) {
+        allObjects.push(...res.Contents);
+      }
+      continuationToken = res.NextContinuationToken;
+    } while (continuationToken);
+    return allObjects;
   }
 }
 
