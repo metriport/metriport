@@ -14,6 +14,9 @@ import {
   processDocumentRouteAsync,
   processPatientRouteAsync,
 } from "../../shared";
+import dayjs from "dayjs";
+
+export const elationTokenExpirationDuration = dayjs.duration(30, "minutes");
 
 export const tokenEhrPatientIdQueryParam = "elationPatientIdFromToken";
 
@@ -48,10 +51,10 @@ async function updateTokenExpirationAsync(req: Request): Promise<void> {
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({ token: accessToken, source: elationDashSource });
   if (!authInfo) throw new ForbiddenError();
-  const oneHourFromNow = buildDayjs().add(1, "hour").toDate();
-  if (authInfo.exp < oneHourFromNow) return;
+  const newExpiration = buildDayjs().add(elationTokenExpirationDuration).toDate();
+  if (authInfo.exp < newExpiration) return;
   try {
-    await updateTokenExpiration({ id: authInfo.id, exp: oneHourFromNow });
+    await updateTokenExpiration({ id: authInfo.id, exp: newExpiration });
   } catch (error) {
     throw new ForbiddenError();
   }
