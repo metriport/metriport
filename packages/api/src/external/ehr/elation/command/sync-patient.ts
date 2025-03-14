@@ -45,7 +45,6 @@ export async function syncElationPatientIntoMetriport({
     });
     const metriportPatientId = metriportPatient.id;
     const ehrDashUrl = await createElationPatientLink({ elationPracticeId, elationPatientId });
-    if (!ehrDashUrl) return metriportPatientId;
     const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
     await elationApi.updatePatientMetadata({
       cxId,
@@ -81,15 +80,14 @@ export async function syncElationPatientIntoMetriport({
       externalId: elationPatientId,
       source: EhrSources.elation,
     }),
-    ehrDashUrl &&
-      elationApi.updatePatientMetadata({
-        cxId,
-        patientId: elationPatientId,
-        metadata: {
-          object_id: metriportPatient.id,
-          object_web_link: ehrDashUrl,
-        },
-      }),
+    elationApi.updatePatientMetadata({
+      cxId,
+      patientId: elationPatientId,
+      metadata: {
+        object_id: metriportPatient.id,
+        object_web_link: ehrDashUrl,
+      },
+    }),
   ]);
   return metriportPatient.id;
 }
@@ -132,9 +130,8 @@ async function createElationPatientLink({
 }: {
   elationPracticeId: string;
   elationPatientId: string;
-}): Promise<string | undefined> {
+}): Promise<string> {
   const ehrDashUrl = Config.getEhrDashUrl();
-  if (!ehrDashUrl) return undefined;
   const source = EhrSources.elation;
   const jwtToken = await findOrCreateJwtToken({
     token: uuidv7(),
