@@ -14,12 +14,7 @@ export function normalizeConditions(conditions: Condition[]): Condition[] {
         const chronicity = chronicityMap[coding.code.replace(".", "")];
         if (chronicity) {
           const chronicityExtension = buildChronicityExtension(chronicity);
-
-          if (!updCondition.extension) {
-            updCondition.extension = [chronicityExtension];
-          } else {
-            updCondition.extension = [...updCondition.extension, chronicityExtension];
-          }
+          coding.extension = [chronicityExtension];
         }
       }
 
