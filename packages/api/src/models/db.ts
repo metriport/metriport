@@ -111,14 +111,16 @@ async function initDB(): Promise<void> {
   });
   const readerEndpoint = getReaderEndpoint();
   if (!readerEndpoint) console.log("[server]: reader instance not set, using primary instance");
-  const sequelizeReadOnly = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
-    host: readerEndpoint?.host ?? dbCreds.host,
-    port: readerEndpoint?.port ?? dbCreds.port,
-    dialect: dbCreds.engine,
-    pool: dbPoolSettings,
-    logging: logDBOperations,
-    logQueryParameters: logDBOperations,
-  });
+  const sequelizeReadOnly = readerEndpoint
+    ? new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
+        host: readerEndpoint.host,
+        port: readerEndpoint.port,
+        dialect: dbCreds.engine,
+        pool: dbPoolSettings,
+        logging: logDBOperations,
+        logQueryParameters: logDBOperations,
+      })
+    : sequelize;
   try {
     await Promise.all([sequelize.authenticate(), sequelizeReadOnly.authenticate()]);
 
