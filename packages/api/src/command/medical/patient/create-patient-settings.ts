@@ -63,7 +63,7 @@ export async function upsertPatientSettingsForPatientList({
   patientIds,
   subscribeTo = { adt: false },
 }: PatientSettingsUpsertProps): Promise<PatientSettingsUpsertResults> {
-  const { log } = out(`createOrUpdatePatientSettings - cx ${cxId}`);
+  const { log } = out(`upsertPatientSettingsForPatientList - cx ${cxId}`);
 
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     patientIds,
@@ -95,7 +95,7 @@ export async function upsertPatientSettingsForCx({
   cxId,
   subscribeTo = { adt: false },
 }: PatientSettingsUpsertForCxProps): Promise<PatientSettingsUpsertResults> {
-  const { log } = out(`bulkUpsertPatientSettingsForCx - cx ${cxId}`);
+  const { log } = out(`upsertPatientSettingsForCx - cx ${cxId}`);
 
   const patientIds = await getPatientIds({ cxId });
 

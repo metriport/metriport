@@ -47,7 +47,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.dropTable(patientSettingsTableName, { transaction });
     await queryInterface.removeConstraint(
       patientSettingsTableName,
       patientSettingsTableConstraintName,
@@ -55,5 +54,6 @@ export const down: Migration = ({ context: queryInterface }) => {
         transaction,
       }
     );
+    await queryInterface.dropTable(patientSettingsTableName, { transaction });
   });
 };

@@ -945,7 +945,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/settings-bulk
+ * POST /internal/patient/settings/bulk
  *
  * Creates or updates patient settings across all patients for a CX.
  *
@@ -954,7 +954,7 @@ router.post(
  * @returns 200 with the results of the operation.
  */
 router.post(
-  "/settings-bulk",
+  "/settings/bulk",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
