@@ -448,7 +448,7 @@ export class S3Utils {
     }
   }
 
-  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {
+  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList> {
     const allObjects: AWS.S3.Object[] = [];
     let continuationToken: string | undefined;
     do {
