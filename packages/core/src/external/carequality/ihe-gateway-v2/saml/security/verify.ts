@@ -14,6 +14,9 @@ export function verifySaml({
 }): boolean {
   try {
     const doc = new DOMParser().parseFromString(xmlString, "application/xml");
+
+    // If document has multiple digest values, it is compromised
+    // https://github.com/metriport/metriport/security/dependabot/373
     const digestValues = xpath.select(
       "//*[local-name()='DigestValue'][count(node()) > 1]",
       doc
