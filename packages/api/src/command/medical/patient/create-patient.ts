@@ -27,7 +27,7 @@ export async function createPatient({
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
-  adtSubscription = false,
+  adtSubscription,
 }: {
   patient: PatientCreateCmd;
   runPd?: boolean;
@@ -86,7 +86,11 @@ export async function createPatient({
   const fhirPatient = toFHIR(newPatient);
 
   await Promise.all([
-    createPatientSettings({ cxId, patientId: patientCreate.id, adtSubscription }),
+    createPatientSettings({
+      cxId,
+      patientId: patientCreate.id,
+      subscribeTo: { adt: adtSubscription },
+    }),
     upsertPatientToFHIRServer(newPatient.cxId, fhirPatient),
   ]);
 

@@ -1,14 +1,31 @@
-import { PatientSettings, PatientSettingsCreate } from "@metriport/core/domain/patient-settings";
+import {
+  PatientSettings,
+  PatientSettingsCreate,
+  Subscriptions,
+} from "@metriport/core/domain/patient-settings";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { Transaction } from "sequelize";
+import { BadRequestError } from "@metriport/shared";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../models/patient-settings";
-import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientIds, getPatientOrFail } from "./get-patient";
 
+type PatientSettingsUpsertResults = {
+  patientsNotFound?: string[];
+  patientsFoundAndUpdated: number;
+};
+
+type PatientSettingsUpsertForCxProps = {
+  cxId: string;
+  subscribeTo: Subscriptions;
+};
+
+type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
+  patientIds: string[];
+};
+
 /**
- * Creates a new patient settings record
+ * Creates a new patient settings record.
  *
  * @param patientId The patient ID
  * @param cxId The customer ID
@@ -18,126 +35,125 @@ import { getPatientIds, getPatientOrFail } from "./get-patient";
 export async function createPatientSettings({
   patientId,
   cxId,
-  adtSubscription,
-}: {
-  patientId: string;
-  cxId: string;
-  adtSubscription: boolean;
-}): Promise<PatientSettings> {
+  subscribeTo = { adt: false },
+}: Omit<PatientSettingsCreate, "id">): Promise<PatientSettings> {
   await getPatientOrFail({ cxId, id: patientId });
 
   const patientSettingsCreate: PatientSettingsCreate = {
     id: uuidv7(),
     cxId,
     patientId,
-    adtSubscription,
+    subscribeTo,
   };
 
   const newPatientSettings = await PatientSettingsModel.create(patientSettingsCreate);
-  return newPatientSettings;
+  return newPatientSettings.dataValues;
 }
 
 /**
- * Creates or updates patient settings for the given customer and patient IDs
+ * Upserts patient settings for the given customer and patient IDs.
  *
  * @param cxId The customer ID
- * @param patientIds The patient IDs to update. Optional. If not provided, all patients for the CX will be updated.
- * @param adtSubscription Whether to enable or disable ADT subscription. Optional, defaults to false.
+ * @param patientIds The patient IDs to upsert patient settings for.
+ * @param subscribeTo The subscriptions to enable or disable.
  * @returns The number of patients updated and the list of patients not found
  */
-export async function createOrUpdatePatientSettings({
+export async function upsertPatientSettingsForPatientList({
   cxId,
-  patientIds = [],
-  adtSubscription = false,
-}: {
-  cxId: string;
-  patientIds?: string[];
-  adtSubscription?: boolean;
-}): Promise<{
-  patientsNotFound: string[];
-  patientsUpdated: number;
-}> {
-  const { log } = out(`createOrUpdatePatientSettings - cx ${cxId}`);
+  patientIds,
+  subscribeTo = { adt: false },
+}: PatientSettingsUpsertProps): Promise<PatientSettingsUpsertResults> {
+  const { log } = out(`upsertPatientSettingsForPatientList - cx ${cxId}`);
 
-  const idsToProcess = Array.isArray(patientIds) ? patientIds : [];
-  let finalIds = idsToProcess.length > 0 ? idsToProcess : await getPatientIds({ cxId });
-
-  if (!finalIds.length) {
-    log(`No patients found for cx ${cxId}`);
-    return { patientsNotFound: [], patientsUpdated: 0 };
-  }
-
-  let patientsNotFound: string[] = [];
-  let patientsUpdated = 0;
-
-  await executeOnDBTx(PatientModel.prototype, async transaction => {
-    // Only verify patients if specific IDs were provided
-    if (idsToProcess.length > 0) {
-      const { validPatientIds, notFoundIds } = await verifyPatients({
-        patientIds: finalIds,
-        cxId,
-        transaction,
-      });
-      patientsNotFound = notFoundIds;
-      if (validPatientIds.length === 0) {
-        log(`No valid patients found`);
-        return;
-      }
-      finalIds = validPatientIds;
-    }
-
-    patientsUpdated = await upsertPatientSettings({
-      patientIds: finalIds,
-      cxId,
-      adtSubscription,
-      transaction,
-    });
-
-    log(`Updated settings for ${patientsUpdated} patients`);
+  const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
+    patientIds,
+    cxId,
   });
 
-  return { patientsNotFound, patientsUpdated };
+  if (validPatientIds.length === 0) {
+    throw new BadRequestError(`No valid patients found`);
+  }
+
+  const patientsFoundAndUpdated = await upsertPatientSettings({
+    patientIds: validPatientIds,
+    cxId,
+    subscribeTo,
+  });
+
+  log(`Updated settings for ${patientsFoundAndUpdated} patients`);
+  return { patientsFoundAndUpdated, patientsNotFound };
+}
+
+/**
+ * Upserts patient settings for the given customer with specific patient IDs.
+ *
+ * @param cxId The customer ID
+ * @param subscribeTo The subscriptions to enable or disable.
+ * @returns The number of patients updated and the list of patients not found
+ */
+export async function upsertPatientSettingsForCx({
+  cxId,
+  subscribeTo = { adt: false },
+}: PatientSettingsUpsertForCxProps): Promise<PatientSettingsUpsertResults> {
+  const { log } = out(`upsertPatientSettingsForCx - cx ${cxId}`);
+
+  const patientIds = await getPatientIds({ cxId });
+
+  if (!patientIds.length) {
+    log(`No patients found for cx ${cxId}`);
+    return { patientsFoundAndUpdated: 0 };
+  }
+
+  const patientsFoundAndUpdated = await upsertPatientSettings({
+    patientIds,
+    cxId,
+    subscribeTo,
+  });
+
+  log(`Upserted settings for all CX patients. Total: ${patientsFoundAndUpdated}`);
+  return { patientsFoundAndUpdated };
 }
 
 async function verifyPatients({
   patientIds,
   cxId,
-  transaction,
 }: {
   patientIds: string[];
   cxId: string;
-  transaction: Transaction;
 }): Promise<{
   validPatientIds: string[];
-  notFoundIds: string[];
+  invalidPatientIds: string[];
 }> {
+  if (patientIds.length < 1) {
+    return {
+      validPatientIds: [],
+      invalidPatientIds: [],
+    };
+  }
+
   const patients = await PatientModel.findAll({
     where: { id: patientIds, cxId },
     attributes: ["id"],
-    transaction,
   });
   const foundPatientIds = new Set(patients.map(p => p.id));
-  const notFoundIds = patientIds.filter(id => !foundPatientIds.has(id));
+  const invalidPatientIds = patientIds.filter(id => !foundPatientIds.has(id));
   return {
     validPatientIds: Array.from(foundPatientIds),
-    notFoundIds,
+    invalidPatientIds,
   };
 }
 
 async function upsertPatientSettings({
   patientIds,
   cxId,
-  adtSubscription,
-  transaction,
+  subscribeTo,
 }: {
   patientIds: string[];
   cxId: string;
-  adtSubscription: boolean;
-  transaction: Transaction;
+  subscribeTo: Subscriptions;
 }): Promise<number> {
   const existingSettings = await PatientSettingsModel.findAll({
     where: { patientId: patientIds, cxId },
-    transaction,
   });
   const existingSettingsMap = new Map(existingSettings.map(s => [s.patientId, s]));
 
@@ -145,12 +161,11 @@ async function upsertPatientSettings({
     id: existingSettingsMap.get(patientId)?.id ?? uuidv7(),
     cxId,
     patientId,
-    adtSubscription,
+    subscribeTo,
   }));
 
   await PatientSettingsModel.bulkCreate(upserts, {
-    updateOnDuplicate: ["adtSubscription"],
-    transaction,
+    updateOnDuplicate: ["subscribeTo"],
   });
 
   return upserts.length;

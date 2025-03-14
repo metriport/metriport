@@ -1,4 +1,4 @@
-import { PatientSettings } from "@metriport/core/domain/patient-settings";
+import { PatientSettings, Subscriptions } from "@metriport/core/domain/patient-settings";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "./_default";
 
@@ -10,7 +10,7 @@ export class PatientSettingsModel
   declare id: string;
   declare cxId: string;
   declare patientId: string;
-  declare adtSubscription: boolean;
+  declare subscribeTo: Subscriptions;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientSettingsModel.init(
@@ -22,10 +22,8 @@ export class PatientSettingsModel
         patientId: {
           type: DataTypes.UUID,
         },
-        adtSubscription: {
-          type: DataTypes.BOOLEAN,
-          allowNull: false,
-          defaultValue: false,
+        subscribeTo: {
+          type: DataTypes.JSONB,
         },
       },
       {
