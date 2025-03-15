@@ -7,6 +7,7 @@ import { Config } from "../../../../util/config";
 import { processAsyncError } from "../../../../util/error/shared";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
+import { updateJobAtApi } from "../../api/update-job-status";
 import { PatientImportResult, ProcessPatientResult } from "./patient-import-result";
 
 const region = Config.getAWSRegion();
@@ -47,6 +48,7 @@ export class PatientImportResultHandlerCloud implements PatientImportResult {
           error,
         },
       });
+      await updateJobAtApi({ cxId, jobId, status: "failed" });
       throw error;
     }
   }
