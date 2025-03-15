@@ -61,7 +61,7 @@ export class PatientImportParseLocal implements PatientImportParse {
 
       if (dryRun) {
         log(`dryRun is true, calling result...`);
-        await this.result.processJobResult({ cxId, jobId, dryRun });
+        await this.result.processJobResult({ cxId, jobId });
         return;
       }
 

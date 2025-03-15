@@ -38,6 +38,6 @@ export async function tryToFinishPatientImport({
   if (isComplete) {
     log(`Job is complete, triggering PatientImportResult`);
     const next = buildPatientImportResult();
-    await next.processJobResult({ cxId, jobId, dryRun: false });
+    await next.processJobResult({ cxId, jobId });
   }
 }

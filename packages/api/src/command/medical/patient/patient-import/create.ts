@@ -8,7 +8,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import {
   metaToRecord,
   PatientImport,
-  PatientImportMetadata,
+  PatientImportUploadMetadata,
   PatientImportParams,
   PatientImportStatus,
 } from "@metriport/shared/domain/patient/patient-import/types";
@@ -108,7 +108,7 @@ async function createUploadUrl({ cxId, jobId }: { cxId: string; jobId: string })
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const s3BucketName = Config.getPatientImportBucket();
   const key = createFileKeyRaw(cxId, jobId);
-  const metadata = metaToRecord(getMetadata());
+  const metadata = metaToRecord(getUploadMetadata());
   const s3Url = await s3Utils.getPresignedUploadUrl({
     bucket: s3BucketName,
     key,
@@ -118,7 +118,7 @@ async function createUploadUrl({ cxId, jobId }: { cxId: string; jobId: string })
   return s3Url;
 }
 
-function getMetadata(): PatientImportMetadata {
+function getUploadMetadata(): PatientImportUploadMetadata {
   if (Config.isDev()) return { isDev: true };
   return {};
 }
