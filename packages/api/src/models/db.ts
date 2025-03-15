@@ -19,15 +19,16 @@ import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { FacilityMappingModel } from "./facility-mapping";
 import { FeedbackModel } from "./feedback";
 import { FeedbackEntryModel } from "./feedback-entry";
+import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
 import { PatientMappingModel } from "./patient-mapping";
+import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { InvalidLinksModel } from "./invalid-links";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -52,6 +53,7 @@ const models: ModelSetup[] = [
   FeedbackEntryModel.setup,
   CxMappingModel.setup,
   PatientMappingModel.setup,
+  PatientSettingsModel.setup,
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
   InvalidLinksModel.setup,

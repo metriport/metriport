@@ -84,7 +84,7 @@ export async function getPatients({
   });
 
   const patientsWithIdentifiers = await Promise.all(
-    patients.map(patient => attatchPatientIdentifiers(patient.dataValues))
+    patients.map(patient => attachPatientIdentifiers(patient.dataValues))
   );
   const sortedPatients = sortForPagination(patientsWithIdentifiers, pagination);
   return sortedPatients;
@@ -202,7 +202,7 @@ export async function getPatientByDemo({
 }): Promise<PatientWithIdentifiers | undefined> {
   const patientLoader = new PatientLoaderLocal();
   const patient = await getPatientByDemoMPI({ cxId, demo, patientLoader });
-  return patient ? await attatchPatientIdentifiers(patient) : undefined;
+  return patient ? await attachPatientIdentifiers(patient) : undefined;
 }
 
 export type GetPatient = {
@@ -239,7 +239,7 @@ export async function getPatient({
     transaction,
     lock,
   });
-  return patient ? await attatchPatientIdentifiers(patient.dataValues) : undefined;
+  return patient ? await attachPatientIdentifiers(patient.dataValues) : undefined;
 }
 
 /**
@@ -307,7 +307,7 @@ export async function getPatientStates({
   return uniq(nonUniqueStates);
 }
 
-export async function attatchPatientIdentifiers(patient: Patient): Promise<PatientWithIdentifiers> {
+export async function attachPatientIdentifiers(patient: Patient): Promise<PatientWithIdentifiers> {
   const additionalIds = await getSourceMapForPatient({
     cxId: patient.cxId,
     patientId: patient.id,

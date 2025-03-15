@@ -3,16 +3,19 @@ import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { patientEvents } from "../../../event/medical/patient-event";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
+import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
+import { validateVersionForUpdate } from "../../../models/_default";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { getPatientModelOrFail } from "./get-patient";
+import {
+  PatientWithIdentifiers,
+  attachPatientIdentifiers,
+  getPatientModelOrFail,
+} from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
-import { attatchPatientIdentifiers, PatientWithIdentifiers } from "./get-patient";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -54,7 +57,7 @@ export async function updatePatient({
     forceCarequality,
   }).catch(processAsyncError("runOrSchedulePatientDiscoveryAcrossHies"));
 
-  const patientWithIdentifiers = await attatchPatientIdentifiers(patient);
+  const patientWithIdentifiers = await attachPatientIdentifiers(patient);
   return patientWithIdentifiers;
 }
 
