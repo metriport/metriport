@@ -89,8 +89,8 @@ export class Config {
     return CoreConfig.getApiUrl();
   }
 
-  static getDashUrl(): string | undefined {
-    return getEnvVar("DASH_URL");
+  static getEhrDashUrl(): string {
+    return getEnvVarOrFail("EHR_DASH_URL");
   }
 
   static getApiGatewayUsagePlanId(): string | undefined {

@@ -1,5 +1,5 @@
 import Router from "express-promise-router";
-import patientWebhook from "./patient-webhook";
+import patientWebhook from "../patient-webhook";
 
 const routes = Router();
 

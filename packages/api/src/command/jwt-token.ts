@@ -74,3 +74,11 @@ export async function deleteJwtToken({ token, source }: JwtTokenLookUpParams): P
   if (!existing) throw new NotFoundError("Entry not found", undefined, { token, source });
   await existing.destroy();
 }
+
+export async function updateTokenExpiration({ id, exp }: { id: string; exp: Date }): Promise<void> {
+  const existing = await JwtTokenModel.findOne({
+    where: { id },
+  });
+  if (!existing) throw new NotFoundError("Entry not found", undefined, { id });
+  await existing.update({ exp });
+}

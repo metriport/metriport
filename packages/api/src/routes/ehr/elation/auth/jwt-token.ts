@@ -1,4 +1,6 @@
 import {
+  elationDashJwtTokenDataSchema,
+  elationDashSource,
   elationWebhookJwtTokenDataSchema,
   elationWebhookSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
@@ -11,6 +13,45 @@ import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getAuthorizationToken } from "../../../util";
 
 const router = Router();
+
+/**
+ * GET /internal/token/elation
+ */
+router.get(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const token = getAuthorizationToken(req);
+    const tokenStatus = await checkJwtToken({
+      token,
+      source: elationDashSource,
+    });
+    return res.status(httpStatus.OK).json(tokenStatus);
+  })
+);
+
+const createJwtSchema = z.object({
+  exp: z.number(),
+  data: elationDashJwtTokenDataSchema,
+});
+
+/**
+ * POST /internal/token/elation
+ */
+router.post(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const token = getAuthorizationToken(req);
+    const data = createJwtSchema.parse(req.body);
+    await saveJwtToken({
+      token,
+      source: elationDashSource,
+      ...data,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
 
 /**
  * GET /internal/token/elation/webhook

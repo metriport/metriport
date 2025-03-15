@@ -7,9 +7,9 @@ import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
 import {
   ParseResponse,
-  processCxIdAsync,
-  processDocumentRouteAsync,
-  processPatientRouteAsync,
+  processCxId as processCxIdShared,
+  processDocumentRoute as processDocumentRouteShared,
+  processPatientRoute as processPatientRouteShared,
 } from "../../shared";
 
 function parseCanvasPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
@@ -37,17 +37,17 @@ function parseCanvasPracticeIdWebhook(tokenData: JwtTokenData): ParseResponse {
 }
 
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, canvasDashSource, parseCanvasPracticeIdDash).then(next).catch(next);
+  processCxIdShared(req, canvasDashSource, parseCanvasPracticeIdDash).then(next).catch(next);
 }
 
 export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, canvasWebhookSource, parseCanvasPracticeIdWebhook).then(next).catch(next);
+  processCxIdShared(req, canvasWebhookSource, parseCanvasPracticeIdWebhook).then(next).catch(next);
 }
 
 export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
-  processPatientRouteAsync(req, canvasDashSource).then(next).catch(next);
+  processPatientRouteShared(req, canvasDashSource).then(next).catch(next);
 }
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
-  processDocumentRouteAsync(req, canvasDashSource).then(next).catch(next);
+  processDocumentRouteShared(req, canvasDashSource).then(next).catch(next);
 }

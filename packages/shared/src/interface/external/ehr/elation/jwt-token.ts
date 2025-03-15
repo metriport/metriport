@@ -1,6 +1,14 @@
 import z from "zod";
 import { EhrSources, clientSourceSuffix, webhookSourceSuffix } from "../source";
 
+export const elationDashSource = EhrSources.elation as const;
+export const elationDashJwtTokenDataSchema = z.object({
+  practiceId: z.string(),
+  patientId: z.string(),
+  source: z.literal(`${elationDashSource}`),
+});
+export type ElationDashJwtTokenData = z.infer<typeof elationDashJwtTokenDataSchema>;
+
 export const elationClientSource = `${EhrSources.elation}${clientSourceSuffix}` as const;
 export const elationClientJwtTokenDataSchema = z.object({
   practiceId: z.string(),

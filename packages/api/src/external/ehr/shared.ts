@@ -24,6 +24,8 @@ import {
 import {
   ElationClientJwtTokenData,
   elationClientSource,
+  ElationDashJwtTokenData,
+  elationDashSource,
   ElationWebhookJwtTokenData,
   elationWebhookSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
@@ -53,13 +55,20 @@ export type EhrClientParams<Env extends EhrEnv> = {
   practiceId: string;
 } & EhrEnvAndClientCredentials<Env>;
 
-export const ehrDashJwtTokenSources = [athenaDashSource, canvasDashSource] as const;
+export const ehrDashJwtTokenSources = [
+  athenaDashSource,
+  canvasDashSource,
+  elationDashSource,
+] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
   return ehrDashJwtTokenSources.includes(source as EhrDashJwtTokenSource);
 }
 
-export type EhrDashJwtTokenData = AthenaDashJwtTokenData | CanvasDashJwtTokenData;
+export type EhrDashJwtTokenData =
+  | AthenaDashJwtTokenData
+  | CanvasDashJwtTokenData
+  | ElationDashJwtTokenData;
 
 export const ehrClientJwtTokenSources = [
   athenaClientSource,
