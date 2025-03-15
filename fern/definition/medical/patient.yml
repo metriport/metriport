@@ -78,7 +78,9 @@ service:
 
     list:
       display-name: List Patients at Facility
-      docs: Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.
+      docs: |
+        Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.
+        If the `count` query parameter is provided, the response will be paginated.
       method: GET
       path: ""
       request:
@@ -87,7 +89,20 @@ service:
           facilityId:
             type: optional<string>
             docs: The ID of the Facility where the patient is receiving care.
-      response: ListPatientsResponse
+          filters:
+            type: optional<string>
+            docs: Optional filters to apply to the patient list.
+          fromItem:
+            type: optional<integer>
+            docs: Starting index of items to retrieve.
+          toItem:
+            type: optional<integer>
+            docs: Ending index of items to retrieve.
+          count:
+            type: optional<integer>
+            docs: Total number of items to retrieve.
+      response:
+        type: ListPatientsResponse
 
     delete:
       display-name: Delete Patient
@@ -298,5 +313,35 @@ types:
             - $FacilityId.Example1
 
   ListPatientsResponse:
+    discriminated: false
+    union:
+      - PaginatedPatientsResponse
+      - UnpaginatedPatientsResponse
+
+  UnpaginatedPatientsResponse:
     properties:
-      patients: list<Patient>
+      patients:
+        type: list<Patient>
+
+  PaginatedPatientsResponse:
+    properties:
+      meta:
+        type: PaginationMeta
+      patients:
+        type: list<Patient>
+
+  PaginationMeta:
+    properties:
+      prevPage:
+        type: optional<string>
+        docs: The URL for the previous page of results.
+      nextPage:
+        type: optional<string>
+        docs: The URL for the next page of results.
+      itemsOnPage:
+        type: integer
+        docs: Number of items on the current page.
+      itemsInTotal:
+        type: integer
+        docs: Total number of items across all pages.
+
