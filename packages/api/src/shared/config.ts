@@ -344,9 +344,6 @@ export class Config {
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }
-  static getOrgOidsWithIHEGatewayV2Enabled(): string {
-    return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
-  }
 
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
