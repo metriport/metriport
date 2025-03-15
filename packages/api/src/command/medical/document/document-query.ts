@@ -45,6 +45,7 @@ export async function queryDocumentsAcrossHIEs({
   cxId,
   patientId,
   facilityId,
+  requestId: requestIdParam,
   override,
   cxDocumentRequestMetadata,
   forceQuery = false,
@@ -57,6 +58,7 @@ export async function queryDocumentsAcrossHIEs({
   cxId: string;
   patientId: string;
   facilityId?: string;
+  requestId?: string | undefined;
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
@@ -77,7 +79,7 @@ export async function queryDocumentsAcrossHIEs({
   validateOptionalFacilityId(patient, facilityId);
 
   const docQueryProgress = patient.data.documentQueryProgress;
-  const requestId = getOrGenerateRequestId(docQueryProgress, forceQuery);
+  const requestId = requestIdParam ?? getOrGenerateRequestId(docQueryProgress, forceQuery);
 
   const isCheckStatus = !forceQuery;
   if (isCheckStatus && areDocumentsProcessing(docQueryProgress)) {
