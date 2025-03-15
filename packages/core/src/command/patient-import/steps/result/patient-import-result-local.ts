@@ -17,10 +17,12 @@ const numberOfParallelExecutions = 20;
 export class PatientImportResultLocal implements PatientImportResult {
   constructor(private readonly patientImportBucket: string) {}
 
-  async processJobResult({ cxId, jobId, dryRun = false }: ProcessPatientResult) {
-    const { log } = out(
-      `PatientImport processJobResult.local - cxId ${cxId} jobId ${jobId} dryRun ${dryRun}`
-    );
+  /**
+   * Consolidates the individual patient records into a single file and updates the job status at
+   * the API (which might do other things, like sending WH requests).
+   */
+  async processJobResult({ cxId, jobId }: ProcessPatientResult) {
+    const { log } = out(`PatientImport processJobResult.local - cxId ${cxId} jobId ${jobId}`);
     try {
       const resultEntries = await getResultEntries({
         cxId,
@@ -35,10 +37,6 @@ export class PatientImportResultLocal implements PatientImportResult {
       });
 
       await updateJobAtApi({ cxId, jobId, status: "completed" });
-
-      // TODO: Send webhook notification
-      // processPatientImportWebhook(cxId, patientImport.id, "completed");
-      log(`>>>> Would send webhook notification here <<<<`);
 
       log(`Result completed successfully`);
     } catch (error) {
