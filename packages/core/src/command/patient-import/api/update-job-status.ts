@@ -14,6 +14,7 @@ import { out } from "../../../util/log";
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
  * @param status - The new status of the job.
+ * @returns the updated job.
  */
 export async function updateJobAtApi({
   cxId,

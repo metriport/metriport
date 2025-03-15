@@ -131,7 +131,7 @@ export const processPatientDocumentRequest = async (
   }
 };
 
-function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
+function getMetadata(whType: MAPIWebhookType, patientData: PatientData): unknown {
   if (whType === "medical.document-download" || whType === "medical.document-conversion") {
     return patientData.cxDocumentRequestMetadata;
   } else if (whType === "medical.consolidated-data") {

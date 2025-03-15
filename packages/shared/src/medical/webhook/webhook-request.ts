@@ -19,13 +19,16 @@ export type DocumentBulkDownloadWebhookType = z.infer<typeof docBulkDownloadWebh
 
 const hl7NotificationWebhookTypeSchema = z.enum(["patient.admit", "patient.discharge"]);
 export type Hl7WebhookTypeSchemaType = z.infer<typeof hl7NotificationWebhookTypeSchema>;
+export const bulkPatientImportWebhookTypeSchema = z.literal(`medical.bulk-patient-create`);
+export type BulkPatientImportWebhookType = z.infer<typeof bulkPatientImportWebhookTypeSchema>;
 
 export const mapiWebhookTypeSchema = consolidatedWebhookTypeSchema
   .or(consolidatedWebhookTypeSchema)
   .or(docDownloadWebhookTypeSchema)
   .or(docConversionWebhookTypeSchema)
   .or(docBulkDownloadWebhookTypeSchema)
-  .or(hl7NotificationWebhookTypeSchema);
+  .or(hl7NotificationWebhookTypeSchema)
+  .or(bulkPatientImportWebhookTypeSchema);
 export type MAPIWebhookType = z.infer<typeof mapiWebhookTypeSchema>;
 
 export const webhookTypeSchema = pingWebhookTypeSchema.or(mapiWebhookTypeSchema);
