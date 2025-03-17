@@ -132,14 +132,10 @@ export function processEhrPatientId(
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     const tokenEhrPatientId = getFromQueryOrFail(tokenEhrPatientIdQueryParam, req);
-    console.log("tokenEhrPatientId", tokenEhrPatientId);
-    console.log("req.query", req.query);
-    console.log("req.params", req.params);
     const requestEhrPatientId =
       context === "query"
         ? getFromQueryOrFail("patientEhrId", req)
         : getFrom("params").orFail("id", req);
-    console.log("requestEhrPatientId", requestEhrPatientId);
     if (requestEhrPatientId !== tokenEhrPatientId) throw new ForbiddenError();
 
     next();
