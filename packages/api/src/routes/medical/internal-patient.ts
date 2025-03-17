@@ -33,10 +33,6 @@ import {
 import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
 import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
-import {
-  upsertPatientSettingsForCx,
-  upsertPatientSettingsForPatientList,
-} from "../../command/medical/patient/create-patient-settings";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -911,63 +907,6 @@ router.post(
     });
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/settings
- *
- * Creates or updates patient settings for a select list of patient IDs.
- *
- * @param req.query.cxId The customer ID.
- * @param req.query.patientIds List of patient IDs to update.
- * @param req.query.adtSubscription Whether to enable or disable ADT subscription. Optional, defaults to false.
- * @returns 200 with the results of the operation.
- */
-router.post(
-  "/settings",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
-    const adtSubscription = getFromQueryAsBoolean("adtSubscription", req) ?? false;
-
-    const result = await upsertPatientSettingsForPatientList({
-      cxId,
-      patientIds,
-      subscribeTo: {
-        adt: adtSubscription,
-      },
-    });
-
-    return res.status(status.OK).json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/settings/bulk
- *
- * Creates or updates patient settings across all patients for a CX.
- *
- * @param req.query.cxId The customer ID.
- * @param req.query.adtSubscription Whether to enable or disable ADT subscription. Optional, defaults to false.
- * @returns 200 with the results of the operation.
- */
-router.post(
-  "/settings/bulk",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const adtSubscription = getFromQueryAsBoolean("adtSubscription", req) ?? false;
-
-    const result = await upsertPatientSettingsForCx({
-      cxId,
-      subscribeTo: {
-        adt: adtSubscription,
-      },
-    });
-
-    return res.status(status.OK).json(result);
   })
 );
 

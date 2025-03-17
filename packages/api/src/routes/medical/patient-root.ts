@@ -43,7 +43,6 @@ const router = Router();
  * customer's organization if it doesn't exist already.
  *
  * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
- * @param  req.query.adtSubscription Whether to enable or disable ADT subscription. Optional, defaults to false.
  * @return The newly created patient.
  */
 router.post(
@@ -58,8 +57,8 @@ router.post(
     );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
-    const adtSubscription = stringToBoolean(getFrom("query").optional("adtSubscription", req));
     const payload = patientCreateSchema.parse(req.body);
+    const { settings, ...patientCreateProps } = payload;
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
@@ -73,7 +72,7 @@ router.post(
     }
 
     const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatientData(payload),
+      ...schemaCreateToPatientData(patientCreateProps),
       cxId,
       facilityId,
     };
@@ -83,7 +82,7 @@ router.post(
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
-      adtSubscription,
+      settings,
     });
 
     return res.status(httpStatus.CREATED).json(dtoFromModel(patient));

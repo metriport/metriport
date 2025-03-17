@@ -2,12 +2,16 @@ import { z } from "zod";
 import { baseUpdateSchema } from "./common/base-update";
 import { demographicsSchema } from "./demographics";
 import { ConsolidatedQuery } from "./fhir";
+import { patientSettingsSchema } from "./patient-settings";
 
-export const patientCreateSchema = demographicsSchema.merge(
-  z.object({
-    externalId: z.string().optional(),
-  })
-);
+export const patientCreateSchema = demographicsSchema
+  .merge(
+    z.object({
+      externalId: z.string().optional(),
+    })
+  )
+  .merge(patientSettingsSchema);
+
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 
 export const patientUpdateSchema = patientCreateSchema.merge(baseUpdateSchema);

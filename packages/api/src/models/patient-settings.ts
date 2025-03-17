@@ -10,7 +10,7 @@ export class PatientSettingsModel
   declare id: string;
   declare cxId: string;
   declare patientId: string;
-  declare subscribeTo: Subscriptions;
+  declare subscriptions: Subscriptions | undefined;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientSettingsModel.init(
@@ -22,7 +22,7 @@ export class PatientSettingsModel
         patientId: {
           type: DataTypes.UUID,
         },
-        subscribeTo: {
+        subscriptions: {
           type: DataTypes.JSONB,
         },
       },
