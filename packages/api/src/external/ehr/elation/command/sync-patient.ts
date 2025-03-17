@@ -1,8 +1,9 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/ehr/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
+import { errorToString, MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -150,7 +151,11 @@ async function createElationPatientLink({
     });
     return `${ehrDashUrl}/elation/app#patient=${elationPatientId}&access_token=${jwtToken.token}`;
   } catch (error) {
-    throw new MetriportError("Elation patient link creation failed", error, {
+    const msg = "Elation patient link creation failed";
+    out(
+      `createElationPatientLink - elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}`
+    ).log(`${msg} - ${errorToString(error)}`);
+    throw new MetriportError(msg, undefined, {
       elationPracticeId,
       elationPatientId,
     });
