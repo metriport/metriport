@@ -1,5 +1,4 @@
 import { BadRequestError } from "@metriport/shared";
-import { webhookRequestSchema } from "@metriport/shared/medical";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../../command/internal/get-hie-enabled-feature-flags-status";
@@ -491,21 +490,6 @@ router.delete(
       id,
     });
     return res.sendStatus(httpStatus.NO_CONTENT);
-  })
-);
-
-/**
- * POST /internal/webhook
- *
- * Process a webhook request.
- */
-router.post(
-  "/my-fake-webhook",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const result = webhookRequestSchema.parse(req.body);
-    console.log(`result: ${JSON.stringify(result)}`);
-    return res.status(httpStatus.OK).json(result);
   })
 );
 
