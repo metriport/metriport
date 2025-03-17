@@ -1,19 +1,19 @@
 import Router from "express-promise-router";
 import { checkMAPIAccess } from "../middlewares/auth";
 import { processCxIdDash as processCxIdDashAthena } from "./athenahealth/auth/middleware";
-import athenaDash from "./athenahealth/routers/dash-router";
+import athenaDash from "./athenahealth/routes/dash";
 import {
   processCxIdDash as processCxIdCanvasDash,
   processCxIdWebhooks as processCxIdCanvasWebhooks,
 } from "./canvas/auth/middleware";
-import canvasDash from "./canvas/routers/dash-router";
-import canvasWebhooks from "./canvas/routers/webhook-router";
+import canvasDash from "./canvas/routes/dash";
+import canvasWebhooks from "./canvas/routes/webhook";
 import {
   processCxIdDash as processCxIdElationDash,
   processCxIdWebhooks as processCxIdElationWebhooks,
 } from "./elation/auth/middleware";
-import elationDash from "./elation/routers/dash-router";
-import elationWebhooks from "./elation/routers/webhook-router";
+import elationDash from "./elation/routes/dash";
+import elationWebhooks from "./elation/routes/webhook";
 
 const routes = Router();
 
