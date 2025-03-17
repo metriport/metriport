@@ -1,5 +1,5 @@
-import { buildDayjs } from "@metriport/shared/common/date";
 import { MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { NextFunction, Request, Response } from "express";
 import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail, getCxMappingSourceFromJwtTokenSource } from "../../command/mapping/cx";
@@ -8,7 +8,7 @@ import { JwtTokenData } from "../../domain/jwt-token";
 import { PatientMappingSource } from "../../domain/patient-mapping";
 import ForbiddenError from "../../errors/forbidden";
 import { EhrDashJwtTokenSource, EhrWebhookJwtTokenSource } from "../../external/ehr/shared";
-import { getAuthorizationToken, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import { getAuthorizationToken, getFrom, getFromQueryOrFail } from "../util";
 import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";
 
 export type ParseResponse = {
@@ -132,12 +132,17 @@ export function processEhrPatientId(
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     const tokenEhrPatientId = getFromQueryOrFail(tokenEhrPatientIdQueryParam, req);
+    console.log("tokenEhrPatientId", tokenEhrPatientId);
+    console.log("req.query", req.query);
+    console.log("req.params", req.params);
     const requestEhrPatientId =
       context === "query"
-        ? getFromQueryOrFail("patientExternalId", req)
-        : getFromParamsOrFail("id", req);
+        ? getFromQueryOrFail("patientEhrId", req)
+        : getFrom("params").orFail("id", req);
+    console.log("requestEhrPatientId", requestEhrPatientId);
     if (requestEhrPatientId !== tokenEhrPatientId) throw new ForbiddenError();
 
     next();
   };
 }
+//http://localhost:3020/elation/app#access_token=0195a4f5-da0d-7bb2-a195-0011807514a4&patient=142792222572545

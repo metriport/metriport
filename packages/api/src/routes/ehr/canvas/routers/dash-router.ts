@@ -1,5 +1,4 @@
 import Router from "express-promise-router";
-import { handleParams } from "../../../helpers/handle-params";
 import medicalDocument from "../../../medical/document";
 import medicalPatient from "../../../medical/patient";
 import { patientAuthorization } from "../../../middlewares/patient-authorization";
@@ -9,10 +8,9 @@ import patient from "../patient";
 
 const routes = Router();
 
-routes.use("/patient", handleParams, patient);
+routes.use("/patient", patient);
 routes.use(
   "/medical/v1/patient/:id",
-  handleParams,
   processPatientRoute,
   patientAuthorization("query"),
   medicalPatient

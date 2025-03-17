@@ -5,6 +5,8 @@ import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/c
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
 import { handleParams } from "../../helpers/handle-params";
+import { processEhrPatientId } from "../shared";
+import { tokenEhrPatientIdQueryParam } from "./auth/middleware";
 
 const router = Router();
 
@@ -17,6 +19,7 @@ const router = Router();
  */
 router.get(
   "/:id",
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "params"),
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {

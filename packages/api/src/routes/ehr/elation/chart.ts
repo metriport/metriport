@@ -5,6 +5,8 @@ import { writeConditionToChart } from "../../../external/ehr/elation/command/wri
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
+import { processEhrPatientId } from "../shared";
+import { tokenEhrPatientIdQueryParam } from "./auth/middleware";
 
 const router = Router();
 
@@ -19,6 +21,7 @@ const router = Router();
  */
 router.post(
   "/:id/condition",
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "params"),
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
