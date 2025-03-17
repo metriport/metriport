@@ -6,9 +6,9 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import z from "zod";
-import { checkJwtToken, saveJwtToken } from "../../../../external/ehr/jwt-token";
-import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler, getAuthorizationToken } from "../../../util";
+import { checkJwtToken, saveJwtToken } from "../../../../../external/ehr/jwt-token";
+import { requestLogger } from "../../../../helpers/request-logger";
+import { asyncHandler, getAuthorizationToken } from "../../../../util";
 
 const router = Router();
 
