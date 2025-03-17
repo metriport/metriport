@@ -141,4 +141,3 @@ export function processEhrPatientId(
     next();
   };
 }
-//http://localhost:3020/elation/app#access_token=0195a4f5-da0d-7bb2-a195-0011807514a4&patient=142792222572545

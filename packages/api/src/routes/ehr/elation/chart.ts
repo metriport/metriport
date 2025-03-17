@@ -21,8 +21,8 @@ const router = Router();
  */
 router.post(
   "/:id/condition",
-  processEhrPatientId(tokenEhrPatientIdQueryParam, "params"),
   handleParams,
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "params"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
