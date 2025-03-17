@@ -1,21 +1,21 @@
 import {
-  elationDashJwtTokenDataSchema,
-  elationDashSource,
-  elationWebhookJwtTokenDataSchema,
-  elationWebhookSource,
-} from "@metriport/shared/interface/external/ehr/elation/jwt-token";
+  canvasDashJwtTokenDataSchema,
+  canvasDashSource,
+  canvasWebhookJwtTokenDataSchema,
+  canvasWebhookSource,
+} from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import z from "zod";
-import { checkJwtToken, saveJwtToken } from "../../../../../external/ehr/jwt-token";
-import { requestLogger } from "../../../../helpers/request-logger";
-import { asyncHandler, getAuthorizationToken } from "../../../../util";
+import { checkJwtToken, saveJwtToken } from "../../../../external/ehr/jwt-token";
+import { requestLogger } from "../../../helpers/request-logger";
+import { asyncHandler, getAuthorizationToken } from "../../../util";
 
 const router = Router();
 
 /**
- * GET /internal/token/elation
+ * GET /internal/token/canvas
  */
 router.get(
   "/",
@@ -24,7 +24,7 @@ router.get(
     const token = getAuthorizationToken(req);
     const tokenStatus = await checkJwtToken({
       token,
-      source: elationDashSource,
+      source: canvasDashSource,
     });
     return res.status(httpStatus.OK).json(tokenStatus);
   })
@@ -32,11 +32,11 @@ router.get(
 
 const createJwtSchema = z.object({
   exp: z.number(),
-  data: elationDashJwtTokenDataSchema,
+  data: canvasDashJwtTokenDataSchema,
 });
 
 /**
- * POST /internal/token/elation
+ * POST /internal/token/canvas
  */
 router.post(
   "/",
@@ -46,7 +46,7 @@ router.post(
     const data = createJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
-      source: elationDashSource,
+      source: canvasDashSource,
       ...data,
     });
     return res.sendStatus(httpStatus.OK);
@@ -54,7 +54,7 @@ router.post(
 );
 
 /**
- * GET /internal/token/elation/webhook
+ * GET /internal/token/canvas/webhook
  */
 router.get(
   "/webhook",
@@ -63,7 +63,7 @@ router.get(
     const token = getAuthorizationToken(req);
     const tokenStatus = await checkJwtToken({
       token,
-      source: elationWebhookSource,
+      source: canvasWebhookSource,
     });
     return res.status(httpStatus.OK).json(tokenStatus);
   })
@@ -71,11 +71,11 @@ router.get(
 
 const createWebhookJwtSchema = z.object({
   exp: z.number(),
-  data: elationWebhookJwtTokenDataSchema,
+  data: canvasWebhookJwtTokenDataSchema,
 });
 
 /**
- * POST /internal/token/elation/webhook
+ * POST /internal/token/canvas/webhook
  */
 router.post(
   "/webhook",
@@ -85,7 +85,7 @@ router.post(
     const data = createWebhookJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
-      source: elationWebhookSource,
+      source: canvasWebhookSource,
       ...data,
     });
     return res.sendStatus(httpStatus.OK);
