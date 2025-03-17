@@ -118,6 +118,13 @@ export async function replaceIdInQueryParams(
   req.query["patientEhrId"] = patient.externalId;
 }
 
+/**
+ * Middleware that validates if the EHR patient ID in the token matches the one in the request.
+ * Throws a ForbiddenError if they don't match.
+ * @param tokenEhrPatientIdQueryParam The query parameter name that contains the EHR patient ID from the token
+ * @param context Whether to get the request's EHR patient ID from query or path parameters
+ * @returns Express middleware function
+ */
 export function processEhrPatientId(
   tokenEhrPatientIdQueryParam: string,
   context: "query" | "params" = "params"

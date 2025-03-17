@@ -6,6 +6,7 @@ import { normalizeDob, normalizeGender } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import dayjs from "dayjs";
 import { findOrCreateJwtToken } from "../../../../command/jwt-token";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -17,6 +18,8 @@ import {
 import { Config } from "../../../../shared/config";
 import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
+
+export const longDurationTokenDuration = dayjs.duration(1, "year");
 
 export type SyncElationPatientIntoMetriportParams = {
   cxId: string;
