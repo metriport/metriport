@@ -8,7 +8,7 @@ import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
 import ehrInternal from "./internal/ehr";
 import internal from "./internal/internal";
-import jwtToken from "./internal/jwt-token/ehr";
+import jwtTokenInternal from "./internal/jwt-token";
 import medical from "./medical";
 import fhirRouter from "./medical/fhir-r4-proxy";
 import { checkMAPIAccess, processCxId } from "./middlewares/auth";
@@ -26,7 +26,7 @@ const dash = "/dash-oss";
 export default (app: Application) => {
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", reportClientErrors, webhook);
-  app.use("/internal/token", jwtToken);
+  app.use("/internal/token", jwtTokenInternal);
   app.use("/internal/ehr", ehrInternal);
   app.use("/internal", internal);
 
