@@ -147,7 +147,7 @@ async function createElationPatientLink({
         source,
       },
       source,
-      exp: buildDayjs().add(1, "year").toDate(),
+      exp: buildDayjs().add(longDurationTokenDuration).toDate(),
     });
     return `${ehrDashUrl}/elation/app#patient=${elationPatientId}&access_token=${jwtToken.token}`;
   } catch (error) {
