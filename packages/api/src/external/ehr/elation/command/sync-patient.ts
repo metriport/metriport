@@ -5,10 +5,14 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { elationDashSource } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
-import { findOrCreateJwtToken } from "../../../../command/jwt-token";
+import {
+  deleteTokenBasedOnExpBySourceAndData,
+  findOrCreateJwtToken,
+} from "../../../../command/jwt-token";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {
@@ -21,6 +25,7 @@ import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
 
 export const longDurationTokenDuration = dayjs.duration(1, "year");
+export const shortDurationTokenDuration = dayjs.duration(30, "minutes");
 
 export type SyncElationPatientIntoMetriportParams = {
   cxId: string;
@@ -137,17 +142,24 @@ async function createElationPatientLink({
   elationPatientId: string;
 }): Promise<string> {
   const ehrDashUrl = Config.getEhrDashUrl();
-  const source = EhrSources.elation;
+  const source = elationDashSource;
+  const data = {
+    practiceId: elationPracticeId,
+    patientId: elationPatientId,
+    source,
+  };
   try {
+    await deleteTokenBasedOnExpBySourceAndData({
+      source,
+      data,
+      exp: buildDayjs().add(shortDurationTokenDuration).toDate(),
+      expComparison: "gte",
+    });
     const jwtToken = await findOrCreateJwtToken({
       token: uuidv7(),
-      data: {
-        practiceId: elationPracticeId,
-        patientId: elationPatientId,
-        source,
-      },
-      source,
       exp: buildDayjs().add(longDurationTokenDuration).toDate(),
+      source,
+      data,
     });
     return `${ehrDashUrl}/elation/app#patient=${elationPatientId}&access_token=${jwtToken.token}`;
   } catch (error) {

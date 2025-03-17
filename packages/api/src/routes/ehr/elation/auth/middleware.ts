@@ -7,6 +7,7 @@ import { NextFunction, Request, Response } from "express";
 import { getJwtToken, updateTokenExpiration } from "../../../../command/jwt-token";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
+import { shortDurationTokenDuration } from "../../../../external/ehr/elation/command/sync-patient";
 import { getAuthorizationToken } from "../../../util";
 import {
   ParseResponse,
@@ -14,9 +15,7 @@ import {
   processDocumentRoute as processDocumentRouteShared,
   processPatientRoute as processPatientRouteShared,
 } from "../../shared";
-import dayjs from "dayjs";
 
-export const shortDurationTokenDuration = dayjs.duration(30, "minutes");
 export const tokenEhrPatientIdQueryParam = "elationPatientIdFromToken";
 
 function parseElationPracticeIdDash(tokenData: JwtTokenData): ParseResponse {

@@ -2,6 +2,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
 import { JwtToken, JwtTokenData, JwtTokenPerSource, JwtTokenSource } from "../domain/jwt-token";
 import { JwtTokenModel } from "../models/jwt-token";
+import { Op } from "sequelize";
 
 export type JwtTokenParams = JwtTokenPerSource;
 
@@ -81,4 +82,25 @@ export async function updateTokenExpiration({ id, exp }: { id: string; exp: Date
   });
   if (!existing) throw new NotFoundError("Entry not found", undefined, { id });
   await existing.update({ exp });
+}
+
+export async function deleteTokenBasedOnExpBySourceAndData({
+  source,
+  data,
+  exp,
+  expComparison,
+}: {
+  source: JwtTokenSource;
+  data: JwtTokenData;
+  exp: Date;
+  expComparison: "lt" | "lte" | "gt" | "gte";
+}): Promise<void> {
+  const existing = await JwtTokenModel.findAll({
+    where: {
+      source,
+      data,
+      exp: { [Op[expComparison]]: exp },
+    },
+  });
+  await Promise.all(existing.map(token => token.destroy()));
 }
