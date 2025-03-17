@@ -53,7 +53,7 @@ export async function syncElationPatientIntoMetriport({
       cxId,
       patientId: elationPatientId,
       metadata: {
-        object_id: metriportPatient.id,
+        object_id: metriportPatientId,
         object_web_link: ehrDashUrl,
       },
     });
@@ -69,17 +69,18 @@ export async function syncElationPatientIntoMetriport({
     demographics,
     externalId: elationPatientId,
   });
+  const metriportPatientId = metriportPatient.id;
   if (triggerDq) {
     queryDocumentsAcrossHIEs({
       cxId,
-      patientId: metriportPatient.id,
+      patientId: metriportPatientId,
     }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
   }
   const ehrDashUrl = await createElationPatientLink({ elationPracticeId, elationPatientId });
   await Promise.all([
     findOrCreatePatientMapping({
       cxId,
-      patientId: metriportPatient.id,
+      patientId: metriportPatientId,
       externalId: elationPatientId,
       source: EhrSources.elation,
     }),
@@ -87,12 +88,12 @@ export async function syncElationPatientIntoMetriport({
       cxId,
       patientId: elationPatientId,
       metadata: {
-        object_id: metriportPatient.id,
+        object_id: metriportPatientId,
         object_web_link: ehrDashUrl,
       },
     }),
   ]);
-  return metriportPatient.id;
+  return metriportPatientId;
 }
 
 function createMetriportPatientDemographics(patient: ElationPatient): PatientDemoData {

@@ -37,6 +37,7 @@ import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
+
 export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
@@ -112,7 +113,7 @@ export function getLookBackTimeRange({ lookBack }: { lookBack: Duration }): {
   startRange: Date;
   endRange: Date;
 } {
-  const currentDatetime = buildDayjs(new Date());
+  const currentDatetime = buildDayjs();
   const startRange = buildDayjs(currentDatetime).subtract(lookBack).toDate();
   const endRange = buildDayjs(currentDatetime).toDate();
   return {
@@ -125,7 +126,7 @@ export function getLookForwardTimeRange({ lookForward }: { lookForward: Duration
   startRange: Date;
   endRange: Date;
 } {
-  const currentDatetime = buildDayjs(new Date());
+  const currentDatetime = buildDayjs();
   const startRange = buildDayjs(currentDatetime).toDate();
   const endRange = buildDayjs(currentDatetime).add(lookForward).toDate();
   return {

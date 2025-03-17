@@ -1,3 +1,4 @@
+import { buildDayjs } from "@metriport/shared/common/date";
 import { MetriportError } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
 import { getJwtToken } from "../../command/jwt-token";
@@ -23,7 +24,7 @@ export async function processCxId(
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({ token: accessToken, source: tokenSource });
   if (!authInfo) throw new ForbiddenError();
-  if (authInfo.exp < new Date()) throw new ForbiddenError();
+  if (authInfo.exp < buildDayjs().toDate()) throw new ForbiddenError();
   const { externalId, queryParams } = parseExternalId(authInfo.data);
   try {
     const cxMappingSource = getCxMappingSourceFromJwtTokenSource(tokenSource);

@@ -51,7 +51,7 @@ async function shortenLongDurationToken(req: Request): Promise<void> {
   const authInfo = await getJwtToken({ token: accessToken, source: elationDashSource });
   if (!authInfo) throw new ForbiddenError();
   const newExpiration = buildDayjs().add(shortDurationTokenDuration).toDate();
-  if (authInfo.exp < newExpiration) return;
+  if (authInfo.exp <= newExpiration) return;
   try {
     await updateTokenExpiration({ id: authInfo.id, exp: newExpiration });
   } catch (error) {
