@@ -5,6 +5,7 @@ import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
 import { Hl7NotificationConfig } from "./hl7-notification-config";
+
 export type ConnectWidgetConfig = {
   stackName: string;
   region: string;
