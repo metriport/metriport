@@ -1,7 +1,7 @@
 import Router from "express-promise-router";
-import athena from "./internal/ehr/athenahealth/jwt-token";
-import canvas from "./internal/ehr/canvas/jwt-token";
-import elation from "./internal/ehr/elation/jwt-token";
+import athena from "./athenahealth/jwt-token";
+import canvas from "./canvas/jwt-token";
+import elation from "./elation/jwt-token";
 
 const routes = Router();
 
