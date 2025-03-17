@@ -15,13 +15,14 @@ import {
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
-import { SNOMED_CODE } from "../../../util/constants";
 import { out } from "../../../util/log";
 import {
   ApiConfig,
   createDataParams,
   formatDate,
+  getConditionSnomedCode,
+  getConditionStartDate,
+  getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -38,7 +39,6 @@ export function isElationEnv(env: string): env is ElationEnv {
   return elationEnv.includes(env as ElationEnv);
 }
 
-const clinicalStatusActiveCode = "55561003";
 const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("active", "Active");
 problemStatusesMap.set("relapse", "Active");
@@ -177,15 +177,15 @@ class ElationApi {
     );
     const problemUrl = `/problems/`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const snomedCode = this.getConditionSnomedCode(condition);
+    const snomedCode = getConditionSnomedCode(condition);
     if (!snomedCode) {
       throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
     }
-    const startDate = this.getConditionStartDate(condition);
+    const startDate = getConditionStartDate(condition);
     if (!startDate) {
       throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
     }
-    const conditionStatus = this.getConditionStatus(condition);
+    const conditionStatus = getConditionStatus(condition);
     const problemStatus = conditionStatus
       ? problemStatusesMap.get(conditionStatus.toLowerCase())
       : undefined;
@@ -282,28 +282,6 @@ class ElationApi {
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, elationDateFormat);
-  }
-
-  private getConditionSnomedCode(condition: Condition): string | undefined {
-    const code = condition.code;
-    const snomedCoding = code?.coding?.find(coding => {
-      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
-      return system?.includes(SNOMED_CODE);
-    });
-    if (!snomedCoding) return undefined;
-    return snomedCoding.code;
-  }
-
-  private getConditionStartDate(condition: Condition): string | undefined {
-    return condition.onsetDateTime ?? condition.onsetPeriod?.start;
-  }
-
-  private getConditionStatus(condition: Condition): string | undefined {
-    return condition.clinicalStatus?.text ??
-      condition.clinicalStatus?.coding?.[0]?.display ??
-      condition.clinicalStatus?.coding?.[0]?.code === clinicalStatusActiveCode
-      ? "Active"
-      : condition.clinicalStatus?.coding?.[0]?.code;
   }
 }
 

@@ -35,4 +35,29 @@ router.get(
   })
 );
 
+/**
+ * POST /ehr/elation/patient/:id
+ *
+ * Tries to retrieve the matching Metriport patient
+ * @param req.params.id The ID of Elation Patient.
+ * @returns Metriport Patient if found.
+ */
+router.post(
+  "/:id",
+  handleParams,
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "params"),
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const elationPatientId = getFrom("params").orFail("id", req);
+    const elationPracticeId = getFromQueryOrFail("practiceId", req);
+    const patientId = await syncElationPatientIntoMetriport({
+      cxId,
+      elationPracticeId,
+      elationPatientId,
+    });
+    return res.status(httpStatus.OK).json(patientId);
+  })
+);
+
 export default router;
