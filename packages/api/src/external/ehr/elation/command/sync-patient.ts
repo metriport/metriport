@@ -2,7 +2,7 @@ import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/ehr/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { normalizeDob, normalizeGender } from "@metriport/shared";
+import { MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -137,15 +137,22 @@ async function createElationPatientLink({
 }): Promise<string> {
   const ehrDashUrl = Config.getEhrDashUrl();
   const source = EhrSources.elation;
-  const jwtToken = await findOrCreateJwtToken({
-    token: uuidv7(),
-    data: {
-      practiceId: elationPracticeId,
-      patientId: elationPatientId,
+  try {
+    const jwtToken = await findOrCreateJwtToken({
+      token: uuidv7(),
+      data: {
+        practiceId: elationPracticeId,
+        patientId: elationPatientId,
+        source,
+      },
       source,
-    },
-    source,
-    exp: buildDayjs().add(1, "year").toDate(),
-  });
-  return `${ehrDashUrl}/elation/app#patient=${elationPatientId}&access_token=${jwtToken.token}`;
+      exp: buildDayjs().add(1, "year").toDate(),
+    });
+    return `${ehrDashUrl}/elation/app#patient=${elationPatientId}&access_token=${jwtToken.token}`;
+  } catch (error) {
+    throw new MetriportError("Elation patient link creation failed", error, {
+      elationPracticeId,
+      elationPatientId,
+    });
+  }
 }
