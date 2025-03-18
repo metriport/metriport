@@ -55,6 +55,7 @@ export async function createPatientSettings({
  * Upserts patient settings for the given customer and patient IDs.
  *
  * @param cxId The customer ID
+ * @param facilityId The facility ID. Optional.
  * @param patientIds The patient IDs to upsert patient settings for.
  * @param settings Patient settings object, which includes subscriptions
  * @returns The number of patients updated and the list of patients not found
@@ -91,6 +92,7 @@ export async function upsertPatientSettingsForPatientList({
  * Upserts patient settings for the given customer with specific patient IDs.
  *
  * @param cxId The customer ID
+ * @param facilityId The facility ID. Optional.
  * @param settings Patient settings object, which includes subscriptions
  * @returns The number of patients updated and the list of patients not found
  */

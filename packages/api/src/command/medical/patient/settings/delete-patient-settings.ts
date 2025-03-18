@@ -1,4 +1,4 @@
-import { PatientSettingsModel } from "../../models/patient-settings";
+import { PatientSettingsModel } from "../../../../models/patient-settings";
 
 export async function deletePatientSettings({
   cxId,
