@@ -1,4 +1,10 @@
-import { DbCredsReadOnly, dbCredsSchema, dbCredsSchemaReadOnly } from "@metriport/shared";
+import {
+  DbCreds,
+  DbCredsReadOnly,
+  dbCredsSchema,
+  dbCredsSchemaReadOnly,
+  dbPoolSettingsSchema,
+} from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
@@ -88,7 +94,6 @@ export let docTableNames: DocTableNames;
 
 async function initDB(): Promise<void> {
   // make sure we have the env vars we need
-  const sqlDBCreds = Config.getDBCreds();
   const tokenTableName = Config.getTokenTableName();
   const rateLimitTableName = Config.getRateLimitTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
@@ -100,7 +105,7 @@ async function initDB(): Promise<void> {
   };
 
   // get database creds
-  const dbCreds = dbCredsSchema.parse(sqlDBCreds);
+  const dbCreds = getDbCreds();
   console.log("[server]: connecting to db...");
   const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
     host: dbCreds.host,
@@ -110,7 +115,7 @@ async function initDB(): Promise<void> {
     logging: logDBOperations,
     logQueryParameters: logDBOperations,
   });
-  const readerEndpoint = getReaderEndpoint();
+  const readerEndpoint = getDbReadReplicaEndpoint();
   console.log("[server]: connecting to db read replica...");
   const sequelizeReadOnly = Config.isCloudEnv()
     ? new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
@@ -156,7 +161,7 @@ function getDbPoolSettings(): DbPoolProps {
   function getAndParseSettings(): Partial<Record<keyof DbPoolProps, string>> {
     try {
       const rawProps = Config.getDbPoolSettings();
-      const parsedProps = rawProps ? JSON.parse(rawProps) : {};
+      const parsedProps = rawProps ? dbPoolSettingsSchema.parse(JSON.parse(rawProps)) : {};
       return parsedProps;
     } catch (error) {
       console.log("Error parsing db pool settings", error);
@@ -184,10 +189,34 @@ function getOptionalInteger(prop: string | undefined): number | undefined {
   return resp;
 }
 
-function getReaderEndpoint(): DbCredsReadOnly {
-  const sqlDbReaderEndpoint = Config.getDbReadReplicaEndpoint();
-  const readerEndpoint = dbCredsSchemaReadOnly.parse(sqlDbReaderEndpoint);
-  return readerEndpoint;
+function getDbCreds(): DbCreds {
+  function getAndParseDbCreds(): DbCreds {
+    try {
+      const rawProps = Config.getDBCreds();
+      const parsedProps = dbCredsSchema.parse(JSON.parse(rawProps));
+      return parsedProps;
+    } catch (error) {
+      console.log("Error parsing db creds", error);
+      throw error;
+    }
+  }
+  const parsedProps = getAndParseDbCreds();
+  return parsedProps;
+}
+
+function getDbReadReplicaEndpoint(): DbCredsReadOnly {
+  function getAndParseReaderEndpoint(): DbCredsReadOnly {
+    try {
+      const rawProps = Config.getDbReadReplicaEndpoint();
+      const parsedProps = dbCredsSchemaReadOnly.parse(JSON.parse(rawProps));
+      return parsedProps;
+    } catch (error) {
+      console.log("Error parsing db read replica endpoint", error);
+      throw error;
+    }
+  }
+  const parsedProps = getAndParseReaderEndpoint();
+  return parsedProps;
 }
 
 export default initDB;
