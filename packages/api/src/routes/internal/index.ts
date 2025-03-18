@@ -40,13 +40,13 @@ import { internalDtoFromModel as orgInternalDto } from "../medical/dtos/organiza
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "../util";
 import ehr from "./ehr";
+import hieRoutes from "./hie";
 import carequalityRoutes from "./hie/carequality";
 import commonwellRoutes from "./hie/commonwell";
 import jwtToken from "./jwt-token";
 import docsRoutes from "./medical/docs";
 import facilityRoutes from "./medical/facility";
 import feedbackRoutes from "./medical/feedback";
-import hieRoutes from "./medical/hie";
 import mpiRoutes from "./medical/mpi";
 import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
