@@ -161,6 +161,10 @@ export const config: EnvConfigNonSandbox = {
       fargateTaskCountMax: 4,
     },
   },
+  acmCertMonitor: {
+    scheduleExpressions: ["cw-schedule-expression"],
+    heartbeatUrl: "url-to-heartbeat-service",
+  },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",

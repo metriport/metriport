@@ -217,6 +217,15 @@ type EnvConfigBase = {
     workspaceId: string;
     alertsChannelId: string;
   };
+  acmCertMonitor: {
+    /**
+     * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+     * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+     * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+     */
+    scheduleExpressions: string | string[];
+    heartbeatUrl: string;
+  };
   docQueryChecker?: {
     /**
      * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"

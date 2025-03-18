@@ -150,6 +150,7 @@ export class LambdasNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      ...props.config.acmCertMonitor,
     });
   }
 
@@ -547,8 +548,10 @@ export class LambdasNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    scheduleExpressions: string | string[];
+    heartbeatUrl: string;
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType } = ownProps;
+    const { lambdaLayers, vpc, sentryDsn, envType, scheduleExpressions, heartbeatUrl } = ownProps;
 
     const acmCertificateMonitorLambda = createScheduledLambda({
       stack: this,
@@ -558,10 +561,11 @@ export class LambdasNestedStack extends NestedStack {
       vpc,
       memory: 256,
       timeout: Duration.minutes(2),
-      scheduleExpression: ["23 9 * * ? *"], // Every day at 9:36am UTC (1:36am PST)
+      scheduleExpression: scheduleExpressions,
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        HEARTBEAT_URL: heartbeatUrl,
       },
     });
 
