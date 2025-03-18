@@ -6,6 +6,7 @@ import {
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
+import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
 import { getPatientIds, getPatientOrFail } from "../get-patient";
@@ -140,7 +141,13 @@ async function verifyPatients({
   }
 
   const patients = await PatientModel.findAll({
-    where: { id: patientIds, cxId, ...(facilityId && { facilityIds: [facilityId] }) },
+    where: {
+      id: patientIds,
+      cxId,
+      ...(facilityId && {
+        facilityIds: { [Op.contains]: [facilityId] },
+      }),
+    },
     attributes: ["id"],
   });
   const foundPatientIds = new Set(patients.map(p => p.id));
