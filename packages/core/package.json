@@ -104,6 +104,7 @@
   },
   "dependencies": {
     "@aws-crypto/sha256-js": "5.0.0",
+    "@aws-sdk/client-acm": "^3.616.0",
     "@aws-sdk/client-bedrock-runtime": "^3.616.0",
     "@aws-sdk/client-s3": "^3.435.0",
     "@aws-sdk/credential-provider-node": "3.435.0",

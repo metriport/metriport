@@ -1,8 +1,6 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as events from "aws-cdk-lib/aws-events";
-import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -17,6 +15,7 @@ import { EnvType } from "./env-type";
 import * as AppConfigUtils from "./shared/app-config";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -549,37 +548,29 @@ export class LambdasNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, sentryDsn, envType } = ownProps;
 
-    const acmCertificateMonitorLambda = createLambda({
+    const acmCertificateMonitorLambda = createScheduledLambda({
       stack: this,
+      layers: [lambdaLayers.shared],
       name: "AcmCertificateMonitor",
       entry: "acm-cert-monitor",
+      vpc,
+      memory: 256,
+      timeout: Duration.minutes(2),
+      scheduleExpression: ["23 9 * * ? *"], // Every day at 9:36am UTC (1:36am PST)
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
-      memory: 256,
-      timeout: Duration.minutes(1),
-      vpc,
-      alarmSnsAction: alarmAction,
     });
 
     acmCertificateMonitorLambda.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ["acm:DescribeCertificate"],
+        actions: ["acm:ListCertificates"],
         resources: ["*"],
       })
     );
-
-    new events.Rule(this, "AcmCertificateExpirationRule", {
-      eventPattern: {
-        source: ["aws.acm"],
-        detailType: ["ACM Certificate Approaching Expiration"],
-      },
-      targets: [new targets.LambdaFunction(acmCertificateMonitorLambda)],
-    });
 
     return acmCertificateMonitorLambda;
   }
