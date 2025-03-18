@@ -87,6 +87,7 @@ import {
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
+import patientSettingsRoutes from "./internal-patient-settings";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { schemaCreateToPatientData } from "./schemas/patient";
@@ -94,6 +95,9 @@ import { schemaCreateToPatientData } from "./schemas/patient";
 dayjs.extend(duration);
 
 const router = Router();
+
+router.use("/settings", patientSettingsRoutes);
+
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });
 const patientLoader = new PatientLoaderLocal();
