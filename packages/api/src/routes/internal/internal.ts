@@ -1,50 +1,54 @@
 import { BadRequestError } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
-import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
-import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
+import { getCxFFStatus } from "../../command/internal/get-hie-enabled-feature-flags-status";
+import { updateCxHieEnabledFFs } from "../../command/internal/update-hie-enabled-feature-flags";
 import {
   deleteCxMapping,
   findOrCreateCxMapping,
   getCxMappingsByCustomer,
   setExternalIdOnCxMapping,
-} from "../command/mapping/cx";
+} from "../../command/mapping/cx";
 import {
   deleteFacilityMapping,
   findOrCreateFacilityMapping,
   getFacilityMappingsByCustomer,
   setExternalIdOnFacilityMapping,
-} from "../command/mapping/facility";
-import { checkApiQuota } from "../command/medical/admin/api";
-import { dbMaintenance } from "../command/medical/admin/db-maintenance";
+} from "../../command/mapping/facility";
+import { checkApiQuota } from "../../command/medical/admin/api";
+import { dbMaintenance } from "../../command/medical/admin/db-maintenance";
 import {
-  populateFhirServer,
   PopulateFhirServerResponse,
-} from "../command/medical/admin/populate-fhir";
-import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
-import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
-import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { isCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
-import { isFacilityMappingSource } from "../domain/facility-mapping";
-import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
-import { initCQOrgIncludeList } from "../external/commonwell/organization";
-import { OrganizationModel } from "../models/medical/organization";
-import userRoutes from "./devices/internal-user";
-import { requestLogger } from "./helpers/request-logger";
-import { internalDtoFromModel as facilityInternalDto } from "./medical/dtos/facilityDTO";
-import { internalDtoFromModel as orgInternalDto } from "./medical/dtos/organizationDTO";
-import carequalityRoutes from "./medical/internal-cq";
-import commonwellRoutes from "./medical/internal-cw";
-import docsRoutes from "./medical/internal-docs";
-import facilityRoutes from "./medical/internal-facility";
-import feedbackRoutes from "./medical/internal-feedback";
-import hieRoutes from "./medical/internal-hie";
-import mpiRoutes from "./medical/internal-mpi";
-import organizationRoutes from "./medical/internal-organization";
-import patientRoutes from "./medical/internal-patient";
-import patientSettingsRoutes from "./medical/internal-patient-settings";
-import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "./util";
+  populateFhirServer,
+} from "../../command/medical/admin/populate-fhir";
+import { getFacilities, getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import {
+  allowMapiAccess,
+  hasMapiAccess,
+  revokeMapiAccess,
+} from "../../command/medical/mapi-access";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { isCxMappingSource, secondaryMappingsSchemaMap } from "../../domain/cx-mapping";
+import { isFacilityMappingSource } from "../../domain/facility-mapping";
+import { isEnhancedCoverageEnabledForCx } from "../../external/aws/app-config";
+import { initCQOrgIncludeList } from "../../external/commonwell/organization";
+import { OrganizationModel } from "../../models/medical/organization";
+import userRoutes from "../devices/internal-user";
+import { requestLogger } from "../helpers/request-logger";
+import { internalDtoFromModel as facilityInternalDto } from "../medical/dtos/facilityDTO";
+import { internalDtoFromModel as orgInternalDto } from "../medical/dtos/organizationDTO";
+import carequalityRoutes from "../medical/internal-cq";
+import commonwellRoutes from "../medical/internal-cw";
+import docsRoutes from "../medical/internal-docs";
+import facilityRoutes from "../medical/internal-facility";
+import feedbackRoutes from "../medical/internal-feedback";
+import hieRoutes from "../medical/internal-hie";
+import mpiRoutes from "../medical/internal-mpi";
+import organizationRoutes from "../medical/internal-organization";
+import patientRoutes from "../medical/internal-patient";
+import patientSettingsRoutes from "../medical/internal-patient-settings";
+import { getUUIDFrom } from "../schemas/uuid";
+import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "../util";
 
 const router = Router();
 

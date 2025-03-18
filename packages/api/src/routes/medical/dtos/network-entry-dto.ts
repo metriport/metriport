@@ -12,5 +12,6 @@ export function dtoFromHieDirectoryEntry(networkEntry: HieDirectoryEntry): Netwo
     state: normalizeUSStateForAddressSafe(networkEntry.state ?? ""),
     rootOrganization: networkEntry.rootOrganization,
     managingOrgOid: networkEntry.managingOrganizationId,
+    network: networkEntry.network,
   };
 }

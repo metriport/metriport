@@ -1,3 +1,4 @@
+import { Condition } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
@@ -11,7 +12,9 @@ import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
+import { SNOMED_CODE } from "../../util/constants";
 import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
@@ -191,4 +194,27 @@ function createAxiosErrorMessage(error: AxiosError): string {
       .join(", ");
   }
   return error.message;
+}
+
+export function getConditionSnomedCode(condition: Condition): string | undefined {
+  const code = condition.code;
+  const snomedCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(SNOMED_CODE);
+  });
+  if (!snomedCoding) return undefined;
+  return snomedCoding.code;
+}
+
+export function getConditionStartDate(condition: Condition): string | undefined {
+  return condition.onsetDateTime ?? condition.onsetPeriod?.start;
+}
+
+export function getConditionStatus(condition: Condition): string | undefined {
+  const statusFromCoding = (condition.clinicalStatus?.coding ?? []).flatMap(coding => {
+    const code = coding?.display ?? coding?.code;
+    if (!code) return [];
+    return [code];
+  });
+  return condition.clinicalStatus?.text ?? statusFromCoding[0];
 }

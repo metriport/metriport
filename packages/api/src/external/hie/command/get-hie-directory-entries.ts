@@ -25,7 +25,7 @@ export async function getHieDirectoryEntriesByFilter({
   const { query, replacements } = paginationSqlExpressions(pagination);
   const queryFinal = queryFTS + query;
 
-  const cqDirectoryEntries = await sequelize.query(queryFinal, {
+  const networkEntries = await sequelize.query(queryFinal, {
     model: HIEDirectoryEntryViewModel,
     mapToModel: true,
     replacements: {
@@ -35,8 +35,8 @@ export async function getHieDirectoryEntriesByFilter({
     type: QueryTypes.SELECT,
   });
 
-  const sortedCqDirectoryEntries = sortForPagination(cqDirectoryEntries, pagination);
-  return sortedCqDirectoryEntries.map(entry => entry.dataValues);
+  const sortedNetworkEntries = sortForPagination(networkEntries, pagination);
+  return sortedNetworkEntries.map(entry => entry.dataValues);
 }
 
 export async function getHieDirectoryEntriesByFilterCount({

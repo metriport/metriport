@@ -4,11 +4,11 @@ import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
 import ehr from "./ehr";
-import ehrInternal from "./ehr-internal";
 import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
-import internal from "./internal";
-import jwtToken from "./jwt-token";
+import ehrInternal from "./internal/ehr";
+import internal from "./internal/internal";
+import jwtTokenInternal from "./internal/jwt-token";
 import medical from "./medical";
 import fhirRouter from "./medical/fhir-r4-proxy";
 import { checkMAPIAccess, processCxId } from "./middlewares/auth";
@@ -26,7 +26,7 @@ const dash = "/dash-oss";
 export default (app: Application) => {
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", reportClientErrors, webhook);
-  app.use("/internal/token", jwtToken);
+  app.use("/internal/token", jwtTokenInternal);
   app.use("/internal/ehr", ehrInternal);
   app.use("/internal", internal);
 

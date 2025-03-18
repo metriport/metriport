@@ -32,4 +32,28 @@ router.get(
   })
 );
 
+/**
+ * POST /ehr/athenahealth/patient/:id
+ *
+ * Tries to retrieve the matching Metriport patient
+ * @param req.params.id The ID of AthenaHealth Patient.
+ * @returns Metriport Patient if found.
+ */
+router.post(
+  "/:id",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const athenaPatientId = getFrom("params").orFail("id", req);
+    const athenaPracticeId = getFromQueryOrFail("practiceId", req);
+    const patientId = await syncAthenaPatientIntoMetriport({
+      cxId,
+      athenaPracticeId,
+      athenaPatientId,
+    });
+    return res.status(httpStatus.OK).json(patientId);
+  })
+);
+
 export default router;

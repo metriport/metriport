@@ -1,10 +1,13 @@
-import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { Condition } from "@medplum/fhirtypes";
+import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointments,
   appointmentsSchema,
   BookedAppointment,
   bookedAppointmentSchema,
+  CreatedProblem,
+  createdProblemSchema,
   elationClientJwtTokenResponseSchema,
   Metadata,
   Patient,
@@ -17,6 +20,9 @@ import {
   ApiConfig,
   createDataParams,
   formatDate,
+  getConditionSnomedCode,
+  getConditionStartDate,
+  getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -32,6 +38,13 @@ export type ElationEnv = (typeof elationEnv)[number];
 export function isElationEnv(env: string): env is ElationEnv {
   return elationEnv.includes(env as ElationEnv);
 }
+
+const problemStatusesMap = new Map<string, string>();
+problemStatusesMap.set("active", "Active");
+problemStatusesMap.set("relapse", "Active");
+problemStatusesMap.set("recurrence", "Active");
+problemStatusesMap.set("remission", "Controlled");
+problemStatusesMap.set("resolved", "Resolved");
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
@@ -148,6 +161,57 @@ class ElationApi {
       debug,
     });
     return patient;
+  }
+
+  async createProblem({
+    cxId,
+    patientId,
+    condition,
+  }: {
+    cxId: string;
+    patientId: string;
+    condition: Condition;
+  }): Promise<CreatedProblem> {
+    const { debug } = out(
+      `Elation createProblem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const problemUrl = `/problems/`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const snomedCode = getConditionSnomedCode(condition);
+    if (!snomedCode) {
+      throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
+    }
+    const startDate = getConditionStartDate(condition);
+    if (!startDate) {
+      throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
+    }
+    const conditionStatus = getConditionStatus(condition);
+    const problemStatus = conditionStatus
+      ? problemStatusesMap.get(conditionStatus.toLowerCase())
+      : undefined;
+    if (!problemStatus) {
+      throw new BadRequestError("No problem status found for condition", undefined, additionalInfo);
+    }
+    const data = {
+      patient: patientId,
+      status: problemStatus,
+      dx: [{ snomed: snomedCode }],
+      start_date: this.formatDate(startDate),
+      description: condition.code?.text,
+    };
+    const problem = await this.makeRequest<CreatedProblem>({
+      cxId,
+      patientId,
+      s3Path: "problem",
+      method: "POST",
+      url: problemUrl,
+      data,
+      schema: createdProblemSchema,
+      additionalInfo,
+      headers: { "content-type": "application/json" },
+      debug,
+    });
+    return problem;
   }
 
   async getAppointments({

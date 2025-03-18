@@ -1,50 +1,50 @@
 import {
-  elationWebhookJwtTokenDataSchema,
-  elationWebhookSource,
-} from "@metriport/shared/interface/external/ehr/elation/jwt-token";
+  athenaDashJwtTokenDataSchema,
+  athenaDashSource,
+} from "@metriport/shared/interface/external/ehr/athenahealth/jwt-token";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import z from "zod";
-import { checkJwtToken, saveJwtToken } from "../../../../external/ehr/jwt-token";
-import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler, getAuthorizationToken } from "../../../util";
+import { checkJwtToken, saveJwtToken } from "../../../external/ehr/jwt-token";
+import { requestLogger } from "../../helpers/request-logger";
+import { asyncHandler, getAuthorizationToken } from "../../util";
 
 const router = Router();
 
 /**
- * GET /internal/token/elation/webhook
+ * GET /internal/token/athenahealth
  */
 router.get(
-  "/webhook",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const token = getAuthorizationToken(req);
     const tokenStatus = await checkJwtToken({
       token,
-      source: elationWebhookSource,
+      source: athenaDashSource,
     });
     return res.status(httpStatus.OK).json(tokenStatus);
   })
 );
 
-const createWebhookJwtSchema = z.object({
+const createJwtSchema = z.object({
   exp: z.number(),
-  data: elationWebhookJwtTokenDataSchema,
+  data: athenaDashJwtTokenDataSchema,
 });
 
 /**
- * POST /internal/token/elation/webhook
+ * POST /internal/token/athenahealth
  */
 router.post(
-  "/webhook",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const token = getAuthorizationToken(req);
-    const data = createWebhookJwtSchema.parse(req.body);
+    const data = createJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
-      source: elationWebhookSource,
+      source: athenaDashSource,
       ...data,
     });
     return res.sendStatus(httpStatus.OK);
