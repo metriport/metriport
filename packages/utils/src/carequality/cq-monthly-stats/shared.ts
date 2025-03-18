@@ -350,12 +350,6 @@ export function findExistingStatByImplementer(
   return monthlyImplementerStats.find(stat => stat.implementerId === implementerId);
 }
 
-/**
- * This function is used to initialize the readonly DB pool for queries that require the read replica.
- *
- * Note that this is a workaround while we don't have https://github.com/metriport/metriport-internal/issues/1174
- * in place.
- */
 function initReadonlyDbPool(
   dbCreds: string,
   dbReadReplicaEndpoint: string,

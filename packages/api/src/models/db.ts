@@ -1,3 +1,4 @@
+import { DbCredsReadOnly, dbCredsSchema, dbCredsSchemaReadOnly } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
@@ -99,7 +100,7 @@ async function initDB(): Promise<void> {
   };
 
   // get database creds
-  const dbCreds = JSON.parse(sqlDBCreds);
+  const dbCreds = dbCredsSchema.parse(sqlDBCreds);
   console.log("[server]: connecting to db...");
   const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
     host: dbCreds.host,
@@ -110,17 +111,15 @@ async function initDB(): Promise<void> {
     logQueryParameters: logDBOperations,
   });
   const readerEndpoint = getReaderEndpoint();
-  if (!readerEndpoint) console.log("[server]: reader instance not set, using primary instance");
-  const sequelizeReadOnly = readerEndpoint
-    ? new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
-        host: readerEndpoint.host,
-        port: readerEndpoint.port,
-        dialect: dbCreds.engine,
-        pool: dbPoolSettings,
-        logging: logDBOperations,
-        logQueryParameters: logDBOperations,
-      })
-    : sequelize;
+  console.log("[server]: connecting to db read replica...");
+  const sequelizeReadOnly = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
+    host: readerEndpoint.host,
+    port: readerEndpoint.port,
+    dialect: dbCreds.engine,
+    pool: dbPoolSettings,
+    logging: logDBOperations,
+    logQueryParameters: logDBOperations,
+  });
   try {
     await Promise.all([sequelize.authenticate(), sequelizeReadOnly.authenticate()]);
 
@@ -183,19 +182,10 @@ function getOptionalInteger(prop: string | undefined): number | undefined {
   return resp;
 }
 
-function getReaderEndpoint():
-  | {
-      host: string;
-      port: number;
-    }
-  | undefined {
+function getReaderEndpoint(): DbCredsReadOnly {
   const sqlDbReaderEndpoint = Config.getDbReadReplicaEndpoint();
-  if (!sqlDbReaderEndpoint) return undefined;
-  const readerEndpoint = JSON.parse(sqlDbReaderEndpoint);
-  return {
-    host: readerEndpoint.host,
-    port: readerEndpoint.port,
-  };
+  const readerEndpoint = dbCredsSchemaReadOnly.parse(sqlDbReaderEndpoint);
+  return readerEndpoint;
 }
 
 export default initDB;
