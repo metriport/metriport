@@ -28,8 +28,7 @@ routes.use(
 routes.use(
   "/medical/v1/document",
   processDocumentRoute,
-  processEhrPatientId(tokenEhrPatientIdQueryParam, "query"),
-  patientAuthorization("query"),
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "query", [new RegExp(`^/download-url$`)]),
   medicalDocument
 );
 routes.use("/settings", settings);
