@@ -128,9 +128,14 @@ export async function replaceIdInQueryParams(
  */
 export function processEhrPatientId(
   tokenEhrPatientIdQueryParam: string,
-  context: "query" | "params" = "params"
+  context: "query" | "params" = "params",
+  skipPaths: RegExp[] = []
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
+    if (skipPaths.some(path => path.test(req.path))) {
+      next();
+      return;
+    }
     const tokenEhrPatientId = getFromQueryOrFail(tokenEhrPatientIdQueryParam, req);
     const requestEhrPatientId =
       context === "query"

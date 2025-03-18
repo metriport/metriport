@@ -19,12 +19,7 @@ routes.use(
   patientAuthorization("query"),
   medicalPatient
 );
-routes.use(
-  "/medical/v1/document",
-  processDocumentRoute,
-  patientAuthorization("query"),
-  medicalDocument
-);
+routes.use("/medical/v1/document", processDocumentRoute, medicalDocument);
 routes.use("/settings", settings);
 
 export default routes;

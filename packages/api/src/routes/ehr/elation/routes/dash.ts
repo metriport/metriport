@@ -15,6 +15,8 @@ import patient from "../patient";
 
 const routes = Router();
 
+const documentSkipPathsForElationIdCheck = [new RegExp(`^/download-url$`)];
+
 routes.use("/patient", patient);
 routes.use("/chart", chart);
 routes.use(
@@ -28,8 +30,7 @@ routes.use(
 routes.use(
   "/medical/v1/document",
   processDocumentRoute,
-  processEhrPatientId(tokenEhrPatientIdQueryParam, "query"),
-  patientAuthorization("query"),
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "query", documentSkipPathsForElationIdCheck),
   medicalDocument
 );
 routes.use("/settings", settings);
