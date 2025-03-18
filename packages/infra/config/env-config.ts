@@ -210,9 +210,9 @@ type EnvConfigBase = {
   };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
-  slack?: {
-    SLACK_ALERT_URL?: string;
-    SLACK_NOTIFICATION_URL?: string;
+  slack: {
+    SLACK_ALERT_URL: string;
+    SLACK_NOTIFICATION_URL: string;
     SLACK_SENSITIVE_DATA_URL?: string;
     workspaceId: string;
     alertsChannelId: string;

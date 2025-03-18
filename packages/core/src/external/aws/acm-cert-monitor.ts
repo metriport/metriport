@@ -2,7 +2,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { DeepUndefinable } from "ts-essentials";
 import { Config } from "../../util/config";
 import { out } from "../../util/log";
-import { sendNotification } from "../slack/index";
+import { sendToSlack } from "../slack/index";
 import { AcmUtils } from "./acm";
 
 const daysToAlarm = 10;
@@ -18,7 +18,7 @@ type ExpiringCertificate = {
 /**
  * Checks for expiring certificates and sends notifications to Slack.
  */
-export async function checkExpiringCertificates(): Promise<void> {
+export async function checkExpiringCertificates(notificationUrl: string): Promise<void> {
   const { log } = out(`checkExpiringCertificates`);
 
   const certificatesMissingData: DeepUndefinable<ExpiringCertificate>[] = [];
@@ -106,7 +106,7 @@ export async function checkExpiringCertificates(): Promise<void> {
 
   log(`${subject}\n${message}`);
 
-  sendNotification({ emoji: ":eyes:", subject, message });
+  sendToSlack({ emoji: ":eyes:", subject, message }, notificationUrl);
 }
 
 function certToMessage(cert: ExpiringCertificate): string {

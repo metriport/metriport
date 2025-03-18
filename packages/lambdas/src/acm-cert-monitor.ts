@@ -8,6 +8,7 @@ import { capture } from "./shared/capture";
 capture.init();
 
 const heartbeatUrl = getEnvVarOrFail("HEARTBEAT_URL");
+const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
 
 /**
  * Lambda function that handles ACM Certificate Approaching Expiration events
@@ -16,7 +17,7 @@ const heartbeatUrl = getEnvVarOrFail("HEARTBEAT_URL");
 export const handler = Sentry.AWSLambda.wrapHandler(async () => {
   console.log(`Calling checkExpiringCertificates()...`);
 
-  await checkExpiringCertificates();
+  await checkExpiringCertificates(notificationUrl);
 
   await sendHeartbeatToMonitoringService();
 

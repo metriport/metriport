@@ -150,6 +150,7 @@ export class LambdasNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      notificationUrl: props.config.slack.SLACK_ALERT_URL,
       ...props.config.acmCertMonitor,
     });
   }
@@ -549,9 +550,18 @@ export class LambdasNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     scheduleExpressions: string | string[];
+    notificationUrl: string;
     heartbeatUrl: string;
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, scheduleExpressions, heartbeatUrl } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      scheduleExpressions,
+      heartbeatUrl,
+      notificationUrl,
+    } = ownProps;
 
     const acmCertificateMonitorLambda = createScheduledLambda({
       stack: this,
@@ -565,6 +575,7 @@ export class LambdasNestedStack extends NestedStack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        SLACK_NOTIFICATION_URL: notificationUrl,
         HEARTBEAT_URL: heartbeatUrl,
       },
     });
