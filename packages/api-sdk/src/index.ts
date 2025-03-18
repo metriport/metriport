@@ -78,5 +78,5 @@ export {
   patientSchema,
   patientUpdateSchema,
 } from "./medical/models/patient";
-export { patientSettingsDataSchema } from "./medical/models/patient-settings";
 export { PatientDTO } from "./medical/models/patientDTO";
+export { patientSettingsDataSchema } from "./medical/models/patient-settings";
