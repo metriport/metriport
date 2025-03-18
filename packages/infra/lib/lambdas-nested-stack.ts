@@ -1,10 +1,12 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as rds from "aws-cdk-lib/aws-rds";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
@@ -47,6 +49,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly outboundDocumentRetrievalLambda: lambda.Function;
   readonly fhirToBundleLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
+  readonly acmCertificateMonitorLambda: Lambda;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -140,6 +143,14 @@ export class LambdasNestedStack extends NestedStack {
       appId: props.appConfigEnvVars.appId,
       configId: props.appConfigEnvVars.configId,
       bedrock: props.config.bedrock,
+    });
+
+    this.acmCertificateMonitorLambda = this.setupAcmCertificateMonitor({
+      lambdaLayers: this.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
     });
   }
 
@@ -529,5 +540,47 @@ export class LambdasNestedStack extends NestedStack {
         MAXIMUM_LAMBDA_TIMEOUT.toMilliseconds()
       )
     );
+  }
+
+  private setupAcmCertificateMonitor(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction } = ownProps;
+
+    const acmCertificateMonitorLambda = createLambda({
+      stack: this,
+      name: "AcmCertificateMonitor",
+      entry: "acm-cert-monitor",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 256,
+      timeout: Duration.minutes(1),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    acmCertificateMonitorLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["acm:DescribeCertificate"],
+        resources: ["*"],
+      })
+    );
+
+    new events.Rule(this, "AcmCertificateExpirationRule", {
+      eventPattern: {
+        source: ["aws.acm"],
+        detailType: ["ACM Certificate Approaching Expiration"],
+      },
+      targets: [new targets.LambdaFunction(acmCertificateMonitorLambda)],
+    });
+
+    return acmCertificateMonitorLambda;
   }
 }
