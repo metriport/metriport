@@ -37,15 +37,17 @@ import userRoutes from "../devices/internal-user";
 import { requestLogger } from "../helpers/request-logger";
 import { internalDtoFromModel as facilityInternalDto } from "../medical/dtos/facilityDTO";
 import { internalDtoFromModel as orgInternalDto } from "../medical/dtos/organizationDTO";
-import carequalityRoutes from "../medical/internal-cq";
-import commonwellRoutes from "../medical/internal-cw";
-import docsRoutes from "../medical/internal-docs";
-import facilityRoutes from "../medical/internal-facility";
-import feedbackRoutes from "../medical/internal-feedback";
-import hieRoutes from "../medical/internal-hie";
-import mpiRoutes from "../medical/internal-mpi";
-import organizationRoutes from "../medical/internal-organization";
-import patientRoutes from "../medical/internal-patient";
+import carequalityRoutes from "./hie/internal-cq";
+import commonwellRoutes from "./hie/internal-cw";
+import docsRoutes from "./medical/internal-docs";
+import facilityRoutes from "./medical/internal-facility";
+import feedbackRoutes from "./medical/internal-feedback";
+import hieRoutes from "./medical/internal-hie";
+import mpiRoutes from "./medical/internal-mpi";
+import organizationRoutes from "./medical/internal-organization";
+import patientRoutes from "./medical/internal-patient";
+import jwtToken from "./jwt-token";
+import ehr from "./ehr";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "../util";
 
@@ -61,6 +63,8 @@ router.use("/carequality", carequalityRoutes);
 router.use("/mpi", mpiRoutes);
 router.use("/hie", hieRoutes);
 router.use("/feedback", feedbackRoutes);
+router.use("/token", jwtToken);
+router.use("/ehr", ehr);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
