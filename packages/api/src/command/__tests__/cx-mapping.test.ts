@@ -9,6 +9,7 @@ describe("Cx Mapping command", () => {
       "canvas-webhook",
       "athenahealth",
       "athenahealth-client",
+      "elation",
       "elation-client",
       "elation-webhook",
     ];
@@ -20,13 +21,7 @@ describe("Cx Mapping command", () => {
       });
     }
 
-    const invalidSources = [
-      "bogus",
-      "bogus-client",
-      "bogus-webhook",
-      "elation",
-      "athenahealth-webhook",
-    ];
+    const invalidSources = ["bogus", "bogus-client", "bogus-webhook", "athenahealth-webhook"];
 
     for (const source of invalidSources) {
       it(`throws an error for ${source}`, () => {

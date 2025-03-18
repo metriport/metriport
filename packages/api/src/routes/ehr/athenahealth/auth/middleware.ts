@@ -4,9 +4,9 @@ import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
 import {
   ParseResponse,
-  processCxIdAsync,
-  processDocumentRouteAsync,
-  processPatientRouteAsync,
+  processCxId as processCxIdShared,
+  processDocumentRoute as processDocumentRouteShared,
+  processPatientRoute as processPatientRouteShared,
 } from "../../shared";
 
 function parseAthenaHealthPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
@@ -25,13 +25,13 @@ function parseAthenaHealthPracticeIdDash(tokenData: JwtTokenData): ParseResponse
 }
 
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req, athenaDashSource, parseAthenaHealthPracticeIdDash).then(next).catch(next);
+  processCxIdShared(req, athenaDashSource, parseAthenaHealthPracticeIdDash).then(next).catch(next);
 }
 
 export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
-  processPatientRouteAsync(req, athenaDashSource).then(next).catch(next);
+  processPatientRouteShared(req, athenaDashSource).then(next).catch(next);
 }
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
-  processDocumentRouteAsync(req, athenaDashSource).then(next).catch(next);
+  processDocumentRouteShared(req, athenaDashSource).then(next).catch(next);
 }
