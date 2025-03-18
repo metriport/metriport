@@ -37,7 +37,7 @@ export async function createPatientSettings({
   patientId,
   cxId,
   settings,
-}: PatientSettingsCreate): Promise<PatientSettings> {
+}: Omit<PatientSettingsCreate, "id">): Promise<PatientSettings> {
   await getPatientOrFail({ cxId, id: patientId });
 
   const patientSettingsCreate: PatientSettingsCreate = {
