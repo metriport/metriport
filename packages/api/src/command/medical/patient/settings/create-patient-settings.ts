@@ -1,14 +1,14 @@
 import {
   PatientSettings,
   PatientSettingsCreate,
-  Subscriptions,
+  PatientSettingsData,
 } from "@metriport/core/domain/patient-settings";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
-import { PatientModel } from "../../../models/medical/patient";
-import { PatientSettingsModel } from "../../../models/patient-settings";
-import { getPatientIds, getPatientOrFail } from "./get-patient";
+import { PatientModel } from "../../../../models/medical/patient";
+import { PatientSettingsModel } from "../../../../models/patient-settings";
+import { getPatientIds, getPatientOrFail } from "../get-patient";
 
 type PatientSettingsUpsertResults = {
   patientsNotFound?: string[];
@@ -17,7 +17,8 @@ type PatientSettingsUpsertResults = {
 
 type PatientSettingsUpsertForCxProps = {
   cxId: string;
-  subscribeTo: Subscriptions;
+  facilityId?: string;
+  settings: PatientSettingsData;
 };
 
 type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
@@ -29,13 +30,13 @@ type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
  *
  * @param patientId The patient ID
  * @param cxId The customer ID
- * @param adtSubscription Whether to enable or disable ADT subscription. Optional, defaults to false.
+ * @param settings Patient settings object, which includes subscriptions
  * @returns The created patient settings record
  */
 export async function createPatientSettings({
   patientId,
   cxId,
-  subscribeTo = { adt: false },
+  settings,
 }: Omit<PatientSettingsCreate, "id">): Promise<PatientSettings> {
   await getPatientOrFail({ cxId, id: patientId });
 
@@ -43,7 +44,7 @@ export async function createPatientSettings({
     id: uuidv7(),
     cxId,
     patientId,
-    subscribeTo,
+    settings,
   };
 
   const newPatientSettings = await PatientSettingsModel.create(patientSettingsCreate);
@@ -55,19 +56,21 @@ export async function createPatientSettings({
  *
  * @param cxId The customer ID
  * @param patientIds The patient IDs to upsert patient settings for.
- * @param subscribeTo The subscriptions to enable or disable.
+ * @param settings Patient settings object, which includes subscriptions
  * @returns The number of patients updated and the list of patients not found
  */
 export async function upsertPatientSettingsForPatientList({
   cxId,
+  facilityId,
   patientIds,
-  subscribeTo = { adt: false },
+  settings,
 }: PatientSettingsUpsertProps): Promise<PatientSettingsUpsertResults> {
   const { log } = out(`upsertPatientSettingsForPatientList - cx ${cxId}`);
 
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
-    patientIds,
     cxId,
+    facilityId,
+    patientIds,
   });
 
   if (validPatientIds.length === 0) {
@@ -75,9 +78,9 @@ export async function upsertPatientSettingsForPatientList({
   }
 
   const patientsFoundAndUpdated = await upsertPatientSettings({
-    patientIds: validPatientIds,
     cxId,
-    subscribeTo,
+    patientIds: validPatientIds,
+    settings,
   });
 
   log(`Updated settings for ${patientsFoundAndUpdated} patients`);
@@ -88,16 +91,17 @@ export async function upsertPatientSettingsForPatientList({
  * Upserts patient settings for the given customer with specific patient IDs.
  *
  * @param cxId The customer ID
- * @param subscribeTo The subscriptions to enable or disable.
+ * @param settings Patient settings object, which includes subscriptions
  * @returns The number of patients updated and the list of patients not found
  */
 export async function upsertPatientSettingsForCx({
   cxId,
-  subscribeTo = { adt: false },
+  facilityId,
+  settings,
 }: PatientSettingsUpsertForCxProps): Promise<PatientSettingsUpsertResults> {
   const { log } = out(`upsertPatientSettingsForCx - cx ${cxId}`);
 
-  const patientIds = await getPatientIds({ cxId });
+  const patientIds = await getPatientIds({ cxId, facilityId });
 
   if (!patientIds.length) {
     log(`No patients found for cx ${cxId}`);
@@ -107,7 +111,7 @@ export async function upsertPatientSettingsForCx({
   const patientsFoundAndUpdated = await upsertPatientSettings({
     patientIds,
     cxId,
-    subscribeTo,
+    settings,
   });
 
   log(`Upserted settings for all CX patients. Total: ${patientsFoundAndUpdated}`);
@@ -116,9 +120,11 @@ export async function upsertPatientSettingsForCx({
 
 async function verifyPatients({
   patientIds,
+  facilityId,
   cxId,
 }: {
   patientIds: string[];
+  facilityId?: string;
   cxId: string;
 }): Promise<{
   validPatientIds: string[];
@@ -132,7 +138,7 @@ async function verifyPatients({
   }
 
   const patients = await PatientModel.findAll({
-    where: { id: patientIds, cxId },
+    where: { id: patientIds, cxId, ...(facilityId && { facilityIds: [facilityId] }) },
     attributes: ["id"],
   });
   const foundPatientIds = new Set(patients.map(p => p.id));
@@ -146,11 +152,11 @@ async function verifyPatients({
 async function upsertPatientSettings({
   patientIds,
   cxId,
-  subscribeTo,
+  settings,
 }: {
   patientIds: string[];
   cxId: string;
-  subscribeTo: Subscriptions;
+  settings: PatientSettingsData;
 }): Promise<number> {
   const existingSettings = await PatientSettingsModel.findAll({
     where: { patientId: patientIds, cxId },
@@ -161,11 +167,15 @@ async function upsertPatientSettings({
     id: existingSettingsMap.get(patientId)?.id ?? uuidv7(),
     cxId,
     patientId,
-    subscribeTo,
+    subscriptions: {
+      ...existingSettingsMap.get(patientId)?.subscriptions,
+      ...settings.subscriptions,
+    },
   }));
 
   await PatientSettingsModel.bulkCreate(upserts, {
-    updateOnDuplicate: ["subscribeTo"],
+    returning: false,
+    updateOnDuplicate: ["subscriptions"],
   });
 
   return upserts.length;

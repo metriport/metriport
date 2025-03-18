@@ -4,11 +4,14 @@ export type Subscriptions = {
   adt?: boolean;
 };
 
+export type PatientSettingsData = {
+  subscriptions?: Subscriptions;
+};
+
 export interface PatientSettingsCreate extends BaseDomainCreate {
-  id: string;
   cxId: string;
   patientId: string;
-  subscribeTo: Subscriptions;
+  settings?: PatientSettingsData;
 }
 
 export interface PatientSettings extends BaseDomain, PatientSettingsCreate {}

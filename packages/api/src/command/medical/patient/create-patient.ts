@@ -4,6 +4,7 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
+import { PatientSettingsData } from "@metriport/core/domain/patient-settings";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -13,8 +14,8 @@ import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { createPatientSettings } from "./create-patient-settings";
 import { PatientWithIdentifiers, attachPatientIdentifiers, getPatientByDemo } from "./get-patient";
+import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
@@ -27,14 +28,14 @@ export async function createPatient({
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
-  adtSubscription,
+  settings,
 }: {
   patient: PatientCreateCmd;
   runPd?: boolean;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
-  adtSubscription?: boolean;
+  settings?: PatientSettingsData;
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
@@ -89,7 +90,7 @@ export async function createPatient({
     createPatientSettings({
       cxId,
       patientId: patientCreate.id,
-      subscribeTo: { adt: adtSubscription },
+      settings,
     }),
     upsertPatientToFHIRServer(newPatient.cxId, fhirPatient),
   ]);

@@ -11,7 +11,7 @@ export async function getAdtSubscribers(states: string[]): Promise<PatientModel[
     // TODO: See if we can do a JOIN operation on the DB
     const patientIds = await PatientSettingsModel.findAll({
       where: {
-        subscribeTo: { adt: true },
+        subscriptions: { adt: true },
       },
       attributes: ["patientId"],
     });

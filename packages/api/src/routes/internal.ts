@@ -42,6 +42,7 @@ import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
 import organizationRoutes from "./medical/internal-organization";
 import patientRoutes from "./medical/internal-patient";
+import patientSettingsRoutes from "./medical/internal-patient-settings";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "./util";
 
@@ -49,6 +50,7 @@ const router = Router();
 
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
+router.use("/patient-settings", patientSettingsRoutes);
 router.use("/facility", facilityRoutes);
 router.use("/organization", organizationRoutes);
 router.use("/user", userRoutes);

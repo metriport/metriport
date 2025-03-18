@@ -3,9 +3,9 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const patientSettingsTableName = "patient_settings";
-const adtSubscriptionColumn = "subscribe_to";
+const adtSubscriptionColumn = "subscriptions";
 const patientSettingsTableConstraintName = "patient_settings_cxId_patientId_constraint";
-const patientSettingsTableIdFields = ["patient_id", "cx_id"];
+const patientSettingsTableIdFields = ["cx_id", "patient_id"];
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -28,7 +28,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
           field: "cx_id",
           allowNull: false,
         },
-        subscribeTo: {
+        subscriptions: {
           type: DataTypes.JSONB,
           field: adtSubscriptionColumn,
           allowNull: true,
