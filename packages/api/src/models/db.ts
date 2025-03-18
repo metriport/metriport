@@ -112,14 +112,16 @@ async function initDB(): Promise<void> {
   });
   const readerEndpoint = getReaderEndpoint();
   console.log("[server]: connecting to db read replica...");
-  const sequelizeReadOnly = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
-    host: readerEndpoint.host,
-    port: readerEndpoint.port,
-    dialect: dbCreds.engine,
-    pool: dbPoolSettings,
-    logging: logDBOperations,
-    logQueryParameters: logDBOperations,
-  });
+  const sequelizeReadOnly = Config.isCloudEnv()
+    ? new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
+        host: readerEndpoint.host,
+        port: readerEndpoint.port,
+        dialect: dbCreds.engine,
+        pool: dbPoolSettings,
+        logging: logDBOperations,
+        logQueryParameters: logDBOperations,
+      })
+    : sequelize;
   try {
     await Promise.all([sequelize.authenticate(), sequelizeReadOnly.authenticate()]);
 
