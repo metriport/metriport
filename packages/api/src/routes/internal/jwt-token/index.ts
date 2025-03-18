@@ -1,12 +1,13 @@
 import Router from "express-promise-router";
-import athena from "./athenahealth/internal";
-import canvas from "./canvas/internal";
-import elation from "./elation/internal";
+import athena from "./athenahealth";
+import canvas from "./canvas";
+import elation from "./elation";
 
 const routes = Router();
 
+// EHRs
 routes.use("/athenahealth", athena);
-routes.use("/elation", elation);
 routes.use("/canvas", canvas);
+routes.use("/elation", elation);
 
 export default routes;

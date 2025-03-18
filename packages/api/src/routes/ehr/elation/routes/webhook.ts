@@ -1,5 +1,5 @@
 import Router from "express-promise-router";
-import appointmentWebhook from "./appointment-webhook";
+import appointmentWebhook from "../appointment-webhook";
 
 const routes = Router();
 
