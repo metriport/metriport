@@ -90,7 +90,7 @@ export async function createPatient({
     createPatientSettings({
       cxId,
       patientId: patientCreate.id,
-      settings,
+      ...settings,
     }),
     upsertPatientToFHIRServer(newPatient.cxId, fhirPatient),
   ]);

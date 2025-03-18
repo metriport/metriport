@@ -36,7 +36,7 @@ type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
 export async function createPatientSettings({
   patientId,
   cxId,
-  settings,
+  subscriptions,
 }: Omit<PatientSettingsCreate, "id">): Promise<PatientSettings> {
   await getPatientOrFail({ cxId, id: patientId });
 
@@ -44,7 +44,7 @@ export async function createPatientSettings({
     id: uuidv7(),
     cxId,
     patientId,
-    settings,
+    subscriptions,
   };
 
   const newPatientSettings = await PatientSettingsModel.create(patientSettingsCreate);

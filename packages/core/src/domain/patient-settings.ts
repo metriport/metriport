@@ -11,7 +11,7 @@ export type PatientSettingsData = {
 export interface PatientSettingsCreate extends BaseDomainCreate {
   cxId: string;
   patientId: string;
-  settings?: PatientSettingsData;
+  subscriptions?: Subscriptions;
 }
 
 export interface PatientSettings extends BaseDomain, PatientSettingsCreate {}
