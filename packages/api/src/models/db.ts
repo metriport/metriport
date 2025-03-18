@@ -1,6 +1,7 @@
 import {
   DbCreds,
   DbCredsReadOnly,
+  DbPoolSettings,
   dbCredsSchema,
   dbCredsSchemaReadOnly,
   dbPoolSettingsSchema,
@@ -66,13 +67,6 @@ const models: ModelSetup[] = [
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
-
-export type DbPoolProps = {
-  max: number;
-  min: number;
-  acquire: number;
-  idle: number;
-};
 
 export type MetriportDB = {
   sequelize: Sequelize;
@@ -157,8 +151,8 @@ async function initDB(): Promise<void> {
   }
 }
 
-function getDbPoolSettings(): DbPoolProps {
-  function getAndParseSettings(): Partial<Record<keyof DbPoolProps, string>> {
+function getDbPoolSettings(): DbPoolSettings {
+  function getAndParseSettings(): Partial<Record<keyof DbPoolSettings, string>> {
     try {
       const rawProps = Config.getDbPoolSettings();
       const parsedProps = rawProps ? dbPoolSettingsSchema.parse(JSON.parse(rawProps)) : {};
