@@ -4,6 +4,7 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -80,6 +81,19 @@ export async function createPatient({
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
   const newPatient = await PatientModel.create(patientCreate);
+
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.patientCreate,
+    properties: {
+      patientId: newPatient.id,
+      facilityId,
+      rerunPdOnNewDemographics,
+      runPd,
+      forceCommonwell,
+      forceCarequality,
+    },
+  });
 
   const fhirPatient = toFHIR(newPatient);
   await upsertPatientToFHIRServer(newPatient.cxId, fhirPatient);

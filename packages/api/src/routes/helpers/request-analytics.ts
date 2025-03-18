@@ -1,7 +1,7 @@
 import { Request } from "express";
 import QueryString from "qs";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { getCxId, getCxIdFromHeaders } from "../util";
+import { getCxId, getCxIdFromHeaders, getCxIdFromQuery } from "../util";
 
 const devicesRoutes = [
   "activity",
@@ -39,7 +39,8 @@ export const analyzeRoute = ({
 }): void => {
   const reqCxId = getCxId(req);
   const headerCxId = getCxIdFromHeaders(req);
-  const cxId = reqCxId ?? headerCxId;
+  const queryCxId = getCxIdFromQuery(req);
+  const cxId = reqCxId ?? headerCxId ?? queryCxId;
 
   const isDevices = devicesRoutes.some(route => url.includes(route));
 

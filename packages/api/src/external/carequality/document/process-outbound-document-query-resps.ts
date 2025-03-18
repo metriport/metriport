@@ -59,21 +59,6 @@ export async function processOutboundDocumentQueryResps({
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
     const { successCount, failureCount } = getOutboundDocQuerySuccessFailureCount(response);
 
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.documentQuery,
-      properties: {
-        requestId,
-        patientId,
-        hie: MedicalDataSource.CAREQUALITY,
-        duration,
-        documentCount: docRefs.length,
-        successCount,
-        failureCount,
-        ...contentTypeCounts,
-      },
-    });
-
     const responsesWithDocsToDownload = await getRespWithDocsToDownload({
       cxId,
       patientId,
@@ -90,6 +75,23 @@ export async function processOutboundDocumentQueryResps({
     ).length;
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentQuery,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.CAREQUALITY,
+        duration,
+        documentCount: docRefs.length,
+        docsToDownloadCount: docsToDownload.length,
+        convertibleCount: convertibleDocCount,
+        successCount,
+        failureCount,
+        ...contentTypeCounts,
+      },
+    });
 
     if (docsToDownload.length === 0) {
       log(`No new documents to download.`);
