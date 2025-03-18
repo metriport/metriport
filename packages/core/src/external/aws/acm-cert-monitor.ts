@@ -106,7 +106,7 @@ export async function checkExpiringCertificates(notificationUrl: string): Promis
 
   log(`${subject}\n${message}`);
 
-  sendToSlack({ emoji: ":eyes:", subject, message }, notificationUrl);
+  await sendToSlack({ emoji: ":eyes:", subject, message }, notificationUrl);
 }
 
 function certToMessage(cert: ExpiringCertificate): string {
