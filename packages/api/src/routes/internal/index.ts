@@ -18,8 +18,8 @@ import {
 import { checkApiQuota } from "../../command/medical/admin/api";
 import { dbMaintenance } from "../../command/medical/admin/db-maintenance";
 import {
-  populateFhirServer,
   PopulateFhirServerResponse,
+  populateFhirServer,
 } from "../../command/medical/admin/populate-fhir";
 import { getFacilities, getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import {
