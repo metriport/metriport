@@ -1,16 +1,20 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import {
+  dbCredsSchema,
+  dbReadReplicaEndpointSchema,
+  initDbPool,
+} from "@metriport/core/util/sequelize";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
-import { TableResults } from "./athena-shared";
-import { QueryTypes } from "sequelize";
 import { mean } from "lodash";
+import { PoolOptions, QueryTypes } from "sequelize";
+import { TableResults } from "./athena-shared";
 
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
@@ -344,4 +348,22 @@ export function findExistingStatByImplementer(
   monthlyImplementerStats: MonthlyImplementerStats[]
 ): MonthlyImplementerStats | undefined {
   return monthlyImplementerStats.find(stat => stat.implementerId === implementerId);
+}
+
+function initReadonlyDbPool(
+  dbCreds: string,
+  dbReadReplicaEndpoint: string,
+  poolOptions?: PoolOptions,
+  logging?: boolean
+) {
+  const dbCredsRaw = JSON.parse(dbCreds);
+  const parsedDbCreds = dbCredsSchema.parse(dbCredsRaw);
+
+  const dbReadReplicaEndpointRaw = JSON.parse(dbReadReplicaEndpoint);
+  const parsedDbReadReplicaEndpoint = dbReadReplicaEndpointSchema.parse(dbReadReplicaEndpointRaw);
+
+  parsedDbCreds.host = parsedDbReadReplicaEndpoint.host;
+  parsedDbCreds.port = parsedDbReadReplicaEndpoint.port;
+
+  return initDbPool(JSON.stringify(parsedDbCreds), poolOptions, logging);
 }

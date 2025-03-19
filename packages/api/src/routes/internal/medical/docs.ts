@@ -15,33 +15,36 @@ import { z } from "zod";
 import {
   createAndUploadDocReference,
   updateDocumentReference,
-} from "../../command/medical/admin/upload-doc";
-import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
-import { calculateDocumentConversionStatus } from "../../command/medical/document/document-conversion-status";
-import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
-import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
+} from "../../../command/medical/admin/upload-doc";
+import { checkDocumentQueries } from "../../../command/medical/document/check-doc-queries";
+import { calculateDocumentConversionStatus } from "../../../command/medical/document/document-conversion-status";
+import { queryDocumentsAcrossHIEs } from "../../../command/medical/document/document-query";
+import { reConvertDocuments } from "../../../command/medical/document/document-reconvert";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
-} from "../../command/medical/document/document-webhook";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
-import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import BadRequestError from "../../errors/bad-request";
-import { processCcdRequest, processEmptyCcdRequest } from "../../external/cda/process-ccd-request";
-import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
-import { Config } from "../../shared/config";
-import { parseISODate } from "../../shared/date";
-import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
-import { requestLogger } from "../helpers/request-logger";
-import { documentQueryProgressSchema } from "../schemas/internal";
-import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
-import { getFromQueryOrFail } from "./../util";
-import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { toDTO } from "./dtos/document-bulk-downloadDTO";
+} from "../../../command/medical/document/document-webhook";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
+import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import { appendBulkGetDocUrlProgress } from "../../../command/medical/patient/bulk-get-doc-url-progress";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import BadRequestError from "../../../errors/bad-request";
+import {
+  processCcdRequest,
+  processEmptyCcdRequest,
+} from "../../../external/cda/process-ccd-request";
+import { setDocQueryProgress } from "../../../external/hie/set-doc-query-progress";
+import { Config } from "../../../shared/config";
+import { parseISODate } from "../../../shared/date";
+import { errorToString } from "../../../shared/log";
+import { capture } from "../../../shared/notifications";
+import { requestLogger } from "../../helpers/request-logger";
+import { documentQueryProgressSchema } from "../../schemas/internal";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../../util";
+import { getFromQueryOrFail } from "../../util";
+import { cxRequestMetadataSchema } from "../../medical/schemas/request-metadata";
+import { toDTO } from "../../medical/dtos/document-bulk-downloadDTO";
 
 const router = Router();
 const upload = multer();
