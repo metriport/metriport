@@ -19,9 +19,15 @@ export const up: Migration = async ({ context: queryInterface }) => {
           allowNull: false,
         },
         patientId: {
-          type: DataTypes.UUID,
+          type: DataTypes.STRING,
           field: "patient_id",
           allowNull: false,
+          references: {
+            model: "patient",
+            key: "id",
+          },
+          onDelete: "CASCADE",
+          onUpdate: "CASCADE",
         },
         cxId: {
           type: DataTypes.UUID,

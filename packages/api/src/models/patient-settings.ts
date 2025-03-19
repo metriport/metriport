@@ -20,7 +20,14 @@ export class PatientSettingsModel
           type: DataTypes.UUID,
         },
         patientId: {
-          type: DataTypes.UUID,
+          type: DataTypes.STRING,
+          references: {
+            model: "patient",
+            key: "id",
+          },
+          onDelete: "CASCADE",
+          onUpdate: "CASCADE",
+          allowNull: false,
         },
         subscriptions: {
           type: DataTypes.JSONB,
