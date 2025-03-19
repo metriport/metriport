@@ -77,14 +77,14 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/settings/adt-subscribers
+ * GET /internal/patient/settings/adt-subscribers
  *
  * Gets all patients that have ADT subscriptions enabled for the given states.
  *
  * @param req.query.states List of US state codes to filter by
  * @returns List of patients with ADT subscriptions in the specified states
  */
-router.post(
+router.get(
   "/adt-subscribers",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
