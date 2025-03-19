@@ -4,15 +4,15 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { createOrganization } from "../../command/medical/organization/create-organization";
-import { updateOrganization } from "../../command/medical/organization/update-organization";
-import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
-import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
-import { requestLogger } from "../helpers/request-logger";
-import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler } from "../util";
-import { internalDtoFromModel } from "./dtos/organizationDTO";
-import { organiationInternalDetailsSchema } from "./schemas/organization";
+import { createOrganization } from "../../../command/medical/organization/create-organization";
+import { updateOrganization } from "../../../command/medical/organization/update-organization";
+import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../../external/carequality/command/create-or-update-organization";
+import { createOrUpdateCWOrganization } from "../../../external/commonwell/command/create-or-update-cw-organization";
+import { requestLogger } from "../../helpers/request-logger";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler } from "../../util";
+import { internalDtoFromModel } from "../../medical/dtos/organizationDTO";
+import { organiationInternalDetailsSchema } from "../../medical/schemas/organization";
 
 const router = Router();
 

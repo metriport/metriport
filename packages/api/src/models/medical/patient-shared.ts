@@ -1,7 +1,7 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel } from "../_default";
 
-export const patientModelName = "patient";
+export const patientTableName = "patient";
 
 export function initParams() {
   return {
@@ -31,7 +31,7 @@ export function initModel(sequelize: Sequelize) {
     },
     options: {
       ...BaseModel.modelOptions(sequelize),
-      tableName: patientModelName,
+      tableName: patientTableName,
     },
   };
 }

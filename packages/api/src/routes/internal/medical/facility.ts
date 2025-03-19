@@ -4,17 +4,17 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { createFacility } from "../../command/medical/facility/create-facility";
-import { updateFacility } from "../../command/medical/facility/update-facility";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { Facility, FacilityCreate } from "../../domain/medical/facility";
-import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../external/carequality/command/create-or-update-facility";
-import { createOrUpdateFacilityInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
-import { requestLogger } from "../helpers/request-logger";
-import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler } from "../util";
-import { internalDtoFromModel } from "./dtos/facilityDTO";
-import { facilityInternalDetailsSchema } from "./schemas/facility";
+import { createFacility } from "../../../command/medical/facility/create-facility";
+import { updateFacility } from "../../../command/medical/facility/update-facility";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
+import { Facility, FacilityCreate } from "../../../domain/medical/facility";
+import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../external/carequality/command/create-or-update-facility";
+import { createOrUpdateFacilityInCw } from "../../../external/commonwell/command/create-or-update-cw-facility";
+import { requestLogger } from "../../helpers/request-logger";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler } from "../../util";
+import { internalDtoFromModel } from "../../medical/dtos/facilityDTO";
+import { facilityInternalDetailsSchema } from "../../medical/schemas/facility";
 
 const router = Router();
 

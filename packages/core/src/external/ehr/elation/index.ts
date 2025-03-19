@@ -45,6 +45,7 @@ problemStatusesMap.set("relapse", "Active");
 problemStatusesMap.set("recurrence", "Active");
 problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
+problemStatusesMap.set("inactive", "Resolved");
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
