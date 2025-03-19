@@ -4,7 +4,7 @@ import medicalDocument from "../../../medical/document";
 import medicalPatient from "../../../medical/patient";
 import { patientAuthorization } from "../../../middlewares/patient-authorization";
 import settings from "../../../settings";
-import { processEhrPatientId } from "../../shared";
+import { documentDownloadUrlRegex, processEhrPatientId } from "../../shared";
 import {
   processDocumentRoute,
   processPatientRoute,
@@ -15,7 +15,7 @@ import patient from "../patient";
 
 const routes = Router();
 
-const documentSkipPathsForElationIdCheck = [new RegExp(`^/download-url$`)];
+const documentSkipPathsForElationIdCheck = [documentDownloadUrlRegex];
 
 routes.use("/patient", patient);
 routes.use("/chart", chart);
