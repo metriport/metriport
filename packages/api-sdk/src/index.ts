@@ -12,45 +12,46 @@ export { Sleep } from "./devices/models/sleep";
 export { User } from "./devices/models/user";
 
 // Medical API
-export type { PaginatedResponse, ResponseMeta } from "@metriport/shared";
 export {
-  WebhookRequest,
   WebhookRequestParsingFailure,
+  WebhookRequest,
   WebhookRequestStatus,
   WebhookType,
 } from "@metriport/shared/medical";
+export type { ResponseMeta, PaginatedResponse } from "@metriport/shared";
 export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema, usStateForAddressSchema } from "./medical/models/common/address";
 export { BaseUpdate, baseUpdateSchema } from "./medical/models/common/base-update";
 export { MedicalDataSource } from "./medical/models/common/medical-data-source";
 export {
   USState,
-  USTerritory,
   usStateSchema,
+  USTerritory,
   usTerritorySchema,
 } from "./medical/models/common/us-data";
 export {
   Contact,
-  Demographics,
-  DriverLicenseIdentifier,
-  GeneralTypeIdentifier,
-  PersonalIdentifier,
   contactSchema,
+  Demographics,
   demographicsSchema,
-  driversLicensePersonalIdentifier,
   genderAtBirthSchema,
-  generalPersonalIdentifiers,
+  PersonalIdentifier,
   personalIdentifierSchema,
+  GeneralTypeIdentifier,
+  generalPersonalIdentifiers,
+  DriverLicenseIdentifier,
+  driversLicensePersonalIdentifier,
 } from "./medical/models/demographics";
 export {
   DocumentQuery,
+  documentQuerySchema,
   DocumentQueryStatus,
+  documentQueryStatusSchema,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
-  documentQuerySchema,
-  documentQueryStatusSchema,
 } from "./medical/models/document";
+export { MedicalRecordsStatusDTO } from "./medical/models/medicalRecordStatus";
 export {
   Facility,
   FacilityCreate,
@@ -59,24 +60,23 @@ export {
   facilitySchema,
 } from "./medical/models/facility";
 export * from "./medical/models/fhir";
-export { MedicalRecordsStatusDTO } from "./medical/models/medicalRecordStatus";
-export { NetworkEntry } from "./medical/models/network-entry";
 export {
-  OrgType,
   Organization,
   OrganizationCreate,
-  orgTypeSchema,
   organizationCreateSchema,
   organizationSchema,
+  OrgType,
+  orgTypeSchema,
 } from "./medical/models/organization";
 export {
   Patient,
   PatientCreate,
-  PatientUpdate,
   patientCreateSchema,
   patientListSchema,
   patientSchema,
+  PatientUpdate,
   patientUpdateSchema,
 } from "./medical/models/patient";
 export { PatientDTO } from "./medical/models/patientDTO";
+export { NetworkEntry } from "./medical/models/network-entry";
 export { patientSettingsSchema } from "./medical/models/patient-settings";
