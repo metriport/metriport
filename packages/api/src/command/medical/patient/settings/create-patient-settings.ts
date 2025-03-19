@@ -7,6 +7,7 @@ import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, errorToString } from "@metriport/shared";
+import { chunk } from "lodash";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
@@ -128,12 +129,14 @@ async function processBatch({
       });
       return { processedCount, failedCount: 0 };
     } catch (error) {
-      const isLastAttempt = attempt === MAX_BATCH_RETRIES;
+      const isLastAttempt = attempt >= MAX_BATCH_RETRIES;
 
       if (!isLastAttempt) {
         log(
           `Batch operation failed, attempt ${attempt}/${MAX_BATCH_RETRIES}: ${errorToString(error)}`
         );
+      } else {
+        log(`Batch operation failed, will not try again: ${errorToString(error)}`);
       }
     }
   }
@@ -171,8 +174,8 @@ export async function upsertPatientSettingsForCx({
   let failedTotal = 0;
   const failedIds: string[] = [];
 
-  for (let i = 0; i < patientIds.length; i += BATCH_SIZE) {
-    const batchIds = patientIds.slice(i, i + BATCH_SIZE);
+  const batches = chunk(patientIds, BATCH_SIZE);
+  for (const batchIds of batches) {
     const {
       processedCount,
       failedCount,
@@ -196,12 +199,12 @@ export async function upsertPatientSettingsForCx({
 
   if (failedTotal > 0) {
     const msg = `Failed to upsert settings for patients`;
-    log(`${msg} - failed IDs: ${failedIds}`);
+    log(`${msg} - failed IDs: ${JSON.stringify(failedIds)}`);
     capture.error(msg, {
       extra: {
-        failedIds,
         cxId,
         facilityId,
+        failedIds,
       },
     });
     return { patientsFoundAndUpdated: processedTotal, failedCount: failedTotal, failedIds };
