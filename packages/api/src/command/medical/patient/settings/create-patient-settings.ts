@@ -15,6 +15,7 @@ import { getPatientIds, getPatientOrFail } from "../get-patient";
 type PatientSettingsUpsertResults = {
   patientsNotFound?: string[];
   patientsFoundAndUpdated: number;
+  failedCount?: number;
   failedIds?: string[];
 };
 
@@ -34,7 +35,7 @@ type BatchProcessingResult = {
   failedIds?: string[];
 };
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 500;
 
 /**
  * Maximum number of retries for a batch operation
@@ -105,15 +106,15 @@ export async function upsertPatientSettingsForPatientList({
 }
 
 /**
- * Processes a batch of patient settings updates with retries
+ * Processes a batch of patient settings upserts with retries
  */
 async function processBatch({
-  patients,
+  patientIds,
   cxId,
   settings,
   log,
 }: {
-  patients: string[];
+  patientIds: string[];
   cxId: string;
   settings: PatientSettingsData;
   log: typeof console.log;
@@ -121,7 +122,7 @@ async function processBatch({
   for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
     try {
       const processedCount = await upsertPatientSettings({
-        patientIds: patients,
+        patientIds,
         cxId,
         settings,
       });
@@ -139,8 +140,8 @@ async function processBatch({
 
   return {
     processedCount: 0,
-    failedCount: patients.length,
-    failedIds: patients,
+    failedCount: patientIds.length,
+    failedIds: patientIds,
   };
 }
 
@@ -177,7 +178,7 @@ export async function upsertPatientSettingsForCx({
       failedCount,
       failedIds: failedBatchIds,
     } = await processBatch({
-      patients: batchIds,
+      patientIds: batchIds,
       cxId,
       settings,
       log,
@@ -203,7 +204,7 @@ export async function upsertPatientSettingsForCx({
         facilityId,
       },
     });
-    return { patientsFoundAndUpdated: processedTotal, failedIds };
+    return { patientsFoundAndUpdated: processedTotal, failedCount: failedTotal, failedIds };
   }
 
   return { patientsFoundAndUpdated: processedTotal };
