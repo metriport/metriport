@@ -1,6 +1,9 @@
 # https://docs.cursor.com/context/ignore-files
 # Files on .gitignore are automatically included
 packages/utils/runs
+production.ts
+sandbox.ts
+staging.ts
 *.json
 *.xml
 *.sql
