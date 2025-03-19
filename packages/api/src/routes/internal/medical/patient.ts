@@ -32,13 +32,13 @@ import {
 } from "../../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
+  getPatients,
 } from "../../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -70,6 +70,10 @@ import { parseISODate } from "../../../shared/date";
 import { getETag } from "../../../shared/http";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
+import { dtoFromModel } from "../../medical/dtos/demographicsDTO";
+import { getResourcesQueryParam } from "../../medical/schemas/fhir";
+import { linkCreateSchema } from "../../medical/schemas/link";
+import { schemaCreateToPatientData } from "../../medical/schemas/patient";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -86,14 +90,14 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../../util";
-import { dtoFromModel } from "../../medical/dtos/patientDTO";
-import { getResourcesQueryParam } from "../../medical/schemas/fhir";
-import { linkCreateSchema } from "../../medical/schemas/link";
-import { schemaCreateToPatientData } from "../../medical/schemas/patient";
+import patientSettingsRoutes from "./patient-settings";
 
 dayjs.extend(duration);
 
 const router = Router();
+
+router.use("/settings", patientSettingsRoutes);
+
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });
 const patientLoader = new PatientLoaderLocal();
@@ -873,7 +877,7 @@ router.post(
  * POST /internal/patient
  *
  * Creates the patient corresponding to the specified facility at the
- * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery by defaul.
+ * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery by default.
  *
  * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
  * @return The newly created patient.

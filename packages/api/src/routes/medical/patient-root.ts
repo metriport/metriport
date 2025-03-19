@@ -58,6 +58,7 @@ router.post(
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
+    const { settings, ...patientCreateProps } = payload;
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
@@ -71,7 +72,7 @@ router.post(
     }
 
     const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatientData(payload),
+      ...schemaCreateToPatientData(patientCreateProps),
       cxId,
       facilityId,
     };
@@ -81,6 +82,7 @@ router.post(
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
+      settings,
     });
 
     return res.status(httpStatus.CREATED).json(dtoFromModel(patient));

@@ -35,6 +35,7 @@ import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
 import { PatientMappingModel } from "./patient-mapping";
+import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 
@@ -61,6 +62,7 @@ const models: ModelSetup[] = [
   FeedbackEntryModel.setup,
   CxMappingModel.setup,
   PatientMappingModel.setup,
+  PatientSettingsModel.setup,
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
