@@ -9,7 +9,8 @@ import { BadRequestError } from "@metriport/shared";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
-import { getPatientIds, getPatientOrFail } from "../get-patient";
+import { getPaginationItems } from "../../../pagination";
+import { getPatientOrFail, getPatients, getPatientsCount } from "../get-patient";
 
 type PatientSettingsUpsertResults = {
   patientsNotFound?: string[];
@@ -25,6 +26,14 @@ type PatientSettingsUpsertForCxProps = {
 type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
   patientIds: string[];
 };
+
+type BatchProcessingResult = {
+  processedCount: number;
+  failedCount: number;
+  error?: Error;
+};
+
+const BATCH_SIZE = 1000;
 
 /**
  * Creates a new patient settings record.
@@ -90,7 +99,32 @@ export async function upsertPatientSettingsForPatientList({
 }
 
 /**
+ * Processes a batch of patient settings updates
+ */
+async function processBatch({
+  patients,
+  cxId,
+  settings,
+}: {
+  patients: string[];
+  cxId: string;
+  settings: PatientSettingsData;
+}): Promise<BatchProcessingResult> {
+  try {
+    const processedCount = await upsertPatientSettings({
+      patientIds: patients,
+      cxId,
+      settings,
+    });
+    return { processedCount, failedCount: 0 };
+  } catch (error) {
+    return { processedCount: 0, failedCount: patients.length, error: error as Error };
+  }
+}
+
+/**
  * Upserts patient settings for the given customer with specific patient IDs.
+ * Processes patients in batches to handle large datasets efficiently.
  *
  * @param cxId The customer ID
  * @param facilityId The facility ID. Optional.
@@ -104,21 +138,51 @@ export async function upsertPatientSettingsForCx({
 }: PatientSettingsUpsertForCxProps): Promise<PatientSettingsUpsertResults> {
   const { log } = out(`upsertPatientSettingsForCx - cx ${cxId}`);
 
-  const patientIds = await getPatientIds({ cxId, facilityId });
-
-  if (!patientIds.length) {
+  const totalPatients = await getPatientsCount({ cxId, facilityId });
+  if (totalPatients === 0) {
     log(`No patients found for cx ${cxId}`);
     return { patientsFoundAndUpdated: 0 };
   }
 
-  const patientsFoundAndUpdated = await upsertPatientSettings({
-    patientIds,
-    cxId,
-    settings,
-  });
+  let processedTotal = 0;
+  let failedTotal = 0;
+  let fromItem: string | undefined;
 
-  log(`Upserted settings for all CX patients. Total: ${patientsFoundAndUpdated}`);
-  return { patientsFoundAndUpdated };
+  do {
+    const { currPageItems, nextPageItemId } = await getPaginationItems(
+      { count: BATCH_SIZE, ...(fromItem ? { fromItem } : {}) },
+      pagination => getPatients({ cxId, facilityId, pagination }),
+      () => Promise.resolve(totalPatients)
+    );
+
+    if (currPageItems.length === 0) break;
+
+    const patientIds = currPageItems.map(p => p.id);
+    const { processedCount, failedCount, error } = await processBatch({
+      patients: patientIds,
+      cxId,
+      settings,
+    });
+
+    processedTotal += processedCount;
+    failedTotal += failedCount;
+    fromItem = nextPageItemId;
+
+    log(
+      `Processed batch: ${processedCount} successful, ` +
+        `${failedCount} failed. Total progress: ${processedTotal}/${totalPatients}`
+    );
+
+    if (error) {
+      log(`Error processing batch: ${error.message}`);
+    }
+  } while (fromItem);
+
+  log(
+    `Completed processing all patients. ` +
+      `Total: ${processedTotal} successful, ${failedTotal} failed`
+  );
+  return { patientsFoundAndUpdated: processedTotal };
 }
 
 async function verifyPatients({
