@@ -17,7 +17,10 @@ import {
   parallelPractices,
 } from "../../shared";
 import { createElationClient } from "../shared";
-import { SyncElationPatientIntoMetriportParams } from "./sync-patient";
+import {
+  SyncElationPatientIntoMetriportParams,
+  updateOrCreateElationPatientMetadata,
+} from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -118,6 +121,11 @@ async function syncPatient({
   elationPracticeId,
   elationPatientId,
 }: Omit<SyncElationPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
+  await updateOrCreateElationPatientMetadata({
+    cxId,
+    elationPracticeId,
+    elationPatientId,
+  });
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
     ehr: EhrSources.elation,
