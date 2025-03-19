@@ -3,7 +3,7 @@ import { Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
 import { initModel, patientTableName } from "./patient-shared";
 
-export class PatientModel extends BaseModel<PatientModel> implements Patient {
+export class PatientModelReadOnly extends BaseModel<PatientModelReadOnly> implements Patient {
   static NAME = patientTableName;
   declare cxId: string;
   declare facilityIds: string[];
@@ -13,6 +13,6 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     const model = initModel(sequelize);
-    PatientModel.init(model.attributes, model.options);
+    PatientModelReadOnly.init(model.attributes, model.options);
   };
 }

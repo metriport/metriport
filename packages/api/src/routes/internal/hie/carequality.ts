@@ -14,44 +14,44 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { getFacilityByOidOrFail } from "../../command/medical/facility/get-facility";
+import { getFacilityByOidOrFail } from "../../../command/medical/facility/get-facility";
 import {
   verifyCxAccessToSendFacilityToHies,
   verifyCxAccessToSendOrgToHies,
-} from "../../command/medical/facility/verify-access";
+} from "../../../command/medical/facility/verify-access";
 import {
   getOrganizationByOidOrFail,
   getOrganizationOrFail,
-} from "../../command/medical/organization/get-organization";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { Facility } from "../../domain/medical/facility";
-import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
+} from "../../../command/medical/organization/get-organization";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { Facility } from "../../../domain/medical/facility";
+import { rebuildCQDirectory } from "../../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
-} from "../../external/carequality/command/cq-directory/search-cq-directory";
-import { getCqOrgOrFail } from "../../external/carequality/command/cq-organization/get-cq-organization";
-import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../external/carequality/command/create-or-update-facility";
-import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
-import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
-import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
-import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
-import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
-import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
+} from "../../../external/carequality/command/cq-directory/search-cq-directory";
+import { getCqOrgOrFail } from "../../../external/carequality/command/cq-organization/get-cq-organization";
+import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../external/carequality/command/create-or-update-facility";
+import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../../external/carequality/command/create-or-update-organization";
+import { createOutboundDocumentQueryResp } from "../../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
+import { createOutboundDocumentRetrievalResp } from "../../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
+import { createOutboundPatientDiscoveryResp } from "../../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
+import { processOutboundDocumentQueryResps } from "../../../external/carequality/document/process-outbound-document-query-resps";
+import { processOutboundDocumentRetrievalResps } from "../../../external/carequality/document/process-outbound-document-retrieval-resps";
 import {
   getDQResultStatus,
   getDRResultStatus,
   getPDResultStatus,
-} from "../../external/carequality/ihe-result";
-import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
-import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { cqOrgActiveSchema } from "../../external/carequality/shared";
-import { Config } from "../../shared/config";
-import { handleParams } from "../helpers/handle-params";
-import { requestLogger } from "../helpers/request-logger";
-import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
+} from "../../../external/carequality/ihe-result";
+import { processOutboundPatientDiscoveryResps } from "../../../external/carequality/process-outbound-patient-discovery-resps";
+import { processPostRespOutboundPatientDiscoveryResps } from "../../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
+import { cqOrgActiveSchema } from "../../../external/carequality/shared";
+import { Config } from "../../../shared/config";
+import { handleParams } from "../../helpers/handle-params";
+import { requestLogger } from "../../helpers/request-logger";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../../util";
 
 dayjs.extend(duration);
 const router = Router();

@@ -32,6 +32,7 @@ export * from "./domain/patient/patient-import";
 export * from "./domain/secrets";
 export * from "./domain/rate-limiting";
 export * from "./domain/jwt-token";
+export * from "./domain/db";
 export { BadRequestError } from "./error/bad-request";
 export { MetriportError, AdditionalInfo } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";
