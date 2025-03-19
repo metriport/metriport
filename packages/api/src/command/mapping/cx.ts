@@ -160,8 +160,8 @@ export async function updateSecondaryMappingsOnCxMapping({
     ...secondaryMappings,
   };
   const schema = secondaryMappingsSchemaMap[existing.source];
-  let validatedSecondaryMappings: CxMappingSecondaryMappings = newSecondaryMappings;
-  if (schema) validatedSecondaryMappings = schema.parse(newSecondaryMappings);
+  if (!schema) return existing.dataValues;
+  const validatedSecondaryMappings = schema.parse(newSecondaryMappings);
   const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
   return updated.dataValues;
 }

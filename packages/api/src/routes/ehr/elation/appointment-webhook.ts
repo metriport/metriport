@@ -4,6 +4,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { updateOrCreateElationPatientMetadata } from "../../../external/ehr/elation/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
@@ -27,6 +28,11 @@ router.post(
     const event = elationAppointmentEventSchema.parse(req.body);
     if (event.action === "deleted") return res.sendStatus(httpStatus.OK);
     const handler = buildEhrSyncPatientHandler();
+    updateOrCreateElationPatientMetadata({
+      cxId,
+      elationPracticeId,
+      elationPatientId: event.data.patient,
+    }).catch(processAsyncError("Elation updateOrCreateElationPatientMetadata"));
     handler
       .processSyncPatient({
         ehr: EhrSources.elation,

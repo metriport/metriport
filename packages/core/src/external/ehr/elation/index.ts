@@ -38,9 +38,9 @@ import {
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
-//import { Config } from "../../../util/config";
+import { Config } from "../../../util/config";
 
-const apiUrl = "https://02bec6db3742.ngrok.app"; //Config.getApiUrl();
+const apiUrl = Config.getApiUrl();
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;

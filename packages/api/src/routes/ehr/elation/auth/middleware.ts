@@ -21,6 +21,35 @@ import {
 export const tokenEhrPatientIdQueryParam = "elationPatientIdFromToken";
 const elationSignatureHeader = "el8-ed25519-signature";
 
+async function processCxIdWebhook(req: Request): Promise<void> {
+  const signature = req.headers[elationSignatureHeader];
+  if (!signature) throw new ForbiddenError();
+  if (Array.isArray(signature)) throw new ForbiddenError();
+  const webhookResource = req.body.resource;
+  if (!webhookResource) throw new ForbiddenError();
+  if (!isSubscriptionResource(webhookResource)) throw new ForbiddenError();
+  const applicationId = req.body.application_id;
+  if (!applicationId) throw new ForbiddenError();
+  try {
+    const { cxId, practiceId } = getCxIdAndPracticeIdFromElationApplicationId(applicationId);
+    const cxMapping = await getCxMappingOrFail({
+      source: EhrSources.elation,
+      externalId: practiceId,
+    });
+    const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+    const key = secondaryMappings.webHooks?.[webhookResource];
+    if (!key) throw new ForbiddenError();
+    if (!verifyWebhookSignature(key.signingKey, req.body, signature)) throw new ForbiddenError();
+    req.cxId = cxId;
+    req.query = {
+      ...req.query,
+      practiceId,
+    };
+  } catch (error) {
+    throw new ForbiddenError();
+  }
+}
+
 function parseElationPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
   if (tokenData.source !== elationDashSource) throw new ForbiddenError();
   const practiceId = tokenData.practiceId;
@@ -49,35 +78,6 @@ async function shortenLongDurationToken(req: Request): Promise<void> {
   }
 }
 
-async function parseElationPracticeIdWebhook(req: Request): Promise<void> {
-  const signature = req.headers[elationSignatureHeader];
-  if (!signature) throw new ForbiddenError();
-  if (Array.isArray(signature)) throw new ForbiddenError();
-  try {
-    const webhookResource = req.body.resource;
-    if (!webhookResource) throw new ForbiddenError();
-    if (!isSubscriptionResource(webhookResource)) throw new ForbiddenError();
-    const applicationId = req.body.application_id;
-    if (!applicationId) throw new ForbiddenError();
-    const { cxId, practiceId } = getCxIdAndPracticeIdFromElationApplicationId(applicationId);
-    const cxMapping = await getCxMappingOrFail({
-      source: EhrSources.elation,
-      externalId: practiceId,
-    });
-    const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
-    const key = secondaryMappings.webHooks?.[webhookResource];
-    if (!key) throw new ForbiddenError();
-    if (!verifyWebhookSignature(key.signingKey, req.body, signature)) throw new ForbiddenError();
-    req.cxId = cxId;
-    req.query = {
-      ...req.query,
-      practiceId,
-    };
-  } catch (error) {
-    throw new ForbiddenError();
-  }
-}
-
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
   processCxIdShared(req, elationDashSource, parseElationPracticeIdDash)
     .then(() => shortenLongDurationToken(req))
@@ -86,7 +86,7 @@ export function processCxIdDash(req: Request, res: Response, next: NextFunction)
 }
 
 export function processCxIdWebhooks(req: Request, res: Response, next: NextFunction) {
-  parseElationPracticeIdWebhook(req).then(next).catch(next);
+  processCxIdWebhook(req).then(next).catch(next);
 }
 
 export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
