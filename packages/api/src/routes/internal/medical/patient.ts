@@ -23,59 +23,64 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
-import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
 import {
   ConsolidatedQueryParams,
   getConsolidated,
   getConsolidatedAndSendToCx,
   startConsolidatedQuery,
-} from "../../command/medical/patient/consolidated-get";
-import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
-import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
-import { deletePatient } from "../../command/medical/patient/delete-patient";
+} from "../../../command/medical/patient/consolidated-get";
+import { createCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-create";
+import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
+import { PatientCreateCmd } from "../../../command/medical/patient/create-patient";
+import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
   getPatientStates,
   getPatients,
-} from "../../command/medical/patient/get-patient";
+} from "../../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
-} from "../../command/medical/patient/update-patient";
-import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import BadRequestError from "../../errors/bad-request";
+} from "../../../command/medical/patient/update-patient";
+import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
+import BadRequestError from "../../../errors/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
-} from "../../external/aws/app-config";
-import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
-import cwCommands from "../../external/commonwell";
-import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
-import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
-import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
-import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-check-stale";
-import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
-import { setCQLinkStatuses } from "../../external/commonwell/cq-bridge/cq-link-status";
-import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
-import { cqLinkStatus } from "../../external/commonwell/patient-shared";
-import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
-import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
-import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
-import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
-import { PatientModel } from "../../models/medical/patient";
-import { executeOnDBTx } from "../../models/transaction-wrapper";
-import { parseISODate } from "../../shared/date";
-import { getETag } from "../../shared/http";
-import { handleParams } from "../helpers/handle-params";
-import { requestLogger } from "../helpers/request-logger";
+} from "../../../external/aws/app-config";
+import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
+import cwCommands from "../../../external/commonwell";
+import { findDuplicatedPersons } from "../../../external/commonwell/admin/find-patient-duplicates";
+import { patchDuplicatedPersonsForPatient } from "../../../external/commonwell/admin/patch-patient-duplicates";
+import { recreatePatientsAtCW } from "../../../external/commonwell/admin/recreate-patients-at-hies";
+import { checkStaleEnhancedCoverage } from "../../../external/commonwell/cq-bridge/coverage-enhancement-check-stale";
+import { initEnhancedCoverage } from "../../../external/commonwell/cq-bridge/coverage-enhancement-init";
+import { setCQLinkStatuses } from "../../../external/commonwell/cq-bridge/cq-link-status";
+import { ECUpdaterLocal } from "../../../external/commonwell/cq-bridge/ec-updater-local";
+import { cqLinkStatus } from "../../../external/commonwell/patient-shared";
+import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient-updater-commonwell";
+import { createPatient } from "../../../external/commonwell/sandbox-payloads";
+import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
+import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
+import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
+import { PatientModel } from "../../../models/medical/patient";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { parseISODate } from "../../../shared/date";
+import { getETag } from "../../../shared/http";
+import { handleParams } from "../../helpers/handle-params";
+import { requestLogger } from "../../helpers/request-logger";
+import { dtoFromModel } from "../../medical/dtos/demographicsDTO";
+import { getResourcesQueryParam } from "../../medical/schemas/fhir";
+import { linkCreateSchema } from "../../medical/schemas/link";
+import { schemaCreateToPatientData } from "../../medical/schemas/patient";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
   stringListFromQuerySchema,
-} from "../schemas/shared";
-import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
+} from "../../schemas/shared";
+import { getUUIDFrom, uuidSchema } from "../../schemas/uuid";
 import {
   asyncHandler,
   getFrom,
@@ -85,12 +90,8 @@ import {
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
   getFromQueryOrFail,
-} from "../util";
-import { dtoFromModel } from "./dtos/patientDTO";
-import patientSettingsRoutes from "./internal-patient-settings";
-import { getResourcesQueryParam } from "./schemas/fhir";
-import { linkCreateSchema } from "./schemas/link";
-import { schemaCreateToPatientData } from "./schemas/patient";
+} from "../../util";
+import patientSettingsRoutes from "./patient-settings";
 
 dayjs.extend(duration);
 
@@ -877,7 +878,7 @@ router.post(
  * POST /internal/patient
  *
  * Creates the patient corresponding to the specified facility at the
- * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery by defaul.
+ * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery by default.
  *
  * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
  * @return The newly created patient.

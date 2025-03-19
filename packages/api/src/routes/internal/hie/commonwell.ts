@@ -2,22 +2,22 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { getFacilityByOidOrFail } from "../../command/medical/facility/get-facility";
+import { getFacilityByOidOrFail } from "../../../command/medical/facility/get-facility";
 import {
   verifyCxAccessToSendFacilityToHies,
   verifyCxAccessToSendOrgToHies,
-} from "../../command/medical/facility/verify-access";
+} from "../../../command/medical/facility/verify-access";
 import {
   getOrganizationByOidOrFail,
   getOrganizationOrFail,
-} from "../../command/medical/organization/get-organization";
-import { getAndUpdateCWOrgAndMetriportOrg } from "../../external/commonwell/command/create-or-update-cw-organization";
-import { getParsedOrgOrFail } from "../../external/commonwell/organization";
-import { cwOrgActiveSchema } from "../../external/commonwell/shared";
-import { handleParams } from "../helpers/handle-params";
-import { requestLogger } from "../helpers/request-logger";
-import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom } from "../util";
+} from "../../../command/medical/organization/get-organization";
+import { getAndUpdateCWOrgAndMetriportOrg } from "../../../external/commonwell/command/create-or-update-cw-organization";
+import { getParsedOrgOrFail } from "../../../external/commonwell/organization";
+import { cwOrgActiveSchema } from "../../../external/commonwell/shared";
+import { handleParams } from "../../helpers/handle-params";
+import { requestLogger } from "../../helpers/request-logger";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler, getFrom } from "../../util";
 
 const router = Router();
 
