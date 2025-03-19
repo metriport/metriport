@@ -41,6 +41,8 @@ export async function processCxId(
   }
 }
 
+export const documentDownloadUrlRegex = new RegExp(`^/download-url$`);
+
 export const validPatientPaths: PathDetails[] = [
   {
     pathRegex: new RegExp(`^/$`),
@@ -78,7 +80,7 @@ export const validedDocumentPaths: PathDetails[] = [
     queryParamKey: "patientId",
   },
   {
-    pathRegex: new RegExp(`^/download-url$`),
+    pathRegex: documentDownloadUrlRegex,
   },
 ];
 
