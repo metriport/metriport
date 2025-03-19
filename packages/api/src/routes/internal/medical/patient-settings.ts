@@ -4,6 +4,7 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { getAdtSubscribers } from "../../../command/medical/patient/get-adt-subscribers";
 import {
   upsertPatientSettingsForCx,
   upsertPatientSettingsForPatientList,
@@ -70,6 +71,25 @@ router.post(
       facilityId,
       settings,
     });
+
+    return res.status(status.OK).json(result);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/settings/adt-subscribers
+ *
+ * Gets all patients that have ADT subscriptions enabled for the given states.
+ *
+ * @param req.query.states List of US state codes to filter by
+ * @returns List of patients with ADT subscriptions in the specified states
+ */
+router.post(
+  "/adt-subscribers",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const states = getFromQueryAsArrayOrFail("states", req);
+    const result = await getAdtSubscribers(states);
 
     return res.status(status.OK).json(result);
   })

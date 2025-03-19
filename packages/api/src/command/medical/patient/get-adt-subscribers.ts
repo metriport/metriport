@@ -8,20 +8,17 @@ export async function getAdtSubscribers(states: string[]): Promise<PatientModel[
   const { log } = out(`Get ADT Subscribers`);
   log(`States: ${states}`);
   try {
-    // TODO: See if we can do a JOIN operation on the DB
-    const patientIds = await PatientSettingsModel.findAll({
-      where: {
-        subscriptions: { adt: true },
-      },
-      attributes: ["patientId"],
-    });
-
-    if (patientIds.length === 0) return [];
-
     const patients = await PatientModel.findAll({
-      where: {
-        id: patientIds.map(p => p.patientId),
-      },
+      include: [
+        {
+          model: PatientSettingsModel,
+          as: "settings",
+          where: {
+            subscriptions: { adt: true },
+          },
+          attributes: ["patient_id"],
+        },
+      ],
     });
 
     const patientsInSelectedStates = patients.filter(p =>
