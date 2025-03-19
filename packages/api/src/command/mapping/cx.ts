@@ -7,8 +7,10 @@ import {
 import {
   CxMapping,
   CxMappingPerSource,
+  CxMappingSecondaryMappings,
   CxMappingSource,
   isCxMappingSource,
+  secondaryMappingsSchemaMap,
 } from "../../domain/cx-mapping";
 import {
   isEhrClientJwtTokenSource,
@@ -51,11 +53,36 @@ export async function getCxMapping({
   return existing.dataValues;
 }
 
+export async function getCxMappingModel({
+  externalId,
+  source,
+}: CxMappingLookUpParams): Promise<CxMappingModel | undefined> {
+  const existing = await CxMappingModel.findOne({
+    where: { externalId, source },
+  });
+  if (!existing) return undefined;
+  return existing;
+}
+
 export async function getCxMappingOrFail({
   externalId,
   source,
 }: CxMappingLookUpParams): Promise<CxMapping> {
   const mapping = await getCxMapping({
+    externalId,
+    source,
+  });
+  if (!mapping) {
+    throw new NotFoundError("CxMapping not found", undefined, { externalId, source });
+  }
+  return mapping;
+}
+
+export async function getCxMappingModelOrFail({
+  externalId,
+  source,
+}: CxMappingLookUpParams): Promise<CxMappingModel> {
+  const mapping = await getCxMappingModel({
     externalId,
     source,
   });
@@ -112,13 +139,30 @@ async function getCxMappingModelByIdOrFail({
   return mapping;
 }
 
-export async function setExternalIdOnCxMapping({
+export async function setExternalIdOnCxMappingById({
   cxId,
   id,
   externalId,
 }: CxMappingLookupByIdParams & { externalId: string }): Promise<CxMapping> {
   const existing = await getCxMappingModelByIdOrFail({ cxId, id });
   const updated = await existing.update({ externalId });
+  return updated.dataValues;
+}
+
+export async function updateSecondaryMappingsOnCxMapping({
+  externalId,
+  source,
+  secondaryMappings,
+}: CxMappingLookUpParams & { secondaryMappings: CxMappingSecondaryMappings }): Promise<CxMapping> {
+  const existing = await getCxMappingModelOrFail({ externalId, source });
+  const newSecondaryMappings = {
+    ...existing.secondaryMappings,
+    ...secondaryMappings,
+  };
+  const schema = secondaryMappingsSchemaMap[existing.source];
+  let validatedSecondaryMappings: CxMappingSecondaryMappings = newSecondaryMappings;
+  if (schema) validatedSecondaryMappings = schema.parse(newSecondaryMappings);
+  const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
   return updated.dataValues;
 }
 

@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, EhrSources } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../../command/internal/get-hie-enabled-feature-flags-status";
@@ -7,7 +7,7 @@ import {
   deleteCxMapping,
   findOrCreateCxMapping,
   getCxMappingsByCustomer,
-  setExternalIdOnCxMapping,
+  setExternalIdOnCxMappingById,
 } from "../../command/mapping/cx";
 import {
   deleteFacilityMapping,
@@ -28,6 +28,7 @@ import {
   revokeMapiAccess,
 } from "../../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { subscribeToAllWebhooks } from "../../external/ehr/elation/command/subsribe-to-webhook";
 import { isCxMappingSource, secondaryMappingsSchemaMap } from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../../external/aws/app-config";
@@ -315,6 +316,9 @@ router.post(
     const secondaryMappings = secondaryMappingsSchema
       ? secondaryMappingsSchema.parse(req.body)
       : null;
+    if (source === EhrSources.elation) {
+      await subscribeToAllWebhooks({ cxId, externalId });
+    }
     await findOrCreateCxMapping({
       cxId,
       source,
@@ -365,7 +369,7 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFrom("params").orFail("id", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    await setExternalIdOnCxMapping({
+    await setExternalIdOnCxMappingById({
       cxId,
       id,
       externalId,

@@ -97,6 +97,24 @@ function getElationEnv({
   };
 }
 
+export function getCxIdAndPracticeIdFromElationApplicationId(oauthApplicationId: string): {
+  cxId: string;
+  practiceId: string;
+} {
+  const rawClientsMap = Config.getElationClientKeyAndSecretMap();
+  if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
+  const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
+  if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
+  const entry = Object.entries(clientMap.data).find(([, v]) => v === oauthApplicationId);
+  if (!entry) throw new MetriportError("Elation application id not found");
+  const key = entry[0];
+  const keySplit = key.split("_");
+  const cxId = keySplit[0];
+  const practiceId = keySplit[1];
+  if (!cxId || !practiceId) throw new MetriportError("Elation cxId or practiceId not found");
+  return { cxId, practiceId };
+}
+
 export async function createElationClient(
   perPracticeParams: EhrPerPracticeParams
 ): Promise<ElationApi> {

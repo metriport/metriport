@@ -5,8 +5,11 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
+import {
+  AthenaSecondaryMappings,
+  BookedAppointment,
+} from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { BookedAppointment } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -50,14 +53,15 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.flatMap(mapping => {
-    if (mapping.secondaryMappings?.backgroundAppointmentsDisabled) {
+    const secondaryMappings = mapping.secondaryMappings as AthenaSecondaryMappings;
+    if (secondaryMappings.backgroundAppointmentsDisabled) {
       return [];
     }
     return [
       {
         cxId: mapping.cxId,
         practiceId: mapping.externalId,
-        departmentIds: mapping.secondaryMappings?.departmentIds,
+        departmentIds: secondaryMappings.departmentIds,
         lookupMode,
       },
     ];
