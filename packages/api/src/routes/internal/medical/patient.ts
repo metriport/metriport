@@ -32,7 +32,7 @@ import {
 } from "../../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { PatientCreateCmd } from "../../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -61,7 +61,6 @@ import { setCQLinkStatuses } from "../../../external/commonwell/cq-bridge/cq-lin
 import { ECUpdaterLocal } from "../../../external/commonwell/cq-bridge/ec-updater-local";
 import { cqLinkStatus } from "../../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient-updater-commonwell";
-import { createPatient } from "../../../external/commonwell/sandbox-payloads";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
