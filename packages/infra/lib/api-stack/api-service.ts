@@ -316,6 +316,7 @@ export function createAPIService({
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
+            EHR_DASH_URL: props.config.ehrDashUrl,
           }),
         },
       },

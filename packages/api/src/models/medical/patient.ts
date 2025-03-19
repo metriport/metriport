@@ -1,9 +1,10 @@
-import { DataTypes, Sequelize } from "sequelize";
 import { Patient, PatientData } from "@metriport/core/domain/patient";
+import { Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
+import { initModel, patientTableName } from "./patient-shared";
 
 export class PatientModel extends BaseModel<PatientModel> implements Patient {
-  static NAME = "patient";
+  static NAME = patientTableName;
   declare cxId: string;
   declare facilityIds: string[];
   declare externalId?: string;
@@ -11,29 +12,7 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
   declare data: PatientData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    PatientModel.init(
-      {
-        ...BaseModel.attributes(),
-        cxId: {
-          type: DataTypes.UUID,
-        },
-        facilityIds: {
-          type: DataTypes.ARRAY(DataTypes.STRING),
-        },
-        externalId: {
-          type: DataTypes.STRING,
-        },
-        hieOptOut: {
-          type: DataTypes.BOOLEAN,
-        },
-        data: {
-          type: DataTypes.JSONB,
-        },
-      },
-      {
-        ...BaseModel.modelOptions(sequelize),
-        tableName: PatientModel.NAME,
-      }
-    );
+    const model = initModel(sequelize);
+    PatientModel.init(model.attributes, model.options);
   };
 }

@@ -43,6 +43,7 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   dashUrl: "https://url-of-your-dashboard.com",
+  ehrDashUrl: "https://url-of-your-ehr-dashboard.com",
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },

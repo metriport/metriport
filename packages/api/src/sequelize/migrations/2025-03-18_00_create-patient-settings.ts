@@ -3,7 +3,7 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const patientSettingsTableName = "patient_settings";
-const adtSubscriptionColumn = "subscriptions";
+const subscriptionsColumn = "subscriptions";
 const patientSettingsTableConstraintName = "patient_settings_cxId_patientId_constraint";
 const patientSettingsTableIdFields = ["cx_id", "patient_id"];
 
@@ -30,7 +30,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
         },
         subscriptions: {
           type: DataTypes.JSONB,
-          field: adtSubscriptionColumn,
+          field: subscriptionsColumn,
           allowNull: true,
         },
       },

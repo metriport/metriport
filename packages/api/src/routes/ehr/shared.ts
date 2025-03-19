@@ -1,5 +1,6 @@
 import { MetriportError } from "@metriport/shared";
-import { Request } from "express";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { NextFunction, Request, Response } from "express";
 import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail, getCxMappingSourceFromJwtTokenSource } from "../../command/mapping/cx";
 import { getPatientMappingOrFail } from "../../command/mapping/patient";
@@ -7,7 +8,7 @@ import { JwtTokenData } from "../../domain/jwt-token";
 import { PatientMappingSource } from "../../domain/patient-mapping";
 import ForbiddenError from "../../errors/forbidden";
 import { EhrDashJwtTokenSource, EhrWebhookJwtTokenSource } from "../../external/ehr/shared";
-import { getAuthorizationToken } from "../util";
+import { getAuthorizationToken, getFrom, getFromQueryOrFail } from "../util";
 import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";
 
 export type ParseResponse = {
@@ -15,7 +16,7 @@ export type ParseResponse = {
   queryParams?: { [k: string]: string };
 };
 
-export async function processCxIdAsync(
+export async function processCxId(
   req: Request,
   tokenSource: EhrDashJwtTokenSource | EhrWebhookJwtTokenSource,
   parseExternalId: (tokenData: JwtTokenData) => ParseResponse
@@ -23,7 +24,7 @@ export async function processCxIdAsync(
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({ token: accessToken, source: tokenSource });
   if (!authInfo) throw new ForbiddenError();
-  if (authInfo.exp < new Date()) throw new ForbiddenError();
+  if (authInfo.exp < buildDayjs().toDate()) throw new ForbiddenError();
   const { externalId, queryParams } = parseExternalId(authInfo.data);
   try {
     const cxMappingSource = getCxMappingSourceFromJwtTokenSource(tokenSource);
@@ -81,7 +82,7 @@ export const validedDocumentPaths: PathDetails[] = [
   },
 ];
 
-export async function processPatientRouteAsync(
+export async function processPatientRoute(
   req: Request,
   source: PatientMappingSource
 ): Promise<void> {
@@ -92,7 +93,7 @@ export async function processPatientRouteAsync(
   }
 }
 
-export async function processDocumentRouteAsync(
+export async function processDocumentRoute(
   req: Request,
   source: PatientMappingSource
 ): Promise<void> {
@@ -115,4 +116,33 @@ export async function replaceIdInQueryParams(
     source,
   });
   req.query["patientId"] = patient.patientId;
+  req.query["patientEhrId"] = patient.externalId;
+}
+
+/**
+ * Middleware that validates if the EHR patient ID in the token matches the one in the request.
+ * Throws a ForbiddenError if they don't match.
+ * @param tokenEhrPatientIdQueryParam The query parameter name that contains the EHR patient ID from the token
+ * @param context Whether to get the request's EHR patient ID from query or path parameters
+ * @returns Express middleware function
+ */
+export function processEhrPatientId(
+  tokenEhrPatientIdQueryParam: string,
+  context: "query" | "params" = "params",
+  skipPaths: RegExp[] = []
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (skipPaths.some(path => path.test(req.path))) {
+      next();
+      return;
+    }
+    const tokenEhrPatientId = getFromQueryOrFail(tokenEhrPatientIdQueryParam, req);
+    const requestEhrPatientId =
+      context === "query"
+        ? getFromQueryOrFail("patientEhrId", req)
+        : getFrom("params").orFail("id", req);
+    if (requestEhrPatientId !== tokenEhrPatientId) throw new ForbiddenError();
+
+    next();
+  };
 }

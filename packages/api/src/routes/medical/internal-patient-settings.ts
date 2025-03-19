@@ -1,4 +1,4 @@
-import { patientSettingsDataSchema } from "@metriport/api-sdk";
+import { patientSettingsSchema } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -36,7 +36,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getUUIDFrom("query", req, "facilityId").optional();
     const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
-    const settings = patientSettingsDataSchema.parse(req.body) ?? defaultSettings;
+    const settings = patientSettingsSchema.parse(req.body) ?? defaultSettings;
 
     const result = await upsertPatientSettingsForPatientList({
       cxId,
@@ -64,7 +64,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getUUIDFrom("query", req, "facilityId").optional();
-    const settings = patientSettingsDataSchema.parse(req.body) ?? defaultSettings;
+    const settings = patientSettingsSchema.parse(req.body) ?? defaultSettings;
 
     const result = await upsertPatientSettingsForCx({
       cxId,

@@ -10,7 +10,11 @@ export const patientCreateSchema = demographicsSchema
       externalId: z.string().optional(),
     })
   )
-  .merge(patientSettingsSchema);
+  .merge(
+    z.object({
+      settings: patientSettingsSchema.optional(),
+    })
+  );
 
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 

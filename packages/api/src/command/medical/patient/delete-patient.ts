@@ -6,9 +6,9 @@ import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { deleteAllPatientMappings } from "../../mapping/patient";
-import { deletePatientSettings } from "../../patient-settings/deleteSettings";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientModelOrFail } from "./get-patient";
+import { deletePatientSettings } from "./settings/delete-patient-settings";
 
 const deleteContext = "cw.patient.delete";
 

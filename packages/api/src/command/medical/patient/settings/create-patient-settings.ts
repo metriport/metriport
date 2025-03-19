@@ -3,9 +3,11 @@ import {
   PatientSettingsCreate,
   PatientSettingsData,
 } from "@metriport/core/domain/patient-settings";
+import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, errorToString } from "@metriport/shared";
+import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
 import { getPatientIds, getPatientOrFail } from "../get-patient";
@@ -13,6 +15,8 @@ import { getPatientIds, getPatientOrFail } from "../get-patient";
 type PatientSettingsUpsertResults = {
   patientsNotFound?: string[];
   patientsFoundAndUpdated: number;
+  failedCount?: number;
+  failedIds?: string[];
 };
 
 type PatientSettingsUpsertForCxProps = {
@@ -25,6 +29,19 @@ type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
   patientIds: string[];
 };
 
+type BatchProcessingResult = {
+  processedCount: number;
+  failedCount: number;
+  failedIds?: string[];
+};
+
+const BATCH_SIZE = 500;
+
+/**
+ * Maximum number of retries for a batch operation
+ */
+const MAX_BATCH_RETRIES = 3;
+
 /**
  * Creates a new patient settings record.
  *
@@ -36,15 +53,15 @@ type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
 export async function createPatientSettings({
   patientId,
   cxId,
-  settings,
-}: PatientSettingsCreate): Promise<PatientSettings> {
+  subscriptions,
+}: Omit<PatientSettingsCreate, "id">): Promise<PatientSettings> {
   await getPatientOrFail({ cxId, id: patientId });
 
   const patientSettingsCreate: PatientSettingsCreate = {
     id: uuidv7(),
     cxId,
     patientId,
-    settings,
+    subscriptions,
   };
 
   const newPatientSettings = await PatientSettingsModel.create(patientSettingsCreate);
@@ -55,6 +72,7 @@ export async function createPatientSettings({
  * Upserts patient settings for the given customer and patient IDs.
  *
  * @param cxId The customer ID
+ * @param facilityId The facility ID. Optional.
  * @param patientIds The patient IDs to upsert patient settings for.
  * @param settings Patient settings object, which includes subscriptions
  * @returns The number of patients updated and the list of patients not found
@@ -88,9 +106,51 @@ export async function upsertPatientSettingsForPatientList({
 }
 
 /**
+ * Processes a batch of patient settings upserts with retries
+ */
+async function processBatch({
+  patientIds,
+  cxId,
+  settings,
+  log,
+}: {
+  patientIds: string[];
+  cxId: string;
+  settings: PatientSettingsData;
+  log: typeof console.log;
+}): Promise<BatchProcessingResult> {
+  for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
+    try {
+      const processedCount = await upsertPatientSettings({
+        patientIds,
+        cxId,
+        settings,
+      });
+      return { processedCount, failedCount: 0 };
+    } catch (error) {
+      const isLastAttempt = attempt === MAX_BATCH_RETRIES;
+
+      if (!isLastAttempt) {
+        log(
+          `Batch operation failed, attempt ${attempt}/${MAX_BATCH_RETRIES}: ${errorToString(error)}`
+        );
+      }
+    }
+  }
+
+  return {
+    processedCount: 0,
+    failedCount: patientIds.length,
+    failedIds: patientIds,
+  };
+}
+
+/**
  * Upserts patient settings for the given customer with specific patient IDs.
+ * Processes patient settings updates in batches to handle large datasets efficiently.
  *
  * @param cxId The customer ID
+ * @param facilityId The facility ID. Optional.
  * @param settings Patient settings object, which includes subscriptions
  * @returns The number of patients updated and the list of patients not found
  */
@@ -102,20 +162,52 @@ export async function upsertPatientSettingsForCx({
   const { log } = out(`upsertPatientSettingsForCx - cx ${cxId}`);
 
   const patientIds = await getPatientIds({ cxId, facilityId });
-
-  if (!patientIds.length) {
+  if (patientIds.length === 0) {
     log(`No patients found for cx ${cxId}`);
     return { patientsFoundAndUpdated: 0 };
   }
 
-  const patientsFoundAndUpdated = await upsertPatientSettings({
-    patientIds,
-    cxId,
-    settings,
-  });
+  let processedTotal = 0;
+  let failedTotal = 0;
+  const failedIds: string[] = [];
 
-  log(`Upserted settings for all CX patients. Total: ${patientsFoundAndUpdated}`);
-  return { patientsFoundAndUpdated };
+  for (let i = 0; i < patientIds.length; i += BATCH_SIZE) {
+    const batchIds = patientIds.slice(i, i + BATCH_SIZE);
+    const {
+      processedCount,
+      failedCount,
+      failedIds: failedBatchIds,
+    } = await processBatch({
+      patientIds: batchIds,
+      cxId,
+      settings,
+      log,
+    });
+
+    processedTotal += processedCount;
+    failedTotal += failedCount;
+    failedIds.push(...(failedBatchIds ?? []));
+  }
+
+  log(
+    `Completed processing all patients. ` +
+      `Total: ${processedTotal} successful, ${failedTotal} failed`
+  );
+
+  if (failedTotal > 0) {
+    const msg = `Failed to upsert settings for patients`;
+    log(`${msg} - failed IDs: ${failedIds}`);
+    capture.error(msg, {
+      extra: {
+        failedIds,
+        cxId,
+        facilityId,
+      },
+    });
+    return { patientsFoundAndUpdated: processedTotal, failedCount: failedTotal, failedIds };
+  }
+
+  return { patientsFoundAndUpdated: processedTotal };
 }
 
 async function verifyPatients({
@@ -138,7 +230,13 @@ async function verifyPatients({
   }
 
   const patients = await PatientModel.findAll({
-    where: { id: patientIds, cxId, ...(facilityId && { facilityIds: [facilityId] }) },
+    where: {
+      id: patientIds,
+      cxId,
+      ...(facilityId && {
+        facilityIds: { [Op.contains]: [facilityId] },
+      }),
+    },
     attributes: ["id"],
   });
   const foundPatientIds = new Set(patients.map(p => p.id));
