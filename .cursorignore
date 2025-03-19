@@ -4,6 +4,10 @@ packages/utils/runs
 production.ts
 sandbox.ts
 staging.ts
+.env*
+*.crt
+*.key
+*.ovpn
 *.json
 *.xml
 *.sql
@@ -18,7 +22,6 @@ staging.ts
 *.tsv
 *.xlsx
 *.xls
-.env*
 
 # include these
 !package.json
