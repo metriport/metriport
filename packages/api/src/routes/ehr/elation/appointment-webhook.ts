@@ -1,14 +1,16 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { elationAppointmentEventSchema } from "@metriport/shared/interface/external/ehr/elation/event";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { getCxMappingOrFail } from "../../../command/mapping/cx";
+import { processAsyncError } from "../../../errors";
 import { updateOrCreateElationPatientMetadata } from "../../../external/ehr/elation/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
-import { processAsyncError } from "../../../errors";
 
 const router = Router();
 
@@ -33,13 +35,18 @@ router.post(
       elationPracticeId,
       elationPatientId: event.data.patient,
     }).catch(processAsyncError("Elation updateOrCreateElationPatientMetadata"));
+    const cxMapping = await getCxMappingOrFail({
+      externalId: elationPracticeId,
+      source: EhrSources.elation,
+    });
+    const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
     handler
       .processSyncPatient({
         ehr: EhrSources.elation,
         cxId,
         practiceId: elationPracticeId,
         patientId: event.data.patient,
-        triggerDq: true,
+        triggerDq: secondaryMappings.webhookAppointmentDqsDisabled ? false : true,
       })
       .catch(processAsyncError("Elation processSyncPatient"));
     return res.sendStatus(httpStatus.OK);

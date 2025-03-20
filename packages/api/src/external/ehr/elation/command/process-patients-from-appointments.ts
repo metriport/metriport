@@ -3,11 +3,12 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
+import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
-import { getCxMappingsBySource } from "../../../../command/mapping/cx";
+import { getCxMappingOrFail, getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
   delayBetweenPatientBatches,
@@ -126,12 +127,17 @@ async function syncPatient({
     elationPracticeId,
     elationPatientId,
   });
+  const cxMapping = await getCxMappingOrFail({
+    externalId: elationPracticeId,
+    source: EhrSources.elation,
+  });
+  const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
     ehr: EhrSources.elation,
     cxId,
     practiceId: elationPracticeId,
     patientId: elationPatientId,
-    triggerDq: true,
+    triggerDq: secondaryMappings.webhookAppointmentDqsDisabled ? false : true,
   });
 }

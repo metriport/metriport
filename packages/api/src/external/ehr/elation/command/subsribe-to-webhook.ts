@@ -28,8 +28,8 @@ export async function subscribeToWebhook({
     ...cxMappingLookupParams,
     secondaryMappings: {
       ...existingSecondaryMappings,
-      webHooks: {
-        ...existingSecondaryMappings.webHooks,
+      webhooks: {
+        ...existingSecondaryMappings.webhooks,
         [subscription.resource]: {
           url: subscription.target,
           signingKey: subscription.signing_pub_key,

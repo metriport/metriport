@@ -29,8 +29,9 @@ async function processCxIdWebhook(req: Request): Promise<void> {
   if (!applicationId) throw new ForbiddenError();
   try {
     const signingKeyInfo = await getElationSigningKeyInfo(applicationId, webhookResource);
-    if (!verifyWebhookSignature(signingKeyInfo.signingKey, req.body, signature))
+    if (!verifyWebhookSignature(signingKeyInfo.signingKey, req.body, signature)) {
       throw new ForbiddenError();
+    }
     req.cxId = signingKeyInfo.cxId;
     req.query = {
       ...req.query,
