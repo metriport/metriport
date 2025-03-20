@@ -2,12 +2,14 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
+import { NetworkStackOutput } from "./network";
 
 const IPSEC_1 = "ipsec.1";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
-  vpc: ec2.IVpc;
+  vpc: ec2.Vpc;
   vpnConfig: Hl7NotificationVpnConfig;
+  networkStack: NetworkStackOutput;
 }
 
 /**
@@ -18,24 +20,19 @@ export class VpnStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const vpnGateway = new ec2.CfnVPNGateway(this, `${props.vpnConfig.partnerName}VpnGateway`, {
-      type: IPSEC_1,
-    });
-
-    // Attach the VGW to your VPC
-    new ec2.CfnVPCGatewayAttachment(this, `${props.vpnConfig.partnerName}VpcVpnAttachment`, {
-      vpcId: props.vpc.vpcId,
-      vpnGatewayId: vpnGateway.ref,
-    });
-
     const customerGateway = new ec2.CfnCustomerGateway(
       this,
       `${props.vpnConfig.partnerName}CustomerGateway`,
       {
         ipAddress: props.vpnConfig.partnerGatewayPublicIp,
         type: IPSEC_1,
-        // Not using bgpAsn but "Invalid request provided: The key 'BgpAsn' is required"
         bgpAsn: 65000,
+        tags: [
+          {
+            key: "Name",
+            value: `${props.vpnConfig.partnerName}-cgw`,
+          },
+        ],
       }
     );
 
@@ -47,9 +44,15 @@ export class VpnStack extends cdk.NestedStack {
       `${props.vpnConfig.partnerName}VpnConnection`,
       {
         type: IPSEC_1,
-        vpnGatewayId: vpnGateway.ref,
+        vpnGatewayId: props.networkStack.vgw1.ref,
         customerGatewayId: customerGateway.ref,
         staticRoutesOnly: props.vpnConfig.staticRoutesOnly,
+        tags: [
+          {
+            key: "Name",
+            value: `${props.vpnConfig.partnerName}-vpn`,
+          },
+        ],
         vpnTunnelOptionsSpecifications: [
           // TODO(lucas|2754|2025-03-05): Replace placeholders with preshared keys loaded from AWS Secrets Manager
           {
@@ -63,10 +66,23 @@ export class VpnStack extends cdk.NestedStack {
     );
 
     if (props.vpnConfig.staticRoutesOnly) {
-      new ec2.CfnVPNConnectionRoute(this, `${props.vpnConfig.partnerName}VpnConnectionRoute`, {
-        destinationCidrBlock: props.vpc.vpcCidrBlock,
-        vpnConnectionId: vpnConnection.ref,
-      });
+      new ec2.CfnVPNConnectionRoute(
+        this,
+        `${props.vpnConfig.partnerName}-MetriportSideVpnConnectionRoute`,
+        {
+          destinationCidrBlock: props.vpc.vpcCidrBlock,
+          vpnConnectionId: vpnConnection.ref,
+        }
+      );
+
+      new ec2.CfnVPNConnectionRoute(
+        this,
+        `${props.vpnConfig.partnerName}-HieSideVpnConnectionRoute`,
+        {
+          destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
+          vpnConnectionId: vpnConnection.ref,
+        }
+      );
     }
 
     new cdk.CfnOutput(this, `${props.vpnConfig.partnerName}VpnConnectionId`, {

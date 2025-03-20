@@ -85,5 +85,14 @@
         ]
       }
     ]
+  },
+  "availability-zones:account=463519787594:region=sa-east-1": [
+    "sa-east-1a",
+    "sa-east-1b",
+    "sa-east-1c"
+  ],
+  "hosted-zone:account=463519787594:domainName=metriport.com:region=sa-east-1": {
+    "Id": "/hostedzone/Z06381181A1ZNHQQAN5CN",
+    "Name": "metriport.com."
   }
 }

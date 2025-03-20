@@ -1,42 +1,33 @@
 import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
-import { NetworkStackOutput } from "./network";
+import { Repository } from "aws-cdk-lib/aws-ecr";
 
 const MLLP_DEFAULT_PORT = 2575;
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
-  networkStack: NetworkStackOutput;
+  vpc: ec2.Vpc;
+  ecrRepo: Repository;
 }
 
 export class MllpStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
+    const { vpc, ecrRepo } = props;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
-    const { vpc } = props.networkStack;
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
       containerInsights: true,
-    });
-
-    const ecrRepo = new Repository(this, "MllpServerRepo", {
-      repositoryName: "metriport/mllp-server",
-      lifecycleRules: [{ maxImageCount: 5000 }],
-    });
-    new cdk.CfnOutput(this, "MllpECRRepoURI", {
-      description: "MLLP ECR repository URI",
-      value: ecrRepo.repositoryUri,
     });
 
     const mllpSecurityGroup = new ec2.SecurityGroup(this, "MllpServerSG", {
