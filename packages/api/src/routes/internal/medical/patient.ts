@@ -40,6 +40,8 @@ import {
   getAdtSubscribers,
   getAdtSubscribersCount,
 } from "../../../command/medical/patient/get-adt-subscribers";
+import { Pagination } from "../../../command/pagination";
+import { paginated } from "../../pagination";
 import {
   getPatientIds,
   getPatientOrFail,
@@ -50,7 +52,6 @@ import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
 } from "../../../command/medical/patient/update-patient";
-import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import BadRequestError from "../../../errors/bad-request";
 import {
@@ -81,7 +82,6 @@ import { dtoFromModel } from "../../medical/dtos/demographicsDTO";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
 import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
-import { paginated } from "../../pagination";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -137,7 +137,6 @@ router.get(
       getTotalCount: () => getAdtSubscribersCount(states),
     });
 
-    console.log("META WE BUILT", meta);
     const response: PaginatedResponse<(typeof items)[0], "subscribers"> = {
       meta,
       subscribers: items,

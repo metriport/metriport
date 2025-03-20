@@ -76,7 +76,6 @@ export async function paginated<T extends { id: string }>({
   getTotalCount: () => Promise<number>;
 }): Promise<PaginatedResponse<T, "items">> {
   const requestMeta = getRequestMeta(request);
-  console.log("REQUEST IS", request);
 
   const { prevPageItemId, nextPageItemId, currPageItems, totalCount } = await getPaginationItems(
     requestMeta,
@@ -129,7 +128,6 @@ function getNextPageUrl(
 ): string {
   const p: PaginationFromItem = { fromItem: nextPageFromItem };
   const pagUrl = getPaginationUrl(req, p, count, additionalQueryParams);
-  console.log("Pag URL", pagUrl);
 
   return pagUrl;
 }
@@ -141,7 +139,6 @@ function getPaginationUrl(
   additionalQueryParams: Record<string, string> | undefined
 ): string {
   const params = new URLSearchParams(item);
-  params.append("count", count.toString());
   if (additionalQueryParams) {
     for (const [key, value] of Object.entries(additionalQueryParams)) {
       params.append(key, value);

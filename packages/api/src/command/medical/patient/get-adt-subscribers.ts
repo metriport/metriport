@@ -17,7 +17,7 @@ export async function getAdtSubscribers({
   pagination,
 }: GetAdtSubscribersParams): Promise<AdtSubscriber[]> {
   const { log } = out(`Get ADT Subscribers`);
-  log(`States: ${targetStates}, pagination: ${JSON.stringify(pagination)}`);
+  log(`States: ${targetStates}, pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const states = `{${targetStates.join(",")}}`;
@@ -67,7 +67,7 @@ export async function getAdtSubscribers({
         },
       ],
       ...getPaginationLimits(pagination),
-      order: [["id", "ASC"]],
+      order: [["id", "DESC"]],
     };
 
     const patients = await PatientModel.findAll(findOptions);
