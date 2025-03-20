@@ -138,6 +138,6 @@ async function syncPatient({
     cxId,
     practiceId: elationPracticeId,
     patientId: elationPatientId,
-    triggerDq: secondaryMappings.webhookAppointmentDqsDisabled ? false : true,
+    triggerDq: secondaryMappings.backgroundAppointmentDqsDisabled ? false : true,
   });
 }
