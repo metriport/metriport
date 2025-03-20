@@ -8,7 +8,7 @@ const webhookSchema = z.object({
 
 export const elationSecondaryMappingsSchema = z.object({
   webhooks: z.record(z.enum(subscriptionResources), webhookSchema).optional(),
-  webhookAppointmentDqsDisabled: z.boolean().optional(),
-  backgroundAppointmentDqsDisabled: z.boolean().optional(),
+  webhookAppointmentPatientProcessingDisabled: z.boolean().optional(),
+  backgroundAppointmentPatientProcessingDisabled: z.boolean().optional(),
 });
 export type ElationSecondaryMappings = z.infer<typeof elationSecondaryMappingsSchema>;

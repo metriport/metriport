@@ -1,4 +1,5 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+import { MetriportError } from "@metriport/shared";
 import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { elationAppointmentEventSchema } from "@metriport/shared/interface/external/ehr/elation/event";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -40,12 +41,21 @@ router.post(
       externalId: elationPracticeId,
       source: EhrSources.elation,
     });
+    if (!cxMapping.secondaryMappings) {
+      throw new MetriportError("Elation secondary mappings not found", undefined, {
+        externalId: elationPracticeId,
+        source: EhrSources.elation,
+      });
+    }
     const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
     updateOrCreateElationPatientMetadata({
       cxId,
       elationPracticeId,
       elationPatientId: event.data.patient,
     }).catch(processAsyncError("Elation updateOrCreateElationPatientMetadata"));
+    if (secondaryMappings.webhookAppointmentPatientProcessingDisabled) {
+      return res.sendStatus(httpStatus.OK);
+    }
     const handler = buildEhrSyncPatientHandler();
     handler
       .processSyncPatient({
@@ -53,7 +63,7 @@ router.post(
         cxId,
         practiceId: elationPracticeId,
         patientId: event.data.patient,
-        triggerDq: secondaryMappings.webhookAppointmentDqsDisabled ? false : true,
+        triggerDq: true,
       })
       .catch(processAsyncError("Elation processSyncPatient"));
     return res.sendStatus(httpStatus.OK);

@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import {
   CreatedSubscription,
@@ -21,6 +22,12 @@ export async function subscribeToWebhook({
 }): Promise<CreatedSubscription> {
   const cxMappingLookupParams = { externalId: elationPracticeId, source: EhrSources.elation };
   const cxMapping = await getCxMappingOrFail(cxMappingLookupParams);
+  if (!cxMapping.secondaryMappings) {
+    throw new MetriportError("Elation secondary mappings not found", undefined, {
+      externalId: elationPracticeId,
+      source: EhrSources.elation,
+    });
+  }
   const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
   const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   const subscription = await api.subscribeToResource({ cxId, resource });

@@ -53,6 +53,12 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.flatMap(mapping => {
+    if (!mapping.secondaryMappings) {
+      throw new MetriportError("Athena secondary mappings not found", undefined, {
+        externalId: mapping.externalId,
+        source: EhrSources.athena,
+      });
+    }
     const secondaryMappings = mapping.secondaryMappings as AthenaSecondaryMappings;
     if (secondaryMappings.backgroundAppointmentsDisabled) {
       return [];
