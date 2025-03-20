@@ -28,7 +28,14 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const elationPracticeId = getFromQueryOrFail("practiceId", req);
     const event = elationAppointmentEventSchema.parse(req.body);
-    if (event.action === "deleted") return res.sendStatus(httpStatus.OK);
+    if (event.action === "deleted") {
+      console.log(`Appointment event is a deleted event for appointment ${event.data.id}`);
+      return res.sendStatus(httpStatus.OK);
+    }
+    if (event.data.created_date !== event.data.last_modified_date) {
+      console.log(`Appointment event is not a created event for appointment ${event.data.id}`);
+      return res.sendStatus(httpStatus.OK);
+    }
     const cxMapping = await getCxMappingOrFail({
       externalId: elationPracticeId,
       source: EhrSources.elation,

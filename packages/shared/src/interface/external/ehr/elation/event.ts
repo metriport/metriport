@@ -7,7 +7,10 @@ export const elationAppointmentEventSchema = z.object({
   resource: z.enum(subscriptionResources),
   action: z.enum(["saved", "deleted"]),
   data: z.object({
+    id: z.coerce.string(),
     patient: z.coerce.string(),
+    created_date: z.string(),
+    last_modified_date: z.string(),
     status: z.object({
       status: z.string(),
     }),
@@ -22,6 +25,8 @@ export const elationPatientEventSchema = z.object({
   action: z.enum(["saved", "deleted"]),
   data: z.object({
     id: z.coerce.string(),
+    created_date: z.string(),
+    last_modified_date: z.string(),
   }),
 });
 export type ElationPatientEvent = z.infer<typeof elationPatientEventSchema>;

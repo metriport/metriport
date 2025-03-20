@@ -24,7 +24,14 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const elationPracticeId = getFromQueryOrFail("practiceId", req);
     const event = elationPatientEventSchema.parse(req.body);
-    if (event.action === "deleted") return res.sendStatus(httpStatus.OK);
+    if (event.action === "deleted") {
+      console.log(`Patient event is a deleted event for patient ${event.data.id}`);
+      return res.sendStatus(httpStatus.OK);
+    }
+    if (event.data.created_date !== event.data.last_modified_date) {
+      console.log(`Patient event is not a created event for patient ${event.data.id}`);
+      return res.sendStatus(httpStatus.OK);
+    }
     updateOrCreateElationPatientMetadata({
       cxId,
       elationPracticeId,

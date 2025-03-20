@@ -145,7 +145,7 @@ export async function getElationSigningKeyInfo(
     source: EhrSources.elation,
   });
   const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
-  const key = secondaryMappings.webhooks?.[resource];
-  if (!key) throw new NotFoundError("Elation signing key not found");
-  return { cxId, practiceId, signingKey: key.signingKey };
+  const signingKey = secondaryMappings.webhooks?.[resource]?.signingKey;
+  if (!signingKey) throw new NotFoundError("Elation signing key not found");
+  return { cxId, practiceId, signingKey };
 }

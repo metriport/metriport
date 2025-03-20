@@ -1,6 +1,7 @@
 import { buildDayjs } from "@metriport/shared/common/date";
 import { elationDashSource } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { isSubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
+import crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import { getJwtToken, updateTokenExpiration } from "../../../../command/jwt-token";
 import { JwtTokenData } from "../../../../domain/jwt-token";
@@ -32,6 +33,7 @@ async function processCxIdWebhook(req: Request): Promise<void> {
     if (!verifyWebhookSignature(signingKeyInfo.signingKey, req.body, signature)) {
       throw new ForbiddenError();
     }
+    console.log("body", req.body);
     req.cxId = signingKeyInfo.cxId;
     req.query = {
       ...req.query,
@@ -90,11 +92,25 @@ export function processDocumentRoute(req: Request, res: Response, next: NextFunc
 }
 
 function verifyWebhookSignature(key: string, body: object, signature: string): boolean {
-  console.log("verifyWebhookSignature", key, body, signature);
-  /*
-  const newKey = crypto.createPublicKey(btoa(key));
-  const verified = crypto.verify(null, Buffer.from(JSON.stringify(body)), newKey, Buffer.from(atob(signature)));
+  const newKey = createPublicKey(key);
+  const newBody = createJsonDumpsBody(body);
+  const verified = crypto.verify(
+    null,
+    Buffer.from(newBody),
+    newKey,
+    Buffer.from(signature, "base64")
+  );
   return verified;
-  */
-  return true;
+}
+
+function createPublicKey(key: string) {
+  return `
+-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA${key}
+-----END PUBLIC KEY-----
+  `;
+}
+
+function createJsonDumpsBody(body: object) {
+  return JSON.stringify(body).replaceAll('":', '": ').replaceAll(',"', ', "');
 }
