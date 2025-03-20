@@ -30,18 +30,19 @@ async function processCxIdWebhook(req: Request): Promise<void> {
   if (!applicationId) throw new ForbiddenError();
   try {
     const signingKeyInfo = await getElationSigningKeyInfo(applicationId, webhookResource);
-    if (!verifyWebhookSignature(signingKeyInfo.signingKey, req.body, signature)) {
-      throw new ForbiddenError();
+    const verified = verifyWebhookSignature(signingKeyInfo.signingKey, req.body, signature);
+    if (verified) {
+      req.cxId = signingKeyInfo.cxId;
+      req.query = {
+        ...req.query,
+        practiceId: signingKeyInfo.practiceId,
+      };
+      return;
     }
-    console.log("body", req.body);
-    req.cxId = signingKeyInfo.cxId;
-    req.query = {
-      ...req.query,
-      practiceId: signingKeyInfo.practiceId,
-    };
   } catch (error) {
     throw new ForbiddenError();
   }
+  throw new ForbiddenError();
 }
 
 function parseElationPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
