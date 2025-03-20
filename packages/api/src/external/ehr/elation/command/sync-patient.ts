@@ -27,6 +27,8 @@ import { createAddresses, createContacts, createElationClient, createNames } fro
 export const longDurationTokenDuration = dayjs.duration(1, "year");
 export const shortDurationTokenDuration = dayjs.duration(30, "minutes");
 
+const unknownPatientId = "unknown";
+
 export type SyncElationPatientIntoMetriportParams = {
   cxId: string;
   elationPracticeId: string;
@@ -187,7 +189,7 @@ async function createElationPatientMetadata({
     cxId,
     patientId: elationPatientId,
     metadata: {
-      object_id: metriportPatientId ?? "unknown",
+      object_id: metriportPatientId ?? unknownPatientId,
       object_web_link: ehrDashUrl,
     },
   });

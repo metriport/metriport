@@ -278,7 +278,7 @@ class ElationApi {
     const { debug } = out(
       `Elation replaceSubscription - cxId ${cxId} practiceId ${this.practiceId} resource ${resource}`
     );
-    const getSubscriptionsUrl = `/app/subscriptions/`;
+    const getSubscriptionsUrl = "/app/subscriptions/";
     const additionalInfo = { cxId, practiceId: this.practiceId };
     const subscriptions = await this.makeRequest<Subscriptions>({
       cxId,
@@ -329,14 +329,14 @@ class ElationApi {
         attempt,
       });
     }
-    const subscriptionUrl = `/app/subscriptions/`;
+    const subscriptionUrl = "/app/subscriptions/";
     const additionalInfo = { cxId, practiceId: this.practiceId };
     const data = {
       resource,
       target: `${apiUrl}/ehr/webhook/elation/${resource}`,
     };
     try {
-      const response = await this.makeRequest<CreatedSubscription>({
+      const subscription = await this.makeRequest<CreatedSubscription>({
         cxId,
         s3Path: `${resource}-subscribe`,
         method: "POST",
@@ -346,7 +346,7 @@ class ElationApi {
         additionalInfo,
         debug,
       });
-      return response;
+      return subscription;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.message?.includes("Duplicated object")) {

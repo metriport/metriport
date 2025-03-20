@@ -27,7 +27,7 @@ router.post(
       console.log(`Patient event is a deleted event for patient ${event.data.id}`);
       return res.sendStatus(httpStatus.OK);
     }
-    if (event.data.created_date !== event.data.last_modified_date) {
+    if (event.data.created_date !== event.data.last_modified) {
       console.log(`Patient event is not a created event for patient ${event.data.id}`);
       return res.sendStatus(httpStatus.OK);
     }

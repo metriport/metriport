@@ -26,7 +26,7 @@ export const elationPatientEventSchema = z.object({
   data: z.object({
     id: z.coerce.string(),
     created_date: z.string(),
-    last_modified_date: z.string(),
+    last_modified: z.string(),
   }),
 });
 export type ElationPatientEvent = z.infer<typeof elationPatientEventSchema>;
