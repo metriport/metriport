@@ -159,8 +159,12 @@ export async function updateSecondaryMappingsOnCxMapping({
     ...existing.secondaryMappings,
     ...secondaryMappings,
   };
-  const schema = secondaryMappingsSchemaMap[existing.source];
-  if (!schema) return existing.dataValues;
+  const schema = secondaryMappingsSchemaMap[source];
+  if (!schema) {
+    throw new MetriportError("Schema to validate new secondary mappings not found", undefined, {
+      source,
+    });
+  }
   const validatedSecondaryMappings = schema.parse(newSecondaryMappings);
   const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
   return updated.dataValues;
