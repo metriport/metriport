@@ -114,6 +114,7 @@ function getCxIdAndPracticeIdFromElationApplicationId(oauthApplicationId: string
   if (!entry) throw new MetriportError("Elation application id not found");
   const key = entry[0];
   const keySplit = key.split("_");
+  if (keySplit.length !== 3) throw new MetriportError("Elation key for application id malformed");
   const cxId = keySplit[0];
   const practiceId = keySplit[1];
   if (!cxId || !practiceId) throw new MetriportError("Elation cxId or practiceId not found");
