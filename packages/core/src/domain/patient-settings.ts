@@ -17,7 +17,7 @@ export interface PatientSettingsCreate extends BaseDomainCreate {
 
 export interface PatientSettings extends BaseDomain, PatientSettingsCreate {}
 
-export type AdtSubscriberData = {
+export type AdtSubscriber = {
   id: string;
   cxId: string;
 } & Pick<

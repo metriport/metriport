@@ -1,25 +1,28 @@
-import { AdtSubscriberData } from "@metriport/core/domain/patient-settings";
+import { AdtSubscriber } from "@metriport/core/domain/patient-settings";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
-import { errorToString } from "@metriport/shared";
+import { USState, errorToString } from "@metriport/shared";
 import { Sequelize } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../models/patient-settings";
 
-export async function getAdtSubscribers(targetStates: string[]): Promise<AdtSubscriberData[]> {
+export async function getAdtSubscribers(targetStates: USState[]): Promise<AdtSubscriber[]> {
   const { log } = out(`Get ADT Subscribers`);
   log(`States: ${targetStates}`);
-  const stateList = targetStates.map(s => `'${s}'`).join(", ");
 
   try {
+    const states = `{${targetStates.join(",")}}`;
     const patients = await PatientModel.findAll({
       where: Sequelize.literal(`
         EXISTS (
           SELECT 1
           FROM jsonb_array_elements(data->'address') addr
-          WHERE addr->>'state' = ANY(ARRAY[${stateList}])
+          WHERE addr->>'state' = ANY(:states)
         )
       `),
+      replacements: {
+        states,
+      },
       attributes: [
         "id",
         ["cx_id", "cxId"],
@@ -30,7 +33,7 @@ export async function getAdtSubscribers(targetStates: string[]): Promise<AdtSubs
           Sequelize.literal(`
           (SELECT jsonb_agg(addr)
            FROM jsonb_array_elements(data->'address') addr
-           WHERE addr->>'state' = ANY(ARRAY[${stateList}]))
+           WHERE addr->>'state' = ANY(:states))
         `),
           "address",
         ],
@@ -53,7 +56,7 @@ export async function getAdtSubscribers(targetStates: string[]): Promise<AdtSubs
 
     log(`Done. Found ${patients.length} ADT subscribers`);
 
-    const adtSubscribersData = patients as unknown as AdtSubscriberData[];
+    const adtSubscribersData = patients as unknown as AdtSubscriber[];
     return adtSubscribersData;
   } catch (error) {
     const msg = `Failed to get ADT subscribers`;

@@ -9,6 +9,7 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   internalSendConsolidatedSchema,
+  normalizeState,
   patientImportSchema,
   sleep,
   stringToBoolean,
@@ -34,6 +35,7 @@ import { createCoverageAssessments } from "../../../command/medical/patient/cove
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
 import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
+import { getAdtSubscribers } from "../../../command/medical/patient/get-adt-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
@@ -101,6 +103,27 @@ router.use("/settings", patientSettingsRoutes);
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });
 const patientLoader = new PatientLoaderLocal();
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/adt-subscribers
+ *
+ * Gets all patients that have ADT subscriptions enabled for the given states.
+ *
+ * @param req.query.states List of US state codes to filter by
+ * @returns List of patients with ADT subscriptions in the specified states
+ */
+router.get(
+  "/adt-subscribers",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    console.log("HIT THE SPOT!!!");
+    const stateInputs = getFromQueryAsArrayOrFail("states", req);
+    const states = stateInputs.map(state => normalizeState(state));
+    const result = await getAdtSubscribers(states);
+
+    return res.status(status.OK).json(result);
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/ids
