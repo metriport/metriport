@@ -6,7 +6,7 @@ import {
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
   getCxMappingOrFail,
-  updateSecondaryMappingsOnCxMapping,
+  setSecondaryMappingsOnCxMappingById,
 } from "../../../../command/mapping/cx";
 import { createElationClient } from "../shared";
 
@@ -24,8 +24,9 @@ export async function subscribeToWebhook({
   const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
   const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   const subscription = await api.subscribeToResource({ cxId, resource });
-  await updateSecondaryMappingsOnCxMapping({
-    ...cxMappingLookupParams,
+  await setSecondaryMappingsOnCxMappingById({
+    cxId,
+    id: cxMapping.id,
     secondaryMappings: {
       ...secondaryMappings,
       webhooks: {

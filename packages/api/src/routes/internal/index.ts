@@ -28,7 +28,7 @@ import {
   revokeMapiAccess,
 } from "../../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { subscribeToAllWebhooks } from "../../external/ehr/elation/command/subsribe-to-webhook";
+import { subscribeToAllWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import { isCxMappingSource, secondaryMappingsSchemaMap } from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../../external/aws/app-config";

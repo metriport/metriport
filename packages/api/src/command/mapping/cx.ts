@@ -149,23 +149,21 @@ export async function setExternalIdOnCxMappingById({
   return updated.dataValues;
 }
 
-export async function updateSecondaryMappingsOnCxMapping({
-  externalId,
-  source,
+export async function setSecondaryMappingsOnCxMappingById({
+  cxId,
+  id,
   secondaryMappings,
-}: CxMappingLookUpParams & { secondaryMappings: CxMappingSecondaryMappings }): Promise<CxMapping> {
-  const existing = await getCxMappingModelOrFail({ externalId, source });
-  const newSecondaryMappings = {
-    ...existing.secondaryMappings,
-    ...secondaryMappings,
-  };
-  const schema = secondaryMappingsSchemaMap[source];
+}: CxMappingLookupByIdParams & {
+  secondaryMappings: CxMappingSecondaryMappings;
+}): Promise<CxMapping> {
+  const existing = await getCxMappingModelByIdOrFail({ cxId, id });
+  const schema = secondaryMappingsSchemaMap[existing.source];
   if (!schema) {
     throw new MetriportError("Schema to validate new secondary mappings not found", undefined, {
-      source,
+      source: existing.source,
     });
   }
-  const validatedSecondaryMappings = schema.parse(newSecondaryMappings);
+  const validatedSecondaryMappings = schema.parse(secondaryMappings);
   const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
   return updated.dataValues;
 }
