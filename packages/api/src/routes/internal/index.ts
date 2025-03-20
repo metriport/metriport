@@ -316,15 +316,15 @@ router.post(
     const secondaryMappings = secondaryMappingsSchema
       ? secondaryMappingsSchema.parse(req.body)
       : null;
-    if (source === EhrSources.elation) {
-      await subscribeToAllWebhooks({ cxId, externalId });
-    }
     await findOrCreateCxMapping({
       cxId,
       source,
       externalId,
       secondaryMappings,
     });
+    if (source === EhrSources.elation) {
+      await subscribeToAllWebhooks({ cxId, externalId });
+    }
     return res.sendStatus(httpStatus.OK);
   })
 );

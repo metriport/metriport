@@ -23,7 +23,7 @@ export async function subscribeToWebhook({
   const subscription = await api.subscribeToResource({ cxId, resource });
   const cxMappingLookupParams = { externalId: elationPracticeId, source: EhrSources.elation };
   const existing = await getCxMappingOrFail(cxMappingLookupParams);
-  const existingSecondaryMappings = (existing.secondaryMappings ?? {}) as ElationSecondaryMappings;
+  const existingSecondaryMappings = existing.secondaryMappings as ElationSecondaryMappings;
   await updateSecondaryMappingsOnCxMapping({
     ...cxMappingLookupParams,
     secondaryMappings: {

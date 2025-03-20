@@ -27,6 +27,7 @@ import {
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
+import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import {
   ApiConfig,
@@ -38,7 +39,6 @@ import {
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
-import { Config } from "../../../util/config";
 
 const apiUrl = Config.getApiUrl();
 
