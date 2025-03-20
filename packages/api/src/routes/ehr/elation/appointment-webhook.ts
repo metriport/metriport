@@ -29,16 +29,16 @@ router.post(
     const elationPracticeId = getFromQueryOrFail("practiceId", req);
     const event = elationAppointmentEventSchema.parse(req.body);
     if (event.action === "deleted") return res.sendStatus(httpStatus.OK);
-    updateOrCreateElationPatientMetadata({
-      cxId,
-      elationPracticeId,
-      elationPatientId: event.data.patient,
-    }).catch(processAsyncError("Elation updateOrCreateElationPatientMetadata"));
     const cxMapping = await getCxMappingOrFail({
       externalId: elationPracticeId,
       source: EhrSources.elation,
     });
     const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+    updateOrCreateElationPatientMetadata({
+      cxId,
+      elationPracticeId,
+      elationPatientId: event.data.patient,
+    }).catch(processAsyncError("Elation updateOrCreateElationPatientMetadata"));
     const handler = buildEhrSyncPatientHandler();
     handler
       .processSyncPatient({

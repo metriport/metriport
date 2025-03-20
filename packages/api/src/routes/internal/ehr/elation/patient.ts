@@ -85,7 +85,7 @@ router.get(
     const resource = getFromQueryOrFail("resource", req);
     if (!isSubscriptionResource(resource)) throw new BadRequestError();
     const signingKey = await getElationSigningKeyInfo(applicationId, resource);
-    return res.status(httpStatus.OK).json({ key: signingKey });
+    return res.status(httpStatus.OK).json({ signingKey });
   })
 );
 

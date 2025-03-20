@@ -141,8 +141,8 @@ export async function getElationSigningKeyInfo(
 }> {
   const { cxId, practiceId } = getCxIdAndPracticeIdFromElationApplicationId(applicationId);
   const cxMapping = await getCxMappingOrFail({
-    source: EhrSources.elation,
     externalId: practiceId,
+    source: EhrSources.elation,
   });
   const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
   const key = secondaryMappings.webhooks?.[resource];

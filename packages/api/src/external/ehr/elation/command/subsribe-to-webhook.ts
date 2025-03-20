@@ -19,17 +19,17 @@ export async function subscribeToWebhook({
   elationPracticeId: string;
   resource: SubscriptionResource;
 }): Promise<CreatedSubscription> {
+  const cxMappingLookupParams = { externalId: elationPracticeId, source: EhrSources.elation };
+  const cxMapping = await getCxMappingOrFail(cxMappingLookupParams);
+  const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
   const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   const subscription = await api.subscribeToResource({ cxId, resource });
-  const cxMappingLookupParams = { externalId: elationPracticeId, source: EhrSources.elation };
-  const existing = await getCxMappingOrFail(cxMappingLookupParams);
-  const existingSecondaryMappings = existing.secondaryMappings as ElationSecondaryMappings;
   await updateSecondaryMappingsOnCxMapping({
     ...cxMappingLookupParams,
     secondaryMappings: {
-      ...existingSecondaryMappings,
+      ...secondaryMappings,
       webhooks: {
-        ...existingSecondaryMappings.webhooks,
+        ...secondaryMappings.webhooks,
         [subscription.resource]: {
           url: subscription.target,
           signingKey: subscription.signing_pub_key,

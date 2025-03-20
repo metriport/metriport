@@ -122,16 +122,16 @@ async function syncPatient({
   elationPracticeId,
   elationPatientId,
 }: Omit<SyncElationPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
-  await updateOrCreateElationPatientMetadata({
-    cxId,
-    elationPracticeId,
-    elationPatientId,
-  });
   const cxMapping = await getCxMappingOrFail({
     externalId: elationPracticeId,
     source: EhrSources.elation,
   });
   const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+  await updateOrCreateElationPatientMetadata({
+    cxId,
+    elationPracticeId,
+    elationPatientId,
+  });
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
     ehr: EhrSources.elation,
