@@ -47,6 +47,7 @@ interface ElationApiConfig extends ApiConfig {
 }
 
 const elationDateFormat = "YYYY-MM-DD";
+const maxSubscribeAttempts = 3;
 
 const elationEnv = ["app", "sandbox"] as const;
 export type ElationEnv = (typeof elationEnv)[number];
@@ -311,13 +312,24 @@ class ElationApi {
   async subscribeToResource({
     cxId,
     resource,
+    attempt = 1,
   }: {
     cxId: string;
     resource: SubscriptionResource;
+    attempt?: number;
   }): Promise<CreatedSubscription> {
     const { log, debug } = out(
-      `Elation subscribeToResource - cxId ${cxId} practiceId ${this.practiceId} resource ${resource}`
+      `Elation subscribeToResource - cxId ${cxId} practiceId ${this.practiceId} resource ${resource} attempt ${attempt}`
     );
+    if (attempt > maxSubscribeAttempts) {
+      throw new MetriportError("Max attempts reached for subscribing to resource", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        resource,
+        attempt,
+      });
+    }
+    attempt++;
     const subscriptionUrl = `/app/subscriptions/`;
     const additionalInfo = { cxId, practiceId: this.practiceId };
     const data = {
@@ -341,7 +353,7 @@ class ElationApi {
       if (error.message?.includes("Duplicated object")) {
         log(`Subscription already exists for ${resource} and cxId ${cxId} @ Elation - deleting`);
         await this.replaceSubscription({ cxId, resource });
-        return await this.subscribeToResource({ cxId, resource });
+        return await this.subscribeToResource({ cxId, resource, attempt });
       }
       throw error;
     }
