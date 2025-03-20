@@ -70,7 +70,7 @@ import { parseISODate } from "../../../shared/date";
 import { getETag } from "../../../shared/http";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
-import { dtoFromModel } from "../../medical/dtos/demographicsDTO";
+import { dtoFromModel } from "../../medical/dtos/patientDTO";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
 import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
