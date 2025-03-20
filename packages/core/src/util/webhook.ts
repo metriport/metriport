@@ -1,5 +1,7 @@
 import crypto from "crypto";
 
+const ed25519Prefix = "MCowBQYDK2VwAyEA";
+
 export function verifyWebhookSignatureEd25519(
   key: string,
   body: object,
@@ -19,7 +21,7 @@ export function verifyWebhookSignatureEd25519(
 function createPublicKey(key: string) {
   return `
 -----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEA${key}
+${ed25519Prefix}${key}
 -----END PUBLIC KEY-----
   `;
 }
