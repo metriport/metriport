@@ -102,7 +102,7 @@ function getElationEnv({
   };
 }
 
-function getCxIdAndPracticeIdFromElationApplicationId(oauthApplicationId: string): {
+function getCxIdAndPracticeIdFromElationApplicationId(applicationId: string): {
   cxId: string;
   practiceId: string;
 } {
@@ -110,7 +110,7 @@ function getCxIdAndPracticeIdFromElationApplicationId(oauthApplicationId: string
   if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
   const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
   if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
-  const entry = Object.entries(clientMap.data).find(([, v]) => v === oauthApplicationId);
+  const entry = Object.entries(clientMap.data).find(([, v]) => v === applicationId);
   if (!entry) throw new MetriportError("Elation application id not found");
   const key = entry[0];
   const keySplit = key.split("_");

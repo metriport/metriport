@@ -329,7 +329,6 @@ class ElationApi {
         attempt,
       });
     }
-    attempt++;
     const subscriptionUrl = `/app/subscriptions/`;
     const additionalInfo = { cxId, practiceId: this.practiceId };
     const data = {
@@ -353,7 +352,7 @@ class ElationApi {
       if (error.message?.includes("Duplicated object")) {
         log(`Subscription already exists for ${resource} and cxId ${cxId} @ Elation - deleting`);
         await this.replaceSubscription({ cxId, resource });
-        return await this.subscribeToResource({ cxId, resource, attempt });
+        return await this.subscribeToResource({ cxId, resource, attempt: attempt + 1 });
       }
       throw error;
     }
