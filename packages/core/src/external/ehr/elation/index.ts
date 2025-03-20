@@ -298,12 +298,12 @@ class ElationApi {
       });
     }
     const deleteSubscriptionUrl = `/app/subscriptions/${subscription.id}/`;
-    await this.makeRequest<unknown>({
+    await this.makeRequest<undefined>({
       cxId,
       s3Path: `${resource}-replace-subscription-delete`,
       method: "DELETE",
       url: deleteSubscriptionUrl,
-      schema: z.unknown(),
+      schema: z.undefined(),
       additionalInfo,
       debug,
     });

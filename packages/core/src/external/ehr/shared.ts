@@ -141,7 +141,15 @@ export async function makeRequest<T>({
     }
     throw error;
   }
-  if (method === "DELETE") return undefined as T;
+  if (!response.data && method === "DELETE") {
+    const outcome = schema.safeParse(undefined);
+    if (!outcome.success) {
+      const msg = `Response not parsed @ ${ehr}`;
+      log(msg);
+      throw new MetriportError(msg, undefined, fullAdditionalInfo);
+    }
+    return outcome.data;
+  }
   if (!response.data) {
     const msg = `No body returned @ ${ehr}`;
     log(msg);
