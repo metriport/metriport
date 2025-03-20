@@ -1,7 +1,7 @@
 import { buildDayjs } from "@metriport/shared/common/date";
 import { elationDashSource } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { isSubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
-import crypto from "crypto";
+import { verifyWebhookSignatureEd25519 } from "@metriport/core/util/webhook";
 import { NextFunction, Request, Response } from "express";
 import { getJwtToken, updateTokenExpiration } from "../../../../command/jwt-token";
 import { JwtTokenData } from "../../../../domain/jwt-token";
@@ -30,7 +30,7 @@ async function processCxIdWebhook(req: Request): Promise<void> {
   if (!applicationId) throw new ForbiddenError();
   try {
     const signingKeyInfo = await getElationSigningKeyInfo(applicationId, webhookResource);
-    const verified = verifyWebhookSignature(signingKeyInfo.signingKey, req.body, signature);
+    const verified = verifyWebhookSignatureEd25519(signingKeyInfo.signingKey, req.body, signature);
     if (verified) {
       req.cxId = signingKeyInfo.cxId;
       req.query = {
@@ -90,28 +90,4 @@ export function processPatientRoute(req: Request, res: Response, next: NextFunct
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
   processDocumentRouteShared(req, elationDashSource).then(next).catch(next);
-}
-
-function verifyWebhookSignature(key: string, body: object, signature: string): boolean {
-  const newKey = createPublicKey(key);
-  const newBody = createJsonDumpsBody(body);
-  const verified = crypto.verify(
-    null,
-    Buffer.from(newBody),
-    newKey,
-    Buffer.from(signature, "base64")
-  );
-  return verified;
-}
-
-function createPublicKey(key: string) {
-  return `
------BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEA${key}
------END PUBLIC KEY-----
-  `;
-}
-
-function createJsonDumpsBody(body: object) {
-  return JSON.stringify(body).replaceAll('":', '": ').replaceAll(',"', ', "');
 }
