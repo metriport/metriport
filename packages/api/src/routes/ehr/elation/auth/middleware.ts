@@ -1,15 +1,12 @@
 import { buildDayjs } from "@metriport/shared/common/date";
-import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { elationDashSource } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { isSubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { NextFunction, Request, Response } from "express";
 import { getJwtToken, updateTokenExpiration } from "../../../../command/jwt-token";
-import { getCxMappingOrFail } from "../../../../command/mapping/cx";
 import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
 import { shortDurationTokenDuration } from "../../../../external/ehr/elation/command/sync-patient";
-import { getCxIdAndPracticeIdFromElationApplicationId } from "../../../../external/ehr/elation/shared";
+import { getElationSigningKeyInfo } from "../../../../external/ehr/elation/shared";
 import { getAuthorizationToken } from "../../../util";
 import {
   ParseResponse,
@@ -31,19 +28,13 @@ async function processCxIdWebhook(req: Request): Promise<void> {
   const applicationId = req.body.application_id;
   if (!applicationId) throw new ForbiddenError();
   try {
-    const { cxId, practiceId } = getCxIdAndPracticeIdFromElationApplicationId(applicationId);
-    const cxMapping = await getCxMappingOrFail({
-      source: EhrSources.elation,
-      externalId: practiceId,
-    });
-    const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
-    const key = secondaryMappings.webHooks?.[webhookResource];
-    if (!key) throw new ForbiddenError();
-    if (!verifyWebhookSignature(key.signingKey, req.body, signature)) throw new ForbiddenError();
-    req.cxId = cxId;
+    const signingKeyInfo = await getElationSigningKeyInfo(applicationId, webhookResource);
+    if (!verifyWebhookSignature(signingKeyInfo.signingKey, req.body, signature))
+      throw new ForbiddenError();
+    req.cxId = signingKeyInfo.cxId;
     req.query = {
       ...req.query,
-      practiceId,
+      practiceId: signingKeyInfo.practiceId,
     };
   } catch (error) {
     throw new ForbiddenError();

@@ -4,14 +4,19 @@ import ElationApi, { ElationEnv, isElationEnv } from "@metriport/core/external/e
 import {
   BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
+  EhrSources,
   MetriportError,
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
+  NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
+import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
+import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
+import { getCxMappingOrFail } from "../../../command/mapping/cx";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 
@@ -97,7 +102,7 @@ function getElationEnv({
   };
 }
 
-export function getCxIdAndPracticeIdFromElationApplicationId(oauthApplicationId: string): {
+function getCxIdAndPracticeIdFromElationApplicationId(oauthApplicationId: string): {
   cxId: string;
   practiceId: string;
 } {
@@ -124,4 +129,23 @@ export async function createElationClient(
     getEnv: { params: perPracticeParams, getEnv: getElationEnv },
     getClient: ElationApi.create,
   });
+}
+
+export async function getElationSigningKeyInfo(
+  applicationId: string,
+  resource: SubscriptionResource
+): Promise<{
+  cxId: string;
+  practiceId: string;
+  signingKey: string;
+}> {
+  const { cxId, practiceId } = getCxIdAndPracticeIdFromElationApplicationId(applicationId);
+  const cxMapping = await getCxMappingOrFail({
+    source: EhrSources.elation,
+    externalId: practiceId,
+  });
+  const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+  const key = secondaryMappings.webHooks?.[resource];
+  if (!key) throw new NotFoundError("Elation signing key not found");
+  return { cxId, practiceId, signingKey: key.signingKey };
 }
