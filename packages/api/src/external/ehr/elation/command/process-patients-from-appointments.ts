@@ -20,7 +20,7 @@ import {
 import { createElationClient } from "../shared";
 import {
   SyncElationPatientIntoMetriportParams,
-  updateOrCreateElationPatientMetadata,
+  createOrUpdateElationPatientMetadata,
 } from "./sync-patient";
 
 dayjs.extend(duration);
@@ -133,7 +133,7 @@ async function syncPatient({
     });
   }
   const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
-  await updateOrCreateElationPatientMetadata({
+  await createOrUpdateElationPatientMetadata({
     cxId,
     elationPracticeId,
     elationPatientId,

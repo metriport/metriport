@@ -46,11 +46,20 @@ export async function getCxMapping({
   externalId,
   source,
 }: CxMappingLookUpParams): Promise<CxMapping | undefined> {
-  const existing = await CxMappingModel.findOne({
-    where: { externalId, source },
-  });
+  const existing = await getCxMappingModel({ externalId, source });
   if (!existing) return undefined;
   return existing.dataValues;
+}
+
+export async function getCxMappingOrFail({
+  externalId,
+  source,
+}: CxMappingLookUpParams): Promise<CxMapping> {
+  const mapping = await getCxMappingModelOrFail({
+    externalId,
+    source,
+  });
+  return mapping.dataValues;
 }
 
 export async function getCxMappingModel({
@@ -62,20 +71,6 @@ export async function getCxMappingModel({
   });
   if (!existing) return undefined;
   return existing;
-}
-
-export async function getCxMappingOrFail({
-  externalId,
-  source,
-}: CxMappingLookUpParams): Promise<CxMapping> {
-  const mapping = await getCxMapping({
-    externalId,
-    source,
-  });
-  if (!mapping) {
-    throw new NotFoundError("CxMapping not found", undefined, { externalId, source });
-  }
-  return mapping;
 }
 
 export async function getCxMappingModelOrFail({

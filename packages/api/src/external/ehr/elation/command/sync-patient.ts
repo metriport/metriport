@@ -193,7 +193,7 @@ async function createElationPatientMetadata({
   });
 }
 
-export async function updateOrCreateElationPatientMetadata({
+export async function createOrUpdateElationPatientMetadata({
   cxId,
   elationPracticeId,
   elationPatientId,

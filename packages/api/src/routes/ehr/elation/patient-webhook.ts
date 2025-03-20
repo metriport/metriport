@@ -2,11 +2,10 @@ import { elationPatientEventSchema } from "@metriport/shared/interface/external/
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { updateOrCreateElationPatientMetadata } from "../../../external/ehr/elation/command/sync-patient";
+import { createOrUpdateElationPatientMetadata } from "../../../external/ehr/elation/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
-import { processAsyncError } from "../../../errors";
 
 const router = Router();
 
@@ -32,11 +31,11 @@ router.post(
       console.log(`Patient event is not a created event for patient ${event.data.id}`);
       return res.sendStatus(httpStatus.OK);
     }
-    updateOrCreateElationPatientMetadata({
+    await createOrUpdateElationPatientMetadata({
       cxId,
       elationPracticeId,
       elationPatientId: event.data.id,
-    }).catch(processAsyncError("Elation updateOrCreateElationPatientMetadata"));
+    });
     return res.sendStatus(httpStatus.OK);
   })
 );

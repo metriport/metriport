@@ -86,14 +86,11 @@ function getElationEnv({
   if (!isElationEnv(environment)) {
     throw new MetriportError("Invalid Elation environment", undefined, { environment });
   }
-  const rawClientsMap = Config.getElationClientKeyAndSecretMap();
-  if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
-  const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
-  if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
+  const clientMap = getClientMap();
   const key = `${cxId}_${practiceId}_key`;
-  const keyEntry = clientMap.data[key];
+  const keyEntry = clientMap[key];
   const secret = `${cxId}_${practiceId}_secret`;
-  const secretEntry = clientMap.data[secret];
+  const secretEntry = clientMap[secret];
   if (!keyEntry || !secretEntry) throw new MetriportError("Elation credentials not found");
   return {
     environment,
@@ -106,11 +103,8 @@ function getCxIdAndPracticeIdFromElationApplicationId(applicationId: string): {
   cxId: string;
   practiceId: string;
 } {
-  const rawClientsMap = Config.getElationClientKeyAndSecretMap();
-  if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
-  const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
-  if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
-  const entry = Object.entries(clientMap.data).find(([, v]) => v === applicationId);
+  const clientMap = getClientMap();
+  const entry = Object.entries(clientMap).find(([, v]) => v === applicationId);
   if (!entry) throw new MetriportError("Elation application id not found");
   const key = entry[0];
   const keySplit = key.split("_");
@@ -160,4 +154,12 @@ export async function getElationSigningKeyInfo(
     });
   }
   return { cxId, practiceId, signingKey };
+}
+
+function getClientMap() {
+  const rawClientsMap = Config.getElationClientKeyAndSecretMap();
+  if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
+  const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
+  if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
+  return clientMap.data;
 }

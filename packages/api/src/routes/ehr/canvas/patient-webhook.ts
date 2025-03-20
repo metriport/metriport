@@ -6,7 +6,6 @@ import httpStatus from "http-status";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
-import { processAsyncError } from "../../../errors";
 
 const router = Router();
 
@@ -26,15 +25,13 @@ router.post(
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const handler = buildEhrSyncPatientHandler();
-    handler
-      .processSyncPatient({
-        ehr: EhrSources.canvas,
-        cxId,
-        practiceId: canvasPracticeId,
-        patientId: canvasPatientId,
-        triggerDq: true,
-      })
-      .catch(processAsyncError("Canvas processSyncPatient"));
+    await handler.processSyncPatient({
+      ehr: EhrSources.canvas,
+      cxId,
+      practiceId: canvasPracticeId,
+      patientId: canvasPatientId,
+      triggerDq: true,
+    });
     return res.sendStatus(httpStatus.OK);
   })
 );

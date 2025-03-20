@@ -7,8 +7,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
-import { processAsyncError } from "../../../errors";
-import { updateOrCreateElationPatientMetadata } from "../../../external/ehr/elation/command/sync-patient";
+import { createOrUpdateElationPatientMetadata } from "../../../external/ehr/elation/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
@@ -48,24 +47,22 @@ router.post(
       });
     }
     const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
-    updateOrCreateElationPatientMetadata({
+    await createOrUpdateElationPatientMetadata({
       cxId,
       elationPracticeId,
       elationPatientId: event.data.patient,
-    }).catch(processAsyncError("Elation updateOrCreateElationPatientMetadata"));
+    });
     if (secondaryMappings.webhookAppointmentPatientProcessingDisabled) {
       return res.sendStatus(httpStatus.OK);
     }
     const handler = buildEhrSyncPatientHandler();
-    handler
-      .processSyncPatient({
-        ehr: EhrSources.elation,
-        cxId,
-        practiceId: elationPracticeId,
-        patientId: event.data.patient,
-        triggerDq: true,
-      })
-      .catch(processAsyncError("Elation processSyncPatient"));
+    await handler.processSyncPatient({
+      ehr: EhrSources.elation,
+      cxId,
+      practiceId: elationPracticeId,
+      patientId: event.data.patient,
+      triggerDq: true,
+    });
     return res.sendStatus(httpStatus.OK);
   })
 );
