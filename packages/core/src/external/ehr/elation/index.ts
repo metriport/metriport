@@ -333,7 +333,7 @@ class ElationApi {
     const additionalInfo = { cxId, practiceId: this.practiceId };
     const data = {
       resource,
-      target: `${apiUrl}/ehr/webhook/elation/${resource}`,
+      target: `${apiUrl}/ehr/webhook/elation`,
     };
     try {
       const subscription = await this.makeRequest<CreatedSubscription>({
