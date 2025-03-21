@@ -14,7 +14,11 @@ export type GetPatientImport = {
   cxId: string;
 };
 
-export type PatientImportParams = {
+export type PatientImportParamsCx = {
+  dryRun: boolean;
+};
+
+export type PatientImportParamsOps = {
   dryRun: boolean;
   rerunPdOnNewDemographics: boolean;
   triggerConsolidated: boolean;
@@ -36,7 +40,8 @@ export type PatientImport = {
   total: number | undefined;
   successful: number | undefined;
   failed: number | undefined;
-  params: PatientImportParams;
+  paramsCx: PatientImportParamsCx;
+  paramsOps: PatientImportParamsOps;
 };
 
 export type PatientImportEntryStatusFailed = "failed";

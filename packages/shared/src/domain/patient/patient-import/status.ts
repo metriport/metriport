@@ -15,7 +15,8 @@ import { PatientImportStatus } from "./types";
  */
 export function validateNewStatus(
   currentStatus: PatientImportStatus,
-  newStatus: PatientImportStatus
+  newStatus: PatientImportStatus,
+  dryRun?: boolean
 ): PatientImportStatus {
   const validStatusForProcessing = ["waiting", "processing"];
   switch (newStatus) {
@@ -31,6 +32,12 @@ export function validateNewStatus(
       }
       break;
     case "completed":
+      if (dryRun && currentStatus === "processing") {
+        // When dry-run, we don't want to set the status to completed so (1) the cx can tell
+        // whether the patients were imported or not, and (2) we can dry-run a job before we
+        // actually import the patients
+        return "waiting";
+      }
       if (currentStatus !== "processing") {
         throw new BadRequestError(`Import job is not processing, cannot update to completed`);
       }

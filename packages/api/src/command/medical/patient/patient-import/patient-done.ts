@@ -9,14 +9,13 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import {
   PatientImport,
   PatientImportEntryStatus,
-  PatientImportParams,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
 import { PatientImportModel } from "../../../../models/medical/patient-import";
-import { tryToFinishPatientImport } from "./try-finish-job";
 import { getPatientImportJobOrFail } from "./get";
+import { tryToFinishPatientImport } from "./try-finish-job";
 
 dayjs.extend(duration);
 
@@ -24,16 +23,6 @@ const bucketName = Config.getPatientImportBucket();
 
 const defaultReasonForCx = "Failed to obtain patient data";
 const defaultReasonForDev = "failed";
-
-export type PatientImportCreateCmd = {
-  cxId: string;
-  facilityId?: string | undefined;
-  params?: Partial<PatientImportParams>;
-};
-
-export type PatientImportCreateResponse = PatientImport & {
-  uploadUrl: string;
-};
 
 /**
  * Finishes a single patient import and checks if the whole job is complete.

@@ -59,8 +59,14 @@ export const up: Migration = async ({ context: queryInterface }) => {
           allowNull: false,
           defaultValue: 0,
         },
-        params: {
+        paramsCx: {
           type: DataTypes.JSONB,
+          field: "params_cx",
+          allowNull: false,
+        },
+        paramsOps: {
+          type: DataTypes.JSONB,
+          field: "params_ops",
           allowNull: false,
         },
       },
