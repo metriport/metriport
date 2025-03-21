@@ -3,6 +3,8 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
 import { NetworkStackOutput } from "./network";
+import { MllpStackOutput } from "./mllp";
+import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 
 const IPSEC_1 = "ipsec.1";
 
@@ -10,6 +12,7 @@ export interface VpnStackProps extends cdk.NestedStackProps {
   vpc: ec2.Vpc;
   vpnConfig: Hl7NotificationVpnConfig;
   networkStack: NetworkStackOutput;
+  mllpStack: MllpStackOutput;
 }
 
 /**
@@ -65,15 +68,21 @@ export class VpnStack extends cdk.NestedStack {
       }
     );
 
+    const vpnAccessibleSubnets = props.vpc.selectSubnets({
+      subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
+    }).subnets;
+
     if (props.vpnConfig.staticRoutesOnly) {
-      new ec2.CfnVPNConnectionRoute(
-        this,
-        `${props.vpnConfig.partnerName}-MetriportSideVpnConnectionRoute`,
-        {
-          destinationCidrBlock: props.vpc.vpcCidrBlock,
-          vpnConnectionId: vpnConnection.ref,
-        }
-      );
+      vpnAccessibleSubnets.forEach((subnet, index) => {
+        new ec2.CfnVPNConnectionRoute(
+          this,
+          `${props.vpnConfig.partnerName}-MetriportSideVpnConnectionRoute${index}`,
+          {
+            destinationCidrBlock: subnet.ipv4CidrBlock,
+            vpnConnectionId: vpnConnection.ref,
+          }
+        );
+      });
 
       new ec2.CfnVPNConnectionRoute(
         this,

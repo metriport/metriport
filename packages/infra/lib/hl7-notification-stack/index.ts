@@ -6,6 +6,8 @@ import { EnvConfigNonSandbox } from "../../config/env-config";
 import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
 import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
+import { OTHER_INTERNAL_SERVICES_SUBNET_GROUP_NAME } from "./constants";
+import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 import { VpnStack } from "./vpn";
 
 export interface Hl7NotificationStackProps extends cdk.StackProps {
@@ -24,20 +26,28 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
-      natGateways: NUM_AZS,
+      subnetConfiguration: [
+        {
+          cidrMask: 24,
+          name: "Public",
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        {
+          cidrMask: 24,
+          name: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+        {
+          cidrMask: 24,
+          name: OTHER_INTERNAL_SERVICES_SUBNET_GROUP_NAME,
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+      ],
     });
 
     const ecrRepo = new Repository(this, "MllpServerRepo", {
       repositoryName: "metriport/mllp-server",
       lifecycleRules: [{ maxImageCount: 5000 }],
-    });
-
-    /**
-     * CloudFormation Outputs
-     */
-    new cdk.CfnOutput(this, "MllpECRRepoURI", {
-      description: "MLLP ECR repository URI",
-      value: ecrRepo.repositoryUri,
     });
 
     this.mllpStack = new MllpStack(this, "NestedMllpStack", {
@@ -61,8 +71,14 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
         vpnConfig: config,
         vpc,
         networkStack: this.networkStack.output,
+        mllpStack: this.mllpStack.output,
         description: `VPN Configuration for routing HL7 messages from ${config.partnerName}`,
       });
+    });
+
+    new cdk.CfnOutput(this, "MllpECRRepoURI", {
+      description: "MLLP ECR repository URI",
+      value: ecrRepo.repositoryUri,
     });
   }
 }

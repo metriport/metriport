@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
+import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 
 const IPSEC_1 = "ipsec.1";
 
@@ -41,13 +42,12 @@ export class NetworkStack extends cdk.NestedStack {
       }
     );
 
-    /**
-     * Read more about needing to set the dependency here:
-     * https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/CfnVPNGatewayRoutePropagation.html
-     * */
+    const vpnAccessibleSubnets = vpc.selectSubnets({
+      subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
+    }).subnets;
 
     // Enable route propagation for each of our private subnets back out to the vgw
-    vpc.privateSubnets.forEach((subnet, index) => {
+    vpnAccessibleSubnets.forEach((subnet, index) => {
       const routePropagation = new ec2.CfnVPNGatewayRoutePropagation(
         this,
         `RouteTablePropagation${index}`,
@@ -57,12 +57,16 @@ export class NetworkStack extends cdk.NestedStack {
         }
       );
 
+      /**
+       * Read more about needing to set this dependency here:
+       * https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/CfnVPNGatewayRoutePropagation.html
+       * */
       routePropagation.node.addDependency(vgw1Attachment);
     });
 
     // Add routing rules for each partner HIE to route traffic back out thru the VPN to them
     props.config.hl7Notification.vpnConfigs.forEach(config => {
-      vpc.privateSubnets.forEach((subnet, index) => {
+      vpnAccessibleSubnets.forEach((subnet, index) => {
         const route = new ec2.CfnRoute(this, `${config.partnerName}VpnRoute${index}`, {
           routeTableId: subnet.routeTable.routeTableId,
           destinationCidrBlock: config.partnerInternalCidrBlock,
