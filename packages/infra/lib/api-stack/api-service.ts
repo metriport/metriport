@@ -98,6 +98,7 @@ export function createAPIService({
   patientImportLambda,
   patientImportBucket,
   ehrSyncPatientQueue,
+  elationLinkPatientQueue,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
@@ -134,6 +135,7 @@ export function createAPIService({
   patientImportLambda: ILambda;
   patientImportBucket: s3.IBucket;
   ehrSyncPatientQueue: IQueue;
+  elationLinkPatientQueue: IQueue;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -261,6 +263,7 @@ export function createAPIService({
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
+          ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
@@ -416,6 +419,11 @@ export function createAPIService({
   provideAccessToQueue({
     accessType: "send",
     queue: ehrSyncPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: elationLinkPatientQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
 

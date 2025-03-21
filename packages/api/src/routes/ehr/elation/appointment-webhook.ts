@@ -49,6 +49,9 @@ router.post(
       });
     }
     const secondaryMappings = elationSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
+    if (secondaryMappings.webhookAppointmentPatientLinkingDisabled) {
+      return res.sendStatus(httpStatus.OK);
+    }
     await createOrUpdateElationPatientMetadata({
       cxId,
       elationPracticeId,

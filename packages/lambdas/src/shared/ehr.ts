@@ -1,4 +1,5 @@
 import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
+import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient";
 import { MetriportError } from "@metriport/shared";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 
@@ -38,5 +39,33 @@ export function parseSyncPatient(bodyAsJson: SyncPatientPayload): ProcessSyncPat
     practiceId: practiceIdRaw,
     patientId: patientIdRaw,
     triggerDq: triggerDqRaw,
+  };
+}
+
+interface ElationLinkPatientPayload {
+  cxId: unknown;
+  practiceId: unknown;
+  patientId: unknown;
+}
+
+export function elationParseLinkPatient(
+  bodyAsJson: ElationLinkPatientPayload
+): ElationProcessLinkPatientRequest {
+  const cxIdRaw = bodyAsJson.cxId;
+  if (!cxIdRaw) throw new MetriportError("Missing cxId");
+  if (typeof cxIdRaw !== "string") throw new MetriportError("Invalid cxId");
+
+  const practiceIdRaw = bodyAsJson.practiceId;
+  if (!practiceIdRaw) throw new MetriportError("Missing practiceId");
+  if (typeof practiceIdRaw !== "string") throw new MetriportError("Invalid practiceId");
+
+  const patientIdRaw = bodyAsJson.patientId;
+  if (!patientIdRaw) throw new MetriportError("Missing patientId");
+  if (typeof patientIdRaw !== "string") throw new MetriportError("Invalid patientId");
+
+  return {
+    cxId: cxIdRaw,
+    practiceId: practiceIdRaw,
+    patientId: patientIdRaw,
   };
 }
