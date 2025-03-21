@@ -6,9 +6,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
-import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
-
-const MLLP_DEFAULT_PORT = 2575;
+import { MLLP_DEFAULT_PORT, VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -17,13 +15,7 @@ interface MllpStackProps extends cdk.StackProps {
   ecrRepo: Repository;
 }
 
-export interface MllpStackOutput {
-  fargate: ecs.FargateService;
-}
-
 export class MllpStack extends cdk.NestedStack {
-  public readonly output: MllpStackOutput;
-
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
@@ -45,7 +37,13 @@ export class MllpStack extends cdk.NestedStack {
     mllpSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(MLLP_DEFAULT_PORT),
-      "Allow inbound traffic to MLLP server"
+      "Allow inbound traffic on 2575 to MLLP server"
+    );
+
+    mllpSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.allTraffic(),
+      "Allow outbound traffic from MLLP server"
     );
 
     const nlb = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB", {
@@ -128,9 +126,5 @@ export class MllpStack extends cdk.NestedStack {
       scaleInCooldown: Duration.seconds(60),
       scaleOutCooldown: Duration.seconds(60),
     });
-
-    this.output = {
-      fargate: fargateService,
-    };
   }
 }

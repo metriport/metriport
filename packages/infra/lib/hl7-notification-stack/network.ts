@@ -13,6 +13,7 @@ interface NetworkStackProps extends cdk.StackProps {
 
 export interface NetworkStackOutput {
   vgw1: ec2.CfnVPNGateway;
+  networkAcl: ec2.NetworkAcl;
 }
 
 export class NetworkStack extends cdk.NestedStack {
@@ -42,12 +43,34 @@ export class NetworkStack extends cdk.NestedStack {
       }
     );
 
-    const vpnAccessibleSubnets = vpc.selectSubnets({
-      subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
-    }).subnets;
+    const networkAcl = new ec2.NetworkAcl(this, "VpnAccessibleMllpServerNacl2", {
+      vpc,
+      subnetSelection: { subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME },
+    });
+
+    networkAcl.addEntry("AllowAllTrafficIngress", {
+      ruleNumber: 2000,
+      direction: ec2.TrafficDirection.INGRESS,
+      traffic: ec2.AclTraffic.allTraffic(),
+      ruleAction: ec2.Action.ALLOW,
+      cidr: ec2.AclCidr.ipv4(vpc.vpcCidrBlock),
+    });
+
+    networkAcl.addEntry("AllowAllTrafficEgress", {
+      ruleNumber: 2000,
+      direction: ec2.TrafficDirection.EGRESS,
+      traffic: ec2.AclTraffic.allTraffic(),
+      ruleAction: ec2.Action.ALLOW,
+      cidr: ec2.AclCidr.ipv4(vpc.vpcCidrBlock),
+    });
+
+    /**
+     * Read more about needing to set the dependency here:
+     * https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/CfnVPNGatewayRoutePropagation.html
+     * */
 
     // Enable route propagation for each of our private subnets back out to the vgw
-    vpnAccessibleSubnets.forEach((subnet, index) => {
+    vpc.privateSubnets.forEach((subnet, index) => {
       const routePropagation = new ec2.CfnVPNGatewayRoutePropagation(
         this,
         `RouteTablePropagation${index}`,
@@ -57,28 +80,12 @@ export class NetworkStack extends cdk.NestedStack {
         }
       );
 
-      /**
-       * Read more about needing to set this dependency here:
-       * https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/CfnVPNGatewayRoutePropagation.html
-       * */
       routePropagation.node.addDependency(vgw1Attachment);
-    });
-
-    // Add routing rules for each partner HIE to route traffic back out thru the VPN to them
-    props.config.hl7Notification.vpnConfigs.forEach(config => {
-      vpnAccessibleSubnets.forEach((subnet, index) => {
-        const route = new ec2.CfnRoute(this, `${config.partnerName}VpnRoute${index}`, {
-          routeTableId: subnet.routeTable.routeTableId,
-          destinationCidrBlock: config.partnerInternalCidrBlock,
-          gatewayId: vgw1.attrVpnGatewayId,
-        });
-
-        route.node.addDependency(vgw1Attachment);
-      });
     });
 
     this.output = {
       vgw1,
+      networkAcl,
     };
   }
 }

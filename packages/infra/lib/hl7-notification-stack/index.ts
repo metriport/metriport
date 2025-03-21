@@ -6,9 +6,9 @@ import { EnvConfigNonSandbox } from "../../config/env-config";
 import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
 import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
+import { VpnStack } from "./vpn";
 import { OTHER_INTERNAL_SERVICES_SUBNET_GROUP_NAME } from "./constants";
 import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
-import { VpnStack } from "./vpn";
 
 export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -66,12 +66,12 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       description: "HL7 Notification Routing Network Infrastructure",
     });
 
-    props.config.hl7Notification.vpnConfigs.forEach(config => {
+    props.config.hl7Notification.vpnConfigs.forEach((config, index) => {
       new VpnStack(this, `NestedVpnStack${config.partnerName}`, {
         vpnConfig: config,
         vpc,
+        index,
         networkStack: this.networkStack.output,
-        mllpStack: this.mllpStack.output,
         description: `VPN Configuration for routing HL7 messages from ${config.partnerName}`,
       });
     });
