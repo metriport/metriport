@@ -56,7 +56,7 @@ export type MakeRequestParams<T> = {
   s3Path: string;
   axiosInstance: AxiosInstance;
   url: string;
-  method: "GET" | "POST" | "PATCH";
+  method: "GET" | "POST" | "PATCH" | "DELETE";
   data?: RequestData | undefined;
   headers?: Record<string, string> | undefined;
   schema: z.Schema<T>;
@@ -140,6 +140,15 @@ export async function makeRequest<T>({
       }
     }
     throw error;
+  }
+  if (!response.data && method === "DELETE") {
+    const outcome = schema.safeParse(undefined);
+    if (!outcome.success) {
+      const msg = `Response not parsed @ ${ehr}`;
+      log(msg);
+      throw new MetriportError(msg, undefined, fullAdditionalInfo);
+    }
+    return outcome.data;
   }
   if (!response.data) {
     const msg = `No body returned @ ${ehr}`;

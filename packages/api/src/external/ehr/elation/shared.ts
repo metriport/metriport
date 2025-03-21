@@ -4,14 +4,19 @@ import ElationApi, { ElationEnv, isElationEnv } from "@metriport/core/external/e
 import {
   BadRequestError,
   cxClientKeyAndSecretMapSecretSchema,
+  EhrSources,
   MetriportError,
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
+  NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
+import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
+import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
+import { getCxMappingOrFail } from "../../../command/mapping/cx";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 
@@ -81,20 +86,33 @@ function getElationEnv({
   if (!isElationEnv(environment)) {
     throw new MetriportError("Invalid Elation environment", undefined, { environment });
   }
-  const rawClientsMap = Config.getElationClientKeyAndSecretMap();
-  if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
-  const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
-  if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
+  const clientMap = getClientMap();
   const key = `${cxId}_${practiceId}_key`;
-  const keyEntry = clientMap.data[key];
+  const keyEntry = clientMap[key];
   const secret = `${cxId}_${practiceId}_secret`;
-  const secretEntry = clientMap.data[secret];
+  const secretEntry = clientMap[secret];
   if (!keyEntry || !secretEntry) throw new MetriportError("Elation credentials not found");
   return {
     environment,
     clientKey: keyEntry,
     clientSecret: secretEntry,
   };
+}
+
+function getCxIdAndPracticeIdFromElationApplicationId(applicationId: string): {
+  cxId: string;
+  practiceId: string;
+} {
+  const clientMap = getClientMap();
+  const entry = Object.entries(clientMap).find(([, v]) => v === applicationId);
+  if (!entry) throw new MetriportError("Elation application id not found");
+  const key = entry[0];
+  const keySplit = key.split("_");
+  if (keySplit.length !== 3) throw new MetriportError("Elation key for application id malformed");
+  const cxId = keySplit[0];
+  const practiceId = keySplit[1];
+  if (!cxId || !practiceId) throw new MetriportError("Elation cxId or practiceId not found");
+  return { cxId, practiceId };
 }
 
 export async function createElationClient(
@@ -106,4 +124,42 @@ export async function createElationClient(
     getEnv: { params: perPracticeParams, getEnv: getElationEnv },
     getClient: ElationApi.create,
   });
+}
+
+export async function getElationSigningKeyInfo(
+  applicationId: string,
+  resource: SubscriptionResource
+): Promise<{
+  cxId: string;
+  practiceId: string;
+  signingKey: string;
+}> {
+  const { cxId, practiceId } = getCxIdAndPracticeIdFromElationApplicationId(applicationId);
+  const cxMapping = await getCxMappingOrFail({
+    externalId: practiceId,
+    source: EhrSources.elation,
+  });
+  if (!cxMapping.secondaryMappings) {
+    throw new MetriportError("Elation secondary mappings not found", undefined, {
+      externalId: practiceId,
+      source: EhrSources.elation,
+    });
+  }
+  const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+  const signingKey = secondaryMappings.webhooks?.[resource]?.signingKey;
+  if (!signingKey) {
+    throw new NotFoundError("Elation signing key not found", {
+      externalId: practiceId,
+      source: EhrSources.elation,
+    });
+  }
+  return { cxId, practiceId, signingKey };
+}
+
+function getClientMap() {
+  const rawClientsMap = Config.getElationClientKeyAndSecretMap();
+  if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
+  const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
+  if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
+  return clientMap.data;
 }
