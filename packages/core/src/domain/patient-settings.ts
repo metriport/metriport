@@ -20,7 +20,6 @@ export interface PatientSettings extends BaseDomain, PatientSettingsCreate {}
 export type AdtSubscriber = {
   id: string;
   cxId: string;
-} & Pick<
-  PatientData,
-  "firstName" | "lastName" | "dob" | "address" | "personalIdentifiers" | "genderAtBirth"
->;
+  ssn?: string;
+  driversLicense?: string;
+} & Pick<PatientData, "firstName" | "lastName" | "dob" | "address" | "genderAtBirth">;

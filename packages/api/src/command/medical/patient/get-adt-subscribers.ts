@@ -51,7 +51,24 @@ export async function getAdtSubscribers({
         `),
           "address",
         ],
-        [Sequelize.literal(`data->'personalIdentifiers'`), "personalIdentifiers"],
+        [
+          Sequelize.literal(`
+          (SELECT value->>'value'
+           FROM jsonb_array_elements(data->'personalIdentifiers') value
+           WHERE value->>'type' = 'ssn'
+           LIMIT 1)
+          `),
+          "ssn",
+        ],
+        [
+          Sequelize.literal(`
+          (SELECT value->>'value'
+           FROM jsonb_array_elements(data->'personalIdentifiers') value
+           WHERE value->>'type' = 'driversLicense'
+           LIMIT 1)
+          `),
+          "driversLicense",
+        ],
         [Sequelize.literal(`data->'contact'`), "contact"],
         [Sequelize.literal(`data->>'genderAtBirth'`), "genderAtBirth"],
       ],
