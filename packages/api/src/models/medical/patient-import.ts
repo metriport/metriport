@@ -1,6 +1,7 @@
 import {
   PatientImport,
-  PatientImportParams,
+  PatientImportParamsCx,
+  PatientImportParamsOps,
   PatientImportStatus,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import { DataTypes, Sequelize } from "sequelize";
@@ -17,7 +18,8 @@ export class PatientImportModel extends BaseModel<PatientImportModel> implements
   declare total: number | undefined;
   declare successful: number | undefined;
   declare failed: number | undefined;
-  declare params: PatientImportParams;
+  declare paramsCx: PatientImportParamsCx;
+  declare paramsOps: PatientImportParamsOps;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientImportModel.init(
@@ -50,7 +52,10 @@ export class PatientImportModel extends BaseModel<PatientImportModel> implements
         failed: {
           type: DataTypes.INTEGER,
         },
-        params: {
+        paramsCx: {
+          type: DataTypes.JSONB,
+        },
+        paramsOps: {
           type: DataTypes.JSONB,
         },
       },

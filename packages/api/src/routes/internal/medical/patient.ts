@@ -55,10 +55,8 @@ import {
 } from "../../../command/medical/patient/get-patient";
 import { createPatientImport } from "../../../command/medical/patient/patient-import/create";
 import { getPatientImportJobOrFail } from "../../../command/medical/patient/patient-import/get";
-import {
-  updatePatientImportParams,
-  updatePatientImportStatus,
-} from "../../../command/medical/patient/patient-import/update";
+import { updatePatientImportParams } from "../../../command/medical/patient/patient-import/update-params";
+import { updatePatientImportStatus } from "../../../command/medical/patient/patient-import/update-status";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
@@ -1038,7 +1036,8 @@ router.post(
     const patientImportResponse = await createPatientImport({
       cxId,
       facilityId,
-      params: {
+      paramsCx: {},
+      paramsOps: {
         dryRun,
         rerunPdOnNewDemographics,
         triggerConsolidated,
@@ -1073,12 +1072,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromParamsOrFail("id", req);
-    // job parms
+    // job parms - to be stored in the repository
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
-    // request param
+    // request param - just being passed as parameter to this particular request
     const forceStatusUpdate = getFromQueryAsBoolean("forceStatusUpdate", req);
 
     await updatePatientImportParams({
@@ -1087,18 +1086,14 @@ router.post(
       rerunPdOnNewDemographics,
       triggerConsolidated,
       disableWebhooks,
+      dryRun,
     });
 
-    // TODO 2330 could potentially compare the params w/ the job record's params
     const patientImportParser = buildPatientImportParseHandler();
     await patientImportParser.processJobParse({
       cxId,
       jobId,
-      triggerConsolidated,
-      disableWebhooks,
-      rerunPdOnNewDemographics,
       forceStatusUpdate,
-      dryRun,
     });
 
     return res.sendStatus(status.OK);

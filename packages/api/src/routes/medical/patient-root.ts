@@ -28,7 +28,7 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
-import { PatientImportDto } from "./dtos/patient-import";
+import { PatientImportDto, patientImportDtoFromModel } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
 
@@ -196,25 +196,10 @@ router.post(
     const patientImportResponse = await createPatientImport({
       cxId,
       facilityId: facilityIdParam,
-      params: { dryRun: dryRunParam },
+      paramsCx: { dryRun: dryRunParam },
     });
 
-    const {
-      id: jobId,
-      facilityId,
-      status,
-      params: { dryRun },
-      createdAt,
-      uploadUrl,
-    } = patientImportResponse;
-    const respPayload: PatientImportDto = {
-      requestId: jobId,
-      facilityId,
-      status,
-      uploadUrl,
-      params: { dryRun },
-      createdAt: createdAt.toISOString(),
-    };
+    const respPayload: PatientImportDto = patientImportDtoFromModel(patientImportResponse);
     return res.status(httpStatus.OK).json(respPayload);
   })
 );

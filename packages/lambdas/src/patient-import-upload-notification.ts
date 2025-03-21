@@ -1,4 +1,3 @@
-import { fetchJobRecordOrFail } from "@metriport/core/command/patient-import/record/fetch-job-record";
 import { PatientImportParseRequest } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse";
 import { PatientImportParseCloud } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-cloud";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -50,10 +49,6 @@ export async function handler(event: S3Event) {
         );
       }
 
-      // Load from S3 so we can run local w/o relying on the lambda finding our local API
-      // to get job related info
-      const jobRecord = await fetchJobRecordOrFail({ cxId, jobId });
-
       const subjectSuffix = isSandbox
         ? " - :package: `SANDBOX` :package:"
         : isDev
@@ -71,16 +66,16 @@ export async function handler(event: S3Event) {
         slackNotificationUrl
       );
 
-      if (!isDev) {
-        console.log(`Calling the parse lambda`);
-        const parseCloud = new PatientImportParseCloud(patientImportParseLambdaName);
-        const payload: PatientImportParseRequest = {
-          cxId,
-          jobId,
-          ...jobRecord.params,
-        };
-        await parseCloud.processJobParse(payload);
+      if (isDev) {
+        console.log(
+          `Running in dev mode, not calling the parse lambda, call the internal endpoint!`
+        );
+        return;
       }
+
+      const parseCloud = new PatientImportParseCloud(patientImportParseLambdaName);
+      const payload: PatientImportParseRequest = { cxId, jobId };
+      await parseCloud.processJobParse(payload);
     } catch (error) {
       const msg = `Error processing new patient import file`;
       console.log(msg, sourceKey, errorToString(error));
