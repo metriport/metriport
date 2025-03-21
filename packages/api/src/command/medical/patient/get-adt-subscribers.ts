@@ -3,7 +3,7 @@ import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { USState, errorToString } from "@metriport/shared";
 import { FindOptions, Op, QueryTypes, Sequelize, WhereOptions } from "sequelize";
-import { PatientModel } from "../../../models/medical/patient";
+import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
@@ -21,7 +21,7 @@ export async function getAdtSubscribers({
 
   try {
     const states = `{${targetStates.join(",")}}`;
-    const findOptions: FindOptions<PatientModel> = {
+    const findOptions: FindOptions<PatientModelReadOnly> = {
       where: {
         ...getPaginationFilters(pagination),
         [Op.and]: [
@@ -69,7 +69,7 @@ export async function getAdtSubscribers({
       order: [["id", "DESC"]],
     };
 
-    const patients = await PatientModel.findAll(findOptions);
+    const patients = await PatientModelReadOnly.findAll(findOptions);
 
     log(`Done. Found ${patients.length} ADT subscribers for this page`);
 
@@ -94,7 +94,7 @@ export async function getAdtSubscribersCount(targetStates: USState[]): Promise<n
 
   try {
     const states = `{${targetStates.join(",")}}`;
-    const sequelize = PatientModel.sequelize;
+    const sequelize = PatientModelReadOnly.sequelize;
     if (!sequelize) throw new Error("Sequelize not found");
 
     const query = `

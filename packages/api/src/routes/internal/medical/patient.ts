@@ -3,6 +3,7 @@ import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolida
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { AdtSubscriber } from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -40,8 +41,6 @@ import {
   getAdtSubscribers,
   getAdtSubscribersCount,
 } from "../../../command/medical/patient/get-adt-subscribers";
-import { Pagination } from "../../../command/pagination";
-import { paginated } from "../../pagination";
 import {
   getPatientIds,
   getPatientOrFail,
@@ -52,6 +51,7 @@ import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
 } from "../../../command/medical/patient/update-patient";
+import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import BadRequestError from "../../../errors/bad-request";
 import {
@@ -82,6 +82,7 @@ import { dtoFromModel } from "../../medical/dtos/patientDTO";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
 import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
+import { paginated } from "../../pagination";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -119,7 +120,9 @@ const patientLoader = new PatientLoaderLocal();
  * @param req.query.fromItem The minimum item to be included in the response, inclusive.
  * @param req.query.toItem The maximum item to be included in the response, inclusive.
  * @param req.query.count The number of items to be included in the response.
- * @returns List of patients with ADT subscriptions in the specified states
+ * @returns An object containing:
+ * - `patients` - List of patients with ADT subscriptions in the specified states
+ * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
   "/adt-subscribers",
@@ -137,9 +140,9 @@ router.get(
       getTotalCount: () => getAdtSubscribersCount(states),
     });
 
-    const response: PaginatedResponse<(typeof items)[0], "subscribers"> = {
+    const response: PaginatedResponse<AdtSubscriber, "patients"> = {
       meta,
-      subscribers: items,
+      patients: items,
     };
     return res.status(status.OK).json(response);
   })

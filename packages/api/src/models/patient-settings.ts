@@ -1,7 +1,7 @@
 import { PatientSettings, Subscriptions } from "@metriport/core/domain/patient-settings";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "./_default";
-import { PatientModel } from "./medical/patient";
+import { PatientModelReadOnly } from "./medical/patient-readonly";
 
 export class PatientSettingsModel
   extends BaseModel<PatientSettingsModel>
@@ -38,11 +38,10 @@ export class PatientSettingsModel
     );
   };
 
-  static associate = (models: { PatientModel: typeof PatientModel }) => {
-    PatientSettingsModel.belongsTo(models.PatientModel, {
+  static associate = (models: { PatientModelReadOnly: typeof PatientModelReadOnly }) => {
+    PatientSettingsModel.belongsTo(models.PatientModelReadOnly, {
       foreignKey: "patientId",
       targetKey: "id",
-      as: "patient",
     });
   };
 }
