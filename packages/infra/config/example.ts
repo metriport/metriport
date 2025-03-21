@@ -161,6 +161,10 @@ export const config: EnvConfigNonSandbox = {
       fargateTaskCountMax: 4,
     },
   },
+  acmCertMonitor: {
+    scheduleExpressions: ["cw-schedule-expression"],
+    heartbeatUrl: "url-to-heartbeat-service",
+  },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
@@ -168,5 +172,11 @@ export const config: EnvConfigNonSandbox = {
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
+  slack: {
+    SLACK_ALERT_URL: "url-to-slack-alert",
+    SLACK_NOTIFICATION_URL: "url-to-slack-notification",
+    workspaceId: "workspace-id",
+    alertsChannelId: "alerts-channel-id",
+  },
 };
 export default config;

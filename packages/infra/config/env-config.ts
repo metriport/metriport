@@ -210,12 +210,21 @@ type EnvConfigBase = {
   };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
-  slack?: {
-    SLACK_ALERT_URL?: string;
-    SLACK_NOTIFICATION_URL?: string;
+  slack: {
+    SLACK_ALERT_URL: string;
+    SLACK_NOTIFICATION_URL: string;
     SLACK_SENSITIVE_DATA_URL?: string;
     workspaceId: string;
     alertsChannelId: string;
+  };
+  acmCertMonitor: {
+    /**
+     * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+     * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+     * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+     */
+    scheduleExpressions: string | string[];
+    heartbeatUrl: string;
   };
   docQueryChecker?: {
     /**
