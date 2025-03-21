@@ -36,7 +36,7 @@ export async function updateJobAtApi({
   const url = buildUrl(cxId, jobId);
   const payload: UpdateJobSchema = { status, total, failed, forceStatusUpdate };
   try {
-    log(`Updating API w/ status ${status}, paylaod ${JSON.stringify(payload)}`);
+    log(`Updating API w/ status ${status}, payload ${JSON.stringify(payload)}`);
     const response = await api.post(url, payload);
     if (!response.data) {
       throw new MetriportError(`No body returned from updateJobStatus`, undefined, { url });
