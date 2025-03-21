@@ -1,7 +1,8 @@
 import {
   PatientImportEntryStatusFailed,
   PatientImportEntryStatusParsed,
-  PatientImportParams,
+  PatientImportParamsCx,
+  PatientImportParamsOps,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import { PatientDemoData } from "../../domain/patient";
 
@@ -10,7 +11,8 @@ export type JobRecord = {
   facilityId: string;
   jobId: string;
   createdAt: string;
-  params: PatientImportParams;
+  paramsCx: PatientImportParamsCx;
+  paramsOps: PatientImportParamsOps;
 };
 
 export type FailedPatientRecord = {
