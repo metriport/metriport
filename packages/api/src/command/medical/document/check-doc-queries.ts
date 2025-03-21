@@ -21,6 +21,7 @@ import {
 dayjs.extend(duration);
 
 const MAX_TIME_TO_PROCESS = dayjs.duration({ minutes: 30 });
+const BUFFER_TIME = dayjs.duration({ minutes: 16 });
 const MAX_CONCURRENT_UDPATES = 10;
 
 /**
@@ -83,6 +84,10 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
       const extra = { amount, patientsToUpdate: updatedPatientIds.join(", ") };
       capture.message(msg, { extra, level: "warning" });
       log(msg, stringify(extra));
+    } else {
+      if (patientsWithInvalidStatusOrCount.length > 0) {
+        log("Got patients with invalid status from the DB, but no patients to update");
+      }
     }
 
     sendWHNotifications(patientsToUpdate);
@@ -118,6 +123,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
   string,
   GroupedValidationResult
 ]): Promise<void> {
+  const { log } = out(`updatePatientsInSequence cx ${cxId} patient ${patientId}`);
   async function updatePatient(): Promise<Patient | undefined> {
     const patientFilter = { id: patientId, cxId };
     return executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -129,7 +135,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
 
       const docProgress = patient.data.documentQueryProgress;
       if (!docProgress) {
-        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id}`);
+        log(`Patient without doc query progress @ update, skipping it`);
         return undefined;
       }
       if (whatToUpdate.convert) {
@@ -223,9 +229,13 @@ function getQuery(patientIds: string[] = []): string {
   const convert = property("convert");
   const download = property("download");
 
+  const from = MAX_TIME_TO_PROCESS.add(BUFFER_TIME).asMinutes();
+  const to = MAX_TIME_TO_PROCESS.asMinutes();
+
   const baseQuery =
     `select * from patient ` +
-    `where updated_at < now() - interval '${MAX_TIME_TO_PROCESS.asMinutes()}' minute ` +
+    `where updated_at > now() - interval '${from}' minute ` +
+    `  and updated_at < now() - interval '${to}' minute ` +
     `  and ((${convert}->'${total}')::int <> (${convert}->'${successful}')::int + (${convert}->'${errors}')::int ` +
     `        or ` +
     `        ${convert}->>'${status}' = '${processing}' ` +
