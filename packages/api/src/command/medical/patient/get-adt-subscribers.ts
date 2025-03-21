@@ -2,15 +2,52 @@ import { AdtSubscriber } from "@metriport/core/domain/patient-settings";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { USState, errorToString } from "@metriport/shared";
-import { FindOptions, Op, QueryTypes, Sequelize, WhereOptions } from "sequelize";
+import { FindOptions, Op, Order, Sequelize, WhereOptions } from "sequelize";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
 export type GetAdtSubscribersParams = {
-  targetStates: USState[];
+  targetStates: string;
   pagination: Pagination;
 };
+
+export function combineStatesIntoReplacementObject(states: USState[]): string {
+  return `{${states.join(",")}}`;
+}
+
+function getCommonQueryOptions(targetStates: string, pagination?: Pagination) {
+  const order: Order = [["id", "DESC"]];
+  return {
+    where: {
+      ...(pagination ? getPaginationFilters(pagination) : {}),
+      [Op.and]: [
+        Sequelize.literal(`
+            EXISTS (
+              SELECT 1
+              FROM jsonb_array_elements(data->'address') addr
+              WHERE addr->>'state' = ANY(:states)
+            )
+          `),
+      ],
+    } as WhereOptions,
+    replacements: {
+      states: targetStates,
+    },
+    include: [
+      {
+        model: PatientSettingsModel,
+        where: {
+          subscriptions: { adt: true },
+        },
+        attributes: [],
+        required: true,
+      },
+    ],
+    ...(pagination ? getPaginationLimits(pagination) : {}),
+    ...(pagination ? { order } : {}),
+  };
+}
 
 export async function getAdtSubscribers({
   targetStates,
@@ -20,23 +57,8 @@ export async function getAdtSubscribers({
   log(`States: ${targetStates}, pagination params: ${JSON.stringify(pagination)}`);
 
   try {
-    const states = `{${targetStates.join(",")}}`;
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      where: {
-        ...getPaginationFilters(pagination),
-        [Op.and]: [
-          Sequelize.literal(`
-            EXISTS (
-              SELECT 1
-              FROM jsonb_array_elements(data->'address') addr
-              WHERE addr->>'state' = ANY(:states)
-            )
-          `),
-        ],
-      } as WhereOptions,
-      replacements: {
-        states,
-      },
+      ...getCommonQueryOptions(targetStates, pagination),
       attributes: [
         "id",
         ["cx_id", "cxId"],
@@ -72,18 +94,6 @@ export async function getAdtSubscribers({
         [Sequelize.literal(`data->'contact'`), "contact"],
         [Sequelize.literal(`data->>'genderAtBirth'`), "genderAtBirth"],
       ],
-      include: [
-        {
-          model: PatientSettingsModel,
-          where: {
-            subscriptions: { adt: true },
-          },
-          attributes: [],
-          required: true,
-        },
-      ],
-      ...getPaginationLimits(pagination),
-      order: [["id", "DESC"]],
     };
 
     const patients = await PatientModelReadOnly.findAll(findOptions);
@@ -105,33 +115,17 @@ export async function getAdtSubscribers({
   }
 }
 
-export async function getAdtSubscribersCount(targetStates: USState[]): Promise<number> {
+export async function getAdtSubscribersCount(targetStates: string): Promise<number> {
   const { log } = out(`Get ADT Subscribers Count`);
   log(`States: ${targetStates}`);
 
   try {
-    const states = `{${targetStates.join(",")}}`;
-    const sequelize = PatientModelReadOnly.sequelize;
-    if (!sequelize) throw new Error("Sequelize not found");
+    const findOptions = {
+      ...getCommonQueryOptions(targetStates),
+      col: "id",
+    };
 
-    const query = `
-      SELECT COUNT(DISTINCT p.id) as count
-      FROM patient p
-      INNER JOIN patient_settings ps ON ps.patient_id = p.id
-      WHERE ps.subscriptions->>'adt' = 'true'
-      AND EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements(p.data->'address') addr
-        WHERE addr->>'state' = ANY(:states)
-      )
-    `;
-
-    const result = await sequelize.query(query, {
-      replacements: { states },
-      type: QueryTypes.SELECT,
-    });
-
-    const count = parseInt((result[0] as { count: string }).count);
+    const count = await PatientModelReadOnly.count(findOptions);
     log(`Done. Total count: ${count}`);
     return count;
   } catch (error) {

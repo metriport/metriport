@@ -38,6 +38,7 @@ import { getCoverageAssessments } from "../../../command/medical/patient/coverag
 import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
+  combineStatesIntoReplacementObject,
   getAdtSubscribers,
   getAdtSubscribersCount,
 } from "../../../command/medical/patient/get-adt-subscribers";
@@ -130,14 +131,15 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const stateInputs = getFromQueryAsArrayOrFail("states", req);
     const states = stateInputs.map(state => normalizeState(state));
+    const statesString = combineStatesIntoReplacementObject(states);
 
     const { meta, items } = await paginated({
       request: req,
       additionalQueryParams: { states: states.join(",") },
       getItems: (pagination: Pagination) => {
-        return getAdtSubscribers({ targetStates: states, pagination });
+        return getAdtSubscribers({ targetStates: statesString, pagination });
       },
-      getTotalCount: () => getAdtSubscribersCount(states),
+      getTotalCount: () => getAdtSubscribersCount(statesString),
     });
 
     const response: PaginatedResponse<AdtSubscriber, "patients"> = {

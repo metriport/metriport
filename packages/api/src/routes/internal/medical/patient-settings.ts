@@ -50,7 +50,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient-settings/bulk
+ * POST /internal/patient/settings/bulk
  *
  * Creates or updates patient settings across all patients for a CX.
  *
