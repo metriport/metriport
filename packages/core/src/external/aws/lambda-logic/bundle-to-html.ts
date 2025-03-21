@@ -852,7 +852,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
         ${
           notes.length > 0
             ? `<p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
-                "<br />"
+                "<br /><hr/>"
               )}</p>`
             : ""
         }
