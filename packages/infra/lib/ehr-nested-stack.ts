@@ -37,7 +37,7 @@ function settings() {
   const elationLinkPatientLambdaTimeout = waitTimeElationLinkPatient.plus(Duration.seconds(25));
   const elationLinkPatient: QueueAndLambdaSettings = {
     name: "EhrElationLinkPatient",
-    entry: "ehr-elation-link-patient",
+    entry: "elation-link-patient",
     lambda: {
       memory: 1024,
       batchSize: 1,
