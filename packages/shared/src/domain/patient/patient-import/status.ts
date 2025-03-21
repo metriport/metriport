@@ -17,12 +17,17 @@ export function validateNewStatus(
   currentStatus: PatientImportStatus,
   newStatus: PatientImportStatus
 ): PatientImportStatus {
+  const validStatusForProcessing = ["waiting", "processing"];
   switch (newStatus) {
     case "waiting":
       throw new BadRequestError(`Waiting is not a valid status to update`);
     case "processing":
-      if (currentStatus !== "waiting") {
-        throw new BadRequestError(`Import job is not waiting, cannot update to processing`);
+      if (!validStatusForProcessing.includes(currentStatus)) {
+        throw new BadRequestError(
+          `Import job is not in [${validStatusForProcessing.join(
+            ","
+          )}], cannot update to processing`
+        );
       }
       break;
     case "completed":
