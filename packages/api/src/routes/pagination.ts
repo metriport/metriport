@@ -137,15 +137,15 @@ function getPaginationUrl(
   additionalQueryParams: Record<string, string> | undefined
 ): string {
   const params = new URLSearchParams(item);
+  params.append("count", count.toString());
   if (additionalQueryParams) {
     for (const [key, value] of Object.entries(additionalQueryParams)) {
       params.append(key, value);
     }
   }
 
-  // if ("_reconstructedRoute" in req) {
-  //   console.log("returning _reconstructedRoute", req._reconstructedRoute);
-  //   return Config.getApiUrl() + req._reconstructedRoute + "?" + params.toString();
-  // }
+  if ("_reconstructedRoute" in req) {
+    return Config.getApiUrl() + req._reconstructedRoute + "?" + params.toString();
+  }
   return Config.getApiUrl() + req.baseUrl + "?" + params.toString();
 }
