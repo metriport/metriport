@@ -1,5 +1,6 @@
 import { z, ZodError, ZodFormattedError } from "zod";
 import { dateSchema } from "../../common/date";
+import { PatientImportStatus } from "../../domain/patient/patient-import/types";
 import { SearchSetBundle } from "../fhir/bundle";
 
 export const pingWebhookTypeSchema = z.literal(`ping`);
@@ -17,11 +18,15 @@ export type DocumentConversionWebhookType = z.infer<typeof docConversionWebhookT
 export const docBulkDownloadWebhookTypeSchema = z.literal(`medical.document-bulk-download-urls`);
 export type DocumentBulkDownloadWebhookType = z.infer<typeof docBulkDownloadWebhookTypeSchema>;
 
+export const bulkPatientImportWebhookTypeSchema = z.literal(`medical.bulk-patient-create`);
+export type BulkPatientImportWebhookType = z.infer<typeof bulkPatientImportWebhookTypeSchema>;
+
 export const mapiWebhookTypeSchema = consolidatedWebhookTypeSchema
   .or(consolidatedWebhookTypeSchema)
   .or(docDownloadWebhookTypeSchema)
   .or(docConversionWebhookTypeSchema)
-  .or(docBulkDownloadWebhookTypeSchema);
+  .or(docBulkDownloadWebhookTypeSchema)
+  .or(bulkPatientImportWebhookTypeSchema);
 export type MAPIWebhookType = z.infer<typeof mapiWebhookTypeSchema>;
 
 export const webhookTypeSchema = pingWebhookTypeSchema.or(mapiWebhookTypeSchema);
@@ -153,6 +158,19 @@ export type DocumentBulkDownloadWebhookRequest = z.infer<
   typeof documentBulkDownloadWebhookRequestSchema
 >;
 
+export type WebhookBulkPatientImportPayload = {
+  // TODO 2330 try to add the type to the metadata so it's types are safer/stronger
+  // meta: WebhookMetadata<BulkPatientImportWebhookType>;
+  meta: WebhookMetadata;
+  bulkPatientCreate: WebhookBulkPatientImportEntry;
+};
+
+export type WebhookBulkPatientImportEntry = {
+  requestId: string;
+  status: PatientImportStatus;
+  result?: string | undefined;
+};
+
 export const webhookRequestSchema = z.union([
   pingWebhookRequestDataSchema,
   consolidatedWebhookRequestSchema,
@@ -160,7 +178,7 @@ export const webhookRequestSchema = z.union([
   documentConversionWebhookRequestSchema,
   documentBulkDownloadWebhookRequestSchema,
 ]);
-export type WebhookRequest = z.infer<typeof webhookRequestSchema>;
+export type WebhookRequest = z.infer<typeof webhookRequestSchema> | WebhookBulkPatientImportPayload;
 
 export class WebhookRequestParsingFailure {
   constructor(
@@ -205,6 +223,15 @@ export function isDocumentBulkDownloadWebhookRequest(
   whRequest: WebhookRequest
 ): whRequest is DocumentBulkDownloadWebhookRequest {
   if (whRequest.meta.type === "medical.document-bulk-download-urls") {
+    return true;
+  }
+  return false;
+}
+
+export function isBulkPatientImportWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is WebhookBulkPatientImportPayload {
+  if (whRequest.meta.type === "medical.bulk-patient-create") {
     return true;
   }
   return false;
