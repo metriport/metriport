@@ -27,10 +27,6 @@ export class PatientImportParseLocal implements PatientImportParse {
   async processJobParse({
     cxId,
     jobId,
-    triggerConsolidated = false,
-    disableWebhooks = false,
-    rerunPdOnNewDemographics,
-    dryRun: dryRunFromInternal,
     forceStatusUpdate,
   }: PatientImportParseRequest): Promise<void> {
     const { log } = out(`PatientImport processJobParse.local - cxId ${cxId} jobId ${jobId}`);
@@ -39,9 +35,15 @@ export class PatientImportParseLocal implements PatientImportParse {
 
       const job = await updateJobAtApi({ cxId, jobId, status: "processing", forceStatusUpdate });
 
-      const { facilityId, params } = job;
-      const { dryRun: dryRunFromCreate } = params;
-      const dryRun = dryRunFromInternal != undefined ? dryRunFromInternal : dryRunFromCreate;
+      const { facilityId, paramsCx, paramsOps } = job;
+      const { dryRun: dryRunFromCx } = paramsCx ?? {};
+      const {
+        dryRun: dryRunFromOps,
+        triggerConsolidated,
+        disableWebhooks,
+        rerunPdOnNewDemographics,
+      } = paramsOps ?? {};
+      const dryRun = dryRunFromCx ?? dryRunFromOps;
 
       const patients = await validateAndParsePatientImportCsvFromS3({
         cxId,

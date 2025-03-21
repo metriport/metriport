@@ -18,7 +18,7 @@ dayjs.extend(duration);
 const presignedResultUrlDuration = dayjs.duration(3, "minutes");
 
 export async function processPatientImportWebhook(job: PatientImport): Promise<void> {
-  const { cxId, id: jobId, status, params } = job;
+  const { cxId, id: jobId, status, paramsOps } = job;
   const { log } = out(`processPatientImportWebhook - cx ${cxId}, job ${jobId}`);
   try {
     const settings = await getSettingsOrFail({ id: cxId });
@@ -34,7 +34,7 @@ export async function processPatientImportWebhook(job: PatientImport): Promise<v
         ...(presignedUrl && { result: presignedUrl }),
       },
     };
-    const isWhDisabled = params.disableWebhooks;
+    const isWhDisabled = paramsOps.disableWebhooks;
     const createWebhookRequestCmd: CreateWebhookRequestCommand = {
       cxId,
       requestId: jobId,
