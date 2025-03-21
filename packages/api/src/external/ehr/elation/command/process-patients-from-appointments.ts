@@ -100,7 +100,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = uniqueAppointments.flatMap(
     appointment => {
-      const secondaryMappings = secondaryMappingsMap[appointment.cxId];
+      const secondaryMappings = secondaryMappingsMap[appointment.practiceId];
       if (!secondaryMappings) {
         throw new MetriportError("Elation secondary mappings not found", undefined, {
           externalId: appointment.practiceId,
