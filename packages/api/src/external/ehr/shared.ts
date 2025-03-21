@@ -22,12 +22,14 @@ import {
   canvasWebhookSource,
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import {
+  ElationSecondaryMappings,
+  elationSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
+import {
   ElationClientJwtTokenData,
   elationClientSource,
   ElationDashJwtTokenData,
   elationDashSource,
-  ElationWebhookJwtTokenData,
-  elationWebhookSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
@@ -86,20 +88,20 @@ export type EhrClientJwtTokenData =
   | ElationClientJwtTokenData
   | CanvasClientJwtTokenData;
 
-export const ehrWebhookJwtTokenSources = [canvasWebhookSource, elationWebhookSource] as const;
+export const ehrWebhookJwtTokenSources = [canvasWebhookSource] as const;
 export type EhrWebhookJwtTokenSource = (typeof ehrWebhookJwtTokenSources)[number];
 export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhookJwtTokenSource {
   return ehrWebhookJwtTokenSources.includes(source as EhrWebhookJwtTokenSource);
 }
 
-export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData | ElationWebhookJwtTokenData;
+export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
 
-export type EhrCxMappingSecondaryMappings = AthenaSecondaryMappings;
+export type EhrCxMappingSecondaryMappings = AthenaSecondaryMappings | ElationSecondaryMappings;
 export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [key in EhrSource]: z.Schema | undefined;
 } = {
   [EhrSources.athena]: athenaSecondaryMappingsSchema,
-  [EhrSources.elation]: undefined,
+  [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: undefined,
 };
 

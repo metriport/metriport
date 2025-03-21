@@ -2,12 +2,13 @@ import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-pa
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
+import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
-import { getCxMappingsBySource } from "../../../../command/mapping/cx";
+import { getCxMappingOrFail, getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
   delayBetweenPatientBatches,
@@ -17,7 +18,10 @@ import {
   parallelPractices,
 } from "../../shared";
 import { createElationClient } from "../shared";
-import { SyncElationPatientIntoMetriportParams } from "./sync-patient";
+import {
+  SyncElationPatientIntoMetriportParams,
+  createOrUpdateElationPatientMetadata,
+} from "./sync-patient";
 
 dayjs.extend(duration);
 
@@ -118,6 +122,23 @@ async function syncPatient({
   elationPracticeId,
   elationPatientId,
 }: Omit<SyncElationPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
+  const cxMapping = await getCxMappingOrFail({
+    externalId: elationPracticeId,
+    source: EhrSources.elation,
+  });
+  if (!cxMapping.secondaryMappings) {
+    throw new MetriportError("Elation secondary mappings not found", undefined, {
+      externalId: elationPracticeId,
+      source: EhrSources.elation,
+    });
+  }
+  const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+  await createOrUpdateElationPatientMetadata({
+    cxId,
+    elationPracticeId,
+    elationPatientId,
+  });
+  if (secondaryMappings.backgroundAppointmentPatientProcessingDisabled) return;
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
     ehr: EhrSources.elation,

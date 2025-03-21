@@ -66,8 +66,11 @@ export function buildEncounterSections(diagnosticReports: DiagnosticReport[]): E
           const reportInsideDate = formatDateForDisplay(reportInsideTime);
           const isDuplicateDate = reportInsideDate === reportDate;
 
-          const hasSamePresentedForm = report.presentedForm?.some(pf =>
-            reportInside.presentedForm?.some(ripf => pf.data === ripf.data)
+          const hasSamePresentedForm = report.presentedForm?.some(reportForm =>
+            reportInside.presentedForm?.some(
+              insideForm =>
+                reportForm.data && insideForm.data && reportForm.data === insideForm.data
+            )
           );
 
           return isDuplicateDate && hasSamePresentedForm;
