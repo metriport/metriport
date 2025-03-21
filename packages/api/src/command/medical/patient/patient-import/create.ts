@@ -8,9 +8,10 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import {
   metaToRecord,
   PatientImport,
-  PatientImportUploadMetadata,
-  PatientImportParams,
+  PatientImportParamsCx,
+  PatientImportParamsOps,
   PatientImportStatus,
+  PatientImportUploadMetadata,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -24,7 +25,8 @@ const presignedUploadUrlDuration = dayjs.duration(10, "minutes");
 export type PatientImportCreateCmd = {
   cxId: string;
   facilityId?: string | undefined;
-  params?: Partial<PatientImportParams>;
+  paramsCx?: Partial<PatientImportParamsCx>;
+  paramsOps?: Partial<PatientImportParamsOps>;
 };
 
 export type PatientImportCreateResponse = PatientImport & {
@@ -43,27 +45,34 @@ export type PatientImportCreateResponse = PatientImport & {
 export async function createPatientImport({
   cxId,
   facilityId: facilityIdParam,
-  params = {},
+  paramsCx = {},
+  paramsOps = {},
 }: PatientImportCreateCmd): Promise<PatientImportCreateResponse> {
-  const { log } = out(
-    `createPatientImport - cxId ${cxId}, facilityId ${facilityIdParam}, params ${JSON.stringify(
-      params
-    )}`
+  const { log } = out(`createPatientImport - cxId ${cxId}, facilityId ${facilityIdParam}`);
+
+  const facility = await getOptionalFacilityOrFail(cxId, facilityIdParam);
+  const facilityId = facility.id;
+
+  log(
+    `Creating job w/ paramsCx ${JSON.stringify(paramsCx)}, paramsOps ${JSON.stringify(paramsOps)}`
   );
+
+  const { dryRun: dryRunCx = false } = paramsCx;
   const {
-    dryRun = false,
+    dryRun: dryRunOps = false,
     rerunPdOnNewDemographics = false,
     triggerConsolidated = false,
     disableWebhooks = false,
-  } = params;
-  const initializedParams: PatientImportParams = {
-    dryRun,
+  } = paramsOps;
+  const initializedParamsCx: PatientImportParamsCx = {
+    dryRun: dryRunCx,
+  };
+  const initializedParamsOps: PatientImportParamsOps = {
+    dryRun: dryRunOps,
     rerunPdOnNewDemographics,
     triggerConsolidated,
     disableWebhooks,
   };
-  const facility = await getOptionalFacilityOrFail(cxId, facilityIdParam);
-  const facilityId = facility.id;
 
   const jobId = uuidv7();
   const status: PatientImportStatus = "waiting";
@@ -81,7 +90,8 @@ export async function createPatientImport({
     total: undefined,
     successful: undefined,
     failed: undefined,
-    params: initializedParams,
+    paramsCx: initializedParamsCx,
+    paramsOps: initializedParamsOps,
   };
 
   const [job, uploadUrl] = await Promise.all([

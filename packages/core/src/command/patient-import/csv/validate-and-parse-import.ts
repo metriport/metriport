@@ -85,6 +85,7 @@ export async function validateAndParsePatientImportCsvFromS3({
       }
     );
 
+    // TODO 2330 split these in the `createPatientRecords` function
     return patients.map(p => ({
       rowNumber: p.rowNumber,
       status: p.parsed ? "processing" : "failed",

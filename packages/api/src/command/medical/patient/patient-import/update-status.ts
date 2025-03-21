@@ -9,7 +9,7 @@ import {
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { PatientImportModel } from "../../../../models/medical/patient-import";
-import { getPatientImportJobModelOrFail, getPatientImportJobOrFail } from "./get";
+import { getPatientImportJobOrFail } from "./get";
 import { processPatientImportWebhook } from "./process-patient-import-webhook";
 
 dayjs.extend(duration);
@@ -50,11 +50,14 @@ export async function updatePatientImportStatus({
 
   // TODO 2330 move to the model version for consistency
   const job = await getPatientImportJobOrFail({ cxId, id: jobId });
+  const { dryRun: dryRunCx } = job.paramsCx ?? {};
+  const { disableWebhooks, dryRun: dryRunOps } = job.paramsOps ?? {};
+  const dryRun = dryRunCx ?? dryRunOps;
   const oldStatus = job.status;
   const newStatus = status
     ? forceStatusUpdate
       ? status
-      : validateNewStatus(job.status, status)
+      : validateNewStatus(job.status, status, dryRun)
     : undefined;
 
   const jobToUpdate: PatientImport = {
@@ -78,49 +81,13 @@ export async function updatePatientImportStatus({
 
   const justTurnedProcessing = newStatus === "processing" && oldStatus === "waiting";
   const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
-  const shouldSendWebhook =
-    !job.params.disableWebhooks && (justTurnedProcessing || justTurnedCompleted);
+  const shouldSendWebhook = !disableWebhooks && (justTurnedProcessing || justTurnedCompleted);
   if (shouldSendWebhook) {
-    log(`Sending WH to cx for patient import, newStatus ${newStatus}, oldStatus ${oldStatus}`);
+    log(
+      `Sending WH to cx for patient import, newStatus ${newStatus}, ` +
+        `oldStatus ${oldStatus}, disableWebhooks ${disableWebhooks}`
+    );
     processPatientImportWebhook(jobToUpdate).catch(emptyFunction);
   }
   return jobToUpdate;
-}
-
-export type PatientImportUpdateParamsCmd = {
-  cxId: string;
-  jobId: string;
-  rerunPdOnNewDemographics?: boolean | undefined;
-  triggerConsolidated?: boolean | undefined;
-  disableWebhooks?: boolean | undefined;
-};
-
-/** ---------------------------------------------------------------------------
- * Updates a bulk patient import job's parameters.
- *
- * @param cxId - The customer ID.
- * @param jobId - The bulk import job ID.
- * @param rerunPdOnNewDemographics - Whether to rerun PD on new demographics.
- * @param triggerConsolidated - Whether to trigger consolidated.
- * @param disableWebhooks - Whether to disable webhooks.
- * @returns the updated job.
- */
-export async function updatePatientImportParams({
-  cxId,
-  jobId,
-  rerunPdOnNewDemographics,
-  triggerConsolidated,
-  disableWebhooks,
-}: PatientImportUpdateParamsCmd): Promise<PatientImport> {
-  const job = await getPatientImportJobModelOrFail({ cxId, id: jobId });
-
-  job.params = {
-    ...job.params,
-    ...(rerunPdOnNewDemographics && { rerunPdOnNewDemographics }),
-    ...(triggerConsolidated && { triggerConsolidated }),
-    ...(disableWebhooks && { disableWebhooks }),
-  };
-  job.changed("params", true);
-  const updatedJob = await job.save();
-  return updatedJob.dataValues;
 }
