@@ -6,7 +6,7 @@ import {
   cxClientKeyAndSecretMapSecretSchema,
   EhrSources,
   MetriportError,
-  normalizeEmailNewSafe,
+  normalizeEmailSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
@@ -26,7 +26,7 @@ export const elationWebhookJwtTokenSource = "elation-webhook";
 export function createContacts(patient: ElationPatient): Contact[] {
   return [
     ...(patient.emails ?? []).flatMap(e => {
-      const email = normalizeEmailNewSafe(e.email);
+      const email = normalizeEmailSafe(e.email);
       if (!email) return [];
       return { email };
     }),
