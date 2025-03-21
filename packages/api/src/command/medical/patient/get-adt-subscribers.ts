@@ -58,7 +58,6 @@ export async function getAdtSubscribers({
       include: [
         {
           model: PatientSettingsModel,
-          as: "settings",
           where: {
             subscriptions: { adt: true },
           },

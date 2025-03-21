@@ -21,7 +21,6 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
     PatientModel.hasOne(models.PatientSettingsModel, {
       foreignKey: "patientId",
       sourceKey: "id",
-      as: "settings",
     });
   };
 }

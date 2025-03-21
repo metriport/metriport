@@ -127,9 +127,7 @@ function getNextPageUrl(
   additionalQueryParams: Record<string, string> | undefined
 ): string {
   const p: PaginationFromItem = { fromItem: nextPageFromItem };
-  const pagUrl = getPaginationUrl(req, p, count, additionalQueryParams);
-
-  return pagUrl;
+  return getPaginationUrl(req, p, count, additionalQueryParams);
 }
 
 function getPaginationUrl(
@@ -145,9 +143,9 @@ function getPaginationUrl(
     }
   }
 
-  if ("_reconstructedRoute" in req) {
-    console.log("returning _reconstructedRoute", req._reconstructedRoute);
-    return Config.getApiUrl() + req._reconstructedRoute + "?" + params.toString();
-  }
+  // if ("_reconstructedRoute" in req) {
+  //   console.log("returning _reconstructedRoute", req._reconstructedRoute);
+  //   return Config.getApiUrl() + req._reconstructedRoute + "?" + params.toString();
+  // }
   return Config.getApiUrl() + req.baseUrl + "?" + params.toString();
 }
