@@ -27,6 +27,8 @@ import { createAddresses, createContacts, createElationClient, createNames } fro
 export const longDurationTokenDuration = dayjs.duration(1, "year");
 export const shortDurationTokenDuration = dayjs.duration(30, "minutes");
 
+const unknownPatientId = "unknown";
+
 export type SyncElationPatientIntoMetriportParams = {
   cxId: string;
   elationPracticeId: string;
@@ -53,15 +55,11 @@ export async function syncElationPatientIntoMetriport({
       id: existingPatient.patientId,
     });
     const metriportPatientId = metriportPatient.id;
-    const ehrDashUrl = await createElationPatientLink({ elationPracticeId, elationPatientId });
-    const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
-    await elationApi.updatePatientMetadata({
+    await createElationPatientMetadata({
       cxId,
-      patientId: elationPatientId,
-      metadata: {
-        object_id: metriportPatientId,
-        object_web_link: ehrDashUrl,
-      },
+      elationPracticeId,
+      elationPatientId,
+      metriportPatientId,
     });
     return metriportPatientId;
   }
@@ -82,7 +80,6 @@ export async function syncElationPatientIntoMetriport({
       patientId: metriportPatientId,
     }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
   }
-  const ehrDashUrl = await createElationPatientLink({ elationPracticeId, elationPatientId });
   await Promise.all([
     findOrCreatePatientMapping({
       cxId,
@@ -90,13 +87,12 @@ export async function syncElationPatientIntoMetriport({
       externalId: elationPatientId,
       source: EhrSources.elation,
     }),
-    elationApi.updatePatientMetadata({
+    createElationPatientMetadata({
       cxId,
-      patientId: elationPatientId,
-      metadata: {
-        object_id: metriportPatientId,
-        object_web_link: ehrDashUrl,
-      },
+      elationPracticeId,
+      elationPatientId,
+      metriportPatientId,
+      elationApi,
     }),
   ]);
   return metriportPatientId;
@@ -172,4 +168,59 @@ async function createElationPatientLink({
       elationPatientId,
     });
   }
+}
+
+async function createElationPatientMetadata({
+  cxId,
+  elationPracticeId,
+  elationPatientId,
+  metriportPatientId,
+  elationApi,
+}: {
+  cxId: string;
+  elationPracticeId: string;
+  elationPatientId: string;
+  metriportPatientId?: string;
+  elationApi?: ElationApi;
+}): Promise<void> {
+  const ehrDashUrl = await createElationPatientLink({ elationPracticeId, elationPatientId });
+  const api = elationApi ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
+  await api.updatePatientMetadata({
+    cxId,
+    patientId: elationPatientId,
+    metadata: {
+      object_id: metriportPatientId ?? unknownPatientId,
+      object_web_link: ehrDashUrl,
+    },
+  });
+}
+
+export async function createOrUpdateElationPatientMetadata({
+  cxId,
+  elationPracticeId,
+  elationPatientId,
+}: {
+  cxId: string;
+  elationPracticeId: string;
+  elationPatientId: string;
+}): Promise<void> {
+  const existingPatient = await getPatientMapping({
+    cxId,
+    externalId: elationPatientId,
+    source: EhrSources.elation,
+  });
+  if (existingPatient) {
+    await createElationPatientMetadata({
+      cxId,
+      elationPracticeId,
+      elationPatientId,
+      metriportPatientId: existingPatient.patientId,
+    });
+    return;
+  }
+  await createElationPatientMetadata({
+    cxId,
+    elationPracticeId,
+    elationPatientId,
+  });
 }

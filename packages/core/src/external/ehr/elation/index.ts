@@ -1,5 +1,11 @@
 import { Condition } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  JwtTokenInfo,
+  MetriportError,
+  NotFoundError,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointments,
@@ -8,13 +14,20 @@ import {
   bookedAppointmentSchema,
   CreatedProblem,
   createdProblemSchema,
+  CreatedSubscription,
+  createdSubscriptionSchema,
   elationClientJwtTokenResponseSchema,
   Metadata,
   Patient,
   patientSchema,
+  SubscriptionResource,
+  Subscriptions,
+  subscriptionsSchema,
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
+import { z } from "zod";
+import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import {
   ApiConfig,
@@ -27,11 +40,14 @@ import {
   MakeRequestParamsInEhr,
 } from "../shared";
 
+const apiUrl = Config.getApiUrl();
+
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
 }
 
 const elationDateFormat = "YYYY-MM-DD";
+const maxSubscribeAttempts = 3;
 
 const elationEnv = ["app", "sandbox"] as const;
 export type ElationEnv = (typeof elationEnv)[number];
@@ -250,6 +266,96 @@ class ElationApi {
       app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
     );
     return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
+  }
+
+  async replaceSubscription({
+    cxId,
+    resource,
+  }: {
+    cxId: string;
+    resource: SubscriptionResource;
+  }): Promise<void> {
+    const { debug } = out(
+      `Elation replaceSubscription - cxId ${cxId} practiceId ${this.practiceId} resource ${resource}`
+    );
+    const getSubscriptionsUrl = "/app/subscriptions/";
+    const additionalInfo = { cxId, practiceId: this.practiceId };
+    const subscriptions = await this.makeRequest<Subscriptions>({
+      cxId,
+      s3Path: `${resource}-replace-subscription-get`,
+      method: "GET",
+      url: getSubscriptionsUrl,
+      schema: subscriptionsSchema,
+      additionalInfo,
+      debug,
+    });
+    const subscription = subscriptions.results.find(s => s.resource === resource);
+    if (!subscription) {
+      throw new NotFoundError("Subscription not found @ Elation", undefined, {
+        resource,
+        cxId,
+        practiceId: this.practiceId,
+      });
+    }
+    const deleteSubscriptionUrl = `/app/subscriptions/${subscription.id}/`;
+    await this.makeRequest<undefined>({
+      cxId,
+      s3Path: `${resource}-replace-subscription-delete`,
+      method: "DELETE",
+      url: deleteSubscriptionUrl,
+      schema: z.undefined(),
+      additionalInfo,
+      debug,
+    });
+  }
+
+  async subscribeToResource({
+    cxId,
+    resource,
+    attempt = 1,
+  }: {
+    cxId: string;
+    resource: SubscriptionResource;
+    attempt?: number;
+  }): Promise<CreatedSubscription> {
+    const { log, debug } = out(
+      `Elation subscribeToResource - cxId ${cxId} practiceId ${this.practiceId} resource ${resource} attempt ${attempt}`
+    );
+    if (attempt > maxSubscribeAttempts) {
+      throw new MetriportError("Max attempts reached for subscribing to resource", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        resource,
+        attempt,
+      });
+    }
+    const subscriptionUrl = "/app/subscriptions/";
+    const additionalInfo = { cxId, practiceId: this.practiceId };
+    const data = {
+      resource,
+      target: `${apiUrl}/ehr/webhook/elation`,
+    };
+    try {
+      const subscription = await this.makeRequest<CreatedSubscription>({
+        cxId,
+        s3Path: `${resource}-subscribe`,
+        method: "POST",
+        url: subscriptionUrl,
+        data,
+        schema: createdSubscriptionSchema,
+        additionalInfo,
+        debug,
+      });
+      return subscription;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.message?.includes("Duplicated object")) {
+        log(`Subscription already exists for ${resource} and cxId ${cxId} @ Elation - deleting`);
+        await this.replaceSubscription({ cxId, resource });
+        return await this.subscribeToResource({ cxId, resource, attempt: attempt + 1 });
+      }
+      throw error;
+    }
   }
 
   private async makeRequest<T>({
