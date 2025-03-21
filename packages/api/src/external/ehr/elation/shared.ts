@@ -13,7 +13,7 @@ import {
   NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
-import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
+import { elationSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
@@ -145,7 +145,7 @@ export async function getElationSigningKeyInfo(
       source: EhrSources.elation,
     });
   }
-  const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+  const secondaryMappings = elationSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
   const signingKey = secondaryMappings.webhooks?.[resource]?.signingKey;
   if (!signingKey) {
     throw new NotFoundError("Elation signing key not found", {

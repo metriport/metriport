@@ -6,7 +6,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
 import {
-  AthenaSecondaryMappings,
+  athenaSecondaryMappingsSchema,
   BookedAppointment,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -59,7 +59,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
         source: EhrSources.athena,
       });
     }
-    const secondaryMappings = mapping.secondaryMappings as AthenaSecondaryMappings;
+    const secondaryMappings = athenaSecondaryMappingsSchema.parse(mapping.secondaryMappings);
     if (secondaryMappings.backgroundAppointmentsDisabled) {
       return [];
     }
