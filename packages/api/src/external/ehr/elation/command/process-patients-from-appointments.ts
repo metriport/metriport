@@ -8,7 +8,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
-import { getCxMappingOrFail, getCxMappingsBySource } from "../../../../command/mapping/cx";
+import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
   delayBetweenPatientBatches,
@@ -19,8 +19,8 @@ import {
 } from "../../shared";
 import { createElationClient } from "../shared";
 import {
-  SyncElationPatientIntoMetriportParams,
   createOrUpdateElationPatientMetadata,
+  SyncElationPatientIntoMetriportParams,
 } from "./sync-patient";
 
 dayjs.extend(duration);
@@ -38,6 +38,17 @@ export async function processPatientsFromAppointments(): Promise<void> {
     out("processPatientsFromAppointments @ Elation").log("No cx mappings found");
     return;
   }
+
+  const secondaryMappingsMap = cxMappings.reduce((acc, cxMapping) => {
+    if (!cxMapping.secondaryMappings) {
+      throw new MetriportError("Elation secondary mappings not found", undefined, {
+        externalId: cxMapping.externalId,
+        source: EhrSources.elation,
+      });
+    }
+    const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+    return { ...acc, [cxMapping.externalId]: secondaryMappings };
+  }, {} as Record<string, ElationSecondaryMappings>);
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
@@ -76,13 +87,31 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
 
-  const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = uniqueAppointments.map(
+  for (const appointment of uniqueAppointments) {
+    await createOrUpdateElationPatientMetadata({
+      cxId: appointment.cxId,
+      elationPracticeId: appointment.practiceId,
+      elationPatientId: appointment.patientId,
+    });
+  }
+
+  const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = uniqueAppointments.flatMap(
     appointment => {
-      return {
-        cxId: appointment.cxId,
-        elationPracticeId: appointment.practiceId,
-        elationPatientId: appointment.patientId,
-      };
+      const secondaryMappings = secondaryMappingsMap[appointment.cxId];
+      if (!secondaryMappings) {
+        throw new MetriportError("Elation secondary mappings not found", undefined, {
+          externalId: appointment.practiceId,
+          source: EhrSources.elation,
+        });
+      }
+      if (secondaryMappings.backgroundAppointmentPatientProcessingDisabled) return [];
+      return [
+        {
+          cxId: appointment.cxId,
+          elationPracticeId: appointment.practiceId,
+          elationPatientId: appointment.patientId,
+        },
+      ];
     }
   );
 
@@ -122,23 +151,6 @@ async function syncPatient({
   elationPracticeId,
   elationPatientId,
 }: Omit<SyncElationPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
-  const cxMapping = await getCxMappingOrFail({
-    externalId: elationPracticeId,
-    source: EhrSources.elation,
-  });
-  if (!cxMapping.secondaryMappings) {
-    throw new MetriportError("Elation secondary mappings not found", undefined, {
-      externalId: elationPracticeId,
-      source: EhrSources.elation,
-    });
-  }
-  const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
-  await createOrUpdateElationPatientMetadata({
-    cxId,
-    elationPracticeId,
-    elationPatientId,
-  });
-  if (secondaryMappings.backgroundAppointmentPatientProcessingDisabled) return;
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
     ehr: EhrSources.elation,
