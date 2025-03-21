@@ -9,15 +9,15 @@ import {
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { PatientImportModel } from "../../../../models/medical/patient-import";
-import { getPatientImportJobOrFail } from "./get";
+import { getPatientImportJobModelOrFail, getPatientImportJobOrFail } from "./get";
 import { processPatientImportWebhook } from "./process-patient-import-webhook";
 
 dayjs.extend(duration);
 
-export type PatientImportUpdateCmd = {
+export type PatientImportUpdateStatusCmd = {
   cxId: string;
   jobId: string;
-  status: PatientImportStatus;
+  status?: PatientImportStatus;
   total?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
@@ -38,21 +38,29 @@ export type PatientImportUpdateCmd = {
  * @throws BadRequestError if the status is not valid based on the current state.
  * @throws NotFoundError if the job doesn't exist.
  */
-export async function updatePatientImport({
+export async function updatePatientImportStatus({
   cxId,
   jobId,
   status,
   total,
   failed,
   forceStatusUpdate = false,
-}: PatientImportUpdateCmd): Promise<PatientImport> {
-  const { log } = out(`updatePatientImport - cxId ${cxId} jobId ${jobId}`);
+}: PatientImportUpdateStatusCmd): Promise<PatientImport> {
+  const { log } = out(`updatePatientImportStatus - cxId ${cxId} jobId ${jobId}`);
 
+  // TODO 2330 move to the model version for consistency
   const job = await getPatientImportJobOrFail({ cxId, id: jobId });
   const oldStatus = job.status;
-  const newStatus = forceStatusUpdate ? status : validateNewStatus(job.status, status);
+  const newStatus = status
+    ? forceStatusUpdate
+      ? status
+      : validateNewStatus(job.status, status)
+    : undefined;
 
-  const jobToUpdate: PatientImport = { ...job, status: newStatus };
+  const jobToUpdate: PatientImport = {
+    ...job,
+    status: newStatus ?? job.status,
+  };
   if (total != undefined) {
     jobToUpdate.total = total;
     jobToUpdate.successful = 0;
@@ -64,17 +72,55 @@ export async function updatePatientImport({
   if (newStatus === "processing" && oldStatus !== "processing") {
     jobToUpdate.startedAt = buildDayjs().toDate();
   }
-
   await PatientImportModel.update(jobToUpdate, {
     where: { cxId, id: jobId },
   });
 
   const justTurnedProcessing = newStatus === "processing" && oldStatus === "waiting";
   const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
-  const shouldSendWebhook = justTurnedProcessing || justTurnedCompleted;
+  const shouldSendWebhook =
+    !job.params.disableWebhooks && (justTurnedProcessing || justTurnedCompleted);
   if (shouldSendWebhook) {
     log(`Sending WH to cx for patient import, newStatus ${newStatus}, oldStatus ${oldStatus}`);
     processPatientImportWebhook(jobToUpdate).catch(emptyFunction);
   }
   return jobToUpdate;
+}
+
+export type PatientImportUpdateParamsCmd = {
+  cxId: string;
+  jobId: string;
+  rerunPdOnNewDemographics?: boolean | undefined;
+  triggerConsolidated?: boolean | undefined;
+  disableWebhooks?: boolean | undefined;
+};
+
+/** ---------------------------------------------------------------------------
+ * Updates a bulk patient import job's parameters.
+ *
+ * @param cxId - The customer ID.
+ * @param jobId - The bulk import job ID.
+ * @param rerunPdOnNewDemographics - Whether to rerun PD on new demographics.
+ * @param triggerConsolidated - Whether to trigger consolidated.
+ * @param disableWebhooks - Whether to disable webhooks.
+ * @returns the updated job.
+ */
+export async function updatePatientImportParams({
+  cxId,
+  jobId,
+  rerunPdOnNewDemographics,
+  triggerConsolidated,
+  disableWebhooks,
+}: PatientImportUpdateParamsCmd): Promise<PatientImport> {
+  const job = await getPatientImportJobModelOrFail({ cxId, id: jobId });
+
+  job.params = {
+    ...job.params,
+    ...(rerunPdOnNewDemographics && { rerunPdOnNewDemographics }),
+    ...(triggerConsolidated && { triggerConsolidated }),
+    ...(disableWebhooks && { disableWebhooks }),
+  };
+  job.changed("params", true);
+  const updatedJob = await job.save();
+  return updatedJob.dataValues;
 }

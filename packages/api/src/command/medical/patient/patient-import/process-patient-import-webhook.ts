@@ -3,12 +3,8 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture, out } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
 import { errorToString } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
-import {
-  PatientImport,
-  PatientImportStatus,
-} from "@metriport/shared/domain/patient/patient-import/types";
-import { WebhookMetadata } from "@metriport/shared/medical";
+import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { WebhookBulkPatientImportPayload } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getSettingsOrFail } from "../../../settings/getSettings";
@@ -21,19 +17,6 @@ dayjs.extend(duration);
 
 const presignedResultUrlDuration = dayjs.duration(3, "minutes");
 
-export type WebhookBulkPatientImportPayload = {
-  // TODO 2330 try to add the type to the metadata so it's types are safer/stronger
-  // meta: WebhookMetadata<BulkPatientImportWebhookType>;
-  meta: WebhookMetadata;
-  bulkPatientCreate: WebhookBulkPatientImportEntry;
-};
-
-export type WebhookBulkPatientImportEntry = {
-  requestId: string;
-  status: PatientImportStatus;
-  result?: string | undefined;
-};
-
 export async function processPatientImportWebhook(job: PatientImport): Promise<void> {
   const { cxId, id: jobId, status, params } = job;
   const { log } = out(`processPatientImportWebhook - cx ${cxId}, job ${jobId}`);
@@ -43,12 +26,8 @@ export async function processPatientImportWebhook(job: PatientImport): Promise<v
     const presignedUrl = await getBulkPatientImportPresignedUrl(job);
 
     const whType = "medical.bulk-patient-create";
-    const payload: WebhookBulkPatientImportPayload = {
-      meta: {
-        messageId: jobId,
-        when: buildDayjs().toISOString(),
-        type: whType,
-      },
+    // `meta` is added by processRequest()
+    const payload: Omit<WebhookBulkPatientImportPayload, "meta"> = {
       bulkPatientCreate: {
         requestId: jobId,
         status,
