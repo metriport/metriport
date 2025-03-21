@@ -37,7 +37,7 @@ export class EhrSyncPatientLocal implements EhrSyncPatientHandler {
           practiceId,
           patientId,
           triggerDq,
-          context: "ehr-sync-patient-local.processEhrPatientSync",
+          context: "ehr-sync-patient-local.processSyncPatient",
           error,
         },
       });

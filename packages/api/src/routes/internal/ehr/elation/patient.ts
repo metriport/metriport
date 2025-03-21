@@ -3,7 +3,10 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processPatientsFromAppointments } from "../../../../external/ehr/elation/command/process-patients-from-appointments";
-import { syncElationPatientIntoMetriport } from "../../../../external/ehr/elation/command/sync-patient";
+import {
+  createOrUpdateElationPatientMetadata,
+  syncElationPatientIntoMetriport,
+} from "../../../../external/ehr/elation/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
@@ -47,7 +50,7 @@ router.post(
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Elation Patient.
- * @returns Metriport Patient if found.
+ * @returns 200 OK
  */
 router.post(
   "/",
@@ -63,6 +66,29 @@ router.post(
       elationPatientId,
       triggerDq,
     }).catch(processAsyncError("Elation syncElationPatientIntoMetriport"));
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/elation/patient/link
+ *
+ * Creates or updates the Elation patient metadata
+ * @param req.params.id The ID of Elation Patient.
+ * @returns 200 OK
+ */
+router.post(
+  "/link",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const elationPatientId = getFromQueryOrFail("patientId", req);
+    const elationPracticeId = getFromQueryOrFail("practiceId", req);
+    createOrUpdateElationPatientMetadata({
+      cxId,
+      elationPracticeId,
+      elationPatientId,
+    }).catch(processAsyncError("Elation createOrUpdateElationPatientMetadata"));
     return res.sendStatus(httpStatus.OK);
   })
 );

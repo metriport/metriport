@@ -160,6 +160,10 @@ export class Config {
     return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
   }
 
+  static getElationLinkPatientQueueUrl(): string {
+    return getEnvVarOrFail("ELATION_LINK_PATIENT_QUEUE_URL");
+  }
+
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }

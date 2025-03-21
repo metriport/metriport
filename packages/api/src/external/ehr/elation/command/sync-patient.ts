@@ -170,19 +170,21 @@ async function createElationPatientLink({
   }
 }
 
+type CreateElationPatientMetadataParams = {
+  cxId: string;
+  elationPracticeId: string;
+  elationPatientId: string;
+  metriportPatientId?: string;
+  elationApi?: ElationApi;
+};
+
 async function createElationPatientMetadata({
   cxId,
   elationPracticeId,
   elationPatientId,
   metriportPatientId,
   elationApi,
-}: {
-  cxId: string;
-  elationPracticeId: string;
-  elationPatientId: string;
-  metriportPatientId?: string;
-  elationApi?: ElationApi;
-}): Promise<void> {
+}: CreateElationPatientMetadataParams): Promise<void> {
   const ehrDashUrl = await createElationPatientLink({ elationPracticeId, elationPatientId });
   const api = elationApi ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
   await api.updatePatientMetadata({
@@ -195,15 +197,16 @@ async function createElationPatientMetadata({
   });
 }
 
+export type CreateOrUpdateElationPatientMetadataParams = Omit<
+  CreateElationPatientMetadataParams,
+  "metriportPatientId" | "elationApi"
+>;
+
 export async function createOrUpdateElationPatientMetadata({
   cxId,
   elationPracticeId,
   elationPatientId,
-}: {
-  cxId: string;
-  elationPracticeId: string;
-  elationPatientId: string;
-}): Promise<void> {
+}: CreateOrUpdateElationPatientMetadataParams): Promise<void> {
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: elationPatientId,
