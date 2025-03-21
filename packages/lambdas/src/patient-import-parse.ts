@@ -16,21 +16,13 @@ const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (params: PatientImportParseRequest): Promise<void> => {
-    const { cxId, jobId, dryRun, triggerConsolidated, disableWebhooks, rerunPdOnNewDemographics } =
-      params;
+    const { cxId, jobId } = params;
     const { log } = out(`bulk import parse - cx ${cxId} job ${jobId}`);
     log(`Running the bulk import parse w/ params ${JSON.stringify(params)}`);
 
     const startedAt = new Date().getTime();
     try {
-      const processJobParseRequest: PatientImportParseRequest = {
-        cxId,
-        jobId,
-        triggerConsolidated,
-        disableWebhooks,
-        rerunPdOnNewDemographics,
-        dryRun,
-      };
+      const processJobParseRequest: PatientImportParseRequest = { cxId, jobId };
       const patientImportParser = new PatientImportParseLocal(patientImportBucket);
 
       await patientImportParser.processJobParse(processJobParseRequest);
