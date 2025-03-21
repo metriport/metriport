@@ -116,23 +116,17 @@ export async function processPatientsFromAppointments(): Promise<void> {
     delay: delayBetweenPatientBatches.asMilliseconds(),
   });
 
-  const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = uniqueAppointments.flatMap(
+  const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = linkPatientArgs.flatMap(
     appointment => {
-      const secondaryMappings = secondaryMappingsMap[appointment.practiceId];
+      const secondaryMappings = secondaryMappingsMap[appointment.elationPracticeId];
       if (!secondaryMappings) {
         throw new MetriportError("Elation secondary mappings not found", undefined, {
-          externalId: appointment.practiceId,
+          externalId: appointment.elationPracticeId,
           source: EhrSources.elation,
         });
       }
       if (secondaryMappings.backgroundAppointmentPatientProcessingDisabled) return [];
-      return [
-        {
-          cxId: appointment.cxId,
-          elationPracticeId: appointment.practiceId,
-          elationPatientId: appointment.patientId,
-        },
-      ];
+      return [appointment];
     }
   );
 
