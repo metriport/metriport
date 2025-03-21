@@ -1,5 +1,5 @@
 import { MetriportError } from "@metriport/shared";
-import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
+import { elationSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import {
   CreatedSubscription,
   SubscriptionResource,
@@ -28,7 +28,7 @@ export async function subscribeToWebhook({
       source: EhrSources.elation,
     });
   }
-  const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+  const secondaryMappings = elationSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
   const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   const subscription = await api.subscribeToResource({ cxId, resource });
   await setSecondaryMappingsOnCxMappingById({

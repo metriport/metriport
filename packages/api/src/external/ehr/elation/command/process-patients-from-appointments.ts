@@ -3,7 +3,10 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, MetriportError } from "@metriport/shared";
-import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
+import {
+  ElationSecondaryMappings,
+  elationSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -46,7 +49,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
         source: EhrSources.elation,
       });
     }
-    const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+    const secondaryMappings = elationSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
     return { ...acc, [cxMapping.externalId]: secondaryMappings };
   }, {} as Record<string, ElationSecondaryMappings>);
 

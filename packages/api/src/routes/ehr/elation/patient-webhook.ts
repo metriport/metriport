@@ -1,7 +1,7 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { out } from "@metriport/core/util/log";
 import { MetriportError } from "@metriport/shared";
-import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
+import { elationSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { elationPatientEventSchema } from "@metriport/shared/interface/external/ehr/elation/event";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
@@ -48,7 +48,7 @@ router.post(
         source: EhrSources.elation,
       });
     }
-    const secondaryMappings = cxMapping.secondaryMappings as ElationSecondaryMappings;
+    const secondaryMappings = elationSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
     await createOrUpdateElationPatientMetadata({
       cxId,
       elationPracticeId,
