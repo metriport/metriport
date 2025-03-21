@@ -39,7 +39,10 @@ import {
 } from "../../../command/medical/patient/get-patient";
 import { createPatientImport } from "../../../command/medical/patient/patient-import/create";
 import { getPatientImportJobOrFail } from "../../../command/medical/patient/patient-import/get";
-import { updatePatientImport } from "../../../command/medical/patient/patient-import/update";
+import {
+  updatePatientImportParams,
+  updatePatientImportStatus,
+} from "../../../command/medical/patient/patient-import/update";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
@@ -991,11 +994,21 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromParamsOrFail("id", req);
+    // job parms
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
-    const forceStatusUpdate = getFromQueryAsBoolean("forceStatusUpdate", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
+    // request param
+    const forceStatusUpdate = getFromQueryAsBoolean("forceStatusUpdate", req);
+
+    await updatePatientImportParams({
+      cxId,
+      jobId,
+      rerunPdOnNewDemographics,
+      triggerConsolidated,
+      disableWebhooks,
+    });
 
     // TODO 2330 could potentially compare the params w/ the job record's params
     const patientImportParser = buildPatientImportParseHandler();
@@ -1032,7 +1045,7 @@ router.post(
     const jobId = getFromParamsOrFail("id", req);
     const updateParams = updateJobSchema.parse(req.body);
 
-    const patientImport = await updatePatientImport({
+    const patientImport = await updatePatientImportStatus({
       jobId,
       cxId,
       status: updateParams.status,

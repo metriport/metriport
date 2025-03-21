@@ -47,25 +47,30 @@ export type PatientImportEntryStatus =
 
 const isDevKey = "isDev";
 
-export type PatientImportMetadata = {
+/**
+ * Used to store metadata on the upload URL.
+ */
+export type PatientImportUploadMetadata = {
   [isDevKey]?: boolean;
 };
 
 export function metaToRecord(
-  metadata: PatientImportMetadata
-): Record<keyof PatientImportMetadata, string> {
+  metadata: PatientImportUploadMetadata
+): Record<keyof PatientImportUploadMetadata, string> {
   return {
     [isDevKey]: metadata[isDevKey] ? "true" : "false",
   };
 }
 
-export function recordToMeta(record: Record<string, string>): PatientImportMetadata {
+export function recordToMeta(record: Record<string, string>): PatientImportUploadMetadata {
   return {
     ...(record[isDevKey] ? { [isDevKey]: record[isDevKey] === "true" } : {}),
   };
 }
 
-export function isPatientImportRunningOnDev(metadata: PatientImportMetadata | undefined): boolean {
+export function isPatientImportRunningOnDev(
+  metadata: PatientImportUploadMetadata | undefined
+): boolean {
   const isDevProp = metadata?.[isDevKey];
   return isDevProp ? [true, "true"].includes(isDevProp) : false;
 }
