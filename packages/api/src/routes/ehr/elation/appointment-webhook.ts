@@ -1,4 +1,5 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+import { out } from "@metriport/core/util/log";
 import { MetriportError } from "@metriport/shared";
 import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { elationAppointmentEventSchema } from "@metriport/shared/interface/external/ehr/elation/event";
@@ -11,7 +12,6 @@ import { createOrUpdateElationPatientMetadata } from "../../../external/ehr/elat
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
-import { out } from "@metriport/core/util/log";
 
 const router = Router();
 
@@ -26,10 +26,10 @@ router.post(
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const { log } = out(`${req.method} ${req.url}`);
     const cxId = getCxIdOrFail(req);
     const elationPracticeId = getFromQueryOrFail("practiceId", req);
     const event = elationAppointmentEventSchema.parse(req.body);
+    const { log } = out(`${req.method} ${req.url} ${cxId} ${elationPracticeId} ${event.event_id}`);
     if (event.action === "deleted") {
       log(`Appointment event is a deleted event for appointment ${event.data.id}`);
       return res.sendStatus(httpStatus.OK);

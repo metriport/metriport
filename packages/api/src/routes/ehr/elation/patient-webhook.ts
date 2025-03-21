@@ -1,3 +1,4 @@
+import { out } from "@metriport/core/util/log";
 import { elationPatientEventSchema } from "@metriport/shared/interface/external/ehr/elation/event";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -6,7 +7,6 @@ import { createOrUpdateElationPatientMetadata } from "../../../external/ehr/elat
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
-import { out } from "@metriport/core/util/log";
 
 const router = Router();
 
@@ -21,10 +21,10 @@ router.post(
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const { log } = out(`${req.method} ${req.url}`);
     const cxId = getCxIdOrFail(req);
     const elationPracticeId = getFromQueryOrFail("practiceId", req);
     const event = elationPatientEventSchema.parse(req.body);
+    const { log } = out(`${req.method} ${req.url} ${cxId} ${elationPracticeId} ${event.event_id}`);
     if (event.action === "deleted") {
       log(`Patient event is a deleted event for patient ${event.data.id}`);
       return res.sendStatus(httpStatus.OK);
