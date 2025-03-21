@@ -16,7 +16,7 @@ export async function getPatientImportJob({
   cxId: string;
   id: string;
 }): Promise<PatientImport | undefined> {
-  const job = await PatientImportModel.findOne({ where: { cxId, id } });
+  const job = await getPatientImportJobModel({ cxId, id });
   return job?.dataValues;
 }
 
@@ -35,7 +35,43 @@ export async function getPatientImportJobOrFail({
   cxId: string;
   id: string;
 }): Promise<PatientImport> {
-  const job = await getPatientImportJob({ cxId, id });
+  const job = await getPatientImportJobModelOrFail({ cxId, id });
+  return job.dataValues;
+}
+
+/**
+ * Gets a bulk patient import job model.
+ *
+ * @param cxId - The customer ID.
+ * @param id - The bulk import job ID.
+ * @returns the bulk import job model.
+ */
+export async function getPatientImportJobModel({
+  cxId,
+  id,
+}: {
+  cxId: string;
+  id: string;
+}): Promise<PatientImportModel | null> {
+  return PatientImportModel.findOne({ where: { cxId, id } });
+}
+
+/**
+ * Gets a bulk patient import job model or fails if it doesn't exist.
+ *
+ * @param cxId - The customer ID.
+ * @param id - The bulk import job ID.
+ * @returns the bulk import job model.
+ * @throws NotFoundError if the job doesn't exist.
+ */
+export async function getPatientImportJobModelOrFail({
+  cxId,
+  id,
+}: {
+  cxId: string;
+  id: string;
+}): Promise<PatientImportModel> {
+  const job = await getPatientImportJobModel({ cxId, id });
   if (!job) {
     throw new NotFoundError(`Patient import job not found`);
   }
