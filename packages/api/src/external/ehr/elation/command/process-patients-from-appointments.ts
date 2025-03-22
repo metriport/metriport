@@ -1,3 +1,4 @@
+import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
@@ -22,7 +23,7 @@ import {
 } from "../../shared";
 import { createElationClient } from "../shared";
 import {
-  createOrUpdateElationPatientMetadata,
+  CreateOrUpdateElationPatientMetadataParams,
   SyncElationPatientIntoMetriportParams,
 } from "./sync-patient";
 
@@ -90,15 +91,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
 
-  for (const appointment of uniqueAppointments) {
-    await createOrUpdateElationPatientMetadata({
-      cxId: appointment.cxId,
-      elationPracticeId: appointment.practiceId,
-      elationPatientId: appointment.patientId,
-    });
-  }
-
-  const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = uniqueAppointments.flatMap(
+  const linkPatientArgs: CreateOrUpdateElationPatientMetadataParams[] = uniqueAppointments.flatMap(
     appointment => {
       const secondaryMappings = secondaryMappingsMap[appointment.practiceId];
       if (!secondaryMappings) {
@@ -107,7 +100,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
           source: EhrSources.elation,
         });
       }
-      if (secondaryMappings.backgroundAppointmentPatientProcessingDisabled) return [];
+      if (secondaryMappings.backgroundAppointmentPatientLinkingDisabled) return [];
       return [
         {
           cxId: appointment.cxId,
@@ -115,6 +108,25 @@ export async function processPatientsFromAppointments(): Promise<void> {
           elationPatientId: appointment.patientId,
         },
       ];
+    }
+  );
+
+  await executeAsynchronously(linkPatientArgs, linkPatient, {
+    numberOfParallelExecutions: parallelPatients,
+    delay: delayBetweenPatientBatches.asMilliseconds(),
+  });
+
+  const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = linkPatientArgs.flatMap(
+    appointment => {
+      const secondaryMappings = secondaryMappingsMap[appointment.elationPracticeId];
+      if (!secondaryMappings) {
+        throw new MetriportError("Elation secondary mappings not found", undefined, {
+          externalId: appointment.elationPracticeId,
+          source: EhrSources.elation,
+        });
+      }
+      if (secondaryMappings.backgroundAppointmentPatientProcessingDisabled) return [];
+      return [appointment];
     }
   );
 
@@ -147,6 +159,19 @@ async function getAppointments({
     log(`Failed to get appointments. Cause: ${errorToString(error)}`);
     return { error };
   }
+}
+
+async function linkPatient({
+  cxId,
+  elationPracticeId,
+  elationPatientId,
+}: CreateOrUpdateElationPatientMetadataParams): Promise<void> {
+  const handler = buildElationLinkPatientHandler();
+  await handler.processLinkPatient({
+    cxId,
+    practiceId: elationPracticeId,
+    patientId: elationPatientId,
+  });
 }
 
 async function syncPatient({
