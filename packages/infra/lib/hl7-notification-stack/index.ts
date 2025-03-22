@@ -19,7 +19,6 @@ const NUM_AZS = 2;
 
 export class Hl7NotificationStack extends MetriportCompositeStack {
   public readonly networkStack: NetworkStack;
-  public readonly mllpStack: MllpStack;
 
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
     super(scope, id, props);
@@ -50,7 +49,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       lifecycleRules: [{ maxImageCount: 5000 }],
     });
 
-    this.mllpStack = new MllpStack(this, "NestedMllpStack", {
+    new MllpStack(this, "NestedMllpStack", {
       stackName: "NestedMllpStack",
       config: props.config,
       version: props.version,
