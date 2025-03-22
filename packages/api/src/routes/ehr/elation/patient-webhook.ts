@@ -1,6 +1,7 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { out } from "@metriport/core/util/log";
 import { MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { elationSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { elationPatientEventSchema } from "@metriport/shared/interface/external/ehr/elation/event";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -9,6 +10,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
 import { createOrUpdateElationPatientMetadata } from "../../../external/ehr/elation/command/sync-patient";
+import { elationWebhookCreatedDateDiffSeconds } from "../../../external/ehr/elation/shared";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
@@ -34,7 +36,11 @@ router.post(
       log(`Patient event is a deleted event for patient ${event.data.id}`);
       return res.sendStatus(httpStatus.OK);
     }
-    if (event.data.created_date !== event.data.last_modified) {
+    const diff = buildDayjs(event.data.last_modified).diff(
+      buildDayjs(event.data.created_date),
+      "second"
+    );
+    if (diff > elationWebhookCreatedDateDiffSeconds.asSeconds()) {
       log(`Patient event is not a created event for patient ${event.data.id}`);
       return res.sendStatus(httpStatus.OK);
     }

@@ -16,12 +16,14 @@ import {
 import { elationSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
+import dayjs from "dayjs";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
 
 export const elationClientJwtTokenSource = "elation-client";
 export const elationWebhookJwtTokenSource = "elation-webhook";
+export const elationWebhookCreatedDateDiffSeconds = dayjs.duration(5, "seconds");
 
 export function createContacts(patient: ElationPatient): Contact[] {
   return [
