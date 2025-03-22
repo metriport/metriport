@@ -3,7 +3,11 @@ import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolida
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { AdtSubscriber } from "@metriport/core/domain/patient-settings";
+import {
+  Hl7v2Subscriber,
+  hl7v2SubscriptionRequestSchema,
+  validHl7v2Subscriptions,
+} from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -38,10 +42,10 @@ import { getCoverageAssessments } from "../../../command/medical/patient/coverag
 import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
-  combineStatesIntoReplacementObject,
-  getAdtSubscribers,
-  getAdtSubscribersCount,
-} from "../../../command/medical/patient/get-adt-subscribers";
+  GetHl7v2SubscribersParams,
+  getHl7v2Subscribers,
+  getHl7v2SubscribersCount,
+} from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
@@ -113,36 +117,59 @@ const SLEEP_TIME = dayjs.duration({ seconds: 5 });
 const patientLoader = new PatientLoaderLocal();
 
 /** ---------------------------------------------------------------------------
- * GET /internal/patient/adt-subscribers
+ * GET /internal/patient/hl7v2-subscribers
  *
- * Gets all patients that have ADT subscriptions enabled for the given states.
+ * This is a paginated route.
+ * Gets all patients that have the specified HL7v2 subscriptions enabled for the given states.
  *
- * @param req.query.states List of US state codes to filter by
+ * @param req.query.states List of US state codes to filter by.
+ * @param req.query.subscriptions List of HL7v2 subscriptions to filter by. Currently, only supports "adt".
  * @param req.query.fromItem The minimum item to be included in the response, inclusive.
  * @param req.query.toItem The maximum item to be included in the response, inclusive.
  * @param req.query.count The number of items to be included in the response.
  * @returns An object containing:
- * - `patients` - List of patients with ADT subscriptions in the specified states
+ * - `patients` - List of patients with HL7v2 subscriptions in the specified states.
  * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
-  "/adt-subscribers",
+  "/hl7v2-subscribers",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const stateInputs = getFromQueryAsArrayOrFail("states", req);
     const states = stateInputs.map(state => normalizeState(state));
-    const statesString = combineStatesIntoReplacementObject(states);
+
+    const subscriptions = getFromQueryAsArrayOrFail("subscriptions", req);
+
+    const { validSubscriptions, invalidSubscriptions } = hl7v2SubscriptionRequestSchema.parse({
+      subscriptions,
+    }).subscriptions;
+
+    if (invalidSubscriptions.length > 0) {
+      throw new BadRequestError(
+        `Invalid subscription options provided. Valid options are: ${validHl7v2Subscriptions.join(
+          ", "
+        )}`
+      );
+    }
+
+    const params: GetHl7v2SubscribersParams = {
+      states,
+      subscriptions: validSubscriptions,
+    };
 
     const { meta, items } = await paginated({
       request: req,
       additionalQueryParams: { states: states.join(",") },
       getItems: (pagination: Pagination) => {
-        return getAdtSubscribers({ targetStates: statesString, pagination });
+        return getHl7v2Subscribers({
+          ...params,
+          pagination,
+        });
       },
-      getTotalCount: () => getAdtSubscribersCount(statesString),
+      getTotalCount: () => getHl7v2SubscribersCount(params),
     });
 
-    const response: PaginatedResponse<AdtSubscriber, "patients"> = {
+    const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {
       meta,
       patients: items,
     };
