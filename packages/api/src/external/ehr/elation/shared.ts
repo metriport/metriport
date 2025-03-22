@@ -23,7 +23,7 @@ import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } fro
 
 export const elationClientJwtTokenSource = "elation-client";
 export const elationWebhookJwtTokenSource = "elation-webhook";
-export const elationWebhookCreatedDateDiffSeconds = dayjs.duration(5, "seconds");
+export const elationWebhookCreatedDateDiffSeconds = dayjs.duration(2, "seconds");
 
 export function createContacts(patient: ElationPatient): Contact[] {
   return [
