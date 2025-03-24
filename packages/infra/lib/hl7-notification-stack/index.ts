@@ -10,6 +10,7 @@ import { VpnStack } from "./vpn";
 import { INTERNAL_SERVICES_SUBNET_GROUP_NAME } from "./constants";
 import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
+import { VpcPeeringStack } from "../vpc-peering";
 
 export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -70,6 +71,22 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       config: props.config,
       vpc,
       description: "HL7 Notification Routing Network Infrastructure",
+    });
+
+    new VpcPeeringStack(this, "NestedVpcPeeringStack", {
+      vpcConfigs: [
+        {
+          vpc,
+          identifier: "Hl7NotificationInternal",
+          subnets: vpc.selectSubnets({
+            subnetGroupName: INTERNAL_SERVICES_SUBNET_GROUP_NAME,
+          }).subnets,
+        },
+        {
+          vpc: props.config.api.vpc,
+          identifier: "Api",
+        },
+      ],
     });
 
     vpnConfigs.forEach((config, index) => {
