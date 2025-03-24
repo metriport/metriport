@@ -72,7 +72,11 @@ export class NetworkStack extends cdk.NestedStack {
      * */
 
     // Enable route propagation for each of our private subnets back out to the vgw
-    vpc.privateSubnets.forEach((subnet, index) => {
+    const vpnAccessibleSubnets = vpc.selectSubnets({
+      subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
+    }).subnets;
+
+    vpnAccessibleSubnets.forEach((subnet, index) => {
       const routePropagation = new ec2.CfnVPNGatewayRoutePropagation(
         this,
         `RouteTablePropagation${index}`,
