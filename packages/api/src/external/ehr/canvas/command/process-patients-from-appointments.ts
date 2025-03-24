@@ -94,7 +94,9 @@ async function getAppointments({
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createCanvasClient({ cxId, practiceId });
-  const { startRange, endRange } = getLookForwardTimeRange({ appointmentsLookForward });
+  const { startRange, endRange } = getLookForwardTimeRange({
+    lookForward: appointmentsLookForward,
+  });
   log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
     const appointments = await api.getAppointments({

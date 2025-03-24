@@ -56,13 +56,21 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
-  const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
+  const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.flatMap(mapping => {
     const secondaryMappings = secondaryMappingsMap[mapping.externalId];
+    if (!secondaryMappings) {
+      throw new MetriportError("Elation secondary mappings not found", undefined, {
+        externalId: mapping.externalId,
+        source: EhrSources.elation,
+      });
+    }
     if (secondaryMappings.backgroundAppointmentsDisabled) return [];
-    return {
-      cxId: mapping.cxId,
-      practiceId: mapping.externalId,
-    };
+    return [
+      {
+        cxId: mapping.cxId,
+        practiceId: mapping.externalId,
+      },
+    ];
   });
 
   await executeAsynchronously(
@@ -144,7 +152,9 @@ async function getAppointments({
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createElationClient({ cxId, practiceId });
-  const { startRange, endRange } = getLookForwardTimeRange({ appointmentsLookForward });
+  const { startRange, endRange } = getLookForwardTimeRange({
+    lookForward: appointmentsLookForward,
+  });
   log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
     const appointments = await api.getAppointments({
