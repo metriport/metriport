@@ -81,7 +81,7 @@ export class VpnStack extends cdk.NestedStack {
       `${props.vpnConfig.partnerName}VpnConnection`,
       {
         type: IPSEC_1,
-        vpnGatewayId: props.networkStack.vgw1.ref,
+        vpnGatewayId: props.networkStack.vgw.ref,
         customerGatewayId: customerGateway.ref,
         staticRoutesOnly: true,
         tags: [

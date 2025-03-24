@@ -12,7 +12,7 @@ interface NetworkStackProps extends cdk.StackProps {
 }
 
 export interface NetworkStackOutput {
-  vgw1: ec2.CfnVPNGateway;
+  vgw: ec2.CfnVPNGateway;
   networkAcl: ec2.NetworkAcl;
 }
 
@@ -24,22 +24,22 @@ export class NetworkStack extends cdk.NestedStack {
 
     const { vpc } = props;
 
-    const vgw1 = new ec2.CfnVPNGateway(this, `VirtualPrivateGateway1`, {
+    const vgw = new ec2.CfnVPNGateway(this, `VirtualPrivateGateway`, {
       type: IPSEC_1,
       tags: [
         {
           key: "Name",
-          value: "vgw-1",
+          value: "hl7-notification-vgw",
         },
       ],
     });
 
-    const vgw1Attachment = new ec2.CfnVPCGatewayAttachment(
+    const vgwAttachment = new ec2.CfnVPCGatewayAttachment(
       this,
-      `VirtualPrivateGateway1VpcVpnAttachment`,
+      `VirtualPrivateGatewayVpcVpnAttachment`,
       {
         vpcId: vpc.vpcId,
-        vpnGatewayId: vgw1.ref,
+        vpnGatewayId: vgw.ref,
       }
     );
 
@@ -78,15 +78,15 @@ export class NetworkStack extends cdk.NestedStack {
         `RouteTablePropagation${index}`,
         {
           routeTableIds: [subnet.routeTable.routeTableId],
-          vpnGatewayId: vgw1.attrVpnGatewayId,
+          vpnGatewayId: vgw.attrVpnGatewayId,
         }
       );
 
-      routePropagation.node.addDependency(vgw1Attachment);
+      routePropagation.node.addDependency(vgwAttachment);
     });
 
     this.output = {
-      vgw1,
+      vgw,
       networkAcl,
     };
   }

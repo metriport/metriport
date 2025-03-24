@@ -37,7 +37,7 @@ export class MllpStack extends cdk.NestedStack {
     mllpSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(MLLP_DEFAULT_PORT),
-      "Allow inbound traffic on 2575 to MLLP server"
+      `Allow inbound traffic on ${MLLP_DEFAULT_PORT} to MLLP server`
     );
 
     mllpSecurityGroup.addEgressRule(
@@ -51,7 +51,6 @@ export class MllpStack extends cdk.NestedStack {
       internetFacing: false,
       vpcSubnets: {
         subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
-        onePerAz: true,
       },
     });
 
