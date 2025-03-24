@@ -8,6 +8,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
+  BadRequestError,
   internalSendConsolidatedSchema,
   patientImportSchema,
   sleep,
@@ -45,7 +46,6 @@ import {
   updatePatientWithoutHIEs,
 } from "../../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import BadRequestError from "../../../errors/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
