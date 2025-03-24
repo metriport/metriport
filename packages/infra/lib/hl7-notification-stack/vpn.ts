@@ -4,12 +4,16 @@ import { Construct } from "constructs";
 import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
 import { NetworkStackOutput } from "./network";
 import { MLLP_DEFAULT_PORT } from "./constants";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { Fn } from "aws-cdk-lib";
 
 const IPSEC_1 = "ipsec.1";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
   vpc: ec2.Vpc;
-  vpnConfig: Hl7NotificationVpnConfig;
+  vpnConfig: Hl7NotificationVpnConfig & {
+    presharedKey: secret.ISecret;
+  };
   networkStack: NetworkStackOutput;
   index: number;
 }
@@ -23,7 +27,7 @@ export class VpnStack extends cdk.NestedStack {
     super(scope, id, props);
 
     const { networkAcl } = props.networkStack;
-    const { partnerInternalCidrBlock } = props.vpnConfig;
+    const { partnerInternalCidrBlock, presharedKey } = props.vpnConfig;
 
     const customerGateway = new ec2.CfnCustomerGateway(
       this,
@@ -91,12 +95,21 @@ export class VpnStack extends cdk.NestedStack {
           },
         ],
         vpnTunnelOptionsSpecifications: [
-          // TODO(lucas|2754|2025-03-05): Replace placeholders with preshared keys loaded from AWS Secrets Manager
           {
-            preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
+            preSharedKey: Fn.sub(
+              "{{resolve:secretsmanager:${SecretArn}:SecretString:presharedKey1}}",
+              {
+                SecretArn: presharedKey.secretArn,
+              }
+            ),
           },
           {
-            preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
+            preSharedKey: Fn.sub(
+              "{{resolve:secretsmanager:${SecretArn}:SecretString:presharedKey2}}",
+              {
+                SecretArn: presharedKey.secretArn,
+              }
+            ),
           },
         ],
       }

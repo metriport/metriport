@@ -117,5 +117,21 @@ export class MllpStack extends cdk.NestedStack {
       scaleInCooldown: Duration.seconds(60),
       scaleOutCooldown: Duration.seconds(60),
     });
+
+    // Add CloudFormation outputs
+    new cdk.CfnOutput(this, "MllpClusterArn", {
+      value: cluster.clusterArn,
+      description: "ARN of the MLLP ECS Cluster",
+    });
+
+    new cdk.CfnOutput(this, "MllpServiceArn", {
+      value: fargateService.serviceArn,
+      description: "ARN of the MLLP Fargate Service",
+    });
+
+    new cdk.CfnOutput(this, "MllpNlbDnsName", {
+      value: nlb.loadBalancerDnsName,
+      description: "DNS name of the Network Load Balancer for MLLP",
+    });
   }
 }
