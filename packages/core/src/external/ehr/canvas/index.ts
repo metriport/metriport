@@ -379,6 +379,7 @@ class CanvasApi {
         schema: appointmentsSchema,
         additionalInfo,
         debug,
+        useFhir: true,
       });
       acc.push(...(appointments.entry ?? []).map(e => e.resource));
       const nextUrl = appointments.link?.find(l => l.relation === "next")?.url;
