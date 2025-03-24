@@ -1,4 +1,4 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";

@@ -1,11 +1,11 @@
 import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
-import NotFoundError from "@metriport/core/util/error/not-found";
 import {
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryRespSuccessfulSchema,
 } from "@metriport/ihe-gateway-sdk";
 import { OutboundPatientDiscoveryRespFaultSchema } from "@metriport/ihe-gateway-sdk/models/patient-discovery/patient-discovery-responses";
+import { NotFoundError } from "@metriport/shared";
 import { formatNumber } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
