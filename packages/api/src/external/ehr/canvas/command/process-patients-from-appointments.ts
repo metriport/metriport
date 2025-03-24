@@ -21,7 +21,7 @@ import { SyncCanvasPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
 
-const lookForward = dayjs.duration(1, "day");
+const appointmentsLookForward = dayjs.duration(1, "day");
 
 type GetAppointmentsParams = {
   cxId: string;
@@ -94,7 +94,9 @@ async function getAppointments({
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createCanvasClient({ cxId, practiceId });
-  const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
+  const { startRange, endRange } = getLookForwardTimeRange({
+    lookForward: appointmentsLookForward,
+  });
   log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
     const appointments = await api.getAppointments({

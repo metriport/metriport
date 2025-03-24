@@ -8,6 +8,7 @@ const webhookSchema = z.object({
 
 export const elationSecondaryMappingsSchema = z.object({
   webhooks: z.record(z.enum(subscriptionResources), webhookSchema).optional(),
+  backgroundAppointmentsDisabled: z.boolean().optional(),
   webhookPatientPatientLinkingDisabled: z.boolean().optional(),
   webhookPatientPatientProcessingEnabled: z.boolean().optional(),
   webhookAppointmentPatientLinkingDisabled: z.boolean().optional(),
