@@ -7,10 +7,10 @@ import status from "http-status";
 import {
   upsertPatientSettingsForCx,
   upsertPatientSettingsForPatientList,
-} from "../../../command/medical/patient/settings/create-patient-settings";
-import { requestLogger } from "../../helpers/request-logger";
-import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFromQueryAsArrayOrFail } from "../../util";
+} from "../../command/medical/patient/settings/create-patient-settings";
+import { requestLogger } from "../helpers/request-logger";
+import { getUUIDFrom } from "../schemas/uuid";
+import { asyncHandler, getFromQueryAsArrayOrFail } from "../util";
 
 dayjs.extend(duration);
 
@@ -19,7 +19,7 @@ const router = Router();
 const defaultSettings = {};
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/settings/
+ * POST /internal/patient-settings/
  *
  * Creates or updates patient settings for a select list of patient IDs.
  *
