@@ -57,6 +57,8 @@ export async function processPatientsFromAppointments(): Promise<void> {
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
+    const secondaryMappings = secondaryMappingsMap[mapping.externalId];
+    if (secondaryMappings.backgroundAppointmentsDisabled) return [];
     return {
       cxId: mapping.cxId,
       practiceId: mapping.externalId,

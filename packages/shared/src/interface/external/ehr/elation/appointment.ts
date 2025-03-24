@@ -12,5 +12,6 @@ export const appointmentSchema = z.object({
 export type Appointment = z.infer<typeof appointmentSchema>;
 export const appointmentsSchema = z.object({
   results: appointmentSchema.array(),
+  next: z.string().nullable(),
 });
 export type Appointments = z.infer<typeof appointmentsSchema>;
