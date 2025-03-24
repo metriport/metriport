@@ -7,7 +7,7 @@ import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
 import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
 import { VpnStack } from "./vpn";
-import { OTHER_INTERNAL_SERVICES_SUBNET_GROUP_NAME } from "./constants";
+import { INTERNAL_SERVICES_SUBNET_GROUP_NAME } from "./constants";
 import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 
 export interface Hl7NotificationStackProps extends cdk.StackProps {
@@ -38,7 +38,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
         },
         {
           cidrMask: 24,
-          name: OTHER_INTERNAL_SERVICES_SUBNET_GROUP_NAME,
+          name: INTERNAL_SERVICES_SUBNET_GROUP_NAME,
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
       ],
