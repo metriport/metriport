@@ -1,7 +1,7 @@
+import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { inspect } from "node:util";
 import { out } from "../log";
 import { capture } from "../notifications";
-import { NotFoundError, BadRequestError } from "@metriport/shared";
 
 /**
  * @deprecated User @metriport/shared instead
