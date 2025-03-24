@@ -2,7 +2,6 @@
   "name": "utils",
   "version": "1.24.2",
   "description": "",
-  "main": "mock-webhook.js",
   "private": true,
   "scripts": {
     "clean": "rimraf dist",
@@ -14,7 +13,6 @@
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
-    "mock-webhook": "ts-node src/mock-webhook.ts",
     "cq-stats": "npx --node-options='--max-old-space-size=8192' ts-node src/carequality/cq-monthly-stats/index.ts",
     "fhir-uploader": "ts-node src/fhir-uploader.ts",
     "doc-query": "ts-node src/document/document-query.ts",
