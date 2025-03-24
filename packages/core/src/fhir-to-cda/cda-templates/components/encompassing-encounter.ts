@@ -1,7 +1,7 @@
 import { Bundle, Composition, Encounter, Location, Practitioner } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
 import { findResourceInBundle, isEncounter } from "../../../external/fhir/shared";
-import BadRequestError from "../../../util/error/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { EncompassingEncounter, ResponsibleParty } from "../../cda-types/shared-types";
 import {
   buildAddress,

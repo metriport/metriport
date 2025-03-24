@@ -19,11 +19,16 @@
   "exports": {
     ".": "./dist/index.js",
     "./api": "./dist/api/index.js",
-    "./common/*": "./dist/common/*.js",
+    "./common": "./dist/common/index.js",
+    "./common/*": "./dist/common/*",
     "./domain": "./dist/domain/index.js",
     "./domain/*": "./dist/domain/*.js",
-    "./interface/*": "./dist/interface/*.js",
-    "./medical": "./dist/medical/index.js"
+    "./error": "./dist/error/index.js",
+    "./error/*": "./dist/error/*.js",
+    "./interface": "./dist/interface/index.js",
+    "./interface/*": "./dist/interface/*",
+    "./medical": "./dist/medical/index.js",
+    "./medical/*": "./dist/medical/*"
   },
   "typesVersions": {
     "*": {
@@ -36,6 +41,9 @@
       "api/*": [
         "dist/api/*"
       ],
+      "common": [
+        "dist/common/index.d.ts"
+      ],
       "common/*": [
         "dist/common/*"
       ],
@@ -45,6 +53,12 @@
       "domain/*": [
         "dist/domain/*"
       ],
+      "error": [
+        "dist/error/index.d.ts"
+      ],
+      "error/*": [
+        "dist/error/*"
+      ],
       "interface": [
         "dist/interface/index.d.ts"
       ],
@@ -53,6 +67,9 @@
       ],
       "medical": [
         "dist/medical/index.d.ts"
+      ],
+      "medical/*": [
+        "dist/medical/*"
       ]
     }
   },

@@ -4,7 +4,7 @@ import { AuthorizationCode, Token } from "simple-oauth2";
 import { z } from "zod";
 import { getProviderTokenFromConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 import { updateProviderData } from "../../command/connected-user/save-connected-user";
-import MetriportError from "../../errors/metriport-error";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
 import { ConnectedUser } from "../../models/connected-user";
 import { Config } from "../../shared/config";
 import { ProviderOAuth2Options } from "../../shared/constants";

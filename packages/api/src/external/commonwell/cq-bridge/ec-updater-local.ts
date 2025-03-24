@@ -4,8 +4,8 @@ import {
   StoreECAfterIncludeListCmd,
 } from "@metriport/core/external/commonwell/cq-bridge/ec-updater";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import { CoverageEnhancementModel } from "../../../models/medical/coverage-enhancement";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { createOrUpdateCoverageEnhancements } from "./coverage-enhancement-storage";

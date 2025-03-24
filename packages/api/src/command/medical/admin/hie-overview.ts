@@ -1,6 +1,6 @@
 import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import {
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryRespSuccessfulSchema,

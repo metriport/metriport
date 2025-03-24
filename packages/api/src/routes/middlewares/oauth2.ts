@@ -1,6 +1,6 @@
 import { updateProviderData } from "../../command/connected-user/save-connected-user";
 import { getUserToken } from "../../command/cx-user/get-user-token";
-import UnauthorizedError from "../../errors/unauthorized";
+import { UnauthorizedError } from "@metriport/shared/error/unauthorized";
 import { ConnectedUser } from "../../models/connected-user";
 import { Config } from "../../shared/config";
 import { Constants, ProviderOAuth2Options } from "../../shared/constants";

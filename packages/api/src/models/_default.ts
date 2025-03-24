@@ -9,7 +9,7 @@ import {
   Model,
   Sequelize,
 } from "sequelize";
-import VersionMismatchError from "../errors/version-mismatch";
+import { VersionMismatchError } from "@metriport/shared/error/version-mismatch";
 import { Util } from "../shared/util";
 
 export const MAX_VARCHAR_LENGTH = 255;

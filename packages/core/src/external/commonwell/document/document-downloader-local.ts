@@ -5,7 +5,7 @@ import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
-import NotFoundError from "../../../util/error/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";

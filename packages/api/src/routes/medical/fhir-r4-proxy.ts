@@ -1,6 +1,6 @@
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
-import NotFoundError from "../../errors/not-found";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import { Config } from "../../shared/config";
 import { Util } from "../../shared/util";
 import { asyncHandler, getCxIdOrFail } from "../util";

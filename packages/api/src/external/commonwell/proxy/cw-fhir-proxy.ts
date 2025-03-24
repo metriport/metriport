@@ -1,4 +1,4 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import Router from "express-promise-router";
 import { asyncHandler } from "../../../routes/util";
 import { processRequest } from "./cw-process-request";

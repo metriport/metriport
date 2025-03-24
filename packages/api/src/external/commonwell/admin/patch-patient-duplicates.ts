@@ -2,7 +2,7 @@ import { getPersonId, getPersonIdFromUrl } from "@metriport/commonwell-sdk";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import MetriportError from "../../../errors/metriport-error";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
 import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "../link/shared";
 import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
 import {

@@ -12,8 +12,7 @@ import { downloadDocument } from "../../command/medical/document/document-downlo
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import {} from "../../command/medical/patient/update-hie-opt-out";
-import ForbiddenError from "../../errors/forbidden";
+import { ForbiddenError } from "@metriport/shared/error/forbidden";
 import {
   composeDocumentReference,
   docRefCheck,

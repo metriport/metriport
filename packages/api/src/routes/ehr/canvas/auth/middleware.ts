@@ -4,7 +4,7 @@ import {
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import { NextFunction, Request, Response } from "express";
 import { JwtTokenData } from "../../../../domain/jwt-token";
-import ForbiddenError from "../../../../errors/forbidden";
+import { ForbiddenError } from "@metriport/shared/error/forbidden";
 import {
   ParseResponse,
   processCxId as processCxIdShared,

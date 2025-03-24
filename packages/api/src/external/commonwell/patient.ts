@@ -23,7 +23,7 @@ import {
   createAugmentedPatient,
   getNewDemographics,
 } from "../../domain/medical/patient-demographics";
-import MetriportError from "../../errors/metriport-error";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
 import { isDemoAugEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/app-config";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { HieInitiator } from "../hie/get-hie-initiator";

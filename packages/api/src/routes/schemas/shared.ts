@@ -1,4 +1,4 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { z } from "zod";
 
 export const stringListSchema = z.string().array();

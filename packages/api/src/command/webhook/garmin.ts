@@ -2,7 +2,7 @@ import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data"
 import { out } from "@metriport/core/util/log";
 import { errorToString, sleep } from "@metriport/shared";
 import { chunk, groupBy } from "lodash";
-import { getErrorMessage } from "../../errors";
+import { getErrorMessage } from "@metriport/shared/error/shared";
 import { UserData } from "../../mappings/garmin";
 import { Settings } from "../../models/settings";
 import { getConnectedUsers } from "../connected-user/get-connected-user";

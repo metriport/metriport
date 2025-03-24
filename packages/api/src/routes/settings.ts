@@ -10,7 +10,7 @@ import { updateSettings } from "../command/settings/updateSettings";
 import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
 import { retryFailedRequests } from "../command/webhook/retry-failed";
 import { maxWebhookUrlLength, MrFilters } from "../domain/settings";
-import BadRequestError from "../errors/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { Settings } from "../models/settings";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "./util";

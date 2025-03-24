@@ -1,6 +1,6 @@
 import { capture } from "@metriport/core/util/notifications";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import { processAsyncError } from "../../../errors";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -37,10 +37,14 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
           console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
           return;
         }
-        processAsyncError(deleteContext)(err);
+        processAsyncError("Failed deleting patient from CW - " + deleteContext)(err);
       }),
-      fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
-      cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
+      fhirApi
+        .deleteResource("Patient", patient.id)
+        .catch(processAsyncError("Failed deleting patient from FHIR Server - " + deleteContext)),
+      cqCommands.patient
+        .remove(patient)
+        .catch(processAsyncError("Failed deleting patient from CQ - " + deleteContext)),
       deleteAllPatientMappings({ cxId, patientId: id }),
       deletePatientSettings({ cxId, patientId: id }),
     ]);

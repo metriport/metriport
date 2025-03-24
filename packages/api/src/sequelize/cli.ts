@@ -3,7 +3,7 @@ dotenv.config();
 // Keep dotenv import and config before everything else
 import { Sequelize } from "sequelize";
 import { getUmzugWithMeta } from "./index";
-import MetriportError from "../errors/metriport-error";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
 
 /**
  * NOT TO BE USED WITHIN THE APPLICATION!

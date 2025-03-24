@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { OrganizationBizType } from "@metriport/core/domain/organization";
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
 import * as getOrganizationOrFail from "../../organization/get-organization";
 import {

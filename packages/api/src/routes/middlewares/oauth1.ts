@@ -1,7 +1,7 @@
 import z from "zod";
 import { updateProviderData } from "../../command/connected-user/save-connected-user";
 import { getUserToken } from "../../command/cx-user/get-user-token";
-import UnauthorizedError from "../../errors/unauthorized";
+import { UnauthorizedError } from "@metriport/shared/error/unauthorized";
 import { ConnectedUser } from "../../models/connected-user";
 import { Constants, PROVIDER_GARMIN, ProviderOAuth1Options } from "../../shared/constants";
 

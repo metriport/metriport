@@ -1,5 +1,5 @@
 import httpStatus from "http-status";
-import MetriportError from "./metriport-error";
+import { MetriportError } from "./metriport-error";
 
 const numericStatus = httpStatus.INTERNAL_SERVER_ERROR;
 

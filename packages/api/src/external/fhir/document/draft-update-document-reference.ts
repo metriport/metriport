@@ -11,7 +11,7 @@ import { appendIdentifierOID, toFHIR } from "@metriport/core/external/fhir/organ
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { IETF_URI } from "@metriport/core/external/fhir/shared/namespaces";
-import BadRequestError from "@metriport/core/util/error/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { cloneDeep } from "lodash";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { Config } from "../../../shared/config";
