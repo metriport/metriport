@@ -133,10 +133,6 @@ async function initDB(): Promise<void> {
     for (const setup of models) setup(sequelize);
     for (const setup of modelsReadOnly) setup(sequelizeReadOnly);
 
-    // Set up model associations
-    PatientModelReadOnly.associate({ PatientSettingsModel });
-    PatientSettingsModel.associate({ PatientModelReadOnly });
-
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client
     if (Config.isCloudEnv()) {
