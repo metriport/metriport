@@ -582,14 +582,13 @@ async function downloadDocsAndUpsertFHIR({
               // Download from CW and upload to S3
               uploadToS3 = async () => {
                 const initiator = await getCwInitiator({ id: patient.id, cxId }, facilityId);
-                const newFile = triggerDownloadDocument({
+                const newFile = await triggerDownloadDocument({
                   doc,
                   fileInfo,
                   initiator,
                   cxId,
                   requestId,
                 });
-
                 return newFile;
               };
             } else {
@@ -635,8 +634,8 @@ async function downloadDocsAndUpsertFHIR({
                 requestId,
                 error,
               },
-              level: "error",
             });
+            errorReported = true;
             throw error;
           }
 
