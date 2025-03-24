@@ -29,7 +29,7 @@ import {
 
 dayjs.extend(duration);
 
-const lookForward = dayjs.duration(14, "days");
+const appointmentsLookForward = dayjs.duration(1, "day");
 
 type GetAppointmentsParams = {
   cxId: string;
@@ -144,7 +144,7 @@ async function getAppointments({
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await createElationClient({ cxId, practiceId });
-  const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
+  const { startRange, endRange } = getLookForwardTimeRange({ appointmentsLookForward });
   log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
     const appointments = await api.getAppointments({
