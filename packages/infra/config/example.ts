@@ -152,7 +152,6 @@ export const config: EnvConfigNonSandbox = {
         partnerName: "SampleHIE",
         partnerGatewayPublicIp: "200.54.1.1",
         partnerInternalCidrBlock: "10.10.0.0/16",
-        staticRoutesOnly: true,
       },
     ],
     mllpServer: {

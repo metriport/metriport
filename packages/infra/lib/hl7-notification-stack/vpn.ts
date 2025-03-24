@@ -83,7 +83,7 @@ export class VpnStack extends cdk.NestedStack {
         type: IPSEC_1,
         vpnGatewayId: props.networkStack.vgw1.ref,
         customerGatewayId: customerGateway.ref,
-        staticRoutesOnly: props.vpnConfig.staticRoutesOnly,
+        staticRoutesOnly: true,
         tags: [
           {
             key: "Name",
@@ -102,25 +102,14 @@ export class VpnStack extends cdk.NestedStack {
       }
     );
 
-    if (props.vpnConfig.staticRoutesOnly) {
-      new ec2.CfnVPNConnectionRoute(
-        this,
-        `${props.vpnConfig.partnerName}-MetriportSideVpnConnectionRoute`,
-        {
-          destinationCidrBlock: props.vpc.vpcCidrBlock,
-          vpnConnectionId: vpnConnection.ref,
-        }
-      );
-
-      new ec2.CfnVPNConnectionRoute(
-        this,
-        `${props.vpnConfig.partnerName}-HieSideVpnConnectionRoute`,
-        {
-          destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
-          vpnConnectionId: vpnConnection.ref,
-        }
-      );
-    }
+    new ec2.CfnVPNConnectionRoute(
+      this,
+      `${props.vpnConfig.partnerName}-HieSideVpnConnectionRoute`,
+      {
+        destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
+        vpnConnectionId: vpnConnection.ref,
+      }
+    );
 
     new cdk.CfnOutput(this, `${props.vpnConfig.partnerName}VpnConnectionId`, {
       value: vpnConnection.ref,

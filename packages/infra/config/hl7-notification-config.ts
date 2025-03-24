@@ -12,5 +12,4 @@ export type Hl7NotificationVpnConfig = {
   partnerName: string;
   partnerGatewayPublicIp: string;
   partnerInternalCidrBlock: string;
-  staticRoutesOnly: boolean;
 };

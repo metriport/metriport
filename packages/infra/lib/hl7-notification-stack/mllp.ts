@@ -101,15 +101,6 @@ export class MllpStack extends cdk.NestedStack {
 
     targetGroup.addTarget(fargateService);
 
-    targetGroup.configureHealthCheck({
-      port: MLLP_DEFAULT_PORT.toString(),
-      protocol: elbv2.Protocol.TCP,
-      healthyThresholdCount: 3,
-      unhealthyThresholdCount: 2,
-      timeout: Duration.seconds(10),
-      interval: Duration.seconds(20),
-    });
-
     const scaling = fargateService.autoScaleTaskCount({
       minCapacity: fargateTaskCountMin,
       maxCapacity: fargateTaskCountMax,

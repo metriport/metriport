@@ -29,7 +29,7 @@ export class NetworkStack extends cdk.NestedStack {
       tags: [
         {
           key: "Name",
-          value: `${props.config.environmentType}-vgw-1`,
+          value: "vgw-1",
         },
       ],
     });
@@ -43,25 +43,27 @@ export class NetworkStack extends cdk.NestedStack {
       }
     );
 
-    const networkAcl = new ec2.NetworkAcl(this, "VpnAccessibleMllpServerNacl2", {
+    const networkAcl = new ec2.NetworkAcl(this, "VpnAccessibleMllpServerNacl", {
       vpc,
       subnetSelection: { subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME },
     });
 
-    networkAcl.addEntry("AllowAllTrafficIngress", {
-      ruleNumber: 2000,
+    // Ephemeral ports to allow for TCP handshakes with ECR
+    networkAcl.addEntry("AllowEphemeralPortsIngress", {
+      ruleNumber: 5000,
       direction: ec2.TrafficDirection.INGRESS,
-      traffic: ec2.AclTraffic.allTraffic(),
+      traffic: ec2.AclTraffic.tcpPortRange(32768, 65535),
       ruleAction: ec2.Action.ALLOW,
-      cidr: ec2.AclCidr.ipv4(vpc.vpcCidrBlock),
+      cidr: ec2.AclCidr.ipv4("0.0.0.0/0"),
     });
 
-    networkAcl.addEntry("AllowAllTrafficEgress", {
-      ruleNumber: 2000,
+    // Used by fargate to pull images from ECR
+    networkAcl.addEntry("AllowHttpsEgress", {
+      ruleNumber: 5000,
       direction: ec2.TrafficDirection.EGRESS,
-      traffic: ec2.AclTraffic.allTraffic(),
+      traffic: ec2.AclTraffic.tcpPort(443),
       ruleAction: ec2.Action.ALLOW,
-      cidr: ec2.AclCidr.ipv4(vpc.vpcCidrBlock),
+      cidr: ec2.AclCidr.ipv4("0.0.0.0/0"),
     });
 
     /**
