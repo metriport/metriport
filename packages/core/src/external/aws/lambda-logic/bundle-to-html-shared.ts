@@ -100,7 +100,6 @@ export function createBrief(brief?: Brief): string {
   const { link, content } = brief;
   const briefContents = `
   <div class="brief-section-content">
-    <div class="beta-flag">BETA</div>
     <table><tbody><tr><td>${content.replace(/\n/g, "<br/>")}</td></tr></tbody></table>
     <div class="brief-warning">
       <div class="brief-warning-contents">
