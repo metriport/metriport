@@ -874,8 +874,8 @@ class AthenaHealthApi {
     acc: T[] | undefined = []
   ): Promise<T[]> {
     const appointments = await requester(limit, offset);
-    if (appointments.length === 0 || appointments.length < limit) return acc;
     acc.push(...appointments);
+    if (appointments.length === 0 || appointments.length < limit) return acc;
     return api.paginateAppointments(api, requester, limit, offset + limit, acc);
   }
 
