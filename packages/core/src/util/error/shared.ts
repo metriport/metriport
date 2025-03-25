@@ -1,3 +1,4 @@
+import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { inspect } from "node:util";
 import { out } from "../log";
 import { capture } from "../notifications";
@@ -57,6 +58,7 @@ export function processAsyncError(msg: string, log?: typeof console.log | undefi
   return (err: unknown) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     log!(`${msg}: ${getErrorMessage(err)}`);
+    if (err instanceof BadRequestError || err instanceof NotFoundError) return;
     capture.error(err, { extra: { message: msg, err } });
   };
 }

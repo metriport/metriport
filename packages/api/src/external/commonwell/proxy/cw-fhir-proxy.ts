@@ -1,9 +1,9 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared";
 import Router from "express-promise-router";
+import { requestLogger } from "../../../routes/helpers/request-logger";
 import { asyncHandler } from "../../../routes/util";
 import { processRequest } from "./cw-process-request";
 import { fhirServerUrl } from "./shared";
-import { requestLogger } from "../../../routes/helpers/request-logger";
 
 /**
  * Endpoints to process CW's Document Query (DQ) requests.

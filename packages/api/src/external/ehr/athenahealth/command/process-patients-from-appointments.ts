@@ -60,7 +60,19 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
       });
     }
     const secondaryMappings = athenaSecondaryMappingsSchema.parse(mapping.secondaryMappings);
-    if (secondaryMappings.backgroundAppointmentsDisabled) return [];
+    if (
+      secondaryMappings.backgroundAppointmentsDisabled &&
+      lookupMode === LookupModes.Appointments
+    ) {
+      return [];
+    }
+    if (
+      secondaryMappings.webhookAppointmentDisabled &&
+      (lookupMode === LookupModes.FromSubscription ||
+        lookupMode === LookupModes.FromSubscriptionBackfill)
+    ) {
+      return [];
+    }
     return [
       {
         cxId: mapping.cxId,

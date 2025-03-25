@@ -103,14 +103,6 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   const linkPatientArgs: CreateOrUpdateElationPatientMetadataParams[] = uniqueAppointments.flatMap(
     appointment => {
-      const secondaryMappings = secondaryMappingsMap[appointment.practiceId];
-      if (!secondaryMappings) {
-        throw new MetriportError("Elation secondary mappings not found", undefined, {
-          externalId: appointment.practiceId,
-          source: EhrSources.elation,
-        });
-      }
-      if (secondaryMappings.backgroundAppointmentPatientLinkingDisabled) return [];
       return [
         {
           cxId: appointment.cxId,

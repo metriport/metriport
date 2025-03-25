@@ -13,6 +13,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
+  BadRequestError,
   PaginatedResponse,
   internalSendConsolidatedSchema,
   normalizeState,
@@ -58,7 +59,6 @@ import {
 } from "../../../command/medical/patient/update-patient";
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import BadRequestError from "../../../errors/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
