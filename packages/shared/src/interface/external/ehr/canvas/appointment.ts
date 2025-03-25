@@ -15,7 +15,7 @@ export const appointmentSchema = z.object({
       }),
     })
     .array(),
-  status: z.string(),
+  status: z.literal("booked"),
 });
 export type Appointment = z.infer<typeof appointmentSchema>;
 export const appointmentListResponseSchema = z.object({

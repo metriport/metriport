@@ -26,6 +26,7 @@ const defaultSettings = {};
  * @param req.query.cxId The customer ID.
  * @param req.query.facilityId The facility ID. Optional.
  * @param req.query.patientIds List of patient IDs to update.
+ * @param req.body The patient settings to apply. Optional, defaults to empty object.
  * @returns 200 with the results of the operation.
  */
 router.post(
@@ -49,12 +50,13 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient-settings/bulk
+ * POST /internal/patient/settings/bulk
  *
  * Creates or updates patient settings across all patients for a CX.
  *
  * @param req.query.cxId The customer ID.
  * @param req.query.facilityId The facility ID. Optional.
+ * @param req.body The patient settings to apply. Optional, defaults to empty object.
  * @returns 200 with the results of the operation.
  */
 router.post(
