@@ -267,6 +267,9 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };
+  hl7v2RosterLambda: {
+    bucketName: string;
+  };
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
   hl7Notification: Hl7NotificationConfig;
