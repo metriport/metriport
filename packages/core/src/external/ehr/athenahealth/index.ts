@@ -15,13 +15,14 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  AppointmentEvents,
-  appointmentEventsSchema,
+  AppointmentEvent,
+  AppointmentEventListResponse,
+  appointmentEventListResponseSchema,
   athenaClientJwtTokenResponseSchema,
   BookedAppointment,
-  BookedAppointments,
+  BookedAppointmentListResponse,
+  bookedAppointmentListResponseSchema,
   bookedAppointmentSchema,
-  bookedAppointmentsSchema,
   CreatedMedication,
   createdMedicationSchema,
   CreatedMedicationSuccess,
@@ -740,16 +741,24 @@ class AthenaHealthApi {
       startAppointmentDate: startAppointmentDate.toISOString(),
       endAppointmentDate: endAppointmentDate.toISOString(),
     };
-    const bookedAppointments = await this.makeRequest<BookedAppointments>({
-      cxId,
-      s3Path: "appointments",
-      method: "GET",
-      url: appointmentUrl,
-      schema: bookedAppointmentsSchema,
-      additionalInfo,
-      debug,
-    });
-    return bookedAppointments.appointments;
+    const bookedAppointments = await this.paginateAppointments<BookedAppointment>(
+      this,
+      async (limit, offset) => {
+        const bookedAppointmentListResponse = await this.makeRequest<BookedAppointmentListResponse>(
+          {
+            cxId,
+            s3Path: "appointments",
+            method: "GET",
+            url: `${appointmentUrl}?limit=${limit}&offset=${offset}`,
+            schema: bookedAppointmentListResponseSchema,
+            additionalInfo,
+            debug,
+          }
+        );
+        return bookedAppointmentListResponse.appointments;
+      }
+    );
+    return bookedAppointments;
   }
 
   async getAppointmentsFromSubscription({
@@ -787,19 +796,27 @@ class AthenaHealthApi {
       endProcessedDate: endProcessedDate?.toISOString(),
     };
     try {
-      const appointmentEvents = await this.makeRequest<AppointmentEvents>({
-        cxId,
-        s3Path: "appointments-changed",
-        method: "GET",
-        url: appointmentUrl,
-        schema: appointmentEventsSchema,
-        additionalInfo,
-        debug,
-      });
-      const bookedAppointments = appointmentEvents.appointments.filter(
-        app => app.patientid !== undefined && app.appointmentstatus === "f"
+      const appointmentEvents = await this.paginateAppointments<AppointmentEvent>(
+        this,
+        async (limit, offset) => {
+          const appointmentEventListResponse = await this.makeRequest<AppointmentEventListResponse>(
+            {
+              cxId,
+              s3Path: "appointments-changed",
+              method: "GET",
+              url: `${appointmentUrl}?limit=${limit}&offset=${offset}`,
+              schema: appointmentEventListResponseSchema,
+              additionalInfo,
+              debug,
+            }
+          );
+          return appointmentEventListResponse.appointments;
+        }
       );
-      return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
+      const bookedAppointments = appointmentEvents
+        .filter(app => app.patientid !== undefined && app.appointmentstatus === "f")
+        .map(a => bookedAppointmentSchema.parse(a));
+      return bookedAppointments;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (
@@ -847,6 +864,19 @@ class AthenaHealthApi {
       additionalInfo,
       debug,
     });
+  }
+
+  private async paginateAppointments<T>(
+    api: AthenaHealthApi,
+    requester: (limit: number, offset: number) => Promise<T[]>,
+    limit: number | undefined = 1000,
+    offset: number | undefined = 0,
+    acc: T[] | undefined = []
+  ): Promise<T[]> {
+    const appointments = await requester(limit, offset);
+    if (appointments.length === 0 || appointments.length < limit) return acc;
+    acc.push(...appointments);
+    return api.paginateAppointments(api, requester, limit, offset + limit, acc);
   }
 
   private formatDate(date: string | undefined): string | undefined {

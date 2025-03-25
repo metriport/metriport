@@ -9,8 +9,8 @@ import {
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
-  Appointments,
-  appointmentsSchema,
+  AppointmentListResponse,
+  appointmentListResponseSchema,
   BookedAppointment,
   bookedAppointmentSchema,
   CreatedProblem,
@@ -261,23 +261,25 @@ class ElationApi {
       acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
-      const appointments = await api.makeRequest<Appointments>({
+      const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
         cxId,
         s3Path: "appointments",
         method: "GET",
         url,
-        schema: appointmentsSchema,
+        schema: appointmentListResponseSchema,
         additionalInfo,
         debug,
       });
-      acc.push(...appointments.results);
-      return paginateAppointments(api, appointments.next, acc);
+      acc.push(...appointmentListResponse.results);
+      return paginateAppointments(api, appointmentListResponse.next, acc);
     }
     const appointments = await paginateAppointments(this, appointmentUrl);
-    const bookedAppointments = appointments.filter(
-      app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
-    );
-    return bookedAppointments.map(a => bookedAppointmentSchema.parse(a));
+    const bookedAppointments = appointments
+      .filter(
+        app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
+      )
+      .map(a => bookedAppointmentSchema.parse(a));
+    return bookedAppointments;
   }
 
   async replaceSubscription({

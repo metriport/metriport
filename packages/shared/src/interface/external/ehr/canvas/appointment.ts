@@ -18,8 +18,8 @@ export const appointmentSchema = z.object({
   status: z.string(),
 });
 export type Appointment = z.infer<typeof appointmentSchema>;
-export const appointmentsSchema = z.object({
+export const appointmentListResponseSchema = z.object({
   entry: z.object({ resource: appointmentSchema }).array().optional(),
   link: z.object({ relation: z.string(), url: z.string() }).array().optional(),
 });
-export type Appointments = z.infer<typeof appointmentsSchema>;
+export type AppointmentListResponse = z.infer<typeof appointmentListResponseSchema>;
