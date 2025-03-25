@@ -264,7 +264,7 @@ class ElationApi {
         cxId,
         s3Path: "appointments",
         method: "GET",
-        url,
+        url: url.replace(api.baseUrl, ""),
         schema: appointmentsSchema,
         additionalInfo,
         debug,

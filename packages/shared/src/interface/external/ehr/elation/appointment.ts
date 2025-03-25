@@ -10,8 +10,8 @@ export const appointmentSchema = z.object({
   status: z.object({ status: z.string() }).nullable(),
 });
 export type Appointment = z.infer<typeof appointmentSchema>;
-export const appointmentsSchema = z.object({
+export const appointmentListResponseSchema = z.object({
   results: appointmentSchema.array(),
   next: z.string().nullable(),
 });
-export type Appointments = z.infer<typeof appointmentsSchema>;
+export type AppointmentListResponse = z.infer<typeof appointmentListResponseSchema>;

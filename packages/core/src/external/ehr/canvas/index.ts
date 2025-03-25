@@ -1,6 +1,6 @@
 import {
   AllergyIntolerance,
-  Appointment,
+  Appointment as AppointmentFhir,
   Bundle,
   Condition,
   Encounter,
@@ -13,8 +13,9 @@ import {
 import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  BookedAppointments,
-  bookedAppointmentsSchema,
+  Appointment,
+  AppointmentListResponse,
+  appointmentListResponseSchema,
   canvasClientJwtTokenResponseSchema,
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
@@ -313,7 +314,7 @@ class CanvasApi {
     throw new Error("Medication not found");
   }
 
-  async getAppointment(appointmentId: string): Promise<Appointment> {
+  async getAppointment(appointmentId: string): Promise<AppointmentFhir> {
     const response = await this.handleAxiosRequest(() =>
       this.axiosInstanceFhirApi.get(`Appointment/${appointmentId}`)
     );
@@ -354,6 +355,7 @@ class CanvasApi {
       status: "booked",
       ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
       ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
+      _count: "1000",
     };
     const urlParams = new URLSearchParams(params);
     const appointmentUrl = `/Appointment?${urlParams.toString()}`;
@@ -363,22 +365,37 @@ class CanvasApi {
       fromDate: fromDate.toISOString(),
       toDate: toDate.toISOString(),
     };
-    const bookedAppointments = await this.makeRequest<BookedAppointments>({
-      cxId,
-      s3Path: "appointments",
-      method: "GET",
-      url: appointmentUrl,
-      schema: bookedAppointmentsSchema,
-      additionalInfo,
-      debug,
-      useFhir: true,
-    });
-    const slimBookedAppointments = bookedAppointments.entry.flatMap(app => {
-      const patient = app.resource.participant.find(p => p.actor.type === "Patient");
-      if (!patient) return [];
-      return { patientId: patient.actor.reference.replace("Patient/", "") };
-    });
-    return slimBookedAppointments.map(a => slimBookedAppointmentSchema.parse(a));
+    async function paginateAppointments(
+      api: CanvasApi,
+      url: string | undefined,
+      acc: Appointment[] | undefined = []
+    ): Promise<Appointment[]> {
+      if (!url) return acc;
+      const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
+        cxId,
+        s3Path: "appointments",
+        method: "GET",
+        url,
+        schema: appointmentListResponseSchema,
+        additionalInfo,
+        debug,
+        useFhir: true,
+      });
+      acc.push(...(appointmentListResponse.entry ?? []).map(e => e.resource));
+      const nextUrl = appointmentListResponse.link?.find(l => l.relation === "next")?.url;
+      return paginateAppointments(api, nextUrl, acc);
+    }
+    const appointments = await paginateAppointments(this, appointmentUrl);
+    const slimBookedAppointments = appointments
+      .flatMap(app => {
+        // Canvas returns some statuses that are not "booked", so we have further filter
+        if (app.status !== "booked") return [];
+        const patient = app.participant.find(p => p.actor.type === "Patient");
+        if (!patient) return [];
+        return [{ patientId: patient.actor.reference.replace("Patient/", "") }];
+      })
+      .map(a => slimBookedAppointmentSchema.parse(a));
+    return slimBookedAppointments;
   }
 
   private async makeRequest<T>({
