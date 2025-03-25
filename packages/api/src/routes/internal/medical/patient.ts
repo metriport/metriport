@@ -159,7 +159,7 @@ router.get(
 
     const { meta, items } = await paginated({
       request: req,
-      additionalQueryParams: { states: states.join(",") },
+      additionalQueryParams: { states: states.join(","), subscriptions: subscriptions.join(",") },
       getItems: (pagination: Pagination) => {
         return getHl7v2Subscribers({
           ...params,
