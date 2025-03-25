@@ -3,7 +3,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 
 interface VpcConfig {
-  vpc: ec2.Vpc;
+  vpc: ec2.IVpc;
   identifier: string; // Human readable identifier for the VPC
   subnets?: ec2.ISubnet[];
 }
@@ -19,11 +19,12 @@ export class VpcPeeringStack extends cdk.Stack {
     super(scope, id, props);
 
     const [vpcConfigA, vpcConfigB] = props.vpcConfigs;
+    const vpcA = vpcConfigA.vpc;
+    const vpcB = vpcConfigB.vpc;
 
-    // Create the VPC Peering Connection with readable name
-    this.peeringConnection = new ec2.CfnVPCPeeringConnection(this, "VpcPeering", {
-      vpcId: vpcConfigA.vpc.vpcId,
-      peerVpcId: vpcConfigB.vpc.vpcId,
+    this.peeringConnection = new ec2.CfnVPCPeeringConnection(this, `${id}Connection`, {
+      vpcId: vpcA.vpcId,
+      peerVpcId: vpcB.vpcId,
       tags: [
         {
           key: "Name",
@@ -32,7 +33,6 @@ export class VpcPeeringStack extends cdk.Stack {
       ],
     });
 
-    // Create routes for both VPCs using readable identifiers
     this.createRoutesForVpc(vpcConfigA, vpcConfigB);
     this.createRoutesForVpc(vpcConfigB, vpcConfigA);
   }

@@ -1,4 +1,5 @@
 export interface Hl7NotificationConfig {
+  apiVpcId: string;
   vpnConfigs: Hl7NotificationVpnConfig[];
   mllpServer: {
     fargateCpu: number;

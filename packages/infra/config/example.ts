@@ -147,6 +147,7 @@ export const config: EnvConfigNonSandbox = {
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
+    apiVpcId: "vpc-00000000000000000",
     vpnConfigs: [
       {
         partnerName: "SampleHIE",

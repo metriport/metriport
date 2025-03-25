@@ -29,7 +29,9 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
 
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
     super(scope, id, props);
-    const vpnConfigs = props.config.hl7Notification.vpnConfigs;
+    const { vpnConfigs, apiVpcId } = props.config.hl7Notification;
+
+    const apiVpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId: apiVpcId });
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
@@ -73,7 +75,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       description: "HL7 Notification Routing Network Infrastructure",
     });
 
-    new VpcPeeringStack(this, "NestedVpcPeeringStack", {
+    new VpcPeeringStack(this, `NestedVpcPeeringStack`, {
       vpcConfigs: [
         {
           vpc,
@@ -83,10 +85,26 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
           }).subnets,
         },
         {
-          vpc: props.config.api.vpc,
+          vpc: apiVpc,
           identifier: "Api",
         },
       ],
+    });
+
+    this.networkStack.output.networkAcl.addEntry("Deny all inbound traffic from API VPC", {
+      cidr: ec2.AclCidr.ipv4(apiVpc.vpcCidrBlock),
+      direction: ec2.TrafficDirection.INGRESS,
+      ruleAction: ec2.Action.DENY,
+      ruleNumber: 4900,
+      traffic: ec2.AclTraffic.allTraffic(),
+    });
+
+    this.networkStack.output.networkAcl.addEntry("Deny all outbound traffic to API VPC", {
+      cidr: ec2.AclCidr.ipv4(apiVpc.vpcCidrBlock),
+      direction: ec2.TrafficDirection.EGRESS,
+      ruleAction: ec2.Action.DENY,
+      ruleNumber: 4900,
+      traffic: ec2.AclTraffic.allTraffic(),
     });
 
     vpnConfigs.forEach((config, index) => {
