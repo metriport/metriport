@@ -245,6 +245,7 @@ class ElationApi {
     const params = {
       from_date: this.formatDate(fromDate.toISOString()) ?? "",
       to_date: this.formatDate(toDate.toISOString()) ?? "",
+      limit: "1000",
     };
     const urlParams = new URLSearchParams(params);
     const appointmentUrl = `/appointments/?${urlParams.toString()}`;
@@ -257,7 +258,7 @@ class ElationApi {
     async function paginateAppointments(
       api: ElationApi,
       url: string | null,
-      acc: Appointment[]
+      acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
       const appointments = await api.makeRequest<Appointments>({
@@ -272,8 +273,7 @@ class ElationApi {
       acc.push(...appointments.results);
       return paginateAppointments(api, appointments.next, acc);
     }
-    const appointments: Appointment[] = [];
-    await paginateAppointments(this, appointmentUrl, appointments);
+    const appointments = await paginateAppointments(this, appointmentUrl);
     const bookedAppointments = appointments.filter(
       app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
     );

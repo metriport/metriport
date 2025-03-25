@@ -355,6 +355,7 @@ class CanvasApi {
       status: "booked",
       ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
       ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
+      _count: "1000",
     };
     const urlParams = new URLSearchParams(params);
     const appointmentUrl = `/Appointment?${urlParams.toString()}`;
@@ -363,12 +364,11 @@ class CanvasApi {
       practiceId: this.practiceId,
       fromDate: fromDate.toISOString(),
       toDate: toDate.toISOString(),
-      _count: 100,
     };
     async function paginateAppointments(
       api: CanvasApi,
       url: string | undefined,
-      acc: Appointment[]
+      acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
       const appointments = await api.makeRequest<Appointments>({
@@ -385,8 +385,7 @@ class CanvasApi {
       const nextUrl = appointments.link?.find(l => l.relation === "next")?.url;
       return paginateAppointments(api, nextUrl, acc);
     }
-    const appointments: Appointment[] = [];
-    await paginateAppointments(this, appointmentUrl, appointments);
+    const appointments = await paginateAppointments(this, appointmentUrl);
     const slimBookedAppointments = appointments.flatMap(app => {
       if (app.status !== "booked") return [];
       const patient = app.participant.find(p => p.actor.type === "Patient");
