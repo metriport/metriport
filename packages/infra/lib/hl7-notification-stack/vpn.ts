@@ -2,12 +2,20 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
+import { NetworkStackOutput } from "./network";
+import { MLLP_DEFAULT_PORT } from "./constants";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { Fn } from "aws-cdk-lib";
 
 const IPSEC_1 = "ipsec.1";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
-  vpc: ec2.IVpc;
-  vpnConfig: Hl7NotificationVpnConfig;
+  vpc: ec2.Vpc;
+  vpnConfig: Hl7NotificationVpnConfig & {
+    presharedKey: secret.ISecret;
+  };
+  networkStack: NetworkStackOutput;
+  index: number;
 }
 
 /**
@@ -18,15 +26,8 @@ export class VpnStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const vpnGateway = new ec2.CfnVPNGateway(this, `${props.vpnConfig.partnerName}VpnGateway`, {
-      type: IPSEC_1,
-    });
-
-    // Attach the VGW to your VPC
-    new ec2.CfnVPCGatewayAttachment(this, `${props.vpnConfig.partnerName}VpcVpnAttachment`, {
-      vpcId: props.vpc.vpcId,
-      vpnGatewayId: vpnGateway.ref,
-    });
+    const { networkAcl } = props.networkStack;
+    const { partnerInternalCidrBlock, presharedKey } = props.vpnConfig;
 
     const customerGateway = new ec2.CfnCustomerGateway(
       this,
@@ -34,10 +35,47 @@ export class VpnStack extends cdk.NestedStack {
       {
         ipAddress: props.vpnConfig.partnerGatewayPublicIp,
         type: IPSEC_1,
-        // Not using bgpAsn but "Invalid request provided: The key 'BgpAsn' is required"
         bgpAsn: 65000,
+        tags: [
+          {
+            key: "Name",
+            value: `${props.vpnConfig.partnerName}-cgw`,
+          },
+        ],
       }
     );
+
+    /**
+     * Add new rules to the NACL for the static IPs we're using for this VPN.
+     */
+    this.addIngressRules(networkAcl, partnerInternalCidrBlock, [
+      {
+        ruleNumber: 120 + props.index * 10,
+        traffic: ec2.AclTraffic.tcpPort(MLLP_DEFAULT_PORT),
+        ruleAction: ec2.Action.ALLOW,
+      },
+      // Used to create a point on the NACL to deny all traffic, below which we can
+      // add other allow rules for other services the subnet members need to access
+      {
+        ruleNumber: 1400 + props.index * 10,
+        traffic: ec2.AclTraffic.allTraffic(),
+        ruleAction: ec2.Action.DENY,
+      },
+    ]);
+
+    this.addEgressRules(networkAcl, partnerInternalCidrBlock, [
+      // Outbound TCP handshake traffic
+      {
+        ruleNumber: 120 + props.index * 10,
+        traffic: ec2.AclTraffic.tcpPortRange(1024, 65535),
+        ruleAction: ec2.Action.ALLOW,
+      },
+      {
+        ruleNumber: 1400 + props.index * 10,
+        traffic: ec2.AclTraffic.allTraffic(),
+        ruleAction: ec2.Action.DENY,
+      },
+    ]);
 
     /**
      * We use 2 tunnels here because state HIEs often have a failover to a backup IP..
@@ -47,31 +85,98 @@ export class VpnStack extends cdk.NestedStack {
       `${props.vpnConfig.partnerName}VpnConnection`,
       {
         type: IPSEC_1,
-        vpnGatewayId: vpnGateway.ref,
+        vpnGatewayId: props.networkStack.vgw.ref,
         customerGatewayId: customerGateway.ref,
-        staticRoutesOnly: props.vpnConfig.staticRoutesOnly,
-        vpnTunnelOptionsSpecifications: [
-          // TODO(lucas|2754|2025-03-05): Replace placeholders with preshared keys loaded from AWS Secrets Manager
+        staticRoutesOnly: true,
+        tags: [
           {
-            preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
+            key: "Name",
+            value: `${props.vpnConfig.partnerName}-vpn`,
+          },
+        ],
+        vpnTunnelOptionsSpecifications: [
+          {
+            preSharedKey: Fn.sub(
+              "{{resolve:secretsmanager:${SecretArn}:SecretString:presharedKey1}}",
+              {
+                SecretArn: presharedKey.secretArn,
+              }
+            ),
           },
           {
-            preSharedKey: "PRESHARED_KEY_PLACEHOLDER",
+            preSharedKey: Fn.sub(
+              "{{resolve:secretsmanager:${SecretArn}:SecretString:presharedKey2}}",
+              {
+                SecretArn: presharedKey.secretArn,
+              }
+            ),
           },
         ],
       }
     );
 
-    if (props.vpnConfig.staticRoutesOnly) {
-      new ec2.CfnVPNConnectionRoute(this, `${props.vpnConfig.partnerName}VpnConnectionRoute`, {
-        destinationCidrBlock: props.vpc.vpcCidrBlock,
+    new ec2.CfnVPNConnectionRoute(
+      this,
+      `${props.vpnConfig.partnerName}-HieSideVpnConnectionRoute`,
+      {
+        destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
         vpnConnectionId: vpnConnection.ref,
-      });
-    }
+      }
+    );
 
     new cdk.CfnOutput(this, `${props.vpnConfig.partnerName}VpnConnectionId`, {
       value: vpnConnection.ref,
       description: `VPN Connection for ${props.vpnConfig.partnerName}`,
     });
+  }
+
+  private setNaclRules(
+    networkAcl: ec2.NetworkAcl,
+    partnerInternalCidrBlock: string,
+    direction: ec2.TrafficDirection,
+    rules: {
+      ruleNumber: number;
+      traffic: ec2.AclTraffic;
+      ruleAction: ec2.Action;
+    }[]
+  ) {
+    const cidr = ec2.AclCidr.ipv4(partnerInternalCidrBlock);
+
+    rules.forEach(rule => {
+      const ruleName = `${direction === ec2.TrafficDirection.INGRESS ? "Ingress" : "Egress"}Rule${
+        rule.ruleNumber
+      }`;
+      networkAcl.addEntry(ruleName, {
+        cidr,
+        direction,
+        ruleNumber: rule.ruleNumber,
+        traffic: rule.traffic,
+        ruleAction: rule.ruleAction,
+      });
+    });
+  }
+
+  private addIngressRules(
+    networkAcl: ec2.NetworkAcl,
+    partnerInternalCidrBlock: string,
+    rules: {
+      ruleNumber: number;
+      traffic: ec2.AclTraffic;
+      ruleAction: ec2.Action;
+    }[]
+  ) {
+    this.setNaclRules(networkAcl, partnerInternalCidrBlock, ec2.TrafficDirection.INGRESS, rules);
+  }
+
+  private addEgressRules(
+    networkAcl: ec2.NetworkAcl,
+    partnerInternalCidrBlock: string,
+    rules: {
+      ruleNumber: number;
+      traffic: ec2.AclTraffic;
+      ruleAction: ec2.Action;
+    }[]
+  ) {
+    this.setNaclRules(networkAcl, partnerInternalCidrBlock, ec2.TrafficDirection.EGRESS, rules);
   }
 }
