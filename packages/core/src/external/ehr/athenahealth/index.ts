@@ -744,12 +744,16 @@ class AthenaHealthApi {
     const bookedAppointments = await this.paginateListResponse<BookedAppointment>(
       this,
       async (limit, offset) => {
+        const queryParams = new URLSearchParams({
+          limit: limit.toString(),
+          offset: offset.toString(),
+        });
         const bookedAppointmentListResponse = await this.makeRequest<BookedAppointmentListResponse>(
           {
             cxId,
             s3Path: "appointments",
             method: "GET",
-            url: `${appointmentUrl}?limit=${limit}&offset=${offset}`,
+            url: `${appointmentUrl}?${queryParams.toString()}`,
             schema: bookedAppointmentListResponseSchema,
             additionalInfo,
             debug,
@@ -799,12 +803,16 @@ class AthenaHealthApi {
       const appointmentEvents = await this.paginateListResponse<AppointmentEvent>(
         this,
         async (limit, offset) => {
+          const queryParams = new URLSearchParams({
+            limit: limit.toString(),
+            offset: offset.toString(),
+          });
           const appointmentEventListResponse = await this.makeRequest<AppointmentEventListResponse>(
             {
               cxId,
               s3Path: "appointments-changed",
               method: "GET",
-              url: `${appointmentUrl}?limit=${limit}&offset=${offset}`,
+              url: `${appointmentUrl}?${queryParams.toString()}`,
               schema: appointmentEventListResponseSchema,
               additionalInfo,
               debug,
