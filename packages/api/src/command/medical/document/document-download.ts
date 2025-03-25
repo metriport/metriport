@@ -5,9 +5,8 @@ import {
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
+import { BadRequestError, NotFoundError } from "@metriport/shared";
 import dayjs from "dayjs";
-import BadRequestError from "../../../errors/bad-request";
-import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";

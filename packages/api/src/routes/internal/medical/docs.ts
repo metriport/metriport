@@ -7,6 +7,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { BadRequestError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -28,7 +29,6 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import BadRequestError from "../../../errors/bad-request";
 import {
   processCcdRequest,
   processEmptyCcdRequest,
@@ -39,12 +39,17 @@ import { parseISODate } from "../../../shared/date";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { requestLogger } from "../../helpers/request-logger";
+import { toDTO } from "../../medical/dtos/document-bulk-downloadDTO";
+import { cxRequestMetadataSchema } from "../../medical/schemas/request-metadata";
 import { documentQueryProgressSchema } from "../../schemas/internal";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../../util";
-import { getFromQueryOrFail } from "../../util";
-import { cxRequestMetadataSchema } from "../../medical/schemas/request-metadata";
-import { toDTO } from "../../medical/dtos/document-bulk-downloadDTO";
+import {
+  asyncHandler,
+  getFrom,
+  getFromQueryAsArray,
+  getFromQueryAsBoolean,
+  getFromQueryOrFail,
+} from "../../util";
 
 const router = Router();
 const upload = multer();

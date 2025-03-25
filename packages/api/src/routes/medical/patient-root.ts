@@ -1,5 +1,5 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import { PaginatedResponse, stringToBoolean } from "@metriport/shared";
+import { NotFoundError, PaginatedResponse, stringToBoolean } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -15,7 +15,6 @@ import {
 import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
-import NotFoundError from "../../errors/not-found";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";

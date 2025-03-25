@@ -1,9 +1,7 @@
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
-import BadRequestError from "../../util/error/bad-request";
-import { MetriportError } from "../../util/error/metriport-error";
-import NotFoundError from "../../util/error/not-found";
 
 export function makeLambdaClient(region: string, timeoutInMillis?: number) {
   return new AWS.Lambda({

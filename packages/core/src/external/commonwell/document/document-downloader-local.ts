@@ -1,11 +1,14 @@
 import { CommonWellAPI, CommonwellError, organizationQueryMeta } from "@metriport/commonwell-sdk";
-import { executeWithNetworkRetries, getNetworkErrorDetails } from "@metriport/shared";
+import {
+  executeWithNetworkRetries,
+  getNetworkErrorDetails,
+  MetriportError,
+  NotFoundError,
+} from "@metriport/shared";
 import AWS from "aws-sdk";
 import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
-import { MetriportError } from "../../../util/error/metriport-error";
-import NotFoundError from "../../../util/error/not-found";
 import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
