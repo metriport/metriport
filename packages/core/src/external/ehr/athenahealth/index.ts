@@ -725,7 +725,7 @@ class AthenaHealthApi {
     const params = {
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
-      limit: "1",
+      limit: "1000",
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
