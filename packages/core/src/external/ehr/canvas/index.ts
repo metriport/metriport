@@ -388,6 +388,7 @@ class CanvasApi {
     const appointments = await paginateAppointments(this, appointmentUrl);
     const slimBookedAppointments = appointments
       .flatMap(app => {
+        // Canvas returns some statuses that are not "booked", so we have further filter
         if (app.status !== "booked") return [];
         const patient = app.participant.find(p => p.actor.type === "Patient");
         if (!patient) return [];
