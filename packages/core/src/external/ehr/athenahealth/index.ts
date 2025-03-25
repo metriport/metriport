@@ -741,7 +741,7 @@ class AthenaHealthApi {
       startAppointmentDate: startAppointmentDate.toISOString(),
       endAppointmentDate: endAppointmentDate.toISOString(),
     };
-    const bookedAppointments = await this.paginateAppointments<BookedAppointment>(
+    const bookedAppointments = await this.paginateListResponse<BookedAppointment>(
       this,
       async (limit, offset) => {
         const bookedAppointmentListResponse = await this.makeRequest<BookedAppointmentListResponse>(
@@ -796,7 +796,7 @@ class AthenaHealthApi {
       endProcessedDate: endProcessedDate?.toISOString(),
     };
     try {
-      const appointmentEvents = await this.paginateAppointments<AppointmentEvent>(
+      const appointmentEvents = await this.paginateListResponse<AppointmentEvent>(
         this,
         async (limit, offset) => {
           const appointmentEventListResponse = await this.makeRequest<AppointmentEventListResponse>(
@@ -866,17 +866,17 @@ class AthenaHealthApi {
     });
   }
 
-  private async paginateAppointments<T>(
+  private async paginateListResponse<T>(
     api: AthenaHealthApi,
     requester: (limit: number, offset: number) => Promise<T[]>,
     limit: number | undefined = 1000,
     offset: number | undefined = 0,
     acc: T[] | undefined = []
   ): Promise<T[]> {
-    const appointments = await requester(limit, offset);
-    acc.push(...appointments);
-    if (appointments.length === 0 || appointments.length < limit) return acc;
-    return api.paginateAppointments(api, requester, limit, offset + limit, acc);
+    const listOfItems = await requester(limit, offset);
+    acc.push(...listOfItems);
+    if (listOfItems.length === 0 || listOfItems.length < limit) return acc;
+    return api.paginateListResponse(api, requester, limit, offset + limit, acc);
   }
 
   private formatDate(date: string | undefined): string | undefined {
