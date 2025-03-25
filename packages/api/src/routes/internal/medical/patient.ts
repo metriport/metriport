@@ -3,12 +3,19 @@ import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolida
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import {
+  Hl7v2Subscriber,
+  hl7v2SubscriptionRequestSchema,
+  validHl7v2Subscriptions,
+} from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
+  PaginatedResponse,
   internalSendConsolidatedSchema,
+  normalizeState,
   patientImportSchema,
   sleep,
   stringToBoolean,
@@ -35,6 +42,11 @@ import { getCoverageAssessments } from "../../../command/medical/patient/coverag
 import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
+  GetHl7v2SubscribersParams,
+  getHl7v2Subscribers,
+  getHl7v2SubscribersCount,
+} from "../../../command/medical/patient/get-hl7v2-subscribers";
+import {
   getPatientIds,
   getPatientOrFail,
   getPatientStates,
@@ -44,6 +56,7 @@ import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
 } from "../../../command/medical/patient/update-patient";
+import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import BadRequestError from "../../../errors/bad-request";
 import {
@@ -74,6 +87,7 @@ import { dtoFromModel } from "../../medical/dtos/patientDTO";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
 import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
+import { paginated } from "../../pagination";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -101,6 +115,67 @@ router.use("/settings", patientSettingsRoutes);
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });
 const patientLoader = new PatientLoaderLocal();
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/hl7v2-subscribers
+ *
+ * This is a paginated route.
+ * Gets all patients that have the specified HL7v2 subscriptions enabled for the given states.
+ *
+ * @param req.query.states List of US state codes to filter by.
+ * @param req.query.subscriptions List of HL7v2 subscriptions to filter by. Currently, only supports "adt".
+ * @param req.query.fromItem The minimum item to be included in the response, inclusive.
+ * @param req.query.toItem The maximum item to be included in the response, inclusive.
+ * @param req.query.count The number of items to be included in the response.
+ * @returns An object containing:
+ * - `patients` - List of patients with HL7v2 subscriptions in the specified states.
+ * - `meta` - Pagination information, including how to get to the next page.
+ */
+router.get(
+  "/hl7v2-subscribers",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const stateInputs = getFromQueryAsArrayOrFail("states", req);
+    const states = stateInputs.map(state => normalizeState(state));
+
+    const subscriptions = getFromQueryAsArrayOrFail("subscriptions", req);
+
+    const { validSubscriptions, invalidSubscriptions } = hl7v2SubscriptionRequestSchema.parse({
+      subscriptions,
+    }).subscriptions;
+
+    if (invalidSubscriptions.length > 0) {
+      throw new BadRequestError(
+        `Invalid subscription options provided. Valid options are: ${validHl7v2Subscriptions.join(
+          ", "
+        )}`
+      );
+    }
+
+    const params: GetHl7v2SubscribersParams = {
+      states,
+      subscriptions: validSubscriptions,
+    };
+
+    const { meta, items } = await paginated({
+      request: req,
+      additionalQueryParams: { states: states.join(","), subscriptions: subscriptions.join(",") },
+      getItems: (pagination: Pagination) => {
+        return getHl7v2Subscribers({
+          ...params,
+          pagination,
+        });
+      },
+      getTotalCount: () => getHl7v2SubscribersCount(params),
+    });
+
+    const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {
+      meta,
+      patients: items,
+    };
+    return res.status(status.OK).json(response);
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/ids
