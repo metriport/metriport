@@ -127,6 +127,8 @@ function mapPatientsToSubscribers(patients: PatientModelReadOnly[]): Hl7v2Subscr
     const driversLicense = data.personalIdentifiers?.find(
       id => id.type === "driversLicense"
     )?.value;
+    const phone = data.contact?.find(c => c.phone)?.phone;
+    const email = data.contact?.find(c => c.email)?.email;
 
     return {
       id: p.id,
@@ -138,6 +140,8 @@ function mapPatientsToSubscribers(patients: PatientModelReadOnly[]): Hl7v2Subscr
       address: data.address,
       ...(ssn ? { ssn } : undefined),
       ...(driversLicense ? { driversLicense } : undefined),
+      ...(phone ? { phone } : undefined),
+      ...(email ? { email } : undefined),
     };
   });
 }

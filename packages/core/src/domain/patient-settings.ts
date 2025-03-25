@@ -23,6 +23,8 @@ export type Hl7v2Subscriber = {
   cxId: string;
   ssn?: string;
   driversLicense?: string;
+  phone?: string;
+  email?: string;
 } & Pick<PatientData, "firstName" | "lastName" | "dob" | "address" | "genderAtBirth">;
 
 export const validHl7v2Subscriptions = ["adt"] as const;
