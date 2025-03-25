@@ -725,6 +725,7 @@ class AthenaHealthApi {
     const params = {
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
+      limit: "1",
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
@@ -743,24 +744,24 @@ class AthenaHealthApi {
     };
     const bookedAppointments = await this.paginateListResponse<BookedAppointment>(
       this,
-      async (limit, offset) => {
-        const queryParams = new URLSearchParams({
-          limit: limit.toString(),
-          offset: offset.toString(),
-        });
+      async url => {
         const bookedAppointmentListResponse = await this.makeRequest<BookedAppointmentListResponse>(
           {
             cxId,
             s3Path: "appointments",
             method: "GET",
-            url: `${appointmentUrl}?${queryParams.toString()}`,
+            url,
             schema: bookedAppointmentListResponseSchema,
             additionalInfo,
             debug,
           }
         );
-        return bookedAppointmentListResponse.appointments;
-      }
+        return {
+          listOfItems: bookedAppointmentListResponse.appointments,
+          nextUrl: bookedAppointmentListResponse.next,
+        };
+      },
+      appointmentUrl
     );
     return bookedAppointments;
   }
@@ -786,6 +787,7 @@ class AthenaHealthApi {
       ...(endProcessedDate && {
         showprocessedenddatetime: this.formatDateTime(endProcessedDate.toISOString()) ?? "",
       }),
+      limit: "1000",
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
@@ -802,24 +804,24 @@ class AthenaHealthApi {
     try {
       const appointmentEvents = await this.paginateListResponse<AppointmentEvent>(
         this,
-        async (limit, offset) => {
-          const queryParams = new URLSearchParams({
-            limit: limit.toString(),
-            offset: offset.toString(),
-          });
+        async url => {
           const appointmentEventListResponse = await this.makeRequest<AppointmentEventListResponse>(
             {
               cxId,
               s3Path: "appointments-changed",
               method: "GET",
-              url: `${appointmentUrl}?${queryParams.toString()}`,
+              url,
               schema: appointmentEventListResponseSchema,
               additionalInfo,
               debug,
             }
           );
-          return appointmentEventListResponse.appointments;
-        }
+          return {
+            listOfItems: appointmentEventListResponse.appointments,
+            nextUrl: appointmentEventListResponse.next,
+          };
+        },
+        appointmentUrl
       );
       const bookedAppointments = appointmentEvents
         .filter(app => app.patientid !== undefined && app.appointmentstatus === "f")
@@ -876,15 +878,15 @@ class AthenaHealthApi {
 
   private async paginateListResponse<T>(
     api: AthenaHealthApi,
-    requester: (limit: number, offset: number) => Promise<T[]>,
-    limit: number | undefined = 1000,
-    offset: number | undefined = 0,
+    requester: (url: string) => Promise<{ listOfItems: T[]; nextUrl: string | undefined }>,
+    url: string | undefined,
     acc: T[] | undefined = []
   ): Promise<T[]> {
-    const listOfItems = await requester(limit, offset);
+    if (!url) return acc;
+    const { listOfItems, nextUrl } = await requester(url.replace(`/v1/${this.practiceId}`, ""));
     acc.push(...listOfItems);
-    if (listOfItems.length === 0 || listOfItems.length < limit) return acc;
-    return api.paginateListResponse(api, requester, limit, offset + limit, acc);
+    if (!nextUrl) return acc;
+    return api.paginateListResponse(api, requester, nextUrl, acc);
   }
 
   private formatDate(date: string | undefined): string | undefined {
