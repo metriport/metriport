@@ -9,6 +9,7 @@ import { NetworkStack } from "./network";
 import { VpnStack } from "./vpn";
 import { INTERNAL_SERVICES_SUBNET_GROUP_NAME } from "./constants";
 import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
+import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 
 export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -17,11 +18,17 @@ export interface Hl7NotificationStackProps extends cdk.StackProps {
 
 const NUM_AZS = 2;
 
+const fetchSecretsForPartner = (scope: Construct, partnerName: string) => {
+  const secretName = `PresharedKey-${partnerName}`;
+  return Secret.fromSecretNameV2(scope, secretName, secretName);
+};
+
 export class Hl7NotificationStack extends MetriportCompositeStack {
   public readonly networkStack: NetworkStack;
 
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
     super(scope, id, props);
+    const vpnConfigs = props.config.hl7Notification.vpnConfigs;
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
@@ -65,9 +72,9 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       description: "HL7 Notification Routing Network Infrastructure",
     });
 
-    props.config.hl7Notification.vpnConfigs.forEach((config, index) => {
+    vpnConfigs.forEach((config, index) => {
       new VpnStack(this, `NestedVpnStack${config.partnerName}`, {
-        vpnConfig: config,
+        vpnConfig: { ...config, presharedKey: fetchSecretsForPartner(this, config.partnerName) },
         vpc,
         index,
         networkStack: this.networkStack.output,
