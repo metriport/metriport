@@ -1,8 +1,15 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import/setup before all other imports
-import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { MetriportMedicalApi, WebhookRequest } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/shared";
+import {
+  isBulkPatientImportWebhookRequest,
+  isConsolidatedWebhookRequest,
+  isDocumentConversionWebhookRequest,
+  isDocumentDownloadWebhookRequest,
+  isPingWebhookRequest,
+} from "@metriport/shared/medical";
 import express, { Application, raw, Request, Response } from "express";
 import fs from "fs";
 import https from "https";
@@ -34,24 +41,41 @@ function verifySignature(req: Request): boolean {
  END - Docs section
  ******************************************************/
 
-app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response) => {
+app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response): Promise<void> => {
   console.log(`BODY: ${req.body.toString()}`);
 
   if (!verifySignature(req)) {
-    return res.sendStatus(401);
+    console.log(`Signature verification failed`);
+    res.sendStatus(401);
+    return;
   }
 
-  const payload = JSON.parse(req.body.toString());
-  if (payload.meta.type === "medical.document-download") {
+  const payload: WebhookRequest = JSON.parse(req.body.toString());
+
+  if (isPingWebhookRequest(payload)) {
+    console.log(`Sending 200 | OK + 'pong' body param`);
+    res.status(200).send({ pong: payload.ping });
+    return;
+  }
+
+  // Sending the response before processing the webhook.
+  // This is to simulate long running processes that should not
+  // delay the response, which could result in a timeout.
+  // See https://docs.metriport.com/medical-api/getting-started/webhooks#overview,
+  // "Responds 200 in under 4 seconds"
+  console.log(`Sending 200 | OK`);
+  res.sendStatus(200);
+
+  let processed = false;
+
+  if (isDocumentDownloadWebhookRequest(payload)) {
     console.log(`Received document download webhook`);
     const patient = payload.patients[0];
 
-    if (patient.status === "completed") {
-      const documents = payload.patients[0].documents;
-
-      if (documents.length > 0) {
-        const firstDoc = documents[0];
-
+    if (patient?.status === "completed") {
+      const documents = payload.patients[0]?.documents;
+      const firstDoc = documents ? documents[0] : undefined;
+      if (firstDoc) {
         // DOWNLOAD THE DOCUMENT
         // Expected response https://docs.metriport.com/medical-api/api-reference/document/get-document#response
         const resp = await metriportApi.getDocumentUrl(firstDoc.fileName, "pdf");
@@ -61,13 +85,14 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response) => {
     } else {
       console.log("Error querying documents");
     }
+    processed = true;
   }
 
-  if (payload.meta.type === "medical.document-conversion") {
+  if (isDocumentConversionWebhookRequest(payload)) {
     console.log(`Received document conversion webhook`);
     const patient = payload.patients[0];
 
-    if (patient.status === "completed") {
+    if (patient?.status === "completed") {
       const patientId = patient.patientId;
 
       // START A CONSOLIDATED QUERY
@@ -82,26 +107,41 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response) => {
     } else {
       console.log("Error converting documents");
     }
+    processed = true;
   }
 
-  if (payload.meta.type === "medical.consolidated-data") {
+  if (isConsolidatedWebhookRequest(payload)) {
     console.log(`Received consolidated data webhook`);
     const patient = payload.patients[0];
 
-    if (patient.status === "completed") {
+    if (patient?.status === "completed") {
       // Process/store the consolidated data
       console.log(JSON.stringify(payload, undefined, 2));
     } else {
       console.log("Error consolidating data");
     }
+    processed = true;
   }
 
-  if (payload.ping) {
-    console.log(`Sending 200 | OK + 'pong' body param`);
-    return res.status(200).send({ pong: payload.ping });
+  if (isBulkPatientImportWebhookRequest(payload)) {
+    console.log(`Received bulk patient create webhook`);
+    const bulkPatientCreate = payload.bulkPatientCreate;
+
+    if (bulkPatientCreate.status === "processing") {
+      // Could do something when notified the bulk create is in progress
+      console.log(`Processing: ${JSON.stringify(payload, undefined, 2)}`);
+    } else if (bulkPatientCreate.status === "completed") {
+      // Download and process the result file
+      console.log(`COMPLETED: ${JSON.stringify(payload, undefined, 2)}`);
+    } else {
+      console.log("Failed to process the bulk patient create");
+    }
+    processed = true;
   }
-  console.log(`Sending 200 | OK`);
-  res.sendStatus(200);
+
+  if (!processed) {
+    console.log(`Unknown webhook type: ${payload.meta.type}`);
+  }
 });
 
 // If needed, you can parse the body as JSON from here on (the webhook endpoint
