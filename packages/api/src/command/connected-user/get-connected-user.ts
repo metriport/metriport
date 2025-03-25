@@ -1,6 +1,6 @@
 import { AtLeastOne } from "@metriport/shared";
 import { Op } from "sequelize";
-import NotFoundError from "../../errors/not-found";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
 

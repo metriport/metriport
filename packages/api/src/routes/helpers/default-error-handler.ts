@@ -1,12 +1,10 @@
 import { OperationOutcomeError } from "@medplum/core";
 import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
-import { MetriportError as MetriportErrorFromCore } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
-import { MetriportError as MetriportErrorFromShared } from "@metriport/shared";
+import { isMetriportError, MetriportError } from "@metriport/shared/error/metriport-error";
 import { ErrorRequestHandler } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
-import MetriportError from "../../errors/metriport-error";
 import { isClientError } from "../../shared/http";
 import { capture } from "../../shared/notifications";
 import { httpResponseBody } from "../util";
@@ -44,14 +42,6 @@ const zodResponseBody = (err: ZodError): string => {
     }),
   });
 };
-
-function isMetriportError(err: unknown): err is MetriportErrorFromShared {
-  return (
-    err instanceof MetriportError ||
-    err instanceof MetriportErrorFromCore ||
-    err instanceof MetriportErrorFromShared
-  );
-}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {

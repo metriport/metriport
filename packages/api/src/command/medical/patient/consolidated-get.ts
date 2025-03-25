@@ -23,7 +23,7 @@ import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { intersection } from "lodash";
-import { processAsyncError } from "../../../errors";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -456,5 +456,5 @@ export async function getConsolidatedPatientDataAsync({
   const connector = buildConsolidatedSnapshotConnector();
   connector
     .execute(payload)
-    .catch(processAsyncError("Failed to get consolidated patient data async", true));
+    .catch(processAsyncError("Failed to get consolidated patient data async"));
 }

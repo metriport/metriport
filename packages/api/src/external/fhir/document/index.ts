@@ -31,7 +31,7 @@ import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shar
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
-import MetriportError from "../../../errors/metriport-error";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";

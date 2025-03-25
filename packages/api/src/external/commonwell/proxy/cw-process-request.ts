@@ -10,7 +10,7 @@ import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
 import { ensureCcdExists } from "@metriport/core/shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
-import BadRequestError from "@metriport/core/util/error/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import { Request } from "express";

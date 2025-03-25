@@ -1,8 +1,8 @@
 import { out } from "@metriport/core/util/log";
 import { errorToString, stringToBoolean } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
-import BadRequestError from "../errors/bad-request";
-import ForbiddenError from "../errors/forbidden";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
+import { ForbiddenError } from "@metriport/shared/error/forbidden";
 import { Config } from "../shared/config";
 import { capture } from "../shared/notifications";
 

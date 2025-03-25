@@ -4,7 +4,7 @@ import {
   findOrganizationResource,
   findPatientResource,
 } from "../external/fhir/shared";
-import BadRequestError from "../util/error/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { buildAuthor } from "./cda-templates/clinical-document/author";
 import { buildClinicalDocumentXml } from "./cda-templates/clinical-document/clinical-document";
 import { buildCustodian } from "./cda-templates/clinical-document/custodian";

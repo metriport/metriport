@@ -1,6 +1,6 @@
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { sleep } from "@metriport/shared";
-import { processAsyncError } from "../../errors";
 import { WebhookRequest } from "../../models/webhook-request";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { processRequest } from "./webhook";
@@ -38,5 +38,5 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
     }
   };
   // intentionally asynchronous
-  _processRequest().catch(processAsyncError(`retryFailedRequests._processRequest`));
+  _processRequest().catch(processAsyncError("Failed retrying failed webhook requests"));
 };

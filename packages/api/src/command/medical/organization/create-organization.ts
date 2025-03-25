@@ -4,7 +4,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { sleep } from "@metriport/shared";
 import { UniqueConstraintError } from "sequelize";
-import BadRequestError from "../../../errors/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../models/medical/organization";

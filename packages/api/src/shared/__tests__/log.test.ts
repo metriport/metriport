@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { inspect } from "node:util";
-import MetriportError from "../../errors/metriport-error";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
 import { errorToString } from "../log";
 
 beforeEach(() => {

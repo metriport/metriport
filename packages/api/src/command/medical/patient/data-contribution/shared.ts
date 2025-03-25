@@ -1,6 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
-import BadRequestError from "../../../../errors/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { countResources } from "../../../../external/fhir/patient/count-resources";
 import { Bundle as ValidBundle } from "../../../../routes/medical/schemas/fhir";
 import { Config } from "../../../../shared/config";

@@ -1,7 +1,7 @@
 import { limitStringLength } from "@metriport/shared";
 import { nanoid } from "nanoid";
 import { maxWebhookStatusLength } from "../../domain/settings";
-import { processAsyncError } from "../../errors";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import WebhookError from "../../errors/webhook";
 import {
   Settings as SettingsModel,
@@ -40,7 +40,7 @@ export const updateSettings = async ({
 
   // if there's a URL, fire a test towards it - intentionally asynchronous
   updateWebhook.webhookUrl &&
-    testWebhook({ cxId, ...updateWebhook }).catch(processAsyncError(`testWebhook`));
+    testWebhook({ cxId, ...updateWebhook }).catch(processAsyncError("Failed testing cx's webhook"));
 
   const updatedSettings = await getSettingsOrFail({ id: cxId });
   return updatedSettings;

@@ -1,5 +1,5 @@
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import BadRequestError from "../../errors/bad-request";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import { Patient } from "@metriport/core/domain/patient";
 
 /**

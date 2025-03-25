@@ -6,8 +6,8 @@ import { getConnectedUserOrFail } from "../command/connected-user/get-connected-
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { getUserToken } from "../command/cx-user/get-user-token";
 import { sendProviderConnected } from "../command/webhook/devices";
-import BadRequestError from "../errors/bad-request";
-import UnauthorizedError from "../errors/unauthorized";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
+import { UnauthorizedError } from "@metriport/shared/error/unauthorized";
 import { Config } from "../shared/config";
 import {
   Constants,

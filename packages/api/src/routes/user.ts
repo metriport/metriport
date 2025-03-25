@@ -9,8 +9,8 @@ import {
   getConnectedUsers,
 } from "../command/connected-user/get-connected-user";
 import { createUserToken } from "../command/cx-user/create-user-token";
-import BadRequestError from "../errors/bad-request";
-import NotFoundError from "../errors/not-found";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import { ConnectedUser } from "../models/connected-user";
 
 import { ConsumerHealthDataType } from "../providers/provider";

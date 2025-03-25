@@ -6,7 +6,7 @@ import { getCxMappingOrFail, getCxMappingSourceFromJwtTokenSource } from "../../
 import { getPatientMappingOrFail } from "../../command/mapping/patient";
 import { JwtTokenData } from "../../domain/jwt-token";
 import { PatientMappingSource } from "../../domain/patient-mapping";
-import ForbiddenError from "../../errors/forbidden";
+import { ForbiddenError } from "@metriport/shared/error/forbidden";
 import { EhrDashJwtTokenSource, EhrWebhookJwtTokenSource } from "../../external/ehr/shared";
 import { getAuthorizationToken, getFrom, getFromQueryOrFail } from "../util";
 import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";

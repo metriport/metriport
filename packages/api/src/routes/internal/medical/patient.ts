@@ -58,7 +58,7 @@ import {
 } from "../../../command/medical/patient/update-patient";
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import BadRequestError from "../../../errors/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,

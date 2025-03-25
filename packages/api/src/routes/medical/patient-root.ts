@@ -15,7 +15,7 @@ import {
 import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
-import NotFoundError from "../../errors/not-found";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";

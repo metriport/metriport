@@ -1,5 +1,5 @@
 import { errorToString, USState } from "@metriport/shared";
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import { Organization as CWSdkOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization, OrgType } from "@metriport/core/domain/organization";

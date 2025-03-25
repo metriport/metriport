@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import BadRequestError from "../errors/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 
 export const ISO_DATE = "YYYY-MM-DD";
 

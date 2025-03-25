@@ -5,7 +5,7 @@ import { verifyWebhookSignatureEd25519 } from "@metriport/core/util/webhook";
 import { NextFunction, Request, Response } from "express";
 import { getJwtToken, updateTokenExpiration } from "../../../../command/jwt-token";
 import { JwtTokenData } from "../../../../domain/jwt-token";
-import ForbiddenError from "../../../../errors/forbidden";
+import { ForbiddenError } from "@metriport/shared/error/forbidden";
 import { shortDurationTokenDuration } from "../../../../external/ehr/elation/command/sync-patient";
 import { getElationSigningKeyInfo } from "../../../../external/ehr/elation/shared";
 import { getAuthorizationToken } from "../../../util";

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api-sdk";
 
-import NotImplementedError from "../errors/not-implemented";
+import { NotImplementedError } from "@metriport/shared/error/not-implemented";
 import { ConnectedUser } from "../models/connected-user";
 import { RawParams } from "../shared/raw-params";
 

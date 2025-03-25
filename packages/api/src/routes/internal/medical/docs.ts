@@ -28,7 +28,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import BadRequestError from "../../../errors/bad-request";
+import { BadRequestError } from "@metriport/shared/error/bad-request";
 import {
   processCcdRequest,
   processEmptyCcdRequest,

@@ -10,7 +10,7 @@ import {
   bodyCategory,
   sleepCategory,
 } from "../command/webhook/withings";
-import MetriportError from "../errors/metriport-error";
+import { MetriportError } from "@metriport/shared/error/metriport-error";
 import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToBody } from "../mappings/withings/body";

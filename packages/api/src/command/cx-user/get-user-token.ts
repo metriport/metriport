@@ -1,6 +1,6 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { UserToken } from "../../domain/user-token";
-import NotFoundError from "../../errors/not-found";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import { docTableNames, getDB } from "../../models/db";
 import { capture } from "../../shared/notifications";
 
