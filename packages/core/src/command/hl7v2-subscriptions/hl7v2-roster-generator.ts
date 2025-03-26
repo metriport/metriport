@@ -1,5 +1,7 @@
-import { MetriportError, errorToString } from "@metriport/shared";
+import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { Client, SFTPWrapper } from "ssh2";
 import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
@@ -12,6 +14,8 @@ import {
   Hl7v2SubscriberParams,
   SftpConfig,
 } from "./get-subscribers";
+
+dayjs.extend(duration);
 
 const region = Config.getAWSRegion();
 
@@ -26,6 +30,8 @@ type RosterGenerateProps = {
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const csvSeparator = ",";
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
+const NUMBER_OF_ATTEMPTS = 3;
+const DELAY_BETWEEN_ATTEMPTS = dayjs.duration({ seconds: 1 });
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -75,7 +81,14 @@ export async function generateAndUploadHl7v2Roster({
   const { states, subscriptions, hieConfig } = config;
   log(`Running with these configs: ${JSON.stringify(config)}`);
 
-  const subscribers = await getAllSubscribers(apiUrl, states, subscriptions, log);
+  const subscribers = await executeWithNetworkRetries(
+    async () => getAllSubscribers(apiUrl, states, subscriptions, log),
+    {
+      maxAttempts: NUMBER_OF_ATTEMPTS,
+      initialDelay: DELAY_BETWEEN_ATTEMPTS.asMilliseconds(),
+      log,
+    }
+  );
   log(`Found ${subscribers.length} total subscribers`);
 
   if (subscribers.length === 0) {
@@ -111,7 +124,11 @@ export async function generateAndUploadHl7v2Roster({
   });
 
   try {
-    await sendViaSftp(hieConfig.sftpConfig, rosterCsv, log);
+    await executeWithNetworkRetries(async () => sendViaSftp(hieConfig.sftpConfig, rosterCsv, log), {
+      maxAttempts: NUMBER_OF_ATTEMPTS,
+      initialDelay: DELAY_BETWEEN_ATTEMPTS.asMilliseconds(),
+      log,
+    });
   } catch (err) {
     const msg = `Failed to SFTP upload HL7v2 roster`;
     capture.error(msg, {
@@ -315,21 +332,47 @@ async function ensureRemoteDirectory(
       return;
     }
 
-    sftp.stat(dirPath, err => {
+    log(`[SFTP] Ensuring directory ${dirPath} exists...`);
+    createNestedDirectories(sftp, dirPath, err => {
       if (err) {
-        log(`[SFTP] Directory ${dirPath} doesn't exist, creating it...`);
-        sftp.mkdir(dirPath, mkdirErr => {
-          if (mkdirErr) {
-            reject(new MetriportError(`Failed to create directory ${dirPath}`, mkdirErr));
-            return;
-          }
-          resolve();
-        });
-      } else {
-        resolve();
+        reject(new MetriportError(`Failed to create nested directories ${dirPath}`, err));
+        return;
       }
+      log(`[SFTP] Successfully created/verified directory structure`);
+      resolve();
     });
   });
+}
+
+function createNestedDirectories(sftp: SFTPWrapper, path: string, callback: (err?: Error) => void) {
+  const segments = path.replace(/^\.\//, "").split("/").filter(Boolean) as string[];
+  let current = "";
+
+  function nextDir(i: number) {
+    if (i > segments.length - 1) return callback();
+    const segment = segments[i];
+    if (!segment) return callback(new Error(`Invalid path segment at index ${i}`));
+
+    current = i === 0 ? segment : `${current}/${segment}`;
+
+    sftp.stat(current, err => {
+      if (err) {
+        sftp.mkdir(current, mkdirErr => {
+          if (mkdirErr) {
+            const enhancedError = new Error(
+              `Failed to create directory '${current}': ${mkdirErr.message}`
+            );
+            return callback(enhancedError);
+          }
+          nextDir(i + 1);
+        });
+      } else {
+        nextDir(i + 1);
+      }
+    });
+  }
+
+  nextDir(0);
 }
 
 function cleanup({ conn, sftp }: { conn: Client; sftp: SFTPWrapper }): void {
