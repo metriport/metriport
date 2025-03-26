@@ -124,19 +124,21 @@ export async function convert(
   }
 
   if (options?.hydrate) {
-    combinedBundle = await hydrate({
+    const hydratedBundle = await hydrate({
       cxId,
       patientId,
       bundle: combinedBundle,
     });
+    combinedBundle = hydratedBundle;
   }
 
   if (options?.normalize) {
-    combinedBundle = await normalize({
+    const normalizedBundle = await normalize({
       cxId,
       patientId,
       bundle: combinedBundle,
     });
+    combinedBundle = normalizedBundle;
   }
 
   // Making the value of the fileName short to prevent the insertion error on the FHIR test server.
