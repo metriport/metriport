@@ -30,6 +30,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   dbCredsSecret: secret.ISecret;
   medicalDocumentsBucket: s3.Bucket;
   sandboxSeedDataBucket: s3.IBucket | undefined;
+  rosterBucket: s3.Bucket | undefined;
   alarmAction?: SnsAction;
   appConfigEnvVars: {
     appId: string;
@@ -49,6 +50,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirToBundleLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
+  readonly hl7v2RosterLambda: Lambda | undefined;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -153,6 +155,17 @@ export class LambdasNestedStack extends NestedStack {
       notificationUrl: props.config.slack.SLACK_ALERT_URL,
       ...props.config.acmCertMonitor,
     });
+
+    if (props.rosterBucket) {
+      this.hl7v2RosterLambda = this.setupRosterLambda({
+        lambdaLayers: this.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        hl7v2RosterBucket: props.rosterBucket,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+      });
+    }
   }
 
   private setupCdaToVisualization(ownProps: {
@@ -588,5 +601,41 @@ export class LambdasNestedStack extends NestedStack {
     );
 
     return acmCertificateMonitorLambda;
+  }
+
+  private setupRosterLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    hl7v2RosterBucket: s3.Bucket;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, hl7v2RosterBucket } = ownProps;
+
+    const hl7v2RosterLambda = createLambda({
+      stack: this,
+      name: "Hl7v2Roster",
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "hl7v2-roster",
+      envType,
+      envVars: {
+        BUCKET_NAME: hl7v2RosterBucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [
+        lambdaLayers.shared,
+        lambdaLayers.chromium,
+        lambdaLayers.puppeteer,
+        lambdaLayers.saxon,
+      ],
+      memory: 1024,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    hl7v2RosterBucket.grantReadWrite(hl7v2RosterLambda);
+
+    return hl7v2RosterLambda;
   }
 }
