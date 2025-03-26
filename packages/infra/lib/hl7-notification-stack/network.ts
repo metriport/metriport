@@ -70,8 +70,6 @@ export class NetworkStack extends cdk.NestedStack {
      * Read more about needing to set the dependency here:
      * https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/CfnVPNGatewayRoutePropagation.html
      * */
-
-    // Enable route propagation for each of our private subnets back out to the vgw
     const vpnAccessibleSubnets = vpc.selectSubnets({
       subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
     }).subnets;
@@ -87,6 +85,16 @@ export class NetworkStack extends cdk.NestedStack {
       );
 
       routePropagation.node.addDependency(vgwAttachment);
+    });
+
+    new cdk.CfnOutput(this, "NetworkAclId", {
+      value: networkAcl.networkAclId,
+      exportName: `NestedNetworkStack-NetworkAclId`,
+    });
+
+    new cdk.CfnOutput(this, "VgwId", {
+      value: vgw.ref,
+      exportName: `NestedNetworkStack-VgwId`,
     });
 
     this.output = {

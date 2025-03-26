@@ -1,20 +1,18 @@
 import * as cdk from "aws-cdk-lib";
+import { Fn } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
-import { NetworkStackOutput } from "./network";
 import { MLLP_DEFAULT_PORT } from "./constants";
-import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import { Fn } from "aws-cdk-lib";
 
 const IPSEC_1 = "ipsec.1";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
-  vpc: ec2.Vpc;
   vpnConfig: Hl7NotificationVpnConfig & {
-    presharedKey: secret.ISecret;
+    presharedKeyName: string;
   };
-  networkStack: NetworkStackOutput;
+  networkStackId: string;
   index: number;
 }
 
@@ -22,12 +20,20 @@ export interface VpnStackProps extends cdk.NestedStackProps {
  * This stack creates all the infra to setup a VPN tunnel with an HIE sending us HL7 messages.
  * @see https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html
  */
-export class VpnStack extends cdk.NestedStack {
+export class VpnStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const { networkAcl } = props.networkStack;
-    const { partnerInternalCidrBlock, presharedKey } = props.vpnConfig;
+    const { partnerInternalCidrBlock, presharedKeyName } = props.vpnConfig;
+    const presharedKey = secret.Secret.fromSecretNameV2(this, presharedKeyName, presharedKeyName);
+
+    const networkAcl = ec2.NetworkAcl.fromNetworkAclId(
+      this,
+      "NetworkAcl",
+      Fn.importValue(`${props.networkStackId}-NetworkAclId`)
+    );
+
+    const vgwId = Fn.importValue(`${props.networkStackId}-VgwId`);
 
     const customerGateway = new ec2.CfnCustomerGateway(
       this,
@@ -85,7 +91,7 @@ export class VpnStack extends cdk.NestedStack {
       `${props.vpnConfig.partnerName}VpnConnection`,
       {
         type: IPSEC_1,
-        vpnGatewayId: props.networkStack.vgw.ref,
+        vpnGatewayId: vgwId,
         customerGatewayId: customerGateway.ref,
         staticRoutesOnly: true,
         tags: [
@@ -131,7 +137,7 @@ export class VpnStack extends cdk.NestedStack {
   }
 
   private setNaclRules(
-    networkAcl: ec2.NetworkAcl,
+    networkAcl: ec2.INetworkAcl,
     partnerInternalCidrBlock: string,
     direction: ec2.TrafficDirection,
     rules: {
@@ -157,7 +163,7 @@ export class VpnStack extends cdk.NestedStack {
   }
 
   private addIngressRules(
-    networkAcl: ec2.NetworkAcl,
+    networkAcl: ec2.INetworkAcl,
     partnerInternalCidrBlock: string,
     rules: {
       ruleNumber: number;
@@ -169,7 +175,7 @@ export class VpnStack extends cdk.NestedStack {
   }
 
   private addEgressRules(
-    networkAcl: ec2.NetworkAcl,
+    networkAcl: ec2.INetworkAcl,
     partnerInternalCidrBlock: string,
     rules: {
       ruleNumber: number;
