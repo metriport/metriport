@@ -14,9 +14,14 @@ import {
 } from "./get-subscribers";
 
 const region = Config.getAWSRegion();
-const bucketName = Config.getHl7v2RosterBucketName();
 
 type SubscriberRecord = Record<string, string>;
+
+type RosterGenerateProps = {
+  config: Hl7v2RosterConfig;
+  bucketName: string;
+  apiUrl: string;
+};
 
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const csvSeparator = ",";
@@ -61,158 +66,152 @@ export function convertToHieFormat(
   });
 }
 
-export class Hl7v2RosterGenerator {
-  private readonly s3Client: S3Utils;
+export async function generateAndUploadHl7v2Roster({
+  config,
+  bucketName,
+  apiUrl,
+}: RosterGenerateProps): Promise<void> {
+  const { log } = out("Hl7v2RosterGenerator");
+  const { states, subscriptions, hieConfig } = config;
+  log(`Running with these configs: ${JSON.stringify(config)}`);
 
-  constructor() {
-    this.s3Client = getS3UtilsInstance();
-  }
+  const subscribers = await getAllSubscribers(apiUrl, states, subscriptions, log);
+  log(`Found ${subscribers.length} total subscribers`);
 
-  async generate(config: Hl7v2RosterConfig): Promise<void> {
-    const { log } = out("Hl7v2RosterGenerator");
-    const { states, subscriptions, hieConfig, apiUrl } = config;
-    log(`Running with these configs: ${JSON.stringify(config)}`);
-
-    const subscribers = await this.getAllSubscribers(apiUrl, states, subscriptions, log);
-    log(`Found ${subscribers.length} total subscribers`);
-
-    if (subscribers.length === 0) {
-      const msg = `No subscribers found, skipping roster generation`;
-      log(msg);
-      capture.message(msg, {
-        extra: {
-          hieConfig,
-          states,
-          subscriptions,
-        },
-        level: "warning",
-      });
-      return;
-    }
-
-    const convertedSubscribers = convertToHieFormat(subscribers, hieConfig.schema);
-    const rosterCsv = this.generateCsv(convertedSubscribers);
-    log("Created CSV");
-
-    const fileName = buildDocumentNameForHl7v2Roster(hieConfig.name, subscriptions);
-    await storeInS3WithRetries({
-      s3Utils: this.s3Client,
-      payload: rosterCsv,
-      bucketName,
-      fileName,
-      contentType: CSV_MIME_TYPE,
-      log,
-      errorConfig: {
-        errorMessage: "Error uploading preprocessed XML",
-        context: "Hl7v2RosterGenerator",
-        captureParams: config,
-        shouldCapture: true,
-      },
+  if (subscribers.length === 0) {
+    const msg = `No subscribers found, skipping roster generation`;
+    log(msg);
+    capture.message(msg, {
+      extra: config,
+      level: "warning",
     });
-
-    try {
-      await this.sendViaSftp(hieConfig.sftpConfig, rosterCsv, log);
-    } catch (err) {
-      const msg = `Failed to SFTP upload HL7v2 roster`;
-      capture.error(msg, {
-        extra: {
-          hieConfig,
-          states,
-          subscriptions,
-        },
-      });
-    }
-    log("Done");
     return;
   }
 
-  private async getAllSubscribers(
-    apiUrl: string,
-    states: string[],
-    subscriptions: Hl7v2Subscription[],
-    log: typeof console.log
-  ): Promise<Hl7v2Subscriber[]> {
-    const allSubscribers: Hl7v2Subscriber[] = [];
-    let currentUrl = `${apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
-    let baseParams: Hl7v2SubscriberParams | undefined = {
-      states: states.join(","),
-      subscriptions,
-      count: NUMBER_OF_PATIENTS_PER_PAGE,
-    };
+  const convertedSubscribers = convertToHieFormat(subscribers, hieConfig.schema);
+  const rosterCsv = generateCsv(convertedSubscribers);
+  log("Created CSV");
 
-    try {
-      while (currentUrl) {
-        const response = await axios.get(currentUrl, {
-          params: baseParams,
-        });
-        baseParams = undefined;
+  const fileName = buildDocumentNameForHl7v2Roster(hieConfig.name, subscriptions);
+  const s3Client = getS3UtilsInstance();
 
-        const data = response.data as Hl7v2SubscriberApiResponse;
-        allSubscribers.push(...data.patients);
+  await storeInS3WithRetries({
+    s3Utils: s3Client,
+    payload: rosterCsv,
+    bucketName,
+    fileName,
+    contentType: CSV_MIME_TYPE,
+    log,
+    errorConfig: {
+      errorMessage: "Error uploading preprocessed XML",
+      context: "Hl7v2RosterGenerator",
+      captureParams: config,
+      shouldCapture: true,
+    },
+  });
 
-        currentUrl = data.meta.nextPage || "";
-        if (!currentUrl) break;
-      }
-      return allSubscribers;
-    } catch (error) {
-      const msg = `Failed to fetch ADT subscribers`;
-      log(`${msg} - err: ${errorToString(error)}`);
-      throw new MetriportError(msg, error);
+  try {
+    await sendViaSftp(hieConfig.sftpConfig, rosterCsv, log);
+  } catch (err) {
+    const msg = `Failed to SFTP upload HL7v2 roster`;
+    capture.error(msg, {
+      extra: {
+        hieConfig,
+        states,
+        subscriptions,
+      },
+    });
+  }
+  log("Done");
+  return;
+}
+
+async function getAllSubscribers(
+  apiUrl: string,
+  states: string[],
+  subscriptions: Hl7v2Subscription[],
+  log: typeof console.log
+): Promise<Hl7v2Subscriber[]> {
+  const allSubscribers: Hl7v2Subscriber[] = [];
+  let currentUrl = `${apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
+  let baseParams: Hl7v2SubscriberParams | undefined = {
+    states: states.join(","),
+    subscriptions,
+    count: NUMBER_OF_PATIENTS_PER_PAGE,
+  };
+
+  try {
+    while (currentUrl) {
+      const response = await axios.get(currentUrl, {
+        params: baseParams,
+      });
+      baseParams = undefined;
+
+      const data = response.data as Hl7v2SubscriberApiResponse;
+      allSubscribers.push(...data.patients);
+
+      currentUrl = data.meta.nextPage || "";
+      if (!currentUrl) break;
     }
+    return allSubscribers;
+  } catch (error) {
+    const msg = `Failed to fetch ADT subscribers`;
+    log(`${msg} - err: ${errorToString(error)}`);
+    throw new MetriportError(msg, error);
   }
+}
 
-  private generateCsv(records: SubscriberRecord[]): string {
-    if (records.length === 0) return "";
+function generateCsv(records: SubscriberRecord[]): string {
+  if (records.length === 0) return "";
 
-    const firstRecord = records[0];
-    if (!firstRecord) return "";
+  const firstRecord = records[0];
+  if (!firstRecord) return "";
 
-    const headers = Object.keys(firstRecord);
-    const headerRow = headers.map(h => this.normalizeForCsv(h)).join(csvSeparator);
+  const headers = Object.keys(firstRecord);
+  const headerRow = headers.map(h => normalizeForCsv(h)).join(csvSeparator);
 
-    const dataRows = records.map(record =>
-      headers.map(header => this.normalizeForCsv(record[header])).join(csvSeparator)
-    );
+  const dataRows = records.map(record =>
+    headers.map(header => normalizeForCsv(record[header])).join(csvSeparator)
+  );
 
-    return [headerRow, ...dataRows].join("\n");
+  return [headerRow, ...dataRows].join("\n");
+}
+
+function normalizeForCsv(value: string | number | boolean | undefined): string {
+  if (value === undefined) return "";
+  const stringValue = value.toString();
+
+  if (
+    stringValue.includes(csvSeparator) ||
+    stringValue.includes('"') ||
+    stringValue.includes("\n")
+  ) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
   }
+  return stringValue;
+}
 
-  private normalizeForCsv(value: string | number | boolean | undefined): string {
-    if (value === undefined) return "";
-    const stringValue = value.toString();
+async function sendViaSftp(
+  config: SftpConfig,
+  rosterCsv: string,
+  log: typeof console.log
+): Promise<void> {
+  let connection;
+  try {
+    log(`[SFTP] Uploading roster to ${config.host}:${config.port}${config.remotePath}`);
 
-    if (
-      stringValue.includes(csvSeparator) ||
-      stringValue.includes('"') ||
-      stringValue.includes("\n")
-    ) {
-      return `"${stringValue.replace(/"/g, '""')}"`;
-    }
-    return stringValue;
-  }
+    connection = await createSftpConnection(config);
+    log(`[SFTP] Successfully established connection :)`);
 
-  private async sendViaSftp(
-    config: SftpConfig,
-    rosterCsv: string,
-    log: typeof console.log
-  ): Promise<void> {
-    let connection;
-    try {
-      log(`[SFTP] Uploading roster to ${config.host}:${config.port}${config.remotePath}`);
-
-      connection = await createSftpConnection(config);
-      log(`[SFTP] Successfully established connection :)`);
-
-      await uploadFile(connection.sftp, config.remotePath, rosterCsv, log);
-      log("[SFTP] Upload successful!");
-    } catch (error) {
-      log(`[SFTP] SFTP test failed! ${errorToString(error)}`);
-      throw error;
-    } finally {
-      if (connection) {
-        cleanup(connection);
-        log(`[SFTP] Connection cleaned up.`);
-      }
+    await uploadFile(connection.sftp, config.remotePath, rosterCsv, log);
+    log("[SFTP] Upload successful!");
+  } catch (error) {
+    log(`[SFTP] SFTP test failed! ${errorToString(error)}`);
+    throw error;
+  } finally {
+    if (connection) {
+      cleanup(connection);
+      log(`[SFTP] Connection cleaned up.`);
     }
   }
 }

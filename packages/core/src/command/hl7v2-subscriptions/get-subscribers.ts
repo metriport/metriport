@@ -16,10 +16,9 @@ export type HieConfig = {
 };
 
 export type Hl7v2RosterConfig = {
-  apiUrl: string;
+  hieConfig: HieConfig;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
-  hieConfig: HieConfig;
 };
 
 export type Hl7v2SubscriberParams = {

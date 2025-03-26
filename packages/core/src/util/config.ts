@@ -69,10 +69,6 @@ export class Config {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
 
-  static getHl7v2RosterBucketName(): string {
-    return getEnvVarOrFail("HL7V2_ROSTER_BUCKET_NAME");
-  }
-
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
