@@ -25,7 +25,7 @@ type RosterGenerateProps = {
 
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const csvSeparator = ",";
-const NUMBER_OF_PATIENTS_PER_PAGE = 50;
+const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
