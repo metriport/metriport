@@ -48,7 +48,6 @@ export const cxBasedFFsSchema = z.object({
   cxsWithDemoAugEnabled: ffStringValuesSchema,
   cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
   cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
-  cxsWithHydrationFeatureFlag: ffStringValuesSchema, // TODO: 2563 - Remove this after prod testing is done
   cxsUsingWkhtmltopdfInsteadOfPuppeteer: ffStringValuesSchema, // TODO: 2510 - Remove this when ready to rollout to all customers
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
 });
@@ -272,17 +271,6 @@ export async function getCxsWithStrictMatchingAlgorithm(): Promise<string[]> {
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
   return cxsWithADHDFeatureFlagValue.includes(cxId);
-}
-
-// TODO: 2563 - Remove this after prod testing is done
-export async function isHydrationEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithHydrationEnabled = await getCxsWithHydrationFeatureFlag();
-  return cxIdsWithHydrationEnabled.some(i => i === cxId);
-}
-
-// TODO: 2563 - Remove this after prod testing is done
-export async function getCxsWithHydrationFeatureFlag(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithHydrationFeatureFlag");
 }
 
 export async function isWkhtmltopdfEnabledForCx(cxId: string): Promise<boolean> {
