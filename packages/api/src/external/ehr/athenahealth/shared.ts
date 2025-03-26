@@ -1,7 +1,7 @@
 import AthenaHealthApi, {
   AthenaEnv,
   isAthenaEnv,
-} from "@metriport/core/external/athenahealth/index";
+} from "@metriport/core/external/ehr/athenahealth/index";
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
 import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
@@ -33,4 +33,15 @@ export async function createAthenaClient(
     getEnv: { params: undefined, getEnv: getAthenaEnv },
     getClient: AthenaHealthApi.create,
   });
+}
+
+export enum LookupModes {
+  FromSubscription = "from-subscription",
+  FromSubscriptionBackfill = "from-subscription-backfill",
+  Appointments = "appointments",
+}
+export const lookupModes = [...Object.values(LookupModes)] as const;
+export type LookupMode = (typeof lookupModes)[number];
+export function isLookupMode(value: string): value is LookupMode {
+  return lookupModes.includes(value as LookupMode);
 }

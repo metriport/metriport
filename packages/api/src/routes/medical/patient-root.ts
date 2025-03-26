@@ -1,5 +1,5 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import { PaginatedResponse, stringToBoolean } from "@metriport/shared";
+import { NotFoundError, PaginatedResponse, stringToBoolean } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -15,7 +15,6 @@ import {
 import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
-import NotFoundError from "../../errors/not-found";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
@@ -58,6 +57,7 @@ router.post(
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
+    const { settings, ...patientCreateProps } = payload;
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
@@ -71,7 +71,7 @@ router.post(
     }
 
     const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatientData(payload),
+      ...schemaCreateToPatientData(patientCreateProps),
       cxId,
       facilityId,
     };
@@ -81,6 +81,7 @@ router.post(
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
+      settings,
     });
 
     return res.status(httpStatus.CREATED).json(dtoFromModel(patient));

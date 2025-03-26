@@ -1,4 +1,5 @@
 import { ConnectedUserInfo, User } from "@metriport/api-sdk";
+import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -9,8 +10,6 @@ import {
   getConnectedUsers,
 } from "../command/connected-user/get-connected-user";
 import { createUserToken } from "../command/cx-user/create-user-token";
-import BadRequestError from "../errors/bad-request";
-import NotFoundError from "../errors/not-found";
 import { ConnectedUser } from "../models/connected-user";
 
 import { ConsumerHealthDataType } from "../providers/provider";

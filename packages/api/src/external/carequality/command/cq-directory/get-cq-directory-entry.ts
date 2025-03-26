@@ -1,4 +1,4 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { CQDirectoryEntry } from "../../cq-directory";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 

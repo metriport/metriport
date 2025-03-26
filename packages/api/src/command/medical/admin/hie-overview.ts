@@ -1,12 +1,11 @@
 import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
-import NotFoundError from "@metriport/core/util/error/not-found";
-import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
 import {
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryRespSuccessfulSchema,
 } from "@metriport/ihe-gateway-sdk";
 import { OutboundPatientDiscoveryRespFaultSchema } from "@metriport/ihe-gateway-sdk/models/patient-discovery/patient-discovery-responses";
+import { NotFoundError } from "@metriport/shared";
 import { formatNumber } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -17,13 +16,11 @@ import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
 import cwCommands from "../../../external/commonwell";
+import { getDB } from "../../../models/db";
 import { PatientModel } from "../../../models/medical/patient";
 import { dtoFromCW, PatientLinksDTO } from "../../../routes/medical/dtos/linkDTO";
-import { Config } from "../../../shared/config";
 
 dayjs.extend(duration);
-
-const readOnlyDBPool = initReadonlyDbPool(Config.getDBCreds(), Config.getDbReadReplicaEndpoint());
 
 type DebugLevel = "info" | "success" | "error";
 
@@ -189,7 +186,8 @@ async function getCqDataFromDb(
   const replacements = {
     patientId,
   };
-  const queryResp: DbQueryResponseRecord[] = await readOnlyDBPool.query(query, {
+  const { sequelizeReadOnly } = getDB();
+  const queryResp: DbQueryResponseRecord[] = await sequelizeReadOnly.query(query, {
     replacements,
     type: QueryTypes.SELECT,
   });

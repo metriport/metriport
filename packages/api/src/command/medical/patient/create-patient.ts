@@ -4,6 +4,7 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
+import { PatientSettingsData } from "@metriport/core/domain/patient-settings";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -13,7 +14,8 @@ import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { attatchPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
+import { PatientWithIdentifiers, attachPatientIdentifiers, getPatientByDemo } from "./get-patient";
+import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
@@ -26,12 +28,14 @@ export async function createPatient({
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
+  settings,
 }: {
   patient: PatientCreateCmd;
   runPd?: boolean;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
+  settings?: PatientSettingsData;
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
@@ -80,9 +84,16 @@ export async function createPatient({
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
   const newPatient = await PatientModel.create(patientCreate);
-
   const fhirPatient = toFHIR(newPatient);
-  await upsertPatientToFHIRServer(newPatient.cxId, fhirPatient);
+
+  await Promise.all([
+    createPatientSettings({
+      cxId,
+      patientId: patientCreate.id,
+      ...settings,
+    }),
+    upsertPatientToFHIRServer(newPatient.cxId, fhirPatient),
+  ]);
 
   if (runPd) {
     runInitialPatientDiscoveryAcrossHies({
@@ -93,6 +104,6 @@ export async function createPatient({
       forceCommonwell,
     }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
   }
-  const patientWithIdentifiers = await attatchPatientIdentifiers(newPatient.dataValues);
+  const patientWithIdentifiers = await attachPatientIdentifiers(newPatient.dataValues);
   return patientWithIdentifiers;
 }

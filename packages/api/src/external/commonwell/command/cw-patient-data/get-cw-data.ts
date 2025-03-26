@@ -1,4 +1,4 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { Transaction } from "sequelize";
 import { CwPatientDataModel } from "../../models/cw-patient-data";
 

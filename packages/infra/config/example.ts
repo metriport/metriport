@@ -2,6 +2,7 @@ import { Duration } from "aws-cdk-lib";
 import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
 import { EnvConfigNonSandbox } from "./env-config";
+import { vCPU } from "../lib/shared/fargate";
 
 export const config: EnvConfigNonSandbox = {
   stackName: "MetriportInfraStack",
@@ -42,6 +43,7 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   dashUrl: "https://url-of-your-dashboard.com",
+  ehrDashUrl: "https://url-of-your-ehr-dashboard.com",
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
@@ -144,6 +146,25 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   generalBucketName: "test-bucket",
+  hl7Notification: {
+    vpnConfigs: [
+      {
+        partnerName: "SampleHIE",
+        partnerGatewayPublicIp: "200.54.1.1",
+        partnerInternalCidrBlock: "10.10.0.0/16",
+      },
+    ],
+    mllpServer: {
+      fargateCpu: 1 * vCPU,
+      fargateMemoryLimitMiB: 2048,
+      fargateTaskCountMin: 2,
+      fargateTaskCountMax: 4,
+    },
+  },
+  acmCertMonitor: {
+    scheduleExpressions: ["cw-schedule-expression"],
+    heartbeatUrl: "url-to-heartbeat-service",
+  },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
@@ -151,5 +172,11 @@ export const config: EnvConfigNonSandbox = {
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
+  slack: {
+    SLACK_ALERT_URL: "url-to-slack-alert",
+    SLACK_NOTIFICATION_URL: "url-to-slack-notification",
+    workspaceId: "workspace-id",
+    alertsChannelId: "alerts-channel-id",
+  },
 };
 export default config;

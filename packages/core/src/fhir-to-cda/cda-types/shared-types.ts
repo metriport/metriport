@@ -153,6 +153,7 @@ export type CdaValueEd = {
   reference?: {
     _value: string;
   };
+  "#text"?: string;
 };
 
 // Cd (CD) stands for Concept Descriptor

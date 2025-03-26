@@ -1,0 +1,60 @@
+import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient";
+import { ElationLinkPatientLocal } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient-local";
+import { errorToString, MetriportError } from "@metriport/shared";
+import { SQSEvent } from "aws-lambda";
+import { capture } from "./shared/capture";
+import { elationParseLinkPatient } from "./shared/ehr";
+import { getEnvOrFail } from "./shared/env";
+import { prefixedLog } from "./shared/log";
+import * as Sentry from "@sentry/serverless";
+import { getSingleMessageOrFail } from "./shared/sqs";
+
+// Keep this as early on the file as possible
+capture.init();
+
+// Automatically set by AWS
+const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
+// Set by us
+const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
+const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
+
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+  try {
+    const startedAt = new Date().getTime();
+    const message = getSingleMessageOrFail(event.Records, lambdaName);
+    if (!message) return;
+
+    console.log(`Running with unparsed body: ${message.body}`);
+    const parsedBody = parseBody(message.body);
+    const { cxId, practiceId, patientId } = parsedBody;
+
+    const log = prefixedLog(`cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`);
+    log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
+
+    const elationLinkPatientHandler = new ElationLinkPatientLocal(waitTimeInMillis);
+    await elationLinkPatientHandler.processLinkPatient(parsedBody);
+
+    const finishedAt = new Date().getTime();
+    log(`Done local duration: ${finishedAt - startedAt}ms`);
+  } catch (error) {
+    const msg = "Error processing event on " + lambdaName;
+    console.log(`${msg}: ${errorToString(error)}`);
+    capture.setExtra({
+      event,
+      context: lambdaName,
+      error,
+    });
+    throw new MetriportError(msg, error);
+  }
+});
+
+function parseBody(body?: unknown): ProcessLinkPatientRequest {
+  if (!body) throw new MetriportError(`Missing message body`);
+
+  const bodyString = typeof body === "string" ? (body as string) : undefined;
+  if (!bodyString) throw new MetriportError(`Invalid body`);
+
+  const bodyAsJson = JSON.parse(bodyString);
+
+  return elationParseLinkPatient(bodyAsJson);
+}

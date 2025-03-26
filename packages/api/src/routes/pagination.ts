@@ -143,5 +143,9 @@ function getPaginationUrl(
       params.append(key, value);
     }
   }
+
+  if ("_reconstructedRoute" in req) {
+    return Config.getApiUrl() + req._reconstructedRoute + "?" + params.toString();
+  }
   return Config.getApiUrl() + req.baseUrl + "?" + params.toString();
 }

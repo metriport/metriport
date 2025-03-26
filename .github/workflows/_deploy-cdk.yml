@@ -97,7 +97,7 @@ jobs:
         if: ${{ inputs.is-branch-to-staging == false }}
         with:
           repository: metriport/metriport-internal
-          ref: ${{ (inputs.deploy_env == 'production' || inputs.deploy_env == 'sandbox') && 'master' || 'develop' }}
+          ref: ${{ ((inputs.deploy_env == 'production' || inputs.deploy_env == 'sandbox') && 'master') || 'develop' }}
           token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
           path: metriport-internal
           sparse-checkout: |

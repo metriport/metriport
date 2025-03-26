@@ -1,6 +1,5 @@
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { Facility } from "../../../domain/medical/facility";
-import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 
 type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityModel["id"][] }>;

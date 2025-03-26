@@ -1,5 +1,5 @@
 import { Organization } from "@metriport/core/domain/organization";
-import NotFoundError from "../../../errors/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { OrganizationModel } from "../../../models/medical/organization";
 
 // Didn't reuse getOrganizationOrFail bc we don't have `cxId` in this context and

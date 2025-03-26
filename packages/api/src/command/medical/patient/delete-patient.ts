@@ -1,13 +1,14 @@
+import { capture } from "@metriport/core/util/notifications";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { capture } from "@metriport/core/util/notifications";
+import { deleteAllPatientMappings } from "../../mapping/patient";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientModelOrFail } from "./get-patient";
-import { deleteAllPatientMappings } from "../../mapping/patient";
+import { deletePatientSettings } from "./settings/delete-patient-settings";
 
 const deleteContext = "cw.patient.delete";
 
@@ -41,6 +42,7 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
       fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
       cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
       deleteAllPatientMappings({ cxId, patientId: id }),
+      deletePatientSettings({ cxId, patientId: id }),
     ]);
     await patient.destroy();
   } catch (error) {

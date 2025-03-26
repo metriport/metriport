@@ -15,6 +15,7 @@ import { EnvType } from "./env-type";
 import * as AppConfigUtils from "./shared/app-config";
 import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -48,6 +49,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly outboundDocumentRetrievalLambda: lambda.Function;
   readonly fhirToBundleLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
+  readonly acmCertificateMonitorLambda: Lambda;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -143,6 +145,16 @@ export class LambdasNestedStack extends NestedStack {
       configId: props.appConfigEnvVars.configId,
       bedrock: props.config.bedrock,
       posthogSecretKeyName: props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET,
+    });
+
+    this.acmCertificateMonitorLambda = this.setupAcmCertificateMonitor({
+      lambdaLayers: this.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+      notificationUrl: props.config.slack.SLACK_ALERT_URL,
+      ...props.config.acmCertMonitor,
     });
   }
 
@@ -540,5 +552,52 @@ export class LambdasNestedStack extends NestedStack {
         MAXIMUM_LAMBDA_TIMEOUT.toMilliseconds()
       )
     );
+  }
+
+  private setupAcmCertificateMonitor(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    scheduleExpressions: string | string[];
+    notificationUrl: string;
+    heartbeatUrl: string;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      scheduleExpressions,
+      heartbeatUrl,
+      notificationUrl,
+    } = ownProps;
+
+    const acmCertificateMonitorLambda = createScheduledLambda({
+      stack: this,
+      layers: [lambdaLayers.shared],
+      name: "AcmCertificateMonitor",
+      entry: "acm-cert-monitor",
+      vpc,
+      memory: 256,
+      timeout: Duration.minutes(2),
+      scheduleExpression: scheduleExpressions,
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        SLACK_NOTIFICATION_URL: notificationUrl,
+        HEARTBEAT_URL: heartbeatUrl,
+      },
+    });
+
+    acmCertificateMonitorLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["acm:ListCertificates"],
+        resources: ["*"],
+      })
+    );
+
+    return acmCertificateMonitorLambda;
   }
 }

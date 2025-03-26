@@ -44,3 +44,26 @@ export function isUsefulDisplay(text: string) {
     !(unknownValues.includes(normalizedText) || normalizedText.includes("no data available"))
   );
 }
+
+export function findCodeableConcepts(resource: Resource): CodeableConcept[] {
+  const codeableConcepts: CodeableConcept[] = [];
+  for (const value of Object.values(resource)) {
+    if (!value) continue;
+
+    if (isCodeableConcept(value)) {
+      codeableConcepts.push(value);
+    } else if (Array.isArray(value)) {
+      value.forEach(item => {
+        if (isCodeableConcept(item)) {
+          codeableConcepts.push(item);
+        }
+      });
+    }
+  }
+
+  return codeableConcepts;
+}
+
+export function isCodeableConcept(value: unknown): value is CodeableConcept {
+  return typeof value === "object" && value !== null && "coding" in value;
+}

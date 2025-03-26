@@ -1,9 +1,10 @@
+import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
-import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
+import { Hl7NotificationConfig } from "./hl7-notification-config";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -209,12 +210,21 @@ type EnvConfigBase = {
   };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
-  slack?: {
-    SLACK_ALERT_URL?: string;
-    SLACK_NOTIFICATION_URL?: string;
+  slack: {
+    SLACK_ALERT_URL: string;
+    SLACK_NOTIFICATION_URL: string;
     SLACK_SENSITIVE_DATA_URL?: string;
     workspaceId: string;
     alertsChannelId: string;
+  };
+  acmCertMonitor: {
+    /**
+     * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+     * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+     * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+     */
+    scheduleExpressions: string | string[];
+    heartbeatUrl: string;
   };
   docQueryChecker?: {
     /**
@@ -252,12 +262,14 @@ type EnvConfigBase = {
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
   dashUrl: string;
+  ehrDashUrl: string;
   // TODO 1672 remove this when we remove the old lambda that relies on Puppeteer
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
+  hl7Notification: Hl7NotificationConfig;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

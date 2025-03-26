@@ -51,8 +51,8 @@ type Settings = EnvSpecificSettings & {
 function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
-      desiredTaskCount: 6,
-      maxTaskCount: 40,
+      desiredTaskCount: 12,
+      maxTaskCount: 16,
       memoryLimitMiB: 4096,
     };
   }
@@ -97,6 +97,8 @@ export function createAPIService({
   outboundDocumentRetrievalLambda,
   patientImportLambda,
   patientImportBucket,
+  ehrSyncPatientQueue,
+  elationLinkPatientQueue,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
@@ -132,6 +134,8 @@ export function createAPIService({
   outboundDocumentRetrievalLambda: ILambda;
   patientImportLambda: ILambda;
   patientImportBucket: s3.IBucket;
+  ehrSyncPatientQueue: IQueue;
+  elationLinkPatientQueue: IQueue;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -258,6 +262,8 @@ export function createAPIService({
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
+          EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
+          ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
@@ -313,6 +319,7 @@ export function createAPIService({
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
+            EHR_DASH_URL: props.config.ehrDashUrl,
           }),
         },
       },
@@ -409,6 +416,17 @@ export function createAPIService({
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
   }
 
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrSyncPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: elationLinkPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+
   // Allow access to search services/infra
   provideAccessToQueue({
     accessType: "send",
@@ -435,6 +453,16 @@ export function createAPIService({
         new iam.PolicyStatement({
           actions: ["geo:SearchPlaceIndexForText"],
           resources: [`arn:aws:geo:*`],
+          effect: iam.Effect.ALLOW,
+        }),
+        // TODO: 2711 - Remove when data pipeline webhook is migrated
+        new iam.PolicyStatement({
+          actions: ["bedrock:InvokeModel"],
+          resources: [
+            `arn:aws:bedrock:*:*:foundation-model/*`,
+            `arn:aws:bedrock:*:*:inference-profile/*`,
+            `arn:aws:bedrock:*:*:application-inference-profile/*`,
+          ],
           effect: iam.Effect.ALLOW,
         }),
       ],

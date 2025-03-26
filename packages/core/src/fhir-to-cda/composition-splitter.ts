@@ -1,7 +1,7 @@
 import { Bundle, Composition } from "@medplum/fhirtypes";
+import { BadRequestError } from "@metriport/shared";
 import { findResourceInBundle, isComposition } from "../external/fhir/shared";
 import { capture } from "../util";
-import BadRequestError from "../util/error/bad-request";
 
 /**
  * Splits the incoming FHIR bundle into multiple bundles based on the compositions.

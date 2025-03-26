@@ -1,9 +1,8 @@
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util/log";
-import { sleepRandom } from "@metriport/shared";
+import { BadRequestError, sleepRandom } from "@metriport/shared";
 import { chunk } from "lodash";
-import BadRequestError from "../../../errors/bad-request";
 import { tenantExists } from "../../../external/fhir/admin";
 import { makeFhirAdminApi, makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { queryDocumentsAcrossHIEs } from "../document/document-query";

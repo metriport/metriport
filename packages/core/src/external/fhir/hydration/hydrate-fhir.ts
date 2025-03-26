@@ -5,7 +5,7 @@ import {
   buildMultipleFhirParametersFromCodings,
   lookupMultipleCodes,
 } from "../../term-server";
-import { getCodesFromResource } from "../codeable-concept";
+import { findCodeableConcepts, isUsefulDisplay } from "../codeable-concept";
 
 /**
  * This function first collects all of the different Coding elements from the Bundle,
@@ -32,7 +32,7 @@ export async function hydrateFhir(
   hydratedBundle.entry?.forEach(entry => {
     const res = entry.resource;
     if (!res) return;
-    const codes = getCodesFromResource(res);
+    const codes = findCodeableConcepts(res);
 
     codes.forEach(code => {
       const parameters = buildMultipleFhirParametersFromCodings(code.coding);
@@ -52,10 +52,11 @@ export async function hydrateFhir(
 
   let numCodes = 0;
   let numReplaced = 0;
+  let numMissingDisplays = 0;
   hydratedBundle.entry?.forEach(entry => {
     const res = entry.resource;
     if (!res) return;
-    const codes = getCodesFromResource(res);
+    const codes = findCodeableConcepts(res);
 
     codes.forEach(code => {
       code.coding?.forEach(coding => {
@@ -65,6 +66,7 @@ export async function hydrateFhir(
           if (param && param.id) {
             const newMapping = codesMap.get(param.id);
             if (newMapping && "display" in newMapping && coding.display != newMapping.display) {
+              if (!coding.display || !isUsefulDisplay(coding.display)) numMissingDisplays++;
               numReplaced++;
               coding.display = newMapping.display as string;
             }
@@ -80,6 +82,8 @@ export async function hydrateFhir(
       totalBundleCodes: numCodes,
       numCodesReplaced: numReplaced,
       percentReplaced: (numReplaced / numCodes) * 100,
+      numMissingDisplays,
+      percentFilled: (numMissingDisplays / numCodes) * 100,
     },
     data: hydratedBundle,
   };
