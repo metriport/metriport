@@ -11,7 +11,8 @@ import { sendWHNotifications } from "./check-doc-queries-notification";
 import {
   GroupedValidationResult,
   PatientsWithValidationResult,
-  SingleValidationResult,
+  ProgressType,
+  Source,
 } from "./check-doc-queries-shared";
 
 const MAX_CONCURRENT_UDPATES = 10;
@@ -29,96 +30,31 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
   const { log } = out(`checkDocumentQueries - patientIds ${patientIds.join(", ")}`);
   try {
     const patientsToUpdate: PatientsWithValidationResult = {};
-
     const docQueryProgressesToUpdate = await getDocumentQueryProgressesToUpdate(patientIds);
     for (const docQueryProgress of docQueryProgressesToUpdate) {
-      const checkInvalid = (prop: Progress): SingleValidationResult => {
-        const { total = 0 } = prop;
-        if (total !== calculateTotal(prop)) return "total";
-        return undefined;
-      };
+      const patientId = docQueryProgress.patientId;
+      const requestId = docQueryProgress.requestId;
+      const cxId = docQueryProgress.cxId;
 
-      if (docQueryProgress.commonwell.download) {
-        const whatsInvalid = checkInvalid(docQueryProgress.commonwell.download);
-        if (whatsInvalid !== undefined) {
-          patientsToUpdate[docQueryProgress.patientId] = {
-            ...patientsToUpdate[docQueryProgress.patientId],
-            commonwell: {
-              ...patientsToUpdate[docQueryProgress.patientId]?.commonwell,
-              download: whatsInvalid,
+      const progressesArgs: [Progress, Source, ProgressType][] = [
+        [docQueryProgress.commonwell.download, "commonwell", "download"],
+        [docQueryProgress.commonwell.convert, "commonwell", "convert"],
+        [docQueryProgress.carequality.download, "carequality", "download"],
+        [docQueryProgress.carequality.convert, "carequality", "convert"],
+        [docQueryProgress.unknown.download, "unknown", "download"],
+        [docQueryProgress.unknown.convert, "unknown", "convert"],
+      ];
+
+      for (const [progress, source, progressType] of progressesArgs) {
+        if (progress.total !== calculateTotal(progress)) {
+          patientsToUpdate[patientId] = {
+            ...patientsToUpdate[patientId],
+            [source]: {
+              ...patientsToUpdate[patientId]?.[source],
+              [progressType]: true,
             },
-            requestId: docQueryProgress.requestId,
-            cxId: docQueryProgress.cxId,
-          };
-        }
-      }
-      if (docQueryProgress.commonwell.convert) {
-        const whatsInvalid = checkInvalid(docQueryProgress.commonwell.convert);
-        if (whatsInvalid !== undefined) {
-          patientsToUpdate[docQueryProgress.patientId] = {
-            ...patientsToUpdate[docQueryProgress.patientId],
-            commonwell: {
-              ...patientsToUpdate[docQueryProgress.patientId]?.commonwell,
-              convert: whatsInvalid,
-            },
-            requestId: docQueryProgress.requestId,
-            cxId: docQueryProgress.cxId,
-          };
-        }
-      }
-      if (docQueryProgress.carequality.download) {
-        const whatsInvalid = checkInvalid(docQueryProgress.carequality.download);
-        if (whatsInvalid !== undefined) {
-          patientsToUpdate[docQueryProgress.patientId] = {
-            ...patientsToUpdate[docQueryProgress.patientId],
-            carequality: {
-              ...patientsToUpdate[docQueryProgress.patientId]?.carequality,
-              download: whatsInvalid,
-            },
-            requestId: docQueryProgress.requestId,
-            cxId: docQueryProgress.cxId,
-          };
-        }
-      }
-      if (docQueryProgress.carequality.convert) {
-        const whatsInvalid = checkInvalid(docQueryProgress.carequality.convert);
-        if (whatsInvalid !== undefined) {
-          patientsToUpdate[docQueryProgress.patientId] = {
-            ...patientsToUpdate[docQueryProgress.patientId],
-            carequality: {
-              ...patientsToUpdate[docQueryProgress.patientId]?.carequality,
-              convert: whatsInvalid,
-            },
-            requestId: docQueryProgress.requestId,
-            cxId: docQueryProgress.cxId,
-          };
-        }
-      }
-      if (docQueryProgress.unknown.download) {
-        const whatsInvalid = checkInvalid(docQueryProgress.unknown.download);
-        if (whatsInvalid !== undefined) {
-          patientsToUpdate[docQueryProgress.patientId] = {
-            ...patientsToUpdate[docQueryProgress.patientId],
-            unknown: {
-              ...patientsToUpdate[docQueryProgress.patientId]?.unknown,
-              download: whatsInvalid,
-            },
-            requestId: docQueryProgress.requestId,
-            cxId: docQueryProgress.cxId,
-          };
-        }
-      }
-      if (docQueryProgress.unknown.convert) {
-        const whatsInvalid = checkInvalid(docQueryProgress.unknown.convert);
-        if (whatsInvalid !== undefined) {
-          patientsToUpdate[docQueryProgress.patientId] = {
-            ...patientsToUpdate[docQueryProgress.patientId],
-            unknown: {
-              ...patientsToUpdate[docQueryProgress.patientId]?.unknown,
-              convert: whatsInvalid,
-            },
-            requestId: docQueryProgress.requestId,
-            cxId: docQueryProgress.cxId,
+            requestId,
+            cxId,
           };
         }
       }

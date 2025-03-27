@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
@@ -6,7 +7,6 @@ import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
 import { areDocumentsProcessing } from "../../../../command/medical/document/document-query";
 import { E2eContext, medicalApi } from "../shared";
-import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 
 dayjs.extend(isBetween);
 dayjs.extend(duration);

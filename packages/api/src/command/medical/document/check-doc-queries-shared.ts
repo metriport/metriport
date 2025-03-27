@@ -1,22 +1,19 @@
-import { Progress } from "@metriport/core/domain/document-query";
-
-export type MainProgressProps = keyof Pick<Progress, "total">;
-
-export type SingleValidationResult = MainProgressProps | undefined;
+export type Source = "commonwell" | "carequality" | "unknown";
+export type ProgressType = "convert" | "download";
 export type GroupedValidationResult = {
   cxId: string; // needed downstream
   requestId: string; // needed downstream
   commonwell?: {
-    convert?: SingleValidationResult;
-    download?: SingleValidationResult;
+    convert?: boolean;
+    download?: boolean;
   };
   carequality?: {
-    convert?: SingleValidationResult;
-    download?: SingleValidationResult;
+    convert?: boolean;
+    download?: boolean;
   };
   unknown?: {
-    convert?: SingleValidationResult;
-    download?: SingleValidationResult;
+    convert?: boolean;
+    download?: boolean;
   };
 };
 export type PatientsWithValidationResult = Record<string, GroupedValidationResult>;
