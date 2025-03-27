@@ -1080,7 +1080,7 @@ router.post(
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
-    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    const dryRun = getFromQueryAsBooleanOrFail("dryRun", req);
     // request param - just being passed as parameter to this particular request
     const forceStatusUpdate = getFromQueryAsBoolean("forceStatusUpdate", req);
 
