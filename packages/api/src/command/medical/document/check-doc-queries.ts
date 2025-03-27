@@ -1,17 +1,20 @@
-import { Progress } from "@metriport/core/domain/document-query";
+import { Progress, ProgressType } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import stringify from "json-stringify-safe";
-import { getDocumentQueryProgressesToUpdate, updateDocumentQueryProgress } from "../document-query";
+import {
+  DocumentQueryDocumentSource,
+  getDocumentQueryProgressesToUpdate,
+  updateDocumentQueryProgress,
+} from "../document-query";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";
 import {
   GroupedValidationResult,
   PatientsWithValidationResult,
-  ProgressType,
   Source,
 } from "./check-doc-queries-shared";
 
@@ -101,60 +104,36 @@ async function updatePatientsInSequence([patientId, { cxId, requestId, ...whatTo
   GroupedValidationResult
 ]): Promise<void> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
+  const updates: [DocumentQueryDocumentSource, ProgressType][] = [];
   if (whatToUpdate.commonwell?.download) {
-    await updateDocumentQueryProgress({
-      cxId,
-      patientId,
-      requestId,
-      source: MedicalDataSource.COMMONWELL,
-      progressType: "download",
-    });
+    updates.push([MedicalDataSource.COMMONWELL, "download"]);
   }
   if (whatToUpdate.commonwell?.convert) {
-    await updateDocumentQueryProgress({
-      cxId,
-      patientId,
-      requestId,
-      source: MedicalDataSource.COMMONWELL,
-      progressType: "convert",
-    });
+    updates.push([MedicalDataSource.COMMONWELL, "convert"]);
   }
   if (whatToUpdate.carequality?.download) {
-    await updateDocumentQueryProgress({
-      cxId,
-      patientId,
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-      progressType: "download",
-    });
+    updates.push([MedicalDataSource.CAREQUALITY, "download"]);
   }
   if (whatToUpdate.carequality?.convert) {
-    await updateDocumentQueryProgress({
-      cxId,
-      patientId,
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-      progressType: "convert",
-    });
+    updates.push([MedicalDataSource.CAREQUALITY, "convert"]);
   }
   if (whatToUpdate.unknown?.download) {
-    await updateDocumentQueryProgress({
-      cxId,
-      patientId,
-      requestId,
-      source: "unknown",
-      progressType: "download",
-    });
+    updates.push(["unknown", "download"]);
   }
   if (whatToUpdate.unknown?.convert) {
-    await updateDocumentQueryProgress({
-      cxId,
-      patientId,
-      requestId,
-      source: "unknown",
-      progressType: "convert",
-    });
+    updates.push(["unknown", "convert"]);
   }
+  await Promise.all(
+    updates.map(update =>
+      updateDocumentQueryProgress({
+        cxId,
+        patientId,
+        requestId,
+        source: update[0],
+        progressType: update[1],
+      })
+    )
+  );
   // we want to await here to ensure the consolidated bundle is created before we send the webhook
   await recreateConsolidated({ patient, context: "check-queries" });
 }
