@@ -7,7 +7,7 @@ import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
 import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
 import { VpnStack } from "./vpn";
-import { INTERNAL_SERVICES_SUBNET_GROUP_NAME } from "./constants";
+import { HL7_NOTIFICATION_VPC_CIDR, INTERNAL_SERVICES_SUBNET_GROUP_NAME } from "./constants";
 import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 
@@ -16,7 +16,7 @@ export interface Hl7NotificationStackProps extends cdk.StackProps {
   version: string | undefined;
 }
 
-const NUM_AZS = 2;
+const NUM_AZS = 1;
 
 const fetchSecretsForPartner = (scope: Construct, partnerName: string) => {
   const secretName = `PresharedKey-${partnerName}`;
@@ -32,6 +32,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
+      ipAddresses: ec2.IpAddresses.cidr(HL7_NOTIFICATION_VPC_CIDR),
       subnetConfiguration: [
         {
           cidrMask: 24,
