@@ -58,8 +58,8 @@ async function deploy(config: EnvConfig) {
     });
 
     config.hl7Notification.vpnConfigs.forEach((config, index) => {
-      const vpnStack = new VpnStack(app, `VpnStack${config.partnerName}`, {
-        vpnConfig: { ...config, presharedKeyName: `PresharedKey-${config.partnerName}` },
+      const vpnStack = new VpnStack(app, `VpnStack-${config.partnerName}`, {
+        vpnConfig: { ...config },
         index,
         networkStackId: "NestedNetworkStack",
         description: `VPN Configuration for routing HL7 messages from ${config.partnerName}`,

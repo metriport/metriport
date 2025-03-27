@@ -7,11 +7,10 @@ import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
 import { MLLP_DEFAULT_PORT } from "./constants";
 
 const IPSEC_1 = "ipsec.1";
+const PROBLEMATIC_IPSEC_CHARACTERS = "!@#$%^&*()_+-=[]{}|;:,.<>?";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
-  vpnConfig: Hl7NotificationVpnConfig & {
-    presharedKeyName: string;
-  };
+  vpnConfig: Hl7NotificationVpnConfig;
   networkStackId: string;
   index: number;
 }
@@ -24,32 +23,27 @@ export class VpnStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const { partnerInternalCidrBlock, presharedKeyName } = props.vpnConfig;
-    const presharedKey = secret.Secret.fromSecretNameV2(this, presharedKeyName, presharedKeyName);
+    const { partnerName, partnerInternalCidrBlock } = props.vpnConfig;
 
     const networkAcl = ec2.NetworkAcl.fromNetworkAclId(
       this,
-      "NetworkAcl",
+      `NetworkAcl-${partnerName}`,
       Fn.importValue(`${props.networkStackId}-NetworkAclId`)
     );
 
     const vgwId = Fn.importValue(`${props.networkStackId}-VgwId`);
 
-    const customerGateway = new ec2.CfnCustomerGateway(
-      this,
-      `${props.vpnConfig.partnerName}CustomerGateway`,
-      {
-        ipAddress: props.vpnConfig.partnerGatewayPublicIp,
-        type: IPSEC_1,
-        bgpAsn: 65000,
-        tags: [
-          {
-            key: "Name",
-            value: `${props.vpnConfig.partnerName}-cgw`,
-          },
-        ],
-      }
-    );
+    const customerGateway = new ec2.CfnCustomerGateway(this, `CustomerGateway-${partnerName}`, {
+      ipAddress: props.vpnConfig.partnerGatewayPublicIp,
+      type: IPSEC_1,
+      bgpAsn: 65000,
+      tags: [
+        {
+          key: "Name",
+          value: `${partnerName}-cgw`,
+        },
+      ],
+    });
 
     /**
      * Add new rules to the NACL for the static IPs we're using for this VPN.
@@ -83,56 +77,54 @@ export class VpnStack extends cdk.Stack {
       },
     ]);
 
+    const createPskSecret = (index: number) => {
+      return new secret.Secret(this, `PresharedKey${index}-${partnerName}`, {
+        secretName: `PresharedKey${index}-${partnerName}`,
+        generateSecretString: {
+          excludePunctuation: true,
+          excludeCharacters: PROBLEMATIC_IPSEC_CHARACTERS,
+        },
+      });
+    };
+
+    const presharedKey1 = createPskSecret(1);
+    const presharedKey2 = createPskSecret(2);
     /**
      * We use 2 tunnels here because state HIEs often have a failover to a backup IP..
      */
-    const vpnConnection = new ec2.CfnVPNConnection(
-      this,
-      `${props.vpnConfig.partnerName}VpnConnection`,
-      {
-        type: IPSEC_1,
-        vpnGatewayId: vgwId,
-        customerGatewayId: customerGateway.ref,
-        staticRoutesOnly: true,
-        tags: [
-          {
-            key: "Name",
-            value: `${props.vpnConfig.partnerName}-vpn`,
-          },
-        ],
-        vpnTunnelOptionsSpecifications: [
-          {
-            preSharedKey: Fn.sub(
-              "{{resolve:secretsmanager:${SecretArn}:SecretString:presharedKey1}}",
-              {
-                SecretArn: presharedKey.secretArn,
-              }
-            ),
-          },
-          {
-            preSharedKey: Fn.sub(
-              "{{resolve:secretsmanager:${SecretArn}:SecretString:presharedKey2}}",
-              {
-                SecretArn: presharedKey.secretArn,
-              }
-            ),
-          },
-        ],
-      }
-    );
+    const vpnConnection = new ec2.CfnVPNConnection(this, `VpnConnection-${partnerName}`, {
+      type: IPSEC_1,
+      vpnGatewayId: vgwId,
+      customerGatewayId: customerGateway.ref,
+      staticRoutesOnly: true,
+      tags: [
+        {
+          key: "Name",
+          value: `${partnerName}-vpn`,
+        },
+      ],
+      vpnTunnelOptionsSpecifications: [
+        {
+          preSharedKey: Fn.sub("{{resolve:secretsmanager:${SecretArn}:SecretString}}", {
+            SecretArn: presharedKey1.secretArn,
+          }),
+        },
+        {
+          preSharedKey: Fn.sub("{{resolve:secretsmanager:${SecretArn}:SecretString}}", {
+            SecretArn: presharedKey2.secretArn,
+          }),
+        },
+      ],
+    });
 
-    new ec2.CfnVPNConnectionRoute(
-      this,
-      `${props.vpnConfig.partnerName}-HieSideVpnConnectionRoute`,
-      {
-        destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
-        vpnConnectionId: vpnConnection.ref,
-      }
-    );
+    new ec2.CfnVPNConnectionRoute(this, `VpnConnectionRoute-${partnerName}`, {
+      destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
+      vpnConnectionId: vpnConnection.ref,
+    });
 
-    new cdk.CfnOutput(this, `${props.vpnConfig.partnerName}VpnConnectionId`, {
+    new cdk.CfnOutput(this, `VpnConnectionId-${partnerName}`, {
       value: vpnConnection.ref,
-      description: `VPN Connection for ${props.vpnConfig.partnerName}`,
+      description: `VPN Connection for ${partnerName}`,
     });
   }
 
