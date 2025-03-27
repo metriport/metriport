@@ -1,4 +1,5 @@
 import { errorToString, sleep } from "@metriport/shared";
+import { isDryRun } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk, partition } from "lodash";
@@ -35,15 +36,9 @@ export class PatientImportParseLocal implements PatientImportParse {
 
       const job = await updateJobAtApi({ cxId, jobId, status: "processing", forceStatusUpdate });
 
-      const { facilityId, paramsCx, paramsOps } = job;
-      const { dryRun: dryRunFromCx } = paramsCx ?? {};
-      const {
-        dryRun: dryRunFromOps,
-        triggerConsolidated,
-        disableWebhooks,
-        rerunPdOnNewDemographics,
-      } = paramsOps ?? {};
-      const dryRun = dryRunFromCx ?? dryRunFromOps;
+      const { facilityId } = job;
+      const { triggerConsolidated, disableWebhooks, rerunPdOnNewDemographics } = job.paramsOps;
+      const dryRun = isDryRun(job);
 
       const patients = await validateAndParsePatientImportCsvFromS3({
         cxId,
