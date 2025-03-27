@@ -261,7 +261,7 @@ export async function handler(event: SQSEvent) {
             log,
           });
         } catch (error) {
-          const msg = "Failed to hydrate the converted bundle";
+          const msg = "Failed to hydrate the converted bundle. Continuing w/o hydration.";
           log(`${msg}: ${errorToString(error)}`);
           capture.message(msg, {
             extra: {
@@ -273,6 +273,7 @@ export async function handler(event: SQSEvent) {
             },
             level: "warning",
           });
+          // Inentionally not rethrowing here, we don't want to break conversion b/c of a hydration failure
         }
 
         const normalizedBundle = await normalize({
