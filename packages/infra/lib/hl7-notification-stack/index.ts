@@ -4,7 +4,6 @@ import { Repository } from "aws-cdk-lib/aws-ecr";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
-import { INTERNAL_SERVICES_SUBNET_GROUP_NAME, VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
 
@@ -29,12 +28,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
         },
         {
           cidrMask: 24,
-          name: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-        },
-        {
-          cidrMask: 24,
-          name: INTERNAL_SERVICES_SUBNET_GROUP_NAME,
+          name: "Private-VpnAccessible",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
       ],
