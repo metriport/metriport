@@ -1,9 +1,9 @@
+import { BadRequestError } from "@metriport/shared/error/bad-request";
+import { NotFoundError } from "@metriport/shared/error/not-found";
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
-import { NotFoundError } from "@metriport/shared/error/not-found";
 import { MetriportError } from "../../util/error/metriport-error";
-import { BadRequestError } from "@metriport/shared/error/bad-request";
 
 export function makeLambdaClient(region: string, timeoutInMillis?: number) {
   return new AWS.Lambda({
@@ -112,19 +112,22 @@ export function getLambdaResultPayload({
     throw new MetriportError("Lambda payload is undefined", undefined, { lambdaName });
   }
   if (isLambdaError(result)) {
-    const msg = `Error calling lambda ${lambdaName}`;
+    const msgBase = `calling lambda ${lambdaName}`;
+    const msg = `Error ${msgBase}`;
     const lambdaError = getLambdaError(result);
     const errorDetails = JSON.stringify(lambdaError);
     log(`${msg} - ${errorDetails}`);
     if (failGracefully) return undefined;
 
-    if (lambdaError?.errorType === "BadRequestError" && lambdaError?.errorMessage) {
-      throw new BadRequestError(lambdaError.errorMessage);
+    const additionalInfo = { lambdaName, errorDetails };
+    if (lambdaError?.errorType === "BadRequestError") {
+      const errorMessage = lambdaError?.errorMessage ?? `BadRequestError ${msgBase}`;
+      throw new BadRequestError(errorMessage, undefined, additionalInfo);
     }
     if (lambdaError?.errorType === "NotFoundError") {
-      throw new NotFoundError(msg, undefined, { lambdaName, errorDetails });
+      throw new NotFoundError(`NotFoundError ${msgBase}`, undefined, additionalInfo);
     }
-    throw new MetriportError(msg, undefined, { lambdaName, errorDetails });
+    throw new MetriportError(msg, undefined, additionalInfo);
   }
   return result.Payload.toString();
 }
