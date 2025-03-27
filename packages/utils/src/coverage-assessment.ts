@@ -43,7 +43,7 @@ dayjs.extend(duration);
 
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
-// In case there are too many, expoeted from the DB
+// In case there are too many IDs - e.g., when we export them from the DB
 // Single ID per line
 // const patientIds: string[] = fs
 //   .readFileSync("", "utf-8")
