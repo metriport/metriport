@@ -4,7 +4,11 @@ import { Repository } from "aws-cdk-lib/aws-ecr";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
-import { INTERNAL_SERVICES_SUBNET_GROUP_NAME, VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
+import {
+  HL7_NOTIFICATION_VPC_CIDR,
+  INTERNAL_SERVICES_SUBNET_GROUP_NAME,
+  VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
+} from "./constants";
 import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
 
@@ -13,7 +17,7 @@ export interface Hl7NotificationStackProps extends cdk.StackProps {
   version: string | undefined;
 }
 
-const NUM_AZS = 2;
+const NUM_AZS = 1;
 
 export class Hl7NotificationStack extends MetriportCompositeStack {
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
@@ -21,6 +25,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
+      ipAddresses: ec2.IpAddresses.cidr(HL7_NOTIFICATION_VPC_CIDR),
       subnetConfiguration: [
         {
           cidrMask: 24,
