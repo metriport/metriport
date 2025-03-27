@@ -31,7 +31,7 @@ export async function updateJobAtApi({
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
 }): Promise<PatientImport> {
-  const { log } = out(`PatientImport updateJobStatus - cxId ${cxId} jobId ${jobId}`);
+  const { log } = out(`PatientImport updateJobAtApi - cxId ${cxId} jobId ${jobId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const url = buildUrl(cxId, jobId);
   const payload: UpdateJobSchema = { status, total, failed, forceStatusUpdate };
@@ -39,7 +39,7 @@ export async function updateJobAtApi({
     log(`Updating API w/ status ${status}, payload ${JSON.stringify(payload)}`);
     const response = await api.post(url, payload);
     if (!response.data) {
-      throw new MetriportError(`No body returned from updateJobStatus`, undefined, { url });
+      throw new MetriportError(`No body returned from API - updateJobAtApi`, undefined, { url });
     }
     // intentionally casting to explicitly show that the response is of type any
     return response.data as PatientImport;

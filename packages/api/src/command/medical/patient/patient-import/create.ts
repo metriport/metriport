@@ -58,20 +58,20 @@ export async function createPatientImport({
   );
 
   const { dryRun: dryRunCx = false } = paramsCx;
+  const initializedParamsCx: PatientImportParamsCx = {
+    dryRun: dryRunCx,
+  };
+
   const {
-    dryRun: dryRunOps = false,
     rerunPdOnNewDemographics = false,
     triggerConsolidated = false,
     disableWebhooks = false,
   } = paramsOps;
-  const initializedParamsCx: PatientImportParamsCx = {
-    dryRun: dryRunCx,
-  };
   const initializedParamsOps: PatientImportParamsOps = {
-    dryRun: dryRunOps,
     rerunPdOnNewDemographics,
     triggerConsolidated,
     disableWebhooks,
+    ...(paramsOps?.dryRun ? { dryRun: paramsOps.dryRun } : {}),
   };
 
   const jobId = uuidv7();
