@@ -13,6 +13,7 @@ import { mapCsvPatientToMetriportPatient } from "./convert-patient";
 const MAX_NUMBER_ROWS = 100_000;
 const numberOfParallelExecutions = 20;
 
+const columnSeparator = ",";
 const commaRegex = new RegExp(/,/g);
 
 /**
@@ -144,20 +145,8 @@ export async function validateAndParsePatientImportCsv({
           if (++numberOfRows > MAX_NUMBER_ROWS) {
             throw new MetriportError(`CSV has more rows than max (${MAX_NUMBER_ROWS})`);
           }
-          const raw = Object.values(data) as string[];
-          const result = mapCsvPatientToMetriportPatient(data);
-          const baseParsedPatient = { rowNumber: numberOfRows, raw: raw.join(",") };
-          if (Array.isArray(result)) {
-            patients.push({
-              ...baseParsedPatient,
-              error: result.map(e => e.error).join("; "),
-            });
-          } else {
-            patients.push({
-              ...baseParsedPatient,
-              parsed: result,
-            });
-          }
+          const parsedPatient = csvRecordToParsedPatient(data, numberOfRows);
+          patients.push(parsedPatient);
         } catch (error) {
           reject(error);
         }
@@ -168,6 +157,21 @@ export async function validateAndParsePatientImportCsv({
       .on("error", reject);
   });
   return await promise;
+}
+
+export function csvRecordToParsedPatient(
+  data: Record<string, string>,
+  rowNumber: number
+): ParsedPatient {
+  const raw = Object.values(data) as string[];
+  const rawNormalized = raw.map(r => (r.includes(columnSeparator) ? `"${r}"` : r));
+  const result = mapCsvPatientToMetriportPatient(data);
+  const baseParsedPatient = { rowNumber, raw: rawNormalized.join(",") };
+  if (Array.isArray(result)) {
+    return { ...baseParsedPatient, error: result.map(e => e.error).join("; ") };
+  } else {
+    return { ...baseParsedPatient, parsed: result };
+  }
 }
 
 function stripCommas(input: string, replacement = "") {
