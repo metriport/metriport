@@ -1,7 +1,7 @@
 import {
   DocumentQueryProgress,
-  ProgressType,
   DocumentQueryStatus,
+  ProgressType,
 } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -11,6 +11,12 @@ import dayjs from "dayjs";
 import { Op } from "sequelize";
 import { DocumentQuery } from "../../domain/medical/document-query";
 import { DocumentQueryModel } from "../../models/medical/documentQuery";
+import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
+import {
+  MAPIWebhookStatus,
+  processPatientDocumentRequest,
+  composeDocRefPayload,
+} from "./document/document-webhook";
 
 export type DocumentQueryLookUpParams = Pick<DocumentQuery, "cxId" | "requestId" | "patientId">;
 export type CurrentDocumentLookUpParams = Omit<DocumentQueryLookUpParams, "requestId">;
@@ -145,7 +151,7 @@ function createColumn({
   progressType,
   field,
 }: Omit<ColumnLookupParams, "field"> & {
-  field: DocumentQueryIncrementField | "status";
+  field: DocumentQueryIncrementField | "Status";
 }): keyof DocumentQuery {
   return `${source.toLowerCase()}${progressType}${field}` as keyof DocumentQuery;
 }
@@ -163,6 +169,55 @@ export async function incrementDocumentQuery({
   const column = createColumn({ source, progressType, field });
   const updated = await existing.increment(column, { by: value });
   return updated.dataValues;
+}
+
+export async function incrementDocumentQueryAndProcessWebhook({
+  cxId,
+  patientId,
+  requestId,
+  source,
+  progressType,
+  field,
+  value = 1,
+}: IncrementOrSet): Promise<void> {
+  const updated = await incrementDocumentQuery({
+    cxId,
+    patientId,
+    requestId,
+    source,
+    progressType,
+    field,
+    value,
+  });
+  const successColumn = createColumn({ source, progressType, field: "Success" });
+  const errorColumn = createColumn({ source, progressType, field: "Error" });
+  const totalColumn = createColumn({ source, progressType, field: "Total" });
+  if (
+    (updated[successColumn] as number) + (updated[errorColumn] as number) ===
+    (updated[totalColumn] as number)
+  ) {
+    await setDocumentQueryStatus({
+      cxId,
+      patientId,
+      requestId,
+      source,
+      progressType,
+      status: "completed",
+    });
+    let documents: DocumentReferenceDTO[] | undefined;
+    if (progressType === "convert") {
+      documents = await composeDocRefPayload({ cxId, patientId, requestId });
+    }
+    await processPatientDocumentRequest({
+      cxId,
+      patientId,
+      requestId,
+      whType:
+        progressType === "download" ? "medical.document-download" : "medical.document-conversion",
+      status: MAPIWebhookStatus.completed,
+      documents,
+    });
+  }
 }
 
 export async function setDocumentQuery({
@@ -194,9 +249,39 @@ export async function setDocumentQueryStatus({
   status,
 }: SetStatus): Promise<DocumentQuery> {
   const existing = await getDocumentQueryModelOrFail({ cxId, patientId, requestId });
-  const column = createColumn({ source, progressType, field: "status" });
+  const column = createColumn({ source, progressType, field: "Status" });
   const updated = await existing.update({ [column]: status });
   return updated.dataValues;
+}
+
+export async function setDocumentQueryStatusAndProcessFailedWebhook({
+  cxId,
+  patientId,
+  requestId,
+  source,
+  progressType,
+}: SetStatus): Promise<void> {
+  await setDocumentQueryStatus({
+    cxId,
+    patientId,
+    requestId,
+    source,
+    progressType,
+    status: "failed",
+  });
+  let documents: DocumentReferenceDTO[] | undefined;
+  if (progressType === "convert") {
+    documents = await composeDocRefPayload({ cxId, patientId, requestId });
+  }
+  await processPatientDocumentRequest({
+    cxId,
+    patientId,
+    requestId,
+    whType:
+      progressType === "download" ? "medical.document-download" : "medical.document-conversion",
+    status: MAPIWebhookStatus.failed,
+    documents,
+  });
 }
 
 export async function setWebhookSent({
@@ -284,8 +369,9 @@ export async function updateDocumentQueryProgress({
   const columnTotal = createColumn({ source, progressType, field: "Total" });
   const columnError = createColumn({ source, progressType, field: "Error" });
   const columnSuccess = createColumn({ source, progressType, field: "Success" });
+  const columnStatus = createColumn({ source, progressType, field: "Status" });
   const newTotal = (existing[columnError] as number) + (existing[columnSuccess] as number);
-  const updated = await existing.update({ [columnTotal]: newTotal });
+  const updated = await existing.update({ [columnTotal]: newTotal, [columnStatus]: "completed" });
   return updated.dataValues;
 }
 

@@ -1,8 +1,8 @@
 export type Source = "commonwell" | "carequality" | "unknown";
 export type ProgressType = "convert" | "download";
 export type GroupedValidationResult = {
-  cxId: string; // needed downstream
-  requestId: string; // needed downstream
+  cxId: string;
+  requestId: string;
   commonwell?: {
     convert?: boolean;
     download?: boolean;

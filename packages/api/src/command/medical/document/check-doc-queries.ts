@@ -49,7 +49,7 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
       ];
 
       for (const [progress, source, progressType] of progressesArgs) {
-        if (progress.total !== calculateTotal(progress)) {
+        if (progress.total !== calculateTotal(progress) && progress.status !== "failed") {
           patientsToUpdate[patientId] = {
             ...patientsToUpdate[patientId],
             [source]: {

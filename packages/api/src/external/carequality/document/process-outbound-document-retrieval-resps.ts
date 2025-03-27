@@ -25,7 +25,7 @@ import {
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import {
   getDocumentQueryOrFail,
-  incrementDocumentQuery,
+  incrementDocumentQueryAndProcessWebhook,
   setDocumentQuery,
   setDocumentQueryStatus,
 } from "../../../command/medical/document-query";
@@ -160,7 +160,7 @@ export async function processOutboundDocumentRetrievalResps({
           // TODO put this outside all settled.
           const removedDocRefs = docRefs.length - deduplicatedDocRefs.length;
           if (removedDocRefs > 0) {
-            await incrementDocumentQuery({
+            await incrementDocumentQueryAndProcessWebhook({
               ...docQueryParms,
               progressType: "convert",
               field: "Total",
@@ -323,7 +323,7 @@ async function handleDocReferences(
       const isConvertibleDoc = isConvertible(docRef.contentType || undefined);
 
       if (!isConvertibleDoc) {
-        await incrementDocumentQuery({
+        await incrementDocumentQueryAndProcessWebhook({
           ...docQueryParms,
           progressType: "convert",
           field: "Total",
@@ -332,7 +332,7 @@ async function handleDocReferences(
       }
 
       if (!docRef.isNew && isConvertibleDoc) {
-        await incrementDocumentQuery({
+        await incrementDocumentQueryAndProcessWebhook({
           ...docQueryParms,
           progressType: "convert",
           field: "Success",
@@ -361,7 +361,7 @@ async function handleDocReferences(
               docRef.metriportId ?? ""
             }, just increasing errorCountConvertible - ${err}`
           );
-          await incrementDocumentQuery({
+          await incrementDocumentQueryAndProcessWebhook({
             ...docQueryParms,
             progressType: "convert",
             field: "Error",

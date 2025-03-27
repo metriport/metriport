@@ -1,25 +1,30 @@
 import { PatientData } from "@metriport/core/domain/patient";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
+import { MetriportError } from "@metriport/shared";
 import { WebhookMetadata } from "@metriport/shared/medical";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { patientEvents } from "../../../event/medical/patient-event";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
-import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
+import { DocumentReferenceDTO, toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
-import { setWebhookSent } from "../document-query";
+import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
+import { getDocumentQueryOrFail, setWebhookSent } from "../document-query";
 import { getPatientOrFail } from "../patient/get-patient";
-import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 
 export enum MAPIWebhookStatus {
   completed = "completed",
   failed = "failed",
 }
+
+export const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
+export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 
 type WebhookDocumentDataPayload = {
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[];
@@ -44,14 +49,21 @@ type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload,
  * Callers are not notified of issues/errors while processing the request -
  * nothing is thrown. Instead, the error is logged and captured (Sentry).
  */
-export async function processPatientDocumentRequest(
-  cxId: string,
-  patientId: string,
-  whType: MAPIWebhookType,
-  status: MAPIWebhookStatus,
-  requestId: string,
-  documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
-): Promise<void> {
+export async function processPatientDocumentRequest({
+  cxId,
+  patientId,
+  requestId,
+  whType,
+  status,
+  documents,
+}: {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+  whType: MAPIWebhookType;
+  status: MAPIWebhookStatus;
+  documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[];
+}): Promise<void> {
   const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
     const [settings, patient] = await Promise.all([
@@ -59,6 +71,14 @@ export async function processPatientDocumentRequest(
       getPatientOrFail({ id: patientId, cxId }),
     ]);
 
+    let metadata: WebhookMetadata | undefined;
+    if (whType === DOWNLOAD_WEBHOOK_TYPE || whType === CONVERSION_WEBHOOK_TYPE) {
+      const docQuery = await getDocumentQueryOrFail({ cxId, patientId, requestId });
+      if (docQuery.metaData) metadata = docQuery.metaData as WebhookMetadata;
+    } else {
+      const whMetadata = getMetadata(whType, patient.data);
+      if (whMetadata) metadata = whMetadata as WebhookMetadata;
+    }
     // create a representation of this request and store on the DB
     const payload: WebhookPatientDataPayloadWithoutMessageId = {
       patients: [
@@ -71,7 +91,6 @@ export async function processPatientDocumentRequest(
         },
       ],
     };
-    const metadata = getMetadata(whType, patient.data);
 
     // send it to the customer and update the request status
     if (!isWebhookDisabled(metadata)) {
@@ -131,9 +150,29 @@ export async function processPatientDocumentRequest(
   }
 }
 
+export async function composeDocRefPayload({
+  cxId,
+  patientId,
+  requestId,
+}: {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+}): Promise<DocumentReferenceDTO[]> {
+  const docRefs = await getAllDocRefMapping({ requestId });
+  const docRefsIds = docRefs.map(docRef => docRef.id);
+
+  // We only want to call getDocuments if docRefsIds is a non-empty array.
+  // Otherwise, it would return all DocumentReferences, and not just the ones we're interested in
+  const documents =
+    docRefsIds.length > 0 ? await getDocuments({ patientId, cxId, documentIds: docRefsIds }) : [];
+
+  return toDTO(documents);
+}
+
 function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
   if (whType === "medical.document-download" || whType === "medical.document-conversion") {
-    return patientData.cxDocumentRequestMetadata;
+    throw new MetriportError("Document metadata not implemented on patient");
   } else if (whType === "medical.consolidated-data") {
     return patientData.cxConsolidatedRequestMetadata;
   } else if (whType === "medical.document-bulk-download-urls") {

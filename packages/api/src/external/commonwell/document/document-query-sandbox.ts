@@ -82,21 +82,21 @@ export async function sandboxGetDocRefsAndUpsert({
         status: "completed",
       }),
     ]);
-    processPatientDocumentRequest(
+    processPatientDocumentRequest({
       cxId,
       patientId,
-      "medical.document-download",
-      MAPIWebhookStatus.completed,
+      whType: "medical.document-download",
+      status: MAPIWebhookStatus.completed,
       requestId,
-      []
-    );
-    processPatientDocumentRequest(
+      documents: [],
+    });
+    processPatientDocumentRequest({
       cxId,
       patientId,
-      "medical.document-conversion",
-      MAPIWebhookStatus.completed,
-      ""
-    );
+      whType: "medical.document-conversion",
+      status: MAPIWebhookStatus.completed,
+      requestId,
+    });
     return;
   }
 
@@ -244,21 +244,21 @@ export async function sandboxGetDocRefsAndUpsert({
   ]);
 
   const result = entries.map(d => d.docRef);
-  processPatientDocumentRequest(
+  processPatientDocumentRequest({
     cxId,
     patientId,
-    "medical.document-download",
-    MAPIWebhookStatus.completed,
+    whType: "medical.document-download",
+    status: MAPIWebhookStatus.completed,
     requestId,
-    toDTO(result)
-  );
-  processPatientDocumentRequest(
+    documents: toDTO(result),
+  });
+  processPatientDocumentRequest({
     cxId,
     patientId,
-    "medical.document-conversion",
-    MAPIWebhookStatus.completed,
-    ""
-  );
+    whType: "medical.document-conversion",
+    status: MAPIWebhookStatus.completed,
+    requestId,
+  });
   return;
 }
 

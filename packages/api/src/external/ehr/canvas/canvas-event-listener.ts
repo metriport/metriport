@@ -2,7 +2,7 @@ import CanvasApi from "@metriport/core/external/ehr/canvas/index";
 import { createFullNote } from "@metriport/core/external/ehr/canvas/note";
 import { out } from "@metriport/core/util/log";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
-import { CONVERSION_WEBHOOK_TYPE } from "../../../command/medical/document/process-doc-query-webhook";
+import { CONVERSION_WEBHOOK_TYPE } from "../../../command/medical/document/document-webhook";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import {
   CanvasIntegrationEvent,

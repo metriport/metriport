@@ -412,14 +412,14 @@ router.post(
     });
 
     // trigger the webhook
-    processPatientDocumentRequest(
+    processPatientDocumentRequest({
       cxId,
       patientId,
-      "medical.document-bulk-download-urls",
-      status as MAPIWebhookStatus,
+      whType: "medical.document-bulk-download-urls",
+      status: status as MAPIWebhookStatus,
       requestId,
-      toDTO(docs)
-    );
+      documents: toDTO(docs),
+    });
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
   })

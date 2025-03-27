@@ -21,7 +21,13 @@ export async function sendWHNotifications(
 function notify(patientsToNofify: PatientToNotify[], whType: MAPIWebhookType) {
   const unique = uniqBy(patientsToNofify, p => `${p.cxId}_${p.id}`);
   unique.forEach(({ cxId, id: patientId, requestId }) => {
-    processPatientDocumentRequest(cxId, patientId, whType, MAPIWebhookStatus.completed, requestId);
+    processPatientDocumentRequest({
+      cxId,
+      patientId,
+      requestId,
+      whType,
+      status: MAPIWebhookStatus.completed,
+    });
   });
 }
 

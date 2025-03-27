@@ -22,7 +22,7 @@ import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
 import {
   getDocumentQueryOrFail,
-  incrementDocumentQuery,
+  incrementDocumentQueryAndProcessWebhook,
   setDocumentQuery,
   setDocumentQueryStatus,
 } from "../../../command/medical/document-query";
@@ -603,14 +603,14 @@ async function downloadDocsAndUpsertFHIR({
           const fileInfo = fileInfoByDocId(doc.id);
           if (!fileInfo) {
             if (shouldUpsertFHIR) {
-              await incrementDocumentQuery({
+              await incrementDocumentQueryAndProcessWebhook({
                 ...docQueryParms,
                 progressType: "download",
                 field: "Total",
                 value: -1,
               });
               if (isConvertibleDoc) {
-                await incrementDocumentQuery({
+                await incrementDocumentQueryAndProcessWebhook({
                   ...docQueryParms,
                   progressType: "convert",
                   field: "Total",
@@ -665,13 +665,13 @@ async function downloadDocsAndUpsertFHIR({
             }
 
             if (shouldUpsertFHIR)
-              await incrementDocumentQuery({
+              await incrementDocumentQueryAndProcessWebhook({
                 ...docQueryParms,
                 progressType: "download",
                 field: "Error",
               });
             if (isConvertibleDoc) {
-              await incrementDocumentQuery({
+              await incrementDocumentQueryAndProcessWebhook({
                 ...docQueryParms,
                 progressType: "convert",
                 field: "Error",
@@ -737,7 +737,7 @@ async function downloadDocsAndUpsertFHIR({
                 requestId,
                 log
               ),
-              incrementDocumentQuery({
+              incrementDocumentQueryAndProcessWebhook({
                 ...docQueryParms,
                 progressType: "download",
                 field: "Success",
@@ -752,14 +752,14 @@ async function downloadDocsAndUpsertFHIR({
           const isFileConvertible = fileIsConvertible(file);
 
           if (shouldUpsertFHIR && !isFileConvertible && isConvertibleDoc) {
-            await incrementDocumentQuery({
+            await incrementDocumentQueryAndProcessWebhook({
               ...docQueryParms,
               progressType: "convert",
               field: "Total",
               value: -1,
             });
           } else if (shouldUpsertFHIR && isFileConvertible && !isConvertibleDoc) {
-            await incrementDocumentQuery({
+            await incrementDocumentQueryAndProcessWebhook({
               ...docQueryParms,
               progressType: "convert",
               field: "Total",
@@ -767,7 +767,7 @@ async function downloadDocsAndUpsertFHIR({
           }
 
           if (shouldUpsertFHIR && !file.isNew && isFileConvertible) {
-            await incrementDocumentQuery({
+            await incrementDocumentQueryAndProcessWebhook({
               ...docQueryParms,
               progressType: "convert",
               field: "Success",
@@ -788,7 +788,7 @@ async function downloadDocsAndUpsertFHIR({
               log(
                 `Error triggering conversion of doc ${doc.id}, just increasing errorCountConvertible - ${err}`
               );
-              await incrementDocumentQuery({
+              await incrementDocumentQueryAndProcessWebhook({
                 ...docQueryParms,
                 progressType: "convert",
                 field: "Error",
@@ -798,13 +798,13 @@ async function downloadDocsAndUpsertFHIR({
 
           return fhirDocRef;
         } catch (error) {
-          await incrementDocumentQuery({
+          await incrementDocumentQueryAndProcessWebhook({
             ...docQueryParms,
             progressType: "download",
             field: "Error",
           });
           if (isConvertibleDoc) {
-            await incrementDocumentQuery({
+            await incrementDocumentQueryAndProcessWebhook({
               ...docQueryParms,
               progressType: "convert",
               field: "Error",
@@ -837,18 +837,6 @@ async function downloadDocsAndUpsertFHIR({
 
     // take some time to avoid throttling other servers
     await sleepBetweenChunks();
-  }
-
-  const documentQuery = await getDocumentQueryOrFail(docQueryParms);
-  if (
-    documentQuery.commonwellDownloadError + documentQuery.commonwellDownloadSuccess ===
-    documentQuery.commonwellDownloadTotal
-  ) {
-    await setDocumentQueryStatus({
-      ...docQueryParms,
-      progressType: "download",
-      status: "completed",
-    });
   }
 
   return docsNewLocation;
