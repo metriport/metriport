@@ -95,7 +95,7 @@ export async function updatePatientRecord({
             ...(patientId != undefined ? { patientId } : {}),
           };
     log(
-      `Updating patient record on S3, id ${patientId} key ${key}, status ${updatedRecord.status}`
+      `Updating patient record on S3, patientId ${patientId} key ${key}, status ${updatedRecord.status}`
     );
     await s3Utils.uploadFile({
       bucket: bucketName,
