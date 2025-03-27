@@ -12,7 +12,7 @@ export interface Hl7NotificationStackProps extends cdk.StackProps {
   version: string | undefined;
 }
 
-const NUM_AZS = 2;
+const NUM_AZS = 1;
 
 export class Hl7NotificationStack extends MetriportCompositeStack {
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
