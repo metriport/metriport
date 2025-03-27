@@ -51,7 +51,7 @@ export async function getPatientWithCWData(
   return executeWithRetriesSafe(() => _getPatientWithCWData(patient), {
     maxAttempts: maxAttemptsToGetPatientCWData,
     initialDelay: waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds(),
-    log: out("getPatientWithCWData").log,
+    log: out(`getPatientWithCWData cx ${patient.cxId} pt ${patient.id}`).log,
   });
 }
 
