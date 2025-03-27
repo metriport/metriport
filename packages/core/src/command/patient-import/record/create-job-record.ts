@@ -26,8 +26,8 @@ export async function createJobRecord(
       facilityId,
       jobId,
       createdAt: jobCreate.createdAt.toISOString(),
-      paramsCx: jobCreate.paramsCx ?? {},
-      paramsOps: jobCreate.paramsOps ?? {},
+      paramsCx: jobCreate.paramsCx,
+      paramsOps: jobCreate.paramsOps,
     };
     await s3Utils.uploadFile({
       bucket: bucketName,

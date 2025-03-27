@@ -3,6 +3,7 @@ import { emptyFunction } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { validateNewStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import {
+  isDryRun,
   PatientImport,
   PatientImportStatus,
 } from "@metriport/shared/domain/patient/patient-import/types";
@@ -50,9 +51,8 @@ export async function updatePatientImportStatus({
 
   // TODO 2330 move to the model version for consistency
   const job = await getPatientImportJobOrFail({ cxId, id: jobId });
-  const { dryRun: dryRunCx } = job.paramsCx ?? {};
-  const { disableWebhooks, dryRun: dryRunOps } = job.paramsOps ?? {};
-  const dryRun = dryRunCx ?? dryRunOps;
+  const { disableWebhooks } = job.paramsOps ?? {};
+  const dryRun = isDryRun(job);
   const oldStatus = job.status;
   const newStatus = status
     ? forceStatusUpdate
