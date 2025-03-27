@@ -223,7 +223,6 @@ export async function createSignSendProcessXCPDRequest({
         const msg = "Failed to send PD response to S3";
         const extra = { cxId, patientId, result };
         log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
-        capture.error(msg, { extra: { ...extra, error } });
       }
     }
   });
