@@ -215,7 +215,7 @@ router.get(
  *        there's more than one facility for the customer).
  * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
  *        defaults to false).
- * @returns an object containing the information about the bulk import job:s
+ * @returns an object containing the information about the bulk import job:
  * - `requestId` - the bulk import request ID
  * - `facilityId` - the facility ID used to create the patients
  * - `status` - the status of the bulk import job

@@ -9,6 +9,10 @@ export const patientImportStatus = ["waiting", "processing", "completed", "faile
 // ] as const;
 export type PatientImportStatus = (typeof patientImportStatus)[number];
 
+export function isDryRun(job: Pick<PatientImport, "paramsCx" | "paramsOps">): boolean {
+  return job.paramsOps?.dryRun ?? job.paramsCx?.dryRun ?? false;
+}
+
 export type GetPatientImport = {
   id: string;
   cxId: string;
@@ -19,7 +23,7 @@ export type PatientImportParamsCx = {
 };
 
 export type PatientImportParamsOps = {
-  dryRun: boolean;
+  dryRun?: boolean | undefined;
   rerunPdOnNewDemographics: boolean;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;

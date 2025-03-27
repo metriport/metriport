@@ -1039,7 +1039,6 @@ router.post(
     const patientImportResponse = await createPatientImport({
       cxId,
       facilityId,
-      paramsCx: {},
       paramsOps: {
         dryRun,
         rerunPdOnNewDemographics,
