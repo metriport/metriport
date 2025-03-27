@@ -16,7 +16,7 @@ export interface Hl7NotificationStackProps extends cdk.StackProps {
   version: string | undefined;
 }
 
-const NUM_AZS = 2;
+const NUM_AZS = 1;
 
 const fetchSecretsForPartner = (scope: Construct, partnerName: string) => {
   const secretName = `PresharedKey-${partnerName}`;
