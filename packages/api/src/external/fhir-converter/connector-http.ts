@@ -17,14 +17,13 @@ export class FHIRConverterConnectorHTTP implements FHIRConverterConnector {
     template,
     unusedSegments,
     invalidAccess,
-    source,
   }: FHIRConverterRequest): Promise<void> {
     const fhirConverterUrl = Config.getFHIRConverterServerURL();
     if (!fhirConverterUrl) {
       console.log(`FHIR_CONVERTER_SERVER_URL is not configured, skipping FHIR conversion...`);
       return;
     }
-    const url = buildUrl(fhirConverterUrl, sourceType, template);
+    const converterUrl = buildUrl(fhirConverterUrl, sourceType, template);
 
     // Gotta download the contents from S3 since the payload is just a reference to the actual file
     const s3 = makeS3Client();
@@ -43,14 +42,15 @@ export class FHIRConverterConnectorHTTP implements FHIRConverterConnector {
       .promise();
     const data = obj.Body?.toString("utf-8");
 
-    console.log(`Sending payload to ${url}...`);
-    const resp = await axios.post(url, data, {
-      params: {
-        patientId,
-        unusedSegments,
-        invalidAccess,
-        source,
-      },
+    console.log(`Sending payload to ${converterUrl}...`);
+    const converterParams = {
+      patientId,
+      fileName: s3FileName,
+      unusedSegments,
+      invalidAccess,
+    };
+    const resp = await axios.post(converterUrl, data, {
+      params: converterParams,
       headers: { "Content-Type": "text/plain" },
     });
 

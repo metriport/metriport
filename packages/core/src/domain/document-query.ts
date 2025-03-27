@@ -3,24 +3,19 @@ export type DocumentQueryStatus = (typeof documentQueryStatus)[number];
 
 export type Progress = {
   status: DocumentQueryStatus;
-  total?: number;
-  successful?: number;
-  errors?: number;
+  total: number;
+  successful: number;
+  errors: number;
   webhookSent?: boolean;
 };
-
-export type ProgressIntKeys = keyof Omit<Progress, "status">;
 
 export const progressTypes = ["convert", "download"] as const;
 export type ProgressType = (typeof progressTypes)[number];
 
-export type DocumentQueryProgress = Partial<
-  Record<ProgressType, Progress> & {
-    requestId: string;
-    startedAt: Date;
-    triggerConsolidated: boolean;
-  }
->;
+export type DocumentQueryProgress = Record<ProgressType, Progress> & {
+  requestId: string;
+  startedAt: Date;
+};
 
 export const convertResult = ["success", "failed"] as const;
 export type ConvertResult = (typeof convertResult)[number];
@@ -33,14 +28,6 @@ export function getStatusFromProgress(
   return isConversionCompleted ? "completed" : "processing";
 }
 
-export function isProcessingStatus(status?: DocumentQueryStatus | undefined) {
-  if (!status) return false;
-  return status === "processing";
-}
-export function isFinalStatus(status?: DocumentQueryStatus | undefined) {
-  return !isProcessingStatus(status);
-}
-
-export function isProcessing(progress?: Progress | undefined) {
-  return isProcessingStatus(progress?.status);
+export function isProcessing(progress: Progress) {
+  return progress.status === "processing";
 }

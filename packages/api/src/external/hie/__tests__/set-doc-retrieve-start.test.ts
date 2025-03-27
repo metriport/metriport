@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
+import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { makeProgress } from "../../../domain/medical/__tests__/document-query";
+import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
-import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { getCQData } from "../../carequality/patient";
 import { setDocRetrieveStartAt } from "../set-doc-retrieve-start";
 
@@ -18,12 +17,7 @@ let patientModel: PatientModel;
 
 beforeEach(() => {
   externalData = {
-    [source]: {
-      documentQueryProgress: {
-        download: makeProgress(),
-        convert: makeProgress(),
-      },
-    },
+    [source]: {},
   };
   patient = makePatient({ data: makePatientData({ externalData }) });
   patientModel = { dataValues: patient } as PatientModel;
@@ -44,13 +38,5 @@ describe("setDocRetrieveStartAt", () => {
     const documentRetrievalStartTime = sourceData?.documentRetrievalStartTime;
 
     expect(documentRetrievalStartTime).toEqual(startedAt);
-  });
-
-  it("preserves existing documentQueryProgress when setting new documentRetrievalStartTime", async () => {
-    const result = await setDocRetrieveStartAt({ patient, source, startedAt });
-    const sourceData = result.data.externalData?.[source] ?? {};
-    const resultDocumentQueryProgress = sourceData.documentQueryProgress;
-
-    expect(resultDocumentQueryProgress).toEqual(externalData[source]?.documentQueryProgress);
   });
 });

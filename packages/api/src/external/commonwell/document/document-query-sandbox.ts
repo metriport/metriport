@@ -14,7 +14,11 @@ import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
-import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import {
+  findOrCreateDocumentQuery,
+  setDocumentQueryStatus,
+  setDocumentQuery,
+} from "../../../command/medical/document-query";
 import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
@@ -23,6 +27,7 @@ import { ContentMimeType, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { sandboxSleepTime } from "./shared";
+import { MedicalDataSource } from "@metriport/core/external/index";
 
 const randomDates = [
   "2023-06-15",
@@ -48,19 +53,35 @@ export async function sandboxGetDocRefsAndUpsert({
   const { log } = out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
   const { id: patientId, cxId } = patient;
 
+  await findOrCreateDocumentQuery({
+    patientId,
+    cxId,
+    requestId,
+  });
+
   // Mimic Prod by waiting for docs to download
   await sleep(Math.random() * sandboxSleepTime.asMilliseconds());
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {
-    await appendDocQueryProgress({
-      patient,
-      downloadProgress: {
+    await Promise.all([
+      setDocumentQueryStatus({
+        patientId,
+        cxId,
+        requestId,
+        source: MedicalDataSource.COMMONWELL,
+        progressType: "download",
         status: "completed",
-      },
-      reset: true,
-      requestId,
-    });
+      }),
+      setDocumentQueryStatus({
+        patientId,
+        cxId,
+        requestId,
+        source: MedicalDataSource.COMMONWELL,
+        progressType: "convert",
+        status: "completed",
+      }),
+    ]);
     processPatientDocumentRequest(
       cxId,
       patientId,
@@ -68,6 +89,13 @@ export async function sandboxGetDocRefsAndUpsert({
       MAPIWebhookStatus.completed,
       requestId,
       []
+    );
+    processPatientDocumentRequest(
+      cxId,
+      patientId,
+      "medical.document-conversion",
+      MAPIWebhookStatus.completed,
+      ""
     );
     return;
   }
@@ -91,23 +119,24 @@ export async function sandboxGetDocRefsAndUpsert({
   });
   const existingDocTitles = existingFhirDocs.flatMap(d => d.content?.[0]?.attachment?.title ?? []);
 
-  // set initial download/convert totals
-  await appendDocQueryProgress({
-    patient,
-    downloadProgress: {
-      total: entries.length,
+  await Promise.all([
+    setDocumentQueryStatus({
+      patientId,
+      cxId,
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      progressType: "download",
       status: "processing",
-    },
-    ...(convertibleDocCount > 0
-      ? {
-          convertProgress: {
-            status: "processing",
-            total: convertibleDocCount,
-          },
-        }
-      : undefined),
-    requestId,
-  });
+    }),
+    setDocumentQueryStatus({
+      patientId,
+      cxId,
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      progressType: "convert",
+      status: "processing",
+    }),
+  ]);
 
   for (const entry of docsWithContent) {
     const fileTitle = entry.docRef.content?.[0]?.attachment?.title;
@@ -159,19 +188,60 @@ export async function sandboxGetDocRefsAndUpsert({
   // bundle to make sure it's up-to-date.
   await recreateConsolidated({ patient });
 
-  await appendDocQueryProgress({
-    patient: { id: patientId, cxId },
-    downloadProgress: {
-      total: entries.length,
+  await Promise.all([
+    setDocumentQuery({
+      patientId,
+      cxId,
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      progressType: "download",
+      field: "Success",
+      value: entries.length,
+    }),
+    setDocumentQuery({
+      patientId,
+      cxId,
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      progressType: "download",
+      field: "Total",
+      value: entries.length,
+    }),
+    setDocumentQuery({
+      patientId,
+      cxId,
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      progressType: "convert",
+      field: "Success",
+      value: convertibleDocCount,
+    }),
+    setDocumentQuery({
+      patientId,
+      cxId,
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      progressType: "convert",
+      field: "Total",
+      value: convertibleDocCount,
+    }),
+    setDocumentQueryStatus({
+      patientId,
+      cxId,
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      progressType: "download",
       status: "completed",
-      successful: entries.length,
-    },
-    convertProgress: {
-      total: convertibleDocCount,
+    }),
+    setDocumentQueryStatus({
+      patientId,
+      cxId,
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      progressType: "convert",
       status: "completed",
-    },
-    requestId,
-  });
+    }),
+  ]);
 
   const result = entries.map(d => d.docRef);
   processPatientDocumentRequest(
@@ -189,7 +259,6 @@ export async function sandboxGetDocRefsAndUpsert({
     MAPIWebhookStatus.completed,
     ""
   );
-
   return;
 }
 

@@ -44,7 +44,7 @@ export async function convertCDAToFHIR(params: {
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
   requestId: string;
-  source?: MedicalDataSource;
+  source: MedicalDataSource | "unknown";
 }): Promise<void> {
   const {
     patient,
@@ -58,7 +58,7 @@ export async function convertCDAToFHIR(params: {
     source,
   } = params;
   const { log } = out(
-    `convertCDAToFHIR, patientId ${patient.id}, requestId ${requestId}, docId ${document.id}`
+    `convertCDAToFHIR, patientId ${patient.id}, requestId ${requestId}, docId ${document.id}, source ${source}`
   );
 
   // Build an extension to be added to all resources created by this conversion

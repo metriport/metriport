@@ -110,7 +110,7 @@ async function prepareAndTriggerPD({
       source: MedicalDataSource.CAREQUALITY,
     });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    await queryDocsIfScheduled({ patientIds: patient, isFailed: true });
+    await queryDocsIfScheduled({ patientIds: patient, requestId, isFailed: true });
     const msg = `Error on Patient Discovery`;
     out(baseLogMessage).log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {

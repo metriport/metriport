@@ -5,16 +5,16 @@ import {
   ProgressType,
 } from "@metriport/core/domain/document-query";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { getCQData } from "../../../external/carequality/patient";
-import { getCWData } from "../../../external/commonwell/patient";
-import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
+import {
+  createGlobalDocumentQueryProgress,
+  getDocumentQueryOrFail,
+  incrementDocumentQuery,
+} from "../document-query";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
-import { updateConversionProgress } from "./document-query";
-import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 export async function calculateDocumentConversionStatus({
   patientId,
@@ -29,120 +29,72 @@ export async function calculateDocumentConversionStatus({
   cxId: string;
   requestId: string;
   docId: string;
-  source?: string;
+  source: MedicalDataSource | "unknown";
   convertResult: ConvertResult;
   details?: string;
 }) {
   const { log } = out(`Doc conversion status - patient ${patientId}, requestId ${requestId}`);
 
-  const hasSource = isMedicalDataSource(source);
-
   log(
     `Converted document ${docId} with status ${convertResult}, source: ${source}, ` +
-      `details: ${details}, result: ${JSON.stringify(convertResult)}`
+      `details: ${details}, result: ${convertResult}`
   );
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const docQueryProgress = patient.data.documentQueryProgress;
-  log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
+  const currentDocQuery = await getDocumentQueryOrFail({ cxId, patientId, requestId });
+  log(`Status pre-update: ${JSON.stringify(currentDocQuery)}`);
 
-  if (hasSource) {
-    const updatedPatient = await tallyDocQueryProgress({
-      patient: patient,
-      type: "convert",
-      progress: {
-        ...(convertResult === "success" ? { successful: 1 } : { errors: 1 }),
-      },
-      requestId,
-      source,
-    });
+  const incrementedDocQuery = await incrementDocumentQuery({
+    cxId,
+    patientId,
+    requestId,
+    progressType: "convert",
+    field: convertResult === "success" ? "Success" : "Error",
+    source,
+  });
+  const globalDocQueryProgress = createGlobalDocumentQueryProgress({
+    docQuery: incrementedDocQuery,
+  });
 
-    const externalData =
-      source === MedicalDataSource.COMMONWELL
-        ? getCWData(updatedPatient.data.externalData)
-        : getCQData(updatedPatient.data.externalData);
+  const isGlobalConversionCompleted = isProgressStatusValid({
+    documentQueryProgress: globalDocQueryProgress,
+    progressType: "convert",
+    status: "completed",
+  });
+  const isHieConversionCompleted = isProgressStatusValid({
+    documentQueryProgress: globalDocQueryProgress,
+    progressType: "convert",
+    status: "completed",
+  });
 
-    const globalTriggerConsolidated =
-      updatedPatient.data.documentQueryProgress?.triggerConsolidated;
-    const hieTriggerConsolidated = externalData?.documentQueryProgress?.triggerConsolidated;
+  if (isHieConversionCompleted) {
+    const startedAt = globalDocQueryProgress?.startedAt;
+    const convert = globalDocQueryProgress?.convert;
+    const totalDocsConverted = convert?.total;
+    const successfulConversions = convert?.successful;
+    const failedConversions = convert?.errors;
 
-    const isGlobalConversionCompleted = isProgressStatusValid({
-      documentQueryProgress: updatedPatient.data.documentQueryProgress,
-      progressType: "convert",
-      status: "completed",
-    });
-    const isHieConversionCompleted = isProgressStatusValid({
-      documentQueryProgress: externalData?.documentQueryProgress,
-      progressType: "convert",
-      status: "completed",
-    });
-
-    if (isHieConversionCompleted) {
-      const startedAt = updatedPatient.data.documentQueryProgress?.startedAt;
-      const convert = updatedPatient.data.documentQueryProgress?.convert;
-      const totalDocsConverted = convert?.total;
-      const successfulConversions = convert?.successful;
-      const failedConversions = convert?.errors;
-
-      analytics({
-        distinctId: cxId,
-        event: EventTypes.documentConversion,
-        properties: {
-          requestId,
-          patientId,
-          hie: source,
-          duration: elapsedTimeFromNow(startedAt),
-          totalDocsConverted,
-          successfulConversions,
-          failedConversions,
-        },
-      });
-    }
-
-    if (
-      (hieTriggerConsolidated && isHieConversionCompleted) ||
-      (globalTriggerConsolidated && isGlobalConversionCompleted)
-    ) {
-      log(
-        `Kicking off getConsolidated for patient ${updatedPatient.id} - hie: ${hieTriggerConsolidated} global: ${globalTriggerConsolidated}`
-      );
-      // intentionally async
-      recreateConsolidated({
-        patient: updatedPatient,
-        conversionType: "pdf",
-        context: `Post-DQ getConsolidated ${source}`,
-      });
-    } else if (isGlobalConversionCompleted) {
-      // intentionally async
-      recreateConsolidated({
-        patient: updatedPatient,
-        context: "Post-DQ getConsolidated GLOBAL",
-      });
-    }
-  } else {
-    const expectedPatient = await updateConversionProgress({
-      patient: { id: patientId, cxId },
-      convertResult,
-    });
-
-    const isConversionCompleted = isProgressStatusValid({
-      documentQueryProgress: expectedPatient.data.documentQueryProgress,
-      progressType: "convert",
-      status: "completed",
-    });
-
-    if (isConversionCompleted) {
-      // we want to await here to ensure the consolidated bundle is created before we send the webhook
-      await recreateConsolidated({ patient, context: "calculate-no-source" });
-
-      processPatientDocumentRequest(
-        cxId,
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentConversion,
+      properties: {
+        requestId,
         patientId,
-        "medical.document-conversion",
-        MAPIWebhookStatus.completed,
-        ""
-      );
-    }
+        hie: source,
+        duration: elapsedTimeFromNow(startedAt),
+        totalDocsConverted,
+        successfulConversions,
+        failedConversions,
+      },
+    });
+  }
+
+  if (isGlobalConversionCompleted) {
+    // intentionally async
+    recreateConsolidated({
+      patient: patient,
+      context: "Post-DQ getConsolidated GLOBAL",
+    });
   }
 }
 

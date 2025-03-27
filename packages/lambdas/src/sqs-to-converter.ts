@@ -121,11 +121,12 @@ export async function handler(event: SQSEvent) {
       const cxId = attrib.cxId?.stringValue;
       const patientId = attrib.patientId?.stringValue;
       const jobId = attrib.jobId?.stringValue;
-      const medicalDataSource = attrib.source?.stringValue;
+      const source = attrib.source?.stringValue;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
-      const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
-      const lambdaParams = { cxId, patientId, jobId, source: medicalDataSource };
+      if (!jobId) throw new Error(`Missing jobId`);
+      const log = prefixedLog(`${i}, patient ${patientId}`);
+      const lambdaParams = { cxId, patientId, jobId, source };
       try {
         log(`Body: ${message.body}`);
         const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
@@ -154,7 +155,7 @@ export async function handler(event: SQSEvent) {
               cxId,
               patientId,
               filePath: s3FileName,
-              medicalDataSource,
+              medicalDataSource: source,
               s3BucketName: medicalDocumentsBucketName,
               fhirUrl,
             });
@@ -310,7 +311,7 @@ export async function handler(event: SQSEvent) {
           sourceFileName: s3FileName,
           conversionPayload: updatedConversionResult,
           jobId,
-          medicalDataSource,
+          source,
           log,
         });
 
@@ -430,7 +431,7 @@ async function sendConversionResult({
   sourceFileName,
   conversionPayload,
   jobId,
-  medicalDataSource,
+  source,
   log,
 }: {
   cxId: string;
@@ -438,7 +439,7 @@ async function sendConversionResult({
   sourceFileName: string;
   conversionPayload: Bundle<Resource>;
   jobId: string | undefined;
-  medicalDataSource: string | undefined;
+  source: string | undefined;
   log: Log;
 }) {
   const fileName = buildDocumentNameForConversionResult(sourceFileName);
@@ -461,8 +462,5 @@ async function sendConversionResult({
   );
 
   log(`Sending result info to the API`);
-  await ossApi.internal.notifyApi(
-    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
-    log
-  );
+  await ossApi.internal.notifyApi({ cxId, patientId, jobId, source, status: "success" }, log);
 }

@@ -1,45 +1,21 @@
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
-import {
-  ConvertResult,
-  DocumentQueryProgress,
-  DocumentQueryStatus,
-  Progress,
-} from "@metriport/core/domain/document-query";
-import { Patient } from "@metriport/core/domain/patient";
+import { DocumentQueryProgress, isProcessing } from "@metriport/core/domain/document-query";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, emptyFunction } from "@metriport/shared";
-import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
 import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/app-config";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
-import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
-import { PatientModel } from "../../../models/medical/patient";
-import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import {
+  createGlobalDocumentQueryProgress,
+  findOrCreateDocumentQuery,
+  getCurrentGlobalDocumentQueryProgress,
+} from "../document-query";
 import { getPatientOrFail } from "../patient/get-patient";
-import { storeQueryInit } from "../patient/query-init";
-import { areDocumentsProcessing } from "./document-status";
-
-export function isProgressEqual(a?: Progress, b?: Progress): boolean {
-  return (
-    a?.errors === b?.errors &&
-    a?.status === b?.status &&
-    a?.successful === b?.successful &&
-    a?.total === b?.total
-  );
-}
-
-export function isDocumentQueryProgressEqual(
-  a?: DocumentQueryProgress,
-  b?: DocumentQueryProgress
-): boolean {
-  return isProgressEqual(a?.convert, b?.convert) && isProgressEqual(a?.download, b?.download);
-}
 
 export async function queryDocumentsAcrossHIEs({
   cxId,
@@ -52,19 +28,17 @@ export async function queryDocumentsAcrossHIEs({
   forceCommonwell = false,
   forceCarequality = false,
   cqManagingOrgName,
-  triggerConsolidated = false,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
-  cxDocumentRequestMetadata?: unknown;
+  cxDocumentRequestMetadata?: object;
   forceQuery?: boolean;
   forcePatientDiscovery?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   cqManagingOrgName?: string;
-  triggerConsolidated?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -76,34 +50,18 @@ export async function queryDocumentsAcrossHIEs({
 
   validateOptionalFacilityId(patient, facilityId);
 
-  const docQueryProgress = patient.data.documentQueryProgress;
-  const requestId = getOrGenerateRequestId(docQueryProgress, forceQuery);
-
-  const isCheckStatus = !forceQuery;
-  if (isCheckStatus && areDocumentsProcessing(docQueryProgress)) {
+  const globalDocQueryProgress = await getCurrentGlobalDocumentQueryProgress({ cxId, patientId });
+  if (!forceQuery && globalDocQueryProgress && areDocumentsProcessing(globalDocQueryProgress)) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
-    return createQueryResponse("processing", patient);
+    return globalDocQueryProgress;
   }
 
-  await resetDocQueryProgress({
-    source: MedicalDataSource.ALL,
-    patient,
-  });
-
-  const startedAt = new Date();
-
-  const updatedPatient = await storeQueryInit({
-    id: patient.id,
+  const requestId = uuidv7();
+  const newDocQuery = await findOrCreateDocumentQuery({
     cxId: patient.cxId,
-    cmd: {
-      documentQueryProgress: {
-        requestId,
-        startedAt,
-        triggerConsolidated,
-        download: { status: "processing" },
-      },
-      cxDocumentRequestMetadata,
-    },
+    patientId: patient.id,
+    requestId,
+    metaData: cxDocumentRequestMetadata,
   });
 
   analytics({
@@ -122,7 +80,7 @@ export async function queryDocumentsAcrossHIEs({
   if (!cqManagingOrgName) {
     if (commonwellEnabled || forceCommonwell) {
       getDocumentsFromCW({
-        patient: updatedPatient,
+        patient,
         facilityId,
         forceDownload: override,
         forceQuery,
@@ -137,7 +95,7 @@ export async function queryDocumentsAcrossHIEs({
   const carequalityEnabled = await isCarequalityEnabled();
   if (carequalityEnabled || forceCarequality) {
     getDocumentsFromCQ({
-      patient: updatedPatient,
+      patient,
       facilityId,
       requestId,
       cqManagingOrgName,
@@ -153,76 +111,9 @@ export async function queryDocumentsAcrossHIEs({
     }).catch(processAsyncError("Failed to delete consolidated bundle"));
   }
 
-  return createQueryResponse("processing", updatedPatient);
+  return createGlobalDocumentQueryProgress({ docQuery: newDocQuery });
 }
 
-export const createQueryResponse = (
-  status: DocumentQueryStatus,
-  patient?: Patient
-): DocumentQueryProgress => {
-  return {
-    download: {
-      status,
-      ...patient?.data.documentQueryProgress?.download,
-    },
-    ...patient?.data.documentQueryProgress,
-  };
-};
-
-type UpdateResult = {
-  patient: Pick<Patient, "id" | "cxId">;
-  convertResult: ConvertResult;
-};
-
-export async function updateConversionProgress({
-  patient: { id, cxId },
-  convertResult,
-}: UpdateResult): Promise<Patient> {
-  const patientFilter = { id, cxId };
-  return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientOrFail({
-      ...patientFilter,
-      lock: true,
-      transaction,
-    });
-
-    const documentQueryProgress = calculateConversionProgress({
-      patient,
-      convertResult,
-    });
-
-    const updatedPatient = {
-      ...patient,
-      data: {
-        ...patient.data,
-        documentQueryProgress,
-      },
-    };
-
-    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
-
-    return updatedPatient;
-  });
+export function areDocumentsProcessing(progress: DocumentQueryProgress): boolean {
+  return isProcessing(progress.download) || isProcessing(progress?.convert);
 }
-
-/**
- * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.
- *
- * @param docQueryProgress Progress of the previous query
- * @param forceNew Force creating a new request ID
- * @returns uuidv7 string ID for the request
- */
-export function getOrGenerateRequestId(
-  docQueryProgress: DocumentQueryProgress | undefined,
-  forceNew = false
-): string {
-  if (forceNew) return generateRequestId();
-
-  if (areDocumentsProcessing(docQueryProgress) && docQueryProgress?.requestId) {
-    return docQueryProgress.requestId;
-  }
-
-  return generateRequestId();
-}
-
-const generateRequestId = (): string => uuidv7();

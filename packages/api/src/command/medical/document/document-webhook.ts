@@ -12,7 +12,7 @@ import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
-import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
+import { setWebhookSent } from "../document-query";
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 
@@ -44,14 +44,14 @@ type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload,
  * Callers are not notified of issues/errors while processing the request -
  * nothing is thrown. Instead, the error is logged and captured (Sentry).
  */
-export const processPatientDocumentRequest = async (
+export async function processPatientDocumentRequest(
   cxId: string,
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
-  requestId: string | undefined,
+  requestId: string,
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
-): Promise<void> => {
+): Promise<void> {
   const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
     const [settings, patient] = await Promise.all([
@@ -103,13 +103,13 @@ export const processPatientDocumentRequest = async (
     if (whType === DOWNLOAD_WEBHOOK_TYPE || whType === CONVERSION_WEBHOOK_TYPE) {
       const progressType = whType === DOWNLOAD_WEBHOOK_TYPE ? "download" : "convert";
 
-      await updateProgressWebhookSent(
-        {
-          id: patientId,
-          cxId,
-        },
-        progressType
-      );
+      await setWebhookSent({
+        patientId,
+        cxId,
+        requestId,
+        value: true,
+        progressType,
+      });
     }
 
     patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata, whType });
@@ -129,7 +129,7 @@ export const processPatientDocumentRequest = async (
       extra: { patientId, context: `webhook.processPatientDocumentRequest`, err },
     });
   }
-};
+}
 
 function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
   if (whType === "medical.document-download" || whType === "medical.document-conversion") {

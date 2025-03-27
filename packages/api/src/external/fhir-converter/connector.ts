@@ -13,8 +13,8 @@ export type FHIRConverterRequest = {
   template: string;
   unusedSegments: string;
   invalidAccess: string;
-  requestId?: string;
-  source?: MedicalDataSource;
+  requestId: string;
+  source: MedicalDataSource | "unknown";
 };
 
 export interface FHIRConverterConnector {

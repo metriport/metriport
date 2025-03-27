@@ -6,7 +6,6 @@ import { Address, getState } from "./address";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { Contact } from "./contact";
-import { DocumentQueryProgress } from "./document-query";
 import { LinkDemographics } from "./patient-demographics";
 import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 
@@ -44,7 +43,6 @@ export const genderAtBirthTypes = ["F", "M", "O", "U"] as const;
 export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export abstract class PatientExternalDataEntry {
-  documentQueryProgress?: DocumentQueryProgress;
   scheduledPdRequest?: ScheduledPatientDiscovery;
   discoveryParams?: DiscoveryParams;
 }
@@ -63,7 +61,6 @@ export type PatientData = {
   contact?: Contact[];
   requestId?: string;
   consolidatedLinkDemographics?: ConsolidatedLinkDemographics | undefined;
-  documentQueryProgress?: DocumentQueryProgress | undefined;
   consolidatedQueries?: ConsolidatedQuery[] | undefined;
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
   externalData?: PatientExternalData | undefined;

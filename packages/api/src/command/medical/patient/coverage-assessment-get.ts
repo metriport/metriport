@@ -8,8 +8,9 @@ import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { countResources } from "../../../external/fhir/patient/count-resources";
-import { InternalPatientDTO, internalDtoFromModel } from "../../../routes/medical/dtos/patientDTO";
+import { PatientDTO, dtoFromModel } from "../../../routes/medical/dtos/patientDTO";
 import { Config } from "../../../shared/config";
+import { getCurrentGlobalDocumentQueryProgress } from "../document-query";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -31,7 +32,7 @@ type CoverageAssessment = {
   mrSummaryUrl: string | undefined;
 };
 
-export type PatientWithCoverageAssessment = InternalPatientDTO & Partial<CoverageAssessment>;
+export type PatientWithCoverageAssessment = PatientDTO & Partial<CoverageAssessment>;
 
 export async function getCoverageAssessments({
   cxId,
@@ -60,14 +61,14 @@ export async function getCoverageAssessments({
     try {
       const coverageAssessment = await getCoverageAssessment({ cxId, patient, log });
       patientsWithAssessment.push({
-        ...internalDtoFromModel(patient),
+        ...dtoFromModel(patient),
         ...coverageAssessment,
       });
     } catch (error) {
       const msg = `Patient: ${patient.id}. Cause: ${errorToString(error)}`;
       log(msg);
       errors.push(msg);
-      patientsWithAssessment.push(internalDtoFromModel(patient));
+      patientsWithAssessment.push(dtoFromModel(patient));
     }
   }
 
@@ -104,13 +105,14 @@ async function getCoverageAssessment({
   log: typeof console.log;
 }): Promise<CoverageAssessment> {
   const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "pdf");
-  const [fhirResources, mrSummaryUrl] = await Promise.all([
+  const [fhirResources, mrSummaryUrl, documentQueryProgress] = await Promise.all([
     countResources({ patient }),
     getMrSummaryUrl(mrSummaryFileName, log),
+    getCurrentGlobalDocumentQueryProgress({ cxId, patientId: patient.id }),
   ]);
 
-  const download = patient.data.documentQueryProgress?.download;
-  const convert = patient.data.documentQueryProgress?.convert;
+  const download = documentQueryProgress?.download;
+  const convert = documentQueryProgress?.convert;
   const downloadStatus = download?.status;
   const docCount = download?.successful;
   const convertStatus = convert?.status;

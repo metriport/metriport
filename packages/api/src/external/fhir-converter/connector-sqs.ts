@@ -17,6 +17,7 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
     template,
     unusedSegments,
     invalidAccess,
+    requestId,
     source,
   }: FHIRConverterRequest): Promise<void> {
     const queueUrl = Config.getFHIRConverterQueueURL();
@@ -38,9 +39,9 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
         unusedSegments,
         invalidAccess,
         patientId,
-        jobId: documentId,
+        jobId: `${requestId}_${documentId}`,
         startedAt: dayjs.utc().toISOString(),
-        ...(source && { source }),
+        source,
       },
     });
   }

@@ -12,8 +12,6 @@ import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
-import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
-import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { formatDate } from "../shared";
 import {
@@ -25,6 +23,12 @@ import {
 } from "./shared";
 
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
+import {
+  getDocumentQueryOrFail,
+  incrementDocumentQuery,
+  setDocumentQuery,
+  setDocumentQueryStatus,
+} from "../../../command/medical/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getOutboundDocRetrievalSuccessFailureCount } from "../../hie/carequality-analytics";
 import { getCQData } from "../patient";
@@ -38,6 +42,13 @@ export async function processOutboundDocumentRetrievalResps({
   const { log } = out(
     `CQ processOutboundDocumentRetrievalResps - requestId ${requestId}, patient ${patientId}`
   );
+  const docQueryParms = {
+    cxId,
+    patientId,
+    requestId,
+    source: MedicalDataSource.CAREQUALITY,
+  };
+
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
     const cqData = getCQData(patient.data.externalData);
@@ -63,7 +74,6 @@ export async function processOutboundDocumentRetrievalResps({
 
     if (results.length === 0) {
       const msg = `Received DR result without entries.`;
-
       log(`${msg}`);
       capture.message(msg, {
         extra: {
@@ -76,14 +86,18 @@ export async function processOutboundDocumentRetrievalResps({
         level: "warning",
       });
 
-      await setDocQueryProgress({
-        patient: { id: patientId, cxId: cxId },
-        downloadProgress: { total: 0, status: "completed" },
-        convertProgress: { total: 0, status: "completed" },
-        requestId,
-        source: MedicalDataSource.CAREQUALITY,
-      });
-
+      await Promise.all([
+        setDocumentQueryStatus({
+          ...docQueryParms,
+          progressType: "download",
+          status: "completed",
+        }),
+        setDocumentQueryStatus({
+          ...docQueryParms,
+          progressType: "convert",
+          status: "completed",
+        }),
+      ]);
       return;
     }
 
@@ -95,25 +109,21 @@ export async function processOutboundDocumentRetrievalResps({
       }
     }
 
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId: cxId },
-      downloadProgress: {
-        total: successDocsRetrievedCount + issuesWithExternalGateway,
-        status: "processing",
-      },
-      ...(successDocsRetrievedCount > 0
-        ? {
-            convertProgress: {
-              total: successDocsRetrievedCount,
-              status: "processing",
-            },
-          }
-        : {
-            convertProgress: { total: 0, status: "completed" },
-          }),
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
+    await Promise.all([
+      setDocumentQuery({
+        ...docQueryParms,
+        progressType: "download",
+        field: "Total",
+        value: successDocsRetrievedCount + issuesWithExternalGateway,
+      }),
+      successDocsRetrievedCount > 0 &&
+        setDocumentQuery({
+          ...docQueryParms,
+          progressType: "convert",
+          field: "Total",
+          value: successDocsRetrievedCount,
+        }),
+    ]);
 
     const seenMetriportIds = new Set<string>();
 
@@ -147,6 +157,16 @@ export async function processOutboundDocumentRetrievalResps({
             cxId,
             docRetrievalResp.gateway.homeCommunityId
           );
+          // TODO put this outside all settled.
+          const removedDocRefs = docRefs.length - deduplicatedDocRefs.length;
+          if (removedDocRefs > 0) {
+            await incrementDocumentQuery({
+              ...docQueryParms,
+              progressType: "convert",
+              field: "Total",
+              value: -1 * removedDocRefs,
+            });
+          }
         }
       })
     );
@@ -168,27 +188,48 @@ export async function processOutboundDocumentRetrievalResps({
       });
     }
 
-    await tallyDocQueryProgress({
-      patient: { id: patientId, cxId: cxId },
-      progress: {
-        successful: successDocsRetrievedCount,
-        errors: issuesWithExternalGateway,
-      },
-      type: "download",
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
+    await Promise.all([
+      setDocumentQuery({
+        ...docQueryParms,
+        progressType: "download",
+        field: "Success",
+        value: successDocsRetrievedCount,
+      }),
+      setDocumentQuery({
+        ...docQueryParms,
+        progressType: "download",
+        field: "Error",
+        value: issuesWithExternalGateway,
+      }),
+    ]);
+
+    const documentQuery = await getDocumentQueryOrFail(docQueryParms);
+    if (
+      documentQuery.commonwellDownloadError + documentQuery.commonwellDownloadSuccess ===
+      documentQuery.commonwellDownloadTotal
+    ) {
+      await setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "download",
+        status: "completed",
+      });
+    }
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     log(`${msg}. Error: ${errorToString(error)}`);
 
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId: cxId },
-      downloadProgress: { status: "failed" },
-      convertProgress: { status: "failed" },
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
+    await Promise.all([
+      setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "download",
+        status: "failed",
+      }),
+      setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "convert",
+        status: "failed",
+      }),
+    ]);
 
     capture.message(msg, {
       extra: {
@@ -211,9 +252,6 @@ async function handleDocReferences(
   cxId: string,
   cqOrganizationId: string
 ) {
-  let errorCountConvertible = 0;
-  let adjustCountConvertible = 0;
-
   const { log } = out(`CQ handleDocReferences - requestId ${requestId}, M patient ${patientId}`);
 
   const existingFHIRDocRefs = await getDocuments({
@@ -230,42 +268,18 @@ async function handleDocReferences(
 
   const cqOrganization = await getCQDirectoryEntryOrFail(cqOrganizationId);
 
+  const docQueryParms = {
+    cxId,
+    patientId,
+    requestId,
+    source: MedicalDataSource.CAREQUALITY,
+  };
+
   for (const docRef of docRefs) {
     try {
-      const isDocConvertible = isConvertible(docRef.contentType || undefined);
-      const shouldConvert = isDocConvertible && docRef.isNew;
-
-      const docLocation = docRef.fileLocation;
-      const docPath = docRef.fileName;
-      if (!docLocation || !docPath) {
-        throw new MetriportError(`Invalid doc ref: location or path missing.`, undefined, {
-          docRefId: docRef.metriportId,
-        });
-      }
-
-      if (shouldConvert) {
-        await convertCDAToFHIR({
-          patient: {
-            id: patientId,
-            cxId,
-          },
-          document: {
-            id: docRef.metriportId ?? "",
-            content: { mimeType: docRef.contentType ?? "" },
-          },
-          s3FileName: docPath,
-          s3BucketName: docLocation,
-          requestId,
-          source: MedicalDataSource.CAREQUALITY,
-        });
-      } else {
-        adjustCountConvertible--;
-      }
-
       const draftFHIRDocRef = existingFHIRDocRefs.find(
         fhirDocRef => fhirDocRef.id === docRef.metriportId
       );
-
       const fhirDocRef = cqToFHIR(
         docRef.metriportId,
         docRef,
@@ -281,17 +295,18 @@ async function handleDocReferences(
         contained: combineAndDedupeContainedResources(draftFHIRDocRef, fhirDocRef),
         date: formatDate(fhirDocRef.date) ?? formatDate(draftFHIRDocRef?.date),
       };
-
-      if (!docRef.contentType) {
-        throw new MetriportError(`Invalid doc ref: content type missing.`, undefined, {
+      const docLocation = docRef.fileLocation;
+      const docPath = docRef.fileName;
+      const docContentType = docRef.contentType;
+      if (!docLocation || !docPath || !docContentType) {
+        throw new MetriportError(`Invalid doc ref: location or path missing.`, undefined, {
           docRefId: docRef.metriportId,
         });
       }
-
       const file = {
         key: docPath,
         bucket: docLocation,
-        contentType: docRef.contentType,
+        contentType: docContentType,
       };
 
       const transactionEntry: BundleEntry = {
@@ -304,6 +319,55 @@ async function handleDocReferences(
       transactionBundle.entry?.push(transactionEntry);
 
       ingestIntoSearchEngine({ id: patientId, cxId }, mergedFHIRDocRef, file, requestId, log);
+
+      const isConvertibleDoc = isConvertible(docRef.contentType || undefined);
+
+      if (!isConvertibleDoc) {
+        await incrementDocumentQuery({
+          ...docQueryParms,
+          progressType: "convert",
+          field: "Total",
+          value: -1,
+        });
+      }
+
+      if (!docRef.isNew && isConvertibleDoc) {
+        await incrementDocumentQuery({
+          ...docQueryParms,
+          progressType: "convert",
+          field: "Success",
+        });
+      }
+
+      if (docRef.isNew && isConvertibleDoc) {
+        try {
+          await convertCDAToFHIR({
+            patient: {
+              id: patientId,
+              cxId,
+            },
+            document: {
+              id: docRef.metriportId ?? "",
+              content: { mimeType: docRef.contentType ?? "" },
+            },
+            s3FileName: docPath,
+            s3BucketName: docLocation,
+            requestId,
+            source: MedicalDataSource.CAREQUALITY,
+          });
+        } catch (err) {
+          log(
+            `Error triggering conversion of doc ${
+              docRef.metriportId ?? ""
+            }, just increasing errorCountConvertible - ${err}`
+          );
+          await incrementDocumentQuery({
+            ...docQueryParms,
+            progressType: "convert",
+            field: "Error",
+          });
+        }
+      }
     } catch (error) {
       const msg = `Error handling doc reference`;
       const extra = {
@@ -317,19 +381,10 @@ async function handleDocReferences(
       capture.error(msg, {
         extra: { ...extra, error },
       });
-      errorCountConvertible++;
     }
   }
 
   await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
-
-  await setDocQueryProgress({
-    patient: { id: patientId, cxId: cxId },
-    convertibleDownloadErrors: errorCountConvertible,
-    increaseCountConvertible: adjustCountConvertible,
-    requestId,
-    source: MedicalDataSource.CAREQUALITY,
-  });
 }
 
 function combineAndDedupeContainedResources(
