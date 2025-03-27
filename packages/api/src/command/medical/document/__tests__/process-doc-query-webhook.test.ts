@@ -15,6 +15,7 @@ import * as webhookRequest from "../../../webhook/webhook-request";
 import * as getPatient from "../../patient/get-patient";
 import * as documentWebhook from "../document-webhook";
 import * as processDocQueryWebhook from "../process-doc-query-webhook";
+import * as patientDone from "../../patient/patient-import/patient-done";
 
 let processPatientDocumentRequest: jest.SpyInstance;
 let composeDocRefPayload: jest.SpyInstance;
@@ -37,6 +38,7 @@ beforeEach(() => {
   jest.spyOn(webhookRequest, "createWebhookRequest").mockResolvedValue(webhookModel);
   jest.spyOn(webhook, "processRequest").mockImplementation();
   jest.spyOn(reportUsageCmd, "reportUsage");
+  jest.spyOn(patientDone, "finishSinglePatientImport").mockImplementation();
 });
 
 afterEach(() => {
