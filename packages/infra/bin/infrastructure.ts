@@ -2,14 +2,13 @@ import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
-import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 import { Hl7NotificationStack } from "../lib/hl7-notification-stack";
-import { VpnStack } from "../lib/hl7-notification-stack/vpn";
-import { IHEStack } from "../lib/ihe-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar, isSandbox } from "../lib/shared/util";
+import { IHEStack } from "../lib/ihe-stack";
+import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 
 const app = new cdk.App();
 
@@ -51,21 +50,10 @@ async function deploy(config: EnvConfig) {
   // 4. Deploy the HL7 Notification Routing stack.
   //---------------------------------------------------------------------------------
   if (!isSandbox(config)) {
-    const hl7NotificationStack = new Hl7NotificationStack(app, "Hl7NotificationStack", {
+    new Hl7NotificationStack(app, "Hl7NotificationStack", {
       env,
       config,
       version,
-    });
-
-    config.hl7Notification.vpnConfigs.forEach((config, index) => {
-      const vpnStack = new VpnStack(app, `VpnStack-${config.partnerName}`, {
-        vpnConfig: { ...config },
-        index,
-        networkStackId: "NestedNetworkStack",
-        description: `VPN Configuration for routing HL7 messages from ${config.partnerName}`,
-      });
-
-      vpnStack.addDependency(hl7NotificationStack);
     });
   }
 
