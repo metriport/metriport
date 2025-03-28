@@ -6,6 +6,8 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { Runtime } from "aws-cdk-lib/aws-lambda";
+import nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
@@ -151,6 +153,20 @@ export function createFHIRConverterService(
     scope: stack,
     id: "FhirConverter",
     alarmAction,
+  });
+
+  new nodejs.NodejsFunction(stack, "FhirConverterNodeJsLambda", {
+    entry: "../fhir-converter/src/ccda-to-fhir-lambda.js",
+    handler: "handler", // defaults to 'handler'
+    runtime: Runtime.NODEJS_18_X,
+    bundling: {
+      define: {
+        // Replace strings during build time
+        "process.env.NODE_ENV": "production",
+        "process.env.ENV_TYPE": props.config.environmentType,
+        ...(props.version ? { "process.env.METRIPORT_VERSION": props.version } : undefined),
+      },
+    },
   });
 
   return { service: fargateService.service, address: serverAddress };
