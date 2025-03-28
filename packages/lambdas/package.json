@@ -70,6 +70,7 @@
     "@langchain/core": "0.3.19",
     "@medplum/fhirtypes": "^2.2.10",
     "@metriport/core": "file:packages/core",
+    "@metriport/fhir-converter": "file:packages/fhir-converter",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/shared": "file:packages/shared",
     "@smithy/eventstream-codec": "2.0.5",

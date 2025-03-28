@@ -25,10 +25,11 @@ import { processAttachments } from "@metriport/core/external/cda/process-attachm
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
-import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { FHIR_APP_MIME_TYPE } from "@metriport/core/util/mime";
+import { MetriportError, errorToString } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
-import axios from "axios";
+// @ts-expect-error - FHIR converter is a JS package without type declarations
+import { ccdaToFhir } from "@metriport/fhir-converter/src/ccda-to-fhir-lambda";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
@@ -46,19 +47,11 @@ const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
-const fhirConverter = axios.create({
-  // Only response timeout, no option for connection timeout: https://github.com/axios/axios/issues/4835
-  timeout: axiosTimeoutSeconds * 1_000, // should be less than the lambda timeout
-  transitional: {
-    // enables ETIMEDOUT instead of ECONNABORTED for timeouts - https://betterstack.com/community/guides/scaling-nodejs/nodejs-errors/
-    clarifyTimeoutError: true,
-  },
-});
+
 const ossApi = apiClient(apiUrl);
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
@@ -204,7 +197,6 @@ export async function handler(event: SQSEvent) {
 
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
-            converterUrl,
             partitionedPayloads,
             converterParams,
             log,
@@ -332,17 +324,15 @@ export async function handler(event: SQSEvent) {
 }
 
 async function convertPayloadToFHIR({
-  converterUrl,
   partitionedPayloads,
   converterParams,
   log,
 }: {
-  converterUrl: string;
   partitionedPayloads: string[];
   converterParams: FhirConverterParams;
   log: typeof console.log;
 }): Promise<Bundle<Resource>> {
-  log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`);
+  log(`Starting conversion with params ${JSON.stringify(converterParams)}`);
 
   const combinedBundle: Bundle<Resource> = {
     resourceType: "Bundle",
@@ -372,26 +362,21 @@ async function convertPayloadToFHIR({
       });
     }
 
-    const res = await executeWithNetworkRetries(
-      () =>
-        fhirConverter.post(converterUrl, payload, {
-          params: converterParams,
-          headers: { "Content-Type": TXT_MIME_TYPE },
-        }),
-      {
-        // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
-        // it could lead to timing out the lambda execution.
-        log,
-      }
-    );
+    const startedAt = Date.now();
+    // Use the shared FHIR converter package
+    const fhirResp = await ccdaToFhir(payload, converterParams.patientId);
+    const duration = Date.now() - startedAt;
+    console.log(`Finished conversion within lambda in ${duration} ms.`);
 
-    const conversionResult = res.data.fhirResource as Bundle<Resource>;
+    console.log("FHIR RESP IS", fhirResp);
+
+    const conversionResult = fhirResp.resultMsg.fhirResource;
 
     if (conversionResult?.entry && conversionResult.entry.length > 0) {
       log(
         `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
       );
-      conversionResult.entry.forEach(entry => bundleEntrySet.add(entry));
+      conversionResult.entry.forEach((entry: BundleEntry<Resource>) => bundleEntrySet.add(entry));
     }
   }
   combinedBundle.entry = [...bundleEntrySet];

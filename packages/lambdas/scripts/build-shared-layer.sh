@@ -20,6 +20,7 @@ main() {
    addPackageToLayer "shared"
    addPackageToLayer "core"
    addPackageToLayer "ihe-gateway-sdk"
+   addPackageToLayer "fhir-converter"
 
    pushd ./layers/shared
 

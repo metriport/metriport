@@ -1,13 +1,30 @@
 {
-  "name": "fhirconverter",
+  "name": "@metriport/fhir-converter",
   "version": "2.1.1",
-  "description": "FHIR converter",
-  "main": "src/index.js",
+  "description": "FHIR converter - by Metriport Inc.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "main": "src/ccda-to-fhir-lambda.js",
   "private": true,
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "packages/fhir-converter"
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
   "scripts": {
     "clean": "echo 'nothing to clean'",
     "deepclean": "rimraf node_modules",
     "build": "npm run eslint",
+    "build:cloud": "npm run build",
     "pretest": "node --experimental-worker src/init-service.js",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "prestart": "node --experimental-worker src/init-service.js",
@@ -16,6 +33,9 @@
     "start-dev": "npm run dev",
     "start-docker-compose": "docker compose -f docker-compose.yml up",
     "eslint": "eslint src/**/*.js",
+    "lint": "eslint src/**/*.js",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.js' --write",
     "lint:hbs": "ember-template-lint src/templates/cda > lint-results.txt",
     "full-hbs-lint": "./full-hbs-lint.sh"
   },

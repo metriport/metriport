@@ -30,6 +30,7 @@ services:
       - TOKEN_TABLE_NAME=token
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
       - FHIR_SERVER_URL=http://host.docker.internal:8888
+      # TODO: Cleanup URL when FHIR Converter works on lambda
       - FHIR_CONVERTER_SERVER_URL=http://host.docker.internal:8777
       - MEDICAL_DOCUMENTS_BUCKET_NAME=medical-documents-staging
       - MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME=metriport-medical-document-uploads-staging

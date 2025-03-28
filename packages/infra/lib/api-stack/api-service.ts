@@ -28,7 +28,7 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
 import { buildLbAccessLogPrefix } from "../shared/s3";
-import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
+import { Secrets, buildSecrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
@@ -89,7 +89,6 @@ export function createAPIService({
   dnsZones,
   fhirServerUrl,
   fhirConverterQueueUrl,
-  fhirConverterServiceUrl,
   cdaToVisualizationLambda,
   documentDownloaderLambda,
   outboundPatientDiscoveryLambda,
@@ -126,7 +125,6 @@ export function createAPIService({
   dnsZones: DnsZones;
   fhirServerUrl: string;
   fhirConverterQueueUrl: string | undefined;
-  fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
   outboundPatientDiscoveryLambda: ILambda;
@@ -277,9 +275,6 @@ export function createAPIService({
           FHIR_SERVER_URL: fhirServerUrl,
           ...(fhirConverterQueueUrl && {
             FHIR_CONVERTER_QUEUE_URL: fhirConverterQueueUrl,
-          }),
-          ...(fhirConverterServiceUrl && {
-            FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
           }),
           RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
           SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,

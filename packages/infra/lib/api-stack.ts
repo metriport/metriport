@@ -40,7 +40,6 @@ import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
-import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { createAppConfigStack } from "./app-config-stack";
 import { EhrNestedStack } from "./ehr-nested-stack";
@@ -51,10 +50,10 @@ import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
@@ -419,19 +418,6 @@ export class APIStack extends Stack {
       });
     }
 
-    //-------------------------------------------
-    // FHIR Converter Service
-    //-------------------------------------------
-    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
-    if (!isSandbox(props.config)) {
-      fhirConverter = createFHIRConverterService(
-        this,
-        { ...props, generalBucket },
-        this.vpc,
-        slackNotification?.alarmAction
-      );
-    }
-
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
     let fhirToMedicalRecordLambda2: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
@@ -486,7 +472,6 @@ export class APIStack extends Stack {
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,
       fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
-      fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       outboundPatientDiscoveryLambda,

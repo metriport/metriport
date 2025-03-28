@@ -51,7 +51,8 @@
     "packages/mllp-server",
     "packages/infra",
     "packages/utils",
-    "packages/tester-node"
+    "packages/tester-node",
+    "packages/fhir-converter"
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
