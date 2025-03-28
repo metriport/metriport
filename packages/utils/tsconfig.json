@@ -1,5 +1,12 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
+  // Enable this in case ts-node fails to run b/c of type errors, like:
+  // > TSError: ⨯ Unable to compile TypeScript:
+  // > ../api/src/routes/middlewares/auth.ts:21:9 - error TS2339: Property 'cxId' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+  // Leave this commented out in the codebase, since it slows down scripts considerably.
+  // "ts-node": {
+  //   "files": true
+  // },
   "compilerOptions": {
     "typeRoots": ["./src/@types", "../../node_modules/@types", "./node_modules/@types"],
     // Using community best practices with 'extends'

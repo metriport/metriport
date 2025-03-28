@@ -1,4 +1,4 @@
-import { normalizeAddressLine } from "../address";
+import { normalizeAddressLine, parseAddress } from "../address";
 
 describe("mapCsvAddresses", () => {
   describe("normalizeAddressLine", () => {
@@ -109,7 +109,11 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `100 Monroe Ln Blg 45 Apartment 123`,
-            output: [`100 Monroe Ln Blg 45`, `Apartment 123`],
+            output: [`100 Monroe Ln`, `Blg 45 Apartment 123`],
+          },
+          {
+            input: `100 Monroe Ln Building 45 Apartment 123`,
+            output: [`100 Monroe Ln`, `Building 45 Apartment 123`],
           },
           {
             input: `1791 W 6th St, Apt 1`,
@@ -189,6 +193,22 @@ Apt 1B`,
             input: `1508 S-6TH ST,APT T`,
             output: [`1508 S-6th St`, `Apt T`],
           },
+          {
+            input: `123 Main Circle, Springfield `,
+            output: [`123 Main Circle Springfield`],
+          },
+          {
+            input: `456 Oak Street Apt#12 Riverside,	California`,
+            output: [`456 Oak Street`, `Apt#12 Riverside California`],
+          },
+          {
+            input: `789 Pine Street, Apt 101`,
+            output: [`789 Pine Street`, `Apt 101`],
+          },
+          {
+            input: `1 SUMMERTOWN NORTH CT Minneapolis`,
+            output: [`1 Summertown North Ct Minneapolis`],
+          },
         ];
 
         addresses.forEach(address => {
@@ -203,7 +223,7 @@ Apt 1B`,
         const addresses: { input: string; output: string[] }[] = [
           {
             input: `1 SUMMERTOWN NORTH CT FLORIDA`,
-            output: [`1 Summertown North Ct Florida`], // Florida is the city/state
+            output: [`1 Summertown North Ct`, `Florida`], // Florida matches the "fl" unit indicator
           },
           {
             input: `8547 STORMFLATS DR 	 5`,
@@ -241,6 +261,71 @@ Apt 1B`,
           });
         });
       });
+    });
+  });
+
+  describe("parseAddress", () => {
+    it("splits the address line 1 when there's no address line 2", () => {
+      const city = "Springfield";
+      const state = "CA";
+      const zip = "90210";
+      const { address, errors } = parseAddress({
+        addressLine1: "123 Main Street, Apt 456",
+        city,
+        state,
+        zip,
+      });
+      expect(address).toBeDefined();
+      expect(errors.length).toEqual(0);
+      if (!address) throw new Error("address is undefined");
+      expect(address.addressLine1).toEqual("123 Main Street");
+      expect(address.addressLine2).toEqual("Apt 456");
+      expect(address.city).toEqual(city);
+      expect(address.state).toEqual(state);
+      expect(address.zip).toEqual(zip);
+    });
+
+    it("keeps the address line 2 even then there's an apt w/ comma on address line 1", () => {
+      const addressLine1 = "123 Main Street, Apt 456";
+      const addressLine2 = "Ri";
+      const city = "Springfield";
+      const state = "CA";
+      const zip = "90210";
+      const { address, errors } = parseAddress({
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        zip,
+      });
+      expect(address).toBeDefined();
+      expect(errors.length).toEqual(0);
+      if (!address) throw new Error("address is undefined");
+      expect(address.addressLine1).toEqual(addressLine1);
+      expect(address.addressLine2).toEqual(addressLine2);
+      expect(address.city).toEqual(city);
+      expect(address.state).toEqual(state);
+      expect(address.zip).toEqual(zip);
+    });
+
+    it("returns the main address and unit", () => {
+      const city = "Springfield";
+      const state = "CA";
+      const zip = "90210";
+      const { address, errors } = parseAddress({
+        addressLine1: "123 Main St, 2A",
+        city,
+        state,
+        zip,
+      });
+      expect(address).toBeDefined();
+      expect(errors.length).toEqual(0);
+      if (!address) throw new Error("address is undefined");
+      expect(address.addressLine1).toEqual("123 Main St 2a");
+      expect(address.addressLine2).not.toBeDefined();
+      expect(address.city).toEqual(city);
+      expect(address.state).toEqual(state);
+      expect(address.zip).toEqual(zip);
     });
   });
 });
