@@ -21,7 +21,7 @@ export class PatientImportResultLocal implements PatientImportResult {
    * Consolidates the individual patient records into a single file and updates the job status at
    * the API (which might do other things, like sending WH requests).
    */
-  async processJobResult({ cxId, jobId }: ProcessPatientResult) {
+  async processJobResult({ cxId, jobId }: ProcessPatientResult): Promise<void> {
     const { log } = out(`PatientImport processJobResult.local - cxId ${cxId} jobId ${jobId}`);
     try {
       const resultEntries = await getResultEntries({

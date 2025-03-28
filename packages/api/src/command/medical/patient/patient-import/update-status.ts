@@ -1,12 +1,11 @@
 import { out } from "@metriport/core/util/log";
 import { emptyFunction } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { validateNewStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import {
-  isDryRun,
-  PatientImport,
   PatientImportStatus,
-} from "@metriport/shared/domain/patient/patient-import/types";
+  validateNewStatus,
+} from "@metriport/shared/domain/patient/patient-import/status";
+import { isDryRun, PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { PatientImportModel } from "../../../../models/medical/patient-import";
