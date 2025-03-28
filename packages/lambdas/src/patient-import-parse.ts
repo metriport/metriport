@@ -1,6 +1,7 @@
 import { StartPatientImportRequest } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse";
 import { PatientImportParseLocal } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-local";
 import { errorToString, MetriportError } from "@metriport/shared";
+import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
@@ -21,7 +22,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler(event: StartPatientImportRequest) {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: StartPatientImportRequest) => {
   let errorHandled = false;
   const errorMsg = "Error processing event on " + lambdaName;
   const startedAt = new Date().getTime();
@@ -56,20 +57,24 @@ export async function handler(event: StartPatientImportRequest) {
     } catch (error) {
       errorHandled = true;
       console.log(`${errorMsg}: ${errorToString(error)}`);
-      capture.error(errorMsg, {
-        extra: { event, context: lambdaName, error },
+      capture.setExtra({
+        event,
+        context: lambdaName,
+        error,
       });
       throw new MetriportError(errorMsg, error, { ...parsedBody });
     }
   } catch (error) {
     if (errorHandled) throw error;
     console.log(`${errorMsg}: ${errorToString(error)}`);
-    capture.error(errorMsg, {
-      extra: { event, context: lambdaName, error },
+    capture.setExtra({
+      event,
+      context: lambdaName,
+      error,
     });
     throw new MetriportError(errorMsg, error);
   }
-}
+});
 
 function parseBody(body?: unknown): StartPatientImportRequest {
   if (!body) throw new Error(`Missing message body`);

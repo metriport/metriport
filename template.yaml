@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  DocumentUploader:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: packages/lambdas/dist
+      Handler: packages/lambdas/dist/document-uploader.handler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          ENV_TYPE: staging
+          NODE_ENV: staging
+          SENTRY_DSN: https://2ad7d3a6bd374dff912855495e18b836@o4504912808837120.ingest.us.sentry.io/4505252341153792
+          API_URL: http://localhost:3000
+          MEDICAL_DOCUMENTS_DESTINATION_BUCKET: medical-documents-staging
+          AWS_REGION: us-east-2

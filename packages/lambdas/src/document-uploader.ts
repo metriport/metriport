@@ -1,7 +1,9 @@
 import { documentUploaderHandler } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import * as Sentry from "@sentry/serverless";
 import { S3Event } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
+import { MetriportError } from "../../shared/dist";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -10,7 +12,7 @@ const apiUrl = getEnvOrFail("API_URL");
 const destinationBucket = getEnvOrFail("MEDICAL_DOCUMENTS_DESTINATION_BUCKET");
 const region = getEnvOrFail("AWS_REGION");
 
-export const handler = async (event: S3Event) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: S3Event) => {
   for (const record of event.Records) {
     const sourceBucket = record.s3.bucket.name;
     const sourceKey = decodeURIComponent(record.s3.object.key);
@@ -40,10 +42,15 @@ export const handler = async (event: S3Event) => {
         });
       }
     } catch (error) {
-      console.log("Error in documentUploaderHandler", error);
-      capture.error(error, {
-        extra: { context: `documentUploaderHandler`, sourceBucket, sourceKey, error },
+      const message = "Error in documentUploaderHandler";
+      console.log(message, error);
+      capture.setExtra({
+        context: `documentUploaderHandler`,
+        sourceBucket,
+        sourceKey,
+        error,
       });
+      throw new MetriportError(message, error);
     }
   }
-};
+});
