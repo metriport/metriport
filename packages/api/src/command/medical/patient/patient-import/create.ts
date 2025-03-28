@@ -5,12 +5,12 @@ import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import {
   metaToRecord,
   PatientImport,
   PatientImportParamsCx,
   PatientImportParamsOps,
-  PatientImportStatus,
   PatientImportUploadMetadata,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";

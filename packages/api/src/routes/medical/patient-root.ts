@@ -230,6 +230,7 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const facilityIdParam = getFromQuery("facilityId", req);
     const dryRunParam = getFromQueryAsBoolean("dryRun", req);
+    // TODO 2330 add cx-metadata to the job and pass it to all webhooks related to this job
 
     const patientImportResponse = await createPatientImport({
       cxId,
