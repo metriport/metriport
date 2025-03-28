@@ -3,10 +3,9 @@ import { EventTypes, analytics } from "@metriport/core/external/analytics/postho
 import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { MetriportError, errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -24,10 +23,9 @@ import {
 
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import {
-  getDocumentQueryOrFail,
   incrementDocumentQueryAndProcessWebhook,
   setDocumentQuery,
-  setDocumentQueryStatus,
+  setDocumentQueryStatusAndProcessWebhook,
 } from "../../../command/medical/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getOutboundDocRetrievalSuccessFailureCount } from "../../hie/carequality-analytics";
@@ -42,6 +40,7 @@ export async function processOutboundDocumentRetrievalResps({
   const { log } = out(
     `CQ processOutboundDocumentRetrievalResps - requestId ${requestId}, patient ${patientId}`
   );
+
   const docQueryParms = {
     cxId,
     patientId,
@@ -55,9 +54,6 @@ export async function processOutboundDocumentRetrievalResps({
     const docRetrievalStartedAt = cqData?.documentRetrievalStartTime;
     const duration = elapsedTimeFromNow(docRetrievalStartedAt);
     const { successCount, failureCount } = getOutboundDocRetrievalSuccessFailureCount(results);
-
-    let successDocsRetrievedCount = 0;
-    let issuesWithExternalGateway = 0;
 
     analytics({
       distinctId: cxId,
@@ -87,12 +83,12 @@ export async function processOutboundDocumentRetrievalResps({
       });
 
       await Promise.all([
-        setDocumentQueryStatus({
+        setDocumentQueryStatusAndProcessWebhook({
           ...docQueryParms,
           progressType: "download",
           status: "completed",
         }),
-        setDocumentQueryStatus({
+        setDocumentQueryStatusAndProcessWebhook({
           ...docQueryParms,
           progressType: "convert",
           status: "completed",
@@ -101,13 +97,55 @@ export async function processOutboundDocumentRetrievalResps({
       return;
     }
 
-    for (const docRetrievalResp of results) {
-      if (docRetrievalResp.documentReference) {
-        successDocsRetrievedCount += docRetrievalResp.documentReference.length;
-      } else if (docRetrievalResp.operationOutcome?.issue) {
-        issuesWithExternalGateway += docRetrievalResp.operationOutcome.issue.length;
-      }
-    }
+    const validDeduplicatedDocRefsByReult: {
+      docRefs: DocumentReferenceWithMetriportId[];
+      errors: unknown[];
+      requestId: string;
+      patientId: string;
+      cxId: string;
+      cqOrganizationId: string;
+    }[] = results.flatMap(docRetrievalResp => {
+      const docRefs = docRetrievalResp.documentReference ?? [];
+      const errors = docRetrievalResp.operationOutcome?.issue ?? [];
+      const validDocRefs = docRefs.filter(containsMetriportId);
+      const validDeduplicatedDocRefs = validDocRefs.filter(docRef => {
+        const isDuplicate = containsDuplicateMetriportId(docRef, seenMetriportIds);
+        if (isDuplicate) {
+          capture.message(`Duplicate docRef found in DR Resp`, {
+            extra: {
+              context: `cq.processOutboundDocumentRetrievalResps`,
+              patientId,
+              requestId,
+              cxId,
+              docRef,
+            },
+            level: "warning",
+          });
+        }
+        return !isDuplicate;
+      });
+
+      return {
+        docRefs: validDeduplicatedDocRefs,
+        errors,
+        requestId,
+        patientId,
+        cxId,
+        cqOrganizationId: docRetrievalResp.gateway.homeCommunityId,
+      };
+    });
+
+    const successDocsRetrievedCount = 0;
+    const issuesWithExternalGateway = 0;
+
+    validDeduplicatedDocRefsByReult.reduce(
+      (acc, docRetrievalResp) => {
+        acc.successDocsRetrievedCount += docRetrievalResp.docRefs.length;
+        acc.issuesWithExternalGateway += docRetrievalResp.errors.length;
+        return acc;
+      },
+      { successDocsRetrievedCount, issuesWithExternalGateway }
+    );
 
     await Promise.all([
       setDocumentQuery({
@@ -126,48 +164,9 @@ export async function processOutboundDocumentRetrievalResps({
     ]);
 
     const seenMetriportIds = new Set<string>();
-
     const resultPromises = await Promise.allSettled(
-      results.map(async docRetrievalResp => {
-        const docRefs = docRetrievalResp.documentReference;
-
-        if (docRefs) {
-          const validDocRefs = docRefs.filter(containsMetriportId);
-          const deduplicatedDocRefs = validDocRefs.filter(docRef => {
-            const isDuplicate = containsDuplicateMetriportId(docRef, seenMetriportIds);
-            if (isDuplicate) {
-              capture.message(`Duplicate docRef found in DR Resp`, {
-                extra: {
-                  context: `cq.processOutboundDocumentRetrievalResps`,
-                  patientId,
-                  requestId,
-                  cxId,
-                  docRef,
-                },
-                level: "warning",
-              });
-            }
-            return !isDuplicate;
-          });
-
-          await handleDocReferences(
-            deduplicatedDocRefs,
-            requestId,
-            patientId,
-            cxId,
-            docRetrievalResp.gateway.homeCommunityId
-          );
-          // TODO put this outside all settled.
-          const removedDocRefs = docRefs.length - deduplicatedDocRefs.length;
-          if (removedDocRefs > 0) {
-            await incrementDocumentQueryAndProcessWebhook({
-              ...docQueryParms,
-              progressType: "convert",
-              field: "Total",
-              value: -1 * removedDocRefs,
-            });
-          }
-        }
+      validDeduplicatedDocRefsByReult.map(async args => {
+        await handleDocReferences({ ...args });
       })
     );
 
@@ -189,42 +188,30 @@ export async function processOutboundDocumentRetrievalResps({
     }
 
     await Promise.all([
-      setDocumentQuery({
+      incrementDocumentQueryAndProcessWebhook({
         ...docQueryParms,
         progressType: "download",
         field: "Success",
         value: successDocsRetrievedCount,
       }),
-      setDocumentQuery({
+      incrementDocumentQueryAndProcessWebhook({
         ...docQueryParms,
         progressType: "download",
         field: "Error",
         value: issuesWithExternalGateway,
       }),
     ]);
-
-    const documentQuery = await getDocumentQueryOrFail(docQueryParms);
-    if (
-      documentQuery.commonwellDownloadError + documentQuery.commonwellDownloadSuccess ===
-      documentQuery.commonwellDownloadTotal
-    ) {
-      await setDocumentQueryStatus({
-        ...docQueryParms,
-        progressType: "download",
-        status: "completed",
-      });
-    }
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     log(`${msg}. Error: ${errorToString(error)}`);
 
     await Promise.all([
-      setDocumentQueryStatus({
+      setDocumentQueryStatusAndProcessWebhook({
         ...docQueryParms,
         progressType: "download",
         status: "failed",
       }),
-      setDocumentQueryStatus({
+      setDocumentQueryStatusAndProcessWebhook({
         ...docQueryParms,
         progressType: "convert",
         status: "failed",
@@ -245,13 +232,19 @@ export async function processOutboundDocumentRetrievalResps({
   }
 }
 
-async function handleDocReferences(
-  docRefs: DocumentReferenceWithMetriportId[],
-  requestId: string,
-  patientId: string,
-  cxId: string,
-  cqOrganizationId: string
-) {
+async function handleDocReferences({
+  docRefs,
+  requestId,
+  patientId,
+  cxId,
+  cqOrganizationId,
+}: {
+  docRefs: DocumentReferenceWithMetriportId[];
+  requestId: string;
+  patientId: string;
+  cxId: string;
+  cqOrganizationId: string;
+}) {
   const { log } = out(`CQ handleDocReferences - requestId ${requestId}, M patient ${patientId}`);
 
   const existingFHIRDocRefs = await getDocuments({

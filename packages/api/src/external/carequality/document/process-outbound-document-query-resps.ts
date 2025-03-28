@@ -3,15 +3,14 @@ import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import {
   getDocumentQueryOrFail,
-  setDocumentQuery,
-  setDocumentQueryStatus,
+  setDocumentQueryStatusAndProcessWebhook,
 } from "../../../command/medical/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { mapDocRefToMetriport } from "../../../shared/external";
@@ -50,15 +49,6 @@ export async function processOutboundDocumentQueryResps({
     `CQ processOutboundDocumentQueryResps - requestId ${requestId}, patient ${patientId}`
   );
 
-  if (!resultPoller.isDREnabled()) {
-    log(`IHE DR result poller not available`);
-    return;
-  }
-  if (!(await isCQDirectEnabledForCx(cxId))) {
-    log(`CQ disabled for cx ${cxId}`);
-    return;
-  }
-
   const docQueryParms = {
     cxId,
     patientId,
@@ -68,9 +58,10 @@ export async function processOutboundDocumentQueryResps({
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
-    const docQueryStartedAt = (await getDocumentQueryOrFail({ cxId, patientId, requestId }))
-      .createdAt;
+    const docQuery = await getDocumentQueryOrFail(docQueryParms);
+    const docQueryStartedAt = docQuery.createdAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
+
     const docRefs = response.flatMap(result => result.documentReference ?? []);
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
@@ -110,12 +101,12 @@ export async function processOutboundDocumentQueryResps({
 
     if (docsToDownload.length === 0) {
       await Promise.all([
-        setDocumentQueryStatus({
+        setDocumentQueryStatusAndProcessWebhook({
           ...docQueryParms,
           progressType: "download",
           status: "completed",
         }),
-        setDocumentQueryStatus({
+        setDocumentQueryStatusAndProcessWebhook({
           ...docQueryParms,
           progressType: "convert",
           status: "completed",
@@ -124,21 +115,14 @@ export async function processOutboundDocumentQueryResps({
       return;
     }
 
-    await Promise.all([
-      setDocumentQuery({
-        ...docQueryParms,
-        progressType: "download",
-        field: "Total",
-        value: docsToDownload.length,
-      }),
-      convertibleDocCount > 0 &&
-        setDocumentQuery({
-          ...docQueryParms,
-          progressType: "convert",
-          field: "Total",
-          value: convertibleDocCount,
-        }),
-    ]);
+    if (!resultPoller.isDREnabled()) {
+      log(`IHE DR result poller not available`);
+      return;
+    }
+    if (!(await isCQDirectEnabledForCx(cxId))) {
+      log(`CQ disabled for cx ${cxId}`);
+      return;
+    }
 
     const docRetrievalStartedAt = new Date();
     await setDocRetrieveStartAt({
@@ -194,12 +178,12 @@ export async function processOutboundDocumentQueryResps({
     log(`${msg}. Error: ${errorToString(error)}`);
 
     await Promise.all([
-      setDocumentQueryStatus({
+      setDocumentQueryStatusAndProcessWebhook({
         ...docQueryParms,
         progressType: "download",
         status: "failed",
       }),
-      setDocumentQueryStatus({
+      setDocumentQueryStatusAndProcessWebhook({
         ...docQueryParms,
         progressType: "convert",
         status: "failed",

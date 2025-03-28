@@ -10,7 +10,7 @@ import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { setDocumentQueryStatus } from "../../command/medical/document-query";
+import { setDocumentQueryStatusAndProcessWebhook } from "../../command/medical/document-query";
 import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getNewDemographics } from "../../domain/medical/patient-demographics";
@@ -304,7 +304,7 @@ export async function queryDocsIfScheduled({
   });
   if (isFailed) {
     await Promise.all([
-      setDocumentQueryStatus({
+      setDocumentQueryStatusAndProcessWebhook({
         cxId: patient.cxId,
         patientId: patient.id,
         requestId,
@@ -312,7 +312,7 @@ export async function queryDocsIfScheduled({
         progressType: "download",
         status: "failed",
       }),
-      setDocumentQueryStatus({
+      setDocumentQueryStatusAndProcessWebhook({
         cxId: patient.cxId,
         patientId: patient.id,
         requestId,

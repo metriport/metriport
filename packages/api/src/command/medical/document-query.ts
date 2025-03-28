@@ -13,9 +13,9 @@ import { DocumentQuery } from "../../domain/medical/document-query";
 import { DocumentQueryModel } from "../../models/medical/documentQuery";
 import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
 import {
+  composeDocRefPayload,
   MAPIWebhookStatus,
   processPatientDocumentRequest,
-  composeDocRefPayload,
 } from "./document/document-webhook";
 
 export type DocumentQueryLookUpParams = Pick<DocumentQuery, "cxId" | "requestId" | "patientId">;
@@ -180,7 +180,7 @@ export async function incrementDocumentQueryAndProcessWebhook({
   field,
   value = 1,
 }: IncrementOrSet): Promise<void> {
-  const updated = await incrementDocumentQuery({
+  const incremented = await incrementDocumentQuery({
     cxId,
     patientId,
     requestId,
@@ -189,14 +189,12 @@ export async function incrementDocumentQueryAndProcessWebhook({
     field,
     value,
   });
-  const successColumn = createColumn({ source, progressType, field: "Success" });
-  const errorColumn = createColumn({ source, progressType, field: "Error" });
-  const totalColumn = createColumn({ source, progressType, field: "Total" });
+  const hieDocQueryProgress = createSourceDocumentQueryProgress({ docQuery: incremented, source });
   if (
-    (updated[successColumn] as number) + (updated[errorColumn] as number) ===
-    (updated[totalColumn] as number)
+    hieDocQueryProgress[progressType].errors + hieDocQueryProgress[progressType].successful ===
+    hieDocQueryProgress[progressType].total
   ) {
-    await setDocumentQueryStatus({
+    const updated = await setDocumentQueryStatus({
       cxId,
       patientId,
       requestId,
@@ -204,19 +202,7 @@ export async function incrementDocumentQueryAndProcessWebhook({
       progressType,
       status: "completed",
     });
-    let documents: DocumentReferenceDTO[] | undefined;
-    if (progressType === "convert") {
-      documents = await composeDocRefPayload({ cxId, patientId, requestId });
-    }
-    await processPatientDocumentRequest({
-      cxId,
-      patientId,
-      requestId,
-      whType:
-        progressType === "download" ? "medical.document-download" : "medical.document-conversion",
-      status: MAPIWebhookStatus.completed,
-      documents,
-    });
+    await processStatusForWebhook({ docQuery: updated, progressType });
   }
 }
 
@@ -254,34 +240,23 @@ export async function setDocumentQueryStatus({
   return updated.dataValues;
 }
 
-export async function setDocumentQueryStatusAndProcessFailedWebhook({
+export async function setDocumentQueryStatusAndProcessWebhook({
   cxId,
   patientId,
   requestId,
   source,
   progressType,
-}: SetStatus): Promise<void> {
-  await setDocumentQueryStatus({
+  status,
+}: Omit<SetStatus, "status"> & { status: "failed" | "completed" }): Promise<void> {
+  const updated = await setDocumentQueryStatus({
     cxId,
     patientId,
     requestId,
     source,
     progressType,
-    status: "failed",
+    status,
   });
-  let documents: DocumentReferenceDTO[] | undefined;
-  if (progressType === "convert") {
-    documents = await composeDocRefPayload({ cxId, patientId, requestId });
-  }
-  await processPatientDocumentRequest({
-    cxId,
-    patientId,
-    requestId,
-    whType:
-      progressType === "download" ? "medical.document-download" : "medical.document-conversion",
-    status: MAPIWebhookStatus.failed,
-    documents,
-  });
+  await processStatusForWebhook({ docQuery: updated, progressType });
 }
 
 export async function setWebhookSent({
@@ -337,17 +312,17 @@ export async function getDocumentQueryProgressesToUpdate(patientIds?: string[]):
     },
   });
   return docQueries.map(docQuery => ({
-    commonwell: createHieDocumentQueryProgress({
-      hie: MedicalDataSource.COMMONWELL,
+    commonwell: createSourceDocumentQueryProgress({
       docQuery: docQuery.dataValues,
+      source: MedicalDataSource.COMMONWELL,
     }),
-    carequality: createHieDocumentQueryProgress({
-      hie: MedicalDataSource.CAREQUALITY,
+    carequality: createSourceDocumentQueryProgress({
       docQuery: docQuery.dataValues,
+      source: MedicalDataSource.CAREQUALITY,
     }),
-    unknown: createHieDocumentQueryProgress({
-      hie: "unknown",
+    unknown: createSourceDocumentQueryProgress({
       docQuery: docQuery.dataValues,
+      source: "unknown",
     }),
     cxId: docQuery.cxId,
     patientId: docQuery.patientId,
@@ -375,47 +350,47 @@ export async function updateDocumentQueryProgress({
   return updated.dataValues;
 }
 
-export function createHieDocumentQueryProgress({
-  hie,
+function createSourceDocumentQueryProgress({
   docQuery,
+  source,
 }: {
-  hie: MedicalDataSource | "unknown";
   docQuery: DocumentQuery;
+  source: DocumentQueryDocumentSource;
 }): DocumentQueryProgress {
   const downloadTotal =
-    hie === MedicalDataSource.COMMONWELL
+    source === MedicalDataSource.COMMONWELL
       ? docQuery.commonwellDownloadTotal
-      : hie === MedicalDataSource.CAREQUALITY
+      : source === MedicalDataSource.CAREQUALITY
       ? docQuery.carequalityDownloadTotal
       : docQuery.unknownDownloadTotal;
   const downloadSuccessful =
-    hie === MedicalDataSource.COMMONWELL
+    source === MedicalDataSource.COMMONWELL
       ? docQuery.commonwellDownloadSuccess
-      : hie === MedicalDataSource.CAREQUALITY
+      : source === MedicalDataSource.CAREQUALITY
       ? docQuery.carequalityDownloadSuccess
       : docQuery.unknownDownloadSuccess;
   const downloadErrors =
-    hie === MedicalDataSource.COMMONWELL
+    source === MedicalDataSource.COMMONWELL
       ? docQuery.commonwellDownloadError
-      : hie === MedicalDataSource.CAREQUALITY
+      : source === MedicalDataSource.CAREQUALITY
       ? docQuery.carequalityDownloadError
       : docQuery.unknownDownloadError;
   const convertTotal =
-    hie === MedicalDataSource.COMMONWELL
+    source === MedicalDataSource.COMMONWELL
       ? docQuery.commonwellConvertTotal
-      : hie === MedicalDataSource.CAREQUALITY
+      : source === MedicalDataSource.CAREQUALITY
       ? docQuery.carequalityConvertTotal
       : docQuery.unknownConvertTotal;
   const convertSuccessful =
-    hie === MedicalDataSource.COMMONWELL
+    source === MedicalDataSource.COMMONWELL
       ? docQuery.commonwellConvertSuccess
-      : hie === MedicalDataSource.CAREQUALITY
+      : source === MedicalDataSource.CAREQUALITY
       ? docQuery.carequalityConvertSuccess
       : docQuery.unknownConvertSuccess;
   const convertErrors =
-    hie === MedicalDataSource.COMMONWELL
+    source === MedicalDataSource.COMMONWELL
       ? docQuery.commonwellConvertError
-      : hie === MedicalDataSource.CAREQUALITY
+      : source === MedicalDataSource.CAREQUALITY
       ? docQuery.carequalityConvertError
       : docQuery.unknownConvertError;
   return {
@@ -436,21 +411,21 @@ export function createHieDocumentQueryProgress({
   };
 }
 
-export function createGlobalDocumentQueryProgress({
+function createGlobalDocumentQueryProgress({
   docQuery,
 }: {
   docQuery: DocumentQuery;
 }): DocumentQueryProgress {
-  const cwDocQueryProgress = createHieDocumentQueryProgress({
-    hie: MedicalDataSource.COMMONWELL,
+  const cwDocQueryProgress = createSourceDocumentQueryProgress({
+    source: MedicalDataSource.COMMONWELL,
     docQuery,
   });
-  const cqDocQueryProgress = createHieDocumentQueryProgress({
-    hie: MedicalDataSource.CAREQUALITY,
+  const cqDocQueryProgress = createSourceDocumentQueryProgress({
+    source: MedicalDataSource.CAREQUALITY,
     docQuery,
   });
-  const unknownDocQueryProgress = createHieDocumentQueryProgress({
-    hie: "unknown",
+  const unknownDocQueryProgress = createSourceDocumentQueryProgress({
+    source: "unknown",
     docQuery,
   });
   const downloadTotal =
@@ -497,7 +472,7 @@ export function createGlobalDocumentQueryProgress({
   };
 }
 
-export function computeStatus(
+function computeStatus(
   total: number,
   successful: number,
   errors: number
@@ -505,4 +480,38 @@ export function computeStatus(
   if (errors === total) return "failed";
   if (successful + errors === total) return "completed";
   return "processing";
+}
+
+async function processStatusForWebhook({
+  docQuery,
+  progressType,
+}: {
+  docQuery: DocumentQuery;
+  progressType: ProgressType;
+}) {
+  const globalDocQueryProgress = createGlobalDocumentQueryProgress({ docQuery });
+  if (
+    globalDocQueryProgress[progressType].status === "completed" ||
+    globalDocQueryProgress[progressType].status === "failed"
+  ) {
+    const docQueryIndentifiers = {
+      cxId: docQuery.cxId,
+      patientId: docQuery.patientId,
+      requestId: docQuery.requestId,
+    };
+    let documents: DocumentReferenceDTO[] | undefined;
+    if (progressType === "convert") {
+      documents = await composeDocRefPayload(docQueryIndentifiers);
+    }
+    await processPatientDocumentRequest({
+      ...docQueryIndentifiers,
+      whType:
+        progressType === "download" ? "medical.document-download" : "medical.document-conversion",
+      status:
+        globalDocQueryProgress[progressType].status === "completed"
+          ? MAPIWebhookStatus.completed
+          : MAPIWebhookStatus.failed,
+      documents,
+    });
+  }
 }

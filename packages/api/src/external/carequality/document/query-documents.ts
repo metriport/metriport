@@ -6,7 +6,10 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { setDocumentQueryStatus } from "../../../command/medical/document-query";
+import {
+  setDocumentQueryStatus,
+  setDocumentQueryStatusAndProcessWebhook,
+} from "../../../command/medical/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { isCQDirectEnabledForCx, isStalePatientUpdateEnabledForCx } from "../../aws/app-config";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
@@ -113,6 +116,18 @@ export async function getDocumentsFromCQ({
     }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
       log(`Patient has no CQ links, skipping DQ`);
+      await Promise.all([
+        setDocumentQueryStatus({
+          ...docQueryParms,
+          progressType: "download",
+          status: "processing",
+        }),
+        setDocumentQueryStatus({
+          ...docQueryParms,
+          progressType: "convert",
+          status: "processing",
+        }),
+      ]);
       return;
     }
 
@@ -184,7 +199,7 @@ export async function getDocumentsFromCQ({
     log(`${msg}. Error: ${errorToString(error)}`);
 
     await Promise.all([
-      setDocumentQueryStatus({
+      setDocumentQueryStatusAndProcessWebhook({
         cxId,
         patientId,
         requestId,
@@ -192,7 +207,7 @@ export async function getDocumentsFromCQ({
         progressType: "download",
         status: "failed",
       }),
-      setDocumentQueryStatus({
+      setDocumentQueryStatusAndProcessWebhook({
         cxId,
         patientId,
         requestId,
