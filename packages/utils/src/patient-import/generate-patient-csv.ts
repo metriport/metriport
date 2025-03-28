@@ -61,9 +61,12 @@ async function main() {
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
   const timestamp = dayjs().toISOString();
-  const outputFolderName = `runs/bulk-import-mock/${timestamp}`;
+  const outputBaseFolder = `runs/bulk-import-mock`;
+  const outputFolderName = `${outputBaseFolder}/${timestamp}`;
   makeDir(outputFolderName);
   const outputFileName = `raw.csv`;
+  const outputFileNameFull = `./${outputFolderName}/${outputFileName}`;
+  const outputCurrentFileNameFull = `./${outputBaseFolder}/current-raw.csv`;
 
   const patients: PatientPayload[] = [];
   for (let i = 0; i < numberOfPatients; i++) {
@@ -73,7 +76,9 @@ async function main() {
   const { headers, amountOfAddresses, amountOfContacts } = buildHeaders(patients);
   const contents = patients.map(patientToCsv(amountOfAddresses, amountOfContacts)).join("\n");
   const fileContents = [headers, contents].join("\n");
-  fs.writeFileSync(`./${outputFolderName}/${outputFileName}`, fileContents);
+  fs.writeFileSync(outputFileNameFull, fileContents);
+  fs.rmSync(outputCurrentFileNameFull);
+  fs.writeFileSync(outputCurrentFileNameFull, fileContents);
 
   const { patients: patientsFromValidation } = await validateAndParsePatientImportCsv({
     contents: fileContents,
@@ -94,6 +99,8 @@ async function main() {
   fs.writeFileSync(`./${outputFolderName}/creation.ndjson`, outputPatientsCreation);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
+  // Easier to cmd+click and open the file from the terminal
+  console.log(`>>> File: "${outputCurrentFileNameFull}"`);
 }
 
 function makePatient(): PatientPayload {
