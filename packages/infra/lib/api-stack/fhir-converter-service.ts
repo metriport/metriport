@@ -156,12 +156,11 @@ export function createFHIRConverterService(
   });
 
   new nodejs.NodejsFunction(stack, "FhirConverterNodeJsLambda", {
+    functionName: "FhirConverterNodeJsLambda",
     entry: "../fhir-converter/src/ccda-to-fhir-lambda.js",
-    handler: "handler", // defaults to 'handler'
     runtime: Runtime.NODEJS_18_X,
     bundling: {
       define: {
-        // Replace strings during build time
         "process.env.NODE_ENV": "production",
         "process.env.ENV_TYPE": props.config.environmentType,
         ...(props.version ? { "process.env.METRIPORT_VERSION": props.version } : undefined),
