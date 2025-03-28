@@ -1,17 +1,4 @@
-// TODO 2330 add expired
-export const patientImportStatus = ["waiting", "processing", "completed", "failed"] as const;
-// export const patientImportStatus = [
-//   "waiting",
-//   "processing",
-//   "completed",
-//   "failed",
-//   "expired",
-// ] as const;
-export type PatientImportStatus = (typeof patientImportStatus)[number];
-
-export function isDryRun(job: Pick<PatientImport, "paramsCx" | "paramsOps">): boolean {
-  return job.paramsOps?.dryRun ?? job.paramsCx?.dryRun ?? false;
-}
+import { PatientImportStatus } from "./status";
 
 export type GetPatientImport = {
   id: string;
@@ -29,6 +16,7 @@ export type PatientImportParamsOps = {
   disableWebhooks: boolean;
 };
 
+// TODO 2330 move BaseDomain to packages/shared and extend from it here
 export type PatientImport = {
   id: string;
   cxId: string;
@@ -82,4 +70,8 @@ export function isPatientImportRunningOnDev(
 ): boolean {
   const isDevProp = metadata?.[isDevKey];
   return isDevProp ? [true, "true"].includes(isDevProp) : false;
+}
+
+export function isDryRun(job: Pick<PatientImport, "paramsCx" | "paramsOps">): boolean {
+  return job.paramsOps?.dryRun ?? job.paramsCx?.dryRun ?? false;
 }

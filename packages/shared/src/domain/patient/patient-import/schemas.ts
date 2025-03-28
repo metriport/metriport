@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { patientImportStatus } from "./types";
+import { patientImportStatus } from "./status";
 
 // TODO 2330 Review this as part of POST /internal/patient/bulk/coverage-assessment
 // export const patientImportPatientSchema = z.object({

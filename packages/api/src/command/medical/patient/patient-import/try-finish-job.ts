@@ -6,6 +6,11 @@ import duration from "dayjs/plugin/duration";
 
 dayjs.extend(duration);
 
+export type FinishPatientImportParams = Pick<
+  PatientImport,
+  "cxId" | "id" | "status" | "total" | "failed" | "successful"
+>;
+
 /**
  * Checks if the bulk patient import/create job is complete and, if so, call the service that will
  * finish/complete the bulk patient import job.
@@ -20,7 +25,7 @@ export async function tryToFinishPatientImport({
   total = -1,
   failed = 0,
   successful = 0,
-}: PatientImport): Promise<void> {
+}: FinishPatientImportParams): Promise<void> {
   const { log } = out(`tryToFinishPatientImport - cxId ${cxId}, jobId ${jobId}`);
 
   const sum = successful + failed;
