@@ -78,8 +78,9 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response): Promise
       if (firstDoc) {
         // DOWNLOAD THE DOCUMENT
         // Expected response https://docs.metriport.com/medical-api/api-reference/document/get-document#response
-        const resp = await metriportApi.getDocumentUrl(firstDoc.fileName, "pdf");
-
+        const resp = firstDoc.fileName.endsWith("xml")
+          ? await metriportApi.getDocumentUrl(firstDoc.fileName, "pdf")
+          : await metriportApi.getDocumentUrl(firstDoc.fileName);
         await downloadFile(resp.url, firstDoc.fileName, "pdf");
       }
     } else {
