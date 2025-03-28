@@ -167,4 +167,8 @@ export class Config {
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }
+
+  static getWriteToS3QueueUrl(): string {
+    return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
+  }
 }

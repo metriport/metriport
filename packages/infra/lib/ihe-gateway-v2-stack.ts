@@ -26,6 +26,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   sentryDsn: string | undefined;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
+  writeToS3QueueUrl: string;
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
@@ -140,6 +141,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       apiURL: string;
       envType: EnvType;
       sentryDsn: string | undefined;
+      writeToS3QueueUrl: string;
     },
     iheResponsesBucket: s3.Bucket,
     iheParsedResponsesBucket: s3.Bucket
@@ -157,6 +159,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       apiURL,
       envType,
       sentryDsn,
+      writeToS3QueueUrl,
     } = ownProps;
 
     const patientDiscoveryLambda = createLambda({
@@ -181,6 +184,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
         IHE_PARSED_RESPONSES_BUCKET_NAME: iheParsedResponsesBucket.bucketName,
+        WRITE_TO_S3_QUEUE_URL: writeToS3QueueUrl,
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
