@@ -173,6 +173,10 @@ function buildErrorResponse(status, message) {
   };
 }
 
+// Export the main conversion function
+exports.ccdaToFhir = ccdaToFhir;
+
+// Export the Lambda handler
 exports.handler = async event => {
   const patientId = event.queryStringParameters ? event.queryStringParameters.patientId : "";
   const ccda = event.body;
