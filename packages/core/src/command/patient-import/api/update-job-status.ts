@@ -1,9 +1,7 @@
 import { BadRequestError, errorToString, MetriportError, NotFoundError } from "@metriport/shared";
 import { UpdateJobSchema } from "@metriport/shared/domain/patient/patient-import/schemas";
-import {
-  PatientImport,
-  PatientImportStatus,
-} from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";

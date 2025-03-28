@@ -1,4 +1,4 @@
-import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import { PatientImportCreateResponse } from "../../../command/medical/patient/patient-import/create";
 
 export type PatientImportParamsDto = {

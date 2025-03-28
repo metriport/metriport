@@ -1,9 +1,19 @@
 import { BadRequestError } from "../../../error/bad-request";
-import { PatientImportStatus } from "./types";
 
-// TODO 2330 Unit test this
-// TODO 2330 Unit test this
-// TODO 2330 Unit test this
+// TODO 2330 add expired
+export const patientImportStatus = ["waiting", "processing", "completed", "failed"] as const;
+// export const patientImportStatus = [
+//   "waiting",
+//   "processing",
+//   "completed",
+//   "failed",
+//   "expired",
+// ] as const;
+export type PatientImportStatus = (typeof patientImportStatus)[number];
+
+export function isPatientImportDone(status: PatientImportStatus): boolean {
+  return status === "completed" || status === "failed";
+}
 
 /**
  * Validates that a new status is valid based on the current status.
@@ -18,16 +28,21 @@ export function validateNewStatus(
   newStatus: PatientImportStatus,
   dryRun?: boolean
 ): PatientImportStatus {
-  const validStatusForProcessing = ["waiting", "processing"];
   switch (newStatus) {
     case "waiting":
-      throw new BadRequestError(`Waiting is not a valid status to update`);
+      throw new BadRequestError(`Waiting is not a valid status to update`, undefined, {
+        currentStatus,
+        newStatus,
+      });
     case "processing":
-      if (!validStatusForProcessing.includes(currentStatus)) {
+      if (currentStatus !== "waiting" && currentStatus !== "processing") {
         throw new BadRequestError(
-          `Import job is not in [${validStatusForProcessing.join(
-            ","
-          )}], cannot update to processing`
+          `Import job is not in a valid state to update to processing`,
+          undefined,
+          {
+            currentStatus,
+            newStatus,
+          }
         );
       }
       break;
@@ -39,16 +54,33 @@ export function validateNewStatus(
         return "waiting";
       }
       if (currentStatus !== "processing") {
-        throw new BadRequestError(`Import job is not processing, cannot update to completed`);
+        throw new BadRequestError(
+          `Import job is not processing, cannot update to completed`,
+          undefined,
+          {
+            currentStatus,
+            newStatus,
+          }
+        );
       }
       break;
     case "failed":
       if (currentStatus !== "processing") {
-        throw new BadRequestError(`Import job is not processing, cannot update to failed`);
+        throw new BadRequestError(
+          `Import job is not processing, cannot update to failed`,
+          undefined,
+          {
+            currentStatus,
+            newStatus,
+          }
+        );
       }
       break;
     default:
-      throw new BadRequestError(`Invalid status ${newStatus}`);
+      throw new BadRequestError(`Invalid import job status`, undefined, {
+        currentStatus,
+        newStatus,
+      });
   }
   return newStatus;
 }
