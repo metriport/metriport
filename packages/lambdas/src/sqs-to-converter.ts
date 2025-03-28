@@ -29,7 +29,7 @@ import { FHIR_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { MetriportError, errorToString } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 // @ts-expect-error - FHIR converter is a JS package without type declarations
-import { ccdaToFhir } from "@metriport/fhir-converter/src/ccda-to-fhir-lambda";
+import { ccdaToFhir } from "@metriport/fhir-converter/ccda-to-fhir-lambda";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
