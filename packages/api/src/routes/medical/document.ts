@@ -29,6 +29,7 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { getCurrentGlobalDocumentQueryProgress } from "../../command/medical/document-query";
 
 const router = Router();
 const region = Config.getAWSRegion();
@@ -95,7 +96,11 @@ router.get(
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
     const { patient } = getPatientInfoOrFail(req);
-    return res.status(OK).json(patient.data.documentQueryProgress ?? {});
+    const documentQueryProgress = await getCurrentGlobalDocumentQueryProgress({
+      cxId: patient.cxId,
+      patientId: patient.id,
+    });
+    return res.status(OK).json(documentQueryProgress);
   })
 );
 

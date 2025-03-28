@@ -4,13 +4,14 @@ import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-reco
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
-import { isTrue, stringToBoolean, NotFoundError, BadRequestError } from "@metriport/shared";
+import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
-import { areDocumentsProcessing } from "../../command/medical/document/document-status";
+import { getCurrentGlobalDocumentQueryProgress } from "../../command/medical/document-query";
+import { areDocumentsProcessing } from "../../command/medical/document/document-query";
 import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
@@ -19,11 +20,11 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { setHieOptOut, getHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { countResources } from "../../external/fhir/patient/count-resources";
@@ -38,9 +39,9 @@ import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
+  PatientHieOptOutResponse,
   patientUpdateSchema,
   schemaUpdateToPatientData,
-  PatientHieOptOutResponse,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -69,7 +70,11 @@ router.put(
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
 
-    if (areDocumentsProcessing(patient)) {
+    const documentQueryProgress = await getCurrentGlobalDocumentQueryProgress({
+      cxId,
+      patientId: patient.id,
+    });
+    if (documentQueryProgress && areDocumentsProcessing(documentQueryProgress)) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
 

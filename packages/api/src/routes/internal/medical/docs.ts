@@ -17,6 +17,7 @@ import {
   createAndUploadDocReference,
   updateDocumentReference,
 } from "../../../command/medical/admin/upload-doc";
+import { getCurrentGlobalDocumentQueryProgress } from "../../../command/medical/document-query";
 import { checkDocumentQueries } from "../../../command/medical/document/check-doc-queries";
 import { calculateDocumentConversionStatus } from "../../../command/medical/document/document-conversion-status";
 import { queryDocumentsAcrossHIEs } from "../../../command/medical/document/document-query";
@@ -26,14 +27,12 @@ import {
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
-import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import {
   processCcdRequest,
   processEmptyCcdRequest,
 } from "../../../external/cda/process-ccd-request";
-import { setDocQueryProgress } from "../../../external/hie/set-doc-query-progress";
 import { Config } from "../../../shared/config";
 import { parseISODate } from "../../../shared/date";
 import { errorToString } from "../../../shared/log";
@@ -41,7 +40,6 @@ import { capture } from "../../../shared/notifications";
 import { requestLogger } from "../../helpers/request-logger";
 import { toDTO } from "../../medical/dtos/document-bulk-downloadDTO";
 import { cxRequestMetadataSchema } from "../../medical/schemas/request-metadata";
-import { documentQueryProgressSchema } from "../../schemas/internal";
 import { getUUIDFrom } from "../../schemas/uuid";
 import {
   asyncHandler,
@@ -56,7 +54,6 @@ const upload = multer();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const bucketName = Config.getMedicalDocumentsBucketName();
-const requestIdEmptyOverride = "empty-override";
 
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/re-convert
@@ -97,7 +94,6 @@ router.post(
     const isDisableWH = getFromQueryAsBoolean("isDisableWH", req);
     const dryRun = getFromQueryAsBoolean("dryRun", req);
     const logConsolidatedCountBefore = getFromQueryAsBoolean("logConsolidatedCountBefore", req);
-    const requestId = uuidv7();
 
     reConvertDocuments({
       cxId,
@@ -105,7 +101,6 @@ router.post(
       documentIds,
       dateFrom,
       dateTo,
-      requestId,
       isDisableWH,
       dryRun,
       logConsolidatedCountBefore,
@@ -120,7 +115,6 @@ router.post(
       documentIds,
       dateFrom,
       dateTo,
-      requestId,
       isDisableWH,
       dryRun,
     });
@@ -138,19 +132,23 @@ router.post(
   "/conversion-status",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("query").orFail("patientId", req);
+    const jobId = getFrom("query").orFail("jobId", req);
     const status = getFrom("query").orFail("status", req);
-    const source = getFrom("query").optional("source", req);
+    const source = getFrom("query").orFail("source", req);
+    if (!isMedicalDataSource(source)) {
+      throw new BadRequestError(`Invalid source: ${source}`);
+    }
     const details = getFrom("query").optional("details", req);
-    const jobId = getFrom("query").optional("jobId", req);
-    const convertResult = convertResultSchema.parse(status);
 
-    // keeping the old logic for now, but we should avoid having these optional parameters that can
-    // lead to empty string or `undefined` being used as IDs
-    const decomposed = jobId ? parseJobId(jobId) : { requestId: "", documentId: "" };
-    const requestId = decomposed?.requestId ?? requestIdEmptyOverride;
-    const docId = decomposed?.documentId ?? "";
+    const convertResult = convertResultSchema.parse(status);
+    const decomposed = parseJobId(jobId);
+    const requestId = decomposed?.requestId;
+    const docId = decomposed?.documentId;
+    if (!decomposed || !requestId || !docId) {
+      throw new BadRequestError(`Invalid jobId and documentId: ${jobId}`);
+    }
 
     await calculateDocumentConversionStatus({
       patientId,
@@ -173,6 +171,8 @@ router.post(
   "/override-progress",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    /*
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
     const hie = getFrom("query").optional("hie", req);
@@ -205,6 +205,7 @@ router.post(
     }
 
     return res.json(updatedPatient.data.documentQueryProgress);
+    */
   })
 );
 
@@ -339,10 +340,8 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    return res.status(httpStatus.OK).json({
-      documentQueryProgress: patient.data.documentQueryProgress,
-    });
+    const documentQueryProgress = await getCurrentGlobalDocumentQueryProgress({ cxId, patientId });
+    return res.status(httpStatus.OK).json({ documentQueryProgress });
   })
 );
 
@@ -370,7 +369,6 @@ router.post(
     const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
     const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
-    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
@@ -380,7 +378,6 @@ router.post(
       forceQuery,
       forcePatientDiscovery,
       cqManagingOrgName,
-      triggerConsolidated,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
     });
 
@@ -415,14 +412,14 @@ router.post(
     });
 
     // trigger the webhook
-    processPatientDocumentRequest(
+    processPatientDocumentRequest({
       cxId,
       patientId,
-      "medical.document-bulk-download-urls",
-      status as MAPIWebhookStatus,
+      whType: "medical.document-bulk-download-urls",
+      status: status as MAPIWebhookStatus,
       requestId,
-      toDTO(docs)
-    );
+      documents: toDTO(docs),
+    });
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
   })

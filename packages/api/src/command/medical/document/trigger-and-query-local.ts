@@ -3,7 +3,7 @@ import {
   TriggerAndQueryDocRefs,
   disableWHMetadata,
 } from "@metriport/core/domain/document-query/trigger-and-query";
-import { getPatientOrFail } from "../patient/get-patient";
+import { getCurrentGlobalDocumentQueryProgress } from "../document-query";
 import { queryDocumentsAcrossHIEs } from "./document-query";
 
 /**
@@ -28,7 +28,7 @@ export class TriggerAndQueryDocRefsLocal extends TriggerAndQueryDocRefs {
     cxId: string,
     patientId: string
   ): Promise<DocumentQuery | undefined> {
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    return patient.data.documentQueryProgress;
+    const docQueryProgress = await getCurrentGlobalDocumentQueryProgress({ cxId, patientId });
+    return docQueryProgress;
   }
 }

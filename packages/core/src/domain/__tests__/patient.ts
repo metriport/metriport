@@ -45,7 +45,6 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
     contact: [makeContact()],
     address: data.address ?? [makeAddressStrict()],
     consolidatedLinkDemographics: data.consolidatedLinkDemographics,
-    documentQueryProgress: data.documentQueryProgress,
     consolidatedQueries: data.consolidatedQueries,
     cxDocumentRequestMetadata: data.cxDocumentRequestMetadata,
     cxConsolidatedRequestMetadata: data.cxConsolidatedRequestMetadata,

@@ -9,6 +9,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { isMimeTypeXML } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString } from "@metriport/shared";
 import { formatNumber } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
@@ -19,6 +20,7 @@ import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { Config } from "../../../shared/config";
 import { getDocRefMappings } from "../docref-mapping/get-docref-mapping";
+import { findOrCreateDocumentQuery } from "../document-query";
 import { deleteConsolidated as deleteConsolidatedOnFHIRServer } from "../patient/consolidated-delete";
 import { getPatientOrFail } from "../patient/get-patient";
 import { setDisableDocumentRequestWHFlag } from "../patient/webhook";
@@ -38,7 +40,6 @@ export type ReConvertDocumentsCommand = {
   documentIds?: string[];
   dateFrom?: string;
   dateTo?: string;
-  requestId: string;
   isDisableWH?: boolean;
   dryRun?: boolean;
   logConsolidatedCountBefore?: boolean;
@@ -60,7 +61,6 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
     documentIds: documentIdsParam = [],
     dateFrom,
     dateTo,
-    requestId,
     isDisableWH = true,
     dryRun = false,
     logConsolidatedCountBefore = false,
@@ -94,7 +94,14 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
 
     const patientPromise = async ([patientId, documents]: [string, DocRefMapping[]]) => {
       const documentIds = documents.map(d => d.id);
+      const requestId = uuidv7();
       try {
+        await findOrCreateDocumentQuery({
+          cxId,
+          patientId,
+          requestId,
+          isReconvert: true,
+        });
         await reConvertByPatient({
           patient: { id: patientId, cxId },
           documentIds,
@@ -285,6 +292,7 @@ async function reConvertDocument({
     s3FileName: file.fileName,
     s3BucketName: file.fileLocation,
     requestId,
+    source: "unknown",
   });
 }
 

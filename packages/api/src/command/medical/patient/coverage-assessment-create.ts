@@ -131,7 +131,6 @@ async function queryDocumentsAcrossHIEs({
       cxId,
       patientId: patient.id,
       facilityId,
-      triggerConsolidated: true,
     });
   } catch (error) {
     const msg = `Failed query docuemnts. Patient: ${patient.id}. Cause: ${errorToString(error)}`;

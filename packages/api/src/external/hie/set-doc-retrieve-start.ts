@@ -1,11 +1,15 @@
 import { PatientExternalData } from "@metriport/core/domain//patient";
 import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { setDocQueryStartAt } from "./set-doc-query-start";
 
-export type setDocRetrieveStartAt = setDocQueryStartAt;
+export type setDocRetrieveStartAt = {
+  patient: Pick<Patient, "id" | "cxId">;
+  source: MedicalDataSource;
+  startedAt: Date;
+};
 
 /**
  * Set start time for document query progress

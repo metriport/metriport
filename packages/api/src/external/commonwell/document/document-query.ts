@@ -21,6 +21,12 @@ import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
 import {
+  getDocumentQueryOrFail,
+  incrementDocumentQueryAndProcessWebhook,
+  setDocumentQuery,
+  setDocumentQueryStatus,
+} from "../../../command/medical/document-query";
+import {
   getDocToFileFunction,
   getS3Info,
   getUrl,
@@ -45,11 +51,7 @@ import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { HieInitiator } from "../../hie/get-hie-initiator";
-import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
-import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
-import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
-import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getCWData, update } from "../patient";
@@ -100,7 +102,6 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert,
   requestId,
   getOrgIdExcludeList,
-  triggerConsolidated = false,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -111,7 +112,6 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
-  triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -121,30 +121,31 @@ export async function queryAndProcessDocuments({
     return;
   }
 
-  const interrupt = buildInterrupt({
-    patientId,
+  const isCwEnabled = await validateCWEnabled({ patient: patientParam, facilityId, log });
+  if (!isCwEnabled) {
+    log(`CW disabled for cxId ${cxId} patientId ${patientId} for requestId ${requestId}`);
+    return;
+  }
+
+  const docQueryParms = {
     cxId,
+    patientId,
     requestId,
     source: MedicalDataSource.COMMONWELL,
-    log,
-  });
-  const isCwEnabled = await validateCWEnabled({
-    patient: patientParam,
-    facilityId,
-    log,
-  });
-  if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
+  };
 
   try {
     const [initiator] = await Promise.all([
       getCwInitiator(patientParam, facilityId),
-      setDocQueryProgress({
-        patient: { id: patientId, cxId },
-        downloadProgress: { status: "processing" },
-        convertProgress: { status: "processing" },
-        requestId,
-        source: MedicalDataSource.COMMONWELL,
-        triggerConsolidated,
+      setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "download",
+        status: "processing",
+      }),
+      setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "convert",
+        status: "processing",
       }),
     ]);
 
@@ -167,7 +168,6 @@ export async function queryAndProcessDocuments({
         requestId,
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
-        triggerConsolidated,
       });
 
       if ((forcePatientDiscovery || isStale) && !isProcessing) {
@@ -181,13 +181,6 @@ export async function queryAndProcessDocuments({
 
       return;
     }
-
-    const startedAt = new Date();
-    await setDocQueryStartAt({
-      patient: { id: patientId, cxId },
-      source: MedicalDataSource.COMMONWELL,
-      startedAt,
-    });
 
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
@@ -221,7 +214,8 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
-    const duration = elapsedTimeFromNow(startedAt);
+    const docQuery = await getDocumentQueryOrFail({ cxId, patientId, requestId });
+    const duration = elapsedTimeFromNow(docQuery.createdAt);
     const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
@@ -238,6 +232,22 @@ export async function queryAndProcessDocuments({
       },
     });
 
+    if (cwDocuments.length === 0) {
+      log(`No documents to process, skipping download and upsert`);
+      await Promise.all([
+        setDocumentQueryStatus({
+          ...docQueryParms,
+          progressType: "download",
+          status: "completed",
+        }),
+        setDocumentQueryStatus({
+          ...docQueryParms,
+          progressType: "convert",
+          status: "completed",
+        }),
+      ]);
+    }
+
     const fhirDocRefs = await downloadDocsAndUpsertFHIR({
       patient,
       facilityId,
@@ -253,12 +263,18 @@ export async function queryAndProcessDocuments({
     const msg = `Failed to query and process documents - CommonWell`;
     log(`${msg}. Error: ${errorToString(error)}`);
 
-    await setDocQueryProgress({
-      patient: { id: patientParam.id, cxId: patientParam.cxId },
-      downloadProgress: { status: "failed" },
-      requestId,
-      source: MedicalDataSource.COMMONWELL,
-    });
+    await Promise.all([
+      setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "download",
+        status: "failed",
+      }),
+      setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "convert",
+        status: "failed",
+      }),
+    ]);
 
     const cwReference = error instanceof CommonwellError ? error.cwReference : undefined;
 
@@ -297,7 +313,7 @@ export async function internalGetDocuments({
 
   const cwData = patient.data.externalData.COMMONWELL;
 
-  const reportDocQueryMetric = (queryStart: number) => {
+  function reportDocQueryMetric(queryStart: number) {
     const queryDuration = Date.now() - queryStart;
     reportMetric({
       name: context,
@@ -305,7 +321,8 @@ export async function internalGetDocuments({
       unit: "Milliseconds",
       additionalDimension: "CommonWell",
     });
-  };
+  }
+
   const commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
   const queryMeta = organizationQueryMeta(initiator.oid, { npi: initiator.npi });
 
@@ -389,27 +406,6 @@ function reportCWErrors({
       level: "error",
     });
   }
-}
-
-async function initPatientDocQuery(
-  patient: Patient,
-  totalDocs: number,
-  convertibleDocs: number,
-  requestId: string
-): Promise<Patient> {
-  return setDocQueryProgress({
-    patient: { id: patient.id, cxId: patient.cxId },
-    downloadProgress: {
-      status: "processing",
-      total: totalDocs,
-    },
-    convertProgress: {
-      status: "processing",
-      total: convertibleDocs,
-    },
-    requestId,
-    source: MedicalDataSource.COMMONWELL,
-  });
 }
 
 // custom type guard, this is dangerous as the compiler can't tell whether we're checking or not - but either this or exclamation point
@@ -503,10 +499,8 @@ async function downloadDocsAndUpsertFHIR({
   const cxId = patient.cxId;
   const fhirApi = makeFhirApi(patient.cxId);
   const docsNewLocation: DocumentReference[] = [];
-  let errorCountConvertible = 0;
-  let increaseCountConvertible = 0;
-  const shouldUpsertFHIR = !ignoreFhirConversionAndUpsert;
 
+  const shouldUpsertFHIR = !ignoreFhirConversionAndUpsert;
   const docsWithMetriportId = await Promise.all(
     documents.map(
       addMetriportDocRefId({
@@ -554,7 +548,45 @@ async function downloadDocsAndUpsertFHIR({
     isConvertible(doc.content?.mimeType)
   ).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
-  await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
+
+  const docQueryParms = {
+    cxId,
+    patientId: patient.id,
+    requestId,
+    source: MedicalDataSource.COMMONWELL,
+  };
+
+  if (docsToDownload.length === 0) {
+    await Promise.all([
+      setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "download",
+        status: "completed",
+      }),
+      setDocumentQueryStatus({
+        ...docQueryParms,
+        progressType: "convert",
+        status: "completed",
+      }),
+    ]);
+    return [];
+  }
+
+  await Promise.all([
+    setDocumentQuery({
+      ...docQueryParms,
+      progressType: "download",
+      field: "Total",
+      value: docsToDownload.length,
+    }),
+    convertibleDocCount > 0 &&
+      setDocumentQuery({
+        ...docQueryParms,
+        progressType: "convert",
+        field: "Total",
+        value: convertibleDocCount,
+      }),
+  ]);
 
   // TODO move to executeAsynchronously() from core
   // split the list in chunks
@@ -570,7 +602,22 @@ async function downloadDocsAndUpsertFHIR({
         try {
           const fileInfo = fileInfoByDocId(doc.id);
           if (!fileInfo) {
-            if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) increaseCountConvertible--;
+            if (shouldUpsertFHIR) {
+              await incrementDocumentQueryAndProcessWebhook({
+                ...docQueryParms,
+                progressType: "download",
+                field: "Total",
+                value: -1,
+              });
+              if (isConvertibleDoc) {
+                await incrementDocumentQueryAndProcessWebhook({
+                  ...docQueryParms,
+                  progressType: "convert",
+                  field: "Total",
+                  value: -1,
+                });
+              }
+            }
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
           }
 
@@ -617,7 +664,19 @@ async function downloadDocsAndUpsertFHIR({
               log(`Error removing docRefMapping (${doc.id}): ${errorToString(error2)}`);
             }
 
-            if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
+            if (shouldUpsertFHIR)
+              await incrementDocumentQueryAndProcessWebhook({
+                ...docQueryParms,
+                progressType: "download",
+                field: "Error",
+              });
+            if (isConvertibleDoc) {
+              await incrementDocumentQueryAndProcessWebhook({
+                ...docQueryParms,
+                progressType: "convert",
+                field: "Error",
+              });
+            }
 
             const isZeroLength = doc.content.size === 0;
             if (isZeroLength || error instanceof NotFoundError) {
@@ -640,14 +699,6 @@ async function downloadDocsAndUpsertFHIR({
             throw error;
           }
 
-          // If an xml document contained b64 data, we will parse, convert and store it in s3 as the default downloaded document.
-          // Because of this the document content type may not match the s3 file content type hence this check.
-          // This will prevent us from converting non xml documents to FHIR.
-          const isFileConvertible = fileIsConvertible(file);
-
-          const shouldConvertCDA =
-            file.isNew && !ignoreFhirConversionAndUpsert && isFileConvertible;
-
           const docWithFile: CWDocumentWithMetriportData = {
             ...doc,
             metriport: {
@@ -657,31 +708,6 @@ async function downloadDocsAndUpsertFHIR({
               fileContentType: file.contentType,
             },
           };
-
-          if (!shouldConvertCDA && isConvertibleDoc) {
-            increaseCountConvertible--;
-          } else if (shouldConvertCDA && !isConvertibleDoc) {
-            increaseCountConvertible++;
-          }
-
-          if (shouldConvertCDA) {
-            try {
-              await convertCDAToFHIR({
-                patient,
-                document: doc,
-                s3FileName: file.key,
-                s3BucketName: file.bucket,
-                requestId,
-                source: MedicalDataSource.COMMONWELL,
-              });
-            } catch (err) {
-              // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function
-              log(
-                `Error triggering conversion of doc ${doc.id}, just increasing errorCountConvertible - ${err}`
-              );
-              errorCountConvertible++;
-            }
-          }
 
           const fhirDocRef = cwToFHIR(doc.id, docWithFile, patient);
 
@@ -711,31 +737,79 @@ async function downloadDocsAndUpsertFHIR({
                 requestId,
                 log
               ),
+              incrementDocumentQueryAndProcessWebhook({
+                ...docQueryParms,
+                progressType: "download",
+                field: "Success",
+              }),
             ]);
             processFhirResponse(patient, doc.id, fhir);
           }
 
-          await tallyDocQueryProgress({
-            patient: { id: patient.id, cxId: patient.cxId },
-            progress: {
-              successful: 1,
-            },
-            type: "download",
-            requestId,
-            source: MedicalDataSource.COMMONWELL,
-          });
+          // If an xml document contained b64 data, we will parse, convert and store it in s3 as the default downloaded document.
+          // Because of this the document content type may not match the s3 file content type hence this check.
+          // This will prevent us from converting non xml documents to FHIR.
+          const isFileConvertible = fileIsConvertible(file);
+
+          if (shouldUpsertFHIR && !isFileConvertible && isConvertibleDoc) {
+            await incrementDocumentQueryAndProcessWebhook({
+              ...docQueryParms,
+              progressType: "convert",
+              field: "Total",
+              value: -1,
+            });
+          } else if (shouldUpsertFHIR && isFileConvertible && !isConvertibleDoc) {
+            await incrementDocumentQueryAndProcessWebhook({
+              ...docQueryParms,
+              progressType: "convert",
+              field: "Total",
+            });
+          }
+
+          if (shouldUpsertFHIR && !file.isNew && isFileConvertible) {
+            await incrementDocumentQueryAndProcessWebhook({
+              ...docQueryParms,
+              progressType: "convert",
+              field: "Success",
+            });
+          }
+
+          if (shouldUpsertFHIR && file.isNew && isFileConvertible) {
+            try {
+              await convertCDAToFHIR({
+                patient,
+                document: doc,
+                s3FileName: file.key,
+                s3BucketName: file.bucket,
+                requestId,
+                source: MedicalDataSource.COMMONWELL,
+              });
+            } catch (err) {
+              log(
+                `Error triggering conversion of doc ${doc.id}, just increasing errorCountConvertible - ${err}`
+              );
+              await incrementDocumentQueryAndProcessWebhook({
+                ...docQueryParms,
+                progressType: "convert",
+                field: "Error",
+              });
+            }
+          }
 
           return fhirDocRef;
         } catch (error) {
-          await tallyDocQueryProgress({
-            patient: { id: patient.id, cxId: patient.cxId },
-            progress: {
-              errors: 1,
-            },
-            type: "download",
-            requestId,
-            source: MedicalDataSource.COMMONWELL,
+          await incrementDocumentQueryAndProcessWebhook({
+            ...docQueryParms,
+            progressType: "download",
+            field: "Error",
           });
+          if (isConvertibleDoc) {
+            await incrementDocumentQueryAndProcessWebhook({
+              ...docQueryParms,
+              progressType: "convert",
+              field: "Error",
+            });
+          }
 
           const msg = `Error processing doc from CW`;
           log(`${msg}: ${error}; doc ${JSON.stringify(doc)}`);
@@ -764,23 +838,6 @@ async function downloadDocsAndUpsertFHIR({
     // take some time to avoid throttling other servers
     await sleepBetweenChunks();
   }
-
-  await setDocQueryProgress({
-    patient: { id: patient.id, cxId: patient.cxId },
-    downloadProgress: { status: "completed" },
-    ...(convertibleDocCount <= 0
-      ? {
-          convertProgress: {
-            status: "completed",
-            total: 0,
-          },
-        }
-      : undefined),
-    convertibleDownloadErrors: errorCountConvertible,
-    increaseCountConvertible,
-    requestId,
-    source: MedicalDataSource.COMMONWELL,
-  });
 
   return docsNewLocation;
 }

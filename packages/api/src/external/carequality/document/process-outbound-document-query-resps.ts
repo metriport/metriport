@@ -1,38 +1,40 @@
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import {
+  getDocumentQueryOrFail,
+  setDocumentQueryStatusAndProcessWebhook,
+} from "../../../command/medical/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { setDocRetrieveStartAt } from "../../hie/set-doc-retrieve-start";
 import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import {
+  getDocumentReferenceContentTypeCounts,
+  getOutboundDocQuerySuccessFailureCount,
+} from "../../hie/carequality-analytics";
+import { setDocRetrieveStartAt } from "../../hie/set-doc-retrieve-start";
+import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCqInitiator } from "../shared";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
-import { getCQData } from "../patient";
 import {
+  containsDuplicateMetriportId,
+  containsMetriportId,
   cqToFHIR,
   DocumentReferenceWithMetriportId,
-  containsMetriportId,
   getContentTypeOrUnknown,
-  containsDuplicateMetriportId,
 } from "./shared";
-import {
-  getDocumentReferenceContentTypeCounts,
-  getOutboundDocQuerySuccessFailureCount,
-} from "../../hie/carequality-analytics";
-import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 
 const parallelUpsertsToFhir = 10;
 const resultPoller = makeOutboundResultPoller();
@@ -43,17 +45,23 @@ export async function processOutboundDocumentQueryResps({
   cxId,
   response,
 }: OutboundDocQueryRespParam): Promise<void> {
-  const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
+  const { log } = out(
+    `CQ processOutboundDocumentQueryResps - requestId ${requestId}, patient ${patientId}`
+  );
 
-  const interrupt = buildInterrupt({ requestId, patientId, cxId, log });
-  if (!resultPoller.isDREnabled()) return interrupt(`IHE DR result poller not available`);
-  if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
+  const docQueryParms = {
+    cxId,
+    patientId,
+    requestId,
+    source: MedicalDataSource.CAREQUALITY,
+  };
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
-    const cqData = getCQData(patient.data.externalData);
-    const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
+    const docQuery = await getDocumentQueryOrFail(docQueryParms);
+    const docQueryStartedAt = docQuery.createdAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
+
     const docRefs = response.flatMap(result => result.documentReference ?? []);
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
@@ -92,41 +100,29 @@ export async function processOutboundDocumentQueryResps({
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
 
     if (docsToDownload.length === 0) {
-      log(`No new documents to download.`);
-
-      await setDocQueryProgress({
-        patient: { id: patientId, cxId: cxId },
-        downloadProgress: { status: "completed" },
-        convertProgress: { status: "completed" },
-        requestId,
-        source: MedicalDataSource.CAREQUALITY,
-      });
-
+      await Promise.all([
+        setDocumentQueryStatusAndProcessWebhook({
+          ...docQueryParms,
+          progressType: "download",
+          status: "completed",
+        }),
+        setDocumentQueryStatusAndProcessWebhook({
+          ...docQueryParms,
+          progressType: "convert",
+          status: "completed",
+        }),
+      ]);
       return;
     }
 
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId: cxId },
-      downloadProgress: {
-        status: "processing",
-        total: docsToDownload.length,
-      },
-      ...(convertibleDocCount > 0
-        ? {
-            convertProgress: {
-              status: "processing",
-              total: convertibleDocCount,
-            },
-          }
-        : {
-            convertProgress: {
-              status: "completed",
-              total: 0,
-            },
-          }),
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
+    if (!resultPoller.isDREnabled()) {
+      log(`IHE DR result poller not available`);
+      return;
+    }
+    if (!(await isCQDirectEnabledForCx(cxId))) {
+      log(`CQ disabled for cx ${cxId}`);
+      return;
+    }
 
     const docRetrievalStartedAt = new Date();
     await setDocRetrieveStartAt({
@@ -181,13 +177,18 @@ export async function processOutboundDocumentQueryResps({
     const msg = `Failed to process documents in Carequality.`;
     log(`${msg}. Error: ${errorToString(error)}`);
 
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId: cxId },
-      downloadProgress: { status: "failed" },
-      convertProgress: { status: "failed" },
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
+    await Promise.all([
+      setDocumentQueryStatusAndProcessWebhook({
+        ...docQueryParms,
+        progressType: "download",
+        status: "failed",
+      }),
+      setDocumentQueryStatusAndProcessWebhook({
+        ...docQueryParms,
+        progressType: "convert",
+        status: "failed",
+      }),
+    ]);
 
     capture.message(msg, {
       extra: {
@@ -201,34 +202,6 @@ export async function processOutboundDocumentQueryResps({
     });
     throw error;
   }
-}
-
-function buildInterrupt({
-  requestId,
-  patientId,
-  cxId,
-  log,
-}: {
-  requestId: string;
-  patientId: string;
-  cxId: string;
-  log: typeof console.log;
-}) {
-  return async (reason: string): Promise<void> => {
-    // Error because it shouldn't try to DR if it can't execute, it should be interrupted at DQ
-    const msg = "Programming error processing CQ Doc Retrieval";
-    log(`${msg}: ${reason}; skipping DR`);
-    capture.error(msg, {
-      extra: { requestId, patientId, cxId, reason },
-    });
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId: cxId },
-      downloadProgress: { status: "failed" },
-      convertProgress: { status: "failed" },
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
-  };
 }
 
 type DqRespWithDocRefsWithMetriportId = OutboundDocumentQueryResp & {
