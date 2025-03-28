@@ -1,11 +1,30 @@
+import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import {
   PatientImport,
   PatientImportParamsCx,
   PatientImportParamsOps,
-  PatientImportStatus,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
+
+/**
+ * Used by code that needs to access the raw data from the database.
+ * @see finishSinglePatientImport()
+ */
+export const patientImportRawColumnNames = {
+  id: "id",
+  cxId: "cx_id",
+  facilityId: "facility_id",
+  status: "status",
+  reason: "reason",
+  startedAt: "started_at",
+  finishedAt: "finished_at",
+  total: "total",
+  successful: "successful",
+  failed: "failed",
+  paramsCx: "params_cx",
+  paramsOps: "params_ops",
+};
 
 export class PatientImportModel extends BaseModel<PatientImportModel> implements PatientImport {
   static NAME = "patient_import";

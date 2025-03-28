@@ -6,16 +6,16 @@ import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, MetriportError } from "@metriport/shared";
-import {
-  PatientImport,
-  PatientImportEntryStatus,
-} from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportEntryStatus } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
-import { PatientImportModel } from "../../../../models/medical/patient-import";
+import {
+  PatientImportModel,
+  patientImportRawColumnNames,
+} from "../../../../models/medical/patient-import";
 import { getPatientImportJobOrFail } from "./get";
-import { tryToFinishPatientImport } from "./try-finish-job";
+import { FinishPatientImportParams, tryToFinishPatientImport } from "./try-finish-job";
 
 dayjs.extend(duration);
 
@@ -65,8 +65,8 @@ export async function finishSinglePatientImport({
       rowNumber,
     });
 
-    const updateTotalsOnDb = async (): Promise<PatientImport | undefined> => {
-      const [updatedRows] = await PatientImportModel.increment(
+    const updateTotalsOnDb = async (): Promise<FinishPatientImportParams | undefined> => {
+      const [[updatedRows]] = await PatientImportModel.increment(
         [
           ...(status === "successful" ? ["successful" as const] : []),
           ...(status === "failed" ? ["failed" as const] : []),
@@ -76,12 +76,21 @@ export async function finishSinglePatientImport({
             cxId,
             id: jobId,
           },
-          returing: true,
           // Sequelize types are a mismatch, had to force this
         } as IncrementDecrementOptionsWithBy<PatientImportModel>
       );
-      const updatedRow = (updatedRows[0] as unknown as PatientImport[] | undefined)?.[0];
-      return updatedRow;
+      // Using any because Sequelize doesn't map the columns to the model, even using mapToModel/model
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updatedRaw = (updatedRows as unknown as any[] | undefined)?.[0];
+      if (!updatedRaw) return undefined;
+      return {
+        id: updatedRaw[patientImportRawColumnNames.id],
+        cxId: updatedRaw[patientImportRawColumnNames.cxId],
+        status: updatedRaw[patientImportRawColumnNames.status],
+        successful: updatedRaw[patientImportRawColumnNames.successful],
+        failed: updatedRaw[patientImportRawColumnNames.failed],
+        total: updatedRaw[patientImportRawColumnNames.total],
+      };
     };
 
     const updatePatientRecordOnS3 = async (): Promise<PatientRecord> => {
@@ -119,6 +128,7 @@ export async function finishSinglePatientImport({
     log(`${msg}: ${errorToString(error)}`);
     const additionalInfo = {
       cxId,
+      jobId,
       patientId,
       status,
       context: "patient-import.finishSinglePatientImport",
