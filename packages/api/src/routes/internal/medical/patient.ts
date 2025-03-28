@@ -1,6 +1,7 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
+import { buildPatientImportResult } from "@metriport/core/command/patient-import/steps/result/patient-import-result-factory";
 import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import {
@@ -15,6 +16,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
+  BadRequestError,
   internalSendConsolidatedSchema,
   normalizeState,
   PaginatedResponse,
@@ -24,6 +26,7 @@ import {
 import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import { updateJobSchema } from "@metriport/shared/domain/patient/patient-import/schemas";
+import { validateNewStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -63,7 +66,6 @@ import {
 } from "../../../command/medical/patient/update-patient";
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import BadRequestError from "../../../errors/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
@@ -1094,6 +1096,39 @@ router.post(
       jobId,
       forceStatusUpdate,
     });
+
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/bulk/:id/done
+ *
+ * IMPORTANT: Only to be used to unstuck a bulk patient import job.
+ *
+ * Finishes a bulk patient import job. If the current status doesn't allow completing the job,
+ * you can update the status to `processing` using the endpoint POST /internal/patient/bulk/:id
+ *
+ * @param req.params.id The patient import job ID.
+ * @param req.query.cxId The customer ID.
+ * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
+ */
+router.post(
+  "/bulk/:id/done",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFromParamsOrFail("id", req);
+    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
+
+    const job = await getPatientImportJobOrFail({ cxId, id: jobId });
+
+    validateNewStatus(job.status, "completed");
+
+    await updatePatientImportParams({ cxId, jobId, disableWebhooks });
+
+    const next = buildPatientImportResult();
+    await next.processJobResult({ cxId, jobId });
 
     return res.sendStatus(status.OK);
   })
