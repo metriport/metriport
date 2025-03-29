@@ -3,7 +3,6 @@ import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
-import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { deleteAllPatientMappings } from "../../mapping/patient";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
@@ -27,7 +26,6 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
   validateVersionForUpdate(patient, eTag);
 
   const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-  const fhirApi = makeFhirApi(cxId);
 
   try {
     // These need to run before the Patient is deleted (need patient data from the DB)
@@ -39,7 +37,6 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
         }
         processAsyncError(deleteContext)(err);
       }),
-      fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
       cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
       deleteAllPatientMappings({ cxId, patientId: id }),
       deletePatientSettings({ cxId, patientId: id }),

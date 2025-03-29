@@ -17,10 +17,6 @@ import {
 } from "../../command/mapping/facility";
 import { checkApiQuota } from "../../command/medical/admin/api";
 import { dbMaintenance } from "../../command/medical/admin/db-maintenance";
-import {
-  PopulateFhirServerResponse,
-  populateFhirServer,
-} from "../../command/medical/admin/populate-fhir";
 import { getFacilities, getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import {
   allowMapiAccess,
@@ -28,12 +24,11 @@ import {
   revokeMapiAccess,
 } from "../../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { subscribeToAllWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import { isCxMappingSource, secondaryMappingsSchemaMap } from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../../external/aws/app-config";
 import { initCQOrgIncludeList } from "../../external/commonwell/organization";
-import { OrganizationModel } from "../../models/medical/organization";
+import { subscribeToAllWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import userRoutes from "../devices/internal-user";
 import { requestLogger } from "../helpers/request-logger";
 import { internalDtoFromModel as facilityInternalDto } from "../medical/dtos/facilityDTO";
@@ -119,57 +114,6 @@ router.delete(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     await revokeMapiAccess(cxId);
     return res.sendStatus(httpStatus.NO_CONTENT);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/populate-fhir-server
- *
- * Populate the FHIR server with customer's data.
- * This an idempotent endpoint, which means it can be called multiple times and it
- * will not have side effects.
- *
- * @deprecated Should no longer be used. Does not handle multiple hies.
- *
- * @param req.query.cxId - The customer/account's ID.
- * @param req.query.allCustomers - Whether we should populate all customers.
- * @param req.query.createIfNotExists - Creates the tenant on the FHIR server if
- *          it does not exist. (optional, default false)
- * @param req.query.triggerDocQuery - Triggers a new document query for each patient.
- *          (optional, default false)
- * @return 200 When successful, including the patient count.
- */
-router.post(
-  "/populate-fhir-server",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").optional();
-    const allCustomers = getFrom("query").optional("allCustomers", req) === "true";
-    const triggerDocQuery = getFrom("query").optional("triggerDocQuery", req) === "true";
-
-    if (cxId && allCustomers) {
-      throw new BadRequestError("Either cxId or allCustomers must be provided, not both");
-    }
-
-    if (cxId) {
-      const result = await populateFhirServer({ cxId, triggerDocQuery });
-      return res.json({ [cxId]: result });
-    }
-
-    if (!allCustomers) {
-      throw new BadRequestError("Either cxId or allCustomers must be provided, not both");
-    }
-
-    const allOrgs = await OrganizationModel.findAll();
-    const result: Record<string, PopulateFhirServerResponse> = {};
-    for (const org of allOrgs) {
-      const orgRes = await populateFhirServer({
-        cxId: org.cxId,
-        triggerDocQuery,
-      });
-      result[org.cxId] = orgRes;
-    }
-    return res.json(result);
   })
 );
 

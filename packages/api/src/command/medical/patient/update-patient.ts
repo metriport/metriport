@@ -1,8 +1,6 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
-import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { patientEvents } from "../../../event/medical/patient-event";
-import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { PatientModel } from "../../../models/medical/patient";
@@ -45,9 +43,6 @@ export async function updatePatient({
   await getFacilityOrFail({ cxId, id: facilityId });
 
   const patient = await updatePatientWithoutHIEs(patientUpdate, emit);
-
-  const fhirPatient = toFHIR(patient);
-  await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
   runOrSchedulePatientDiscoveryAcrossHies({
     patient,
