@@ -160,6 +160,9 @@ export function createFHIRConverterService(
     entry: "../fhir-converter/src/ccda-to-fhir-lambda.js",
     runtime: Runtime.NODEJS_18_X,
     bundling: {
+      esbuildArgs: {
+        "--packages": "bundle", // <- behaves like before esbuild 0.22
+      },
       define: {
         "process.env.NODE_ENV": "production",
         "process.env.ENV_TYPE": props.config.environmentType,
