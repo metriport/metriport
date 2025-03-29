@@ -1,8 +1,8 @@
 import { Brief, convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
+import { getFeatureFlagValueStringArray } from "@metriport/core/command/feature-flags";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { getFeatureFlagValueStringArray } from "@metriport/core/command/feature-flags";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -12,7 +12,7 @@ import {
   makeS3Client,
   S3Utils,
 } from "@metriport/core/external/aws/s3";
-import { getEnvType } from "@metriport/core/util/env-var";
+import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { errorToString, MetriportError } from "@metriport/shared";
 import chromium from "@sparticuz/chromium";
@@ -41,8 +41,6 @@ const apiUrl = getEnvOrFail("API_URL");
 const dashUrl = getEnvOrFail("DASH_URL");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
-const appConfigAppId = getEnvOrFail("APPCONFIG_APPLICATION_ID");
-const appConfigConfigId = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 // converter config
 const GRACEFUL_SHUTDOWN_ALLOWANCE = dayjs.duration({ seconds: 3 });
 const PDF_CONTENT_LOAD_ALLOWANCE = dayjs.duration({ seconds: 2.5 });
@@ -285,9 +283,7 @@ async function convertAndStorePdf({
 async function getCxsWithNoMrLogoFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppId,
-    appConfigConfigId,
-    getEnvType(),
+    Config.getFeatureFlagsTableName(),
     "cxsWithNoMrLogoFeatureFlag"
   );
 
@@ -299,9 +295,7 @@ async function getCxsWithNoMrLogoFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppId,
-    appConfigConfigId,
-    getEnvType(),
+    Config.getFeatureFlagsTableName(),
     "cxsWithADHDMRFeatureFlag"
   );
 
@@ -313,9 +307,7 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppId,
-    appConfigConfigId,
-    getEnvType(),
+    Config.getFeatureFlagsTableName(),
     "cxsWithBmiMrFeatureFlag"
   );
 
@@ -327,9 +319,7 @@ async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
 async function getCxsWithDermFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValueStringArray(
     region,
-    appConfigAppId,
-    appConfigConfigId,
-    getEnvType(),
+    Config.getFeatureFlagsTableName(),
     "cxsWithDermMrFeatureFlag"
   );
 
