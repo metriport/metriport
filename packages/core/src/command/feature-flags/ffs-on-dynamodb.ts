@@ -8,7 +8,8 @@ import { capture } from "../../util/notifications";
 
 const { log } = out(`FFs on DDB`);
 
-const partitionKey = "id";
+export const partitionKey = "id";
+export const sortKey = "updatedAt";
 const recordId = "1";
 
 function makeAppConfigClient(region: string, tableName: string): DynamoDbUtils {
@@ -18,14 +19,13 @@ function makeAppConfigClient(region: string, tableName: string): DynamoDbUtils {
 export const featureFlagsRecordUpdateSchema = z.object({
   featureFlags: ffDatastoreSchema,
   updatedBy: z.string(),
-  version: z.number(),
+  updatedAt: z.string(),
 });
 export type FeatureFlagsRecordUpdate = z.infer<typeof featureFlagsRecordUpdateSchema>;
 
 export const featureFlagsRecordSchema = featureFlagsRecordUpdateSchema.merge(
   z.object({
     id: z.string(),
-    updatedAt: z.string(),
   })
 );
 export type FeatureFlagsRecord = z.infer<typeof featureFlagsRecordSchema>;
@@ -60,7 +60,6 @@ const initialRecord: FeatureFlagsRecord = {
   featureFlags: initialFeatureFlags,
   updatedAt: new Date().toISOString(),
   updatedBy: "metriport",
-  version: 0,
 };
 
 export async function getFeatureFlags(
@@ -69,7 +68,7 @@ export async function getFeatureFlags(
 ): Promise<FeatureFlagDatastore> {
   const record = await getFeatureFlagsRecord({ region, tableName: ffTableName });
   log(
-    `From config with region=${region} and tableName=${ffTableName} - got config version: ${record.version}`
+    `From config with region=${region} and tableName=${ffTableName} - got updatedAt: ${record.updatedAt}`
   );
   return record.featureFlags ?? {};
 }
@@ -92,6 +91,7 @@ export async function updateFeatureFlags({
     region,
     tableName,
     newContent: newData,
+    updatedBy: "metriport",
   });
   return updatedRecord.featureFlags;
 }
@@ -104,9 +104,25 @@ export async function getFeatureFlagsRecord({
   tableName: string;
 }): Promise<FeatureFlagsRecord> {
   const ddb = makeAppConfigClient(region, tableName);
-  const config = await ddb.get({ partition: recordId });
-  const record = ddbItemToDbRecord(config.Item);
-  return record;
+  try {
+    const config = await ddb._docClient
+      .query({
+        TableName: ddb._table,
+        KeyConditionExpression: `${partitionKey} = :id`,
+        ExpressionAttributeValues: { ":id": recordId },
+        ScanIndexForward: false,
+        Limit: 1,
+      })
+      .promise();
+    const record = ddbItemToDbRecord(config.Items?.[0]);
+    return record;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error.code === "ResourceNotFoundException") {
+      return initialRecord;
+    }
+    throw error;
+  }
 }
 
 export async function updateFeatureFlagsRecord({
@@ -121,10 +137,10 @@ export async function updateFeatureFlagsRecord({
   try {
     const existingRecord = await getFeatureFlagsRecord({ region, tableName });
 
-    if (existingRecord.version !== newRecordData.version) {
+    if (existingRecord.updatedAt !== newRecordData.updatedAt) {
       throw new BadRequestError(`FFs out of sync, reload and try again`, undefined, {
-        existingVersion: existingRecord.version,
-        updateVersion: newRecordData.version,
+        existingUpdatedAt: existingRecord.updatedAt,
+        updateUpdatedAt: newRecordData.updatedAt,
       });
     }
 
@@ -132,6 +148,7 @@ export async function updateFeatureFlagsRecord({
       region,
       tableName,
       newContent: newRecordData.featureFlags,
+      updatedBy: newRecordData.updatedBy,
     });
 
     return updatedRecord;
@@ -153,10 +170,12 @@ async function _update({
   region,
   tableName,
   newContent,
+  updatedBy,
 }: {
   region: string;
   tableName: string;
   newContent: FeatureFlagDatastore;
+  updatedBy: string;
 }): Promise<FeatureFlagsRecord> {
   const ddbUtils = makeAppConfigClient(region, tableName);
 
@@ -166,36 +185,20 @@ async function _update({
     throw new BadRequestError(`Invalid feature flags`, error);
   }
 
-  const ffColumnName: keyof FeatureFlagsRecord = "featureFlags";
-  const updatedAtColumnName: keyof FeatureFlagsRecord = "updatedAt";
-  const updatedByColumnName: keyof FeatureFlagsRecord = "updatedBy";
-  const versionColumnName: keyof FeatureFlagsRecord = "version";
+  const record = {
+    id: recordId,
+    updatedAt: new Date().toISOString(),
+    updatedBy: updatedBy,
+    featureFlags: newContent,
+  };
+  await ddbUtils._docClient
+    .put({
+      TableName: ddbUtils._table,
+      Item: record,
+    })
+    .promise();
 
-  const ffReplacement = "ffs";
-  const updatedAtReplacement = "updatedAt";
-  const updatedByReplacement = "updatedBy";
-  const zeroReplacement = "zero";
-  const oneReplacement = "one";
-
-  const response = await ddbUtils.update({
-    partition: recordId,
-    expression:
-      `SET ` +
-      `${ffColumnName} = :${ffReplacement}, ` +
-      `${updatedAtColumnName} = :${updatedAtReplacement}, ` +
-      `${updatedByColumnName} = :${updatedByReplacement}, ` +
-      `${versionColumnName} = if_not_exists(${versionColumnName}, :zero) + :one`,
-    expressionAttributesValues: {
-      [`:${ffReplacement}`]: JSON.stringify(newContent),
-      [`:${updatedAtReplacement}`]: new Date().toISOString(),
-      [`:${updatedByReplacement}`]: "metriport",
-      [`:${zeroReplacement}`]: 0,
-      [`:${oneReplacement}`]: 1,
-    },
-    returnValue: "ALL_NEW",
-  });
-  const record = ddbItemToDbRecord(response.Attributes);
-  log(`Updated FFs (new version: ${record.version})`);
+  log(`Updated FFs, updatedAt: ${record.updatedAt}, by ${updatedBy}`);
   return record;
 }
 

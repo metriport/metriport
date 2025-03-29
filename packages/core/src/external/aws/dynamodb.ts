@@ -22,10 +22,14 @@ export class DynamoDbUtils {
     this._table = opts.table;
     this._partitionKey = opts.partitionKey;
     this._rangeKey = opts.rangeKey;
+    const region = Config.isDev()
+      ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        { region: "localhost", endpoint: process.env.DYNAMODB_ENDPOINT! }
+      : { region: opts.region ?? Config.getAWSRegion() };
     this._docClient =
       opts.client ??
       new AWS.DynamoDB.DocumentClient({
-        region: opts.region ?? Config.getAWSRegion(),
+        ...region,
         apiVersion: "2012-08-10",
       });
   }

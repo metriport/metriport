@@ -1,3 +1,4 @@
+import { partitionKey, sortKey } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { rateLimitPartitionKey } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { allowMapiAccess } from "../command/medical/mapi-access";
@@ -98,14 +99,22 @@ async function createFeatureFlagsTable(ddb: AWS.DynamoDB): Promise<void> {
     const params: AWS.DynamoDB.CreateTableInput = {
       AttributeDefinitions: [
         {
-          AttributeName: rateLimitPartitionKey,
+          AttributeName: partitionKey,
+          AttributeType: "S",
+        },
+        {
+          AttributeName: sortKey,
           AttributeType: "S",
         },
       ],
       KeySchema: [
         {
-          AttributeName: rateLimitPartitionKey,
+          AttributeName: partitionKey,
           KeyType: "HASH",
+        },
+        {
+          AttributeName: sortKey,
+          KeyType: "RANGE",
         },
       ],
       ProvisionedThroughput: {
