@@ -10,7 +10,7 @@ import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@m
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { buildWriteToS3Handler } from "../../../../command/write-to-storage/s3/write-to-s3-factory";
+import { buildWS3WriterHandler } from "../../../../command/write-to-storage/s3/write-to-s3-factory";
 import { createHivePartitionFilePath } from "../../../../domain/filename";
 import { Config } from "../../../../util/config";
 import { log as getLog, out } from "../../../../util/log";
@@ -194,8 +194,8 @@ export async function createSignSendProcessXCPDRequest({
           cxid: cxId,
           _stage: "pd",
         };
-        const handler = buildWriteToS3Handler();
-        await handler.processWriteToS3({
+        const handler = buildWS3WriterHandler();
+        await handler.writeToS3({
           serviceId: "cq-patient-discovery-response",
           bucket: parsedResponsesBucket,
           filePath,

@@ -1,9 +1,9 @@
 import {
   bulkServices,
-  ProcessWriteToS3Handler,
-  ProcessWriteToS3Request,
+  S3Writer,
+  WriteToS3Request,
 } from "@metriport/core/command/write-to-storage/s3/write-to-s3";
-import { ProcessWriteToS3Local } from "@metriport/core/command/write-to-storage/s3/write-to-s3-local";
+import { S3WriterLocal } from "@metriport/core/command/write-to-storage/s3/write-to-s3-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -19,12 +19,12 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+  const log = prefixedLog(`write-to-s3`);
   try {
     const startedAt = new Date().getTime();
     const messages = event.Records;
     if (messages.length < 1) return;
-
-    console.log(`Running with unparsed bodies: ${messages.map(m => m.body).join(", ")}`);
+    log(`Running with unparsed bodies: ${messages.map(m => m.body).join(", ")}`);
     const parsedBodies = messages.map(m => parseBody(m.body));
     const messagesByService = parsedBodies.reduce((acc, body) => {
       const serviceId = body.serviceId;
@@ -32,29 +32,28 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       serviceArray.push(body);
       acc[serviceId] = serviceArray;
       return acc;
-    }, {} as Record<string, ProcessWriteToS3Request[]>);
+    }, {} as Record<string, WriteToS3Request[]>);
 
-    const writeToS3Handler = new ProcessWriteToS3Local();
+    const s3Writer = new S3WriterLocal();
     await Promise.all(
       Object.entries(messagesByService).flatMap(([serviceId, messages]) => {
         const log = prefixedLog(`serviceId ${serviceId}`);
         if (bulkServices.includes(serviceId)) {
-          log(`Bulk processing ${messages.length} messages for service ${serviceId}`);
           return processBulkService({
             serviceId,
             messages,
-            handler: writeToS3Handler,
+            handler: s3Writer,
           });
         }
-        log(`Processing ${messages.length} messages for service ${serviceId}`);
-        return messages.map(m => writeToS3Handler.processWriteToS3(m));
+        log(`ing ${messages.length} messages for service ${serviceId}`);
+        return messages.map(m => s3Writer.writeToS3(m));
       })
     );
     const finishedAt = new Date().getTime();
-    console.log(`Done local duration: ${finishedAt - startedAt}ms`);
+    log(`Done local duration: ${finishedAt - startedAt}ms`);
   } catch (error) {
     const msg = "Error processing event on " + lambdaName;
-    console.log(`${msg}: ${errorToString(error)}`);
+    log(`${msg}: ${errorToString(error)}`);
     capture.setExtra({
       event,
       context: lambdaName,
@@ -64,7 +63,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   }
 });
 
-function parseBody(body?: unknown): ProcessWriteToS3Request {
+function parseBody(body?: unknown): WriteToS3Request {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -81,11 +80,12 @@ function processBulkService({
   handler,
 }: {
   serviceId: string;
-  messages: ProcessWriteToS3Request[];
-  handler: ProcessWriteToS3Handler;
+  messages: WriteToS3Request[];
+  handler: S3Writer;
 }): Promise<void>[] {
   const log = prefixedLog(`processBulkService - serviceId ${serviceId}`);
-  const buckets = new Set(...messages.map(m => m.bucket));
+  log(`Bulk processing ${messages.length} messages for service ${serviceId}`);
+  const buckets = new Set(messages.map(m => m.bucket));
   if (buckets.size > 1) throw new MetriportError(`Multiple buckets for service ${serviceId}`);
   const bucket = buckets.values().next().value;
   const messagesByServiceAndFilePath = messages.reduce((acc, message) => {
@@ -94,12 +94,12 @@ function processBulkService({
     serviceArray.push(message);
     acc[filePath] = serviceArray;
     return acc;
-  }, {} as Record<string, ProcessWriteToS3Request[]>);
+  }, {} as Record<string, WriteToS3Request[]>);
   log(
-    `Processing ${messages.length} messages for service ${serviceId} -- input keys and metadata will be ignored`
+    `ing ${messages.length} messages for service ${serviceId} -- input keys and metadata will be ignored`
   );
   return Object.entries(messagesByServiceAndFilePath).map(([filePath, messages]) =>
-    handler.processWriteToS3({
+    handler.writeToS3({
       serviceId,
       bucket,
       filePath,

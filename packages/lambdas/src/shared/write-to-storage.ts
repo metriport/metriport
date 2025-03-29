@@ -1,10 +1,10 @@
 import {
-  ProcessWriteToS3Request,
+  WriteToS3Request,
   isServiceId,
 } from "@metriport/core/command/write-to-storage/s3/write-to-s3";
 import { MetriportError } from "@metriport/shared";
 
-interface ProcessWriteToS3Payload {
+interface WriteToS3Payload {
   serviceId: unknown;
   bucket: unknown;
   filePath: unknown;
@@ -14,11 +14,13 @@ interface ProcessWriteToS3Payload {
   metadata: unknown;
 }
 
-export function parseWriteToS3(bodyAsJson: ProcessWriteToS3Payload): ProcessWriteToS3Request {
+export function parseWriteToS3(bodyAsJson: WriteToS3Payload): WriteToS3Request {
   const serviceIdRaw = bodyAsJson.serviceId;
   if (!serviceIdRaw) throw new MetriportError("Missing serviceId");
   if (typeof serviceIdRaw !== "string") throw new MetriportError("Invalid serviceId");
-  if (!isServiceId(serviceIdRaw)) throw new MetriportError("Invalid serviceId");
+  if (!isServiceId(serviceIdRaw)) {
+    throw new MetriportError("Invalid serviceId", undefined, { serviceIdRaw });
+  }
 
   const bucketRaw = bodyAsJson.bucket;
   if (!bucketRaw) throw new MetriportError("Missing bucket");
@@ -29,8 +31,8 @@ export function parseWriteToS3(bodyAsJson: ProcessWriteToS3Payload): ProcessWrit
   if (typeof filePathRaw !== "string") throw new MetriportError("Invalid filePath");
 
   const keyRaw = bodyAsJson.key;
-  const valiKey = typeof keyRaw === "string" || keyRaw === undefined;
-  if (!valiKey) throw new MetriportError("Invalid key");
+  const validKey = typeof keyRaw === "string" || keyRaw === undefined;
+  if (!validKey) throw new MetriportError("Invalid key");
 
   const payloadRaw = bodyAsJson.payload;
   if (!payloadRaw) throw new MetriportError("Missing payload");

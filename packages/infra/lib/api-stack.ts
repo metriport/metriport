@@ -383,7 +383,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Utils
     //-------------------------------------------
-    const { writeToS3Queue: utilsWriteToS3Queue } = new UtilsNestedStack(this, "EhrNestedStack", {
+    const { writeToS3Queue: utilsWriteToS3Queue } = new UtilsNestedStack(this, "UtilsNestedStack", {
       config: props.config,
       lambdaLayers,
       vpc: this.vpc,

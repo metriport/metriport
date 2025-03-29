@@ -17,13 +17,13 @@ function settings() {
     name: "WriteToS3",
     entry: "write-to-s3",
     lambda: {
-      memory: 1024,
-      batchSize: 1000,
+      memory: 2048,
+      batchSize: 100,
       timeout: writeToS3LambdaTimeout,
       reportBatchItemFailures: true,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.days(2),
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(writeToS3LambdaTimeout.toSeconds() * 2 + 1),
