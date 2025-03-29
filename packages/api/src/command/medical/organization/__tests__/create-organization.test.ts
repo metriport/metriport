@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from "uuid";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
 import * as address from "../../../../domain/medical/address";
 import * as cwCommands from "../../../../external/commonwell";
-import * as upsertOrgToFHIRServer from "../../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../../models/medical/organization";
 import { makeOrganizationOID } from "../../../../shared/oid";
 import * as createId from "../../customer-sequence/create-id";
@@ -20,7 +19,6 @@ beforeAll(() => {
     oid: makeOrganizationOID(organizationNumber),
     organizationNumber,
   });
-  jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
   jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockResolvedValue();
   jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
 });
