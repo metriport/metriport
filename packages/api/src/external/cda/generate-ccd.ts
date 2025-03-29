@@ -9,7 +9,7 @@ import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
-import { isComposition } from "@metriport/core/external/fhir/shared";
+import { isComposition } from "@metriport/core/external/fhir/shared/index";
 import { out } from "@metriport/core/util/log";
 import { JSON_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
