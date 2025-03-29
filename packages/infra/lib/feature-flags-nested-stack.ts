@@ -1,41 +1,41 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { isProd } from "./shared/util";
 
-interface RateLimitingNestedStackProps extends NestedStackProps {
+interface FeatureFlagsNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   alarmAction?: SnsAction;
 }
 
-function getSettings(props: RateLimitingNestedStackProps) {
+function getSettings(props: FeatureFlagsNestedStackProps) {
   return {
     ...props,
-    dynamoConstructName: "APIRateLimit",
-    dynamoRateLimitPartitionKey: "cxIdAndOperationAndWindow",
+    dynamoConstructName: "FeatureFlags",
+    dynamoPartitionKey: "id",
     dynamoReplicationRegions: isProd(props.config) ? ["us-east-1"] : ["ca-central-1"],
     dynamoReplicationTimeout: Duration.hours(3),
     dynamoPointInTimeRecovery: true,
-    consumedWriteCapacityUnitsAlarmThreshold: isProd(props.config) ? 5000 : 100,
+    consumedWriteCapacityUnitsAlarmThreshold: isProd(props.config) ? 100 : 10,
     consumedWriteCapacityUnitsAlarmPeriod: 1,
     consumedReadCapacityUnitsAlarmThreshold: isProd(props.config) ? 5000 : 100,
-    consumedReadCapacityUnitsAlarmPeriod: 1,
+    consumedReadCapacityUnitsAlarmPeriod: 2,
   };
 }
 
-export class RateLimitingNestedStack extends NestedStack {
-  readonly rateLimitTable: dynamodb.Table;
+export class FeatureFlagsNestedStack extends NestedStack {
+  readonly featureFlagsTable: dynamodb.Table;
 
-  constructor(scope: Construct, id: string, props: RateLimitingNestedStackProps) {
+  constructor(scope: Construct, id: string, props: FeatureFlagsNestedStackProps) {
     super(scope, id, props);
 
     const {
       alarmAction,
       dynamoConstructName,
-      dynamoRateLimitPartitionKey,
+      dynamoPartitionKey,
       dynamoReplicationRegions,
       dynamoReplicationTimeout,
       dynamoPointInTimeRecovery,
@@ -45,9 +45,9 @@ export class RateLimitingNestedStack extends NestedStack {
       consumedReadCapacityUnitsAlarmPeriod,
     } = getSettings(props);
 
-    this.rateLimitTable = this.setupRateLimitTable({
+    this.featureFlagsTable = this.setupFeatureFlagsTable({
       dynamoConstructName,
-      dynamoRateLimitPartitionKey,
+      dynamoPartitionKey,
       dynamoReplicationRegions,
       dynamoReplicationTimeout,
       dynamoPointInTimeRecovery,
@@ -59,9 +59,9 @@ export class RateLimitingNestedStack extends NestedStack {
     });
   }
 
-  private setupRateLimitTable(ownProps: {
+  private setupFeatureFlagsTable(ownProps: {
     dynamoConstructName: string;
-    dynamoRateLimitPartitionKey: string;
+    dynamoPartitionKey: string;
     dynamoReplicationRegions: string[];
     dynamoReplicationTimeout: Duration;
     dynamoPointInTimeRecovery: boolean;
@@ -73,7 +73,7 @@ export class RateLimitingNestedStack extends NestedStack {
   }): dynamodb.Table {
     const {
       dynamoConstructName,
-      dynamoRateLimitPartitionKey,
+      dynamoPartitionKey,
       dynamoReplicationRegions,
       dynamoReplicationTimeout,
       dynamoPointInTimeRecovery,
@@ -85,7 +85,7 @@ export class RateLimitingNestedStack extends NestedStack {
     } = ownProps;
     const table = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: {
-        name: dynamoRateLimitPartitionKey,
+        name: dynamoPartitionKey,
         type: dynamodb.AttributeType.STRING,
       },
       replicationRegions: dynamoReplicationRegions,
