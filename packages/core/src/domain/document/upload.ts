@@ -11,6 +11,11 @@ export function createUploadFilePath(cxId: string, patientId: string, docName: s
   return `${folderName}/${UPLOADS_FOLDER}/${fileName}`;
 }
 
+export function createUploadDirectoryPath(cxId: string, patientId: string): string {
+  const folderName = createFolderName(cxId, patientId);
+  return `${folderName}/${UPLOADS_FOLDER}`;
+}
+
 export function createUploadMetadataFilePath(
   cxId: string,
   patientId: string,

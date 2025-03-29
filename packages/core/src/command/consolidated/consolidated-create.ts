@@ -37,7 +37,7 @@ export type ConsolidatePatientDataCommand = {
   sourceBucketName?: string | undefined;
 };
 
-type BundleLocation = { bucket: string; key: string };
+export type BundleLocation = { bucket: string; key: string };
 
 /**
  * Create a consolidated bundle from the existing conversion bundles.

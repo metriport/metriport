@@ -1,5 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
+import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/conversion";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
@@ -11,7 +11,10 @@ import { validateFhirEntries } from "../../../../external/fhir/shared/json-valid
 import { Bundle as ValidBundle } from "../../../../routes/medical/schemas/fhir";
 import { Config } from "../../../../shared/config";
 import { getOrganizationOrFail } from "../../organization/get-organization";
-import { createOrUpdateConsolidatedPatientData } from "../consolidated-create";
+import {
+  createOrUpdateConsolidatedPatientData,
+  createOrUpdateConsolidatedPatientDataLegacy,
+} from "../consolidated-create";
 import { convertFhirToCda } from "../convert-fhir-to-cda";
 import { getPatientOrFail } from "../get-patient";
 import { checkResourceLimit, hasCompositionResource, normalizeBundle } from "./shared";
@@ -77,6 +80,15 @@ export async function handleDataContribution({
     requestId,
     fhirBundle: validatedBundle,
   });
+
+  // TODO: Remove after testing ----------
+  await createOrUpdateConsolidatedPatientDataLegacy({
+    cxId,
+    patientId: patient.id,
+    requestId,
+    fhirBundle: validatedBundle,
+  });
+  // -------------------------------------
   log(`${Date.now() - storeStartedAt}ms to store on FHIR server and S3`);
 
   if (!Config.isSandbox()) {

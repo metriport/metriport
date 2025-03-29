@@ -1,31 +1,32 @@
-import { Bundle } from "@medplum/fhirtypes";
-import { createConsolidatedFromUploads } from "@metriport/core/command/consolidated/create-consolidated-from-uploads";
+// TODO: Remove the whole file when done testing
+import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
   CCD_SUFFIX,
-  FHIR_BUNDLE_SUFFIX,
   createUploadFilePath,
+  FHIR_BUNDLE_SUFFIX,
 } from "@metriport/core/domain/document/upload";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
-import { isComposition } from "@metriport/core/external/fhir/shared";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util/log";
 import { JSON_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
+import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
 import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
-import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
 import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { Config } from "../../shared/config";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
+import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
 const s3Utils = new S3Utils(region);
 
-export async function generateCcd(
+export async function generateCcdLegacy(
   patient: Patient,
   organization: Organization,
   requestId: string
@@ -37,10 +38,8 @@ export async function generateCcd(
   if (!uploadsExist) {
     return generateEmptyCcd(patient);
   }
-  const fullBundle = await createConsolidatedFromUploads(patient);
-  const validEntries = fullBundle.entry?.filter(r => !isComposition(r.resource));
-
-  if (!validEntries || !validEntries.length) {
+  const metriportGenerated = await getFhirResourcesForCcd(patient);
+  if (!metriportGenerated || !metriportGenerated.length) {
     return generateEmptyCcd(patient);
   }
 
@@ -48,7 +47,7 @@ export async function generateCcd(
   const bundle: Bundle = {
     resourceType: "Bundle",
     type: "collection",
-    entry: [...validEntries, { resource: fhirOrganization }],
+    entry: [...metriportGenerated, { resource: fhirOrganization }],
   };
   const normalizedBundle = normalizeBundle(bundle);
   const parsedBundle = bundleSchema.parse(normalizedBundle);
@@ -65,6 +64,33 @@ export async function generateCcd(
   return ccd;
 }
 
+async function getFhirResourcesForCcd(
+  patient: Patient
+): Promise<BundleEntry<Resource>[] | undefined> {
+  const allResources = await getConsolidatedPatientData({ patient, forceDataFromFhir: true });
+  return allResources.entry?.filter(entry => {
+    const resource = entry.resource;
+    if (resource?.resourceType === "Composition") return false;
+
+    if (resource) {
+      // All new FHIR data coming from our CX will now have extensions.
+      if ("extension" in resource) {
+        return resource.extension?.some(
+          (extension: { valueCoding?: { code?: string } }) =>
+            extension.valueCoding?.code === metriportDataSourceExtension.valueCoding.code
+        );
+      }
+      // We used to not add extensions to CX-contributed resources. So this will allow us to include those.
+      // This is taking advantage of how all the resources resulting from external CDAs have extensions.
+      if (!("extension" in resource)) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+}
+
 async function uploadCcdFhirDataToS3(
   patient: Patient,
   data: Bundle,
@@ -74,7 +100,7 @@ async function uploadCcdFhirDataToS3(
   const key = createUploadFilePath(
     patient.cxId,
     patient.id,
-    `${requestId}_${CCD_SUFFIX}_${FHIR_BUNDLE_SUFFIX}.json`
+    `${requestId}_${CCD_SUFFIX}_LEGACY_${FHIR_BUNDLE_SUFFIX}.json`
   );
   try {
     await s3Utils.uploadFile({

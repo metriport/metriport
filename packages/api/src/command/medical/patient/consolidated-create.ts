@@ -10,6 +10,14 @@ import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 
 export const sentToFhirServerPrefix = "toFhirServer";
 
+export function createDataContributionBundleName(
+  cxId: string,
+  patientId: string,
+  requestId: string
+) {
+  return createUploadFilePath(cxId, patientId, `${requestId}_${sentToFhirServerPrefix}.json`);
+}
+
 export async function createOrUpdateConsolidatedPatientData({
   cxId,
   patientId,
@@ -31,6 +39,52 @@ export async function createOrUpdateConsolidatedPatientData({
   );
 
   try {
+    const fhirBundleTransaction = convertCollectionBundleToTransactionBundle({
+      fhirBundle,
+    });
+
+    await uploadFhirBundleToS3({
+      fhirBundle: fhirBundleTransaction,
+      destinationKey: toFhirServerBundleKey,
+    });
+
+    console.log("fhirBundleTransaction thru new route is", JSON.stringify(fhirBundleTransaction));
+    const transformedBundle = removeUnwantedFhirData(fhirBundleTransaction);
+
+    return transformedBundle;
+  } catch (error) {
+    const errorMsg = errorToString(error);
+    const msg = "Error converting and storing fhir bundle resources";
+    const additionalInfo = { cxId, patientId, toFhirServerBundleKey };
+    log(`${msg}: ${errorMsg}, additionalInfo: ${JSON.stringify(additionalInfo)}`);
+    if (errorMsg.includes("ID")) throw new MetriportError(errorMsg, error, additionalInfo);
+    throw new MetriportError(msg, error, additionalInfo);
+  }
+}
+
+// TODO: Remove after testing -----
+export async function createOrUpdateConsolidatedPatientDataLegacy({
+  cxId,
+  patientId,
+  requestId,
+  fhirBundle,
+}: {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+  fhirBundle: Bundle;
+}): Promise<Bundle | undefined> {
+  const { log } = out(
+    `createOrUpdateConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}, requestId ${requestId}`
+  );
+  const toFhirServerBundleKey = createUploadFilePath(
+    cxId,
+    patientId,
+    `${requestId}_${sentToFhirServerPrefix}.json`
+  );
+  // --------------------------------
+
+  try {
     const fhir = makeFhirApi(cxId);
 
     const fhirBundleTransaction = convertCollectionBundleToTransactionBundle({
@@ -44,6 +98,7 @@ export async function createOrUpdateConsolidatedPatientData({
         destinationKey: toFhirServerBundleKey,
       }),
     ]);
+    console.log("bundleResource thru legacy route is", JSON.stringify(bundleResource));
     const transformedBundle = removeUnwantedFhirData(bundleResource);
 
     return transformedBundle;

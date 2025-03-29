@@ -11,6 +11,7 @@ import { getOrganizationOrFail } from "../../command/medical/organization/get-or
 import { Config } from "../../shared/config";
 import { generateCcd } from "./generate-ccd";
 import { generateEmptyCcd } from "./generate-empty-ccd";
+import { generateCcdLegacy } from "./generate-ccd-legacy";
 
 const medicalBucket = Config.getMedicalDocumentsBucketName();
 const awsRegion = Config.getAWSRegion();
@@ -48,6 +49,7 @@ export async function processCcdRequest({
     const fhirOrg = toFhirOrganization(organization);
 
     const ccd = await generateCcd(patient, organization, requestId);
+
     const docRef = createDocRef(patient.id);
     log(`CCD generated. Starting the upload...`);
     await cdaDocumentUploaderHandler({
@@ -60,6 +62,22 @@ export async function processCcdRequest({
       docId: CCD_SUFFIX,
       docRef,
     });
+
+    // TODO: Remove when done testing ---------
+    const ccdLegacy = await generateCcdLegacy(patient, organization, requestId);
+    // const docRef = createDocRef(patient.id);
+    // log(`CCD generated. Starting the upload...`);
+    await cdaDocumentUploaderHandler({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      bundle: ccdLegacy,
+      medicalDocumentsBucket: medicalBucket,
+      region: awsRegion,
+      organization: fhirOrg,
+      docId: `${CCD_SUFFIX}_LEGACY`,
+      docRef,
+    });
+    // ----------------------------------------
     log(`CCD uploaded into ${medicalBucket}`);
   } catch (error) {
     const msg = `Error creating and uploading CCD`;
