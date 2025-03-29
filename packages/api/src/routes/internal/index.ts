@@ -145,7 +145,6 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const allCustomers = getFrom("query").optional("allCustomers", req) === "true";
-    const createIfNotExists = getFrom("query").optional("createIfNotExists", req) === "true";
     const triggerDocQuery = getFrom("query").optional("triggerDocQuery", req) === "true";
 
     if (cxId && allCustomers) {
@@ -153,7 +152,7 @@ router.post(
     }
 
     if (cxId) {
-      const result = await populateFhirServer({ cxId, createIfNotExists, triggerDocQuery });
+      const result = await populateFhirServer({ cxId, triggerDocQuery });
       return res.json({ [cxId]: result });
     }
 
@@ -166,7 +165,6 @@ router.post(
     for (const org of allOrgs) {
       const orgRes = await populateFhirServer({
         cxId: org.cxId,
-        createIfNotExists,
         triggerDocQuery,
       });
       result[org.cxId] = orgRes;
