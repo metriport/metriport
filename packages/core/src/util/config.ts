@@ -137,6 +137,10 @@ export class Config {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
   }
 
+  static getFeatureFlagsTableName(): string {
+    return getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
+  }
+
   static getEhrResponsesBucketName(): string | undefined {
     return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
   }
