@@ -2,13 +2,12 @@ import * as AWS from "aws-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Config } from "../../util/config";
 
-const region = Config.getAWSRegion();
-
 export type DynamoDbUtilsOptions = {
   table: string;
   partitionKey: string;
   rangeKey?: string;
   client?: DocumentClient | undefined;
+  region?: string;
 };
 
 type AttributeValuesMapping = { [k: string]: string | number };
@@ -26,7 +25,7 @@ export class DynamoDbUtils {
     this._docClient =
       opts.client ??
       new AWS.DynamoDB.DocumentClient({
-        region,
+        region: opts.region ?? Config.getAWSRegion(),
         apiVersion: "2012-08-10",
       });
   }
