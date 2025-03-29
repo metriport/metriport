@@ -1,9 +1,9 @@
 import {
   getFeatureFlags,
-  createAndDeployConfigurationContent,
-  StringValuesFF,
-  CxFeatureFlagStatus,
-} from "@metriport/core/external/aws/app-config";
+  updateFeatureFlags,
+} from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
+import { CxFeatureFlagStatus, StringValuesFF } from "@metriport/core/command/feature-flags/types";
+import { Config as ConfigCore } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { Config } from "../../shared/config";
 
@@ -33,12 +33,8 @@ export async function updateCxHieEnabledFFs({
   demoAugEnabled?: boolean;
 }): Promise<CxFeatureFlagStatus> {
   const region = Config.getAWSRegion();
-  const appId = Config.getAppConfigAppId();
-  const configId = Config.getAppConfigConfigId();
-  const envName = Config.getEnvType();
-  const envId = Config.getAppConfigEnvironmentId();
-  const deploymentStrategyId = Config.getAppConfigDeploymentStrategyId();
-  const featureFlags = await getFeatureFlags(region, appId, configId, envName);
+  const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
+  const featureFlags = await getFeatureFlags(region, featureFlagsTableName);
   if (cwEnabled === true) {
     enableFeatureFlagForCustomer(featureFlags.cxsWithCWFeatureFlag, cxId);
   } else if (cwEnabled === false) {
@@ -63,13 +59,10 @@ export async function updateCxHieEnabledFFs({
   deduplicateFeatureFlagValues(featureFlags.cxsWithCQDirectFeatureFlag);
   deduplicateFeatureFlagValues(featureFlags.cxsWithEpicEnabled);
   deduplicateFeatureFlagValues(featureFlags.cxsWithDemoAugEnabled);
-  const newFeatureFlags = await createAndDeployConfigurationContent({
+  const newFeatureFlags = await updateFeatureFlags({
     region,
-    appId,
-    envId,
-    configId,
-    deploymentStrategyId,
-    newContent: featureFlags,
+    tableName: featureFlagsTableName,
+    newData: featureFlags,
   });
   const currentCwEnabled = newFeatureFlags.cxsWithCWFeatureFlag.values.includes(cxId);
   const currentCqEnabled = newFeatureFlags.cxsWithCQDirectFeatureFlag.values.includes(cxId);

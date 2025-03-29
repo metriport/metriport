@@ -8,7 +8,7 @@ import {
   CxFeatureFlagStatus,
   StringValueFeatureFlags,
   stringValueFFsSchema,
-} from "../../external/aws/app-config";
+} from "./types";
 
 const { log } = out(`FFs`);
 
