@@ -1,16 +1,29 @@
 import { BadRequestError } from "@metriport/shared";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { z } from "zod";
 import { DynamoDbUtils } from "../../external/aws/dynamodb";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { FeatureFlagDatastore, ffDatastoreSchema } from "./types";
 
+dayjs.extend(duration);
+
 const { log } = out(`FFs on DDB`);
 
 export const partitionKey = "id";
 export const sortKey = "version";
 export const recordId = "1";
+
+const cacheDuration = dayjs.duration({ minutes: 5 });
+
+type CacheEntry = {
+  record: FeatureFlagsRecord;
+  timestamp: number;
+};
+
+let featureFlagsCache: CacheEntry | undefined;
 
 function makeAppConfigClient(region: string, tableName: string): DynamoDbUtils {
   return new DynamoDbUtils({ region, table: tableName, partitionKey });
@@ -102,6 +115,19 @@ export async function getFeatureFlagsRecord({
   region: string;
   tableName: string;
 }): Promise<FeatureFlagsRecord | undefined> {
+  const now = Date.now();
+
+  // If cache exists and is not expired, return cached value
+  if (featureFlagsCache && now - featureFlagsCache.timestamp < cacheDuration.asMilliseconds()) {
+    log(
+      `Returning cached feature flags (age: ${Math.round(
+        (now - featureFlagsCache.timestamp) / 1000
+      )}s)`
+    );
+    return featureFlagsCache.record;
+  }
+
+  // Cache is expired or doesn't exist, fetch from DynamoDB
   const ddb = makeAppConfigClient(region, tableName);
   try {
     const config = await ddb._docClient
@@ -114,6 +140,15 @@ export async function getFeatureFlagsRecord({
       })
       .promise();
     const record = ddbItemToDbRecord(config.Items?.[0]);
+    if (!record) return undefined;
+
+    // Update cache
+    featureFlagsCache = {
+      record,
+      timestamp: now,
+    };
+    log(`Updated feature flags cache (updatedAt: ${record.updatedAt})`);
+
     return record;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -150,6 +185,12 @@ export async function updateFeatureFlagsRecord({
       updatedBy: newRecordData.updatedBy,
       existingVersion: newRecordData.existingVersion,
     });
+
+    // Update cache with new record
+    featureFlagsCache = {
+      record: updatedRecord,
+      timestamp: Date.now(),
+    };
 
     return updatedRecord;
   } catch (error) {
