@@ -50,7 +50,6 @@ import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
-import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -599,14 +598,6 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
-
-    // TODO 2840 remove this
-    AppConfigUtils.allowReadConfig({
-      scope: this,
-      resourceName: "FhirConverterLambda",
-      resourceRole: fhirConverterLambda.role,
-      appConfigResources: ["*"],
-    });
 
     createDocQueryChecker({
       lambdaLayers,
