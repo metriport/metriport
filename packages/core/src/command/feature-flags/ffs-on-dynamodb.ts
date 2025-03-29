@@ -20,6 +20,8 @@ export const featureFlagsRecordUpdateSchema = z.object({
   updatedBy: z.string(),
   version: z.number(),
 });
+export type FeatureFlagsRecordUpdate = z.infer<typeof featureFlagsRecordUpdateSchema>;
+
 export const featureFlagsRecordSchema = featureFlagsRecordUpdateSchema.merge(
   z.object({
     id: z.string(),
@@ -114,7 +116,7 @@ export async function updateFeatureFlagsRecord({
 }: {
   region: string;
   tableName: string;
-  newRecordData: Pick<FeatureFlagsRecord, "id" | "featureFlags" | "version">;
+  newRecordData: FeatureFlagsRecordUpdate;
 }): Promise<FeatureFlagsRecord> {
   try {
     const existingRecord = await getFeatureFlagsRecord({ region, tableName });
