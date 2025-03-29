@@ -174,6 +174,7 @@ function buildErrorResponse(status, message) {
 }
 
 exports.handler = async event => {
+  console.log(`Event`, JSON.stringify(event));
   const patientId = event.queryStringParameters ? event.queryStringParameters.patientId : "";
   const ccda = event.body;
   try {
