@@ -1,8 +1,9 @@
 import {
   getCxsWithFeatureFlagEnabled,
-  getFeatureFlags,
   isFeatureFlagEnabled,
-} from "@metriport/core/external/aws/app-config";
+} from "@metriport/core/command/feature-flags";
+import { getFeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
+import { Config as ConfigCore } from "@metriport/core/util/config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -21,17 +22,14 @@ export async function initFeatureFlags() {
     return;
   }
   try {
-    await getFeatureFlags(
-      Config.getAWSRegion(),
-      Config.getAppConfigAppId(),
-      Config.getAppConfigConfigId(),
-      Config.getEnvType()
-    );
+    await getFeatureFlags(Config.getAWSRegion(), ConfigCore.getFeatureFlagsTableName());
   } catch (error) {
     throw new MetriportError(`Failed to initialize Feature Flags`, error);
   }
   log(`Feature Flags initialized.`);
 }
+
+// TODO move these to core's packages/core/src/command/feature-flags/index.ts
 
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithEnhancedCoverageFeatureFlag");

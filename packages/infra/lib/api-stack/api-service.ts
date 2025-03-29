@@ -111,7 +111,6 @@ export function createAPIService({
   searchEndpoint,
   searchAuth,
   searchIndexName,
-  appConfigEnvVars,
   featureFlagsTable,
   cookieStore,
 }: {
@@ -148,12 +147,6 @@ export function createAPIService({
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
-  appConfigEnvVars: {
-    appId: string;
-    configId: string;
-    envId: string;
-    deploymentStrategyId: string;
-  };
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
 }): {
@@ -296,11 +289,6 @@ export function createAPIService({
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
-          // app config
-          APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-          APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-          APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
-          APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
           FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
