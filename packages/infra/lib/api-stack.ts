@@ -147,7 +147,7 @@ export class APIStack extends Stack {
         stack: this,
         props: { config: props.config },
       });
-    new FeatureFlagsNestedStack(this, "FeatureFlags", {
+    const { featureFlagsTable } = new FeatureFlagsNestedStack(this, "FeatureFlags", {
       config: props.config,
       alarmAction: slackNotification?.alarmAction,
     });
@@ -521,6 +521,7 @@ export class APIStack extends Stack {
         envId: appConfigEnvId,
         deploymentStrategyId: deploymentStrategyId,
       },
+      featureFlagsTable,
       cookieStore,
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
