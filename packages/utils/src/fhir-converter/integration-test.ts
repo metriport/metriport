@@ -1,29 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Bundle, Resource } from "@medplum/fhirtypes";
-import {
-  ResourceTypeForConsolidation,
-  resourcesSearchableByPatient,
-  resourcesSearchableBySubject,
-} from "@metriport/api-sdk";
-import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/shared";
-import { errorToString } from "@metriport/shared/common/error";
-import { randomInt } from "@metriport/shared/common/numbers";
 import Axios from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import {
-  getFileContents,
-  getFileNames,
-  makeDir,
-  makeDirIfNeeded,
-  writeFileContents,
-} from "../shared/fs";
-import { uuidv7 } from "../shared/uuid-v7";
+import { getFileNames, makeDir, writeFileContents } from "../shared/fs";
 import { ProcessingOptions, convertCDAsToFHIR } from "./convert";
 import { countResourcesPerDirectory } from "./shared";
 
@@ -60,13 +43,8 @@ const fhirBaseUrl = "http://localhost:8889";
 const parallelConversions = 10;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
 // lead to inconsistent results in resource creation/count.
-const parallelUpsertsIntoFHIRServer = 1;
 
-const tenantId = uuidv7();
-const organizationNumber = randomInt(6);
 const converterApi = Axios.create({ baseURL: converterBaseUrl });
-const adminFhirApi = makeFhirAdminApi(fhirBaseUrl);
-const fhirApi = makeFhirApi(tenantId, fhirBaseUrl);
 const fhirApiRaw = Axios.create({ baseURL: fhirBaseUrl });
 
 let startedAt = Date.now();
@@ -75,7 +53,6 @@ const fhirExtension = `.json`;
 const logsFolderName = `runs/fhir-converter-integration/${timestamp}`;
 const outputFolderName = `${logsFolderName}/output`;
 const totalResourceCountStatsLocation = `${logsFolderName}/total-resource-counts.json`;
-const totalResourceCountPostFHIRInsertStatsLocation = `${logsFolderName}/total-resource-counts-post-fhir-insert.json`;
 
 type Params = {
   cleanup?: boolean;
@@ -143,28 +120,6 @@ export async function main() {
   console.log(`Total: ${totalResourceCountStats.total}`);
 
   if (cleanup) await removeAllPartitionsFromFHIRServer();
-  if (useFhirServer) {
-    // Create tenant at FHIR server
-    await createTenant();
-
-    const fhirFileNames = getFileNames({
-      folder: outputFolderName,
-      recursive: true,
-      extension: fhirExtension,
-    });
-    console.log(`Found ${fhirFileNames.length} JSON files.`);
-
-    const relativeJSONFileNames = fhirFileNames.map(f => f.replace(outputFolderName, ""));
-
-    // Insert JSON files into FHIR server
-    await insertBundlesIntoFHIRServer(relativeJSONFileNames);
-
-    // Get stats from FHIR Server
-    const stats = await getStatusFromFHIRServer();
-    console.log(`Resources: `, stats.resources);
-    console.log(`Total resources: ${stats.total}`);
-    storeStats(stats, totalResourceCountPostFHIRInsertStatsLocation);
-  }
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();
   console.log(`Total time: ${duration} ms / ${durationMin} min`);
@@ -187,35 +142,6 @@ function storeStats(stats: any, statsLocation: string) {
   );
 }
 
-async function createTenant() {
-  const config = { cxId: tenantId, organizationNumber };
-  console.log(`Creating tenant @ FHIRServer w/ ${JSON.stringify(config)}`);
-  try {
-    await adminFhirApi.createTenant(config);
-    console.log(`Tenant created successfully.`);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error(`Failed to create tenant:`, {
-      error,
-      message: error.message,
-      response: error.response?.data,
-    });
-    throw error;
-  }
-
-  // Verify tenant creation
-  try {
-    const verifyResponse = await fhirApi.search("Patient", "_summary=count");
-    console.log(`Tenant verification successful:`, {
-      tenantId,
-      total: verifyResponse.total,
-    });
-  } catch (verifyError) {
-    console.error(`Failed to verify tenant:`, verifyError);
-    throw verifyError;
-  }
-}
-
 async function removeAllPartitionsFromFHIRServer() {
   console.log(`Removing all partitions from the FHIR Server...`);
   const payload = {
@@ -228,164 +154,6 @@ async function removeAllPartitionsFromFHIRServer() {
     ],
   };
   await fhirApiRaw.post(`${fhirBaseUrl}/fhir/DEFAULT/$expunge`, payload);
-}
-
-async function insertBundlesIntoFHIRServer(fileNames: string[]) {
-  console.log(`Inserting ${fileNames.length} files, ${parallelUpsertsIntoFHIRServer} at a time...`);
-  let errCount = 0;
-  await executeAsynchronously(
-    fileNames,
-    async fileName => {
-      try {
-        await insertSingleBundle(outputFolderName + fileName);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        console.log(`Error inserting ${fileName}: ${error.message}`);
-        errCount++;
-      }
-    },
-    { numberOfParallelExecutions: parallelUpsertsIntoFHIRServer, keepExecutingOnError: true }
-  );
-  const reportFailure = errCount > 0 ? ` [${errCount} errors]` : "";
-  const insertDuration = Date.now() - startedAt;
-  // Fhir Bundles are processed partially, so don't subtract the errors from the total
-  console.log(`Inserted ${fileNames.length} files in ${insertDuration} ms.${reportFailure}`);
-}
-
-async function insertSingleBundle(fileName: string, verbose = false) {
-  const fileContents = getFileContents(fileName);
-  const payload = JSON.parse(fileContents ?? "");
-
-  if (verbose) {
-    // Add diagnostic information about the bundle
-    console.log(`Bundle details:`, {
-      resourceType: payload.resourceType,
-      type: payload.type,
-      totalEntries: payload.entry?.length ?? 0,
-      resourceTypes: payload.entry
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ?.map((e: any) => e.resource?.resourceType)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .reduce((acc: any, curr: string) => {
-          acc[curr] = (acc[curr] || 0) + 1;
-          return acc;
-        }, {}),
-    });
-  }
-
-  let response;
-  try {
-    response = await fhirApi.executeBatch(payload);
-
-    const responseFileName = `${fileName}.response`;
-    try {
-      makeDirIfNeeded(responseFileName);
-      writeFileContents(responseFileName, JSON.stringify(response));
-    } catch (error) {
-      console.log(`>>> Error writing results to ${responseFileName}: `, error);
-    }
-    const errors = getErrorsFromReponse(response);
-    if (errors.length > 0) {
-      console.log(`>>> Errors: `, JSON.stringify(errors));
-      throw new Error(`Got ${errors.length} errors from FHIR`);
-    }
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    const errAsString = errorToString(error);
-    console.log(`Error inserting ${fileName}: ${errAsString}`);
-    const errorFileName = `${fileName}.error`;
-    try {
-      makeDirIfNeeded(errorFileName);
-      // Store more detailed error information
-      writeFileContents(
-        errorFileName,
-        JSON.stringify(
-          {
-            error: errAsString,
-            timestamp: new Date().toISOString(),
-            request: {
-              tenantId,
-              organizationNumber,
-              fileName,
-            },
-            response: {
-              status: error.response?.status,
-              data: error.response?.data,
-              headers: error.response?.headers,
-            },
-          },
-          null,
-          2
-        )
-      );
-    } catch (writeError) {
-      console.log(`>>> Error writing results to ${errorFileName}: `, writeError);
-    }
-    throw error;
-  }
-}
-
-function getErrorsFromReponse(response?: Bundle<Resource>) {
-  const entries = response?.entry ? response.entry : [];
-  const errors = entries.filter(e => !e.response?.status?.startsWith("2"));
-  return errors;
-}
-
-async function getStatusFromFHIRServer() {
-  const result = await getResourceCount();
-  const succeeded = result.flatMap(r => (r.status === "fulfilled" ? r.value : []));
-  const failed = result.flatMap(r => (r.status === "rejected" ? r.reason : []));
-
-  let total = 0;
-  const countPerResource = succeeded.reduce((acc, curr) => {
-    const resourceType = curr.resourceType;
-    const count = curr.count ?? 0;
-    total += count;
-    if (count === 0) return acc;
-    return { ...acc, [resourceType]: count };
-  }, {} as Record<ResourceTypeForConsolidation, number>);
-
-  if (failed.length) {
-    console.log(
-      `>>> Amount of resources that failed to count: ${failed.length} (${succeeded.length} succeeded)`
-    );
-  }
-  return {
-    total,
-    resources: countPerResource,
-  };
-}
-
-async function getResourceCount() {
-  const { resourcesByPatient, resourcesBySubject, generalResourcesNoFilter } = getResourcesFilter();
-  const summaryCount = "&_summary=count";
-
-  const result = await Promise.allSettled([
-    ...[...resourcesByPatient, ...resourcesBySubject, ...generalResourcesNoFilter].map(
-      async resource => {
-        const res = await fhirApi.search(resource, summaryCount);
-        return { resourceType: resource, count: res.total ?? 0 };
-      }
-    ),
-  ]);
-
-  return result;
-}
-
-function getResourcesFilter() {
-  const resourcesByPatient = resourcesSearchableByPatient;
-  const resourcesBySubject = resourcesSearchableBySubject;
-  const generalResourcesNoFilter = [
-    "Practitioner",
-    "Organization",
-    "Medication",
-    "Location",
-  ] as const;
-  return {
-    resourcesByPatient,
-    resourcesBySubject,
-    generalResourcesNoFilter,
-  };
 }
 
 main().then(() => {
