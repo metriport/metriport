@@ -6,6 +6,8 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { Runtime } from "aws-cdk-lib/aws-lambda";
+import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
@@ -15,6 +17,7 @@ import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd } from "../shared/util";
+import path from "path";
 
 export function settings() {
   const config = getConfig();
@@ -151,6 +154,29 @@ export function createFHIRConverterService(
     scope: stack,
     id: "FhirConverter",
     alarmAction,
+  });
+
+  new nodejs.NodejsFunction(stack, "FhirConverterNodeJsLambda", {
+    functionName: "FhirConverterNodeJsLambda",
+    entry: path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "fhir-converter",
+      "src",
+      "ccda-to-fhir-lambda.js"
+    ),
+    handler: "handler",
+    runtime: Runtime.NODEJS_18_X,
+    bundling: {
+      define: {
+        "process.env.NODE_ENV": "production",
+        "process.env.ENV_TYPE": props.config.environmentType,
+        ...(props.version ? { "process.env.METRIPORT_VERSION": props.version } : undefined),
+      },
+    },
   });
 
   return { service: fargateService.service, address: serverAddress };
