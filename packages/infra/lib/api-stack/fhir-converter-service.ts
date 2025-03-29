@@ -1,4 +1,4 @@
-import { Duration, StackProps } from "aws-cdk-lib";
+import { DockerImage, Duration, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -171,10 +171,13 @@ export function createFHIRConverterService(
     handler: "handler",
     runtime: Runtime.NODEJS_18_X,
     bundling: {
-      define: {
-        "process.env.NODE_ENV": "production",
-        "process.env.ENV_TYPE": props.config.environmentType,
-        ...(props.version ? { "process.env.METRIPORT_VERSION": props.version } : undefined),
+      dockerImage: DockerImage.fromBuild(
+        path.join(__dirname, "..", "..", "..", "..", "fhir-converter", "Dockerfile")
+      ),
+      environment: {
+        NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
+        ENV_TYPE: props.config.environmentType, // staging, production, sandbox
+        ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
       },
     },
   });
