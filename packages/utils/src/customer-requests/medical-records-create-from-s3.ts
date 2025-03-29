@@ -91,6 +91,7 @@ async function getMedicalRecordURL(
 ): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const debug = (params: any) => isDebug && log(params);
+  log(`!!! You need a FHIR server to run this script.`);
   const patientFhir = await fhirApi.readResource("Patient", patientId);
   const resources: Resource[] = [patientFhir];
   const patientPrefix = createFolderName(cxId, patientId);

@@ -8,7 +8,7 @@ import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensi
 import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { out } from "@metriport/core/util/log";
+import { log, out } from "@metriport/core/util/log";
 import { Dictionary, groupBy } from "lodash";
 
 /**
@@ -86,6 +86,7 @@ async function getDocRefsFromCx(cxId: string): Promise<DocumentReference[]> {
     const fhirApi = makeFhirApi(cxId, fhirBaseUrl);
     const docs: DocumentReference[] = [];
     // TODO use getDocuments() instead - see src/external/fhir/document/get-documents.ts
+    log(`!!! You need a FHIR server to run this script.`);
     for await (const page of fhirApi.searchResourcePages("DocumentReference", filters)) {
       docs.push(...page);
     }

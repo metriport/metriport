@@ -5,11 +5,9 @@ import {
   PatientDemoData,
 } from "@metriport/core/domain/patient";
 import { PatientSettingsData } from "@metriport/core/domain/patient-settings";
-import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
@@ -84,16 +82,12 @@ export async function createPatient({
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
   const newPatient = await PatientModel.create(patientCreate);
-  const fhirPatient = toFHIR(newPatient);
 
-  await Promise.all([
-    createPatientSettings({
-      cxId,
-      patientId: patientCreate.id,
-      ...settings,
-    }),
-    upsertPatientToFHIRServer(newPatient.cxId, fhirPatient),
-  ]);
+  await createPatientSettings({
+    cxId,
+    patientId: patientCreate.id,
+    ...settings,
+  });
 
   if (runPd) {
     runInitialPatientDiscoveryAcrossHies({
