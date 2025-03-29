@@ -8,7 +8,7 @@ interface WriteToS3Payload {
   serviceId: unknown;
   bucket: unknown;
   filePath: unknown;
-  key: unknown;
+  fileName: unknown;
   payload: unknown;
   contentType: unknown;
   metadata: unknown;
@@ -30,9 +30,9 @@ export function parseWriteToS3(bodyAsJson: WriteToS3Payload): WriteToS3Request {
   if (!filePathRaw) throw new MetriportError("Missing filePath");
   if (typeof filePathRaw !== "string") throw new MetriportError("Invalid filePath");
 
-  const keyRaw = bodyAsJson.key;
-  const validKey = typeof keyRaw === "string" || keyRaw === undefined;
-  if (!validKey) throw new MetriportError("Invalid key");
+  const fileNameRaw = bodyAsJson.fileName;
+  const validFileName = typeof fileNameRaw === "string" || fileNameRaw === undefined;
+  if (!validFileName) throw new MetriportError("Invalid fileName");
 
   const payloadRaw = bodyAsJson.payload;
   if (!payloadRaw) throw new MetriportError("Missing payload");
@@ -54,7 +54,7 @@ export function parseWriteToS3(bodyAsJson: WriteToS3Payload): WriteToS3Request {
     serviceId: serviceIdRaw,
     bucket: bucketRaw,
     filePath: filePathRaw,
-    key: keyRaw,
+    fileName: fileNameRaw,
     payload: payloadRaw,
     contentType: contentTypeRaw,
     metadata,

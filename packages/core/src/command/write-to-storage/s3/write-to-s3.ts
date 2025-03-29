@@ -3,7 +3,7 @@ import { UploadParams } from "../../../external/aws/s3";
 export type WriteToS3Request = Omit<UploadParams, "file" | "key"> & {
   serviceId: string;
   filePath: string;
-  key?: string;
+  fileName?: string;
   payload: string;
 };
 

@@ -1,8 +1,4 @@
-import {
-  bulkServices,
-  S3Writer,
-  WriteToS3Request,
-} from "@metriport/core/command/write-to-storage/s3/write-to-s3";
+import { WriteToS3Request } from "@metriport/core/command/write-to-storage/s3/write-to-s3";
 import { S3WriterLocal } from "@metriport/core/command/write-to-storage/s3/write-to-s3-local";
 import { errorToString, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
@@ -26,27 +22,57 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
     if (messages.length < 1) return;
     log(`Running with unparsed bodies: ${messages.map(m => m.body).join(", ")}`);
     const parsedBodies = messages.map(m => parseBody(m.body));
-    const messagesByService = parsedBodies.reduce((acc, body) => {
-      const serviceId = body.serviceId;
-      const serviceArray = acc[serviceId] ?? [];
-      serviceArray.push(body);
-      acc[serviceId] = serviceArray;
-      return acc;
-    }, {} as Record<string, WriteToS3Request[]>);
+
+    const services = new Set(parsedBodies.map(m => m.serviceId));
+    if (services.size > 1) {
+      throw new MetriportError(`Multiple services found in batch`, undefined, {
+        services: JSON.stringify(services),
+      });
+    }
+    const serviceId = services.values().next().value;
+    const buckets = new Set(parsedBodies.map(m => m.bucket));
+    if (buckets.size > 1) {
+      throw new MetriportError(`Multiple buckets for service ${serviceId}`, undefined, {
+        buckets: JSON.stringify(buckets),
+      });
+    }
+    const bucket = buckets.values().next().value;
+
+    const messagesByFilePath = parsedBodies.reduce(
+      (acc, body) => {
+        const filePath = body.filePath;
+        const singleMessages = acc[filePath]?.singleMessages ?? [];
+        const bulkMessages = acc[filePath]?.bulkMessages ?? [];
+        (body.fileName ? singleMessages : bulkMessages).push(body);
+        acc[filePath] = {
+          singleMessages,
+          bulkMessages,
+        };
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          singleMessages: WriteToS3Request[];
+          bulkMessages: WriteToS3Request[];
+        }
+      >
+    );
 
     const s3Writer = new S3WriterLocal();
     await Promise.all(
-      Object.entries(messagesByService).flatMap(([serviceId, messages]) => {
+      Object.entries(messagesByFilePath).flatMap(([filePath, messagesMap]) => {
         const log = prefixedLog(`serviceId ${serviceId}`);
-        if (bulkServices.includes(serviceId)) {
-          return processBulkService({
-            serviceId,
-            messages,
-            handler: s3Writer,
-          });
-        }
         log(`ing ${messages.length} messages for service ${serviceId}`);
-        return messages.map(m => s3Writer.writeToS3(m));
+        return [
+          ...messagesMap.singleMessages.map(m => s3Writer.writeToS3(m)),
+          s3Writer.writeToS3({
+            serviceId,
+            bucket,
+            filePath,
+            payload: messagesMap.bulkMessages.map(m => m.payload).join("\n"),
+          }),
+        ];
       })
     );
     const finishedAt = new Date().getTime();
@@ -72,39 +98,4 @@ function parseBody(body?: unknown): WriteToS3Request {
   const bodyAsJson = JSON.parse(bodyString);
 
   return parseWriteToS3(bodyAsJson);
-}
-
-function processBulkService({
-  serviceId,
-  messages,
-  handler,
-}: {
-  serviceId: string;
-  messages: WriteToS3Request[];
-  handler: S3Writer;
-}): Promise<void>[] {
-  const log = prefixedLog(`processBulkService - serviceId ${serviceId}`);
-  log(`Bulk processing ${messages.length} messages for service ${serviceId}`);
-  const buckets = new Set(messages.map(m => m.bucket));
-  if (buckets.size > 1) throw new MetriportError(`Multiple buckets for service ${serviceId}`);
-  const bucket = buckets.values().next().value;
-  const messagesByServiceAndFilePath = messages.reduce((acc, message) => {
-    const filePath = message.filePath;
-    const serviceArray = acc[filePath] ?? [];
-    serviceArray.push(message);
-    acc[filePath] = serviceArray;
-    return acc;
-  }, {} as Record<string, WriteToS3Request[]>);
-  log(
-    `ing ${messages.length} messages for service ${serviceId} -- input keys and metadata will be ignored`
-  );
-  return Object.entries(messagesByServiceAndFilePath).map(([filePath, messages]) =>
-    handler.writeToS3({
-      serviceId,
-      bucket,
-      filePath,
-      payload: messages.map(m => m.payload).join("\n"),
-      contentType: "application/json",
-    })
-  );
 }

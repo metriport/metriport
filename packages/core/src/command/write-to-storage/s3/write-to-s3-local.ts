@@ -8,10 +8,10 @@ const s3Utils = new S3Utils(region);
 
 export class S3WriterLocal implements S3Writer {
   async writeToS3(params: WriteToS3Request): Promise<void> {
-    const { bucket, filePath, key, contentType, metadata, payload } = params;
+    const { bucket, filePath, fileName, contentType, metadata, payload } = params;
     await s3Utils.uploadFile({
       bucket,
-      key: `${filePath}/${key ?? `${uuidv7()}.json`}`,
+      key: `${filePath}/${fileName ?? `${uuidv7()}.json`}`,
       file: Buffer.from(payload),
       ...(contentType ? { contentType } : undefined),
       ...(metadata ? { metadata } : undefined),
