@@ -42,7 +42,6 @@ import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
-import { createAppConfigStack } from "./app-config-stack";
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { UtilsNestedStack } from "./utils-nested-stack";
 import { EnvType } from "./env-type";
@@ -142,11 +141,6 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    // TODO 2840 remove this
-    createAppConfigStack({
-      stack: this,
-      props: { config: props.config },
-    });
     const { featureFlagsTable } = new FeatureFlagsNestedStack(this, "FeatureFlags", {
       config: props.config,
       alarmAction: slackNotification?.alarmAction,
