@@ -26,6 +26,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   sentryDsn: string | undefined;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
+  writeToS3Lambda: Lambda;
   writeToS3QueueUrl: string;
 }
 
@@ -42,12 +43,16 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       versioned: true,
     });
 
+    iheResponsesBucket.grantWrite(props.writeToS3Lambda);
+
     const iheParsedResponsesBucket = new s3.Bucket(this, "iheParsedResponsesBucket", {
       bucketName: props.iheParsedResponsesBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
     });
+
+    iheParsedResponsesBucket.grantWrite(props.writeToS3Lambda);
 
     this.createParsedReponseTables(iheParsedResponsesBucket);
 

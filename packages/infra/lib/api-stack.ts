@@ -383,12 +383,13 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Utils
     //-------------------------------------------
-    const { writeToS3Queue: utilsWriteToS3Queue } = new UtilsNestedStack(this, "UtilsNestedStack", {
-      config: props.config,
-      lambdaLayers,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-    });
+    const { writeToS3Queue: utilsWriteToS3Queue, writeToS3Lambda: utilWriteToS3Lambda } =
+      new UtilsNestedStack(this, "UtilsNestedStack", {
+        config: props.config,
+        lambdaLayers,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+      });
 
     //-------------------------------------------
     // Rate Limiting
@@ -554,6 +555,7 @@ export class APIStack extends Stack {
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
+        writeToS3Lambda: utilWriteToS3Lambda,
         writeToS3QueueUrl: utilsWriteToS3Queue.queueUrl,
       });
     }
