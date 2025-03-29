@@ -427,19 +427,11 @@ export function createAPIService({
   });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
 
-  // Setting permissions for AppConfig
   fargateService.taskDefinition.taskRole.attachInlinePolicy(
-    new iam.Policy(stack, "OSSAPIPermissionsForAppConfig", {
+    new iam.Policy(stack, "OssApiSpecialPermissions", {
       statements: [
         new iam.PolicyStatement({
-          actions: [
-            "appconfig:StartConfigurationSession",
-            "appconfig:GetLatestConfiguration",
-            "appconfig:GetConfiguration",
-            "appconfig:CreateHostedConfigurationVersion",
-            "appconfig:StartDeployment",
-            "apigateway:GET",
-          ],
+          actions: ["apigateway:GET"],
           resources: ["*"],
         }),
         new iam.PolicyStatement({
