@@ -1,10 +1,10 @@
 import { BadRequestError } from "@metriport/shared";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
+import { FeatureFlagDatastore, ffDatastoreSchema } from "../../external/aws/app-config";
 import { DynamoDbUtils } from "../../external/aws/dynamodb";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
-import { FeatureFlagDatastore, ffDatastoreSchema } from "./types";
 
 const { log } = out(`FFs on DDB`);
 
@@ -15,14 +15,18 @@ function makeAppConfigClient(region: string, tableName: string): DynamoDbUtils {
   return new DynamoDbUtils({ region, table: tableName, partitionKey });
 }
 
-const featureFlagsRecordSchema = z.object({
-  id: z.string(),
+export const featureFlagsRecordUpdateSchema = z.object({
   featureFlags: ffDatastoreSchema,
-  updatedAt: z.string().optional(),
-  updatedBy: z.string().optional(),
+  updatedBy: z.string(),
   version: z.number(),
 });
-type FeatureFlagsRecord = z.infer<typeof featureFlagsRecordSchema>;
+export const featureFlagsRecordSchema = featureFlagsRecordUpdateSchema.merge(
+  z.object({
+    id: z.string(),
+    updatedAt: z.string(),
+  })
+);
+export type FeatureFlagsRecord = z.infer<typeof featureFlagsRecordSchema>;
 
 // TODO 2840 Consider removing this, or just making all FFs optional by default.
 const initialFeatureFlags: FeatureFlagDatastore = {

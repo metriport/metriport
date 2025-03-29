@@ -1,4 +1,5 @@
 import {
+  featureFlagsRecordUpdateSchema,
   getFeatureFlagsRecord,
   updateFeatureFlagsRecord,
 } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
@@ -48,7 +49,7 @@ router.post(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const newRecordData = req.body;
+    const newRecordData = featureFlagsRecordUpdateSchema.parse(req.body);
     const ffRecord = await updateFeatureFlagsRecord({
       region: Config.getAWSRegion(),
       tableName: Config.getFeatureFlagsTableName(),
