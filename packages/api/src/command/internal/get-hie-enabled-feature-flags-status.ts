@@ -1,4 +1,4 @@
-import { getFeatureFlagValueCxValues } from "@metriport/core/command/feature-flags";
+import { getFeatureFlagValueCxValues } from "@metriport/core/command/feature-flags/domain-ffs";
 import { CxFeatureFlagStatus } from "@metriport/core/command/feature-flags/types";
 import { Config as ConfigCore } from "@metriport/core/util/config";
 import { Config } from "../../shared/config";

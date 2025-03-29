@@ -1,7 +1,7 @@
 import {
   getCxsWithFeatureFlagEnabled,
   isFeatureFlagEnabled,
-} from "@metriport/core/command/feature-flags";
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { getFeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { Config as ConfigCore } from "@metriport/core/util/config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
