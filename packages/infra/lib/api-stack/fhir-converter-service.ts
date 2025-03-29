@@ -17,6 +17,7 @@ import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd } from "../shared/util";
+import path from "path";
 
 export function settings() {
   const config = getConfig();
@@ -157,12 +158,19 @@ export function createFHIRConverterService(
 
   new nodejs.NodejsFunction(stack, "FhirConverterNodeJsLambda", {
     functionName: "FhirConverterNodeJsLambda",
-    entry: "../fhir-converter/src/ccda-to-fhir-lambda.js",
+    entry: path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "fhir-converter",
+      "src",
+      "ccda-to-fhir-lambda.js"
+    ),
+    handler: "handler",
     runtime: Runtime.NODEJS_18_X,
     bundling: {
-      esbuildArgs: {
-        "--packages": "bundle", // <- behaves like before esbuild 0.22
-      },
       define: {
         "process.env.NODE_ENV": "production",
         "process.env.ENV_TYPE": props.config.environmentType,
