@@ -1,8 +1,8 @@
-import * as AWS from "aws-sdk";
 import { rateLimitPartitionKey } from "@metriport/shared";
-import { docTableNames } from "./db";
-import { getEnvVarOrFail } from "../shared/config";
+import * as AWS from "aws-sdk";
 import { allowMapiAccess } from "../command/medical/mapi-access";
+import { getEnvVarOrFail } from "../shared/config";
+import { docTableNames } from "./db";
 
 //Checks if the table exists in the db
 async function tableExists(tableName: string, ddb: AWS.DynamoDB) {
@@ -92,6 +92,32 @@ async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
   }
 }
 
+async function createFeatureFlagsTable(ddb: AWS.DynamoDB): Promise<void> {
+  const doesTableExist = await tableExists(docTableNames.featureFlags, ddb);
+  if (!doesTableExist) {
+    const params: AWS.DynamoDB.CreateTableInput = {
+      AttributeDefinitions: [
+        {
+          AttributeName: rateLimitPartitionKey,
+          AttributeType: "S",
+        },
+      ],
+      KeySchema: [
+        {
+          AttributeName: rateLimitPartitionKey,
+          KeyType: "HASH",
+        },
+      ],
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 1,
+        WriteCapacityUnits: 1,
+      },
+      TableName: docTableNames.featureFlags,
+    };
+    await ddb.createTable(params).promise();
+  }
+}
+
 export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   const doc = new AWS.DynamoDB.DocumentClient({
     apiVersion: "2012-08-10",
@@ -103,6 +129,7 @@ export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   });
   await createTokenTable(ddb);
   await createRateLimitTable(ddb);
+  await createFeatureFlagsTable(ddb);
   return doc;
 }
 
