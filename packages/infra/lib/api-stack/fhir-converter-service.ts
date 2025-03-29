@@ -7,7 +7,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
-import nodejs from "aws-cdk-lib/aws-lambda-nodejs";
+import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
