@@ -73,7 +73,7 @@ export class FeatureFlagsNestedStack extends NestedStack {
   }): dynamodb.Table {
     const {
       dynamoConstructName,
-      dynamoPartitionKey: dynamoRateLimitPartitionKey,
+      dynamoPartitionKey,
       dynamoReplicationRegions,
       dynamoReplicationTimeout,
       dynamoPointInTimeRecovery,
@@ -85,7 +85,7 @@ export class FeatureFlagsNestedStack extends NestedStack {
     } = ownProps;
     const table = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: {
-        name: dynamoRateLimitPartitionKey,
+        name: dynamoPartitionKey,
         type: dynamodb.AttributeType.STRING,
       },
       replicationRegions: dynamoReplicationRegions,
@@ -137,8 +137,8 @@ export class FeatureFlagsNestedStack extends NestedStack {
       this,
       `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`,
       {
-        threshold: consumedWriteCapacityUnitsAlarmThreshold, // units per second
-        evaluationPeriods: consumedWriteCapacityUnitsAlarmPeriod,
+        threshold: consumedReadCapacityUnitsAlarmThreshold, // units per second
+        evaluationPeriods: consumedReadCapacityUnitsAlarmPeriod,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );
@@ -150,8 +150,8 @@ export class FeatureFlagsNestedStack extends NestedStack {
       this,
       `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`,
       {
-        threshold: consumedReadCapacityUnitsAlarmThreshold, // units per second
-        evaluationPeriods: consumedReadCapacityUnitsAlarmPeriod,
+        threshold: consumedWriteCapacityUnitsAlarmThreshold, // units per second
+        evaluationPeriods: consumedWriteCapacityUnitsAlarmPeriod,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );
