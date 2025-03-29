@@ -45,6 +45,7 @@ import { TerminologyServerNestedStack } from "./api-stack/terminology-server-ser
 import { createAppConfigStack } from "./app-config-stack";
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
+import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
@@ -146,6 +147,10 @@ export class APIStack extends Stack {
         stack: this,
         props: { config: props.config },
       });
+    new FeatureFlagsNestedStack(this, "FeatureFlags", {
+      config: props.config,
+      alarmAction: slackNotification?.alarmAction,
+    });
 
     //-------------------------------------------
     // Aurora Database for backend data
