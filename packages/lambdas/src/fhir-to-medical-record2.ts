@@ -1,6 +1,6 @@
 import { Brief, convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
-import { getFeatureFlagValueStringArray } from "@metriport/core/command/feature-flags";
+import { getFeatureFlagValueStringArray } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
