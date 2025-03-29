@@ -2,7 +2,7 @@ import { Brief, convertStringToBrief } from "@metriport/core/command/ai-brief/br
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
+import { getFeatureFlagValueStringArray } from "@metriport/core/command/feature-flags";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";

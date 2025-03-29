@@ -7,7 +7,7 @@ import {
 import { CQLink } from "../../carequality/cq-patient-data";
 import { CwLink } from "../../commonwell/cw-patient-data";
 import { createCQLink, createCwLink } from "./patient-links-tests";
-import * as appConfig from "@metriport/core/external/aws/app-config";
+import * as appConfig from "@metriport/core/command/feature-flags";
 
 describe("validateLinksBelongToPatient", () => {
   const cxId = "test-cx-id";

@@ -11,7 +11,7 @@ import {
   createSandboxMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { isWkhtmltopdfEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { isWkhtmltopdfEnabledForCx } from "@metriport/core/command/feature-flags";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util";

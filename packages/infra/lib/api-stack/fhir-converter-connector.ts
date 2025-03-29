@@ -1,5 +1,6 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -115,7 +116,7 @@ export function createLambda({
   termServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
-  appConfigEnvVars,
+  featureFlagsTable,
 }: {
   lambdaLayers: LambdaLayers;
   envType: EnvType;
@@ -129,10 +130,7 @@ export function createLambda({
   termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
-  appConfigEnvVars: {
-    appId: string;
-    configId: string;
-  };
+  featureFlagsTable: dynamodb.Table;
 }): Lambda {
   const config = getConfig();
   const {
@@ -162,8 +160,7 @@ export function createLambda({
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
-      APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-      APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+      FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
@@ -171,6 +168,7 @@ export function createLambda({
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
   medicalDocumentsBucket.grantReadWrite(conversionLambda);
+  featureFlagsTable.grantReadData(conversionLambda);
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {

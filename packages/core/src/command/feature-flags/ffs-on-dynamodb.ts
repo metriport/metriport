@@ -1,10 +1,10 @@
 import { BadRequestError } from "@metriport/shared";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { z } from "zod";
-import { FeatureFlagDatastore, ffDatastoreSchema } from "../../external/aws/app-config";
 import { DynamoDbUtils } from "../../external/aws/dynamodb";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
+import { FeatureFlagDatastore, ffDatastoreSchema } from "./types";
 
 const { log } = out(`FFs on DDB`);
 
@@ -61,11 +61,11 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
 
 export async function getFeatureFlags(
   region: string,
-  ffTableName: string
+  tableName: string
 ): Promise<FeatureFlagDatastore> {
-  const record = await getFeatureFlagsRecord({ region, tableName: ffTableName });
+  const record = await getFeatureFlagsRecord({ region, tableName });
   log(
-    `From config with region=${region} and tableName=${ffTableName} - got version: ${record?.version}`
+    `From config with region=${region} and tableName=${tableName} - got version: ${record?.version}`
   );
   return record?.featureFlags ?? initialFeatureFlags;
 }

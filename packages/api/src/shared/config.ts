@@ -328,7 +328,6 @@ export class Config {
     return getEnvVar("CW_CQ_PATIENT_LINK_QUEUE_URL");
   }
 
-  // app config for feature flags
   static getAppConfigAppId(): string {
     return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
   }
