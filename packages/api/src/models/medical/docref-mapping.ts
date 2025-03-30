@@ -22,6 +22,7 @@ export class DocRefMappingModel extends BaseModel<DocRefMappingModel> implements
   declare cxId: string;
   declare patientId: string;
   declare requestId: string;
+  declare rawResource: string;
   declare source: MedicalDataSource;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -41,6 +42,9 @@ export class DocRefMappingModel extends BaseModel<DocRefMappingModel> implements
           type: DataTypes.STRING,
         },
         requestId: {
+          type: DataTypes.STRING,
+        },
+        rawResource: {
           type: DataTypes.STRING,
         },
       },
