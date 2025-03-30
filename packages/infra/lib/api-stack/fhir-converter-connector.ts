@@ -1,7 +1,7 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { IFunction as ILambda, Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
@@ -127,7 +127,7 @@ export function createLambda({
   fhirConverterBucket: s3.IBucket;
   medicalDocumentsBucket: s3.IBucket;
   fhirServerUrl: string;
-  fhirLambda?: Lambda;
+  fhirLambda?: ILambda;
   termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
