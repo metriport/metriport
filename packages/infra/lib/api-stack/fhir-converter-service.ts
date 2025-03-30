@@ -1,4 +1,4 @@
-import { DockerImage, Duration, StackProps } from "aws-cdk-lib";
+import { Duration, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -10,6 +10,7 @@ import { Runtime } from "aws-cdk-lib/aws-lambda";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
+import path from "path";
 import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { vCPU } from "../shared/fargate";
@@ -17,7 +18,6 @@ import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd } from "../shared/util";
-import path from "path";
 
 export function settings() {
   const config = getConfig();
@@ -168,12 +168,25 @@ export function createFHIRConverterService(
       "src",
       "ccda-to-fhir-lambda.js"
     ),
+    timeout: Duration.minutes(10),
+    memorySize: 1024,
     handler: "handler",
     runtime: Runtime.NODEJS_18_X,
     bundling: {
-      dockerImage: DockerImage.fromBuild(
-        path.join(__dirname, "..", "..", "..", "..", "fhir-converter", "Dockerfile")
-      ),
+      commandHooks: {
+        beforeBundling(inputDir: string, outputDir: string): string[] {
+          return [
+            `mkdir -p ${outputDir}/templates`,
+            `cp -r ${inputDir}/packages/fhir-converter/src/templates/ ${outputDir}/templates/`,
+          ];
+        },
+        afterBundling(): string[] {
+          return [];
+        },
+        beforeInstall(): string[] {
+          return [];
+        },
+      },
       environment: {
         NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
         ENV_TYPE: props.config.environmentType, // staging, production, sandbox
