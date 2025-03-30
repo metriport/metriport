@@ -285,9 +285,6 @@ export class Config {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 
-  static getFHIRToMedicalRecordLambdaName(): string | undefined {
-    return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
-  }
   static getFHIRToMedicalRecordLambda2Name(): string | undefined {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME");
   }
