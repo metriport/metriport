@@ -166,7 +166,7 @@ export function createFHIRConverterService(
       "..",
       "fhir-converter",
       "src",
-      "ccda-to-fhir-lambda.js"
+      "ccda-to-fhir-lambda-nodelambda.js"
     ),
     timeout: Duration.minutes(10),
     memorySize: 1024,
@@ -175,10 +175,7 @@ export function createFHIRConverterService(
     bundling: {
       commandHooks: {
         beforeBundling(inputDir: string, outputDir: string): string[] {
-          return [
-            `mkdir -p ${outputDir}/templates`,
-            `cp -r ${inputDir}/packages/fhir-converter/src/templates/ ${outputDir}/templates/`,
-          ];
+          return [`cp -r ${inputDir}/packages/fhir-converter/src/templates/ ${outputDir}/`];
         },
         afterBundling(): string[] {
           return [];
