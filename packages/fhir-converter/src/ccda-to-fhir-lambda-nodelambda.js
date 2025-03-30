@@ -22,7 +22,7 @@ function GetHandlebarsInstance(dataTypeHandler, templatesMap) {
   var instance = HandlebarsConverter.instance(
     needToUseMap ? true : rebuildCache,
     dataTypeHandler,
-    path.join(constants.BASE_TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType),
+    path.join(process.cwd(), constants.BASE_TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType),
     templatesMap
   );
   rebuildCache = needToUseMap ? true : false; // New instance should be created also after templatesMap usage
@@ -73,7 +73,7 @@ async function ccdaToFhir(ccda, patientId) {
       session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
       session.set(
         constants.CLS_KEY_TEMPLATE_LOCATION,
-        path.join(constants.BASE_TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType)
+        path.join(process.cwd(), constants.BASE_TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType)
       );
 
       const getTemplate = templateName => {
