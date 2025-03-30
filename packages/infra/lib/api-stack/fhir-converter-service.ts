@@ -47,7 +47,7 @@ export function createFHIRConverterService(
   props: FhirConverterServiceProps,
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
-): { service: FargateService; address: string } {
+): { service: FargateService; address: string; lambda: nodejs.NodejsFunction } {
   const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
   // Create a new Amazon Elastic Container Service (ECS) cluster
@@ -156,7 +156,7 @@ export function createFHIRConverterService(
     alarmAction,
   });
 
-  new nodejs.NodejsFunction(stack, "FhirConverterNodeJsLambda", {
+  const lambda = new nodejs.NodejsFunction(stack, "FhirConverterNodeJsLambda", {
     functionName: "FhirConverterNodeJsLambda",
     entry: path.join(
       __dirname,
@@ -192,5 +192,5 @@ export function createFHIRConverterService(
     },
   });
 
-  return { service: fargateService.service, address: serverAddress };
+  return { service: fargateService.service, address: serverAddress, lambda };
 }

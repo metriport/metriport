@@ -112,6 +112,7 @@ export function createLambda({
   fhirConverterBucket,
   medicalDocumentsBucket,
   fhirServerUrl,
+  fhirLambda,
   termServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
@@ -126,6 +127,7 @@ export function createLambda({
   fhirConverterBucket: s3.IBucket;
   medicalDocumentsBucket: s3.IBucket;
   fhirServerUrl: string;
+  fhirLambda?: Lambda;
   termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
@@ -157,6 +159,7 @@ export function createLambda({
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
       FHIR_SERVER_URL: fhirServerUrl,
+      ...(fhirLambda && { FHIR_CONVERTER_LAMBDA_ARN: fhirLambda.functionArn }),
       ...(termServerUrl && { TERM_SERVER_URL: termServerUrl }),
       MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       QUEUE_URL: sourceQueue.queueUrl,
@@ -182,6 +185,6 @@ export function createLambda({
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
-
+  fhirLambda?.grantInvoke(conversionLambda);
   return conversionLambda;
 }

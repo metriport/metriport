@@ -90,6 +90,7 @@ export function createAPIService({
   fhirServerUrl,
   fhirConverterQueueUrl,
   fhirConverterServiceUrl,
+  fhirConverterLambda,
   cdaToVisualizationLambda,
   documentDownloaderLambda,
   outboundPatientDiscoveryLambda,
@@ -127,6 +128,7 @@ export function createAPIService({
   fhirServerUrl: string;
   fhirConverterQueueUrl: string | undefined;
   fhirConverterServiceUrl: string | undefined;
+  fhirConverterLambda: ILambda | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
   outboundPatientDiscoveryLambda: ILambda;
@@ -281,6 +283,9 @@ export function createAPIService({
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
           }),
+          ...(fhirConverterLambda && {
+            FHIR_CONVERTER_LAMBDA_NAME: fhirConverterLambda.functionName,
+          }),
           RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
           SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
           SEARCH_ENDPOINT: searchEndpoint,
@@ -395,6 +400,7 @@ export function createAPIService({
   patientImportLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  fhirConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

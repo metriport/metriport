@@ -20,6 +20,7 @@ import {
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
+import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
@@ -31,7 +32,7 @@ import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
-import { getEnvOrFail } from "./shared/env";
+import { getEnvOrFail, getEnv } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 
@@ -45,6 +46,7 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
+const converterLambdaArn = getEnv("FHIR_CONVERTER_LAMBDA_ARN");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
@@ -205,6 +207,7 @@ export async function handler(event: SQSEvent) {
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
             converterUrl,
+            converterLambdaArn,
             partitionedPayloads,
             converterParams,
             log,
@@ -333,11 +336,13 @@ export async function handler(event: SQSEvent) {
 
 async function convertPayloadToFHIR({
   converterUrl,
+  converterLambdaArn,
   partitionedPayloads,
   converterParams,
   log,
 }: {
   converterUrl: string;
+  converterLambdaArn?: string;
   partitionedPayloads: string[];
   converterParams: FhirConverterParams;
   log: typeof console.log;
@@ -385,7 +390,29 @@ async function convertPayloadToFHIR({
       }
     );
 
-    const conversionResult = res.data.fhirResource as Bundle<Resource>;
+    log(`res.data.fhirResource: ${JSON.stringify(res.data.fhirResource)}`);
+
+    let lambdaConversionResult: Bundle<Resource> | undefined;
+    if (converterLambdaArn) {
+      const lambdaClient = makeLambdaClient(region);
+      const converterLambdaResult = await lambdaClient
+        .invoke({
+          FunctionName: converterLambdaArn,
+          Payload: JSON.stringify({
+            queryParameters: converterParams,
+            body: payload,
+          }),
+          InvocationType: "RequestResponse",
+        })
+        .promise();
+      if (converterLambdaResult.StatusCode === 200) {
+        if (!converterLambdaResult.Payload) throw new Error(`Missing payload`);
+        lambdaConversionResult = JSON.parse(converterLambdaResult.Payload.toString());
+        log(`Lambda conversion result: ${JSON.stringify(lambdaConversionResult)}`);
+      }
+    }
+
+    const conversionResult = lambdaConversionResult ?? (res.data.fhirResource as Bundle<Resource>);
 
     if (conversionResult?.entry && conversionResult.entry.length > 0) {
       log(
