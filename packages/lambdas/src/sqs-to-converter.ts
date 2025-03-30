@@ -409,6 +409,8 @@ async function convertPayloadToFHIR({
         if (!converterLambdaResult.Payload) throw new Error(`Missing payload`);
         lambdaConversionResult = JSON.parse(converterLambdaResult.Payload.toString());
         log(`Lambda conversion result: ${JSON.stringify(lambdaConversionResult)}`);
+      } else {
+        log(`Lambda conversion error result: ${JSON.stringify(converterLambdaResult)}`);
       }
     }
 
