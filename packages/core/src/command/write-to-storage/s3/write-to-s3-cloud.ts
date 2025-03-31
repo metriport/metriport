@@ -10,20 +10,20 @@ import { S3Writer, WriteToS3Request } from "./write-to-s3";
 export class S3WriterCloud implements S3Writer {
   private readonly sqsClient: SQSClient;
 
-  constructor(private readonly writeToS3QueueUrl: string) {
-    const region = Config.getAWSRegion();
-    this.sqsClient = new SQSClient({ region });
+  constructor(private readonly writeToS3QueueUrl: string, region?: string) {
+    const clientRegion = region ?? Config.getAWSRegion();
+    this.sqsClient = new SQSClient({ region: clientRegion });
   }
 
   async writeToS3(params: WriteToS3Request): Promise<void> {
     await Promise.all(
-      params.map(p => {
+      params.map(p =>
         this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, p.payload, {
           fifo: true,
           messageDeduplicationId: createUuidFromText(p.payload),
           messageGroupId: p.serviceId,
-        });
-      })
+        })
+      )
     );
   }
 }
