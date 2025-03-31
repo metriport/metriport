@@ -29,15 +29,15 @@ export class S3WriterLocal implements S3Writer {
         const bulkBuckets = new Set(messagesMap.bulkFiles.map(f => f.bucket));
         if (bulkBuckets.size > 1) throw new Error("Bulk files must have the same bucket");
         return [
-          ...messagesMap.singleFiles.map(f => {
+          ...messagesMap.singleFiles.map(f =>
             s3Utils.uploadFile({
               bucket: f.bucket,
               key: `${filePath}/${f.fileName}`,
               file: Buffer.from(f.payload),
               ...(f.contentType ? { contentType: f.contentType } : undefined),
               ...(f.metadata ? { metadata: f.metadata } : undefined),
-            });
-          }),
+            })
+          ),
           messagesMap.bulkFiles.length > 0 &&
             s3Utils.uploadFile({
               bucket: bulkBuckets.values().next().value,
