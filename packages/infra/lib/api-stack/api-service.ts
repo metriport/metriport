@@ -105,7 +105,6 @@ export function createAPIService({
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
   fhirToBundleLambda,
-  fhirToMedicalRecordLambda,
   fhirToMedicalRecordLambda2,
   fhirToCdaConverterLambda,
   rateLimitTable,
@@ -114,6 +113,7 @@ export function createAPIService({
   searchAuth,
   searchIndexName,
   appConfigEnvVars,
+  featureFlagsTable,
   cookieStore,
 }: {
   stack: Construct;
@@ -143,7 +143,6 @@ export function createAPIService({
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
-  fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToMedicalRecordLambda2: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
@@ -157,6 +156,7 @@ export function createAPIService({
     envId: string;
     deploymentStrategyId: string;
   };
+  featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
 }): {
   cluster: ecs.Cluster;
@@ -267,9 +267,6 @@ export function createAPIService({
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
-          ...(fhirToMedicalRecordLambda && {
-            FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
-          }),
           ...(fhirToMedicalRecordLambda2 && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME: fhirToMedicalRecordLambda2.functionName,
           }),
@@ -309,6 +306,7 @@ export function createAPIService({
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
           APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
           APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
+          FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -391,6 +389,7 @@ export function createAPIService({
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -410,9 +409,6 @@ export function createAPIService({
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
 
-  if (fhirToMedicalRecordLambda) {
-    fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  }
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
   }

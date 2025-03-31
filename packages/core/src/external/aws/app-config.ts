@@ -48,7 +48,6 @@ export const cxBasedFFsSchema = z.object({
   cxsWithDemoAugEnabled: ffStringValuesSchema,
   cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
   cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
-  cxsUsingWkhtmltopdfInsteadOfPuppeteer: ffStringValuesSchema, // TODO: 2510 - Remove this when ready to rollout to all customers
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
@@ -271,14 +270,6 @@ export async function getCxsWithStrictMatchingAlgorithm(): Promise<string[]> {
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
   return cxsWithADHDFeatureFlagValue.includes(cxId);
-}
-
-export async function isWkhtmltopdfEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithWkhtmltopdfEnabled = await getCxsUsingWkhtmltopdfInsteadOfPuppeteer();
-  return cxIdsWithWkhtmltopdfEnabled.some(i => i === cxId);
-}
-export async function getCxsUsingWkhtmltopdfInsteadOfPuppeteer(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsUsingWkhtmltopdfInsteadOfPuppeteer");
 }
 
 export async function isAthenaCustomFieldsEnabledForCx(cxId: string): Promise<boolean> {
