@@ -188,6 +188,7 @@ export class LambdasNestedStack extends NestedStack {
       layers: [
         lambdaLayers.shared,
         lambdaLayers.chromium,
+        // TODO when we remove this, make sure to remove the layer from the api-stack as well
         lambdaLayers.puppeteer,
         lambdaLayers.saxon,
       ],
