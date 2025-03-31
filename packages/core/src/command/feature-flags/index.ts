@@ -134,14 +134,6 @@ export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<bo
   return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
 
-export async function isWkhtmltopdfEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithWkhtmltopdfEnabled = await getCxsUsingWkhtmltopdfInsteadOfPuppeteer();
-  return cxIdsWithWkhtmltopdfEnabled.some(i => i === cxId);
-}
-export async function getCxsUsingWkhtmltopdfInsteadOfPuppeteer(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsUsingWkhtmltopdfInsteadOfPuppeteer");
-}
-
 export async function isAthenaCustomFieldsEnabledForCx(cxId: string): Promise<boolean> {
   const cxsWithAthenaCustomFieldsEnabled = await getCxsWithAthenaCustomFieldsEnabled();
   return cxsWithAthenaCustomFieldsEnabled.includes(cxId);
