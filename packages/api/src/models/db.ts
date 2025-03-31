@@ -1,9 +1,10 @@
+import { Config as ConfigCore } from "@metriport/core/util/config";
 import {
   DbCreds,
   DbCredsReadOnly,
-  DbPoolSettings,
   dbCredsSchema,
   dbCredsSchemaReadOnly,
+  DbPoolSettings,
   dbPoolSettingsSchema,
 } from "@metriport/shared";
 import * as AWS from "aws-sdk";
@@ -20,7 +21,6 @@ import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
-import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { CxMappingModel } from "./cx-mapping";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
@@ -38,6 +38,7 @@ import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -85,6 +86,7 @@ export const getDB = (): MetriportDB => {
 export interface DocTableNames {
   token: string;
   rateLimit?: string;
+  featureFlags: string;
 }
 export let docTableNames: DocTableNames;
 
@@ -92,12 +94,14 @@ async function initDB(): Promise<void> {
   // make sure we have the env vars we need
   const tokenTableName = Config.getTokenTableName();
   const rateLimitTableName = Config.getRateLimitTableName();
+  const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {
     token: tokenTableName,
     rateLimit: rateLimitTableName,
+    featureFlags: featureFlagsTableName,
   };
 
   // get database creds
