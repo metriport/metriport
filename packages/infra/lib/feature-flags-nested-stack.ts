@@ -16,7 +16,9 @@ function getSettings(props: FeatureFlagsNestedStackProps) {
     ...props,
     dynamoConstructName: "FeatureFlags",
     dynamoPartitionKey: "id",
-    dynamoSortKey: "updatedAt",
+    dynamoPartitionType: dynamodb.AttributeType.STRING,
+    dynamoSortKey: "version",
+    dynamoSortType: dynamodb.AttributeType.NUMBER,
     dynamoReplicationRegions: isProd(props.config) ? ["us-east-1"] : ["ca-central-1"],
     dynamoReplicationTimeout: Duration.hours(3),
     dynamoPointInTimeRecovery: true,
@@ -32,40 +34,15 @@ export class FeatureFlagsNestedStack extends NestedStack {
 
   constructor(scope: Construct, id: string, props: FeatureFlagsNestedStackProps) {
     super(scope, id, props);
-
-    const {
-      alarmAction,
-      dynamoConstructName,
-      dynamoPartitionKey,
-      dynamoSortKey,
-      dynamoReplicationRegions,
-      dynamoReplicationTimeout,
-      dynamoPointInTimeRecovery,
-      consumedWriteCapacityUnitsAlarmThreshold,
-      consumedWriteCapacityUnitsAlarmPeriod,
-      consumedReadCapacityUnitsAlarmThreshold,
-      consumedReadCapacityUnitsAlarmPeriod,
-    } = getSettings(props);
-
-    this.featureFlagsTable = this.setupFeatureFlagsTable({
-      dynamoConstructName,
-      dynamoPartitionKey,
-      dynamoSortKey,
-      dynamoReplicationRegions,
-      dynamoReplicationTimeout,
-      dynamoPointInTimeRecovery,
-      alarmAction,
-      consumedWriteCapacityUnitsAlarmThreshold,
-      consumedWriteCapacityUnitsAlarmPeriod,
-      consumedReadCapacityUnitsAlarmThreshold,
-      consumedReadCapacityUnitsAlarmPeriod,
-    });
+    this.featureFlagsTable = this.setupFeatureFlagsTable(getSettings(props));
   }
 
   private setupFeatureFlagsTable(ownProps: {
     dynamoConstructName: string;
     dynamoPartitionKey: string;
+    dynamoPartitionType: dynamodb.AttributeType;
     dynamoSortKey: string;
+    dynamoSortType: dynamodb.AttributeType;
     dynamoReplicationRegions: string[];
     dynamoReplicationTimeout: Duration;
     dynamoPointInTimeRecovery: boolean;
@@ -78,7 +55,9 @@ export class FeatureFlagsNestedStack extends NestedStack {
     const {
       dynamoConstructName,
       dynamoPartitionKey,
+      dynamoPartitionType,
       dynamoSortKey,
+      dynamoSortType,
       dynamoReplicationRegions,
       dynamoReplicationTimeout,
       dynamoPointInTimeRecovery,
@@ -91,11 +70,11 @@ export class FeatureFlagsNestedStack extends NestedStack {
     const table = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: {
         name: dynamoPartitionKey,
-        type: dynamodb.AttributeType.STRING,
+        type: dynamoPartitionType,
       },
       sortKey: {
         name: dynamoSortKey,
-        type: dynamodb.AttributeType.STRING,
+        type: dynamoSortType,
       },
       replicationRegions: dynamoReplicationRegions,
       replicationTimeout: dynamoReplicationTimeout,
