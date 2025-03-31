@@ -10,9 +10,12 @@ import { S3Writer, WriteToS3Request } from "./write-to-s3";
 export class S3WriterCloud implements S3Writer {
   private readonly sqsClient: SQSClient;
 
-  constructor(private readonly writeToS3QueueUrl: string, region?: string) {
-    const clientRegion = region ?? Config.getAWSRegion();
-    this.sqsClient = new SQSClient({ region: clientRegion });
+  constructor(private readonly writeToS3QueueUrl: string, region?: string, sqsClient?: SQSClient) {
+    if (!sqsClient) {
+      this.sqsClient = new SQSClient({ region: region ?? Config.getAWSRegion() });
+    } else {
+      this.sqsClient = sqsClient;
+    }
   }
 
   async writeToS3(params: WriteToS3Request): Promise<void> {
