@@ -1,6 +1,6 @@
 import { WriteToS3Request } from "@metriport/core/command/write-to-storage/s3/write-to-s3";
 import { S3WriterLocal } from "@metriport/core/command/write-to-storage/s3/write-to-s3-local";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -16,35 +16,28 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const log = prefixedLog(`write-to-s3`);
-  try {
-    const startedAt = new Date().getTime();
-    const messages = event.Records;
-    if (messages.length < 1) return;
-    log(`Running with unparsed bodies: ${messages.map(m => m.body).join(", ")}`);
-    const parsedBodies = messages.map(m => parseBody(m.body));
+  capture.setExtra({
+    event,
+    context: lambdaName,
+  });
+  const startedAt = new Date().getTime();
+  const messages = event.Records;
+  if (messages.length < 1) return;
+  log(`Running with unparsed bodies: ${messages.map(m => m.body).join(", ")}`);
+  const parsedBodies = messages.map(m => parseBody(m.body));
 
-    const services = new Set(parsedBodies.map(m => m.serviceId));
-    if (services.size > 1) {
-      throw new MetriportError(`Multiple services found in batch`, undefined, {
-        services: JSON.stringify(services),
-      });
-    }
-
-    const s3Writer = new S3WriterLocal();
-    await s3Writer.writeToS3(parsedBodies);
-
-    const finishedAt = new Date().getTime();
-    log(`Done local duration: ${finishedAt - startedAt}ms`);
-  } catch (error) {
-    const msg = "Error processing event on " + lambdaName;
-    log(`${msg}: ${errorToString(error)}`);
-    capture.setExtra({
-      event,
-      context: lambdaName,
-      error,
+  const services = new Set(parsedBodies.map(m => m.serviceId));
+  if (services.size > 1) {
+    throw new MetriportError(`Multiple services found in batch`, undefined, {
+      services: JSON.stringify(services),
     });
-    throw new MetriportError(msg, error);
   }
+
+  const s3Writer = new S3WriterLocal();
+  await s3Writer.writeToS3(parsedBodies);
+
+  const finishedAt = new Date().getTime();
+  log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
 function parseBody(body?: unknown): WriteToS3Request[number] {
