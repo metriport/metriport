@@ -2,10 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import {
+  FeatureFlags,
   FeatureFlagsRecordUpdate,
-  getFeatureFlagsRecord,
   initialFeatureFlags,
-  updateFeatureFlagsRecord,
 } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { getEnvVarOrFail } from "@metriport/shared";
 
@@ -25,7 +24,9 @@ const region = getEnvVarOrFail("AWS_REGION");
 
 async function main() {
   try {
-    const value = await getFeatureFlagsRecord({ region, tableName });
+    FeatureFlags.init(region, tableName);
+
+    const value = await FeatureFlags.getFeatureFlagsRecord();
     console.log("Parameter value:", value);
     const newValue: FeatureFlagsRecordUpdate = {
       ...value,
@@ -36,9 +37,7 @@ async function main() {
       existingVersion: value?.version ?? 0,
       updatedBy: "test",
     };
-    const updatedValue = await updateFeatureFlagsRecord({
-      region,
-      tableName,
+    const updatedValue = await FeatureFlags.updateFeatureFlagsRecord({
       newRecordData: newValue,
     });
     console.log("Parameter value:", updatedValue);

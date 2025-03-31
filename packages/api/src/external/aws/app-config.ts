@@ -10,19 +10,23 @@ import { capture } from "@metriport/core/util/notifications";
 import { getEnvVar } from "@metriport/shared";
 import { getCxIdFromApiKey } from "../../routes/middlewares/auth";
 import { Config } from "../../shared/config";
+import { initializeFeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 
 const { log } = out(`App Config - FF`);
 
 /**
  * Go through all Feature Flags to make sure they are accessible.
  */
-export async function initFeatureFlags() {
-  if (Config.isDev()) {
-    log(`Skipping initializing Feature Flags - Develop/Local env`);
-    return;
-  }
+export async function initFeatureFlags({
+  region = Config.getAWSRegion(),
+  tableName = ConfigCore.getFeatureFlagsTableName(),
+}: {
+  region?: string;
+  tableName?: string;
+} = {}) {
+  initializeFeatureFlags({ region, tableName });
   try {
-    await getFeatureFlags(Config.getAWSRegion(), ConfigCore.getFeatureFlagsTableName());
+    await getFeatureFlags();
   } catch (error) {
     throw new MetriportError(`Failed to initialize Feature Flags`, error);
   }
