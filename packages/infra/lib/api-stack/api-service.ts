@@ -112,6 +112,7 @@ export function createAPIService({
   searchAuth,
   searchIndexName,
   appConfigEnvVars,
+  featureFlagsTable,
   cookieStore,
 }: {
   stack: Construct;
@@ -153,6 +154,7 @@ export function createAPIService({
     envId: string;
     deploymentStrategyId: string;
   };
+  featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
 }): {
   cluster: ecs.Cluster;
@@ -299,6 +301,7 @@ export function createAPIService({
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
           APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
           APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
+          FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -381,6 +384,7 @@ export function createAPIService({
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
