@@ -104,7 +104,7 @@ async function createFeatureFlagsTable(ddb: AWS.DynamoDB): Promise<void> {
         },
         {
           AttributeName: sortKey,
-          AttributeType: "S",
+          AttributeType: "N",
         },
       ],
       KeySchema: [

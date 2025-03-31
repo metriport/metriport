@@ -2,7 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import {
+  FeatureFlagsRecordUpdate,
   getFeatureFlagsRecord,
+  initialFeatureFlags,
   updateFeatureFlagsRecord,
 } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { getEnvVarOrFail } from "@metriport/shared";
@@ -11,6 +13,8 @@ import { getEnvVarOrFail } from "@metriport/shared";
  * Script to test the code that manipulates the feature flags in DynamoDB.
  *
  * Usage:
+ * - IMPORTANT: set the DYNAMODB_ENDPOINT env var when running pointint to local DB
+ *   It's used on DynamoDbUtils' constructor
  * - set the AWS_REGION and FEATURE_FLAGS_TABLE_NAME environment variables
  * - run the script
  *   ts-node src/aws/dynamodb/test.ts
@@ -23,12 +27,14 @@ async function main() {
   try {
     const value = await getFeatureFlagsRecord({ region, tableName });
     console.log("Parameter value:", value);
-    const newValue = {
+    const newValue: FeatureFlagsRecordUpdate = {
       ...value,
       featureFlags: {
-        ...value.featureFlags,
+        ...(value?.featureFlags ?? initialFeatureFlags),
         commonwellFeatureFlag: { enabled: true },
       },
+      version: value?.version ?? 0,
+      updatedBy: "test",
     };
     const updatedValue = await updateFeatureFlagsRecord({
       region,

@@ -9,8 +9,8 @@ import { capture } from "../../util/notifications";
 const { log } = out(`FFs on DDB`);
 
 export const partitionKey = "id";
-export const sortKey = "updatedAt";
-const recordId = "1";
+export const sortKey = "version";
+export const recordId = "1";
 
 function makeAppConfigClient(region: string, tableName: string): DynamoDbUtils {
   return new DynamoDbUtils({ region, table: tableName, partitionKey });
@@ -19,19 +19,20 @@ function makeAppConfigClient(region: string, tableName: string): DynamoDbUtils {
 export const featureFlagsRecordUpdateSchema = z.object({
   featureFlags: ffDatastoreSchema,
   updatedBy: z.string(),
-  updatedAt: z.string(),
+  version: z.number(),
 });
 export type FeatureFlagsRecordUpdate = z.infer<typeof featureFlagsRecordUpdateSchema>;
 
 export const featureFlagsRecordSchema = featureFlagsRecordUpdateSchema.merge(
   z.object({
     id: z.string(),
+    updatedAt: z.string(),
   })
 );
 export type FeatureFlagsRecord = z.infer<typeof featureFlagsRecordSchema>;
 
 // TODO 2840 Consider removing this, or just making all FFs optional by default.
-const initialFeatureFlags: FeatureFlagDatastore = {
+export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithEnhancedCoverageFeatureFlag: { enabled: false, values: [] },
   cxsWithCQDirectFeatureFlag: { enabled: false, values: [] },
   cxsWithCWFeatureFlag: { enabled: false, values: [] },
@@ -55,22 +56,15 @@ const initialFeatureFlags: FeatureFlagDatastore = {
   carequalityFeatureFlag: { enabled: false },
 };
 
-const initialRecord: FeatureFlagsRecord = {
-  id: recordId,
-  featureFlags: initialFeatureFlags,
-  updatedAt: new Date().toISOString(),
-  updatedBy: "metriport",
-};
-
 export async function getFeatureFlags(
   region: string,
   ffTableName: string
 ): Promise<FeatureFlagDatastore> {
   const record = await getFeatureFlagsRecord({ region, tableName: ffTableName });
   log(
-    `From config with region=${region} and tableName=${ffTableName} - got updatedAt: ${record.updatedAt}`
+    `From config with region=${region} and tableName=${ffTableName} - got version: ${record?.version}`
   );
-  return record.featureFlags ?? {};
+  return record?.featureFlags ?? initialFeatureFlags;
 }
 
 /**
@@ -87,11 +81,14 @@ export async function updateFeatureFlags({
   tableName: string;
   newData: FeatureFlagDatastore;
 }): Promise<FeatureFlagDatastore> {
+  const existingRecord = await getFeatureFlagsRecord({ region, tableName });
+
   const updatedRecord = await _update({
     region,
     tableName,
     newContent: newData,
     updatedBy: "metriport",
+    existingVersion: existingRecord?.version ?? 0,
   });
   return updatedRecord.featureFlags;
 }
@@ -102,7 +99,7 @@ export async function getFeatureFlagsRecord({
 }: {
   region: string;
   tableName: string;
-}): Promise<FeatureFlagsRecord> {
+}): Promise<FeatureFlagsRecord | undefined> {
   const ddb = makeAppConfigClient(region, tableName);
   try {
     const config = await ddb._docClient
@@ -119,7 +116,7 @@ export async function getFeatureFlagsRecord({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.code === "ResourceNotFoundException") {
-      return initialRecord;
+      return undefined;
     }
     throw error;
   }
@@ -137,10 +134,10 @@ export async function updateFeatureFlagsRecord({
   try {
     const existingRecord = await getFeatureFlagsRecord({ region, tableName });
 
-    if (existingRecord.updatedAt !== newRecordData.updatedAt) {
+    if (existingRecord && existingRecord.version !== newRecordData.version) {
       throw new BadRequestError(`FFs out of sync, reload and try again`, undefined, {
-        existingUpdatedAt: existingRecord.updatedAt,
-        updateUpdatedAt: newRecordData.updatedAt,
+        existingVersion: existingRecord.version,
+        updateVersion: newRecordData.version,
       });
     }
 
@@ -149,6 +146,7 @@ export async function updateFeatureFlagsRecord({
       tableName,
       newContent: newRecordData.featureFlags,
       updatedBy: newRecordData.updatedBy,
+      existingVersion: newRecordData.version,
     });
 
     return updatedRecord;
@@ -171,11 +169,13 @@ async function _update({
   tableName,
   newContent,
   updatedBy,
+  existingVersion,
 }: {
   region: string;
   tableName: string;
   newContent: FeatureFlagDatastore;
   updatedBy: string;
+  existingVersion: number;
 }): Promise<FeatureFlagsRecord> {
   const ddbUtils = makeAppConfigClient(region, tableName);
 
@@ -185,25 +185,29 @@ async function _update({
     throw new BadRequestError(`Invalid feature flags`, error);
   }
 
-  const record = {
+  const record: FeatureFlagsRecord = {
     id: recordId,
+    featureFlags: newContent,
+    version: existingVersion + 1,
     updatedAt: new Date().toISOString(),
     updatedBy: updatedBy,
-    featureFlags: newContent,
   };
   await ddbUtils._docClient
     .put({
       TableName: ddbUtils._table,
       Item: record,
+      ConditionExpression: `attribute_not_exists(${partitionKey}) AND attribute_not_exists(${sortKey})`,
     })
     .promise();
 
-  log(`Updated FFs, updatedAt: ${record.updatedAt}, by ${updatedBy}`);
+  log(`Updated FFs (new version: ${record.version}), by ${updatedBy}`);
   return record;
 }
 
-function ddbItemToDbRecord(item: DocumentClient.AttributeMap | undefined): FeatureFlagsRecord {
-  if (!item) return initialRecord;
+function ddbItemToDbRecord(
+  item: DocumentClient.AttributeMap | undefined
+): FeatureFlagsRecord | undefined {
+  if (!item) return undefined;
   const recordRaw = item;
   const { featureFlags: featureFlagsRaw, ...rest } = recordRaw;
   const featureFlags = featureFlagsRaw
