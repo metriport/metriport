@@ -51,7 +51,6 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithDemoAugEnabled: { enabled: false, values: [] },
   cxsWithStalePatientUpdateEnabled: { enabled: false, values: [] },
   cxsWithStrictMatchingAlgorithm: { enabled: false, values: [] },
-  cxsUsingWkhtmltopdfInsteadOfPuppeteer: { enabled: false, values: [] },
   cxsWithAthenaCustomFieldsEnabled: { enabled: false, values: [] },
   oidsWithIHEGatewayV2Enabled: { enabled: false, values: [] },
   e2eCxIds: { enabled: false, values: [] },
