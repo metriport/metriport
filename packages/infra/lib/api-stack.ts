@@ -589,7 +589,7 @@ export class APIStack extends Stack {
       fhirConverterBucket,
       medicalDocumentsBucket,
       fhirServerUrl: props.config.fhirServerUrl,
-      fhirLambda: fhirConverter ? fhirConverter.lambda : undefined,
+      fhirConverterLambda: fhirConverter ? fhirConverter.lambda : undefined,
       termServerUrl: props.config.termServerUrl,
       apiServiceDnsAddress: apiDirectUrl,
       alarmSnsAction: slackNotification?.alarmAction,
