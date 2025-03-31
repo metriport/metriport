@@ -96,7 +96,7 @@ export async function updateFeatureFlags({
   tableName: string;
   newData: FeatureFlagDatastore;
 }): Promise<FeatureFlagDatastore> {
-  const existingRecord = await getFeatureFlagsRecord({ region, tableName });
+  const existingRecord = await getFeatureFlagsRecord({ region, tableName, skipCache: true });
 
   const updatedRecord = await _update({
     region,
@@ -111,14 +111,20 @@ export async function updateFeatureFlags({
 export async function getFeatureFlagsRecord({
   region,
   tableName,
+  skipCache,
 }: {
   region: string;
   tableName: string;
+  skipCache?: boolean;
 }): Promise<FeatureFlagsRecord | undefined> {
   const now = Date.now();
 
   // If cache exists and is not expired, return cached value
-  if (featureFlagsCache && now - featureFlagsCache.timestamp < cacheDuration.asMilliseconds()) {
+  if (
+    !skipCache &&
+    featureFlagsCache &&
+    now - featureFlagsCache.timestamp < cacheDuration.asMilliseconds()
+  ) {
     log(
       `Returning cached feature flags (age: ${Math.round(
         (now - featureFlagsCache.timestamp) / 1000
@@ -169,7 +175,7 @@ export async function updateFeatureFlagsRecord({
   newRecordData: FeatureFlagsRecordUpdate;
 }): Promise<FeatureFlagsRecord> {
   try {
-    const existingRecord = await getFeatureFlagsRecord({ region, tableName });
+    const existingRecord = await getFeatureFlagsRecord({ region, tableName, skipCache: true });
 
     if (existingRecord && existingRecord.version !== newRecordData.existingVersion) {
       throw new BadRequestError(`FFs out of sync, reload and try again`, undefined, {
