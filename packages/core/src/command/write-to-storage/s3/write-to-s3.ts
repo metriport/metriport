@@ -16,5 +16,3 @@ type ServiceId = (typeof serviceIds)[number];
 export function isServiceId(serviceId: string): serviceId is ServiceId {
   return serviceIds.includes(serviceId);
 }
-
-export const bulkServices: ServiceId[] = ["cq-patient-discovery-response"];
