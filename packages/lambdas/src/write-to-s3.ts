@@ -3,10 +3,10 @@ import { S3WriterLocal } from "@metriport/core/command/write-to-storage/s3/write
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
+import { z } from "zod";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
-import { parseWriteToS3 } from "./shared/write-to-storage";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -36,6 +36,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   await s3Writer.writeToS3(parsedBodies);
 });
 
+const writeToS3PayloadSchema = z.object({
+  serviceId: z.string(),
+  bucket: z.string(),
+  filePath: z.string(),
+  fileName: z.string().optional(),
+  payload: z.string(),
+  contentType: z.string().optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
+});
+
 function parseBody(body?: unknown): WriteToS3Request[number] {
   if (!body) throw new MetriportError(`Missing message body`);
 
@@ -44,5 +54,5 @@ function parseBody(body?: unknown): WriteToS3Request[number] {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return parseWriteToS3(bodyAsJson);
+  return writeToS3PayloadSchema.parse(bodyAsJson);
 }
