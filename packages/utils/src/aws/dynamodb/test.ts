@@ -33,7 +33,7 @@ async function main() {
         ...(value?.featureFlags ?? initialFeatureFlags),
         commonwellFeatureFlag: { enabled: true },
       },
-      version: value?.version ?? 0,
+      existingVersion: value?.version ?? 0,
       updatedBy: "test",
     };
     const updatedValue = await updateFeatureFlagsRecord({

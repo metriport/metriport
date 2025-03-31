@@ -19,16 +19,19 @@ function makeAppConfigClient(region: string, tableName: string): DynamoDbUtils {
 export const featureFlagsRecordUpdateSchema = z.object({
   featureFlags: ffDatastoreSchema,
   updatedBy: z.string(),
-  version: z.number(),
+  existingVersion: z.number(),
 });
 export type FeatureFlagsRecordUpdate = z.infer<typeof featureFlagsRecordUpdateSchema>;
 
-export const featureFlagsRecordSchema = featureFlagsRecordUpdateSchema.merge(
-  z.object({
-    id: z.string(),
-    updatedAt: z.string(),
-  })
-);
+export const featureFlagsRecordSchema = featureFlagsRecordUpdateSchema
+  .omit({ existingVersion: true })
+  .merge(
+    z.object({
+      id: z.string(),
+      updatedAt: z.string(),
+      version: z.number(),
+    })
+  );
 export type FeatureFlagsRecord = z.infer<typeof featureFlagsRecordSchema>;
 
 // TODO 2840 Consider removing this, or just making all FFs optional by default.
@@ -133,10 +136,10 @@ export async function updateFeatureFlagsRecord({
   try {
     const existingRecord = await getFeatureFlagsRecord({ region, tableName });
 
-    if (existingRecord && existingRecord.version !== newRecordData.version) {
+    if (existingRecord && existingRecord.version !== newRecordData.existingVersion) {
       throw new BadRequestError(`FFs out of sync, reload and try again`, undefined, {
         existingVersion: existingRecord.version,
-        updateVersion: newRecordData.version,
+        updateVersion: newRecordData.existingVersion,
       });
     }
 
@@ -145,7 +148,7 @@ export async function updateFeatureFlagsRecord({
       tableName,
       newContent: newRecordData.featureFlags,
       updatedBy: newRecordData.updatedBy,
-      existingVersion: newRecordData.version,
+      existingVersion: newRecordData.existingVersion,
     });
 
     return updatedRecord;
@@ -185,7 +188,7 @@ async function _update({
     featureFlags: newContent,
     version: existingVersion + 1,
     updatedAt: new Date().toISOString(),
-    updatedBy: updatedBy,
+    updatedBy,
   };
   await ddbUtils._docClient
     .put({
