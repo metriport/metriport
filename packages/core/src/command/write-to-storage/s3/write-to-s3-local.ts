@@ -26,7 +26,7 @@ export class S3WriterLocal implements S3Writer {
     );
     await Promise.all(
       Object.entries(messagesByFilePath).flatMap(([filePath, messagesMap]) => {
-        const bulkBuckets = new Set(...messagesMap.bulkFiles.map(f => f.bucket));
+        const bulkBuckets = new Set(messagesMap.bulkFiles.map(f => f.bucket));
         if (bulkBuckets.size > 1) throw new Error("Bulk files must have the same bucket");
         return [
           ...messagesMap.singleFiles.map(f => {
