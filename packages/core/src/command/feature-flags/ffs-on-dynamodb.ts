@@ -71,7 +71,6 @@ export async function getFeatureFlags(
  * Update the feature flags in the database. Kept here for backwards compatibility only.
  * @deprecated Use updateFeatureFlagsRecord instead
  */
-// export async function createAndDeployConfigurationContent({
 export async function updateFeatureFlags({
   region,
   tableName,
