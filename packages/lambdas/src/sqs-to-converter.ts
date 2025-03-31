@@ -390,36 +390,17 @@ async function convertPayloadToFHIR({
       }
     );
 
-    let lambdaConversionResult: Bundle<Resource> | undefined;
-    if (converterLambdaArn) {
-      const lambdaClient = makeLambdaClient(region);
-      const converterLambdaResult = await lambdaClient
-        .invoke({
-          FunctionName: converterLambdaArn,
-          Payload: JSON.stringify({
-            queryParameters: converterParams,
-            body: payload,
-          }),
-          InvocationType: "RequestResponse",
-        })
-        .promise();
-      if (converterLambdaResult.StatusCode === 200) {
-        if (!converterLambdaResult.Payload) throw new Error(`Missing payload`);
-        lambdaConversionResult = JSON.parse(converterLambdaResult.Payload.toString());
-        if (
-          JSON.stringify(lambdaConversionResult.fhirResource) !==
-          JSON.stringify(res.data.fhirResource)
-        ) {
-          log(`Lambda conversion result does not match the original conversion result`);
-        } else {
-          log(`Lambda conversion result matches the original conversion result`);
-        }
-      } else {
-        log(`Lambda conversion error result: ${JSON.stringify(converterLambdaResult)}`);
-      }
-    }
-
     const conversionResult = res.data.fhirResource as Bundle<Resource>;
+
+    payload &&
+      (await sendConversionResultToLambda({
+        converterLambdaArn,
+        patientId: converterParams.patientId,
+        sourceFileName: converterParams.fileName,
+        converterParams,
+        payload,
+        originalConversionResult: conversionResult,
+      }));
 
     if (conversionResult?.entry && conversionResult.entry.length > 0) {
       log(
@@ -499,4 +480,65 @@ async function sendConversionResult({
     { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
     log
   );
+}
+
+async function sendConversionResultToLambda({
+  converterLambdaArn,
+  patientId,
+  sourceFileName,
+  converterParams,
+  payload,
+  originalConversionResult,
+}: {
+  converterLambdaArn?: string;
+  patientId: string;
+  sourceFileName: string;
+  converterParams: FhirConverterParams;
+  payload: string;
+  originalConversionResult: Bundle<Resource>;
+}): Promise<void> {
+  const log = prefixedLog(
+    `sendConversionResultToLambda, patient ${patientId} sourceFileName ${sourceFileName}`
+  );
+  if (!converterLambdaArn) {
+    log(`No converter lambda ARN, skipping...`);
+    return;
+  }
+  const lambdaClient = makeLambdaClient(region);
+  try {
+    const converterLambdaResult = await lambdaClient
+      .invoke({
+        FunctionName: converterLambdaArn,
+        Payload: JSON.stringify({
+          queryParameters: converterParams,
+          body: payload,
+        }),
+        InvocationType: "RequestResponse",
+      })
+      .promise();
+    if (converterLambdaResult.StatusCode === 200) {
+      if (!converterLambdaResult.Payload) {
+        log(`Lambda conversion result is empty`);
+        return;
+      }
+      const lambdaConversionResult = JSON.parse(converterLambdaResult.Payload.toString());
+      if (
+        JSON.stringify(lambdaConversionResult.fhirResource) !==
+        JSON.stringify(originalConversionResult)
+      ) {
+        log(
+          `Lambda conversion result does not match the original conversion result: ${JSON.stringify(
+            lambdaConversionResult.fhirResource
+          )} vs ${JSON.stringify(originalConversionResult)}`
+        );
+      } else {
+        log(`Lambda conversion result matches the original conversion result`);
+      }
+    } else {
+      log(`Lambda conversion error result: ${JSON.stringify(converterLambdaResult)}`);
+    }
+  } catch (error) {
+    log(`Error invoking lambda ${converterLambdaArn}: ${errorToString(error)}`);
+    return;
+  }
 }
