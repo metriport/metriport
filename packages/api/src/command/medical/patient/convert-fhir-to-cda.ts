@@ -1,24 +1,26 @@
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { makeFhirToCdaConverter } from "../../../external/fhir-to-cda-converter/converter-factory";
-import { Bundle } from "../../../routes/medical/schemas/fhir";
+import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
+import { Bundle as MedplumBundle } from "@medplum/fhirtypes";
 
 export async function convertFhirToCda({
   cxId,
-  validatedBundle,
+  bundle: bundle,
   splitCompositions = true,
 }: {
   cxId: string;
-  validatedBundle: Bundle;
+  bundle: ValidBundle | MedplumBundle;
   splitCompositions?: boolean;
 }): Promise<string[]> {
   const { log } = out(`convertFhirToCda - cxId: ${cxId}`);
   const cdaConverter = makeFhirToCdaConverter();
+  if (!bundle.entry) bundle.entry = [];
 
   try {
     return cdaConverter.requestConvert({
       cxId,
-      bundle: validatedBundle,
+      bundle: bundle as ValidBundle,
       splitCompositions,
     });
   } catch (error) {

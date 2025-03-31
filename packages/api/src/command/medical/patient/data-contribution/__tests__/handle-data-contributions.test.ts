@@ -4,21 +4,23 @@ import { makeBundle } from "@metriport/core/external/fhir/__tests__/bundle";
 import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { makeEncounter } from "@metriport/core/fhir-to-cda/cda-templates/components/__tests__/make-encounter";
 import { cloneDeep } from "lodash";
-import { normalizeBundle } from "../shared";
+import { cleanupSpecialCharsFromBundle } from "../shared";
 
-describe("handle-data-contribution", () => {
-  describe("normalizeBundle", () => {
+jest.mock("@metriport/core/command/consolidated/contribution-bundle-create");
+
+describe("handle-data-contributions", () => {
+  describe("cleanupSpecialCharsFromBundle", () => {
     it("does not change a valid bundle", async () => {
       const encounter = makeEncounter();
       const patient = makePatient();
       const bundle = makeBundle({ entries: [patient, encounter] });
-      const normalizedBundle = normalizeBundle(bundle);
+      const normalizedBundle = cleanupSpecialCharsFromBundle(bundle);
       expect(normalizedBundle).toEqual(bundle);
     });
 
     it("replaces nbsp char by space", async () => {
       const encounter = makeEncounter();
-      const patient = makePatient({ firstName: "John Denver" });
+      const patient = makePatient({ firstName: "John Denver" });
       const bundle = makeBundle({ entries: [patient, encounter] });
       const patientUpdated = cloneDeep(patient);
       patientUpdated.name = [
@@ -31,7 +33,7 @@ describe("handle-data-contribution", () => {
         ...bundle,
         entry: [{ resource: patientUpdated }, { resource: encounter }],
       };
-      const normalizedBundle = normalizeBundle(bundle);
+      const normalizedBundle = cleanupSpecialCharsFromBundle(bundle);
       expect(normalizedBundle).toEqual(expectedBundle);
     });
 
@@ -50,7 +52,7 @@ describe("handle-data-contribution", () => {
         ...bundle,
         entry: [{ resource: patientUpdated }, { resource: encounter }],
       };
-      const normalizedBundle = normalizeBundle(bundle);
+      const normalizedBundle = cleanupSpecialCharsFromBundle(bundle);
       expect(normalizedBundle).toEqual(expectedBundle);
     });
   });

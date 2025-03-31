@@ -4,6 +4,8 @@ import { createFilePath } from "../filename";
 export const extension = ".json";
 export const CONSOLIDATED_SNAPSHOT_KEY = "consolidated";
 export const CONSOLIDATED_DATA_KEY = "CONSOLIDATED_DATA";
+export const FULL_CONTRIBUTION_BUNDLE_KEY = "FULL_CONTRIBUTION_BUNDLE";
+export const UPLOAD_BUNDLE_KEY = "UPLOAD_BUNDLE";
 export const RAW_KEY = "RAW";
 
 export function createConsolidatedDataFilePath(

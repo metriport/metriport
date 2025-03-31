@@ -55,6 +55,21 @@ export function makeEncounter(
   };
 }
 
+export function makeBareEncounter(params: Partial<Encounter> = {}, patientId?: string): Encounter {
+  return {
+    ...(patientId ? makeSubjectReference(patientId) : undefined),
+    id: params?.id ?? faker.string.uuid(),
+    resourceType: "Encounter",
+    status: "finished",
+    class: {
+      system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      code: "AMB",
+      display: "ambulatory",
+    },
+    ...params,
+  };
+}
+
 export const exampleType = [
   {
     coding: [

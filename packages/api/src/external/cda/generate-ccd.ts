@@ -1,5 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { createConsolidatedFromUploads } from "@metriport/core/command/consolidated/create-consolidated-from-uploads";
+import { getFullContributionBundle } from "@metriport/core/command/consolidated/contribution-bundle-create";
 import {
   CCD_SUFFIX,
   FHIR_BUNDLE_SUFFIX,
@@ -15,7 +15,7 @@ import { JSON_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
-import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
+import { cleanupSpecialCharsFromBundle } from "../../command/medical/patient/data-contribution/shared";
 import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { Config } from "../../shared/config";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
@@ -30,15 +30,19 @@ export async function generateCcd(
   organization: Organization,
   requestId: string
 ): Promise<string> {
+  const uploadPath = createUploadFilePath(patient.cxId, patient.id, "");
   const uploadsExist = await s3Utils.fileExists(bucket, {
+    path: uploadPath,
     targetString: FHIR_BUNDLE_SUFFIX,
-    path: createUploadFilePath(patient.cxId, patient.id, ""),
   });
+
+  console.log("uploadsExist", uploadsExist);
   if (!uploadsExist) {
     return generateEmptyCcd(patient);
   }
-  const fullBundle = await createConsolidatedFromUploads(patient);
-  const validEntries = fullBundle.entry?.filter(r => !isComposition(r.resource));
+  const fullBundle = await getFullContributionBundle(patient);
+  console.log("fullBundle", JSON.stringify(fullBundle));
+  const validEntries = fullBundle?.entry?.filter(r => !isComposition(r.resource));
 
   if (!validEntries || !validEntries.length) {
     return generateEmptyCcd(patient);
@@ -50,14 +54,14 @@ export async function generateCcd(
     type: "collection",
     entry: [...validEntries, { resource: fhirOrganization }],
   };
-  const normalizedBundle = normalizeBundle(bundle);
+  const normalizedBundle = cleanupSpecialCharsFromBundle(bundle);
   const parsedBundle = bundleSchema.parse(normalizedBundle);
   await uploadCcdFhirDataToS3(patient, parsedBundle, requestId);
 
   const validatedBundle = validateFhirEntries(parsedBundle);
   const converted = await convertFhirToCda({
     cxId: patient.cxId,
-    validatedBundle,
+    bundle: validatedBundle,
     splitCompositions: false,
   });
   const ccd = converted[0];

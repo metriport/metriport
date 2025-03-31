@@ -8,61 +8,43 @@ import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 
-export const sentToFhirServerPrefix = "toFhirServer";
+// async function createOrUpdateConsolidatedPatientData({
+//   cxId,
+//   patientId,
+//   bundleDestinationKey,
+//   fhirBundle,
+// }: {
+//   cxId: string;
+//   patientId: string;
+//   bundleDestinationKey: string;
+//   fhirBundle: Bundle;
+// }): Promise<Bundle | undefined> {
+//   const { log } = out(
+//     `createOrUpdateConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}`
+//   );
 
-export function createDataContributionBundleName(
-  cxId: string,
-  patientId: string,
-  requestId: string
-) {
-  return createUploadFilePath(cxId, patientId, `${requestId}_${sentToFhirServerPrefix}.json`);
-}
+//   try {
+//     await uploadFhirBundleToS3({
+//       fhirBundle: fhirBundle,
+//       destinationKey: bundleDestinationKey,
+//     });
 
-export async function createOrUpdateConsolidatedPatientData({
-  cxId,
-  patientId,
-  requestId,
-  fhirBundle,
-}: {
-  cxId: string;
-  patientId: string;
-  requestId: string;
-  fhirBundle: Bundle;
-}): Promise<Bundle | undefined> {
-  const { log } = out(
-    `createOrUpdateConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}, requestId ${requestId}`
-  );
-  const toFhirServerBundleKey = createUploadFilePath(
-    cxId,
-    patientId,
-    `${requestId}_${sentToFhirServerPrefix}.json`
-  );
+//     console.log("fhirBundle thru new route is", JSON.stringify(fhirBundle));
+//     const transformedBundle = removeUnwantedFhirData(fhirBundle);
 
-  try {
-    const fhirBundleTransaction = convertCollectionBundleToTransactionBundle({
-      fhirBundle,
-    });
+//     return transformedBundle;
+//   } catch (error) {
+//     const errorMsg = errorToString(error);
+//     const msg = "Error converting and storing fhir bundle resources";
+//     const additionalInfo = { cxId, patientId, bundleDestinationKey };
+//     log(`${msg}: ${errorMsg}, additionalInfo: ${JSON.stringify(additionalInfo)}`);
+//     if (errorMsg.includes("ID")) throw new MetriportError(errorMsg, error, additionalInfo);
+//     throw new MetriportError(msg, error, additionalInfo);
+//   }
+// }
 
-    await uploadFhirBundleToS3({
-      fhirBundle: fhirBundleTransaction,
-      destinationKey: toFhirServerBundleKey,
-    });
+const sentToFhirServerPrefix = "toFhirServer";
 
-    console.log("fhirBundleTransaction thru new route is", JSON.stringify(fhirBundleTransaction));
-    const transformedBundle = removeUnwantedFhirData(fhirBundleTransaction);
-
-    return transformedBundle;
-  } catch (error) {
-    const errorMsg = errorToString(error);
-    const msg = "Error converting and storing fhir bundle resources";
-    const additionalInfo = { cxId, patientId, toFhirServerBundleKey };
-    log(`${msg}: ${errorMsg}, additionalInfo: ${JSON.stringify(additionalInfo)}`);
-    if (errorMsg.includes("ID")) throw new MetriportError(errorMsg, error, additionalInfo);
-    throw new MetriportError(msg, error, additionalInfo);
-  }
-}
-
-// TODO: Remove after testing -----
 export async function createOrUpdateConsolidatedPatientDataLegacy({
   cxId,
   patientId,
@@ -82,7 +64,6 @@ export async function createOrUpdateConsolidatedPatientDataLegacy({
     patientId,
     `${requestId}_${sentToFhirServerPrefix}.json`
   );
-  // --------------------------------
 
   try {
     const fhir = makeFhirApi(cxId);
@@ -98,7 +79,6 @@ export async function createOrUpdateConsolidatedPatientDataLegacy({
         destinationKey: toFhirServerBundleKey,
       }),
     ]);
-    console.log("bundleResource thru legacy route is", JSON.stringify(bundleResource));
     const transformedBundle = removeUnwantedFhirData(bundleResource);
 
     return transformedBundle;

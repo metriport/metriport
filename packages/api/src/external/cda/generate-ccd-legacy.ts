@@ -20,7 +20,7 @@ import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { Config } from "../../shared/config";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
-import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
+import { cleanupSpecialCharsFromBundle } from "../../command/medical/patient/data-contribution/shared";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -49,14 +49,14 @@ export async function generateCcdLegacy(
     type: "collection",
     entry: [...metriportGenerated, { resource: fhirOrganization }],
   };
-  const normalizedBundle = normalizeBundle(bundle);
+  const normalizedBundle = cleanupSpecialCharsFromBundle(bundle);
   const parsedBundle = bundleSchema.parse(normalizedBundle);
   await uploadCcdFhirDataToS3(patient, parsedBundle, requestId);
 
   const validatedBundle = validateFhirEntries(parsedBundle);
   const converted = await convertFhirToCda({
     cxId: patient.cxId,
-    validatedBundle,
+    bundle: validatedBundle,
     splitCompositions: false,
   });
   const ccd = converted[0];

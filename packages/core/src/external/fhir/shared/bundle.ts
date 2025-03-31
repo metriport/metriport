@@ -136,7 +136,9 @@ export function getReferences({
   return remainingRefs;
 }
 
-function buildReferenceFromStringRelative(reference: string): ReferenceWithIdAndType | undefined {
+export function buildReferenceFromStringRelative(
+  reference: string
+): ReferenceWithIdAndType | undefined {
   const parts = reference.split("/");
   const type = parts[0] as ResourceType | undefined;
   const id = parts[1];
