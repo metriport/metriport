@@ -38,13 +38,16 @@ export class S3WriterLocal implements S3Writer {
               ...(f.metadata ? { metadata: f.metadata } : undefined),
             })
           ),
-          messagesMap.bulkFiles.length > 0 &&
-            s3Utils.uploadFile({
-              bucket: bulkBuckets.values().next().value,
-              key: `${filePath}/${uuidv7()}.json`,
-              file: Buffer.from(messagesMap.bulkFiles.map(m => m.payload).join("\n")),
-              contentType: "application/json",
-            }),
+          ...(messagesMap.bulkFiles.length > 0
+            ? [
+                s3Utils.uploadFile({
+                  bucket: bulkBuckets.values().next().value,
+                  key: `${filePath}/${uuidv7()}.json`,
+                  file: Buffer.from(messagesMap.bulkFiles.map(m => m.payload).join("\n")),
+                  contentType: "application/json",
+                }),
+              ]
+            : []),
         ];
       })
     );
