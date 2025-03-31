@@ -178,11 +178,7 @@ async function _update({
 }): Promise<FeatureFlagsRecord> {
   const ddbUtils = makeAppConfigClient(region, tableName);
 
-  try {
-    ffDatastoreSchema.parse(newContent);
-  } catch (error) {
-    throw new BadRequestError(`Invalid feature flags`, error);
-  }
+  ffDatastoreSchema.parse(newContent);
 
   const record: FeatureFlagsRecord = {
     id: recordId,
