@@ -1,14 +1,14 @@
 import { errorToString } from "@metriport/shared";
-import { Config } from "../../util/config";
-import { out } from "../../util/log";
-import { capture } from "../../util/notifications";
-import { getFeatureFlags } from "./ffs-on-dynamodb";
 import {
   BooleanFeatureFlags,
   CxFeatureFlagStatus,
   StringValueFeatureFlags,
   stringValueFFsSchema,
 } from "../../external/aws/app-config";
+import { Config } from "../../util/config";
+import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
+import { getFeatureFlags } from "./ffs-on-dynamodb";
 
 const { log } = out(`FFs`);
 
@@ -59,7 +59,6 @@ export async function getFeatureFlagValueStringArray<T extends keyof StringValue
 export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureFlags>(
   region: string,
   ffTableName: string,
-  envName: string,
   featureFlagName: T
 ): Promise<BooleanFeatureFlags[T]> {
   const configContentValue = await getFeatureFlags(region, ffTableName);
@@ -79,7 +78,6 @@ export async function isFeatureFlagEnabled(
     const featureFlag = await getFeatureFlagValueBoolean(
       Config.getAWSRegion(),
       Config.getFeatureFlagsTableName(),
-      Config.getEnvType(),
       featureFlagName
     );
     return featureFlag ? featureFlag.enabled : defaultValue;
