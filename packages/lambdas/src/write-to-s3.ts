@@ -20,7 +20,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
     event,
     context: lambdaName,
   });
-  const startedAt = new Date().getTime();
   const messages = event.Records;
   if (messages.length < 1) return;
   log(`Running with unparsed bodies: ${messages.map(m => m.body).join(", ")}`);
@@ -35,9 +34,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
   const s3Writer = new S3WriterLocal();
   await s3Writer.writeToS3(parsedBodies);
-
-  const finishedAt = new Date().getTime();
-  log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
 function parseBody(body?: unknown): WriteToS3Request[number] {
