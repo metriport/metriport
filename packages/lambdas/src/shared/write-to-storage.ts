@@ -14,7 +14,7 @@ interface WriteToS3Payload {
   metadata: unknown;
 }
 
-export function parseWriteToS3(bodyAsJson: WriteToS3Payload): WriteToS3Request {
+export function parseWriteToS3(bodyAsJson: WriteToS3Payload): WriteToS3Request[number] {
   const serviceIdRaw = bodyAsJson.serviceId;
   if (!serviceIdRaw) throw new MetriportError("Missing serviceId");
   if (typeof serviceIdRaw !== "string") throw new MetriportError("Invalid serviceId");

@@ -29,52 +29,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         services: JSON.stringify(services),
       });
     }
-    const serviceId = services.values().next().value;
-    const buckets = new Set(parsedBodies.map(m => m.bucket));
-    if (buckets.size > 1) {
-      throw new MetriportError(`Multiple buckets for service ${serviceId}`, undefined, {
-        buckets: JSON.stringify(buckets),
-      });
-    }
-    const bucket = buckets.values().next().value;
-
-    const messagesByFilePath = parsedBodies.reduce(
-      (acc, body) => {
-        const filePath = body.filePath;
-        const singleMessages = acc[filePath]?.singleMessages ?? [];
-        const bulkMessages = acc[filePath]?.bulkMessages ?? [];
-        (body.fileName ? singleMessages : bulkMessages).push(body);
-        acc[filePath] = {
-          singleMessages,
-          bulkMessages,
-        };
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          singleMessages: WriteToS3Request[];
-          bulkMessages: WriteToS3Request[];
-        }
-      >
-    );
 
     const s3Writer = new S3WriterLocal();
-    await Promise.all(
-      Object.entries(messagesByFilePath).flatMap(([filePath, messagesMap]) => {
-        const log = prefixedLog(`serviceId ${serviceId}`);
-        log(`ing ${messages.length} messages for service ${serviceId}`);
-        return [
-          ...messagesMap.singleMessages.map(m => s3Writer.writeToS3(m)),
-          s3Writer.writeToS3({
-            serviceId,
-            bucket,
-            filePath,
-            payload: messagesMap.bulkMessages.map(m => m.payload).join("\n"),
-          }),
-        ];
-      })
-    );
+    await s3Writer.writeToS3(parsedBodies);
+
     const finishedAt = new Date().getTime();
     log(`Done local duration: ${finishedAt - startedAt}ms`);
   } catch (error) {
@@ -89,7 +47,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   }
 });
 
-function parseBody(body?: unknown): WriteToS3Request {
+function parseBody(body?: unknown): WriteToS3Request[number] {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;

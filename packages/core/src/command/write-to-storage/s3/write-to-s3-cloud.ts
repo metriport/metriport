@@ -14,12 +14,14 @@ export class S3WriterCloud implements S3Writer {
   constructor(private readonly writeToS3QueueUrl: string) {}
 
   async writeToS3(params: WriteToS3Request): Promise<void> {
-    const { serviceId } = params;
-    const payload = JSON.stringify(params);
-    await sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, payload, {
-      fifo: true,
-      messageDeduplicationId: createUuidFromText(payload),
-      messageGroupId: serviceId,
-    });
+    await Promise.all(
+      params.map(p => {
+        sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, p.payload, {
+          fifo: true,
+          messageDeduplicationId: createUuidFromText(p.payload),
+          messageGroupId: p.serviceId,
+        });
+      })
+    );
   }
 }

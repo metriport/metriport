@@ -10,7 +10,7 @@ import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@m
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { buildWS3WriterHandler } from "../../../../command/write-to-storage/s3/write-to-s3-factory";
+import { buildS3WriterHandler } from "../../../../command/write-to-storage/s3/write-to-s3-factory";
 import { createHivePartitionFilePath } from "../../../../domain/filename";
 import { Config } from "../../../../util/config";
 import { log as getLog, out } from "../../../../util/log";
@@ -194,13 +194,15 @@ export async function createSignSendProcessXCPDRequest({
           cxid: cxId,
           _stage: "pd",
         };
-        const handler = buildWS3WriterHandler();
-        await handler.writeToS3({
-          serviceId: "cq-patient-discovery-response",
-          bucket: parsedResponsesBucket,
-          filePath,
-          payload: JSON.stringify(extendedResult),
-        });
+        const handler = buildS3WriterHandler();
+        await handler.writeToS3([
+          {
+            serviceId: "cq-patient-discovery-response",
+            bucket: parsedResponsesBucket,
+            filePath,
+            payload: JSON.stringify(extendedResult),
+          },
+        ]);
       } catch (error) {
         const msg = "Failed to send PD response to S3";
         const extra = { cxId, patientId, result };
