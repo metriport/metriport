@@ -25,7 +25,7 @@ type CacheEntry = {
 
 let featureFlagsCache: CacheEntry | undefined;
 
-function makeAppConfigClient(region: string, tableName: string): DynamoDbUtils {
+function makeDdbClient(region: string, tableName: string): DynamoDbUtils {
   return new DynamoDbUtils({ region, table: tableName, partitionKey });
 }
 
@@ -133,7 +133,7 @@ export async function getFeatureFlagsRecord({
   }
 
   // Cache is expired or doesn't exist, fetch from DynamoDB
-  const ddb = makeAppConfigClient(region, tableName);
+  const ddb = makeDdbClient(region, tableName);
   try {
     const config = await ddb._docClient
       .query({
@@ -225,7 +225,7 @@ async function _update({
   updatedBy: string;
   existingVersion: number;
 }): Promise<FeatureFlagsRecord> {
-  const ddbUtils = makeAppConfigClient(region, tableName);
+  const ddbUtils = makeDdbClient(region, tableName);
 
   ffDatastoreSchema.parse(newContent);
 

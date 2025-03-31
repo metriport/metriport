@@ -1,13 +1,13 @@
 import { USState } from "@metriport/api-sdk/medical/models/common/us-data";
+import * as featureFlags from "@metriport/core/command/feature-flags/domain-ffs";
 import { PatientData } from "@metriport/core/domain/patient";
+import { CQLink } from "../../carequality/cq-patient-data";
+import { CwLink } from "../../commonwell/cw-patient-data";
 import {
   validateCqLinksBelongToPatient,
   validateCwLinksBelongToPatient,
 } from "../validate-patient-links";
-import { CQLink } from "../../carequality/cq-patient-data";
-import { CwLink } from "../../commonwell/cw-patient-data";
 import { createCQLink, createCwLink } from "./patient-links-tests";
-import * as appConfig from "@metriport/core/command/feature-flags/domain-ffs";
 
 describe("validateLinksBelongToPatient", () => {
   const cxId = "test-cx-id";
@@ -498,7 +498,7 @@ describe("validateLinksBelongToPatient with strict matching", () => {
   };
 
   beforeEach(() => {
-    jest.spyOn(appConfig, "isStrictMatchingAlgorithmEnabledForCx").mockResolvedValue(true);
+    jest.spyOn(featureFlags, "isStrictMatchingAlgorithmEnabledForCx").mockResolvedValue(true);
   });
 
   afterEach(() => {
