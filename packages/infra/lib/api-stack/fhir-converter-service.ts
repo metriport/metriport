@@ -169,7 +169,7 @@ export function createFHIRConverterService(
       "ccda-to-fhir-lambda-nodelambda.js"
     ),
     timeout: Duration.minutes(10),
-    memorySize: 1024,
+    memorySize: 4096,
     handler: "handler",
     runtime: Runtime.NODEJS_18_X,
     bundling: {

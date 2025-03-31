@@ -390,8 +390,6 @@ async function convertPayloadToFHIR({
       }
     );
 
-    log(`res.data.fhirResource: ${JSON.stringify(res.data.fhirResource)}`);
-
     let lambdaConversionResult: Bundle<Resource> | undefined;
     if (converterLambdaArn) {
       const lambdaClient = makeLambdaClient(region);
@@ -408,13 +406,20 @@ async function convertPayloadToFHIR({
       if (converterLambdaResult.StatusCode === 200) {
         if (!converterLambdaResult.Payload) throw new Error(`Missing payload`);
         lambdaConversionResult = JSON.parse(converterLambdaResult.Payload.toString());
-        log(`Lambda conversion result: ${JSON.stringify(lambdaConversionResult)}`);
+        if (
+          JSON.stringify(lambdaConversionResult.fhirResource) !==
+          JSON.stringify(res.data.fhirResource)
+        ) {
+          log(`Lambda conversion result does not match the original conversion result`);
+        } else {
+          log(`Lambda conversion result matches the original conversion result`);
+        }
       } else {
         log(`Lambda conversion error result: ${JSON.stringify(converterLambdaResult)}`);
       }
     }
 
-    const conversionResult = lambdaConversionResult ?? (res.data.fhirResource as Bundle<Resource>);
+    const conversionResult = res.data.fhirResource as Bundle<Resource>;
 
     if (conversionResult?.entry && conversionResult.entry.length > 0) {
       log(
