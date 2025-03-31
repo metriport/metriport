@@ -42,6 +42,7 @@ router.get(
  * @param req.body The new feature flags record.
  *        req.body.featureFlags: The feature flags to update.
  *        req.body.version: The current version of the feature flags.
+ *        req.body.updatedBy: The user who is updating the feature flags.
  * @return 200 the updated feature flags record.
  *         400 if the update was not successful (usually due to a version mismatch).
  */
