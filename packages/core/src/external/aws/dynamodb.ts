@@ -2,13 +2,12 @@ import * as AWS from "aws-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Config } from "../../util/config";
 
-const region = Config.getAWSRegion();
-
 export type DynamoDbUtilsOptions = {
   table: string;
   partitionKey: string;
   rangeKey?: string;
   client?: DocumentClient | undefined;
+  region?: string;
 };
 
 type AttributeValuesMapping = { [k: string]: string | number };
@@ -23,10 +22,14 @@ export class DynamoDbUtils {
     this._table = opts.table;
     this._partitionKey = opts.partitionKey;
     this._rangeKey = opts.rangeKey;
+    const region = Config.isDev()
+      ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        { region: "localhost", endpoint: process.env.DYNAMODB_ENDPOINT! }
+      : { region: opts.region ?? Config.getAWSRegion() };
     this._docClient =
       opts.client ??
       new AWS.DynamoDB.DocumentClient({
-        region,
+        ...region,
         apiVersion: "2012-08-10",
       });
   }
