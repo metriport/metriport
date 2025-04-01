@@ -1,0 +1,24 @@
+name: Deploy HL7 VPN Tunnel - Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      partner_name:
+        description: "The partner we're deploying the tunnel for, e.g. 'MyTestHIE'"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-hl7-vpn-tunnel-cdk.yml
+    with:
+      deploy_env: staging
+      partner_name: ${{ github.event.inputs.partner_name }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

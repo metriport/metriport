@@ -10,11 +10,7 @@ on:
       deploy_env:
         description: "The environment we're deploying to, either 'staging' or 'production', this deploy does not run in sandbox"
         required: true
-        default: staging
-        type: choice
-        options:
-          - staging
-          - production
+        type: string
       partner_name:
         description: "The partner we're deploying the tunnel for, e.g. 'MyTestHIE'"
         required: true
