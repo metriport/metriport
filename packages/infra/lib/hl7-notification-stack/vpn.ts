@@ -7,7 +7,6 @@ import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
 import { MLLP_DEFAULT_PORT } from "./constants";
 
 const IPSEC_1 = "ipsec.1";
-const PROBLEMATIC_IPSEC_CHARACTERS = "!@#$%^&*()_+-=[]{}|;:,.<>?";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
   vpnConfig: Hl7NotificationVpnConfig;
@@ -77,18 +76,16 @@ export class VpnStack extends cdk.Stack {
       },
     ]);
 
-    const createPskSecret = (index: number) => {
-      return new secret.Secret(this, `PresharedKey${index}-${partnerName}`, {
-        secretName: `PresharedKey${index}-${partnerName}`,
-        generateSecretString: {
-          excludePunctuation: true,
-          excludeCharacters: PROBLEMATIC_IPSEC_CHARACTERS,
-        },
-      });
-    };
-
-    const presharedKey1 = createPskSecret(1);
-    const presharedKey2 = createPskSecret(2);
+    const presharedKey1 = secret.Secret.fromSecretNameV2(
+      this,
+      `PresharedKey1-${partnerName}`,
+      `PresharedKey1-${partnerName}`
+    );
+    const presharedKey2 = secret.Secret.fromSecretNameV2(
+      this,
+      `PresharedKey2-${partnerName}`,
+      `PresharedKey2-${partnerName}`
+    );
     /**
      * We use 2 tunnels here because state HIEs often have a failover to a backup IP..
      */
