@@ -25,6 +25,7 @@ import {
 } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Facility } from "../../../domain/medical/facility";
+import { listCQDirectory } from "../../../external/carequality/command/cq-directory/list-cq-directory";
 import { rebuildCQDirectory } from "../../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
@@ -51,11 +52,43 @@ import { Config } from "../../../shared/config";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../../util";
+import {
+  asyncHandler,
+  getFrom,
+  getFromQueryAsBoolean,
+  getFromQueryAsBooleanOrFail,
+} from "../../util";
 
 dayjs.extend(duration);
 const router = Router();
 
+/**
+ * GET /internal/carequality/directory
+ *
+ * Retrieves organizations from the Carequality Directory.
+ *
+ * @param req.query.active Indicates whether to list active or inactive organizations.
+ * @param req.query.oid Optional, the OID of the organization to fetch.
+ * @param req.query.limit Optional, the number of organizations to fetch.
+ * @returns Returns the organizations from the Carequality Directory.
+ */
+router.get(
+  "/directory",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const active = getFromQueryAsBooleanOrFail("active", req);
+    const oid = getFrom("query").optional("oid", req);
+    const limitRaw = getFrom("query").optional("limit", req);
+    const limit = limitRaw ? parseInt(limitRaw) : undefined;
+    const orgs = await listCQDirectory({
+      oid,
+      active,
+      limit,
+    });
+    return res.status(httpStatus.OK).json({ amount: orgs.length, entries: orgs });
+  })
+);
 /**
  * POST /internal/carequality/directory/rebuild
  *
