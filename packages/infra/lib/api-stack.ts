@@ -44,7 +44,6 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { createAppConfigStack } from "./app-config-stack";
 import { EhrNestedStack } from "./ehr-nested-stack";
-import { UtilsNestedStack } from "./utils-nested-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
@@ -382,17 +381,6 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // Utils
-    //-------------------------------------------
-    const { writeToS3Queue: utilsWriteToS3Queue, writeToS3Lambda: utilsWriteToS3Lambda } =
-      new UtilsNestedStack(this, "UtilsNestedStack", {
-        config: props.config,
-        lambdaLayers,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-      });
-
-    //-------------------------------------------
     // Rate Limiting
     //-------------------------------------------
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
@@ -544,8 +532,6 @@ export class APIStack extends Stack {
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
-        writeToS3Lambda: utilsWriteToS3Lambda,
-        writeToS3Queue: utilsWriteToS3Queue,
       });
     }
 
