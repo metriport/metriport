@@ -33,7 +33,6 @@ export const cxBasedFFsSchema = z.object({
   cxsWithDemoAugEnabled: ffStringValuesSchema,
   cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
   cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
-  cxsUsingWkhtmltopdfInsteadOfPuppeteer: ffStringValuesSchema, // TODO: 2510 - Remove this when ready to rollout to all customers
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
