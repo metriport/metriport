@@ -564,6 +564,7 @@ export class APIStack extends Stack {
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
+        alarmAction: slackNotification?.alarmAction,
       });
     }
 
