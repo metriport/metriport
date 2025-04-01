@@ -12,7 +12,11 @@ export class S3WriterLocal implements S3Writer {
       (acc, param) => {
         const accKey = createFileLookupKey(param);
         const accNew = acc[accKey] ?? { singleFiles: [], bulkFiles: [] };
-        (param.fileName ? accNew.singleFiles : accNew.bulkFiles).push(param);
+        if (param.fileName) {
+          accNew.singleFiles.push(param);
+        } else {
+          accNew.bulkFiles.push(param);
+        }
         acc[accKey] = { ...accNew };
         return acc;
       },
