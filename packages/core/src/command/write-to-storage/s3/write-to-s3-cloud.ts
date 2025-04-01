@@ -1,5 +1,4 @@
 import { BadRequestError, sleep } from "@metriport/shared";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { chunk } from "lodash";
 import { SQSClient } from "../../../external/aws/sqs";
 import { Config } from "../../../util/config";
@@ -24,7 +23,9 @@ export class S3WriterCloud implements S3Writer {
   }
 
   async writeToS3(params: WriteToS3Request): Promise<void> {
-    const paylodTooBig = params.find(p => Buffer.from(p.payload).length > MAX_SQS_MESSAGE_SIZE);
+    const paylodTooBig = params.find(
+      p => Buffer.from(JSON.stringify(p)).length > MAX_SQS_MESSAGE_SIZE
+    );
     if (paylodTooBig) {
       throw new BadRequestError("Payload size exceeds SQS message size limit", undefined, {
         bucket: paylodTooBig.bucket,
@@ -35,13 +36,7 @@ export class S3WriterCloud implements S3Writer {
     const chunks = chunk(params, MAX_SQS_MESSAGE_BATCH_SIZE);
     for (const chunk of chunks) {
       await Promise.all(
-        chunk.map(p =>
-          this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, p.payload, {
-            fifo: true,
-            messageDeduplicationId: createUuidFromText(p.payload),
-            messageGroupId: p.serviceId,
-          })
-        )
+        chunk.map(p => this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, JSON.stringify(p)))
       );
       await sleep(MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP);
     }
