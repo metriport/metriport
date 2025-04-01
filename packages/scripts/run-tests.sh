@@ -8,10 +8,10 @@ set +x
 # Read workspaces from package.json and populate packages array
 packages=($(cat package.json | grep -o '"packages/[^"]*"' | sed 's/"packages\///g' | sed 's/"//g'))
 
-set -x
+echo "Running tests for packages: ${packages[@]}"
+
 # Run tests for each package
 parallel --halt never,fail=1 --keep-order --line-buffer 'FORCE_COLOR=true npm run test -w packages/{}' ::: "${packages[@]}"
-set +x
 
 if [ $? -eq 0 ]; then
   echo -e "\n\033[1;32mTests passed\033[0m"
