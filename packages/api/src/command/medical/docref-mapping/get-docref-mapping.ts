@@ -8,7 +8,9 @@ import {
 } from "../../../models/medical/docref-mapping";
 
 export const getDocRefMapping = async (id: string): Promise<DocRefMapping | undefined> => {
-  const docRef = await DocRefMappingModel.findByPk(id);
+  const docRef = await DocRefMappingModel.findByPk(id, {
+    attributes: ["id", "externalId", "cxId", "patientId", "source", "requestId"],
+  });
   return docRef ?? undefined;
 };
 
@@ -22,6 +24,7 @@ export const getAllDocRefMapping = async ({
   cxId?: string;
 }): Promise<DocRefMapping[]> => {
   const docRefs = await DocRefMappingModel.findAll({
+    attributes: ["id", "externalId", "cxId", "patientId", "source", "requestId"],
     where: {
       requestId,
       ...(patientId && { patientId }),
@@ -91,6 +94,7 @@ export const getDocRefMappings = async ({
 }): Promise<DocRefMapping[]> => {
   const patientIds = Array.isArray(patientIdParam) ? patientIdParam : [patientIdParam];
   const res = await DocRefMappingModel.findAll({
+    attributes: ["id", "externalId", "cxId", "patientId", "source", "requestId"],
     where: {
       cxId,
       ...(ids && ids.length ? { id: { [Op.in]: ids } } : {}),
