@@ -220,12 +220,16 @@ export class APIStack extends Stack {
       slackNotification?.alarmAction
     );
     const instances = dbCluster.instanceIdentifiers.map(instanceIdentifier => {
+      const endpointDomain = dbCluster.clusterEndpoint.hostname.split(".").slice(1).join(".");
       return rds.DatabaseInstance.fromDatabaseInstanceAttributes(
         this,
         `${dbClusterName}-${instanceIdentifier}`,
         {
           instanceIdentifier,
-          instanceEndpointAddress: dbCluster.clusterEndpoint.hostname,
+          instanceEndpointAddress: `${instanceIdentifier}.${endpointDomain.replace(
+            "cluster-",
+            ""
+          )}`,
           port: dbCluster.clusterEndpoint.port,
           securityGroups: dbCluster.connections.securityGroups,
         }
