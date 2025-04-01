@@ -11,10 +11,6 @@ import {
   SNOMED_URL,
 } from "../../../util/constants";
 import { isCodeableConcept, isUsefulDisplay, isValidCoding } from "../codeable-concept";
-import { buildUnknownCoding } from "../coding";
-
-const LOINC_CODE_REGEX = /^[a-zA-Z0-9]{3,8}-\d{1}$/;
-const SNOMED_CODE_REGEX = /^[0-9]{6,18}$/;
 
 export function sortCodings(bundle: Bundle<Resource>): Bundle<Resource> {
   const updatedBundle = cloneDeep(bundle);
@@ -47,9 +43,7 @@ function normalizeResource(resource: Resource): void {
 export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConcept {
   if (!concept.coding) return concept;
   const codings = concept.coding;
-  const normalizedCodings = codings.flatMap(normalizeCoding);
-  const filteredCodings =
-    normalizedCodings.length > 1 ? normalizedCodings.filter(isValidCoding) : normalizedCodings;
+  const filteredCodings = codings.length > 1 ? codings.filter(isValidCoding) : codings;
   const sortedCodings = [...filteredCodings].sort((a, b) => rankCoding(a) - rankCoding(b));
   const replacementText = sortedCodings.find(c => c.display && isUsefulDisplay(c.display))?.display;
 
@@ -60,32 +54,6 @@ export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConc
       : undefined),
     coding: sortedCodings,
   };
-}
-
-export function normalizeCoding(coding: Coding): Coding {
-  const normCoding = cloneDeep(coding);
-  if (!normCoding.system || !normCoding.code) return normCoding;
-
-  // Validate SNOMED code. If it's invalid, but matches LOINC, reassing system to LOINC. Otherwise, set code to UNK
-  if (normCoding.system === SNOMED_URL) {
-    if (!SNOMED_CODE_REGEX.test(normCoding.code)) {
-      if (LOINC_CODE_REGEX.test(normCoding.code)) {
-        normCoding.system = LOINC_URL;
-        return normCoding;
-      } else {
-        return buildUnknownCoding(normCoding.display);
-      }
-    }
-  }
-
-  // Validate LOINC code, and set code to UNK if it's invalid
-  if (normCoding.system === LOINC_URL) {
-    if (!LOINC_CODE_REGEX.test(normCoding.code)) {
-      return buildUnknownCoding(normCoding.display);
-    }
-  }
-
-  return normCoding;
 }
 
 // TODO: 2626 - Improve sorting for codes from the same system
