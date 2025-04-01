@@ -183,6 +183,6 @@ export function createLambda({
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
-  fhirLambda?.grantInvoke(conversionLambda);
+  fhirConverterLambda?.grantInvoke(conversionLambda);
   return conversionLambda;
 }
