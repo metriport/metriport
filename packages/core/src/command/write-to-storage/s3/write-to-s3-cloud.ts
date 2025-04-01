@@ -23,7 +23,9 @@ export class S3WriterCloud implements S3Writer {
   }
 
   async writeToS3(params: WriteToS3Request): Promise<void> {
-    const paylodTooBig = params.find(p => Buffer.from(p.payload).length > MAX_SQS_MESSAGE_SIZE);
+    const paylodTooBig = params.find(
+      p => Buffer.from(JSON.stringify(p)).length > MAX_SQS_MESSAGE_SIZE
+    );
     if (paylodTooBig) {
       throw new BadRequestError("Payload size exceeds SQS message size limit", undefined, {
         bucket: paylodTooBig.bucket,
