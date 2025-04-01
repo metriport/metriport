@@ -33,8 +33,9 @@ export async function syncAthenaPatientIntoMetriport({
   api,
   triggerDq = false,
 }: SyncAthenaPatientIntoMetriportParams): Promise<string> {
+  let athenaApi: AthenaHealthApi | undefined;
   if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
-    const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+    athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
     const customFields = await athenaApi.getCustomFieldsForPatient({
       cxId,
       patientId: athenaPatientId,
@@ -64,8 +65,9 @@ export async function syncAthenaPatientIntoMetriport({
     const metriportPatientId = metriportPatient.id;
     return metriportPatientId;
   }
-
-  const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+  if (!athenaApi) {
+    athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+  }
   const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
   const possibleDemographics = createMetriportPatientDemosFhir(athenaPatient);
   const metriportPatient = await getOrCreateMetriportPatientFhir({
