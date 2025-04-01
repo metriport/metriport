@@ -36,12 +36,14 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
 
 function settings() {
   const writeToS3LambdaTimeout = Duration.seconds(25);
+  const writeToS3LambdaMaxBatchingWindow = Duration.seconds(5);
   const writeToS3: QueueAndLambdaSettings = {
     name: "IHEGatewayV2OutboundPatientDiscoveryWriteToS3",
     entry: "ihe-gateway-v2-outbound-patient-discovery-write-to-s3",
     lambda: {
       memory: 2048,
       batchSize: 100,
+      maxBatchingWindow: writeToS3LambdaMaxBatchingWindow,
       timeout: writeToS3LambdaTimeout,
       reportBatchItemFailures: true,
     },
@@ -65,6 +67,7 @@ type QueueAndLambdaSettings = {
     memory: 512 | 1024 | 2048 | 4096;
     /** Number of messages the lambda pull from SQS at once  */
     batchSize: number;
+    maxBatchingWindow: Duration;
     /** How long can the lambda run for, max is 900 seconds (15 minutes)  */
     timeout: Duration;
     /** Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html */
@@ -190,7 +193,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     const {
       name,
       entry,
-      lambda: { memory, timeout, batchSize, reportBatchItemFailures },
+      lambda: { memory, timeout, batchSize, maxBatchingWindow, reportBatchItemFailures },
       queue: {
         visibilityTimeout,
         maxReceiveCount,
@@ -230,7 +233,9 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
+    lambda.addEventSource(
+      new SqsEventSource(queue, { batchSize, reportBatchItemFailures, maxBatchingWindow })
+    );
 
     return { lambda, queue };
   }
