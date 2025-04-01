@@ -231,7 +231,7 @@ export class APIStack extends Stack {
       addDBInstancePerformanceAlarms(
         this,
         writer,
-        writerInstanceId,
+        `${dbClusterName}-Writer`,
         dbConfig,
         slackNotification?.alarmAction
       );
@@ -247,7 +247,7 @@ export class APIStack extends Stack {
       addDBInstancePerformanceAlarms(
         this,
         reader,
-        readerInstanceId,
+        `${dbClusterName}-Reader`,
         dbConfig,
         slackNotification?.alarmAction
       );
