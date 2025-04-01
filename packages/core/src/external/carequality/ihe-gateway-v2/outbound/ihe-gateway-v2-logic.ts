@@ -6,43 +6,31 @@ import {
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import {
-  errorToString,
-  executeWithNetworkRetries,
-  executeWithRetries,
-  sleepRandom,
-} from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { buildS3WriterHandler } from "../../../../command/write-to-storage/s3/write-to-s3-factory";
+import { createHivePartitionFilePath } from "../../../../domain/filename";
+import { Config } from "../../../../util/config";
 import { log as getLog, out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
+import { SamlCertsAndKeys } from "../saml/security/types";
 import { createAndSignBulkDQRequests, SignedDqRequest } from "./xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests, SignedDrRequest } from "./xca/create/iti39-envelope";
 import { processDqResponse } from "./xca/process/dq-response";
 import { processDrResponse } from "./xca/process/dr-response";
 import { isRetryable as isRetryableXca } from "./xca/process/error";
-import { isRetryable as isRetryableXcpd } from "./xcpd/process/error";
 import { sendSignedDqRequest } from "./xca/send/dq-requests";
 import { sendSignedDrRequest } from "./xca/send/dr-requests";
 import { createAndSignBulkXCPDRequests, SignedXcpdRequest } from "./xcpd/create/iti55-envelope";
+import { isRetryable as isRetryableXcpd } from "./xcpd/process/error";
 import { processXCPDResponse } from "./xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
-import { SamlCertsAndKeys } from "../saml/security/types";
-import { S3Utils } from "../../../aws/s3";
-import { Config } from "../../../../util/config";
-import { createHivePartitionFilePath } from "../../../../domain/filename";
 
 dayjs.extend(duration);
 
-const region = Config.getAWSRegion();
 const parsedResponsesBucket = Config.getIheParsedResponsesBucketName();
-
-const s3JitterMax = dayjs.duration({ seconds: 5 });
-
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
-}
 
 export async function sendProcessXcpdRequest({
   signedRequest,
@@ -164,8 +152,8 @@ export async function createSignSendProcessXCPDRequest({
   cxId: string;
 }): Promise<void> {
   const log = getLog("createSignSendProcessXCPDRequest");
-  const s3Utils = getS3UtilsInstance();
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
+  const resultS3PayloadsWithFilePaths: [string, string][] = [];
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     const result = await sendProcessXcpdRequest({
       signedRequest,
@@ -191,43 +179,39 @@ export async function createSignSendProcessXCPDRequest({
       }
     }
     if (parsedResponsesBucket) {
-      await sleepRandom(s3JitterMax.asMilliseconds());
-      try {
-        const partitionDate = result.requestTimestamp
-          ? new Date(Date.parse(result.requestTimestamp))
-          : new Date();
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          keys: {
-            stage: "pd",
-            request_id: result.id,
-            gateway_oid: result.gateway.oid,
-          },
-          date: partitionDate,
-        });
-        const key = `${filePath}/result.json`;
-        const extendedResult = {
-          ...result,
-          _date: partitionDate.toISOString().slice(0, 10),
-          cxid: cxId,
-          _stage: "pd",
-        };
-        await s3Utils.uploadFile({
-          bucket: parsedResponsesBucket,
-          key,
-          file: Buffer.from(JSON.stringify(extendedResult), "utf8"),
-          contentType: "application/json",
-        });
-      } catch (error) {
-        const msg = "Failed to send PD response to S3";
-        const extra = { cxId, patientId, result };
-        log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
-      }
+      const partitionDate = result.requestTimestamp
+        ? new Date(Date.parse(result.requestTimestamp))
+        : new Date();
+      const filePath = createHivePartitionFilePath({
+        cxId,
+        patientId,
+        keys: { stage: "pd" },
+        date: partitionDate,
+      });
+      const extendedResult = {
+        ...result,
+        _date: partitionDate.toISOString().slice(0, 10),
+        cxid: cxId,
+        _stage: "pd",
+      };
+      resultS3PayloadsWithFilePaths.push([filePath, JSON.stringify(extendedResult)]);
     }
   });
 
   await Promise.allSettled(resultPromises);
+  if (parsedResponsesBucket && resultS3PayloadsWithFilePaths.length > 0) {
+    const handler = buildS3WriterHandler();
+    await handler.writeToS3(
+      resultS3PayloadsWithFilePaths.map(([filePath, payload]) => {
+        return {
+          serviceId: "cq-patient-discovery-response",
+          bucket: parsedResponsesBucket,
+          filePath,
+          payload,
+        };
+      })
+    );
+  }
 }
 
 export async function createSignSendProcessDqRequests({

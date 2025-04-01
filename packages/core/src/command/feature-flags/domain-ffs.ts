@@ -1,14 +1,14 @@
 import { errorToString } from "@metriport/shared";
+import { Config } from "../../util/config";
+import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
+import { getFeatureFlags } from "./ffs-on-dynamodb";
 import {
   BooleanFeatureFlags,
   CxFeatureFlagStatus,
   StringValueFeatureFlags,
   stringValueFFsSchema,
-} from "../../external/aws/app-config";
-import { Config } from "../../util/config";
-import { out } from "../../util/log";
-import { capture } from "../../util/notifications";
-import { getFeatureFlags } from "./ffs-on-dynamodb";
+} from "./types";
 
 const { log } = out(`FFs`);
 
@@ -132,14 +132,6 @@ export async function getCxsWithStrictMatchingAlgorithm(): Promise<string[]> {
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
   return cxsWithADHDFeatureFlagValue.includes(cxId);
-}
-
-export async function isWkhtmltopdfEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithWkhtmltopdfEnabled = await getCxsUsingWkhtmltopdfInsteadOfPuppeteer();
-  return cxIdsWithWkhtmltopdfEnabled.some(i => i === cxId);
-}
-export async function getCxsUsingWkhtmltopdfInsteadOfPuppeteer(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsUsingWkhtmltopdfInsteadOfPuppeteer");
 }
 
 export async function isAthenaCustomFieldsEnabledForCx(cxId: string): Promise<boolean> {

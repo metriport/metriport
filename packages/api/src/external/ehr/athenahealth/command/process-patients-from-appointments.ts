@@ -1,4 +1,4 @@
-import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
