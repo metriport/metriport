@@ -458,7 +458,7 @@ async function addDocumentRefAndBinaryToFHIRServer(
     "id": "${binaryId}",
     "contentType": "application/xml",
     "data": "${payload}"
-}`;
+  }`;
   await fhirApi.put(`/Binary/${binaryId}`, JSON.parse(binaryData));
 
   const docRefId = `${orgId}.696969`;

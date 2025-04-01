@@ -1,10 +1,9 @@
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util/log";
-import { BadRequestError, sleepRandom } from "@metriport/shared";
+import { sleepRandom } from "@metriport/shared";
 import { chunk } from "lodash";
-import { tenantExists } from "../../../external/fhir/admin";
-import { makeFhirAdminApi, makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { queryDocumentsAcrossHIEs } from "../document/document-query";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { getPatients } from "../patient/get-patient";
@@ -26,25 +25,13 @@ export type PopulateFhirServerResponse = { patientsOK: number; patientsError: nu
  */
 export async function populateFhirServer({
   cxId,
-  createIfNotExists = false,
   triggerDocQuery = false,
 }: {
   cxId: string;
-  createIfNotExists?: boolean;
   triggerDocQuery?: boolean;
 }): Promise<PopulateFhirServerResponse> {
   const fhirApi = makeFhirApi(cxId);
-  const adminFhirApi = makeFhirAdminApi();
   const orgOnDB = await getOrganizationOrFail({ cxId });
-
-  const exists = await tenantExists(cxId);
-  if (!exists && !createIfNotExists) {
-    throw new BadRequestError(`FHIR Server it not setup for this customer`);
-  }
-  if (!exists && createIfNotExists) {
-    log("Creating Tenant on FHIR server: ", cxId);
-    await adminFhirApi.createTenant(orgOnDB);
-  }
 
   const orgToFhir = orgToFHIR(orgOnDB);
   log("Creating organization on FHIR server: ", orgOnDB.id);

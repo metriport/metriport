@@ -1,6 +1,6 @@
 import { MedplumClient, QueryTypes, ReadablePromise, ResourceArray } from "@medplum/core";
 import { Bundle, BundleLink, ExtractResource, ResourceType } from "@medplum/fhirtypes";
-import { FhirAdminClient, FhirClient } from "./api";
+import { FhirClient } from "./api";
 
 export const DEFAULT_TENANT = "DEFAULT";
 
@@ -75,55 +75,5 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
         url = undefined;
       }
     }
-  }
-}
-
-/**
- * Don't use this class directly. Use the factory function `makeFhirAdminApi()` instead.
- */
-export class HapiFhirAdminClient extends HapiFhirClient implements FhirAdminClient {
-  /**
-   * Creates a new FHIR client setup for administration/management purposes.
-   */
-  constructor(baseUrl: string) {
-    super(DEFAULT_TENANT, baseUrl);
-  }
-
-  private readonly baseHAPIPayload = { resourceType: "Parameters" };
-
-  async createTenant(org: { organizationNumber: number; cxId: string }): Promise<void> {
-    const url = this.fhirUrl("$partition-management-create-partition");
-    const payload = {
-      ...this.baseHAPIPayload,
-      parameter: [
-        { name: "id", valueInteger: org.organizationNumber },
-        { name: "name", valueCode: org.cxId },
-      ],
-    };
-    await this.post(url, payload);
-  }
-
-  async listTenants(): Promise<string[]> {
-    const url = this.fhirUrl("$partition-management-list-partitions");
-    const payload = {
-      ...this.baseHAPIPayload,
-      parameter: [],
-    };
-    const res = await this.post(url, payload);
-    return res.parameter
-      ? res.parameter
-          .flatMap((p: any) => p.part) //eslint-disable-line @typescript-eslint/no-explicit-any
-          .filter((p: any) => p.name === "name") //eslint-disable-line @typescript-eslint/no-explicit-any
-          .map((p: any) => p.valueCode) //eslint-disable-line @typescript-eslint/no-explicit-any
-      : [];
-  }
-
-  async deleteTenant(org: { organizationNumber: number }): Promise<void> {
-    const url = this.fhirUrl("$partition-management-delete-partition");
-    const payload = {
-      ...this.baseHAPIPayload,
-      parameter: [{ name: "id", valueInteger: org.organizationNumber }],
-    };
-    await this.post(url, payload);
   }
 }
