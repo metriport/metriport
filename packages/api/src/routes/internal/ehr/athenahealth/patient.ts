@@ -7,7 +7,12 @@ import { syncAthenaPatientIntoMetriport } from "../../../../external/ehr/athenah
 import { LookupModes } from "../../../../external/ehr/athenahealth/shared";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
-import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
+import {
+  asyncHandler,
+  getFromQuery,
+  getFromQueryAsBoolean,
+  getFromQueryOrFail,
+} from "../../../util";
 
 const router = Router();
 
@@ -92,11 +97,13 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const athenaPatientId = getFromQueryOrFail("patientId", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
+    const athenaDepartmentId = getFromQuery("departmentId", req);
     const triggerDq = getFromQueryAsBoolean("triggerDq", req);
     syncAthenaPatientIntoMetriport({
       cxId,
       athenaPracticeId,
       athenaPatientId,
+      athenaDepartmentId,
       triggerDq,
     }).catch(processAsyncError("AthenaHealth syncAthenaPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);

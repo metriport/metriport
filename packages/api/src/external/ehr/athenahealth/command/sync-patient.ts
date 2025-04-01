@@ -20,6 +20,7 @@ export type SyncAthenaPatientIntoMetriportParams = {
   cxId: string;
   athenaPracticeId: string;
   athenaPatientId: string;
+  athenaDepartmentId?: string;
   api?: AthenaHealthApi;
   triggerDq?: boolean;
 };
@@ -28,9 +29,28 @@ export async function syncAthenaPatientIntoMetriport({
   cxId,
   athenaPracticeId,
   athenaPatientId,
+  athenaDepartmentId,
   api,
   triggerDq = false,
 }: SyncAthenaPatientIntoMetriportParams): Promise<string> {
+  if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
+    const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+    const customFields = await athenaApi.getCustomFieldsForPatient({
+      cxId,
+      patientId: athenaPatientId,
+      departmentId: athenaDepartmentId,
+    });
+    const targetFieldOptIn = customFields.find(
+      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_IN
+    );
+    const targetFieldOptOut = customFields.find(
+      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_OUT
+    );
+    const optedIn =
+      !targetFieldOptOut && targetFieldOptIn && targetFieldOptIn.customfieldvalue === "Y";
+    if (!optedIn) throw new BadRequestError("AthenaHealth patient opted out of data sharing");
+  }
+
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: athenaPatientId,
@@ -46,21 +66,6 @@ export async function syncAthenaPatientIntoMetriport({
   }
 
   const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
-  if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
-    const customFields = await athenaApi.getCustomFieldsForPatient({
-      cxId,
-      patientId: athenaPatientId,
-    });
-    const targetFieldOptIn = customFields.find(
-      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_IN
-    );
-    const targetFieldOptOut = customFields.find(
-      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_OUT
-    );
-    const optedIn =
-      !targetFieldOptOut && targetFieldOptIn && targetFieldOptIn.customfieldvalue === "Y";
-    if (!optedIn) throw new BadRequestError("AthenaHealth patient opted out of data sharing");
-  }
   const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
   const possibleDemographics = createMetriportPatientDemosFhir(athenaPatient);
   const metriportPatient = await getOrCreateMetriportPatientFhir({

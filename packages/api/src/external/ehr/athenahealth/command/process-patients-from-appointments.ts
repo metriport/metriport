@@ -118,6 +118,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
         cxId: appointment.cxId,
         athenaPracticeId: appointment.practiceId,
         athenaPatientId: appointment.patientId,
+        athenaDepartmentId: appointment.departmentId,
       };
     }
   );
@@ -153,7 +154,12 @@ async function getAppointments({
     }
     return {
       appointments: appointments.map(appointment => {
-        return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
+        return {
+          cxId,
+          practiceId,
+          patientId: api.createPatientId(appointment.patientid),
+          departmentId: api.createDepartmentId(appointment.departmentid),
+        };
       }),
     };
   } catch (error) {
@@ -209,6 +215,7 @@ async function syncPatient({
   cxId,
   athenaPracticeId,
   athenaPatientId,
+  athenaDepartmentId,
 }: Omit<SyncAthenaPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
@@ -216,6 +223,7 @@ async function syncPatient({
     cxId,
     practiceId: athenaPracticeId,
     patientId: athenaPatientId,
+    departmentId: athenaDepartmentId,
     triggerDq: true,
   });
 }
