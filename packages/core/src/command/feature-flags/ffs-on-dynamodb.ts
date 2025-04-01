@@ -78,9 +78,6 @@ export async function getFeatureFlags(
   tableName: string
 ): Promise<FeatureFlagDatastore> {
   const record = await getFeatureFlagsRecord({ region, tableName });
-  log(
-    `From config with region=${region} and tableName=${tableName} - got version: ${record?.version}`
-  );
   return record?.featureFlags ?? initialFeatureFlags;
 }
 
@@ -126,8 +123,6 @@ export async function getFeatureFlagsRecord({
     return featureFlagsCache.record;
   }
 
-  log(`Fetching feature flags from DDB (age: ${age} millis)`);
-
   const ddb = makeDdbClient(region, tableName);
   try {
     const config = await ddb._docClient
@@ -143,7 +138,7 @@ export async function getFeatureFlagsRecord({
     if (!record) return undefined;
 
     featureFlagsCache = { record, timestamp: now };
-    log(`Updated feature flags cache (version: ${record.version})`);
+    log(`Updated feature flags cache, version: ${record.version}, age was ${age} millis`);
 
     return record;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
