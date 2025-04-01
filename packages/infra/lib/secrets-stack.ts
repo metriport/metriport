@@ -87,6 +87,7 @@ export class SecretsStack extends Stack {
       for (const secretName of vpnTunnelSecretNames) {
         const secret = makeSecret(secretName, {
           generateSecretString: {
+            excludePunctuation: true,
             excludeCharacters: PROBLEMATIC_IPSEC_CHARACTERS,
           },
         });
