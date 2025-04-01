@@ -27,10 +27,12 @@ import { createAndSignBulkXCPDRequests, SignedXcpdRequest } from "./xcpd/create/
 import { isRetryable as isRetryableXcpd } from "./xcpd/process/error";
 import { processXCPDResponse } from "./xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
+import { chunk } from "lodash";
 
 dayjs.extend(duration);
 
 const parsedResponsesBucket = Config.getIheParsedResponsesBucketName();
+const parsedResponsesBucketMaxSize = 100;
 
 export async function sendProcessXcpdRequest({
   signedRequest,
@@ -178,13 +180,13 @@ export async function createSignSendProcessXCPDRequest({
         capture.error(msg, { extra: { ...extra, error } });
       }
     }
-    const partitionDate = result.requestTimestamp
+    const requestDate = result.requestTimestamp
       ? new Date(Date.parse(result.requestTimestamp))
       : new Date();
     resultS3Payloads.push(
       JSON.stringify({
         ...result,
-        _date: partitionDate.toISOString().slice(0, 10),
+        _date: requestDate.toISOString().slice(0, 10),
         cxid: cxId,
         _stage: "pd",
       })
@@ -193,7 +195,6 @@ export async function createSignSendProcessXCPDRequest({
 
   await Promise.allSettled(resultPromises);
   if (parsedResponsesBucket && resultS3Payloads.length > 0) {
-    log(`Writing ${resultS3Payloads.length} PD responses to S3`);
     const filePath = createHivePartitionFilePath({
       cxId,
       patientId,
@@ -201,14 +202,19 @@ export async function createSignSendProcessXCPDRequest({
       date: new Date(),
     });
     const handler = buildS3WriterHandler();
-    await handler.writeToS3([
-      {
-        serviceId: "cq-patient-discovery-response",
-        bucket: parsedResponsesBucket,
-        filePath,
-        payload: resultS3Payloads.join("\n"),
-      },
-    ]);
+    const chunks = chunk(resultS3Payloads, parsedResponsesBucketMaxSize);
+    await Promise.allSettled(
+      chunks.map(chunk =>
+        handler.writeToS3([
+          {
+            serviceId: "cq-patient-discovery-response",
+            bucket: parsedResponsesBucket,
+            filePath,
+            payload: chunk.join("\n"),
+          },
+        ])
+      )
+    );
   }
 }
 
