@@ -5,6 +5,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
@@ -25,6 +26,9 @@ export class MllpStack extends cdk.NestedStack {
     const { vpc, ecrRepo, hl7NotificationBucket } = props;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
+
+    const queueArn = cdk.Fn.importValue("Hl7MessageRouterQueueArn");
+    const queueUrl = cdk.Fn.importValue("Hl7MessageRouterQueueUrl");
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
@@ -85,9 +89,22 @@ export class MllpStack extends cdk.NestedStack {
       },
     });
 
+    const taskRole = new iam.Role(this, "MllpServerTaskRole", {
+      assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+    });
+
+    taskRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["sqs:SendMessage"],
+        resources: [queueArn],
+      })
+    );
+
+    // Create Fargate Service
     const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
       cpu: fargateCpu,
       memoryLimitMiB: fargateMemoryLimitMiB,
+      taskRole,
     });
 
     hl7NotificationBucket.grantWrite(taskDefinition.taskRole);
@@ -100,6 +117,7 @@ export class MllpStack extends cdk.NestedStack {
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
         HL7_NOTIFICATION_BUCKET_NAME: props.config.hl7Notification.bucketName,
+        QUEUE_URL: queueUrl,
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
