@@ -1,6 +1,7 @@
 import { CodeableConcept } from "@medplum/fhirtypes";
 import { CPT_URL, ICD_10_URL, LOINC_URL, RXNORM_URL, SNOMED_URL } from "../../../../util/constants";
-import { normalizeCodeableConcept } from "../coding";
+import { unknownCoding } from "../../coding";
+import { normalizeCodeableConcept, normalizeCoding } from "../coding";
 
 describe("normalizeCodeableConcept", () => {
   it("should return concept unchanged when no coding array present", () => {
@@ -13,9 +14,9 @@ describe("normalizeCodeableConcept", () => {
   it("should sort codings based on system priority", () => {
     const concept: CodeableConcept = {
       coding: [
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: "12345678", display: "Snomed Term" },
         { system: RXNORM_URL, code: "456", display: "Rxnorm Term" },
-        { system: LOINC_URL, code: "789", display: "Loinc Term" },
+        { system: LOINC_URL, code: "56789-0", display: "Loinc Term" },
       ],
     };
 
@@ -46,7 +47,7 @@ describe("normalizeCodeableConcept", () => {
   it("should remove the coding from a known system if its code is UNK", () => {
     const concept: CodeableConcept = {
       coding: [
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: "12345678", display: "Snomed Term" },
         { system: CPT_URL, code: "UNK" },
       ],
     };
@@ -71,7 +72,7 @@ describe("normalizeCodeableConcept", () => {
   it("should filter out invalid codings when multiple codings exist", () => {
     const concept: CodeableConcept = {
       coding: [
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: "12345678", display: "Snomed Term" },
         { system: ICD_10_URL },
         { system: CPT_URL, code: "456", display: "Cpt Term" },
       ],
@@ -97,7 +98,7 @@ describe("normalizeCodeableConcept", () => {
     const concept: CodeableConcept = {
       coding: [
         { system: CPT_URL, code: "456", display: "Unknown" },
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: "12345678", display: "Snomed Term" },
       ],
     };
 
@@ -123,5 +124,93 @@ describe("normalizeCodeableConcept", () => {
 
     const normalized = normalizeCodeableConcept(concept);
     expect(normalized.text).toEqual("Something more intelligent");
+  });
+});
+
+describe("normalizeCoding", () => {
+  it("should return coding unchanged when no system is present", () => {
+    const coding = { display: "Some display", code: "123" };
+    expect(normalizeCoding(coding)).toEqual(coding);
+  });
+
+  it("should return coding unchanged when code is missing", () => {
+    const coding = { system: SNOMED_URL, display: "Some display" };
+    expect(normalizeCoding(coding)).toEqual(coding);
+  });
+
+  it("should return coding unchanged when code is empty string", () => {
+    const coding = { system: SNOMED_URL, code: "", display: "Some display" };
+    expect(normalizeCoding(coding)).toEqual(coding);
+  });
+
+  it("should validate SNOMED code and convert to LOINC if it matches LOINC pattern", () => {
+    const coding = {
+      system: SNOMED_URL,
+      code: "12345-6",
+      display: "Test code",
+    };
+    const normalized = normalizeCoding(coding);
+    expect(normalized.system).toBe(LOINC_URL);
+    expect(normalized.code).toBe("12345-6");
+    expect(normalized.display).toBe("Test code");
+  });
+
+  it("should convert to unknown coding for invalid SNOMED code that doesn't match LOINC", () => {
+    const coding = {
+      system: SNOMED_URL,
+      code: "invalid-code",
+      display: "Test code",
+    };
+    const normalized = normalizeCoding(coding);
+    expect(normalized).toEqual({
+      ...unknownCoding,
+      display: "Test code",
+    });
+  });
+
+  it("should keep valid SNOMED code unchanged", () => {
+    const coding = {
+      system: SNOMED_URL,
+      code: "123456789",
+      display: "Test code",
+    };
+    const normalized = normalizeCoding(coding);
+    expect(normalized.system).toBe(SNOMED_URL);
+    expect(normalized.code).toBe("123456789");
+    expect(normalized.display).toBe("Test code");
+  });
+
+  it("should convert to unknown coding for invalid LOINC code", () => {
+    const coding = {
+      system: LOINC_URL,
+      code: "invalid-loinc",
+      display: "Test code",
+    };
+    const normalized = normalizeCoding(coding);
+    expect(normalized).toEqual({
+      ...unknownCoding,
+      display: "Test code",
+    });
+  });
+
+  it("should keep valid LOINC code unchanged", () => {
+    const coding = {
+      system: LOINC_URL,
+      code: "12345-6",
+      display: "Test code",
+    };
+    const normalized = normalizeCoding(coding);
+    expect(normalized.system).toBe(LOINC_URL);
+    expect(normalized.code).toBe("12345-6");
+    expect(normalized.display).toBe("Test code");
+  });
+
+  it("should use default unknown display when no display provided", () => {
+    const coding = {
+      system: LOINC_URL,
+      code: "invalid-code",
+    };
+    const normalized = normalizeCoding(coding);
+    expect(normalized).toEqual(unknownCoding);
   });
 });
