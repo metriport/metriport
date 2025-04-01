@@ -1,4 +1,4 @@
-import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";

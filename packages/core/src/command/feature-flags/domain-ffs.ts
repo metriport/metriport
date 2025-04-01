@@ -1,14 +1,14 @@
 import { errorToString } from "@metriport/shared";
+import { Config } from "../../util/config";
+import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
+import { getFeatureFlags } from "./ffs-on-dynamodb";
 import {
   BooleanFeatureFlags,
   CxFeatureFlagStatus,
   StringValueFeatureFlags,
   stringValueFFsSchema,
-} from "../../external/aws/app-config";
-import { Config } from "../../util/config";
-import { out } from "../../util/log";
-import { capture } from "../../util/notifications";
-import { getFeatureFlags } from "./ffs-on-dynamodb";
+} from "./types";
 
 const { log } = out(`FFs`);
 
