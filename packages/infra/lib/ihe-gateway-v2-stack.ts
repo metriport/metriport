@@ -38,7 +38,7 @@ function settings() {
   const writeToS3LambdaTimeout = Duration.seconds(25);
   const writeToS3: QueueAndLambdaSettings = {
     name: "IHEGatewayV2OutboundPatientDiscoveryWriteToS3",
-    entry: "ihe-outbound-patient-discovery-write-to-s3",
+    entry: "ihe-gateway-v2-outbound-patient-discovery-write-to-s3",
     lambda: {
       memory: 2048,
       batchSize: 10,
