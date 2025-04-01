@@ -36,6 +36,8 @@ const CUSTOM_APPOINTMENT_TYPE_IDS = Config.isProdEnv()
 const subscriptionBackfillLookBack = dayjs.duration(12, "hours");
 const appointmentsLookForward = dayjs.duration(1, "day");
 
+type AthenaAppointment = Appointment & { departmentId: string };
+
 type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
@@ -50,7 +52,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
     return;
   }
 
-  const allAppointments: Appointment[] = [];
+  const allAppointments: AthenaAppointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.flatMap(mapping => {
     if (!mapping.secondaryMappings) {
@@ -110,7 +112,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
     });
   }
 
-  const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
+  const uniqueAppointments: AthenaAppointment[] = uniqBy(allAppointments, "patientId");
 
   const syncPatientsArgs: SyncAthenaPatientIntoMetriportParams[] = uniqueAppointments.map(
     appointment => {
@@ -134,7 +136,7 @@ async function getAppointments({
   practiceId,
   departmentIds,
   lookupMode,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: AthenaAppointment[]; error?: unknown }> {
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );

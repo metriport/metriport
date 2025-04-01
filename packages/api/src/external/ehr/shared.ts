@@ -108,7 +108,6 @@ export const ehrCxMappingSecondaryMappingsSchemaMap: {
 export type Appointment = {
   cxId: string;
   practiceId: string;
-  departmentId?: string;
   patientId: string;
 };
 

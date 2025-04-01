@@ -20,7 +20,7 @@ export type SyncAthenaPatientIntoMetriportParams = {
   cxId: string;
   athenaPracticeId: string;
   athenaPatientId: string;
-  athenaDepartmentId?: string;
+  athenaDepartmentId: string;
   api?: AthenaHealthApi;
   triggerDq?: boolean;
 };
