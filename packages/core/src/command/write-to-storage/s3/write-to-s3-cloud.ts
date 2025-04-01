@@ -1,5 +1,4 @@
 import { BadRequestError, sleep } from "@metriport/shared";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { chunk } from "lodash";
 import { SQSClient } from "../../../external/aws/sqs";
 import { Config } from "../../../util/config";
@@ -37,9 +36,14 @@ export class S3WriterCloud implements S3Writer {
       await Promise.all(
         chunk.map(p =>
           this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, p.payload, {
-            fifo: true,
-            messageDeduplicationId: createUuidFromText(p.payload),
-            messageGroupId: p.serviceId,
+            messageAttributes: {
+              serviceId: p.serviceId,
+              bucket: p.bucket,
+              filePath: p.filePath,
+              ...(p.fileName && { fileName: p.fileName }),
+              ...(p.contentType && { contentType: p.contentType }),
+              ...(p.metadata && { metadata: JSON.stringify(p.metadata) }),
+            },
           })
         )
       );
