@@ -32,7 +32,7 @@ import { chunk } from "lodash";
 dayjs.extend(duration);
 
 const parsedResponsesBucket = Config.getIheParsedResponsesBucketName();
-const parsedResponsesBucketMaxSize = 100;
+const parsedResponsesBucketMaxMessages = 200;
 
 export async function sendProcessXcpdRequest({
   signedRequest,
@@ -155,7 +155,7 @@ export async function createSignSendProcessXCPDRequest({
 }): Promise<void> {
   const log = getLog("createSignSendProcessXCPDRequest");
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
-  const resultS3Payloads: string[] = [];
+  const resultS3PayloadsWithFilePaths: [string, string][] = [];
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     const result = await sendProcessXcpdRequest({
       signedRequest,
@@ -180,41 +180,44 @@ export async function createSignSendProcessXCPDRequest({
         capture.error(msg, { extra: { ...extra, error } });
       }
     }
-    const requestDate = result.requestTimestamp
-      ? new Date(Date.parse(result.requestTimestamp))
-      : new Date();
-    resultS3Payloads.push(
-      JSON.stringify({
+    if (parsedResponsesBucket) {
+      const partitionDate = result.requestTimestamp
+        ? new Date(Date.parse(result.requestTimestamp))
+        : new Date();
+      const filePath = createHivePartitionFilePath({
+        cxId,
+        patientId,
+        keys: { stage: "pd" },
+        date: partitionDate,
+      });
+      const extendedResult = {
         ...result,
-        _date: requestDate.toISOString().slice(0, 10),
+        _date: partitionDate.toISOString().slice(0, 10),
         cxid: cxId,
         _stage: "pd",
-      })
-    );
+      };
+      resultS3PayloadsWithFilePaths.push([filePath, JSON.stringify(extendedResult)]);
+    }
   });
 
   await Promise.allSettled(resultPromises);
-  if (parsedResponsesBucket && resultS3Payloads.length > 0) {
-    const filePath = createHivePartitionFilePath({
-      cxId,
-      patientId,
-      keys: { stage: "pd" },
-      date: new Date(),
-    });
+  if (parsedResponsesBucket && resultS3PayloadsWithFilePaths.length > 0) {
+    const chunks = chunk(resultS3PayloadsWithFilePaths, parsedResponsesBucketMaxMessages);
     const handler = buildS3WriterHandler();
-    const chunks = chunk(resultS3Payloads, parsedResponsesBucketMaxSize);
-    await Promise.allSettled(
-      chunks.map(chunk =>
-        handler.writeToS3([
-          {
-            serviceId: "cq-patient-discovery-response",
-            bucket: parsedResponsesBucket,
-            filePath,
-            payload: chunk.join("\n"),
-          },
-        ])
-      )
-    );
+    for (const chunk of chunks) {
+      await Promise.all(
+        chunk.map(([filePath, payload]) =>
+          handler.writeToS3([
+            {
+              serviceId: "cq-patient-discovery-response",
+              bucket: parsedResponsesBucket,
+              filePath,
+              payload,
+            },
+          ])
+        )
+      );
+    }
   }
 }
 
