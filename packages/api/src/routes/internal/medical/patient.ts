@@ -3,6 +3,7 @@ import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolida
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { documentQueryStatus } from "@metriport/core/domain/document-query";
 import {
   Hl7v2Subscriber,
   hl7v2SubscriptionRequestSchema,
@@ -14,9 +15,9 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   BadRequestError,
-  PaginatedResponse,
   internalSendConsolidatedSchema,
   normalizeState,
+  PaginatedResponse,
   patientImportSchema,
   sleep,
   stringToBoolean,
@@ -31,6 +32,10 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
+import {
+  getDocQueryProgress,
+  updateDocQueryProgress,
+} from "../../../command/medical/admin/patient/doc-progress";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
 import {
   ConsolidatedQueryParams,
@@ -40,18 +45,18 @@ import {
 } from "../../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
-  GetHl7v2SubscribersParams,
   getHl7v2Subscribers,
   getHl7v2SubscribersCount,
+  GetHl7v2SubscribersParams,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -830,6 +835,73 @@ router.post(
       requestId,
     });
     return res.status(status.OK).json({ requestId });
+  })
+);
+
+const docQueryStatusSchema = z
+  .object({
+    convert: z
+      .object({
+        status: z.enum(documentQueryStatus),
+      })
+      .optional(),
+    download: z
+      .object({
+        status: z.enum(documentQueryStatus),
+      })
+      .optional(),
+  })
+  .strict();
+
+/**
+ * GET /internal/patient/:id/doc-query-status
+ *
+ * Gets the document query progress for a patient.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @return The document query progress for the patient:
+ *         - global: the progress for the patient in the global scope
+ *         - cw: the progress for the patient in the CommonWell scope
+ *         - cq: the progress for the patient in the CareQuality scope
+ */
+router.get(
+  "/:id/doc-query-status",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromParamsOrFail("id", req);
+
+    const response = await getDocQueryProgress({ cxId, patientId });
+
+    return res.status(status.OK).json(response);
+  })
+);
+
+/**
+ * POST /internal/patient/:id/doc-query-status
+ *
+ * Updates the document query progress for a patient.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.body The document query progress to update.
+ *        req.body.download.status: The status of the download progress.
+ *        req.body.convert.status: The status of the convert progress.
+ */
+router.post(
+  "/:id/doc-query-status",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromParamsOrFail("id", req);
+    const docQueryProgress = docQueryStatusSchema.parse(req.body);
+
+    const response = await updateDocQueryProgress({ cxId, patientId, docQueryProgress });
+
+    return res.status(status.OK).json(response);
   })
 );
 
