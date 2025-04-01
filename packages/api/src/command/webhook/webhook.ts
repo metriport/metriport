@@ -15,7 +15,7 @@ import { z, ZodError } from "zod";
 import { Product } from "../../domain/product";
 import { WebhookRequestStatus } from "../../domain/webhook";
 import WebhookError from "../../errors/webhook";
-import { isE2eCx } from "../../external/aws/app-config";
+import { isE2eCx } from "../../external/feature-flags";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { getHttpStatusFromAxiosError } from "../../shared/http";

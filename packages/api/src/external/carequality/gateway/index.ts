@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
-import { isE2eCx } from "../../aws/app-config";
+import { isE2eCx } from "../../feature-flags";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { getOrganizationsForXCPD } from "../command/cq-directory/get-organizations-for-xcpd";
 import {

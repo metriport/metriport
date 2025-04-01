@@ -5,8 +5,8 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { getEnvVar } from "@metriport/shared";
-import { getCxIdFromApiKey } from "../../routes/middlewares/auth";
-import { Config } from "../../shared/config";
+import { getCxIdFromApiKey } from "../routes/middlewares/auth";
+import { Config } from "../shared/config";
 
 const { log } = out(`App Config - FF`);
 
