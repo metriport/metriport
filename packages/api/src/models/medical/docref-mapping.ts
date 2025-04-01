@@ -45,7 +45,7 @@ export class DocRefMappingModel extends BaseModel<DocRefMappingModel> implements
           type: DataTypes.STRING,
         },
         rawResource: {
-          type: DataTypes.STRING,
+          type: DataTypes.JSONB,
         },
       },
       {

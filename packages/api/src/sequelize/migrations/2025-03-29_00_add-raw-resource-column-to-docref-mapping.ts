@@ -6,8 +6,8 @@ const columnName = "raw_resource";
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.addColumn(tableName, columnName, {
-    type: DataTypes.STRING,
-    defaultValue: "",
+    type: DataTypes.JSONB,
+    defaultValue: "{}",
     allowNull: false,
   });
 };
