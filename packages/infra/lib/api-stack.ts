@@ -219,38 +219,27 @@ export class APIStack extends Stack {
       dbConfig,
       slackNotification?.alarmAction
     );
-    const writerInstanceId = dbCluster.instanceIdentifiers[0]; // Writer instance is always first
-    if (writerInstanceId) {
-      const writer = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, "APIDBWriter", {
-        instanceIdentifier: writerInstanceId,
-        instanceEndpointAddress: dbCluster.clusterEndpoint.hostname,
-        port: dbCluster.clusterEndpoint.port,
-        securityGroups: dbCluster.connections.securityGroups,
-      });
+    const instances = dbCluster.instanceIdentifiers.map(instanceIdentifier => {
+      return rds.DatabaseInstance.fromDatabaseInstanceAttributes(
+        this,
+        `${dbClusterName}-${instanceIdentifier}`,
+        {
+          instanceIdentifier,
+          instanceEndpointAddress: dbCluster.clusterEndpoint.hostname,
+          port: dbCluster.clusterEndpoint.port,
+          securityGroups: dbCluster.connections.securityGroups,
+        }
+      );
+    });
+    instances.forEach(instance => {
       addDBInstancePerformanceAlarms(
         this,
-        writer,
-        `${dbClusterName}-Writer`,
+        instance,
+        `${dbClusterName}-${instance.instanceIdentifier}`,
         dbConfig,
         slackNotification?.alarmAction
       );
-    }
-    const readerInstanceId = dbCluster.instanceIdentifiers[1];
-    if (readerInstanceId) {
-      const reader = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, "APIReaderReplica", {
-        instanceIdentifier: readerInstanceId,
-        instanceEndpointAddress: dbCluster.clusterReadEndpoint.hostname,
-        port: dbCluster.clusterEndpoint.port,
-        securityGroups: dbCluster.connections.securityGroups,
-      });
-      addDBInstancePerformanceAlarms(
-        this,
-        reader,
-        `${dbClusterName}-Reader`,
-        dbConfig,
-        slackNotification?.alarmAction
-      );
-    }
+    });
 
     //----------------------------------------------------------
     // DynamoDB
