@@ -18,7 +18,7 @@ function settings() {
     entry: "write-to-s3",
     lambda: {
       memory: 2048,
-      batchSize: 100,
+      batchSize: 10,
       timeout: writeToS3LambdaTimeout,
       reportBatchItemFailures: true,
     },
