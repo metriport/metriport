@@ -1,12 +1,15 @@
-import { errorToString } from "@metriport/shared";
-import { capture } from "@metriport/core/util/notifications";
+import {
+  isCommonwellEnabled,
+  isCWEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 import z from "zod";
-import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
-import { isCommonwellEnabled, isCWEnabledForCx } from "../aws/app-config";
 import { Config } from "../../shared/config";
 import { CwLink } from "../commonwell/cw-patient-data";
+import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 export async function getCwInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string

@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
+import * as featureFlags from "@metriport/core/command/feature-flags/domain-ffs";
 import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { Config } from "../../../shared/config";
-import * as featureFlags from "../../aws/app-config";
 import * as hieInitiator from "../../hie/get-hie-initiator";
 import { validateCWEnabled } from "../shared";
 

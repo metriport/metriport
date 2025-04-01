@@ -1,3 +1,4 @@
+import { isWebhookPongDisabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { webhookDisableFlagName } from "@metriport/core/domain/webhook/index";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util/log";
@@ -14,7 +15,7 @@ import { z, ZodError } from "zod";
 import { Product } from "../../domain/product";
 import { WebhookRequestStatus } from "../../domain/webhook";
 import WebhookError from "../../errors/webhook";
-import { isE2eCx, isWebhookPongDisabledForCx } from "../../external/aws/app-config";
+import { isE2eCx } from "../../external/aws/app-config";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { getHttpStatusFromAxiosError } from "../../shared/http";

@@ -7,6 +7,10 @@ import {
   Patient as CommonwellPatient,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import {
+  isDemoAugEnabledForCx,
+  isEnhancedCoverageEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -24,7 +28,6 @@ import {
   getNewDemographics,
 } from "../../domain/medical/patient-demographics";
 import MetriportError from "../../errors/metriport-error";
-import { isDemoAugEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/app-config";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
