@@ -384,8 +384,8 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Utils
     //-------------------------------------------
-    const { writeToS3Queue: utilsWriteToS3Queue, writeToS3Lambda: utilWriteToS3Lambda } =
-      new UtilsNestedStack(this, "Utils", {
+    const { writeToS3Queue: utilsWriteToS3Queue, writeToS3Lambda: utilsWriteToS3Lambda } =
+      new UtilsNestedStack(this, "UtilsNestedStack", {
         config: props.config,
         lambdaLayers,
         vpc: this.vpc,
@@ -544,8 +544,8 @@ export class APIStack extends Stack {
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
-        writeToS3Lambda: utilWriteToS3Lambda,
-        writeToS3QueueUrl: utilsWriteToS3Queue.queueUrl,
+        writeToS3Lambda: utilsWriteToS3Lambda,
+        writeToS3Queue: utilsWriteToS3Queue,
       });
     }
 

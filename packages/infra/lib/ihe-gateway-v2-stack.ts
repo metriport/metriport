@@ -9,6 +9,8 @@ import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
+import { provideAccessToQueue } from "./shared/sqs";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 
 interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
@@ -27,7 +29,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   writeToS3Lambda: Lambda;
-  writeToS3QueueUrl: string;
+  writeToS3Queue: IQueue;
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
@@ -146,7 +148,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       apiURL: string;
       envType: EnvType;
       sentryDsn: string | undefined;
-      writeToS3QueueUrl: string;
+      writeToS3Queue: IQueue;
     },
     iheResponsesBucket: s3.Bucket,
     iheParsedResponsesBucket: s3.Bucket
@@ -164,7 +166,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       apiURL,
       envType,
       sentryDsn,
-      writeToS3QueueUrl,
+      writeToS3Queue,
     } = ownProps;
 
     const patientDiscoveryLambda = createLambda({
@@ -189,12 +191,18 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
         IHE_PARSED_RESPONSES_BUCKET_NAME: iheParsedResponsesBucket.bucketName,
-        WRITE_TO_S3_QUEUE_URL: writeToS3QueueUrl,
+        WRITE_TO_S3_QUEUE_URL: writeToS3Queue.queueUrl,
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
       timeout: Duration.minutes(10),
       vpc,
+    });
+
+    provideAccessToQueue({
+      accessType: "send",
+      queue: writeToS3Queue,
+      resource: patientDiscoveryLambda,
     });
 
     this.grantSecretsReadAccess(patientDiscoveryLambda, secrets, [
@@ -205,7 +213,6 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     ]);
 
     iheResponsesBucket.grantReadWrite(patientDiscoveryLambda);
-    iheParsedResponsesBucket.grantReadWrite(patientDiscoveryLambda);
     medicalDocumentsBucket.grantRead(patientDiscoveryLambda);
     cqTrustBundleBucket.grantRead(patientDiscoveryLambda);
     return patientDiscoveryLambda;
