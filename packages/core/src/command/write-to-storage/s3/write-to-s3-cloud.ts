@@ -34,7 +34,9 @@ export class S3WriterCloud implements S3Writer {
     const chunks = chunk(params, MAX_SQS_MESSAGE_BATCH_SIZE);
     for (const chunk of chunks) {
       await Promise.all(
-        chunk.map(p => this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, p.payload))
+        chunk.map(param =>
+          this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, JSON.stringify(param))
+        )
       );
       await sleep(MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP);
     }
