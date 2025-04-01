@@ -8,7 +8,7 @@ const s3Utils = new S3Utils(region);
 
 export class S3WriterLocal implements S3Writer {
   async writeToS3(params: WriteToS3Request): Promise<void> {
-    const messagesByFilePath = params.reduce(
+    const messagesByBucketAndFilePath = params.reduce(
       (acc, param) => {
         const accKey = createFileLookupKey(param);
         const accNew = acc[accKey] ?? { singleFiles: [], bulkFiles: [] };
@@ -25,7 +25,7 @@ export class S3WriterLocal implements S3Writer {
       >
     );
     await Promise.all(
-      Object.entries(messagesByFilePath).flatMap(([key, messagesMap]) => {
+      Object.entries(messagesByBucketAndFilePath).flatMap(([key, messagesMap]) => {
         const { bucket, filePath } = splitFileLookupKey(key);
         const filePathNoTrailingSlash = filePath.endsWith("/") ? filePath.slice(0, -1) : filePath;
         return [
