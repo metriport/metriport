@@ -41,7 +41,7 @@ function settings() {
     entry: "ihe-gateway-v2-outbound-patient-discovery-write-to-s3",
     lambda: {
       memory: 2048,
-      batchSize: 10,
+      batchSize: 100,
       timeout: writeToS3LambdaTimeout,
       reportBatchItemFailures: true,
     },
