@@ -153,6 +153,7 @@ export async function createSignSendProcessXCPDRequest({
 }): Promise<void> {
   const log = getLog("createSignSendProcessXCPDRequest");
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
+  const resultS3Payloads: string[] = [];
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     const result = await sendProcessXcpdRequest({
       signedRequest,
@@ -177,41 +178,38 @@ export async function createSignSendProcessXCPDRequest({
         capture.error(msg, { extra: { ...extra, error } });
       }
     }
-    if (parsedResponsesBucket) {
-      try {
-        const partitionDate = result.requestTimestamp
-          ? new Date(Date.parse(result.requestTimestamp))
-          : new Date();
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          keys: { stage: "pd" },
-          date: partitionDate,
-        });
-        const extendedResult = {
-          ...result,
-          _date: partitionDate.toISOString().slice(0, 10),
-          cxid: cxId,
-          _stage: "pd",
-        };
-        const handler = buildS3WriterHandler();
-        await handler.writeToS3([
-          {
-            serviceId: "cq-patient-discovery-response",
-            bucket: parsedResponsesBucket,
-            filePath,
-            payload: JSON.stringify(extendedResult),
-          },
-        ]);
-      } catch (error) {
-        const msg = "Failed to send PD response to S3";
-        const extra = { cxId, patientId, result };
-        log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
-      }
-    }
+    const partitionDate = result.requestTimestamp
+      ? new Date(Date.parse(result.requestTimestamp))
+      : new Date();
+    resultS3Payloads.push(
+      JSON.stringify({
+        ...result,
+        _date: partitionDate.toISOString().slice(0, 10),
+        cxid: cxId,
+        _stage: "pd",
+      })
+    );
   });
 
   await Promise.allSettled(resultPromises);
+  if (parsedResponsesBucket && resultS3Payloads.length > 0) {
+    log(`Writing ${resultS3Payloads.length} PD responses to S3`);
+    const filePath = createHivePartitionFilePath({
+      cxId,
+      patientId,
+      keys: { stage: "pd" },
+      date: new Date(),
+    });
+    const handler = buildS3WriterHandler();
+    await handler.writeToS3([
+      {
+        serviceId: "cq-patient-discovery-response",
+        bucket: parsedResponsesBucket,
+        filePath,
+        payload: resultS3Payloads.join("\n"),
+      },
+    ]);
+  }
 }
 
 export async function createSignSendProcessDqRequests({
