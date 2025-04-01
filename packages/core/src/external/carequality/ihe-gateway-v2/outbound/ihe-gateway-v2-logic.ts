@@ -27,12 +27,10 @@ import { createAndSignBulkXCPDRequests, SignedXcpdRequest } from "./xcpd/create/
 import { isRetryable as isRetryableXcpd } from "./xcpd/process/error";
 import { processXCPDResponse } from "./xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
-import { chunk } from "lodash";
 
 dayjs.extend(duration);
 
 const parsedResponsesBucket = Config.getIheParsedResponsesBucketName();
-const parsedResponsesBucketMaxMessages = 200;
 
 export async function sendProcessXcpdRequest({
   signedRequest,
@@ -202,22 +200,17 @@ export async function createSignSendProcessXCPDRequest({
 
   await Promise.allSettled(resultPromises);
   if (parsedResponsesBucket && resultS3PayloadsWithFilePaths.length > 0) {
-    const chunks = chunk(resultS3PayloadsWithFilePaths, parsedResponsesBucketMaxMessages);
     const handler = buildS3WriterHandler();
-    for (const chunk of chunks) {
-      await Promise.all(
-        chunk.map(([filePath, payload]) =>
-          handler.writeToS3([
-            {
-              serviceId: "cq-patient-discovery-response",
-              bucket: parsedResponsesBucket,
-              filePath,
-              payload,
-            },
-          ])
-        )
-      );
-    }
+    await handler.writeToS3(
+      resultS3PayloadsWithFilePaths.map(([filePath, payload]) => {
+        return {
+          serviceId: "cq-patient-discovery-response",
+          bucket: parsedResponsesBucket,
+          filePath,
+          payload,
+        };
+      })
+    );
   }
 }
 
