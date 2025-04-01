@@ -54,7 +54,7 @@ import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { addDBClusterPerformanceAlarms } from "./shared/rds";
+import { addDBClusterPerformanceAlarms, addDBInstancePerformanceAlarms } from "./shared/rds";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
@@ -220,6 +220,38 @@ export class APIStack extends Stack {
       dbConfig,
       slackNotification?.alarmAction
     );
+    const writerInstanceId = dbCluster.instanceIdentifiers[0]; // Writer instance is always first
+    if (writerInstanceId) {
+      const writer = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, "APIDBWriter", {
+        instanceIdentifier: writerInstanceId,
+        instanceEndpointAddress: dbCluster.clusterEndpoint.hostname,
+        port: dbCluster.clusterEndpoint.port,
+        securityGroups: dbCluster.connections.securityGroups,
+      });
+      addDBInstancePerformanceAlarms(
+        this,
+        writer,
+        writerInstanceId,
+        dbConfig,
+        slackNotification?.alarmAction
+      );
+    }
+    const readerInstanceId = dbCluster.instanceIdentifiers[1];
+    if (readerInstanceId) {
+      const reader = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, "APIReaderReplica", {
+        instanceIdentifier: readerInstanceId,
+        instanceEndpointAddress: dbCluster.clusterReadEndpoint.hostname,
+        port: dbCluster.clusterEndpoint.port,
+        securityGroups: dbCluster.connections.securityGroups,
+      });
+      addDBInstancePerformanceAlarms(
+        this,
+        reader,
+        readerInstanceId,
+        dbConfig,
+        slackNotification?.alarmAction
+      );
+    }
 
     //----------------------------------------------------------
     // DynamoDB
