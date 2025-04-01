@@ -1,9 +1,7 @@
 import {
+  FeatureFlags,
   featureFlagsRecordUpdateSchema,
-  getFeatureFlagsRecord,
-  updateFeatureFlagsRecord,
 } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
-import { Config } from "@metriport/core/util/config";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -23,10 +21,7 @@ router.get(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const ffRecord = await getFeatureFlagsRecord({
-      region: Config.getAWSRegion(),
-      tableName: Config.getFeatureFlagsTableName(),
-    });
+    const ffRecord = await FeatureFlags.getFeatureFlagsRecord();
     return res.status(httpStatus.OK).json(ffRecord);
   })
 );
@@ -51,11 +46,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const newRecordData = featureFlagsRecordUpdateSchema.parse(req.body);
-    const ffRecord = await updateFeatureFlagsRecord({
-      region: Config.getAWSRegion(),
-      tableName: Config.getFeatureFlagsTableName(),
-      newRecordData,
-    });
+    const ffRecord = await FeatureFlags.updateFeatureFlagsRecord({ newRecordData });
     return res.status(httpStatus.OK).json(ffRecord);
   })
 );

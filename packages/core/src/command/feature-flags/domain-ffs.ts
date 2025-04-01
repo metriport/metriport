@@ -1,5 +1,4 @@
 import { errorToString } from "@metriport/shared";
-import { Config } from "../../util/config";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { getFeatureFlags } from "./ffs-on-dynamodb";
@@ -13,12 +12,10 @@ import {
 const { log } = out(`FFs`);
 
 export async function getFeatureFlagValueCxValues<T extends keyof StringValueFeatureFlags>(
-  region: string,
-  ffTableName: string,
   cxId: string,
   featureFlagNames?: T[]
 ): Promise<CxFeatureFlagStatus> {
-  const configContentValue = await getFeatureFlags(region, ffTableName);
+  const configContentValue = await getFeatureFlags();
   const targetFeatureFlags =
     featureFlagNames && featureFlagNames.length > 0
       ? featureFlagNames
@@ -40,12 +37,10 @@ export async function getFeatureFlagValueCxValues<T extends keyof StringValueFea
 }
 
 export async function getFeatureFlagValueStringArray<T extends keyof StringValueFeatureFlags>(
-  region: string,
-  ffTableName: string,
   featureFlagName: T
 ): Promise<StringValueFeatureFlags[T]> {
   try {
-    const configContentValue = await getFeatureFlags(region, ffTableName);
+    const configContentValue = await getFeatureFlags();
     return configContentValue[featureFlagName];
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
@@ -57,11 +52,9 @@ export async function getFeatureFlagValueStringArray<T extends keyof StringValue
 }
 
 export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureFlags>(
-  region: string,
-  ffTableName: string,
   featureFlagName: T
 ): Promise<BooleanFeatureFlags[T]> {
-  const configContentValue = await getFeatureFlags(region, ffTableName);
+  const configContentValue = await getFeatureFlags();
   return configContentValue[featureFlagName];
 }
 
@@ -75,11 +68,7 @@ export async function isFeatureFlagEnabled(
   defaultValue = false
 ): Promise<boolean> {
   try {
-    const featureFlag = await getFeatureFlagValueBoolean(
-      Config.getAWSRegion(),
-      Config.getFeatureFlagsTableName(),
-      featureFlagName
-    );
+    const featureFlag = await getFeatureFlagValueBoolean(featureFlagName);
     return featureFlag ? featureFlag.enabled : defaultValue;
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
@@ -99,11 +88,7 @@ export async function getCxsWithFeatureFlagEnabled(
   featureFlagName: keyof StringValueFeatureFlags
 ): Promise<string[]> {
   try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      Config.getAWSRegion(),
-      Config.getFeatureFlagsTableName(),
-      featureFlagName
-    );
+    const featureFlag = await getFeatureFlagValueStringArray(featureFlagName);
     if (featureFlag && featureFlag.enabled) {
       return featureFlag.values;
     }
