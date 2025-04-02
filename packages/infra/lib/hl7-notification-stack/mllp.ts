@@ -27,8 +27,8 @@ export class MllpStack extends cdk.NestedStack {
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
 
-    const queueArn = cdk.Fn.importValue("Hl7MessageRouterQueueArn");
-    const queueUrl = cdk.Fn.importValue("Hl7MessageRouterQueueUrl");
+    const queueArn = cdk.Fn.importValue("Hl7NotificationRouterQueueArn");
+    const queueUrl = cdk.Fn.importValue("Hl7NotificationRouterQueueUrl");
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
