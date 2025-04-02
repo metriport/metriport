@@ -19,7 +19,7 @@ import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consol
 
 dayjs.extend(duration);
 
-const AI_BRIEF_TIMEOUT = dayjs.duration(1.5, "minutes");
+const AI_BRIEF_TIMEOUT = dayjs.duration(2, "minutes");
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const TIMED_OUT = Symbol("TIMED_OUT");
 
