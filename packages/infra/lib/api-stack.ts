@@ -455,10 +455,10 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2 = lambdas.fhirToMedicalRecordLambda2;
     }
 
-    let hl7MessageRouterLambda: Lambda | undefined = undefined;
-    let hl7MessageRouterQueue: IQueue | undefined = undefined;
+    let hl7NotificationRouterLambda: Lambda | undefined = undefined;
+    let hl7NotificationRouterQueue: IQueue | undefined = undefined;
     if (!isSandbox(props.config)) {
-      const constructs = this.setupHl7MessageRouterLambda({
+      const constructs = this.setupHl7NotificationRouterLambda({
         lambdaLayers,
         vpc: this.vpc,
         medicalDocumentsBucket,
@@ -468,8 +468,8 @@ export class APIStack extends Stack {
         featureFlagsTable,
         ...props.config.fhirToMedicalLambda,
       });
-      hl7MessageRouterLambda = constructs.hl7MessageRouterLambda;
-      hl7MessageRouterQueue = constructs.hl7MessageRouterQueue;
+      hl7NotificationRouterLambda = constructs.hl7NotificationRouterLambda;
+      hl7NotificationRouterQueue = constructs.hl7NotificationRouterQueue;
     }
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
@@ -522,7 +522,7 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
-      hl7MessageRouterLambda,
+      hl7NotificationRouterLambda,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
@@ -592,7 +592,7 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    hl7MessageRouterLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    hl7NotificationRouterLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
@@ -989,16 +989,16 @@ export class APIStack extends Stack {
       value: userPoolClientSecret.userPoolId,
     });
 
-    if (hl7MessageRouterQueue) {
-      new CfnOutput(this, "Hl7MessageRouterQueueArn", {
+    if (hl7NotificationRouterQueue) {
+      new CfnOutput(this, "Hl7NotificationRouterQueueArn", {
         description: "HL7 Message Router Queue ARN",
-        value: hl7MessageRouterQueue.queueArn,
-        exportName: "Hl7MessageRouterQueueArn",
+        value: hl7NotificationRouterQueue.queueArn,
+        exportName: "Hl7NotificationRouterQueueArn",
       });
-      new CfnOutput(this, "Hl7MessageRouterQueueUrl", {
+      new CfnOutput(this, "Hl7NotificationRouterQueueUrl", {
         description: "HL7 Message Router Queue URL",
-        value: hl7MessageRouterQueue.queueUrl,
-        exportName: "Hl7MessageRouterQueueUrl",
+        value: hl7NotificationRouterQueue.queueUrl,
+        exportName: "Hl7NotificationRouterQueueUrl",
       });
     }
   }
@@ -1352,7 +1352,7 @@ export class APIStack extends Stack {
     return bulkUrlSigningLambda;
   }
 
-  private setupHl7MessageRouterLambda(ownProps: {
+  private setupHl7NotificationRouterLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
@@ -1360,7 +1360,7 @@ export class APIStack extends Stack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     featureFlagsTable: dynamodb.Table;
-  }): { hl7MessageRouterLambda: Lambda; hl7MessageRouterQueue: IQueue } {
+  }): { hl7NotificationRouterLambda: Lambda; hl7NotificationRouterQueue: IQueue } {
     const {
       lambdaLayers,
       vpc,
@@ -1374,9 +1374,9 @@ export class APIStack extends Stack {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
 
-    const hl7MessageRouterQueue = createQueue({
+    const hl7NotificationRouterQueue = createQueue({
       stack: this,
-      name: "Hl7MessageRouterQueue",
+      name: "Hl7NotificationRouterQueue",
       fifo: true,
       createDLQ: true,
       visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
@@ -1388,11 +1388,11 @@ export class APIStack extends Stack {
       createRetryLambda: true,
     });
 
-    const hl7MessageRouterLambda = createLambda({
+    const hl7NotificationRouterLambda = createLambda({
       stack: this,
-      name: "Hl7MessageRouter",
+      name: "Hl7NotificationRouter",
       runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "hl7-message-router",
+      entry: "hl7-notification-router",
       envType,
       envVars: {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
@@ -1408,11 +1408,11 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    featureFlagsTable.grantReadData(hl7MessageRouterLambda);
-    medicalDocumentsBucket.grantReadWrite(hl7MessageRouterLambda);
-    hl7MessageRouterLambda.addEventSource(new SqsEventSource(hl7MessageRouterQueue));
+    featureFlagsTable.grantReadData(hl7NotificationRouterLambda);
+    medicalDocumentsBucket.grantReadWrite(hl7NotificationRouterLambda);
+    hl7NotificationRouterLambda.addEventSource(new SqsEventSource(hl7NotificationRouterQueue));
 
-    return { hl7MessageRouterLambda, hl7MessageRouterQueue };
+    return { hl7NotificationRouterLambda, hl7NotificationRouterQueue };
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {
