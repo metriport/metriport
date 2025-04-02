@@ -1,27 +1,29 @@
-import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  isCQDirectEnabledForCx,
+  isStalePatientUpdateEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { errorToString } from "@metriport/core/util/error/shared";
+import { errorToString, processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { isCQDirectEnabledForCx, isStalePatientUpdateEnabledForCx } from "../../aws/app-config";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
+import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
-import { getCQData, discover } from "../patient";
-import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
+import { discover, getCQData } from "../patient";
 import { getCqInitiator } from "../shared";
-import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
+import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const staleLookbackHours = 24;
 

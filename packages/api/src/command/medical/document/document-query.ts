@@ -1,5 +1,9 @@
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import {
+  isCarequalityEnabled,
+  isCommonwellEnabled,
+} from "@metriport/core/command/feature-flags/domain-ffs";
+import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
@@ -14,7 +18,6 @@ import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/app-config";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";

@@ -10,7 +10,7 @@ import duration from "dayjs/plugin/duration";
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import { initEvents } from "./event";
-import { initFeatureFlags } from "./external/aws/app-config";
+import { initFeatureFlags } from "./external/feature-flags";
 import initDB from "./models/db";
 import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { VERSION_HEADER_NAME } from "./routes/header";
