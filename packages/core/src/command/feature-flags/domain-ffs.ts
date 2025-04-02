@@ -101,6 +101,14 @@ export async function getCxsWithFeatureFlagEnabled(
   return [];
 }
 
+export async function isCommonwellEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("commonwellFeatureFlag");
+}
+
+export async function isCarequalityEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("carequalityFeatureFlag");
+}
+
 export async function getCxsWithAiBriefFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
 }
@@ -193,10 +201,34 @@ export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
   return cxIdsWithEpicEnabled.some(i => i === cxId);
 }
 
-export async function isCommonwellEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabled("commonwellFeatureFlag");
+export async function getCxsWithADHDFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithADHDMRFeatureFlag");
+}
+export async function isADHDFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithADHDEnabled = await getCxsWithADHDFeatureFlag();
+  return cxIdsWithADHDEnabled.some(i => i === cxId);
 }
 
-export async function isCarequalityEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabled("carequalityFeatureFlag");
+export async function getCxsWithNoMrLogoFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithNoMrLogoFeatureFlag");
+}
+export async function isLogoEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithNoMrLogo = await getCxsWithNoMrLogoFeatureFlag();
+  return !cxIdsWithNoMrLogo.some(i => i === cxId);
+}
+
+export async function getCxsWithBmiFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithBmiMrFeatureFlag");
+}
+export async function isBmiFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithBmiEnabled = await getCxsWithBmiFeatureFlag();
+  return cxIdsWithBmiEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithDermFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDermMrFeatureFlag");
+}
+export async function isDermFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDermEnabled = await getCxsWithDermFeatureFlag();
+  return cxIdsWithDermEnabled.some(i => i === cxId);
 }
