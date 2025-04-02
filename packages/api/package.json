@@ -41,7 +41,7 @@
     "@sentry/tracing": "^7.120.3",
     "ajv": "^8.12.0",
     "aws-sdk": "^2.1243.0",
-    "axios": "^1.4.0",
+    "axios": "^1.7.4",
     "base64url": "^3.0.1",
     "convert-units": "^2.3.4",
     "cors": "^2.8.5",

@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "@metriport/shared": "^0.20.2",
-    "axios": "^1.6.0",
+    "axios": "^1.7.4",
     "zod": "^3.22.1"
   }
 }

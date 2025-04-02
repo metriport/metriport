@@ -61,7 +61,7 @@
   },
   "dependencies": {
     "@metriport/shared": "^0.20.2",
-    "axios": "^1.4.0",
+    "axios": "^1.7.4",
     "http-status": "~1.7.0",
     "jsonwebtoken": "^9.0.0",
     "zod": "^3.22.1"

@@ -57,7 +57,7 @@
     "@playwright/browser-chromium": "^1.39.0",
     "@playwright/browser-firefox": "^1.39.0",
     "aws-sdk": "2.1243",
-    "axios": "^1.4.0",
+    "axios": "^1.7.4",
     "commander": "^10.0.0",
     "csv-parser": "^3.0.0",
     "dayjs": "^1.11.9",
