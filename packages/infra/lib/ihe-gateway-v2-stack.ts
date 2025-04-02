@@ -49,6 +49,7 @@ function settings() {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      maxMessageCountAlarmThreshold: 50_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(writeToS3LambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,

@@ -27,6 +27,7 @@ function settings() {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.days(2),
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(syncPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -45,6 +46,7 @@ function settings() {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.days(2),
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(elationLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
