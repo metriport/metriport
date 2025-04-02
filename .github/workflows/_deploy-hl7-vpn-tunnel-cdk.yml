@@ -15,6 +15,9 @@ on:
         description: "The partner we're deploying the tunnel for, e.g. 'MyTestHIE'"
         required: true
         type: string
+      AWS_REGION:
+        required: true
+        type: string
     secrets:
       SERVICE_PAT:
         required: true
@@ -39,8 +42,6 @@ jobs:
     concurrency:
       group: ${{ format('{0}-{1}', inputs.partner_name, inputs.deploy_env) }}
     runs-on: ubuntu-latest
-    env:
-      AWS_REGION: ${{ inputs.deploy_env == 'production' && vars.API_REGION_PRODUCTION || vars.API_REGION_STAGING }}
     environment: ${{ inputs.deploy_env }}
     steps:
       - name: Log Environment
@@ -80,20 +81,19 @@ jobs:
         working-directory: metriport
         shell: bash
 
-      # INSTALL DEPENDENCIES
       - name: Install dependencies for relevant packages
         run: |
           npm ci --ignore-scripts --no-fund
         working-directory: "metriport/"
 
-      - name: Build lambdas shared layer
-        run: npm run prep-deploy
-        working-directory: "metriport/packages/lambdas/"
-
       - name: Build relevant packages
         run: |
           npm run build:cloud 
         working-directory: "metriport/"
+
+      - name: Infra test
+        run: npm run test
+        working-directory: "metriport/packages/infra"
 
       - name: Deploy VPN Tunnel Stack CDK
         uses: metriport/deploy-with-cdk@master
@@ -106,5 +106,5 @@ jobs:
           INPUT_PATH: "metriport/packages/infra"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}
