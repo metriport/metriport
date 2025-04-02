@@ -6,6 +6,7 @@ import {
   isDermFeatureFlagEnabledForCx,
   isLogoEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
@@ -42,6 +43,9 @@ const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const apiUrl = getEnvOrFail("API_URL");
 const dashUrl = getEnvOrFail("DASH_URL");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
 
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
