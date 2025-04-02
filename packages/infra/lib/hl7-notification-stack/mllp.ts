@@ -6,7 +6,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
-import { MLLP_DEFAULT_PORT, VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
+import { MLLP_DEFAULT_PORT } from "./constants";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -50,7 +50,7 @@ export class MllpStack extends cdk.NestedStack {
       vpc,
       internetFacing: false,
       vpcSubnets: {
-        subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
+        subnets: vpc.privateSubnets,
       },
     });
 
@@ -93,7 +93,7 @@ export class MllpStack extends cdk.NestedStack {
       taskDefinition,
       desiredCount: fargateTaskCountMin,
       vpcSubnets: {
-        subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
+        subnets: vpc.privateSubnets,
       },
       securityGroups: [mllpSecurityGroup],
     });
