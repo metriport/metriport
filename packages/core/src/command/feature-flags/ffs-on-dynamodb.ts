@@ -104,7 +104,7 @@ export class FeatureFlags {
   }: {
     skipCache?: boolean;
   } = {}): Promise<FeatureFlagsRecord | undefined> {
-    if (skipCache) await FeatureFlags._getFeatureFlagsRecord();
+    if (skipCache) return await FeatureFlags._getFeatureFlagsRecord();
     return await FeatureFlags.instance.cache.get(recordId);
   }
 
@@ -185,7 +185,8 @@ export class FeatureFlags {
       const record = ddbItemToDbRecord(config.Items?.[0]);
       if (!record) return undefined;
 
-      log(`Read feature flags from DDB, version: ${record.version}, age was ${age} millis`);
+      const suffix = age ? `, age was ${age} millis` : " (no age, likely updating it)";
+      log(`Read feature flags from DDB, version: ${record.version}${suffix}`);
 
       return record;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
