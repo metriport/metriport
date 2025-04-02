@@ -44,6 +44,7 @@ function settings() {
       memory: 2048,
       batchSize: 100,
       maxBatchingWindow: writeToS3LambdaMaxBatchingWindow,
+      maxConcurrency: 10,
       timeout: writeToS3LambdaTimeout,
       reportBatchItemFailures: true,
     },
@@ -68,6 +69,7 @@ type QueueAndLambdaSettings = {
     /** Number of messages the lambda pull from SQS at once  */
     batchSize: number;
     maxBatchingWindow: Duration;
+    maxConcurrency: number;
     /** How long can the lambda run for, max is 900 seconds (15 minutes)  */
     timeout: Duration;
     /** Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html */
@@ -193,7 +195,14 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     const {
       name,
       entry,
-      lambda: { memory, timeout, batchSize, maxBatchingWindow, reportBatchItemFailures },
+      lambda: {
+        memory,
+        timeout,
+        batchSize,
+        maxBatchingWindow,
+        maxConcurrency,
+        reportBatchItemFailures,
+      },
       queue: {
         visibilityTimeout,
         maxReceiveCount,
@@ -234,7 +243,12 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     });
 
     lambda.addEventSource(
-      new SqsEventSource(queue, { batchSize, reportBatchItemFailures, maxBatchingWindow })
+      new SqsEventSource(queue, {
+        batchSize,
+        reportBatchItemFailures,
+        maxBatchingWindow,
+        maxConcurrency,
+      })
     );
 
     return { lambda, queue };

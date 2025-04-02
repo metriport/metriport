@@ -1,17 +1,20 @@
+import {
+  isCarequalityEnabled,
+  isCQDirectEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { Coordinates } from "@metriport/core/domain/address";
-import { AddressStrict } from "@metriport/core/domain/location-address";
-import { Patient, PatientData, GenderAtBirth } from "@metriport/core/domain/patient";
 import { Contact } from "@metriport/core/domain/contact";
+import { AddressStrict } from "@metriport/core/domain/location-address";
+import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
 import { isEmailValid, isPhoneValid, PurposeOfUse, USStateForAddress } from "@metriport/shared";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { Config } from "../../shared/config";
-import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
-import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { CQLink } from "./cq-patient-data";
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
