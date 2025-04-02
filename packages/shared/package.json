@@ -80,7 +80,7 @@
   },
   "dependencies": {
     "@medplum/core": "^2.2.10",
-    "axios": "^1.7.4",
+    "axios": "^1.7.9",
     "dayjs": "^1.11.9",
     "fast-xml-parser": "^4.4.1",
     "http-status": "~1.7.0",

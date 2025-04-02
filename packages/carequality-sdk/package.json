@@ -61,7 +61,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "axios": "^1.7.4",
+    "axios": "^1.7.9",
     "axios-retry": "^3.1.9",
     "zod": "^3.22.1"
   },

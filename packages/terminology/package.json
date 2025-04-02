@@ -30,7 +30,7 @@
     "@medplum/fhirtypes": "^3.2.5",
     "@metriport/shared": "^0.12.2",
     "aws-sdk": "^2.1243.0",
-    "axios": "^1.7.4",
+    "axios": "^1.7.9",
     "dayjs": "^1.11.9",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
