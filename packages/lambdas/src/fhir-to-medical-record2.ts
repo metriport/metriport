@@ -1,6 +1,11 @@
 import { Brief, convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
-import { getFeatureFlagValueStringArray } from "@metriport/core/command/feature-flags/domain-ffs";
+import {
+  isADHDFeatureFlagEnabledForCx,
+  isBmiFeatureFlagEnabledForCx,
+  isDermFeatureFlagEnabledForCx,
+  isLogoEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
@@ -13,7 +18,6 @@ import {
   S3Utils,
 } from "@metriport/core/external/aws/s3";
 import { wkHtmlToPdf, WkOptions } from "@metriport/core/external/wk-html-to-pdf/index";
-import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { logDuration } from "@metriport/shared/common/duration";
@@ -70,14 +74,17 @@ export async function handler({
       `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
   );
   try {
-    const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
-    const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
-    const cxsWithNoMrLogoFeatureFlagValue = await getCxsWithNoMrLogoFeatureFlagValue();
-    const isLogoEnabled = !cxsWithNoMrLogoFeatureFlagValue.includes(cxId);
-    const cxsWithBmiFeatureFlagValue = await getCxsWithBmiFeatureFlagValue();
-    const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
-    const cxsWithDermFeatureFlagValue = await getCxsWithDermFeatureFlagValue();
-    const isDermFeatureFlagEnabled = cxsWithDermFeatureFlagValue.includes(cxId);
+    const [
+      isADHDFeatureFlagEnabled,
+      isLogoEnabled,
+      isBmiFeatureFlagEnabled,
+      isDermFeatureFlagEnabled,
+    ] = await Promise.all([
+      isADHDFeatureFlagEnabledForCx(cxId),
+      isLogoEnabledForCx(cxId),
+      isBmiFeatureFlagEnabledForCx(cxId),
+      isDermFeatureFlagEnabledForCx(cxId),
+    ]);
 
     const bundle = await getBundleFromS3(fhirFileName);
 
@@ -231,54 +238,6 @@ async function convertAndStorePdf({
     timestamp: new Date(),
   };
   log(`Done storing on S3`);
-}
-
-async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValueStringArray(
-    region,
-    Config.getFeatureFlagsTableName(),
-    "cxsWithADHDMRFeatureFlag"
-  );
-
-  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-
-  return [];
-}
-
-async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValueStringArray(
-    region,
-    Config.getFeatureFlagsTableName(),
-    "cxsWithBmiMrFeatureFlag"
-  );
-
-  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-
-  return [];
-}
-
-async function getCxsWithNoMrLogoFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValueStringArray(
-    region,
-    Config.getFeatureFlagsTableName(),
-    "cxsWithNoMrLogoFeatureFlag"
-  );
-
-  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-
-  return [];
-}
-
-async function getCxsWithDermFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValueStringArray(
-    region,
-    Config.getFeatureFlagsTableName(),
-    "cxsWithDermMrFeatureFlag"
-  );
-
-  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-
-  return [];
 }
 
 function doesMrSummaryHaveContents(html: string): boolean {
