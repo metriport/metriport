@@ -114,7 +114,7 @@ export function createAPIService({
   fhirToBundleLambda,
   fhirToMedicalRecordLambda2,
   fhirToCdaConverterLambda,
-  hl7MessageRouterLambda,
+  hl7NotificationRouterLambda,
   rateLimitTable,
   searchIngestionQueue,
   searchEndpoint,
@@ -151,7 +151,7 @@ export function createAPIService({
   fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda2: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
-  hl7MessageRouterLambda: ILambda | undefined;
+  hl7NotificationRouterLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
   searchIngestionQueue: IQueue;
   searchEndpoint: string;
@@ -281,8 +281,8 @@ export function createAPIService({
           ...(fhirToCdaConverterLambda && {
             FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
           }),
-          ...(hl7MessageRouterLambda && {
-            HL7_MESSAGE_ROUTER_LAMBDA_NAME: hl7MessageRouterLambda.functionName,
+          ...(hl7NotificationRouterLambda && {
+            HL7_MESSAGE_ROUTER_LAMBDA_NAME: hl7NotificationRouterLambda.functionName,
           }),
           FHIR_SERVER_URL: fhirServerUrl,
           ...(fhirConverterQueueUrl && {
@@ -417,8 +417,8 @@ export function createAPIService({
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
   }
 
-  if (hl7MessageRouterLambda) {
-    hl7MessageRouterLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  if (hl7NotificationRouterLambda) {
+    hl7NotificationRouterLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   }
 
   if (cookieStore) {
