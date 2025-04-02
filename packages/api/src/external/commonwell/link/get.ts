@@ -13,6 +13,7 @@ import {
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { AdditionalInfo } from "@metriport/commonwell-sdk/common/commonwell-error";
+import { isCWEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { errorToString } from "@metriport/core/util/error/shared";
@@ -21,15 +22,14 @@ import { capture } from "@metriport/core/util/notifications";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { isCWEnabledForCx } from "../../aws/app-config";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
+import { getCwStrongIdsFromPatient } from "../patient-conversion";
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
 } from "../patient-external-data";
 import { PatientDataCommonwell, searchPersons } from "../patient-shared";
-import { getCwStrongIdsFromPatient } from "../patient-conversion";
 import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 
