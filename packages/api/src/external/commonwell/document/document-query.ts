@@ -7,6 +7,11 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import {
+  isCQDirectEnabledForCx,
+  isEnhancedCoverageEnabledForCx,
+  isStalePatientUpdateEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -29,11 +34,6 @@ import {
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import {
-  isCQDirectEnabledForCx,
-  isEnhancedCoverageEnabledForCx,
-  isStalePatientUpdateEnabledForCx,
-} from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";

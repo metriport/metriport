@@ -1,8 +1,9 @@
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { z } from "zod";
+import { InMemoryCache } from "../../cache/cache-in-memory";
 import { DynamoDbUtils } from "../../external/aws/dynamodb";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
@@ -11,21 +12,10 @@ import { FeatureFlagDatastore, ffDatastoreSchema } from "./types";
 dayjs.extend(duration);
 
 const { log } = out(`FFs on DDB`);
-
 export const partitionKey = "id";
 export const sortKey = "version";
 export const recordId = "1";
-
 const cacheDuration = dayjs.duration({ minutes: 5 });
-type CacheEntry = {
-  record: FeatureFlagsRecord;
-  timestamp: number;
-};
-let featureFlagsCache: CacheEntry | undefined;
-
-function makeDdbClient(region: string, tableName: string): DynamoDbUtils {
-  return new DynamoDbUtils({ region, table: tableName, partitionKey });
-}
 
 export const featureFlagsRecordUpdateSchema = z.object({
   featureFlags: ffDatastoreSchema,
@@ -70,152 +60,147 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
 };
 
 /**
- * Get the feature flags from the database. Kept here for backwards compatibility only.
- * @deprecated Use getFeatureFlagsRecord instead
+ * Feature flags service.
+ *
+ * This class is responsible for fetching the feature flags from the database and caching them.
+ * It also provides a method to update the feature flags in the database.
+ *
+ * This class is a singleton, so it can be used across the application.
+ *
+ * It requires initialization before being used. Call FeatureFlags.init() with the region and table name.
  */
-export async function getFeatureFlags(
-  region: string,
-  tableName: string
-): Promise<FeatureFlagDatastore> {
-  const record = await getFeatureFlagsRecord({ region, tableName });
-  log(
-    `From config with region=${region} and tableName=${tableName} - got version: ${record?.version}`
+export class FeatureFlags {
+  private ddbUtils: DynamoDbUtils;
+  private cache = new InMemoryCache<FeatureFlagsRecord>(
+    cacheDuration.asMilliseconds(),
+    FeatureFlags._getFeatureFlagsRecord
   );
-  return record?.featureFlags ?? initialFeatureFlags;
-}
+  private static _instance: FeatureFlags | undefined;
 
-/**
- * Update the feature flags in the database. Kept here for backwards compatibility only.
- * @deprecated Use updateFeatureFlagsRecord instead
- */
-export async function updateFeatureFlags({
-  region,
-  tableName,
-  newData,
-}: {
-  region: string;
-  tableName: string;
-  newData: FeatureFlagDatastore;
-}): Promise<FeatureFlagDatastore> {
-  const updatedRecord = await updateFeatureFlagsRecord({
-    region,
-    tableName,
-    newRecordData: {
-      featureFlags: newData,
-      updatedBy: "metriport",
-      existingVersion: 0,
-    },
-    skipVersionCheck: true,
-  });
-  return updatedRecord.featureFlags;
-}
-
-export async function getFeatureFlagsRecord({
-  region,
-  tableName,
-  skipCache,
-}: {
-  region: string;
-  tableName: string;
-  skipCache?: boolean;
-}): Promise<FeatureFlagsRecord | undefined> {
-  const now = Date.now();
-  const age = now - (featureFlagsCache?.timestamp ?? 0);
-
-  if (!skipCache && featureFlagsCache && age < cacheDuration.asMilliseconds()) {
-    return featureFlagsCache.record;
+  private constructor(private readonly region: string, private readonly tableName: string) {
+    this.ddbUtils = makeDdbClient(this.region, this.tableName);
+    FeatureFlags._instance = this;
   }
 
-  log(`Fetching feature flags from DDB (age: ${age} millis)`);
-
-  const ddb = makeDdbClient(region, tableName);
-  try {
-    const config = await ddb._docClient
-      .query({
-        TableName: ddb._table,
-        KeyConditionExpression: `${partitionKey} = :id`,
-        ExpressionAttributeValues: { ":id": recordId },
-        ScanIndexForward: false,
-        Limit: 1,
-      })
-      .promise();
-    const record = ddbItemToDbRecord(config.Items?.[0]);
-    if (!record) return undefined;
-
-    featureFlagsCache = { record, timestamp: now };
-    log(`Updated feature flags cache (version: ${record.version})`);
-
-    return record;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    if (error.code === "ResourceNotFoundException") {
-      return undefined;
+  /**
+   * Initialize the feature flags service.
+   * It has to be called before using the service.
+   */
+  public static init(region: string, tableName: string): void {
+    if (!this._instance) {
+      new FeatureFlags(region, tableName);
     }
-    throw error;
+  }
+
+  private static get instance(): FeatureFlags {
+    if (!FeatureFlags._instance) {
+      throw new MetriportError("Feature flags not initialized");
+    }
+    return FeatureFlags._instance;
+  }
+
+  public static async getFeatureFlagsRecord({
+    skipCache = false,
+  }: {
+    skipCache?: boolean;
+  } = {}): Promise<FeatureFlagsRecord | undefined> {
+    if (skipCache) return await FeatureFlags._getFeatureFlagsRecord();
+    return await FeatureFlags.instance.cache.get(recordId);
+  }
+
+  public static async updateFeatureFlagsRecord({
+    newRecordData,
+    skipVersionCheck = false,
+  }: {
+    newRecordData: FeatureFlagsRecordUpdate;
+    skipVersionCheck?: boolean;
+  }): Promise<FeatureFlagsRecord> {
+    ffDatastoreSchema.parse(newRecordData.featureFlags);
+
+    try {
+      const existingRecord = await FeatureFlags.getFeatureFlagsRecord({ skipCache: true });
+
+      if (
+        !skipVersionCheck &&
+        existingRecord &&
+        existingRecord.version !== newRecordData.existingVersion
+      ) {
+        throw new BadRequestError(`FFs out of sync, reload and try again`, undefined, {
+          existingVersion: existingRecord.version,
+          updateVersion: newRecordData.existingVersion,
+        });
+      }
+      const versionToUse = existingRecord?.version ?? 0;
+
+      const recordUpdate: FeatureFlagsRecord = {
+        id: recordId,
+        featureFlags: newRecordData.featureFlags,
+        version: versionToUse + 1,
+        updatedBy: newRecordData.updatedBy,
+        updatedAt: new Date().toISOString(),
+      };
+      await FeatureFlags.instance.ddbUtils._docClient
+        .put({
+          TableName: FeatureFlags.instance.ddbUtils._table,
+          Item: recordUpdate,
+          ConditionExpression: `attribute_not_exists(${partitionKey}) AND attribute_not_exists(${sortKey})`,
+        })
+        .promise();
+
+      await FeatureFlags.instance.cache.set(recordId, recordUpdate);
+
+      log(`Updated FFs (new version: ${recordUpdate.version}), by ${recordUpdate.updatedBy}`);
+
+      return recordUpdate;
+    } catch (error) {
+      const msg = "Failed to update feature flags";
+      const extra = {
+        region: FeatureFlags.instance.region,
+        tableName: FeatureFlags.instance.tableName,
+        newRecordData,
+        errorMessage: errorToString(error),
+        error,
+      };
+      log(`${msg}: ${JSON.stringify(extra)}`);
+      capture.error(msg, { extra });
+      throw error;
+    }
+  }
+
+  private static async _getFeatureFlagsRecord({
+    age,
+  }: {
+    age?: number;
+  } = {}): Promise<FeatureFlagsRecord | undefined> {
+    try {
+      const config = await FeatureFlags.instance.ddbUtils._docClient
+        .query({
+          TableName: FeatureFlags.instance.ddbUtils._table,
+          KeyConditionExpression: `${partitionKey} = :id`,
+          ExpressionAttributeValues: { ":id": recordId },
+          ScanIndexForward: false,
+          Limit: 1,
+        })
+        .promise();
+      const record = ddbItemToDbRecord(config.Items?.[0]);
+      if (!record) return undefined;
+
+      const suffix = age ? `, age was ${age} millis` : " (no age, likely updating it)";
+      log(`Read feature flags from DDB, version: ${record.version}${suffix}`);
+
+      return record;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.code === "ResourceNotFoundException") {
+        return undefined;
+      }
+      throw error;
+    }
   }
 }
 
-export async function updateFeatureFlagsRecord({
-  region,
-  tableName,
-  newRecordData,
-  skipVersionCheck = false,
-}: {
-  region: string;
-  tableName: string;
-  newRecordData: FeatureFlagsRecordUpdate;
-  skipVersionCheck?: boolean;
-}): Promise<FeatureFlagsRecord> {
-  ffDatastoreSchema.parse(newRecordData.featureFlags);
-
-  try {
-    const existingRecord = await getFeatureFlagsRecord({ region, tableName, skipCache: true });
-
-    if (
-      !skipVersionCheck &&
-      existingRecord &&
-      existingRecord.version !== newRecordData.existingVersion
-    ) {
-      throw new BadRequestError(`FFs out of sync, reload and try again`, undefined, {
-        existingVersion: existingRecord.version,
-        updateVersion: newRecordData.existingVersion,
-      });
-    }
-    const versionToUse = existingRecord?.version ?? 0;
-
-    const recordUpdate: FeatureFlagsRecord = {
-      id: recordId,
-      featureFlags: newRecordData.featureFlags,
-      version: versionToUse + 1,
-      updatedBy: newRecordData.updatedBy,
-      updatedAt: new Date().toISOString(),
-    };
-    const ddbUtils = makeDdbClient(region, tableName);
-    await ddbUtils._docClient
-      .put({
-        TableName: ddbUtils._table,
-        Item: recordUpdate,
-        ConditionExpression: `attribute_not_exists(${partitionKey}) AND attribute_not_exists(${sortKey})`,
-      })
-      .promise();
-
-    featureFlagsCache = { record: recordUpdate, timestamp: Date.now() };
-
-    log(`Updated FFs (new version: ${recordUpdate.version}), by ${recordUpdate.updatedBy}`);
-
-    return recordUpdate;
-  } catch (error) {
-    const msg = "Failed to update feature flags";
-    const extra = {
-      region,
-      tableName,
-      newRecordData,
-      error,
-    };
-    log(`${msg}: ${JSON.stringify(extra)}`);
-    capture.error(msg, { extra });
-    throw error;
-  }
+function makeDdbClient(region: string, tableName: string): DynamoDbUtils {
+  return new DynamoDbUtils({ region, table: tableName, partitionKey });
 }
 
 function ddbItemToDbRecord(
@@ -238,4 +223,33 @@ function ddbItemToDbRecord(
     featureFlags,
   };
   return record;
+}
+
+/**
+ * Get the feature flags from the database. Kept here for backwards compatibility only.
+ * @deprecated Use FeatureFlags.getFeatureFlagsRecord instead
+ */
+export async function getFeatureFlags(): Promise<FeatureFlagDatastore> {
+  const record = await FeatureFlags.getFeatureFlagsRecord();
+  return record?.featureFlags ?? initialFeatureFlags;
+}
+
+/**
+ * Update the feature flags in the database. Kept here for backwards compatibility only.
+ * @deprecated Use FeatureFlags.updateFeatureFlagsRecord instead
+ */
+export async function updateFeatureFlags({
+  newData,
+}: {
+  newData: FeatureFlagDatastore;
+}): Promise<FeatureFlagDatastore> {
+  const updatedRecord = await FeatureFlags.updateFeatureFlagsRecord({
+    newRecordData: {
+      featureFlags: newData,
+      updatedBy: "metriport",
+      existingVersion: 0,
+    },
+    skipVersionCheck: true,
+  });
+  return updatedRecord.featureFlags;
 }

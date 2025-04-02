@@ -3,9 +3,7 @@ import {
   updateFeatureFlags,
 } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { CxFeatureFlagStatus, StringValuesFF } from "@metriport/core/command/feature-flags/types";
-import { Config as ConfigCore } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
-import { Config } from "../../shared/config";
 
 function enableFeatureFlagForCustomer(flag: StringValuesFF, cxId: string) {
   flag.values.push(cxId);
@@ -32,9 +30,7 @@ export async function updateCxHieEnabledFFs({
   epicEnabled?: boolean;
   demoAugEnabled?: boolean;
 }): Promise<CxFeatureFlagStatus> {
-  const region = Config.getAWSRegion();
-  const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
-  const featureFlags = await getFeatureFlags(region, featureFlagsTableName);
+  const featureFlags = await getFeatureFlags();
   if (cwEnabled === true) {
     enableFeatureFlagForCustomer(featureFlags.cxsWithCWFeatureFlag, cxId);
   } else if (cwEnabled === false) {
@@ -59,11 +55,7 @@ export async function updateCxHieEnabledFFs({
   deduplicateFeatureFlagValues(featureFlags.cxsWithCQDirectFeatureFlag);
   deduplicateFeatureFlagValues(featureFlags.cxsWithEpicEnabled);
   deduplicateFeatureFlagValues(featureFlags.cxsWithDemoAugEnabled);
-  const newFeatureFlags = await updateFeatureFlags({
-    region,
-    tableName: featureFlagsTableName,
-    newData: featureFlags,
-  });
+  const newFeatureFlags = await updateFeatureFlags({ newData: featureFlags });
   const currentCwEnabled = newFeatureFlags.cxsWithCWFeatureFlag.values.includes(cxId);
   const currentCqEnabled = newFeatureFlags.cxsWithCQDirectFeatureFlag.values.includes(cxId);
   const currentEpicEnabled = newFeatureFlags.cxsWithEpicEnabled.values.includes(cxId);
