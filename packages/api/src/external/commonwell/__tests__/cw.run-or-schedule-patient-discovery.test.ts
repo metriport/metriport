@@ -8,7 +8,7 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { CQDirectoryEntryModel } from "../../carequality/models/cq-directory";
+import { CQDirectoryEntryViewModel } from "../../carequality/models/cq-directory-view";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
 import { runOrScheduleCwPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
@@ -30,7 +30,7 @@ beforeEach(() => {
     .mockImplementation(async () => {
       return;
     });
-  jest.spyOn(CQDirectoryEntryModel, "findAll").mockImplementation(async () => []);
+  jest.spyOn(CQDirectoryEntryViewModel, "findAll").mockImplementation(async () => []);
 });
 
 afterEach(() => {

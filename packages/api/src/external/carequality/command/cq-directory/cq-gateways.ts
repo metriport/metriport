@@ -1,11 +1,11 @@
 import { Op, Sequelize } from "sequelize";
 import { CQDirectoryEntry } from "../../cq-directory";
 import {
-  CQDirectoryEntryModel,
   managingOrgIdColumnName,
   rootOrgColumnName,
   urlXcpdColumnName,
 } from "../../models/cq-directory";
+import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 
 /**
  * Returns the ID of CQ directory entries that are not managed by the organizations provided as
@@ -17,7 +17,7 @@ import {
 export async function getOrganizationIdsNotManagedBy(
   managingOrgNames: string[]
 ): Promise<string[]> {
-  const entries = await CQDirectoryEntryModel.findAll({
+  const entries = await CQDirectoryEntryViewModel.findAll({
     attributes: ["id"],
     where: {
       [Op.or]: [
@@ -31,7 +31,7 @@ export async function getOrganizationIdsNotManagedBy(
 }
 
 export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntry[]> {
-  const rls: CQDirectoryEntryModel[] = await CQDirectoryEntryModel.findAll({
+  const rls = await CQDirectoryEntryViewModel.findAll({
     where: {
       urlXCPD: {
         [Op.ne]: "",
@@ -45,7 +45,7 @@ export async function getRecordLocatorServiceOrganizations(): Promise<CQDirector
     },
   });
 
-  const eHex: CQDirectoryEntryModel[] = await CQDirectoryEntryModel.findAll({
+  const eHex = await CQDirectoryEntryViewModel.findAll({
     where: {
       urlXCPD: {
         [Op.ne]: "",
@@ -60,7 +60,7 @@ export async function getRecordLocatorServiceOrganizations(): Promise<CQDirector
 }
 
 export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
-  const records = await CQDirectoryEntryModel.findAll({
+  const records = await CQDirectoryEntryViewModel.findAll({
     where: {
       urlXCPD: {
         [Op.ne]: "",
@@ -73,7 +73,7 @@ export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
           { [Op.is]: undefined },
           {
             [Op.in]: Sequelize.literal(`(
-                SELECT id FROM ${CQDirectoryEntryModel.NAME}
+                SELECT id FROM ${CQDirectoryEntryViewModel.NAME}
                 WHERE ${urlXcpdColumnName} IS NULL
                 AND (${managingOrgIdColumnName} = id OR ${rootOrgColumnName} = name)
             )`),
@@ -90,7 +90,7 @@ export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
 }
 
 export async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> {
-  const records = await CQDirectoryEntryModel.findAll({
+  const records = await CQDirectoryEntryViewModel.findAll({
     where: {
       urlXCPD: {
         [Op.ne]: "",
@@ -99,17 +99,17 @@ export async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> 
         [Op.and]: [
           {
             [Op.notIn]: Sequelize.literal(`(
-                SELECT id FROM ${CQDirectoryEntryModel.NAME}
+                SELECT id FROM ${CQDirectoryEntryViewModel.NAME}
                 WHERE ${urlXcpdColumnName} IS NOT NULL
                 AND (${managingOrgIdColumnName} IS NULL OR ${managingOrgIdColumnName} = id)
             )`),
           },
           {
             [Op.notIn]: Sequelize.literal(`(
-                SELECT id FROM ${CQDirectoryEntryModel.NAME}
+                SELECT id FROM ${CQDirectoryEntryViewModel.NAME}
                 WHERE ${urlXcpdColumnName} IS NOT NULL
                 AND ${managingOrgIdColumnName} IN (
-                    SELECT id FROM ${CQDirectoryEntryModel.NAME}
+                    SELECT id FROM ${CQDirectoryEntryViewModel.NAME}
                     WHERE ${urlXcpdColumnName} IS NULL
                     AND (${managingOrgIdColumnName} = id OR ${rootOrgColumnName} = name)
                 )

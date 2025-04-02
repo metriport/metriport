@@ -5,7 +5,7 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { CQDirectoryEntryModel } from "../../carequality/models/cq-directory";
+import { CQDirectoryEntryViewModel } from "../../carequality/models/cq-directory-view";
 import { PatientDataCommonwell } from "../../commonwell/patient-shared";
 import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
 import { resetScheduledPatientDiscovery } from "../reset-scheduled-patient-discovery-request";
@@ -19,7 +19,7 @@ beforeEach(() => {
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
-  jest.spyOn(CQDirectoryEntryModel, "findAll").mockImplementation(async () => []);
+  jest.spyOn(CQDirectoryEntryViewModel, "findAll").mockImplementation(async () => []);
 });
 
 afterEach(() => {

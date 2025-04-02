@@ -1,13 +1,19 @@
 import { Organization } from "@medplum/fhirtypes";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../../../models/_default";
-import { CQDirectoryEntry2 } from "../cq-directory";
-
-export const rootOrgColumnName = "root_organization";
-
+import { CQDirectoryEntry } from "../cq-directory";
+import {
+  addressLineColumnName,
+  lastUpdatedAtCqColumnName,
+  managingOrgIdColumnName,
+  rootOrgColumnName,
+  urlDqColumnName,
+  urlDrColumnName,
+  urlXcpdColumnName,
+} from "./cq-directory";
 export class CQDirectoryEntryViewModel
   extends BaseModel<CQDirectoryEntryViewModel>
-  implements CQDirectoryEntry2
+  implements CQDirectoryEntry
 {
   static NAME = "cq_directory_entry_view";
   declare id: string; // Organization's OID
@@ -44,27 +50,27 @@ export class CQDirectoryEntryViewModel
         },
         managingOrganizationId: {
           type: DataTypes.STRING,
-          field: "managing_organization_id",
+          field: managingOrgIdColumnName,
         },
         data: {
           type: DataTypes.JSONB,
         },
         urlXCPD: {
           type: DataTypes.STRING,
-          field: "url_xcpd",
+          field: urlXcpdColumnName,
           allowNull: true,
         },
         urlDQ: {
           type: DataTypes.STRING,
-          field: "url_dq",
+          field: urlDqColumnName,
         },
         urlDR: {
           type: DataTypes.STRING,
-          field: "url_dr",
+          field: urlDrColumnName,
         },
         addressLine: {
           type: DataTypes.STRING,
-          field: "address_line",
+          field: addressLineColumnName,
         },
         city: {
           type: DataTypes.STRING,
@@ -86,7 +92,7 @@ export class CQDirectoryEntryViewModel
         },
         lastUpdatedAtCQ: {
           type: DataTypes.STRING,
-          field: "last_updated_at_cq",
+          field: lastUpdatedAtCqColumnName,
         },
       },
       {
