@@ -6,7 +6,7 @@ import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/node";
 import * as dotenv from "dotenv";
 import { initSentry } from "./sentry";
-import { constructS3Key, unpackPidField } from "./utils";
+import { buildS3Key, unpackPidField } from "./utils";
 
 dotenv.config();
 
@@ -52,7 +52,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
       await s3Utils.uploadFile({
         bucket: bucketName,
-        key: constructS3Key({
+        key: buildS3Key({
           cxId,
           patientId,
           timestamp,

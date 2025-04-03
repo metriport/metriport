@@ -13,7 +13,7 @@ export const unpackPidField = (pid: string) => {
   return { cxId, patientId };
 };
 
-export const constructS3Key = ({
+export const buildS3Key = ({
   cxId,
   patientId,
   timestamp,
