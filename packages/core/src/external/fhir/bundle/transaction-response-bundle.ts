@@ -49,6 +49,8 @@ export function processBundleUploadTransaction(
     const resourceKey = id;
     if (resourceMap.has(resourceKey)) {
       const conflict = resourceMap.get(resourceKey);
+      if (!conflict) return;
+
       const existingType = conflict.existingResource.resourceType;
 
       if (existingType === resourceType) {

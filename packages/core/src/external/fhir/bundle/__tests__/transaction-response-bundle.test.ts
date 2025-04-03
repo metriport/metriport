@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
+import { makePatient } from "../../__tests__/patient";
 import { processBundleUploadTransaction } from "../transaction-response-bundle";
 import { faker } from "@faker-js/faker";
 import {
@@ -67,7 +65,7 @@ describe("processBundleUploadTransaction", () => {
       expect(practIdPresent).toBe(true);
     });
 
-    it("should return 400 when required referenced resources are missing", () => {
+    it("should return 400 when referenced resources are missing", () => {
       const ptId = faker.string.uuid();
       const practId = faker.string.uuid();
       const encId = faker.string.uuid();
