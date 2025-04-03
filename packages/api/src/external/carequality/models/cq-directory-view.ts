@@ -10,7 +10,8 @@ import {
   urlDqColumnName,
   urlDrColumnName,
   urlXcpdColumnName,
-} from "./cq-directory";
+} from "./cq-directory-columns";
+
 export class CQDirectoryEntryViewModel
   extends BaseModel<CQDirectoryEntryViewModel>
   implements CQDirectoryEntry

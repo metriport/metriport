@@ -4,7 +4,7 @@ import {
   managingOrgIdColumnName,
   rootOrgColumnName,
   urlXcpdColumnName,
-} from "../../models/cq-directory";
+} from "../../models/cq-directory-columns";
 import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 
 /**

@@ -9,10 +9,10 @@ import {
   urlDqColumnName,
   urlDrColumnName,
   urlXcpdColumnName,
-} from "../../models/cq-directory";
+} from "../../models/cq-directory-columns";
 import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 
-export const cqDirectoryEntry = `cq_directory_entry`;
+export const cqDirectoryEntry = `cq_directory_entry_new`;
 export const cqDirectoryEntryView = `cq_directory_entry_view`;
 export const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
 export const cqDirectoryEntryBackup1 = `cq_directory_entry_backup1`;
@@ -102,10 +102,7 @@ export async function deleteCqDirectoryEntries(sequelize: Sequelize, ids: string
 export async function createTempCqDirectoryTable(sequelize: Sequelize): Promise<void> {
   await deleteTempCqDirectoryTable(sequelize);
   // The PK is added later, on `updateCqDirectoryViewDefinition`
-
-  // const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry}
-  // TODO: replace with the line above after CQ directory is rebuilt in prod at least once
-  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE cq_directory_entry_new 
+  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry}
                  INCLUDING DEFAULTS INCLUDING STORAGE INCLUDING GENERATED EXCLUDING CONSTRAINTS)`;
   await sequelize.query(query, { type: QueryTypes.RAW });
 }
