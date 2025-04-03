@@ -53,6 +53,10 @@ function settings() {
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+    // How long a message can be on the queue before an alarm is triggered
+    alarmMaxAgeOfOldestMessage: Duration.minutes(5),
+    // How many messages to allow in the queue before an alarm is triggered
+    maxMessageCountAlarmThreshold: 50_000,
   };
 }
 
@@ -68,7 +72,13 @@ export function createQueueAndBucket({
   alarmSnsAction?: SnsAction;
 }): FHIRConverterConnector {
   const config = getConfig();
-  const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
+  const {
+    connectorName,
+    visibilityTimeout,
+    maxReceiveCount,
+    maxMessageCountAlarmThreshold,
+    alarmMaxAgeOfOldestMessage,
+  } = settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
@@ -81,8 +91,8 @@ export function createQueueAndBucket({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(5),
-    maxMessageCountAlarmThreshold: 2000,
+    alarmMaxAgeOfOldestMessage,
+    maxMessageCountAlarmThreshold,
   });
 
   const dlq = queue.deadLetterQueue;
