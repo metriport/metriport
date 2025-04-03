@@ -83,7 +83,7 @@ export class MllpStack extends cdk.NestedStack {
         NODE_ENV: "production",
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-        BASE64_SCRAMBLER_SECRET: props.config.base64ScramblerSecret,
+        BASE64_SCRAMBLER_SEED: props.config.base64ScramblerSeed,
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],

@@ -178,6 +178,6 @@ export const config: EnvConfigNonSandbox = {
     workspaceId: "workspace-id",
     alertsChannelId: "alerts-channel-id",
   },
-  base64ScramblerSecret: "your-base64-scrambler-secret",
+  base64ScramblerSeed: "your-base64-scrambler-seed",
 };
 export default config;

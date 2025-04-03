@@ -2,7 +2,7 @@ import { unpackUuid } from "@metriport/core/util/pack-uuid";
 import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
 
-const crypto = new Base64Scrambler(Config.getBase64ScramblerSecret());
+const crypto = new Base64Scrambler(Config.getBase64ScramblerSeed());
 
 export const unpackPidField = (pid: string) => {
   const [cxString, patientString] = pid.split("_").map(s => crypto.unscramble(s));
