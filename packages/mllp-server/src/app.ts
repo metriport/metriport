@@ -15,6 +15,13 @@ initSentry();
 const MLLP_DEFAULT_PORT = 2575;
 const bucketName = Config.getHl7NotificationBucketName();
 
+const MESSAGE_TYPE_FIELD = 9;
+const MESSAGE_CODE_COMPONENT = 1;
+const TRIGGER_EVENT_COMPONENT = 1;
+
+const IDENTIFIER_FIELD = 3;
+const IDENTIFIER_COMPONENT = 1;
+
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
   const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -28,7 +35,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         `${timestamp}> New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
       );
 
-      const pid = message.getSegment("PID")?.getComponent(3, 1);
+      const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
       if (!pid) {
         throw new Error("Patient Identifier missing");
       }
@@ -39,8 +46,9 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       const fullMessage = message.segments.map(s => s.toString()).join("\n");
       const { cxId, patientId } = unpackPidField(pid);
 
-      const messageType = message.getSegment("MSH")?.getComponent(9, 1) ?? "UNK";
-      const messageCode = message.getSegment("MSH")?.getComponent(9, 2) ?? "UNK";
+      const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
+      const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
+      const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
 
       await s3Utils.uploadFile({
         bucket: bucketName,

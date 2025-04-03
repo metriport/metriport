@@ -76,6 +76,10 @@ export class Base64Scrambler {
    * @returns The original base64 string
    */
   unscramble(scrambledString: string): string {
+    if (!isValidBase64(scrambledString)) {
+      throw new Error("Input is not a valid base64 string");
+    }
+
     return scrambledString
       .split("")
       .map(char => this.mappingReverse.get(char) || char)

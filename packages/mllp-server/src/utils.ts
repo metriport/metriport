@@ -4,12 +4,12 @@ import { Config } from "@metriport/core/util/config";
 
 const crypto = new Base64Scrambler(Config.getBase64ScramblerSeed());
 
+const reformUuid = (shortId: string) => {
+  return unpackUuid(crypto.unscramble(shortId));
+};
+
 export const unpackPidField = (pid: string) => {
-  const [cxString, patientString] = pid.split("_").map(s => crypto.unscramble(s));
-
-  const cxId = unpackUuid(cxString);
-  const patientId = unpackUuid(patientString);
-
+  const [cxId, patientId] = pid.split("_").map(reformUuid);
   return { cxId, patientId };
 };
 

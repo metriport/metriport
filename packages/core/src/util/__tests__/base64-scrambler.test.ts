@@ -23,10 +23,21 @@ describe("base64-scrambler", () => {
     expect(crypto.unscramble(initial)).toEqual(expected);
   });
 
-  it("throws an error when scrambling a non-b64 string", async () => {
+  it("throws an error when scrambling non b64 strings", async () => {
     const crypto = new Base64Scrambler(secret);
-    const initial = ";;;;YyRX63dg6du0c2Bw==";
+    const nonB64String = ";;;;YyRX63dg6du0c2Bw==";
+    const emptyString = "";
 
-    expect(() => crypto.scramble(initial)).toThrow();
+    expect(() => crypto.scramble(nonB64String)).toThrow();
+    expect(() => crypto.scramble(emptyString)).toThrow();
+  });
+
+  it("throws an error when unscrambling non b64 strings", async () => {
+    const crypto = new Base64Scrambler(secret);
+    const nonB64String = ";;;;YyRX63dg6du0c2Bw==";
+    const emptyString = "";
+
+    expect(() => crypto.unscramble(nonB64String)).toThrow();
+    expect(() => crypto.unscramble(emptyString)).toThrow();
   });
 });
