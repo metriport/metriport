@@ -1,3 +1,5 @@
+import { isValidBase64 } from "./base64";
+
 /**
  * Encodes a UUID to a shorter format using binary conversion and Base64
  * Simplified version without URL-safe encoding
@@ -14,6 +16,10 @@ export function packUuid(uuid: string): string {
  * Decodes a shortened Base64 UUID back to its original form
  */
 export function unpackUuid(shortId: string): string {
+  if (!isValidBase64(shortId)) {
+    throw new Error("Input is not a valid base64 string");
+  }
+
   const hexString = Buffer.from(shortId, "base64").toString("hex");
 
   const result = [

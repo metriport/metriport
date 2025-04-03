@@ -1,4 +1,5 @@
 import * as crypto from "crypto";
+import { isValidBase64 } from "./base64";
 
 /**
  * A utility for scrambling base64 strings while maintaining exact length
@@ -61,7 +62,7 @@ export class Base64Scrambler {
    * @throws Error if the string contains non-base64 characters
    */
   scramble(base64String: string): string {
-    if (!this.isValidBase64(base64String)) {
+    if (!isValidBase64(base64String)) {
       throw new Error("Input is not a valid base64 string");
     }
 
@@ -81,15 +82,5 @@ export class Base64Scrambler {
       .split("")
       .map(char => this.mappingReverse.get(char) || char)
       .join("");
-  }
-
-  /**
-   * Validate that a string contains only base64 characters
-   * @param str - The string to validate
-   * @returns True if string is valid base64, false otherwise
-   */
-  private isValidBase64(str: string): boolean {
-    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-    return base64Regex.test(str);
   }
 }
