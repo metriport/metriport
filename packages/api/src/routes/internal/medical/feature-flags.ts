@@ -11,7 +11,7 @@ import { asyncHandler } from "../../util";
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * GET /internal/feature-flags
+ * GET /internal/medical/feature-flags
  *
  * Get the feature flags from the database.
  *
@@ -27,7 +27,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/feature-flags
+ * POST /internal/medical/feature-flags
  *
  * Update the feature flags in the database.
  *

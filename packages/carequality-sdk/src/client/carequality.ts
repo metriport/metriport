@@ -11,6 +11,7 @@ export type ListOrganizationsParams = {
   start?: number;
   oid?: string;
   active?: boolean;
+  sortKey?: string;
 };
 
 export type OrganizationWithId = Organization & Required<Pick<Organization, "id">>;
