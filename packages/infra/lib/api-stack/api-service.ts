@@ -52,7 +52,7 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
       desiredTaskCount: 12,
-      maxTaskCount: 16,
+      maxTaskCount: 20,
       memoryLimitMiB: 4096,
     };
   }
@@ -314,6 +314,8 @@ export function createAPIService({
       listenerPort,
       publicLoadBalancer: false,
       idleTimeout: loadBalancerIdleTimeout,
+      maxHealthyPercent: 120,
+      minHealthyPercent: 80,
     }
   );
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
@@ -488,7 +490,7 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 80,
+    targetUtilizationPercent: 60,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
