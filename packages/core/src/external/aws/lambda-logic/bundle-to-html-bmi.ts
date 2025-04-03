@@ -20,7 +20,6 @@ import {
   Resource,
   Task,
 } from "@medplum/fhirtypes";
-import { buildDayjs } from "@metriport/shared/common/date";
 import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { cloneDeep, uniqWith } from "lodash";
@@ -38,7 +37,6 @@ const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
 const SNOMED_CODE = "snomed";
 const ICD_10_CODE = "icd-10";
-const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
@@ -50,11 +48,12 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
     practitioners,
     conditions,
     procedures,
-    observationMental,
     observationLaboratory,
     encounters,
     medications,
     medicationStatements,
+    locations,
+    diagnosticReports,
   } = extractFhirTypesFromBundle(fhirBundle);
 
   if (!patient) {
@@ -347,13 +346,12 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
         ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${createWeightComoborbidities(conditions, encounters, practitioners)}
+          ${createWeightComoborbidities(conditions, encounters, practitioners, locations)}
           ${createRelatedConditions(conditions, encounters)}
           ${createObesitySection(conditions, encounters)}
           ${createMedicationSection(medications, medicationStatements)}
-          ${createMentalObservationsSection(observationMental)}
           ${createGastricProceduresSection(conditions, procedures, encounters)}
-          ${createObservationLaboratorySection(observationLaboratory)}
+          ${createObservationLaboratorySection(observationLaboratory, diagnosticReports)}
           ${hba1cSection}
         </div>
         <script>
@@ -601,9 +599,6 @@ function createMRHeader(patient: Patient) {
                   <a href="#medications">Medications</a>
                 </li>
                 <li>
-                  <a href="#Mental Health">Mental Health</a>
-                </li>
-                <li>
                   <a href="#Surgeries">Surgeries</a>
                 </li>
                 <li>
@@ -654,7 +649,7 @@ function createHba1cFromObservationVitalsSection(observations: Observation[]): {
   });
 
   const observationsLast5Years = hba1cObservations.filter(observation => {
-    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(5, "year"));
+    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
   });
 
   const observationsSortedByDate = observationsLast5Years.sort((a, b) => {
@@ -906,8 +901,9 @@ const matchesText = (codeText: string | undefined, listOfNames: string[]): boole
 
 function createWeightComoborbidities(
   conditions: Condition[],
-  encounter: Encounter[],
-  practitioners: Practitioner[]
+  encounters: Encounter[],
+  practitioners: Practitioner[],
+  locations: Location[]
 ) {
   if (!conditions) {
     return "";
@@ -923,7 +919,7 @@ function createWeightComoborbidities(
     );
   });
 
-  const conditionDateDict = getConditionDatesFromEncounters(encounter);
+  const conditionDateDict = getConditionDatesFromEncounters(encounters);
   const removeDuplicate = removeDuplicateConditions(conditionsOfInterest, conditionDateDict);
 
   const conditionTableContents =
@@ -933,10 +929,9 @@ function createWeightComoborbidities(
 
     <thead>
       <tr>
-        <th style="width: 35%">Condition</th>
-        <th style="width: 15%">Code</th>
-        <th style="width: 10%">First seen</th>
-        <th style="width: 10%">Last seen</th>
+        <th style="width: 30%">Condition</th>
+        <th style="width: 10%">Code</th>
+        <th style="width: 30%">Location</th>
         <th style="width: 20%">Provider Name</th>
         <th style="width: 10%">Provider NPI</th>
       </tr>
@@ -945,12 +940,12 @@ function createWeightComoborbidities(
       ${removeDuplicate
         .map(condition => {
           const recorder = getPractitionerFromRecorderId(condition.recorderId, practitioners);
+          const location = getLocationFromEncounters(condition.id, encounters, locations);
           return `
             <tr>
               <td>${condition.name}</td>
               <td>${condition.code ?? ""}</td>
-              <td>${formatDateForDisplay(condition.firstSeen)}</td>
-              <td>${formatDateForDisplay(condition.lastSeen)}</td>
+              <td>${location?.name ?? ""}</td>
               <td>${recorder?.name ?? ""}</td>
               <td>${recorder?.npi}</td>
             </tr>
@@ -966,6 +961,31 @@ function createWeightComoborbidities(
       `;
 
   return createSection("Weight-related Comorbidities", conditionTableContents);
+}
+
+function getLocationFromEncounters(
+  conditionId: string | undefined,
+  encounters: Encounter[],
+  locations: Location[]
+): Location | undefined {
+  if (!conditionId) return undefined;
+
+  // Find encounter that has this condition as a diagnosis
+  const encounter = encounters.find(enc =>
+    enc.diagnosis?.some(diag => diag.condition?.reference?.includes(conditionId))
+  );
+
+  if (!encounter) return undefined;
+
+  // Check if encounter has a location reference
+  const locationReference = encounter.location?.[0]?.location?.reference;
+  if (!locationReference) return undefined;
+
+  // Extract location ID from reference (format: "Location/id")
+  const locationId = locationReference.split("/")[1];
+
+  // Find and return the location
+  return locations.find(location => location.id === locationId);
 }
 
 function getPractitionerFromRecorderId(
@@ -1010,9 +1030,6 @@ const listOfRelatedCodes = [
   "F10.20",
   "F10.10",
   "F50.81",
-  "F50.00",
-  "F50.01",
-  "F50.02",
   "F50.2",
   "F50.82",
   "F50.89",
@@ -1029,9 +1046,6 @@ const listOfRelatedNames = [
   "Alcohol dependence, uncomplicated",
   "Alcohol abuse, uncomplicated",
   "Binge eating disorder",
-  "Anorexia nervosa",
-  "Anorexia nervosa, restricting type",
-  "Anorexia nervosa, binge eating/purging type",
   "Bulimia nervosa",
   "Avoidant/restrictive food intake disorder",
   "Other specified eating disorder",
@@ -1306,16 +1320,8 @@ function createMedicationSection(
     return aDate === bDate && a.dosage?.[0]?.text === b.dosage?.[0]?.text;
   });
 
-  const otherMedications = removeDuplicate.filter(
-    medicationStatement => medicationStatement.status !== ("active" || "unknown")
-  );
-
   const activeMedications = removeDuplicate.filter(
     medicationStatement => medicationStatement.status === "active"
-  );
-
-  const emptyMedications = removeDuplicate.filter(
-    medicationStatement => !medicationStatement.status || medicationStatement.status === "unknown"
   );
 
   const activeMedicationsSection = createSectionInMedications(
@@ -1324,22 +1330,8 @@ function createMedicationSection(
     "Active Medications"
   );
 
-  const emptyMedicationsSection = createSectionInMedications(
-    mappedMedications,
-    emptyMedications,
-    "Unknown Status Medications"
-  );
-
-  const completedMedicationsSection = createSectionInMedications(
-    mappedMedications,
-    otherMedications,
-    "Other Status Medications"
-  );
-
   const medicalTableContents = `
   ${activeMedicationsSection}
-  ${emptyMedicationsSection}
-    ${completedMedicationsSection}
   `;
 
   return createSection("Medications", medicalTableContents);
@@ -1598,57 +1590,149 @@ function createGastricProceduresSection(
   return createSection("Surgeries", procedureTableContents);
 }
 
-function createObservationLaboratorySection(observations: Observation[]) {
-  if (!observations) {
-    return "";
+function createObservationLaboratorySection(
+  observations: Observation[],
+  diagnosticReports: DiagnosticReport[]
+) {
+  if (!observations || !diagnosticReports) {
+    return createSection(
+      "Laboratory",
+      `<table><tbody><tr><td>No laboratory info found</td></tr></tbody></table>`
+    );
   }
 
-  const labsLast2Years = observations.filter(observation => {
-    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
-  });
+  // Find Basic, Comprehensive Metabolic, and Lipid Panels in diagnostic reports
+  const basicMetabolicPanels = findMetabolicPanels(diagnosticReports, "Basic Metabolic Panel");
+  const comprehensiveMetabolicPanels = findMetabolicPanels(
+    diagnosticReports,
+    "Comprehensive Metabolic Panel"
+  );
+  const lipidPanels = findMetabolicPanels(diagnosticReports, "Lipid Panel");
+  const thyroidPanels = findMetabolicPanels(diagnosticReports, "Thyroid");
 
-  const observationsSortedByDate = labsLast2Years.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
+  // Get the latest 2 panels of each type
+  const latestBasicPanels = basicMetabolicPanels.slice(0, 2);
+  const latestComprehensivePanels = comprehensiveMetabolicPanels.slice(0, 2);
+  const latestLipidPanels = lipidPanels.slice(0, 2);
+  const latestThyroidPanels = thyroidPanels.slice(0, 2);
+  // Check if any panels were found
+  const noPanelsFound =
+    latestBasicPanels.length === 0 &&
+    latestComprehensivePanels.length === 0 &&
+    latestLipidPanels.length === 0 &&
+    latestThyroidPanels.length === 0;
 
-  const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    const aText = a.code?.text;
-    const bText = b.code?.text;
-    const aCode = a.code?.coding?.[0]?.code;
-    const bCode = b.code?.coding?.[0]?.code;
-    if (aText === undefined || bText === undefined || aCode === undefined || bCode === undefined) {
-      return false;
-    }
-    return aDate === bDate && aText === bText && aCode === bCode;
-  });
+  // Create content for each panel type
+  const basicPanelContent = createPanelSection(
+    "Basic Metabolic Panel",
+    latestBasicPanels,
+    observations
+  );
+  const comprehensivePanelContent = createPanelSection(
+    "Comprehensive Metabolic Panel",
+    latestComprehensivePanels,
+    observations
+  );
+  const lipidPanelContent = createPanelSection("Lipid Panel", latestLipidPanels, observations);
+  const thyroidPanelContent = createPanelSection("Thyroid", latestThyroidPanels, observations);
+  // Generate panel content or "No lab panels found" message
+  const panelContent = noPanelsFound
+    ? `<div><h4>Lab Panels</h4><table><tbody><tr><td>No lab panels found</td></tr></tbody></table></div>`
+    : `${basicPanelContent}${comprehensivePanelContent}${lipidPanelContent}${thyroidPanelContent}`;
 
-  const observationTableContents =
-    removeDuplicate.length > 0
-      ? createObservationsByDate(removeDuplicate)
-      : `        <table>
-      <tbody><tr><td>No laboratory info found</td></tr></tbody>        <table>
-      `;
-
-  return createSection("Laboratory", observationTableContents);
+  return createSection("Laboratory", `${panelContent}`);
 }
 
-function createObservationsByDate(observations: Observation[]): string {
+function findMetabolicPanels(
+  diagnosticReports: DiagnosticReport[],
+  panelType: string
+): DiagnosticReport[] {
+  // Find reports matching the panel type
+  const matchingReports = diagnosticReports.filter(report => {
+    // Check in code.text
+    if (report.code?.text?.toLowerCase().includes(panelType.toLowerCase())) return true;
+
+    // Check in code.coding.display
+    return report.code?.coding?.some(coding =>
+      coding.display?.toLowerCase().includes(panelType.toLowerCase())
+    );
+  });
+
+  // Sort by effectiveDateTime, most recent first
+  return matchingReports.sort((a, b) => {
+    const dateA = a.effectiveDateTime || a.effectivePeriod?.start || a.effectivePeriod?.end || "";
+    const dateB = b.effectiveDateTime || b.effectivePeriod?.start || b.effectivePeriod?.end || "";
+    return dayjs(dateB).diff(dayjs(dateA));
+  });
+}
+
+function createPanelSection(
+  panelType: string,
+  panels: DiagnosticReport[],
+  allObservations: Observation[]
+): string {
+  if (panels.length === 0) return "";
+
+  return panels
+    .map(panel => {
+      const panelDate = formatDateForDisplay(
+        panel.effectiveDateTime ?? panel.effectivePeriod?.start
+      );
+      const panelObservations = getPanelObservations(panel, allObservations);
+
+      if (panelObservations.length === 0) return "";
+
+      return `
+      <div>
+        <h4>${panelType} Results On: ${panelDate}</h4>
+        ${createObservationTable(panelObservations)}
+      </div>
+    `;
+    })
+    .join("");
+}
+
+function getPanelObservations(
+  panel: DiagnosticReport,
+  allObservations: Observation[]
+): Observation[] {
+  if (!panel.result || panel.result.length === 0) return [];
+
+  // Map observation references from the panel to actual observation objects
+  return panel.result
+    .map(reference => {
+      const observationId = reference.reference?.split("/")[1];
+      return allObservations.find(obs => obs.id === observationId);
+    })
+    .filter((obs): obs is Observation => obs !== undefined);
+}
+
+function createObservationTable(observations: Observation[]): string {
   const blacklistReferenceRangeText = ["unknown", "not detected"];
 
-  const observationsWithReadings = observations.filter(observation => {
-    const value = observation.valueQuantity?.value ?? observation.valueString;
-    const interpretation = observation.interpretation;
-    return !!value || !!interpretation;
-  });
-  const filteredObservations = filterObservationsByDate(observationsWithReadings);
+  // Filter observations to only include those with numeric values
+  const numericObservations = observations.filter(observation => {
+    // Check if valueQuantity is a number
+    if (typeof observation.valueQuantity?.value === "number") {
+      return true;
+    }
 
-  return filteredObservations
-    .map(tables => {
-      const observationTableContents = `
-      <table>
-    <thead>
+    // Check if valueString can be parsed as a number
+    if (observation.valueString) {
+      const parsedValue = parseFloat(observation.valueString);
+      return !isNaN(parsedValue);
+    }
+
+    return false;
+  });
+
+  if (numericObservations.length === 0) {
+    return "<table><tbody><tr><td>No numeric lab values found</td></tr></tbody></table>";
+  }
+
+  return `
+    <table>
+      <thead>
         <tr>
           <th style="width: 25%">Observation</th>
           <th style="width: 25%">Value</th>
@@ -1657,7 +1741,7 @@ function createObservationsByDate(observations: Observation[]): string {
         </tr>
       </thead>
       <tbody>
-        ${tables.observations
+        ${numericObservations
           .filter(observation => {
             const observationDisplay = observation.code?.coding?.find(coding => {
               if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
@@ -1713,17 +1797,8 @@ function createObservationsByDate(observations: Observation[]): string {
           })
           .join("")}
       </tbody>
-      </table>
-      `;
-
-      return `
-      <div>
-        <h4>Lab Results On: ${tables.date}</h4>
-        ${observationTableContents}
-      </div>
-      `;
-    })
-    .join("");
+    </table>
+  `;
 }
 
 function getClassFromLaboratory(obs: Observation) {
@@ -1789,59 +1864,6 @@ function getInterpretation(obs: Observation) {
     return "noref";
   }
   return "normal";
-}
-
-function createMentalObservationsSection(observations: Observation[]) {
-  const validObservations = observations.filter(observation => {
-    const value = observation.valueQuantity?.value ?? observation.valueString;
-    return !!value;
-  });
-
-  const mostRecentObservation = validObservations.length
-    ? validObservations?.reduce((latest, current) => {
-        return dayjs(current.effectiveDateTime).isAfter(dayjs(latest.effectiveDateTime))
-          ? current
-          : latest;
-      })
-    : undefined;
-
-  if (!mostRecentObservation) {
-    return createSection(
-      "Mental Health",
-      `<table><tbody><tr><td>No mental health observations found</td></tr></tbody></table>`
-    );
-  }
-
-  const observationTableContents = createMentalHealth(mostRecentObservation);
-
-  return createSection("Mental Health", observationTableContents);
-}
-
-function createMentalHealth(observation: Observation): string {
-  const code = getSpecificCode(observation.code?.coding ?? [], [LOINC_CODE]);
-
-  return `
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 25%">Observation</th>
-          <th style="width: 25%">Value</th>
-          <th style="width: 25%">Date</th>
-          <th style="width: 25%">Code</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>${
-            getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
-          }</td>
-          <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
-          <td>${buildDayjs(observation.effectiveDateTime).format(ISO_DATE)}</td>
-          <td>${code ?? ""}</td>
-        </tr>
-      </tbody>
-    </table>
-  `;
 }
 
 type FilteredObservations = { date: string; observations: Observation[] };
