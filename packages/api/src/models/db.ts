@@ -9,7 +9,6 @@ import {
 } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
-import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
 import { CQDirectoryEntryViewModel } from "../external/carequality/models/cq-directory-view";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
@@ -46,7 +45,6 @@ const models: ModelSetup[] = [
   Settings.setup,
   WebhookRequest.setup,
   OrganizationModel.setup,
-  CQDirectoryEntryModel.setup,
   CQDirectoryEntryViewModel.setup,
   CQPatientDataModel.setup,
   CwPatientDataModel.setup,
