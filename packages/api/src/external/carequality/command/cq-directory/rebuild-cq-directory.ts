@@ -55,6 +55,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           start: currentPosition,
           count: BATCH_SIZE,
           active: true,
+          sortKey: "_id",
         });
         log(`Loaded ${orgs.length} entries in ${Date.now() - loadStartedAt}ms`);
         if (orgs.length < BATCH_SIZE) isDone = true;
