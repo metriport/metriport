@@ -36,7 +36,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
 
 function settings() {
   const writeToS3LambdaTimeout = Duration.seconds(25);
-  const writeToS3LambdaMaxBatchingWindow = Duration.seconds(5);
+  const writeToS3LambdaMaxBatchingWindow = Duration.seconds(30);
   const writeToS3: QueueAndLambdaSettings = {
     name: "IHEGatewayV2OutboundPatientDiscoveryWriteToS3",
     entry: "ihe-gateway-v2-outbound-patient-discovery-write-to-s3",
@@ -44,7 +44,7 @@ function settings() {
       memory: 2048,
       batchSize: 500,
       maxBatchingWindow: writeToS3LambdaMaxBatchingWindow,
-      maxConcurrency: 1,
+      maxConcurrency: 2,
       timeout: writeToS3LambdaTimeout,
       reportBatchItemFailures: true,
     },
