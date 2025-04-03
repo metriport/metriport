@@ -142,19 +142,6 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     }
   }
 
-  /**
-   * List organizations from the Carequality directory.
-   *
-   * @param count The number of organizations to return (optional, defaults to 5000).
-   * @param start The index of the first organization to return (optional, defaults to 0).
-   * @param oid The OID of the organization to return (optional).
-   * @param active Whether to return only active organizations (optional, defaults to true).
-   * @param sortKey The key to sort the organizations by (optional, defaults to "_id"). Valid
-   *                values are: _id, _content, _lastUpdated, _profile, _security, _source,
-   *                _tag, _text, active, address, address-city, address-country, address-postalcode,
-   *                address-state, address-use, endpoint, identifier, name, partof, phonetic, type.
-   * @returns A list of organizations.
-   */
   async listOrganizations({
     count = MAX_COUNT,
     start = 0,

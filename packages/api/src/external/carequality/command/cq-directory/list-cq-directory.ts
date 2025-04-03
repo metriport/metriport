@@ -2,7 +2,7 @@ import { OrganizationWithId } from "@metriport/carequality-sdk/client/carequalit
 import { out } from "@metriport/core/util/log";
 import { makeCarequalityManagementApiOrFail } from "../../api";
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 1_000;
 
 /**
  * Lists organizations from the Carequality Directory.
@@ -35,6 +35,7 @@ export async function listCQDirectory({
       count: itemsToFetch,
       oid,
       active,
+      sortKey: "_id",
     });
 
     orgs.push(...batch);
