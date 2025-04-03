@@ -64,6 +64,9 @@ export class Config {
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
+  static getBase64ScramblerSecret(): string {
+    return getEnvVarOrFail("BASE64_SCRAMBLER_SECRET");
+  }
 
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");

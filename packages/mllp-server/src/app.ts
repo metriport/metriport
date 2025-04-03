@@ -1,6 +1,8 @@
 import { Hl7Server } from "@medplum/hl7";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
+import { unpackUuid } from "@metriport/core/util/pack-uuid";
+import { Base64Scrambler } from "@metriport/core/util/simple-scrambler";
 import * as dotenv from "dotenv";
 import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
@@ -27,12 +29,18 @@ const constructKey = ({
   messageType: string;
   messageCode: string;
 }) => {
-  return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}`;
+  return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
 };
 
+const crypto = new Base64Scrambler(Config.getBase64ScramblerSecret());
+
 const unpackPidField = (pid: string) => {
-  // TODO(lucas|2759|2025-04-02): Implement this
-  return { cxId: pid.split("_")[0], patientId: pid.split("_")[1] };
+  const [cxString, patientString] = pid.split("_").map(s => crypto.unscramble(s));
+
+  const cxId = unpackUuid(cxString);
+  const patientId = unpackUuid(patientString);
+
+  return { cxId, patientId };
 };
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {

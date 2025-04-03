@@ -217,6 +217,7 @@ type EnvConfigBase = {
     workspaceId: string;
     alertsChannelId: string;
   };
+  base64ScramblerSecret: string;
   acmCertMonitor: {
     /**
      * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
