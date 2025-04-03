@@ -2,7 +2,7 @@ import { Organization } from "@metriport/core/domain/organization";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { Facility, isOboFacility } from "../../../domain/medical/facility";
 import { metriportEmail as metriportEmailForCq } from "../constants";
-import { CQDirectoryEntryData2 } from "../cq-directory";
+import { CQDirectoryEntryData } from "../cq-directory";
 import { buildCqOrgNameForFacility, buildCqOrgNameForOboFacility } from "../shared";
 import { metriportIntermediaryOid, metriportOid } from "./cq-organization/constants";
 import {
@@ -20,7 +20,7 @@ export type CreateOrUpdateFacilityCmd = {
  */
 export async function createOrUpdateFacility(
   cmd: CreateOrUpdateFacilityCmd
-): Promise<CQDirectoryEntryData2> {
+): Promise<CQDirectoryEntryData> {
   const cqCmd = getCqCommand(cmd);
   return await createOrUpdateCqOrganization(cqCmd);
 }

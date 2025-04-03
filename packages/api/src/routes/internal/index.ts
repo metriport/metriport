@@ -1,3 +1,4 @@
+import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { BadRequestError, EhrSources } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
@@ -30,7 +31,6 @@ import {
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { isCxMappingSource, secondaryMappingsSchemaMap } from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
-import { isEnhancedCoverageEnabledForCx } from "../../external/aws/app-config";
 import { initCQOrgIncludeList } from "../../external/commonwell/organization";
 import { subscribeToAllWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import { OrganizationModel } from "../../models/medical/organization";

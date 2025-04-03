@@ -23,10 +23,12 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
+    const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
     const patientId = await syncAthenaPatientIntoMetriport({
       cxId,
       athenaPracticeId,
       athenaPatientId,
+      athenaDepartmentId,
     });
     return res.status(httpStatus.OK).json(patientId);
   })
@@ -47,10 +49,12 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
+    const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
     const patientId = await syncAthenaPatientIntoMetriport({
       cxId,
       athenaPracticeId,
       athenaPatientId,
+      athenaDepartmentId,
     });
     return res.status(httpStatus.OK).json(patientId);
   })
