@@ -102,7 +102,7 @@ export async function deleteCqDirectoryEntries(sequelize: Sequelize, ids: string
 export async function createTempCqDirectoryTable(sequelize: Sequelize): Promise<void> {
   await deleteTempCqDirectoryTable(sequelize);
   // The PK is added later, on `updateCqDirectoryViewDefinition`
-  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry}
+  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} 
                  INCLUDING DEFAULTS INCLUDING STORAGE INCLUDING GENERATED EXCLUDING CONSTRAINTS)`;
   await sequelize.query(query, { type: QueryTypes.RAW });
 }

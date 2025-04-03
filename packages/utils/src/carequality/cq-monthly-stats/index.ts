@@ -49,7 +49,7 @@ async function main() {
     cqDirectory = JSON.parse(fs.readFileSync(cqDirectoryPath, "utf8"));
   } else {
     console.log("Fetching CQ directory from DB");
-    const sqlCQDirectory = `SELECT * FROM cq_directory_entry`;
+    const sqlCQDirectory = `SELECT * FROM cq_directory_entry_view`;
     cqDirectory = await readOnlyDBPool.query(sqlCQDirectory, {
       type: QueryTypes.SELECT,
     });
