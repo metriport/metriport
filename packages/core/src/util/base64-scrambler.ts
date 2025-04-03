@@ -27,20 +27,30 @@ export class Base64Scrambler {
     const chars = BASE64_CHARS.split("");
 
     for (let i = chars.length - 1; i > 0; i--) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const j = buffer[i % buffer.length]! % (i + 1);
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      [chars[i], chars[j]] = [chars[j]!, chars[i]!];
+      const bufferModI = buffer[i % buffer.length];
+      if (!bufferModI) {
+        throw new Error("Invalid buffer index");
+      }
+      const j = bufferModI % (i + 1);
+
+      const charsJ = chars[j];
+      const charsI = chars[i];
+      if (!charsJ || !charsI) {
+        throw new Error("Invalid character index");
+      }
+      [chars[i], chars[j]] = [charsJ, charsI];
     }
 
     const forwardMap = new Map<string, string>();
     const reverseMap = new Map<string, string>();
 
     for (let i = 0; i < BASE64_CHARS.length; i++) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const originalChar = BASE64_CHARS[i]!;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const scrambledChar = chars[i]!;
+      const originalChar = BASE64_CHARS[i];
+      const scrambledChar = chars[i];
+
+      if (!originalChar || !scrambledChar) {
+        throw new Error("Invalid character index");
+      }
 
       forwardMap.set(originalChar, scrambledChar);
       reverseMap.set(scrambledChar, originalChar);
