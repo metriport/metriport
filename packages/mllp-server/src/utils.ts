@@ -2,7 +2,7 @@ import { unpackUuid } from "@metriport/core/util/pack-uuid";
 import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
 
-const crypto = new Base64Scrambler(Config.getBase64ScramblerSeed());
+const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
 const reformUuid = (shortId: string) => {
   return unpackUuid(crypto.unscramble(shortId));

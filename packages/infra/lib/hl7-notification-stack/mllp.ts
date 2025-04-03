@@ -20,6 +20,7 @@ export class MllpStack extends cdk.NestedStack {
     super(scope, id, props);
 
     const { vpc, ecrRepo } = props;
+    const base64ScramblerSeed = props.config.hl7Notification.base64ScramblerSeed;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
 
@@ -83,7 +84,7 @@ export class MllpStack extends cdk.NestedStack {
         NODE_ENV: "production",
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-        BASE64_SCRAMBLER_SEED: props.config.base64ScramblerSeed,
+        HL7_BASE64_SCRAMBLER_SEED: base64ScramblerSeed,
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],

@@ -1,6 +1,6 @@
 import * as crypto from "crypto";
 import { BASE64_CHARS, isValidBase64 } from "./base64";
-
+import { MetriportError } from "@metriport/shared";
 /**
  * A utility for scrambling base64 strings while maintaining exact length
  */
@@ -41,7 +41,7 @@ export class Base64Scrambler {
       const scrambledChar = chars[i];
 
       if (!originalChar || !scrambledChar) {
-        throw new Error("Invalid character index");
+        throw new MetriportError("Invalid character index");
       }
 
       forwardMap.set(originalChar, scrambledChar);
@@ -63,7 +63,7 @@ export class Base64Scrambler {
    */
   scramble(base64String: string): string {
     if (!isValidBase64(base64String)) {
-      throw new Error("Input is not a valid base64 string");
+      throw new MetriportError("Input is not a valid base64 string");
     }
 
     return base64String
@@ -79,7 +79,7 @@ export class Base64Scrambler {
    */
   unscramble(scrambledString: string): string {
     if (!isValidBase64(scrambledString)) {
-      throw new Error("Input is not a valid base64 string");
+      throw new MetriportError("Input is not a valid base64 string");
     }
 
     return scrambledString
