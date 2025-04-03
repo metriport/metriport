@@ -10,7 +10,7 @@ import {
   Patient as PatientFhir,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { errorToString, JwtTokenInfo, MetriportError, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -20,8 +20,13 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
+import {
+  FhirResources,
+  fhirResourcesSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { ResourceTypeForConsolidation } from "@metriport/shared/medical";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
@@ -339,6 +344,45 @@ class CanvasApi {
       useFhir: true,
     });
     return patient;
+  }
+
+  async getFhirResourcesByResourceType({
+    cxId,
+    patientId,
+    resourceType,
+  }: {
+    cxId: string;
+    patientId: string;
+    resourceType: ResourceTypeForConsolidation;
+  }): Promise<FhirResources> {
+    const { debug } = out(
+      `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
+    );
+    const resourceTypeUrl = `/${resourceType}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
+    try {
+      const resources = await this.makeRequest<FhirResources>({
+        cxId,
+        patientId,
+        s3Path: "patient",
+        method: "GET",
+        url: resourceTypeUrl,
+        schema: fhirResourcesSchema,
+        additionalInfo,
+        debug,
+        useFhir: true,
+      });
+      const invalidResource = resources.find(resource => resource.resourceType !== resourceType);
+      if (invalidResource) {
+        throw new MetriportError(`Invalid resource type found`, undefined, {
+          invalidResourceType: invalidResource.resourceType,
+        });
+      }
+      return resources;
+    } catch (error) {
+      if (error instanceof NotFoundError) return [];
+      throw error;
+    }
   }
 
   async getAppointments({

@@ -1,12 +1,20 @@
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { BadRequestError } from "@metriport/shared";
+import { isResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
+import { saveResourceDiff } from "../../../../external/ehr/canvas/command/save-resource-diff";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
-import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
+import {
+  asyncHandler,
+  getFromQueryAsBoolean,
+  getFromQueryOrFail,
+  getFromQueryAsArrayOrFail,
+} from "../../../util";
 
 const router = Router();
 
@@ -47,6 +55,36 @@ router.post(
       canvasPatientId,
       triggerDq,
     }).catch(processAsyncError("Canvas syncCanvasPatientIntoMetriport"));
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/canvas/patient/resource-diff
+ *
+ * Tries to retrieve the matching Metriport patient
+ * @param req.params.id The ID of Canvas Patient.
+ * @returns Metriport Patient if found.
+ */
+router.post(
+  "/resource-diff",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const canvasPatientId = getFromQueryOrFail("patientId", req);
+    const resourceId = getFromQueryOrFail("resourceId", req);
+    const direction = getFromQueryOrFail("direction", req);
+    const matchedResourceIds = getFromQueryAsArrayOrFail("matchedResourceIds", req);
+    if (!isResourceDiffDirection(direction)) {
+      throw new BadRequestError("Invalid direction", undefined, { direction });
+    }
+    saveResourceDiff({
+      cxId,
+      canvasPatientId,
+      resourceId,
+      direction,
+      matchedResourceIds,
+    }).catch(processAsyncError("Canvas saveResourceDiff"));
     return res.sendStatus(httpStatus.OK);
   })
 );
