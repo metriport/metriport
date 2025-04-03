@@ -27,18 +27,10 @@ export class Base64Scrambler {
     const chars = BASE64_CHARS.split("");
 
     for (let i = chars.length - 1; i > 0; i--) {
-      const bufferModI = buffer[i % buffer.length];
-      if (!bufferModI) {
-        throw new Error("Invalid buffer index");
-      }
-      const j = bufferModI % (i + 1);
-
-      const charsJ = chars[j];
-      const charsI = chars[i];
-      if (!charsJ || !charsI) {
-        throw new Error("Invalid character index");
-      }
-      [chars[i], chars[j]] = [charsJ, charsI];
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const j = buffer[i % buffer.length]! % (i + 1);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      [chars[i], chars[j]] = [chars[j]!, chars[i]!];
     }
 
     const forwardMap = new Map<string, string>();
