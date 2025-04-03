@@ -17,7 +17,7 @@ export async function getCxIdFromOidOrFail(oid: string): Promise<{ cxId: string 
     OrganizationModel.findOne(query),
     FacilityModel.findOne(query),
   ]);
-  if (!org && !facility) throw new NotFoundError(`Could not find organization with OID ${oid}`);
   if (org) return { cxId: org.cxId };
-  return { cxId: facility.cxId };
+  if (facility) return { cxId: facility.cxId };
+  throw new NotFoundError(`Could not find organization with OID ${oid}`);
 }
