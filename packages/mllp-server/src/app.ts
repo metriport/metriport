@@ -14,6 +14,7 @@ initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
 const bucketName = Config.getHl7NotificationBucketName();
+const s3Utils = new S3Utils(Config.getAWSRegion());
 
 const MESSAGE_TYPE_FIELD = 9;
 const MESSAGE_CODE_COMPONENT = 1;
@@ -24,7 +25,6 @@ const IDENTIFIER_COMPONENT = 1;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
-  const s3Utils = new S3Utils(Config.getAWSRegion());
 
   const server = new Hl7Server(connection => {
     logger.log("Connection received");
@@ -35,16 +35,16 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         `${timestamp}> New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
       );
 
-      const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
-      if (!pid) {
-        throw new Error("Patient Identifier missing");
-      }
+      const fullMessage = message.segments.map(s => s.toString()).join("\n");
 
       /**
        * Avoid using message.toString() as its not stringifying every segment
        */
-      const fullMessage = message.segments.map(s => s.toString()).join("\n");
-      const { cxId, patientId } = unpackPidField(pid);
+      const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
+      let { cxId, patientId } = { cxId: `UNK-${pid}`, patientId: "UNK" };
+      if (pid) {
+        ({ cxId, patientId } = unpackPidField(pid));
+      }
 
       const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
       const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
@@ -56,8 +56,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           cxId,
           patientId,
           timestamp,
-          messageType: messageType ?? "unknown",
-          messageCode: messageCode ?? "unknown",
+          messageType,
+          messageCode,
         }),
         file: Buffer.from(fullMessage),
         contentType: "application/json",
