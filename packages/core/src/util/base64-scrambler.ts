@@ -22,8 +22,8 @@ export class Base64Scrambler {
    * @param seed - The seed key
    * @returns Two maps: forward (original→scrambled) and reverse (scrambled→original)
    */
-  private generateMappings(secret: string): [Map<string, string>, Map<string, string>] {
-    const buffer = crypto.createHash("sha256").update(secret).digest();
+  private generateMappings(seed: string): [Map<string, string>, Map<string, string>] {
+    const buffer = crypto.createHash("sha256").update(seed).digest();
     const chars = BASE64_CHARS.split("");
 
     for (let i = chars.length - 1; i > 0; i--) {
