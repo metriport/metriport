@@ -1,12 +1,10 @@
 import * as crypto from "crypto";
-import { isValidBase64 } from "./base64";
+import { BASE64_CHARS, isValidBase64 } from "./base64";
 
 /**
  * A utility for scrambling base64 strings while maintaining exact length
  */
 export class Base64Scrambler {
-  private readonly BASE64_CHARS =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   private mappingForward: Map<string, string>;
   private mappingReverse: Map<string, string>;
 
@@ -26,7 +24,7 @@ export class Base64Scrambler {
    */
   private generateMappings(secret: string): [Map<string, string>, Map<string, string>] {
     const buffer = crypto.createHash("sha256").update(secret).digest();
-    const chars = this.BASE64_CHARS.split("");
+    const chars = BASE64_CHARS.split("");
 
     for (let i = chars.length - 1; i > 0; i--) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -38,9 +36,9 @@ export class Base64Scrambler {
     const forwardMap = new Map<string, string>();
     const reverseMap = new Map<string, string>();
 
-    for (let i = 0; i < this.BASE64_CHARS.length; i++) {
+    for (let i = 0; i < BASE64_CHARS.length; i++) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const originalChar = this.BASE64_CHARS[i]!;
+      const originalChar = BASE64_CHARS[i]!;
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const scrambledChar = chars[i]!;
 
