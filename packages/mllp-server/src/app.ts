@@ -2,7 +2,7 @@ import { Hl7Server } from "@medplum/hl7";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
-import { Base64Scrambler } from "@metriport/core/util/simple-scrambler";
+import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import * as dotenv from "dotenv";
 import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
