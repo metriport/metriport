@@ -80,3 +80,9 @@ export const resourceTypeForConsolidation = [
 ] as const;
 
 export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];
+
+export function isResourceTypeForConsolidation(
+  resourceType: string
+): resourceType is ResourceTypeForConsolidation {
+  return resourceTypeForConsolidation.includes(resourceType as ResourceTypeForConsolidation);
+}

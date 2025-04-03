@@ -4,7 +4,7 @@ import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
 export type ResourceWithId = Omit<Resource, "id"> & { id: string };
 
-export type ProcessResourceDiffRequest = {
+export type ComputeResourceDiffRequest = {
   ehr: EhrSource;
   cxId: string;
   patientId: string;
@@ -13,6 +13,6 @@ export type ProcessResourceDiffRequest = {
   direction: ResourceDiffDirection;
 };
 
-export interface EhrResourceDifftHandler {
-  processResourceDiff(request: ProcessResourceDiffRequest): Promise<void>;
+export interface EhrComputeResourceDiffHandler {
+  computeResourceDiff(request: ComputeResourceDiffRequest): Promise<void>;
 }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 export const fhirResourceSchema = z.intersection(
   z.object({
     id: z.string(),

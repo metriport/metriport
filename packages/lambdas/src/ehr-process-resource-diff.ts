@@ -1,5 +1,5 @@
-import { ProcessResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/ehr-resource-diff";
-import { EhrResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/ehr-resource-diff-local";
+import { ProcessResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/process/ehr-process-resource-diff";
+import { EhrProcessResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/process/ehr-process-resource-diff-local";
 import { errorToString, MetriportError, ResourceDiffDirection } from "@metriport/shared";
 import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -35,7 +35,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
     );
     log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-    const ehrResourceDiffHandler = new EhrResourceDiffLocal(waitTimeInMillis);
+    const ehrResourceDiffHandler = new EhrProcessResourceDiffLocal(waitTimeInMillis);
     await ehrResourceDiffHandler.processResourceDiff(parsedBody);
 
     const finishedAt = new Date().getTime();

@@ -1,6 +1,7 @@
 import { errorToString, MetriportError } from "@metriport/shared";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { FhirResource } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
+import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
@@ -15,46 +16,44 @@ import { out } from "../../../util/log";
  * @param direction - The direction of the resource diff.
  * @param matchedResourceIds - The matched resource IDs.
  */
-export async function saveResourceDiff({
+export async function computeResourceDiff({
   ehr,
   cxId,
+  practiceId,
   patientId,
-  resourceId,
+  resource,
   direction,
-  matchedResourceIds,
 }: {
   ehr: EhrSource;
   cxId: string;
+  practiceId: string;
   patientId: string;
-  resourceId: string;
+  resource: FhirResource;
   direction: ResourceDiffDirection;
-  matchedResourceIds: string[];
 }): Promise<void> {
   const { log, debug } = out(`Ehr syncPatient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
+    practiceId,
     patientId,
-    resourceId,
     direction,
-    matchedResourceIds: matchedResourceIds.join(","),
   });
-  const saveResourceDiffUrl = `/internal/ehr/${ehr}/patient/save-resource-diff?${queryParams.toString()}`;
+  const computeResourceDiffUrl = `/internal/ehr/${ehr}/patient/compute-resource-diff?${queryParams.toString()}`;
   try {
-    const response = await api.post(saveResourceDiffUrl);
-    if (!response.data) throw new Error(`No body returned from ${saveResourceDiffUrl}`);
-    debug(`${saveResourceDiffUrl} resp: ${JSON.stringify(response.data)}`);
+    const response = await api.post(computeResourceDiffUrl, resource);
+    if (!response.data) throw new Error(`No body returned from ${computeResourceDiffUrl}`);
+    debug(`${computeResourceDiffUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {
-    const msg = `Failure while saving resource diff @ Ehr`;
+    const msg = `Failure while computing resource diff @ Ehr`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
       cxId,
       patientId,
-      resourceId,
       direction,
-      url: saveResourceDiffUrl,
-      context: "ehr.saveResourceDiff",
+      url: computeResourceDiffUrl,
+      context: "ehr.computeResourceDiff",
     });
   }
 }

@@ -34,9 +34,9 @@ import { deduplicateOrganizations } from "../../../fhir-deduplication/resources/
 import { deduplicatePractitioners } from "../../../fhir-deduplication/resources/practitioner";
 import { deduplicateProcedures } from "../../../fhir-deduplication/resources/procedure";
 import { deduplicateRelatedPersons } from "../../../fhir-deduplication/resources/related-person";
-import { ResourceWithId } from "./ehr-resource-diff";
+import { ResourceWithId } from "./compute/ehr-compute-resource-diff";
 
-export function isNewResource({
+export function computeResourceDiff({
   existingResources,
   newResource,
 }: {

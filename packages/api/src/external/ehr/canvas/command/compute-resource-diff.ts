@@ -1,8 +1,14 @@
 import CanvasApi from "@metriport/core/external/ehr/canvas/index";
-import { buildEhrResourceDiffHandler } from "@metriport/core/external/ehr/resource-diff/ehr-resource-diff-factory";
+import { ResourceWithId } from "@metriport/core/external/ehr/resource-diff/process/ehr-process-resource-diff";
+import { buildEhrComputeResourceDiffHandler } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff-factory";
+import { BadRequestError } from "@metriport/shared";
+import {
+  FhirResource,
+  fhirResourceSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { ResourceTypeForConsolidation } from "@metriport/shared/medical";
+import { isResourceTypeForConsolidation } from "@metriport/shared/medical";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
 import {
   getConsolidatedPatientData,
@@ -10,16 +16,13 @@ import {
 } from "../../../../command/medical/patient/consolidated-get";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { createCanvasClient } from "../shared";
-import { FhirResource } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { ResourceWithId } from "@metriport/core/external/ehr/resource-diff/ehr-resource-diff";
 
-export type SyncCanvasPatientIntoMetriportParams = {
+export type ComputeCanvasResourceDiffParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
-  resourceType: ResourceTypeForConsolidation;
-  direction: ResourceDiffDirection;
   resource: FhirResource;
+  direction: ResourceDiffDirection;
   api?: CanvasApi;
 };
 
@@ -27,11 +30,10 @@ export async function computeCanvasResourceDiff({
   cxId,
   canvasPracticeId,
   canvasPatientId,
-  resourceType,
-  direction,
   resource,
+  direction,
   api,
-}: SyncCanvasPatientIntoMetriportParams): Promise<void> {
+}: ComputeCanvasResourceDiffParams): Promise<void> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -41,25 +43,31 @@ export async function computeCanvasResourceDiff({
     cxId,
     id: existingPatient.patientId,
   });
-  const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
+  const resourceType = resource.resourceType;
+  if (!isResourceTypeForConsolidation(resourceType)) {
+    throw new BadRequestError("Resource type is not supported for resource diff", undefined, {
+      resourceType,
+    });
+  }
   let existingResources: FhirResource[] = [];
   if (direction === ResourceDiffDirection.DIFF_EHR) {
+    const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
     existingResources = await canvasApi.getFhirResourcesByResourceType({
       cxId,
       patientId: canvasPatientId,
       resourceType,
     });
-  } else {
+  } else if (direction === ResourceDiffDirection.DIFF_METRIPORT) {
     const payload: GetConsolidatedPatientData = {
       patient: metriportPatient,
       resources: [resourceType],
     };
     const bundle = await getConsolidatedPatientData(payload);
-    existingResources = bundle.entry?.map(entry => entry.resource as FhirResource) ?? [];
+    existingResources = bundle.entry?.map(entry => fhirResourceSchema.parse(entry.resource)) ?? [];
   }
   if (existingResources.length === 0) return;
-  const ehrResourceDiffHandler = buildEhrResourceDiffHandler();
-  await ehrResourceDiffHandler.processResourceDiff({
+  const ehrResourceDiffHandler = buildEhrComputeResourceDiffHandler();
+  await ehrResourceDiffHandler.computeResourceDiff({
     ehr: EhrSources.canvas,
     cxId,
     patientId: canvasPatientId,

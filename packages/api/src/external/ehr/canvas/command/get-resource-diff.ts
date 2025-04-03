@@ -1,3 +1,5 @@
+import { MetriportError } from "@metriport/shared";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
 import { getMappedResourceIdsByPatientMappingExternalId } from "../../../../command/mapping/resource-reversed";
@@ -6,11 +8,13 @@ import { getPatientOrFail } from "../../../../command/medical/patient/get-patien
 export type GetResourceDiffParams = {
   cxId: string;
   canvasPatientId: string;
+  direction: ResourceDiffDirection;
 };
 
-export async function getResourceDiff({
+export async function getCanvasResourceDiffFromEhr({
   cxId,
   canvasPatientId,
+  direction,
 }: GetResourceDiffParams): Promise<string[]> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
@@ -21,9 +25,14 @@ export async function getResourceDiff({
     cxId,
     id: existingPatient.patientId,
   });
-  return await getMappedResourceIdsByPatientMappingExternalId({
-    cxId,
-    patientId: metriportPatient.id,
-    patientMappingExternalId: canvasPatientId,
-  });
+  if (direction === ResourceDiffDirection.DIFF_EHR) {
+    return await getMappedResourceIdsByPatientMappingExternalId({
+      cxId,
+      patientId: metriportPatient.id,
+      patientMappingExternalId: canvasPatientId,
+    });
+  } else if (direction === ResourceDiffDirection.DIFF_METRIPORT) {
+    throw new MetriportError("Cannot get resources in this direction", undefined, { direction });
+  }
+  return [];
 }
