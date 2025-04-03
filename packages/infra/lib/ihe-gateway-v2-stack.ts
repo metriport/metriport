@@ -42,15 +42,15 @@ function settings() {
     entry: "ihe-gateway-v2-outbound-patient-discovery-write-to-s3",
     lambda: {
       memory: 2048,
-      batchSize: 100,
+      batchSize: 500,
       maxBatchingWindow: writeToS3LambdaMaxBatchingWindow,
-      maxConcurrency: 10,
+      maxConcurrency: 1,
       timeout: writeToS3LambdaTimeout,
       reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 5_000,
+      maxMessageCountAlarmThreshold: 50_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(writeToS3LambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
