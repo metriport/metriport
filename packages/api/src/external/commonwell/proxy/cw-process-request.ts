@@ -19,7 +19,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { queryToSearchParams } from "../../../routes/helpers/query";
 import { Config } from "../../../shared/config";
-import { getOrgOrFail } from "./get-org-or-fail";
+import { getCxIdFromOidOrFail } from "./get-org-or-fail";
 import { proxyPrefix } from "./shared";
 
 const apiURL = Config.getApiUrl();
@@ -86,8 +86,7 @@ async function getPatientAndCxFromRequest(
 ): Promise<{ cxId: string; patientId: string }> {
   const { orgOID, patientId } = getOrgOIDAndPatientId(req);
 
-  const org = await getOrgOrFail(orgOID);
-  const cxId = org.cxId;
+  const { cxId } = await getCxIdFromOidOrFail(orgOID);
 
   return { cxId, patientId };
 }
