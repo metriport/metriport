@@ -147,6 +147,7 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     start = 0,
     oid,
     active,
+    sortKey = "_id",
   }: ListOrganizationsParams = {}): Promise<OrganizationWithId[]> {
     if (count < 1 || count > MAX_COUNT) {
       throw new Error(`Count value must be between 1 and ${MAX_COUNT}`);
@@ -154,6 +155,7 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     const query = new URLSearchParams();
     query.append("_count", count.toString());
     query.append("_format", JSON_FORMAT);
+    query.append("_sort", sortKey);
     start != undefined && query.append("_start", start.toString());
     oid != undefined && query.append("_id", oid);
     active != undefined && query.append("active", active.toString());
