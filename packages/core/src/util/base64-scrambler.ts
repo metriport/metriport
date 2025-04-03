@@ -9,17 +9,17 @@ export class Base64Scrambler {
   private mappingReverse: Map<string, string>;
 
   /**
-   * Initialize the scrambler with a secret string
-   * @param secret - A string to use as the scrambling key
+   * Initialize the scrambler with a seed string
+   * @param seed - A string to use as the scrambling key
    */
-  constructor(secret: string) {
-    // Create a consistent character mapping based on the secret
-    [this.mappingForward, this.mappingReverse] = this.generateMappings(secret);
+  constructor(seed: string) {
+    // Create a consistent character mapping based on the seed
+    [this.mappingForward, this.mappingReverse] = this.generateMappings(seed);
   }
 
   /**
-   * Generate consistent character mappings based on the secret
-   * @param secret - The secret key
+   * Generate consistent character mappings based on the seed
+   * @param seed - The seed key
    * @returns Two maps: forward (original→scrambled) and reverse (scrambled→original)
    */
   private generateMappings(secret: string): [Map<string, string>, Map<string, string>] {
