@@ -17,12 +17,14 @@ export async function syncPatient({
   ehr,
   cxId,
   practiceId,
+  departmentId,
   patientId,
   triggerDq,
 }: {
   ehr: EhrSource;
   cxId: string;
   practiceId: string;
+  departmentId?: string;
   patientId: string;
   triggerDq: boolean;
 }): Promise<void> {
@@ -33,6 +35,7 @@ export async function syncPatient({
     practiceId,
     patientId,
     triggerDq: triggerDq.toString(),
+    ...(departmentId ? { departmentId } : {}),
   });
   const syncPatientUrl = `/internal/ehr/${ehr}/patient?${queryParams.toString()}`;
   try {

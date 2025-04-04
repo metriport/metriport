@@ -130,11 +130,9 @@ export class Config {
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
   }
-  static getAppConfigAppId(): string {
-    return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
-  }
-  static getAppConfigConfigId(): string {
-    return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+
+  static getFeatureFlagsTableName(): string {
+    return getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
   }
 
   static getEhrResponsesBucketName(): string | undefined {
@@ -166,5 +164,9 @@ export class Config {
 
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
+  }
+
+  static getWriteToS3QueueUrl(): string {
+    return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
 }

@@ -5,7 +5,7 @@ export const slimBookedAppointmentSchema = z.object({
 });
 export type SlimBookedAppointment = z.infer<typeof slimBookedAppointmentSchema>;
 
-export const bookedAppointmentSchema = z.object({
+export const appointmentSchema = z.object({
   resourceType: z.literal("Appointment"),
   participant: z
     .object({
@@ -15,10 +15,11 @@ export const bookedAppointmentSchema = z.object({
       }),
     })
     .array(),
-  status: z.literal("booked"),
+  status: z.string(),
 });
-export type BookedAppointment = z.infer<typeof bookedAppointmentSchema>;
-export const bookedAppointmentsSchema = z.object({
-  entry: z.object({ resource: bookedAppointmentSchema }).array(),
+export type Appointment = z.infer<typeof appointmentSchema>;
+export const appointmentListResponseSchema = z.object({
+  entry: z.object({ resource: appointmentSchema }).array().optional(),
+  link: z.object({ relation: z.string(), url: z.string() }).array().optional(),
 });
-export type BookedAppointments = z.infer<typeof bookedAppointmentsSchema>;
+export type AppointmentListResponse = z.infer<typeof appointmentListResponseSchema>;

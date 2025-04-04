@@ -1,5 +1,9 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import {
+  getCxsWithCQDirectFeatureFlagValue,
+  getCxsWithEnhancedCoverageFeatureFlagValue,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
@@ -13,9 +17,10 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
-  PaginatedResponse,
+  BadRequestError,
   internalSendConsolidatedSchema,
   normalizeState,
+  PaginatedResponse,
   patientImportSchema,
   sleep,
   stringToBoolean,
@@ -39,18 +44,18 @@ import {
 } from "../../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
-  GetHl7v2SubscribersParams,
   getHl7v2Subscribers,
   getHl7v2SubscribersCount,
+  GetHl7v2SubscribersParams,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -58,11 +63,6 @@ import {
 } from "../../../command/medical/patient/update-patient";
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import BadRequestError from "../../../errors/bad-request";
-import {
-  getCxsWithCQDirectFeatureFlagValue,
-  getCxsWithEnhancedCoverageFeatureFlagValue,
-} from "../../../external/aws/app-config";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../../external/commonwell";
 import { findDuplicatedPersons } from "../../../external/commonwell/admin/find-patient-duplicates";

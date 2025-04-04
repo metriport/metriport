@@ -1,4 +1,4 @@
-import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -36,6 +36,8 @@ const CUSTOM_APPOINTMENT_TYPE_IDS = Config.isProdEnv()
 const subscriptionBackfillLookBack = dayjs.duration(12, "hours");
 const appointmentsLookForward = dayjs.duration(1, "day");
 
+type AthenaAppointment = Appointment & { departmentId: string };
+
 type GetAppointmentsParams = {
   cxId: string;
   practiceId: string;
@@ -50,7 +52,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
     return;
   }
 
-  const allAppointments: Appointment[] = [];
+  const allAppointments: AthenaAppointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.flatMap(mapping => {
     if (!mapping.secondaryMappings) {
@@ -60,7 +62,19 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
       });
     }
     const secondaryMappings = athenaSecondaryMappingsSchema.parse(mapping.secondaryMappings);
-    if (secondaryMappings.backgroundAppointmentsDisabled) return [];
+    if (
+      secondaryMappings.backgroundAppointmentsDisabled &&
+      lookupMode === LookupModes.Appointments
+    ) {
+      return [];
+    }
+    if (
+      secondaryMappings.webhookAppointmentDisabled &&
+      (lookupMode === LookupModes.FromSubscription ||
+        lookupMode === LookupModes.FromSubscriptionBackfill)
+    ) {
+      return [];
+    }
     return [
       {
         cxId: mapping.cxId,
@@ -98,7 +112,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
     });
   }
 
-  const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
+  const uniqueAppointments: AthenaAppointment[] = uniqBy(allAppointments, "patientId");
 
   const syncPatientsArgs: SyncAthenaPatientIntoMetriportParams[] = uniqueAppointments.map(
     appointment => {
@@ -106,6 +120,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
         cxId: appointment.cxId,
         athenaPracticeId: appointment.practiceId,
         athenaPatientId: appointment.patientId,
+        athenaDepartmentId: appointment.departmentId,
       };
     }
   );
@@ -121,7 +136,7 @@ async function getAppointments({
   practiceId,
   departmentIds,
   lookupMode,
-}: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
+}: GetAppointmentsParams): Promise<{ appointments?: AthenaAppointment[]; error?: unknown }> {
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );
@@ -141,7 +156,12 @@ async function getAppointments({
     }
     return {
       appointments: appointments.map(appointment => {
-        return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
+        return {
+          cxId,
+          practiceId,
+          patientId: api.createPatientId(appointment.patientid),
+          departmentId: api.createDepartmentId(appointment.departmentid),
+        };
       }),
     };
   } catch (error) {
@@ -197,6 +217,7 @@ async function syncPatient({
   cxId,
   athenaPracticeId,
   athenaPatientId,
+  athenaDepartmentId,
 }: Omit<SyncAthenaPatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
@@ -204,6 +225,7 @@ async function syncPatient({
     cxId,
     practiceId: athenaPracticeId,
     patientId: athenaPatientId,
+    departmentId: athenaDepartmentId,
     triggerDq: true,
   });
 }

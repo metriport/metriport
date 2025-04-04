@@ -25,7 +25,7 @@ import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
 
 export const longDurationTokenDuration = dayjs.duration(1, "year");
-export const shortDurationTokenDuration = dayjs.duration(30, "minutes");
+export const shortDurationTokenDuration = dayjs.duration(10, "hours");
 
 const unknownPatientId = "unknown";
 

@@ -1,5 +1,6 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -12,7 +13,6 @@ import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
-import * as AppConfigUtils from "./shared/app-config";
 import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
@@ -33,10 +33,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   sandboxSeedDataBucket: s3.IBucket | undefined;
   rosterBucket: s3.Bucket | undefined;
   alarmAction?: SnsAction;
-  appConfigEnvVars: {
-    appId: string;
-    configId: string;
-  };
+  featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
 }
 
@@ -142,8 +139,7 @@ export class LambdasNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
-      appId: props.appConfigEnvVars.appId,
-      configId: props.appConfigEnvVars.configId,
+      featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
     });
 
@@ -202,6 +198,7 @@ export class LambdasNestedStack extends NestedStack {
       layers: [
         lambdaLayers.shared,
         lambdaLayers.chromium,
+        // TODO when we remove this, make sure to remove the layer from the api-stack as well
         lambdaLayers.puppeteer,
         lambdaLayers.saxon,
       ],
@@ -461,8 +458,7 @@ export class LambdasNestedStack extends NestedStack {
     sentryDsn,
     envType,
     alarmAction,
-    appId,
-    configId,
+    featureFlagsTable,
     bedrock,
   }: {
     lambdaLayers: LambdaLayers;
@@ -473,8 +469,7 @@ export class LambdasNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    appId: string;
-    configId: string;
+    featureFlagsTable: dynamodb.Table;
     bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   }): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
@@ -491,8 +486,7 @@ export class LambdasNestedStack extends NestedStack {
         BUCKET_NAME: bundleBucket.bucketName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         CONVERSION_RESULT_BUCKET_NAME: conversionsBucket.bucketName,
-        APPCONFIG_APPLICATION_ID: appId,
-        APPCONFIG_CONFIGURATION_ID: configId,
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         ...(bedrock && {
           // API_URL set on the api-stack after the OSS API is created
           BEDROCK_REGION: bedrock?.region,
@@ -512,12 +506,7 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket.grantReadWrite(fhirToBundleLambda);
     conversionsBucket.grantRead(fhirToBundleLambda);
 
-    AppConfigUtils.allowReadConfig({
-      scope: this,
-      resourceName: "FhirToBundleLambda",
-      resourceRole: fhirToBundleLambda.role,
-      appConfigResources: ["*"],
-    });
+    featureFlagsTable.grantReadData(fhirToBundleLambda);
 
     const bedrockPolicyStatement = new iam.PolicyStatement({
       actions: ["bedrock:InvokeModel"],

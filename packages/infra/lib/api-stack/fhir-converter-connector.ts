@@ -1,5 +1,6 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -52,6 +53,10 @@ function settings() {
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+    // How long a message can be on the queue before an alarm is triggered
+    alarmMaxAgeOfOldestMessage: Duration.minutes(5),
+    // How many messages to allow in the queue before an alarm is triggered
+    maxMessageCountAlarmThreshold: 50_000,
   };
 }
 
@@ -67,7 +72,13 @@ export function createQueueAndBucket({
   alarmSnsAction?: SnsAction;
 }): FHIRConverterConnector {
   const config = getConfig();
-  const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
+  const {
+    connectorName,
+    visibilityTimeout,
+    maxReceiveCount,
+    maxMessageCountAlarmThreshold,
+    alarmMaxAgeOfOldestMessage,
+  } = settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
@@ -80,8 +91,8 @@ export function createQueueAndBucket({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(5),
-    maxMessageCountAlarmThreshold: 2000,
+    alarmMaxAgeOfOldestMessage,
+    maxMessageCountAlarmThreshold,
   });
 
   const dlq = queue.deadLetterQueue;
@@ -115,7 +126,7 @@ export function createLambda({
   termServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
-  appConfigEnvVars,
+  featureFlagsTable,
 }: {
   lambdaLayers: LambdaLayers;
   envType: EnvType;
@@ -129,10 +140,7 @@ export function createLambda({
   termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
-  appConfigEnvVars: {
-    appId: string;
-    configId: string;
-  };
+  featureFlagsTable: dynamodb.Table;
 }): Lambda {
   const config = getConfig();
   const {
@@ -162,8 +170,7 @@ export function createLambda({
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
-      APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-      APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+      FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
@@ -171,6 +178,7 @@ export function createLambda({
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
   medicalDocumentsBucket.grantReadWrite(conversionLambda);
+  featureFlagsTable.grantReadData(conversionLambda);
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {

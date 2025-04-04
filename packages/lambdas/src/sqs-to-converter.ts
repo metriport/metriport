@@ -1,10 +1,17 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import {
   FhirConverterParams,
   FhirExtension,
 } from "@metriport/core/domain/conversion/bundle-modifications/modifications";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
+import {
+  buildDocumentNameForCleanConversion,
+  buildDocumentNameForConversionResult,
+  buildDocumentNameForFromConverter,
+  buildDocumentNameForPreConversion,
+} from "@metriport/core/domain/conversion/filename";
 import {
   defaultS3RetriesConfig,
   storeHydratedConversionResult,
@@ -13,21 +20,14 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
-import {
-  buildDocumentNameForConversionResult,
-  buildDocumentNameForFromConverter,
-  buildDocumentNameForPreConversion,
-  buildDocumentNameForCleanConversion,
-} from "@metriport/core/domain/conversion/filename";
-import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
-import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
@@ -49,6 +49,9 @@ const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
@@ -238,45 +241,43 @@ export async function handler(event: SQSEvent) {
         });
 
         let hydratedBundle = conversionResult;
-        // TODO: 2563 - Remove this after prod testing is done
-        if (await isHydrationEnabledForCx(cxId)) {
-          try {
-            const hydratedResult = await Promise.race<Bundle<Resource>>([
-              hydrate({
-                cxId,
-                patientId,
-                bundle: conversionResult,
-              }),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
-              ),
-            ]);
+        try {
+          const hydratedResult = await Promise.race<Bundle<Resource>>([
+            hydrate({
+              cxId,
+              patientId,
+              bundle: conversionResult,
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
+            ),
+          ]);
 
-            hydratedBundle = hydratedResult;
+          hydratedBundle = hydratedResult;
 
-            await storeHydratedConversionResult({
-              s3Utils,
-              bundle: hydratedBundle,
-              bucketName: conversionResultBucketName,
-              fileName: s3FileName,
+          await storeHydratedConversionResult({
+            s3Utils,
+            bundle: hydratedBundle,
+            bucketName: conversionResultBucketName,
+            fileName: s3FileName,
+            context: lambdaName,
+            lambdaParams,
+            log,
+          });
+        } catch (error) {
+          const msg = "Failed to hydrate the converted bundle. Continuing w/o hydration.";
+          log(`${msg}: ${errorToString(error)}`);
+          capture.message(msg, {
+            extra: {
+              error,
+              cxId,
+              patientId,
               context: lambdaName,
-              lambdaParams,
-              log,
-            });
-          } catch (error) {
-            const msg = "Failed to hydrate the converted bundle";
-            log(`${msg}: ${errorToString(error)}`);
-            capture.message(msg, {
-              extra: {
-                error,
-                cxId,
-                patientId,
-                context: lambdaName,
-                s3FileName,
-              },
-              level: "warning",
-            });
-          }
+              s3FileName,
+            },
+            level: "warning",
+          });
+          // Inentionally not rethrowing here, we don't want to break conversion b/c of a hydration failure
         }
 
         const normalizedBundle = await normalize({
