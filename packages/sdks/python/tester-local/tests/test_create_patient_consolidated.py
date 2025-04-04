@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from generated.client import Metriport
-from generated.resources.medical import ConsolidatedBundleUpload
+from generated.medical import ConsolidatedBundleUpload
 
 load_dotenv()
 
@@ -12,12 +12,14 @@ base_url = os.environ.get("BASE_URL")
 def test_create_patient_consolidated():
     metriport = Metriport(api_key=api_key, base_url=base_url)
 
-    consolidated_bundle_upload = ConsolidatedBundleUpload(
-        resourceType="Bundle",
+    query_status = metriport.medical.fhir.create_patient_consolidated(
+        id=patient_id,
+        resource_type="Bundle",
         type="collection",
         entry=[
             {
                 "resource": {
+                    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
                     "resourceType": "Appointment",
                     "status": "booked",
                     "participant": [
@@ -40,9 +42,5 @@ def test_create_patient_consolidated():
                 }
             }
         ]
-        )
-    query_status = metriport.medical.fhir.create_patient_consolidated(
-        id=patient_id,
-        request=consolidated_bundle_upload
     )
     print(f"queryStatus: {query_status}")
