@@ -1,7 +1,7 @@
 import { USState } from "@metriport/shared";
 import { Address } from "../../../domain/address";
 import { Hl7v2Subscriber } from "../../../domain/patient-settings";
-import { convertToHieFormat } from "../hl7v2-roster-generator";
+import { convertSubscribersToHieFormat } from "../hl7v2-roster-generator";
 
 describe("AdtRosterGenerator", () => {
   describe("convertToHieFormat", () => {
@@ -10,11 +10,11 @@ describe("AdtRosterGenerator", () => {
       lastName: "LAST NAME",
       dob: "DOB",
       genderAtBirth: "GENDER",
-      "address0.addressLine2": "STREET NUMBER",
-      "address0.addressLine1": "STREET ADDRESS",
-      "address0.city": "CITY",
-      "address0.state": "STATE",
-      "address0.zip": "ZIP",
+      "address[0].addressLine2": "STREET NUMBER",
+      "address[0].addressLine1": "STREET ADDRESS",
+      "address[0].city": "CITY",
+      "address[0].state": "STATE",
+      "address[0].zip": "ZIP",
       phone: "PHONE",
       email: "EMAIL",
       ssn: "SSN",
@@ -60,7 +60,7 @@ describe("AdtRosterGenerator", () => {
         },
       ];
 
-      const result = convertToHieFormat(subscribers, mockSchema);
+      const result = convertSubscribersToHieFormat(subscribers, mockSchema);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -92,7 +92,7 @@ describe("AdtRosterGenerator", () => {
         },
       ];
 
-      const result = convertToHieFormat(subscribers, mockSchema);
+      const result = convertSubscribersToHieFormat(subscribers, mockSchema);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({

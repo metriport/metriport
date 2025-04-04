@@ -13,10 +13,11 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
 import * as AppConfigUtils from "./shared/app-config";
-import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
+import { isSandbox } from "./shared/util";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -50,7 +51,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirToBundleLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
-  readonly hl7v2RosterLambda: Lambda | undefined;
+  readonly hl7v2RosterUploadLambda: Lambda | undefined;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -156,8 +157,8 @@ export class LambdasNestedStack extends NestedStack {
       ...props.config.acmCertMonitor,
     });
 
-    if (props.rosterBucket) {
-      this.hl7v2RosterLambda = this.setupRosterLambda({
+    if (!isSandbox(props.config) && props.rosterBucket) {
+      this.hl7v2RosterUploadLambda = this.setupRosterLambda({
         lambdaLayers: this.lambdaLayers,
         vpc: props.vpc,
         envType: props.config.environmentType,
@@ -613,9 +614,9 @@ export class LambdasNestedStack extends NestedStack {
   }): Lambda {
     const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, hl7v2RosterBucket } = ownProps;
 
-    const hl7v2RosterLambda = createLambda({
+    const hl7v2RosterUploadLambda = createLambda({
       stack: this,
-      name: "Hl7v2Roster",
+      name: "Hl7v2RosterUpload",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "hl7v2-roster",
       envType,
@@ -623,19 +624,14 @@ export class LambdasNestedStack extends NestedStack {
         BUCKET_NAME: hl7v2RosterBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [
-        lambdaLayers.shared,
-        lambdaLayers.chromium,
-        lambdaLayers.puppeteer,
-        lambdaLayers.saxon,
-      ],
+      layers: [lambdaLayers.shared],
       memory: 1024,
       vpc,
       alarmSnsAction: alarmAction,
     });
 
-    hl7v2RosterBucket.grantReadWrite(hl7v2RosterLambda);
+    hl7v2RosterBucket.grantReadWrite(hl7v2RosterUploadLambda);
 
-    return hl7v2RosterLambda;
+    return hl7v2RosterUploadLambda;
   }
 }

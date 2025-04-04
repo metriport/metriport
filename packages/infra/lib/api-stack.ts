@@ -290,7 +290,7 @@ export class APIStack extends Stack {
       });
 
       hl7v2RosterBucket = new s3.Bucket(this, "Hl7v2RosterBucket", {
-        bucketName: props.config.hl7v2RosterLambda?.bucketName,
+        bucketName: props.config.hl7v2RosterUploadLambda?.bucketName,
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
         versioned: true,

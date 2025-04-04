@@ -47,8 +47,8 @@ export const config: EnvConfigNonSandbox = {
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
-  hl7v2RosterLambda: {
-    bucketName: "test-bucket",
+  hl7v2RosterUploadLambda: {
+    bucketName: "your-roster-bucket",
   },
   fhirServerUrl: "http://localhost:8888",
   termServerUrl: "http://localhost:8666",

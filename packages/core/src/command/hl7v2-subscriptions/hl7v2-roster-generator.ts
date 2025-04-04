@@ -14,6 +14,7 @@ import {
   Hl7v2SubscriberParams,
   SftpConfig,
 } from "./get-subscribers";
+import _ from "lodash";
 
 dayjs.extend(duration);
 
@@ -31,45 +32,34 @@ const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const csvSeparator = ",";
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
-const DELAY_BETWEEN_ATTEMPTS = dayjs.duration({ seconds: 1 });
+const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-  return path.split(".").reduce((current: unknown, key: string) => {
-    if (!current || typeof current !== "object") return undefined;
-
-    const arrayMatch = key.match(/^(\w+)(\d+)$/);
-    if (arrayMatch) {
-      const arrayKey = arrayMatch[1];
-      const indexStr = arrayMatch[2];
-      if (!arrayKey || !indexStr) return undefined;
-
-      const array = (current as Record<string, unknown>)[arrayKey];
-      if (Array.isArray(array)) {
-        const index = parseInt(indexStr, 10);
-        return array[index];
-      }
-    }
-
-    return (current as Record<string, unknown>)[key];
-  }, obj);
-}
-
-export function convertToHieFormat(
+export function convertSubscribersToHieFormat(
   subscribers: Hl7v2Subscriber[],
   schema: Record<string, string>
 ): SubscriberRecord[] {
-  return subscribers.map(subscriber => {
-    const converted: SubscriberRecord = {};
-    for (const [ourField, hieField] of Object.entries(schema)) {
-      const value = getNestedValue(subscriber, ourField);
-      if (value !== undefined) converted[hieField] = String(value);
+  const convertToOutgoingSchema = (s: Hl7v2Subscriber) => convertSubscriberToHieFormat(s, schema);
+  return subscribers.map(convertToOutgoingSchema);
+}
+
+export function convertSubscriberToHieFormat(
+  subscriber: Hl7v2Subscriber,
+  schema: Record<string, string>
+): SubscriberRecord {
+  const result: SubscriberRecord = {};
+
+  for (const [ourField, hieField] of Object.entries(schema)) {
+    const value = _.get(subscriber, ourField);
+    if (value !== undefined) {
+      result[hieField] = String(value);
     }
-    return converted;
-  });
+  }
+
+  return result;
 }
 
 export async function generateAndUploadHl7v2Roster({
@@ -85,7 +75,7 @@ export async function generateAndUploadHl7v2Roster({
     async () => getAllSubscribers(apiUrl, states, subscriptions, log),
     {
       maxAttempts: NUMBER_OF_ATTEMPTS,
-      initialDelay: DELAY_BETWEEN_ATTEMPTS.asMilliseconds(),
+      initialDelay: BASE_DELAY.asMilliseconds(),
       log,
     }
   );
@@ -101,7 +91,7 @@ export async function generateAndUploadHl7v2Roster({
     return;
   }
 
-  const convertedSubscribers = convertToHieFormat(subscribers, hieConfig.schema);
+  const convertedSubscribers = convertSubscribersToHieFormat(subscribers, hieConfig.schema);
   const rosterCsv = generateCsv(convertedSubscribers);
   log("Created CSV");
 
@@ -116,7 +106,7 @@ export async function generateAndUploadHl7v2Roster({
     contentType: CSV_MIME_TYPE,
     log,
     errorConfig: {
-      errorMessage: "Error uploading preprocessed XML",
+      errorMessage: "Error uploading preprocessed CSV",
       context: "Hl7v2RosterGenerator",
       captureParams: config,
       shouldCapture: true,
@@ -126,7 +116,7 @@ export async function generateAndUploadHl7v2Roster({
   try {
     await executeWithNetworkRetries(async () => sendViaSftp(hieConfig.sftpConfig, rosterCsv, log), {
       maxAttempts: NUMBER_OF_ATTEMPTS,
-      initialDelay: DELAY_BETWEEN_ATTEMPTS.asMilliseconds(),
+      initialDelay: BASE_DELAY.asMilliseconds(),
       log,
     });
   } catch (err) {
