@@ -42,6 +42,8 @@ type EnvSpecificSettings = {
   desiredTaskCount: number;
   maxTaskCount: number;
   memoryLimitMiB: number;
+  maxHealthyPercent: number;
+  minHealthyPercent: number;
 };
 type Settings = EnvSpecificSettings & {
   loadBalancerIdleTimeout: Duration;
@@ -52,8 +54,10 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
       desiredTaskCount: 12,
-      maxTaskCount: 16,
+      maxTaskCount: 20,
       memoryLimitMiB: 4096,
+      maxHealthyPercent: 120,
+      minHealthyPercent: 80,
     };
   }
   if (isSandbox(config)) {
@@ -61,12 +65,16 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
       desiredTaskCount: 2,
       maxTaskCount: 10,
       memoryLimitMiB: 2048,
+      maxHealthyPercent: 200,
+      minHealthyPercent: 50,
     };
   }
   return {
     desiredTaskCount: 1,
     maxTaskCount: 5,
     memoryLimitMiB: 2048,
+    maxHealthyPercent: 200,
+    minHealthyPercent: 50,
   };
 }
 function getSettings(config: EnvConfig): Settings {
@@ -183,8 +191,15 @@ export function createAPIService({
   const listenerPort = 80;
   const containerPort = 8080;
   const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
-  const { cpu, memoryLimitMiB, desiredTaskCount, maxTaskCount, loadBalancerIdleTimeout } =
-    getSettings(props.config);
+  const {
+    cpu,
+    memoryLimitMiB,
+    desiredTaskCount,
+    maxTaskCount,
+    loadBalancerIdleTimeout,
+    maxHealthyPercent,
+    minHealthyPercent,
+  } = getSettings(props.config);
   const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
     "APIFargateServiceAlb",
@@ -314,6 +329,8 @@ export function createAPIService({
       listenerPort,
       publicLoadBalancer: false,
       idleTimeout: loadBalancerIdleTimeout,
+      maxHealthyPercent,
+      minHealthyPercent,
     }
   );
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
@@ -488,7 +505,7 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 80,
+    targetUtilizationPercent: 60,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
