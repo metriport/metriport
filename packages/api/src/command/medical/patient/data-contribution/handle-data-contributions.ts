@@ -3,12 +3,10 @@ import {
   getFullContributionBundle,
   uploadFullContributionBundle,
 } from "@metriport/core/command/consolidated/contribution-bundle-create";
+import { processBundleUploadTransaction } from "@metriport/core/command/contributed/process-upload-bundle";
 import { createContributionBundleFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
-import {
-  buildTransactionResponseBundle,
-  processBundleUploadTransaction,
-} from "@metriport/core/external/fhir/bundle/transaction-response-bundle";
+import { buildTransactionResponseBundle } from "@metriport/core/external/fhir/bundle/transaction-response-bundle";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
