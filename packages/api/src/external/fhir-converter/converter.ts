@@ -37,7 +37,7 @@ export function isConvertible(mimeType?: string | undefined): boolean {
  */
 export async function convertCDAToFHIR(params: {
   patient: { cxId: string; id: string };
-  document: { id: string; content?: ContentMimeType };
+  document: { id: string };
   s3FileName: string;
   s3BucketName: string;
   template?: FHIRConverterCDATemplate;
