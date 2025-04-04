@@ -105,6 +105,12 @@ export async function getResourceMappingModelReversedOrFail({
   return mapping;
 }
 
+export type ResourceMappingReversedMapped = {
+  resourceId: string;
+  externalId: string;
+  updatedAt: Date;
+};
+
 export async function getMappedResourceIdsByPatientMappingExternalId({
   cxId,
   patientId,
@@ -113,11 +119,15 @@ export async function getMappedResourceIdsByPatientMappingExternalId({
   cxId: string;
   patientId: string;
   patientMappingExternalId: string;
-}): Promise<string[]> {
+}): Promise<ResourceMappingReversedMapped[]> {
   const mappings = await ResourceMappingReversedModel.findAll({
     where: { cxId, patientId, patientMappingExternalId },
   });
-  return mappings.map(mapping => mapping.dataValues.resourceId);
+  return mappings.map(mapping => ({
+    resourceId: mapping.dataValues.resourceId,
+    externalId: mapping.dataValues.externalId,
+    updatedAt: mapping.dataValues.updatedAt,
+  }));
 }
 
 export async function deleteAllResourceMappingReverseds({

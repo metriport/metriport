@@ -4,14 +4,13 @@ import * as shared from "../migrations-shared";
 
 const resourceMappingTableName = "resource_mapping_reversed";
 const resourceMappingTableConstraintName =
-  "resource_mapping_reversed_source_cxId_patientId_patientMappingExternalId_resourceId_constraint";
-const resourceMappingTableIndexName =
-  "resource_mapping_reversed_source_cxId_patientId_patientMappingExternalId_resourceId_index";
+  "resource_mapping_reversed_cxId_ptId_ptXId_rId_constraint";
+const resourceMappingTableIndexName = "resource_mapping_reversed_cxId_ptId_ptXId_rId_index";
 const resourceMappingTableIdFields = [
-  "cxId",
-  "patientId",
-  "patientMappingExternalId",
-  "resourceId",
+  "cx_id",
+  "patient_id",
+  "patient_mapping_external_id",
+  "resource_id",
 ];
 
 // Use 'Promise.all' when changes are independent of each other

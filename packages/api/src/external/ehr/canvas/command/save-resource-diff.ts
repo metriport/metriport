@@ -13,7 +13,7 @@ export type SaveResourceDiffParams = {
   direction: ResourceDiffDirection;
 };
 
-export async function saveResourceDiff({
+export async function saveCanvasResourceDiff({
   cxId,
   canvasPatientId,
   resourceId,

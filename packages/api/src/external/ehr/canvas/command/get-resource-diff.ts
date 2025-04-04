@@ -2,7 +2,10 @@ import { MetriportError } from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
-import { getMappedResourceIdsByPatientMappingExternalId } from "../../../../command/mapping/resource-reversed";
+import {
+  getMappedResourceIdsByPatientMappingExternalId,
+  ResourceMappingReversedMapped,
+} from "../../../../command/mapping/resource-reversed";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 
 export type GetResourceDiffParams = {
@@ -15,7 +18,7 @@ export async function getCanvasResourceDiffFromEhr({
   cxId,
   canvasPatientId,
   direction,
-}: GetResourceDiffParams): Promise<string[]> {
+}: GetResourceDiffParams): Promise<ResourceMappingReversedMapped[]> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,

@@ -7,7 +7,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { computeCanvasResourceDiff } from "../../../../external/ehr/canvas/command/compute-resource-diff";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
-import { saveResourceDiff } from "../../../../external/ehr/canvas/command/save-resource-diff";
+import { saveCanvasResourceDiff } from "../../../../external/ehr/canvas/command/save-resource-diff";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
@@ -110,13 +110,13 @@ router.post(
     if (!isResourceDiffDirection(direction)) {
       throw new BadRequestError("Invalid direction", undefined, { direction });
     }
-    saveResourceDiff({
+    saveCanvasResourceDiff({
       cxId,
       canvasPatientId,
       resourceId,
       direction,
       matchedResourceIds,
-    }).catch(processAsyncError("Canvas saveResourceDiff"));
+    }).catch(processAsyncError("Canvas saveCanvasResourceDiff"));
     return res.sendStatus(httpStatus.OK);
   })
 );

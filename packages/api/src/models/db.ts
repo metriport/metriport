@@ -21,6 +21,7 @@ import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
+import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { CxMappingModel } from "./cx-mapping";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
@@ -36,9 +37,9 @@ import { PatientModel } from "./medical/patient";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
+import { ResourceMappingReversedModel } from "./resource-mapping-reversed";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -67,6 +68,7 @@ const models: ModelSetup[] = [
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
+  ResourceMappingReversedModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
