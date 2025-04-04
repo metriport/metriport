@@ -176,12 +176,14 @@ type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
   count?: number;
+  log?: typeof console.log;
 };
 
 export async function updateConversionProgress({
   patient: { id, cxId },
   convertResult,
   count,
+  log = out(`updateConversionProgress - patient ${id}, cxId ${cxId}`).log,
 }: UpdateResult): Promise<Patient> {
   const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -190,6 +192,9 @@ export async function updateConversionProgress({
       lock: true,
       transaction,
     });
+
+    const docQueryProgress = patient.data.documentQueryProgress;
+    log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
     const documentQueryProgress = calculateConversionProgress({
       patient,

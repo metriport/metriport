@@ -9,6 +9,7 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
+import { out } from "@metriport/core/util/log";
 
 export type DynamicProgress = Pick<Progress, "successful" | "errors">;
 
@@ -18,6 +19,7 @@ export type TallyDocQueryProgress = {
   type: ProgressType;
   progress: DynamicProgress;
   requestId: string;
+  log?: typeof console.log;
 };
 
 /**
@@ -33,6 +35,7 @@ export async function tallyDocQueryProgress({
   progress,
   type,
   source,
+  log = out(`tallyDocQueryProgress - patient ${id}, cxId ${cxId}`).log,
 }: TallyDocQueryProgress): Promise<Patient> {
   const patientFilter = { id, cxId };
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -41,6 +44,8 @@ export async function tallyDocQueryProgress({
       lock: true,
       transaction,
     });
+    const docQueryProgress = patient.data.documentQueryProgress;
+    log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
     // Set the doc query progress for the chosen hie
     const externalData = setHIETallyCount(patient, progress, type, source);

@@ -12,7 +12,6 @@ import { getCQData } from "../../../external/carequality/patient";
 import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
-import { getPatientOrFail } from "../patient/get-patient";
 import { updateConversionProgress } from "./document-query";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
@@ -46,13 +45,9 @@ export async function calculateDocumentConversionStatus({
       `count: ${count}, details: ${details}, result: ${JSON.stringify(convertResult)}`
   );
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
-  const docQueryProgress = patient.data.documentQueryProgress;
-  log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
-
   if (hasSource) {
     const updatedPatient = await tallyDocQueryProgress({
-      patient: patient,
+      patient: { id: patientId, cxId },
       type: "convert",
       progress: {
         ...(convertResult === "success" ? { successful: count } : { errors: count }),
@@ -138,7 +133,7 @@ export async function calculateDocumentConversionStatus({
 
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
-      await recreateConsolidated({ patient, context: "calculate-no-source" });
+      await recreateConsolidated({ patient: expectedPatient, context: "calculate-no-source" });
 
       processPatientDocumentRequest(
         cxId,
