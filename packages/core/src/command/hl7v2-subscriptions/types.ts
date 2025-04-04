@@ -11,7 +11,7 @@ export type SftpConfig = {
 
 export type HieConfig = {
   name: string;
-  sftpConfig: SftpConfig;
+  sftpConfig?: SftpConfig;
   schema: Record<string, string>;
 };
 

@@ -119,23 +119,24 @@ export async function generateAndUploadHl7v2Roster({
     },
   });
 
-  try {
-    await executeWithNetworkRetries(async () => sendViaSftp(hieConfig.sftpConfig, rosterCsv, log), {
-      maxAttempts: NUMBER_OF_ATTEMPTS,
-      initialDelay: BASE_DELAY.asMilliseconds(),
-      log,
-    });
-  } catch (err) {
-    const msg = `Failed to SFTP upload HL7v2 roster`;
-    capture.error(msg, {
-      extra: {
-        hieConfig,
-        states,
-        subscriptions,
-        err,
-      },
-    });
-  }
+  // TODO 2791: Uncomment when we update the SFTP configs to be fetched from the AWS secrets
+  // try {
+  //   await executeWithNetworkRetries(async () => sendViaSftp(hieConfig.sftpConfig, rosterCsv, log), {
+  //     maxAttempts: NUMBER_OF_ATTEMPTS,
+  //     initialDelay: BASE_DELAY.asMilliseconds(),
+  //     log,
+  //   });
+  // } catch (err) {
+  //   const msg = `Failed to SFTP upload HL7v2 roster`;
+  //   capture.error(msg, {
+  //     extra: {
+  //       hieConfig,
+  //       states,
+  //       subscriptions,
+  //       err,
+  //     },
+  //   });
+  // }
   log("Done");
   return;
 }
@@ -180,7 +181,7 @@ function generateCsv(records: SubscriberRecord[]): string {
   return stringify(records, { header: true, quoted: true });
 }
 
-async function sendViaSftp(
+export async function sendViaSftp(
   config: SftpConfig,
   rosterCsv: string,
   log: typeof console.log
