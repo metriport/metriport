@@ -47,9 +47,6 @@ export const config: EnvConfigNonSandbox = {
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
-  hl7v2RosterUploadLambda: {
-    bucketName: "your-roster-bucket",
-  },
   fhirServerUrl: "http://localhost:8888",
   termServerUrl: "http://localhost:8666",
   systemRootOID: "2.16.840.1.113883.3.999999",
@@ -162,6 +159,9 @@ export const config: EnvConfigNonSandbox = {
       fargateMemoryLimitMiB: 2048,
       fargateTaskCountMin: 2,
       fargateTaskCountMax: 4,
+    },
+    hl7v2RosterUploadLambda: {
+      bucketName: "your-roster-bucket",
     },
   },
   acmCertMonitor: {
