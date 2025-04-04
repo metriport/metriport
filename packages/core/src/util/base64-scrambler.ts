@@ -13,7 +13,6 @@ export class Base64Scrambler {
    * @param seed - A string to use as the scrambling key
    */
   constructor(seed: string) {
-    // Create a consistent character mapping based on the seed
     [this.mappingForward, this.mappingReverse] = this.generateMappings(seed);
   }
 
@@ -37,12 +36,10 @@ export class Base64Scrambler {
     const reverseMap = new Map<string, string>();
 
     for (let i = 0; i < BASE64_CHARS.length; i++) {
-      const originalChar = BASE64_CHARS[i];
-      const scrambledChar = chars[i];
-
-      if (!originalChar || !scrambledChar) {
-        throw new MetriportError("Invalid character index");
-      }
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const originalChar = BASE64_CHARS[i]!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const scrambledChar = chars[i]!;
 
       forwardMap.set(originalChar, scrambledChar);
       reverseMap.set(scrambledChar, originalChar);

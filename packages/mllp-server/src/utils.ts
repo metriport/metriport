@@ -4,16 +4,20 @@ import { Config } from "@metriport/core/util/config";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
-const reformUuid = (shortId: string) => {
+function reformUuid(shortId: string) {
   return unpackUuid(crypto.unscramble(shortId));
-};
+}
 
-export const unpackPidField = (pid: string) => {
+export function unpackPidField(pid: string | undefined) {
+  if (!pid) {
+    return { cxId: "UNK", patientId: "UNK" };
+  }
+
   const [cxId, patientId] = pid.split("_").map(reformUuid);
   return { cxId, patientId };
-};
+}
 
-export const buildS3Key = ({
+export function buildS3Key({
   cxId,
   patientId,
   timestamp,
@@ -25,6 +29,6 @@ export const buildS3Key = ({
   timestamp: string;
   messageType: string;
   messageCode: string;
-}) => {
+}) {
   return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
-};
+}

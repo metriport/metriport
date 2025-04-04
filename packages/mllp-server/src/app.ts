@@ -35,33 +35,35 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         `${timestamp}> New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
       );
 
-      const fullMessage = message.segments.map(s => s.toString()).join("\n");
-
       /**
        * Avoid using message.toString() as its not stringifying every segment
        */
+      const messageAsString = message.segments.map(s => s.toString()).join("\n");
+
       const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
-      let { cxId, patientId } = { cxId: `UNK-${pid}`, patientId: "UNK" };
-      if (pid) {
-        ({ cxId, patientId } = unpackPidField(pid));
-      }
+      const { cxId, patientId } = unpackPidField(pid);
 
       const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
       const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
       const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
 
-      await s3Utils.uploadFile({
-        bucket: bucketName,
-        key: buildS3Key({
-          cxId,
-          patientId,
-          timestamp,
-          messageType,
-          messageCode,
-        }),
-        file: Buffer.from(fullMessage),
-        contentType: "application/json",
-      });
+      await s3Utils
+        .uploadFile({
+          bucket: bucketName,
+          key: buildS3Key({
+            cxId,
+            patientId,
+            timestamp,
+            messageType,
+            messageCode,
+          }),
+          file: Buffer.from(messageAsString),
+          contentType: "application/json",
+        })
+        .catch(e => {
+          logger.log(`S3 upload failed: ${e}`);
+          Sentry.captureException(e);
+        });
       connection.send(message.buildAck());
     });
 
