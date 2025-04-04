@@ -8,7 +8,7 @@ import { Config } from "../../../../shared/config";
 const MAX_RESOURCE_COUNT_PER_REQUEST = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
 
-export function normalizeBundle<T extends Bundle | ValidBundle>(bundle: T): T {
+export function cleanupSpecialCharsFromBundle<T extends Bundle | ValidBundle>(bundle: T): T {
   const bundleString = JSON.stringify(bundle);
   // String.fromCharCode(160) represents a non-breaking space (NBSP)
   const normalizedString = bundleString.replaceAll(String.fromCharCode(160), " ");
@@ -18,7 +18,7 @@ export function normalizeBundle<T extends Bundle | ValidBundle>(bundle: T): T {
 /**
  * SANDBOX ONLY. Checks if the incoming amount of resources, plus what's already stored, exceeds the limit.
  */
-export async function checkResourceLimit(incomingAmount: number, patient: Patient) {
+export async function checkResourceLimit(incomingAmount: number, patient: Patient): Promise<void> {
   if (!Config.isCloudEnv() || Config.isSandbox()) {
     const { total: currentAmount } = await countResources({
       patient: { id: patient.id, cxId: patient.cxId },
@@ -40,6 +40,8 @@ export async function checkResourceLimit(incomingAmount: number, patient: Patien
   }
 }
 
-export function hasCompositionResource(bundle: ValidBundle): boolean {
-  return bundle.entry.some(entry => entry.resource?.resourceType === "Composition");
+export function hasCompositionResource(bundle: Bundle | ValidBundle): boolean {
+  return bundle.entry
+    ? bundle.entry.some(entry => entry.resource?.resourceType === "Composition")
+    : false;
 }

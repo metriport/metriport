@@ -304,3 +304,21 @@ export function findResourceInBundle(bundle: Bundle, reference: string): Resourc
 export function buildEntryReference(resource: Resource): string {
   return `${resource.resourceType}/${resource.id}`;
 }
+
+export function getResourceReferences(resource: Resource): string[] {
+  const references: string[] = [];
+
+  // Recursively search for reference properties in the resource
+  function traverse(obj: unknown): void {
+    if (!obj || typeof obj !== "object") return;
+
+    if ("reference" in obj && typeof obj.reference === "string") {
+      references.push(obj.reference);
+    }
+
+    Object.values(obj).forEach(traverse);
+  }
+
+  traverse(resource);
+  return references;
+}
