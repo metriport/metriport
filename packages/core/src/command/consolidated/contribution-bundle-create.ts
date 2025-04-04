@@ -36,12 +36,7 @@ export async function getFullContributionBundle(
   patient: Patient
 ): Promise<Bundle<Resource> | undefined> {
   const existingBundle = await getExistingFullContributionBundleSafe(patient);
-
-  if (!existingBundle) {
-    return await createFullContributionBundleFromPreviousUploads(patient);
-  }
-
-  return existingBundle;
+  return existingBundle ?? (await createFullContributionBundleFromPreviousUploads(patient));
 }
 
 async function getExistingFullContributionBundleSafe(
