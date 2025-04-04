@@ -64,6 +64,9 @@ export class Config {
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
+  static getHl7Base64ScramblerSeed(): string {
+    return getEnvVarOrFail("HL7_BASE64_SCRAMBLER_SEED");
+  }
 
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
@@ -71,6 +74,9 @@ export class Config {
 
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  }
+  static getHl7NotificationBucketName(): string {
+    return getEnvVarOrFail("HL7_NOTIFICATION_BUCKET_NAME");
   }
   static getCdaToFhirConversionBucketName(): string | undefined {
     return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
