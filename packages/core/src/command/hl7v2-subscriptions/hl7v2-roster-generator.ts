@@ -15,7 +15,7 @@ import {
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
   SftpConfig,
-} from "./get-subscribers";
+} from "./types";
 
 dayjs.extend(duration);
 
@@ -62,6 +62,12 @@ export function convertSubscriberToHieFormat(
   return result;
 }
 
+/**
+ * TODO: Split the function into:
+ *   - build roster
+ *   - store on S3
+ *   - send
+ */
 export async function generateAndUploadHl7v2Roster({
   config,
   bucketName,
@@ -86,7 +92,7 @@ export async function generateAndUploadHl7v2Roster({
     log(msg);
     capture.message(msg, {
       extra: config,
-      level: "warning",
+      level: "info",
     });
     return;
   }
@@ -203,7 +209,7 @@ async function sendViaSftp(
 
     return;
   } catch (error) {
-    log(`[SFTP] SFTP test failed! ${errorToString(error)}`);
+    log(`[SFTP] SFTP failed! ${errorToString(error)}`);
     throw error;
   } finally {
     await sftp.end();
