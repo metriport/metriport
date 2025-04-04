@@ -479,7 +479,7 @@ export class LambdasNestedStack extends NestedStack {
       eventSource: {
         batchSize: 500,
         maxBatchingWindow: Duration.seconds(20),
-        maxConcurrency: 1,
+        maxConcurrency: 2,
         // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
         reportBatchItemFailures: true,
       },
@@ -488,8 +488,6 @@ export class LambdasNestedStack extends NestedStack {
     const conversionResultQueue = createQueue({
       stack: this,
       name,
-      fifo: true,
-      contentBasedDeduplication: true,
       visibilityTimeout: settings.queue.visibilityTimeout,
       maxReceiveCount: settings.queue.maxReceiveCount,
       createRetryLambda: false,
