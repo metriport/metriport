@@ -6,6 +6,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
+import { buildSecrets, secretsToECS } from "../shared/secrets";
 import { MLLP_DEFAULT_PORT } from "./constants";
 
 interface MllpStackProps extends cdk.StackProps {
@@ -20,7 +21,6 @@ export class MllpStack extends cdk.NestedStack {
     super(scope, id, props);
 
     const { vpc, ecrRepo } = props;
-    const base64ScramblerSeed = props.config.hl7Notification.base64ScramblerSeed;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
 
@@ -80,11 +80,11 @@ export class MllpStack extends cdk.NestedStack {
 
     taskDefinition.addContainer("MllpServer", {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
+      secrets: secretsToECS(buildSecrets(this, props.config.hl7Notification.secrets)),
       environment: {
         NODE_ENV: "production",
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-        HL7_BASE64_SCRAMBLER_SEED: base64ScramblerSeed,
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],

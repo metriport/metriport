@@ -147,7 +147,9 @@ export const config: EnvConfigNonSandbox = {
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
-    base64ScramblerSeed: "your-base64-scrambler-seed",
+    secrets: {
+      HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
+    },
     vpnConfigs: [
       {
         partnerName: "SampleHIE",
