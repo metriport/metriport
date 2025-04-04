@@ -106,7 +106,6 @@ export function createAPIService({
   fhirToBundleLambda,
   fhirToMedicalRecordLambda2,
   fhirToCdaConverterLambda,
-  hl7v2RosterUploadLambda,
   rateLimitTable,
   searchIngestionQueue,
   searchEndpoint,
@@ -143,7 +142,6 @@ export function createAPIService({
   fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda2: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
-  hl7v2RosterUploadLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
   searchIngestionQueue: IQueue;
   searchEndpoint: string;
@@ -265,9 +263,6 @@ export function createAPIService({
           }),
           ...(fhirToCdaConverterLambda && {
             FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
-          }),
-          ...(hl7v2RosterUploadLambda && {
-            HL7V2_ROSTER_UPLOAD_LAMBDA_NAME: hl7v2RosterUploadLambda.functionName,
           }),
           FHIR_SERVER_URL: fhirServerUrl,
           ...(fhirConverterQueueUrl && {

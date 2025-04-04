@@ -494,7 +494,6 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
-      hl7v2RosterUploadLambda,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
