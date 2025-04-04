@@ -21,8 +21,9 @@ import {
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
 import {
+  FhirResourceBundle,
+  fhirResourceBundleSchema,
   FhirResources,
-  fhirResourcesSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -39,6 +40,8 @@ interface CanvasApiConfig extends ApiConfig {
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
+
+export const supportedCanvasDiffResources = ["Condition"];
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -358,27 +361,31 @@ class CanvasApi {
     const { debug } = out(
       `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
     );
-    const resourceTypeUrl = `/${resourceType}`;
+    const params = { patient: `Patient/${patientId}` };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
     try {
-      const resources = await this.makeRequest<FhirResources>({
+      const bundle = await this.makeRequest<FhirResourceBundle>({
         cxId,
         patientId,
         s3Path: "patient",
         method: "GET",
         url: resourceTypeUrl,
-        schema: fhirResourcesSchema,
+        schema: fhirResourceBundleSchema,
         additionalInfo,
         debug,
         useFhir: true,
       });
-      const invalidResource = resources.find(resource => resource.resourceType !== resourceType);
+      const invalidResource = bundle.entry.find(
+        resource => resource.resource.resourceType !== resourceType
+      );
       if (invalidResource) {
         throw new MetriportError(`Invalid resource type found`, undefined, {
-          invalidResourceType: invalidResource.resourceType,
+          invalidResourceType: invalidResource.resource.resourceType,
         });
       }
-      return resources;
+      return bundle.entry.map(resource => resource.resource);
     } catch (error) {
       if (error instanceof NotFoundError) return [];
       throw error;

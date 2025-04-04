@@ -30,7 +30,7 @@ export async function saveResourceDiff({
   direction: ResourceDiffDirection;
   matchedResourceIds: string[];
 }): Promise<void> {
-  const { log, debug } = out(`Ehr syncPatient - cxId ${cxId}`);
+  const { log, debug } = out(`Ehr saveResourceDiff - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,

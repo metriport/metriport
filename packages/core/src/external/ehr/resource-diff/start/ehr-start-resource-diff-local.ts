@@ -4,6 +4,7 @@ import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/
 import { chunk } from "lodash";
 import { getConsolidated } from "../../../../command/consolidated/consolidated-get";
 import { computeResourceDiff } from "../../api/compute-resource-diff";
+import { supportedCanvasDiffResources } from "../../canvas";
 import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
 
 const MAX_RESOURCE_DIFFS_PER_BATCH = 10;
@@ -30,6 +31,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
         if (!resource.resource) return [];
         const resourceSafe = fhirResourceSchema.safeParse(resource.resource);
         if (!resourceSafe.success) return [];
+        if (!supportedCanvasDiffResources.includes(resourceSafe.data.resourceType)) return [];
         return [
           {
             ehr,

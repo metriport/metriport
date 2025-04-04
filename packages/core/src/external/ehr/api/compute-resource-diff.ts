@@ -31,7 +31,7 @@ export async function computeResourceDiff({
   resource: FhirResource;
   direction: ResourceDiffDirection;
 }): Promise<void> {
-  const { log, debug } = out(`Ehr syncPatient - cxId ${cxId}`);
+  const { log, debug } = out(`Ehr computeResourceDiff - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
