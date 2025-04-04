@@ -1,5 +1,4 @@
 import { errorToString } from "@metriport/shared";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { SQSClient } from "../../external/aws/sqs";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
@@ -19,11 +18,7 @@ export class ConversionResultCloud implements ConversionResultHandler {
       : out(`notifyApi.cloud - cxId ${cxId} jobId ${jobId}`);
     try {
       const payload = JSON.stringify(params);
-      await this.sqsClient.sendMessageToQueue(this.conversionResultQueueUrl, payload, {
-        fifo: true,
-        messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: cxId,
-      });
+      await this.sqsClient.sendMessageToQueue(this.conversionResultQueueUrl, payload);
     } catch (error) {
       const msg = `Failure while processing conversion result @ ConversionResult`;
       log(`${msg}. Cause: ${errorToString(error)}`);

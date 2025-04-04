@@ -37,7 +37,7 @@ function settings() {
   } = settingsFhirConverter();
   const lambdaTimeout = maxExecutionTimeout.minus(Duration.seconds(5));
   return {
-    connectorName: "FHIRConverter3",
+    connectorName: "FHIRConverter",
     lambdaMemory: 1024,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
