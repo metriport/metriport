@@ -11,7 +11,7 @@ import { cloneDeep } from "lodash";
 
 /**
  * Removes the Patient resource if provided, adds the Metriport and Document extensions to all the provided resources,
- * ensures that all resources have UUIDs for IDs
+ * ensures that all resources have UUIDs for IDs. Finally, adds the correct patient resource.
  */
 export function processUploadBundle(
   bundle: ValidBundle,
