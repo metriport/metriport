@@ -57,7 +57,6 @@ export function makeEncounter(
 
 export function makeBareEncounter(params: Partial<Encounter> = {}, patientId?: string): Encounter {
   return {
-    ...(patientId ? makeSubjectReference(patientId) : undefined),
     id: params?.id ?? faker.string.uuid(),
     resourceType: "Encounter",
     status: "finished",
@@ -66,6 +65,7 @@ export function makeBareEncounter(params: Partial<Encounter> = {}, patientId?: s
       code: "AMB",
       display: "ambulatory",
     },
+    ...(patientId ? makeSubjectReference(patientId) : undefined),
     ...params,
   };
 }

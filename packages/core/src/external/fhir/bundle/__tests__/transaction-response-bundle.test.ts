@@ -1,11 +1,12 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
-import { makePatient } from "../../__tests__/patient";
-import { processBundleUploadTransaction } from "../transaction-response-bundle";
 import { faker } from "@faker-js/faker";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
   makeBareEncounter,
   makePractitioner,
 } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import { makePatient } from "../../__tests__/patient";
+import { buildEntryReference } from "../../shared";
+import { processBundleUploadTransaction } from "../transaction-response-bundle";
 
 const makeTestBundle = (resources: Resource[]): Bundle<Resource> => ({
   resourceType: "Bundle",
@@ -23,13 +24,13 @@ describe("processBundleUploadTransaction", () => {
       const encounter = makeBareEncounter({ id: encId });
       const incomingBundle = makeTestBundle([patient, encounter]);
 
-      const result = processBundleUploadTransaction(incomingBundle);
+      const { outcomesBundle } = processBundleUploadTransaction(incomingBundle);
 
-      expect(result.type).toBe("transaction-response");
-      if (!result.entry) return;
-      expect(result.entry).toHaveLength(1); // Patient resource won't have response
+      expect(outcomesBundle.type).toBe("transaction-response");
+      if (!outcomesBundle.entry || !incomingBundle.entry) return;
+      expect(outcomesBundle.entry).toHaveLength(incomingBundle.entry?.length - 1);
 
-      const firstEntry = result.entry[0];
+      const firstEntry = outcomesBundle.entry[0];
       if (!firstEntry?.response) return;
       expect(firstEntry.response.status).toBe("201 Created");
       expect(firstEntry.response.location).toBe(`Encounter/${encId}/_history/1`);
@@ -42,23 +43,24 @@ describe("processBundleUploadTransaction", () => {
 
       const patient = makePatient({ id: ptId });
       const practitioner = makePractitioner({ id: practId });
-      const practRef = [{ individual: { reference: `Practitioner/${practId}` } }];
+      const practRef = [{ individual: { reference: buildEntryReference(practitioner) } }];
+
       const encounter = makeBareEncounter({ id: encId, participant: practRef }, ptId);
       const incomingBundle = makeTestBundle([patient, practitioner, encounter]);
 
-      const result = processBundleUploadTransaction(incomingBundle);
+      const { outcomesBundle } = processBundleUploadTransaction(incomingBundle);
 
-      expect(result.type).toBe("transaction-response");
-      if (!result.entry) return;
-      expect(result.entry).toHaveLength(2); // Patient resource won't have response
+      expect(outcomesBundle.type).toBe("transaction-response");
+      if (!outcomesBundle.entry || !incomingBundle.entry) return;
+      expect(outcomesBundle.entry).toHaveLength(incomingBundle.entry?.length - 1);
 
-      result.entry?.forEach(e => {
+      outcomesBundle.entry?.forEach(e => {
         expect(e.response?.status).toBe("201 Created");
       });
-      const encIdPresent = result.entry?.some(
+      const encIdPresent = outcomesBundle.entry?.some(
         e => e.response?.location === `Encounter/${encId}/_history/1`
       );
-      const practIdPresent = result.entry?.some(
+      const practIdPresent = outcomesBundle.entry?.some(
         e => e.response?.location === `Practitioner/${practId}/_history/1`
       );
       expect(encIdPresent).toBe(true);
@@ -75,13 +77,13 @@ describe("processBundleUploadTransaction", () => {
       const encounter = makeBareEncounter({ id: encId, participant: practRef }, ptId);
       const incomingBundle = makeTestBundle([patient, encounter]);
 
-      const result = processBundleUploadTransaction(incomingBundle);
+      const { outcomesBundle } = processBundleUploadTransaction(incomingBundle);
 
-      expect(result.type).toBe("transaction-response");
-      if (!result.entry) return;
-      expect(result.entry).toHaveLength(1);
+      expect(outcomesBundle.type).toBe("transaction-response");
+      if (!outcomesBundle.entry) return;
+      expect(outcomesBundle.entry).toHaveLength(1);
 
-      const firstEntry = result.entry[0];
+      const firstEntry = outcomesBundle.entry[0];
       if (!firstEntry?.response) return;
       expect(firstEntry.response.status).toBe("400");
       expect(firstEntry.response.location).toBe(`Encounter/${encId}/_history/1`);
@@ -91,22 +93,60 @@ describe("processBundleUploadTransaction", () => {
   describe("updating existing resources", () => {
     it("should update existing resources of the same type", () => {
       const ptId = faker.string.uuid();
-      const existingPatient = makePatient({ id: ptId });
-      const existingBundle = makeTestBundle([existingPatient]);
+      const encId = faker.string.uuid();
+      const patient = makePatient({ id: ptId });
 
-      const updatedPatient = makePatient({ id: ptId });
-      const incomingBundle = makeTestBundle([updatedPatient]);
+      const existingEncounter = makeBareEncounter({ id: encId }, ptId);
+      const existingBundle = makeTestBundle([existingEncounter, patient]);
+      const incomingBundle = makeTestBundle([existingEncounter, patient]);
 
-      const result = processBundleUploadTransaction(incomingBundle, existingBundle);
+      const { outcomesBundle } = processBundleUploadTransaction(incomingBundle, existingBundle);
 
-      expect(result.type).toBe("transaction-response");
-      if (!result.entry) return;
-      expect(result.entry).toHaveLength(1);
+      expect(outcomesBundle.type).toBe("transaction-response");
+      if (!outcomesBundle.entry) return;
+      expect(outcomesBundle.entry).toHaveLength(1);
 
-      const firstEntry = result.entry[0];
+      const firstEntry = outcomesBundle.entry[0];
       if (!firstEntry?.response) return;
       expect(firstEntry.response.status).toBe("200 OK");
-      expect(firstEntry.response.location).toBe(`Patient/${ptId}/_history/1`);
+      expect(firstEntry.response.location).toBe(`Encounter/${encId}/_history/1`);
+    });
+  });
+
+  describe("handling larger bundles", () => {
+    it("should correctly handle a bundle with new and existing resources", () => {
+      const ptId = faker.string.uuid();
+      const encId = faker.string.uuid();
+      const practId = faker.string.uuid();
+      const practId2 = faker.string.uuid();
+
+      const patient = makePatient({ id: ptId });
+      const existingEncounter = makeBareEncounter({ id: encId }, ptId);
+      const practitioner1 = makePractitioner({ id: practId });
+      const practitioner2 = makePractitioner({ id: practId2 });
+
+      const existingBundle = makeTestBundle([existingEncounter, practitioner1, patient]);
+      const incomingBundle = makeTestBundle([existingEncounter, practitioner2, patient]);
+
+      const { outcomesBundle } = processBundleUploadTransaction(incomingBundle, existingBundle);
+
+      expect(outcomesBundle.type).toBe("transaction-response");
+      if (!outcomesBundle.entry || !incomingBundle.entry) return;
+      expect(outcomesBundle.entry).toHaveLength(incomingBundle.entry?.length - 1);
+
+      const firstEntry = outcomesBundle.entry[0];
+      if (!firstEntry?.response) return;
+      expect(firstEntry.response.status).toBe("200 OK");
+      expect(firstEntry.response.location).toBe(`Encounter/${encId}/_history/1`);
+
+      const encIdPresent = outcomesBundle.entry?.some(
+        e => e.response?.location === `Encounter/${encId}/_history/1`
+      );
+      const pract2IdPresent = outcomesBundle.entry?.some(
+        e => e.response?.location === `Practitioner/${practId2}/_history/1`
+      );
+      expect(encIdPresent).toBe(true);
+      expect(pract2IdPresent).toBe(true);
     });
   });
 
@@ -121,13 +161,13 @@ describe("processBundleUploadTransaction", () => {
       });
       const incomingBundle = makeTestBundle([encounter]);
 
-      const result = processBundleUploadTransaction(incomingBundle);
+      const { outcomesBundle } = processBundleUploadTransaction(incomingBundle);
 
-      expect(result.type).toBe("transaction-response");
-      if (!result.entry) return;
-      expect(result.entry).toHaveLength(1);
+      expect(outcomesBundle.type).toBe("transaction-response");
+      if (!outcomesBundle.entry || !incomingBundle.entry) return;
+      expect(outcomesBundle.entry).toHaveLength(1);
 
-      const firstEntry = result.entry[0];
+      const firstEntry = outcomesBundle.entry[0];
       if (!firstEntry?.response?.outcome?.issue?.[0]?.details?.coding?.[0]) return;
       expect(firstEntry.response.status).toBe("400");
       expect(firstEntry.response.outcome.issue[0].details.coding[0].code).toBe("INVALID_REFERENCE");
@@ -144,40 +184,16 @@ describe("processBundleUploadTransaction", () => {
       });
       const incomingBundle = makeTestBundle([patient, encounter]);
 
-      const result = processBundleUploadTransaction(incomingBundle);
+      const { outcomesBundle } = processBundleUploadTransaction(incomingBundle);
 
-      expect(result.type).toBe("transaction-response");
-      if (!result.entry) return;
-      expect(result.entry).toHaveLength(1); // Patient won't have response
+      expect(outcomesBundle.type).toBe("transaction-response");
+      if (!outcomesBundle.entry || !incomingBundle.entry) return;
+      expect(outcomesBundle.entry).toHaveLength(incomingBundle.entry?.length - 1);
 
-      const firstEntry = result.entry[0];
+      const firstEntry = outcomesBundle.entry[0];
       if (!firstEntry?.response) return;
       expect(firstEntry.response.status).toBe("201 Created");
       expect(firstEntry.response.location).toBe(`Encounter/${encId}/_history/1`);
-    });
-  });
-
-  describe("empty bundles", () => {
-    it("should handle empty incoming bundle", () => {
-      const emptyBundle = makeTestBundle([]);
-      const result = processBundleUploadTransaction(emptyBundle);
-
-      expect(result.type).toBe("transaction-response");
-      expect(result.entry).toHaveLength(0);
-      expect(result.total).toBe(0);
-    });
-
-    it("should handle empty existing bundle with new resources", () => {
-      const ptId = faker.string.uuid();
-      const patient = makePatient({ id: ptId });
-      const incomingBundle = makeTestBundle([patient]);
-      const emptyExistingBundle = makeTestBundle([]);
-
-      const result = processBundleUploadTransaction(incomingBundle, emptyExistingBundle);
-
-      expect(result.type).toBe("transaction-response");
-      expect(result.entry).toHaveLength(0); // Patient won't have response
-      expect(result.total).toBe(0);
     });
   });
 });

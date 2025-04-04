@@ -1,159 +1,162 @@
-import { Bundle, BundleEntry, OperationOutcome, Resource } from "@medplum/fhirtypes";
-import { buildBundle, buildReferenceFromStringRelative } from "../shared/bundle";
+import {
+  Bundle,
+  BundleEntry,
+  OperationOutcome,
+  OperationOutcomeIssue,
+  Patient,
+  Resource,
+} from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { buildConsolidatedBundle } from "../../../command/consolidated/consolidated-create";
+import { buildEntryReference, getResourceReferences } from "../shared";
+import { buildBundle, buildBundleEntry, parseReferenceString } from "../shared/bundle";
+import { OPERATION_OUTCOME_EXTENSION_URL } from "../shared/extensions/extension";
 
 dayjs.extend(utc);
 
-type ValidationResponse = {
-  isSuccess: boolean;
-  isCreate: boolean;
-  error?: {
-    code: string;
-    display: string;
-    diagnostics: string;
-  };
+type ValidationResponseError = {
+  code: string;
+  display: string;
+  diagnostics: string;
 };
 
-type ResourceConflict = {
-  existingResource: Resource;
-  incomingResource: Resource;
+type ValidationResponse = {
+  isValid: boolean;
+  errors: ValidationResponseError[];
+};
+
+export type UploadBundleTransactionResult = {
+  outcomesBundle: Bundle<Resource>;
+  mergedBundle?: Bundle<Resource>;
 };
 
 export function processBundleUploadTransaction(
   incomingBundle: Bundle<Resource>,
   existingBundle: Bundle<Resource> = { resourceType: "Bundle", type: "collection" }
-): Bundle<Resource> {
+): UploadBundleTransactionResult {
   const transactionResponseBundle = buildTransactionResponseBundle();
-  const resourceMap = new Map<string, ResourceConflict>();
+  let patientResource: Patient | undefined;
 
-  // First, collect all existing resources
+  const referencesMap = new Map<string, string>();
+  const resourcesMap = new Map<string, Resource>();
+
+  // Create a map of existing resources and references for quick lookup
   existingBundle.entry?.forEach(entry => {
-    if (!entry.resource) return;
-    const id = entry.resource.id;
+    const resource = entry.resource;
+    const id = resource?.id;
     if (!id) return;
-
-    const resourceKey = id;
-    resourceMap.set(resourceKey, {
-      existingResource: entry.resource,
-      incomingResource: entry.resource,
-    });
+    // We don't need to check whether there are conflicts in the existing bundle since it's created with deduplication
+    resourcesMap.set(id, resource);
+    referencesMap.set(id, buildEntryReference(resource));
   });
 
-  // Process incoming resources and check for conflicts
+  // Only fill out the references map to allow us to check referential integrity across all resources in the bundle
   incomingBundle.entry?.forEach(entry => {
-    if (!entry.resource) return;
-    const { resourceType, id } = entry.resource;
+    const resource = entry.resource;
+    const id = resource?.id;
     if (!id) return;
+    referencesMap.set(id, buildEntryReference(resource));
+  });
 
-    const resourceKey = id;
-    if (resourceMap.has(resourceKey)) {
-      const conflict = resourceMap.get(resourceKey);
-      if (!conflict) return;
+  // Now check for referential integrity and conflicts with resources in the existing bundle, and build out the merged bundle
+  incomingBundle.entry?.forEach(entry => {
+    const resource = entry.resource;
+    const id = resource?.id;
+    if (!id) return;
+    if (resource.resourceType === "Patient") {
+      patientResource = resource;
+      return;
+    }
 
-      const existingType = conflict.existingResource.resourceType;
+    const integrity = checkReferentialIntegrity(referencesMap, resource);
+    if (integrity.isValid === false) {
+      transactionResponseBundle.entry?.push(buildErrorResponse(resource, integrity.errors));
+      return;
+    }
 
-      if (existingType === resourceType) {
-        // Same resource type - update existing with incoming
-        resourceMap.set(resourceKey, {
-          existingResource: conflict.existingResource,
-          incomingResource: entry.resource,
-        });
-        transactionResponseBundle.entry?.push(buildSuccessfulUpdateResponse(entry.resource));
+    const existingResource = resourcesMap.get(id);
+    if (existingResource) {
+      if (buildEntryReference(existingResource) === buildEntryReference(resource)) {
+        // Same ID, same resourceType => update
+        resourcesMap.set(id, resource);
+        transactionResponseBundle.entry?.push(buildSuccessfulUpdateResponse(resource));
+        return;
+      } else {
+        // Same ID, different resourceType => create. This should never really happen.
+        resourcesMap.set(id, resource);
+        transactionResponseBundle.entry?.push(buildSuccessfulCreateResponse(resource));
+        return;
       }
     } else {
-      // No conflict - add to map as both existing and incoming
-      resourceMap.set(resourceKey, {
-        existingResource: entry.resource,
-        incomingResource: entry.resource,
-      });
+      resourcesMap.set(id, resource);
+      transactionResponseBundle.entry?.push(buildSuccessfulCreateResponse(resource));
     }
   });
 
-  // Validate referential integrity using the combined resources
-  incomingBundle.entry?.forEach(entry => {
-    if (!entry.resource) return;
-    const resp = checkReferentialIntegrity(resourceMap, entry);
-    // Only process successful validations that haven't been handled in conflict resolution
-    if (resp.isSuccess) {
-      const { id, resourceType } = entry.resource;
-      if (resourceType === "Patient") return;
-      if (!id) return;
-
-      const conflict = resourceMap.get(id);
-
-      // If this resource wasn't handled in conflict resolution (no update response generated)
-      if (conflict?.existingResource === conflict?.incomingResource) {
-        if (resp.isCreate) {
-          transactionResponseBundle.entry?.push(buildSuccessfulCreateResponse(entry.resource));
-        }
-      }
-    } else if (!resp.isSuccess && resp.error) {
-      transactionResponseBundle.entry?.push(buildErrorResponse(entry.resource, resp.error));
-    }
-  });
-
-  transactionResponseBundle.total = transactionResponseBundle.entry?.length ?? 0;
-  return transactionResponseBundle;
-}
-
-function buildTransactionResponseBundle(entries: BundleEntry[] = []): Bundle {
-  return buildBundle({ type: "transaction-response", entries });
-}
-
-function findReferences(resource: Resource): string[] {
-  const references: string[] = [];
-
-  // Recursively search for reference properties in the resource
-  function traverse(obj: unknown): void {
-    if (!obj || typeof obj !== "object") return;
-
-    if ("reference" in obj && typeof obj.reference === "string") {
-      references.push(obj.reference);
-    }
-
-    Object.values(obj).forEach(traverse);
-  }
-
-  traverse(resource);
-  return references;
-}
-
-function checkReferentialIntegrity(
-  resourceMap: Map<string, ResourceConflict>,
-  entry: BundleEntry<Resource>
-): ValidationResponse {
-  if (!entry.resource) {
+  const errorOutcomes = transactionResponseBundle.entry?.filter(e => e.response?.status === "400");
+  if (errorOutcomes && errorOutcomes.length > 0) {
     return {
-      isSuccess: false,
-      isCreate: false,
-      error: {
-        code: "MISSING_RESOURCE",
-        display: "Missing resource in bundle entry",
-        diagnostics: "Bundle entry must contain a resource",
+      outcomesBundle: {
+        ...transactionResponseBundle,
+        entry: errorOutcomes,
+        total: errorOutcomes.length,
       },
     };
   }
 
-  const refStrings = findReferences(entry.resource);
-  for (const refString of refStrings) {
-    const reference = buildReferenceFromStringRelative(refString);
-    if (!reference?.id) continue;
+  const outcomesBundle = {
+    ...transactionResponseBundle,
+    ...(transactionResponseBundle.entry
+      ? { total: transactionResponseBundle.entry.length }
+      : undefined),
+  };
 
-    if (!resourceMap.has(reference.id)) {
-      return {
-        isSuccess: false,
-        isCreate: false,
-        error: {
-          code: "INVALID_REFERENCE",
-          display: "Invalid resource reference",
-          diagnostics: `Reference "${reference.reference}" not found in bundle`,
-        },
-      };
+  if (!patientResource) {
+    throw new MetriportError("Patient resource not found in upload bundle");
+  }
+
+  const mergedEntries = Array.from(resourcesMap.values()).map(r => buildBundleEntry(r));
+  const mergedBundle: Bundle<Resource> = buildConsolidatedBundle([
+    ...mergedEntries,
+    buildBundleEntry(patientResource),
+  ]);
+
+  return {
+    outcomesBundle,
+    mergedBundle,
+  };
+}
+
+export function buildTransactionResponseBundle(entries: BundleEntry[] = []): Bundle {
+  return buildBundle({ type: "transaction-response", entries });
+}
+
+function checkReferentialIntegrity(
+  referencesMap: Map<string, string>,
+  resource: Resource
+): ValidationResponse {
+  const refStrings = getResourceReferences(resource);
+  const errors: ValidationResponseError[] = [];
+
+  for (const refString of refStrings) {
+    console.log("refString", refString);
+    const refObj = parseReferenceString(refString);
+    if (!refObj?.id) continue;
+
+    const existingRef = referencesMap.get(refObj.id);
+    console.log("existingRef", existingRef);
+    if (!existingRef) {
+      errors.push({
+        code: "INVALID_REFERENCE",
+        display: "Invalid resource reference",
+        diagnostics: `Reference "${refObj.reference}" not found in bundle`,
+      });
     }
   }
 
-  return { isSuccess: true, isCreate: true };
+  return { isValid: errors.length === 0, errors };
 }
 
 function buildSuccessfulCreateResponse(
@@ -191,7 +194,7 @@ function buildSuccessfulCreateResponse(
 }
 
 function buildSuccessfulUpdateResponse(resource: Resource): BundleEntry<OperationOutcome> {
-  // TODO: dynamic version number ?
+  // TODO: dynamic version number
   const resourceIdentifier = `${resource.resourceType}/${resource.id}/_history/1`;
 
   return {
@@ -223,9 +226,10 @@ function buildSuccessfulUpdateResponse(resource: Resource): BundleEntry<Operatio
 
 function buildErrorResponse(
   resource: Resource,
-  error: { code: string; display: string; diagnostics: string }
+  errors: ValidationResponseError[]
 ): BundleEntry<OperationOutcome> {
   const resourceIdentifier = `${resource.resourceType}/${resource.id}/_history/1`;
+  const issues = buildOperationOutcomeIssues(errors);
 
   return {
     response: {
@@ -233,23 +237,27 @@ function buildErrorResponse(
       location: resourceIdentifier,
       outcome: {
         resourceType: "OperationOutcome",
-        issue: [
-          {
-            severity: "error",
-            code: "invalid",
-            details: {
-              coding: [
-                {
-                  system: "https://public.metriport.com/fhir/StructureDefinition/operation-outcome",
-                  code: error.code,
-                  display: error.display,
-                },
-              ],
-            },
-            diagnostics: error.diagnostics,
-          },
-        ],
+        issue: issues,
       },
     },
   };
+}
+
+function buildOperationOutcomeIssues(errors: ValidationResponseError[]): OperationOutcomeIssue[] {
+  return errors.map(e => {
+    return {
+      severity: "error",
+      code: "invalid",
+      details: {
+        coding: [
+          {
+            system: OPERATION_OUTCOME_EXTENSION_URL,
+            code: e.code,
+            display: e.display,
+          },
+        ],
+      },
+      diagnostics: e.diagnostics,
+    };
+  });
 }

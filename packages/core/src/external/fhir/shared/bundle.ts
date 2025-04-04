@@ -122,7 +122,7 @@ export function getReferences({
   const uniqueRefs = uniq(references);
 
   const preResult: ReferenceWithIdAndType[] = uniqueRefs
-    .flatMap(buildReferenceFromStringRelative)
+    .flatMap(parseReferenceString)
     .flatMap(filterTruthy);
 
   const includedRefs = !referencesToInclude
@@ -136,9 +136,7 @@ export function getReferences({
   return remainingRefs;
 }
 
-export function buildReferenceFromStringRelative(
-  reference: string
-): ReferenceWithIdAndType | undefined {
+export function parseReferenceString(reference: string): ReferenceWithIdAndType | undefined {
   const parts = reference.split("/");
   const type = parts[0] as ResourceType | undefined;
   const id = parts[1];

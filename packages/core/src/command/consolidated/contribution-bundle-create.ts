@@ -20,7 +20,6 @@ import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_FILE_EXTENSION } from "../../util/mime";
 import { BundleLocation, buildConsolidatedBundle, merge } from "./consolidated-create";
-import { cloneDeep } from "lodash";
 
 dayjs.extend(duration);
 
@@ -212,31 +211,20 @@ function deduplicateBundleEntries(
   return Array.from(uniqueEntries.values());
 }
 
-export async function updateFullConsolidatedBundle({
+export async function uploadFullContributionBundle({
   cxId,
   patientId,
-  incomingBundle,
-  existingBundle = buildConsolidatedBundle(),
+  contributionBundle,
 }: {
   cxId: string;
   patientId: string;
-  incomingBundle: Bundle<Resource>;
-  existingBundle: Bundle<Resource> | undefined;
+  contributionBundle: Bundle<Resource>;
 }) {
-  const { log } = out(`updateFullConsolidatedBundle - cx: ${cxId}, pt: ${patientId}`);
-
-  const mergedBundle = cloneDeep(existingBundle);
-  merge(incomingBundle).into(mergedBundle);
-
-  log(
-    `Merged existing bundle (${existingBundle.entry?.length} entries) with incoming )${incomingBundle.entry?.length} entries), to have ${mergedBundle.entry?.length} entries.`
-  );
-
   const fulContributionBundleName = createFullContributionBundleFilePath(cxId, patientId);
   s3Utils.uploadFile({
     bucket,
     key: fulContributionBundleName,
-    file: Buffer.from(JSON.stringify(mergedBundle)),
+    file: Buffer.from(JSON.stringify(contributionBundle)),
     contentType: "application/json",
   });
 }
