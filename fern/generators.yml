@@ -13,7 +13,7 @@ groups:
   python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.11.2
+        version: 4.3.18
         output:
           location: pypi
           package-name: metriport
@@ -51,10 +51,11 @@ groups:
           noSerdeLayer: true
         github:
           repository: metriport/metriport-node
-  test: # fern generate --group test will locally generate the SDKs for testing
+  test:
+    # fern generate --group test will locally generate the SDKs for testing
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.7.5
+        version: 4.3.18
         output:
           location: local-file-system
           path: ../packages/sdks/python/tester-local/generated
