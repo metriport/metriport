@@ -158,7 +158,7 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     if (!isSandbox(props.config) && props.rosterBucket) {
-      this.hl7v2RosterUploadLambda = this.setupRosterLambda({
+      this.hl7v2RosterUploadLambda = this.setupRosterUploadLambda({
         lambdaLayers: this.lambdaLayers,
         vpc: props.vpc,
         envType: props.config.environmentType,
@@ -604,7 +604,7 @@ export class LambdasNestedStack extends NestedStack {
     return acmCertificateMonitorLambda;
   }
 
-  private setupRosterLambda(ownProps: {
+  private setupRosterUploadLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -625,7 +625,7 @@ export class LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: 1024,
+      memory: 4096,
       vpc,
       alarmSnsAction: alarmAction,
     });
