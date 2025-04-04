@@ -10,7 +10,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
 
-type DynamicProgress = Pick<Progress, "successful" | "errors">;
+export type DynamicProgress = Pick<Progress, "successful" | "errors">;
 
 export type TallyDocQueryProgress = {
   source: MedicalDataSource;
@@ -102,6 +102,7 @@ export function setHIETallyCount(
       ...sourceProgress[type],
       successful: sourceSuccessful + tallySuccessful,
       errors: sourceErrors + tallyErrors,
+      total: sourceTotal,
       status: getStatusFromProgress({
         successful: totalSuccessful,
         errors: totalErrors,

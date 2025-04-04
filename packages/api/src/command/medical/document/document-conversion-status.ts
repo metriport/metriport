@@ -24,6 +24,7 @@ export async function calculateDocumentConversionStatus({
   source,
   convertResult,
   details,
+  count: countParam,
 }: {
   patientId: string;
   cxId: string;
@@ -32,14 +33,17 @@ export async function calculateDocumentConversionStatus({
   source?: string;
   convertResult: ConvertResult;
   details?: string;
+  count?: number;
 }) {
   const { log } = out(`Doc conversion status - patient ${patientId}, requestId ${requestId}`);
 
   const hasSource = isMedicalDataSource(source);
 
+  const count = countParam == undefined ? 1 : countParam;
+
   log(
     `Converted document ${docId} with status ${convertResult}, source: ${source}, ` +
-      `details: ${details}, result: ${JSON.stringify(convertResult)}`
+      `count: ${count}, details: ${details}, result: ${JSON.stringify(convertResult)}`
   );
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -51,7 +55,7 @@ export async function calculateDocumentConversionStatus({
       patient: patient,
       type: "convert",
       progress: {
-        ...(convertResult === "success" ? { successful: 1 } : { errors: 1 }),
+        ...(convertResult === "success" ? { successful: count } : { errors: count }),
       },
       requestId,
       source,
@@ -123,6 +127,7 @@ export async function calculateDocumentConversionStatus({
     const expectedPatient = await updateConversionProgress({
       patient: { id: patientId, cxId },
       convertResult,
+      count,
     });
 
     const isConversionCompleted = isProgressStatusValid({
