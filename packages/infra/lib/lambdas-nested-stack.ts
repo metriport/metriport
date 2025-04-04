@@ -31,7 +31,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   dbCredsSecret: secret.ISecret;
   medicalDocumentsBucket: s3.Bucket;
   sandboxSeedDataBucket: s3.IBucket | undefined;
-  rosterBucket: s3.Bucket | undefined;
+  hl7v2RosterBucket: s3.Bucket | undefined;
   alarmAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
@@ -153,12 +153,12 @@ export class LambdasNestedStack extends NestedStack {
       ...props.config.acmCertMonitor,
     });
 
-    if (!isSandbox(props.config) && props.rosterBucket) {
+    if (!isSandbox(props.config) && props.hl7v2RosterBucket) {
       this.hl7v2RosterUploadLambda = this.setupRosterUploadLambda({
         lambdaLayers: this.lambdaLayers,
         vpc: props.vpc,
         envType: props.config.environmentType,
-        hl7v2RosterBucket: props.rosterBucket,
+        hl7v2RosterBucket: props.hl7v2RosterBucket,
         sentryDsn: props.config.lambdasSentryDSN,
         alarmAction: props.alarmAction,
       });

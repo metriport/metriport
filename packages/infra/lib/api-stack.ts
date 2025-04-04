@@ -353,7 +353,7 @@ export class APIStack extends Stack {
       secrets,
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
-      rosterBucket: hl7v2RosterBucket,
+      hl7v2RosterBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
       featureFlagsTable,
