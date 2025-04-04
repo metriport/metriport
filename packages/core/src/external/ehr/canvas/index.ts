@@ -10,7 +10,7 @@ import {
   Patient as PatientFhir,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { errorToString, JwtTokenInfo, MetriportError, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -20,8 +20,14 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
+import {
+  FhirResourceBundle,
+  fhirResourceBundleSchema,
+  FhirResources,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { ResourceTypeForConsolidation } from "@metriport/shared/medical";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
@@ -34,6 +40,8 @@ interface CanvasApiConfig extends ApiConfig {
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
+
+export const supportedCanvasDiffResources = ["Condition"];
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -339,6 +347,49 @@ class CanvasApi {
       useFhir: true,
     });
     return patient;
+  }
+
+  async getFhirResourcesByResourceType({
+    cxId,
+    patientId,
+    resourceType,
+  }: {
+    cxId: string;
+    patientId: string;
+    resourceType: ResourceTypeForConsolidation;
+  }): Promise<FhirResources> {
+    const { debug } = out(
+      `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
+    );
+    const params = { patient: `Patient/${patientId}` };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
+    try {
+      const bundle = await this.makeRequest<FhirResourceBundle>({
+        cxId,
+        patientId,
+        s3Path: "patient",
+        method: "GET",
+        url: resourceTypeUrl,
+        schema: fhirResourceBundleSchema,
+        additionalInfo,
+        debug,
+        useFhir: true,
+      });
+      const invalidResource = bundle.entry.find(
+        resource => resource.resource.resourceType !== resourceType
+      );
+      if (invalidResource) {
+        throw new MetriportError(`Invalid resource type found`, undefined, {
+          invalidResourceType: invalidResource.resource.resourceType,
+        });
+      }
+      return bundle.entry.map(resource => resource.resource);
+    } catch (error) {
+      if (error instanceof NotFoundError) return [];
+      throw error;
+    }
   }
 
   async getAppointments({

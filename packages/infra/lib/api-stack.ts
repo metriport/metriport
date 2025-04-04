@@ -367,6 +367,10 @@ export class APIStack extends Stack {
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
       elationLinkPatientLambda,
+      startResourceDiffLambda: ehrStartResourceDiffLambda,
+      startResourceDiffQueue: ehrStartResourceDiffQueue,
+      completeResourceDiffLambda: ehrCompleteResourceDiffLambda,
+      completeResourceDiffQueue: ehrCompleteResourceDiffQueue,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
       lambdaLayers,
@@ -485,6 +489,8 @@ export class APIStack extends Stack {
       patientImportLambda: patientImportParseLambda,
       patientImportBucket,
       ehrSyncPatientQueue,
+      ehrStartResourceDiffQueue,
+      ehrCompleteResourceDiffQueue,
       elationLinkPatientQueue,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -586,6 +592,8 @@ export class APIStack extends Stack {
     patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrStartResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrCompleteResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&

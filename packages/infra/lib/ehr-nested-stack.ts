@@ -13,6 +13,8 @@ import { createQueue } from "./shared/sqs";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(1); // 60 patients/min
+const waitTimeStartResourceDiff = Duration.seconds(1); // 60 patients/min
+const waitTimeCompleteResourceDiff = Duration.seconds(1); // 60 patients/min
 
 function settings() {
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
@@ -26,7 +28,7 @@ function settings() {
       reportBatchItemFailures: true,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.days(2),
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(syncPatientLambdaTimeout.toSeconds() * 2 + 1),
@@ -45,7 +47,7 @@ function settings() {
       reportBatchItemFailures: true,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.days(2),
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(elationLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
@@ -53,9 +55,49 @@ function settings() {
     },
     waitTime: waitTimeElationLinkPatient,
   };
+  const startResourceDiffLambdaTimeout = waitTimeStartResourceDiff.plus(Duration.minutes(2));
+  const startResourceDiff: QueueAndLambdaSettings = {
+    name: "EhrStartResourceDiff",
+    entry: "ehr-start-resource-diff",
+    lambda: {
+      memory: 1024,
+      batchSize: 1,
+      timeout: startResourceDiffLambdaTimeout,
+      reportBatchItemFailures: true,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      maxMessageCountAlarmThreshold: 5_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(startResourceDiffLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    waitTime: waitTimeStartResourceDiff,
+  };
+  const completeResourceDiffLambdaTimeout = waitTimeCompleteResourceDiff.plus(Duration.minutes(5));
+  const completeResourceDiff: QueueAndLambdaSettings = {
+    name: "EhrCompleteResourceDiff",
+    entry: "ehr-complete-resource-diff",
+    lambda: {
+      memory: 1024,
+      batchSize: 1,
+      timeout: completeResourceDiffLambdaTimeout,
+      reportBatchItemFailures: true,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      maxMessageCountAlarmThreshold: 15_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(completeResourceDiffLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    waitTime: waitTimeCompleteResourceDiff,
+  };
   return {
     syncPatient,
     elationLinkPatient,
+    startResourceDiff,
+    completeResourceDiff,
   };
 }
 
@@ -96,6 +138,10 @@ export class EhrNestedStack extends NestedStack {
   readonly syncPatientQueue: Queue;
   readonly elationLinkPatientLambda: Lambda;
   readonly elationLinkPatientQueue: Queue;
+  readonly startResourceDiffLambda: Lambda;
+  readonly startResourceDiffQueue: Queue;
+  readonly completeResourceDiffLambda: Lambda;
+  readonly completeResourceDiffQueue: Queue;
 
   constructor(scope: Construct, id: string, props: EhrNestedStackProps) {
     super(scope, id, props);
@@ -121,6 +167,26 @@ export class EhrNestedStack extends NestedStack {
     });
     this.elationLinkPatientLambda = elationLinkPatient.lambda;
     this.elationLinkPatientQueue = elationLinkPatient.queue;
+
+    const startResourceDiff = this.setupStartResourceDiff({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+    this.startResourceDiffLambda = startResourceDiff.lambda;
+    this.startResourceDiffQueue = startResourceDiff.queue;
+
+    const completeResourceDiff = this.setupCompleteResourceDiff({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+    this.completeResourceDiffLambda = completeResourceDiff.lambda;
+    this.completeResourceDiffQueue = completeResourceDiff.queue;
   }
 
   private setupSyncPatient(ownProps: {
@@ -203,6 +269,124 @@ export class EhrNestedStack extends NestedStack {
       },
       waitTime,
     } = settings().elationLinkPatient;
+
+    const queue = createQueue({
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      visibilityTimeout,
+      maxReceiveCount,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+      alarmMaxAgeOfOldestMessage,
+      maxMessageCountAlarmThreshold,
+      createRetryLambda,
+    });
+
+    const lambda = createLambda({
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: memory,
+      timeout: timeout,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
+
+    return { lambda, queue };
+  }
+
+  private setupStartResourceDiff(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      name,
+      entry,
+      lambda: { memory, timeout, batchSize, reportBatchItemFailures },
+      queue: {
+        visibilityTimeout,
+        maxReceiveCount,
+        alarmMaxAgeOfOldestMessage,
+        maxMessageCountAlarmThreshold,
+        createRetryLambda,
+      },
+      waitTime,
+    } = settings().startResourceDiff;
+
+    const queue = createQueue({
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      visibilityTimeout,
+      maxReceiveCount,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+      alarmMaxAgeOfOldestMessage,
+      maxMessageCountAlarmThreshold,
+      createRetryLambda,
+    });
+
+    const lambda = createLambda({
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: memory,
+      timeout: timeout,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
+
+    return { lambda, queue };
+  }
+
+  private setupCompleteResourceDiff(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      name,
+      entry,
+      lambda: { memory, timeout, batchSize, reportBatchItemFailures },
+      queue: {
+        visibilityTimeout,
+        maxReceiveCount,
+        alarmMaxAgeOfOldestMessage,
+        maxMessageCountAlarmThreshold,
+        createRetryLambda,
+      },
+      waitTime,
+    } = settings().completeResourceDiff;
 
     const queue = createQueue({
       stack: this,
