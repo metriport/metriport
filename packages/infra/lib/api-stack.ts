@@ -278,26 +278,12 @@ export class APIStack extends Stack {
     });
 
     let ehrResponsesBucket: s3.Bucket | undefined;
-    let hl7v2RosterBucket: s3.Bucket | undefined;
     if (!isSandbox(props.config)) {
       ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
         bucketName: props.config.ehrResponsesBucketName,
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
         versioned: true,
-      });
-
-      hl7v2RosterBucket = new s3.Bucket(this, "Hl7v2RosterBucket", {
-        bucketName: props.config.hl7v2RosterUploadLambda?.bucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-        versioned: true,
-        cors: [
-          {
-            allowedOrigins: ["*"],
-            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
-          },
-        ],
       });
     }
 
@@ -353,7 +339,6 @@ export class APIStack extends Stack {
       secrets,
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
-      hl7v2RosterBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
       featureFlagsTable,

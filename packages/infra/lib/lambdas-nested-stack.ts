@@ -31,7 +31,6 @@ interface LambdasNestedStackProps extends NestedStackProps {
   dbCredsSecret: secret.ISecret;
   medicalDocumentsBucket: s3.Bucket;
   sandboxSeedDataBucket: s3.IBucket | undefined;
-  hl7v2RosterBucket: s3.Bucket | undefined;
   alarmAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
@@ -153,13 +152,25 @@ export class LambdasNestedStack extends NestedStack {
       ...props.config.acmCertMonitor,
     });
 
-    if (!isSandbox(props.config) && props.hl7v2RosterBucket) {
+    if (!isSandbox(props.config)) {
+      const hl7v2RosterBucket = new s3.Bucket(this, "Hl7v2RosterBucket", {
+        bucketName: props.config.hl7Notification.hl7v2RosterUploadLambda.bucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          },
+        ],
+      });
+
       this.hl7v2RosterUploadLambda = this.setupRosterUploadLambda({
         lambdaLayers: this.lambdaLayers,
         vpc: props.vpc,
-        envType: props.config.environmentType,
-        hl7v2RosterBucket: props.hl7v2RosterBucket,
-        sentryDsn: props.config.lambdasSentryDSN,
+        hl7v2RosterBucket,
+        config: props.config,
         alarmAction: props.alarmAction,
       });
     }
@@ -596,17 +607,17 @@ export class LambdasNestedStack extends NestedStack {
   private setupRosterUploadLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
-    envType: EnvType;
-    hl7v2RosterBucket: s3.Bucket;
-    sentryDsn: string | undefined;
+    hl7v2RosterBucket: s3.IBucket;
+    config: EnvConfig;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, hl7v2RosterBucket } = ownProps;
+    const { lambdaLayers, vpc, hl7v2RosterBucket, config, alarmAction } = ownProps;
+    const sentryDsn = config.lambdasSentryDSN;
+    const envType = config.environmentType;
 
     const hl7v2RosterUploadLambda = createLambda({
       stack: this,
       name: "Hl7v2RosterUpload",
-      runtime: lambda.Runtime.NODEJS_18_X,
       entry: "hl7v2-roster",
       envType,
       envVars: {
