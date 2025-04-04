@@ -36,12 +36,10 @@ export async function generateCcd(
     targetString: FHIR_BUNDLE_SUFFIX,
   });
 
-  console.log("uploadsExist", uploadsExist);
   if (!uploadsExist) {
     return generateEmptyCcd(patient);
   }
   const fullBundle = await getFullContributionBundle(patient);
-  console.log("fullBundle", JSON.stringify(fullBundle));
   const validEntries = fullBundle?.entry?.filter(r => !isComposition(r.resource));
 
   if (!validEntries || !validEntries.length) {

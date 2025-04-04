@@ -65,10 +65,11 @@ async function getExistingFullContributionBundleSafe(
     );
     return bundle;
   } catch (err) {
-    log("No existing bundle found.");
-    return undefined;
     // intentionally not rethrowing
   }
+
+  log("No existing bundle found.");
+  return undefined;
 }
 
 /**
@@ -102,11 +103,8 @@ async function createFullContributionBundleFromPreviousUploads(
   const hydrated = await hydrate({ cxId, patientId, bundle: normalized });
   log(`...done, from ${rawBundle.entry?.length} to ${hydrated.entry?.length} resources`);
 
-  const rawContributionBundleName = createUploadFilePath(
-    cxId,
-    patientId,
-    `${FULL_CONTRIBUTION_BUNDLE_KEY}_${RAW_KEY}${JSON_FILE_EXTENSION}`
-  );
+  const docName = `${FULL_CONTRIBUTION_BUNDLE_KEY}_${RAW_KEY}${JSON_FILE_EXTENSION}`;
+  const rawContributionBundleName = createUploadFilePath(cxId, patientId, docName);
   const fulContributionBundleName = createFullContributionBundleFilePath(cxId, patientId);
 
   log(`Storing raw contribution bundle on ${bucket}, key ${rawContributionBundleName}`);
@@ -188,7 +186,7 @@ async function listUploadedBundlesFromS3({
 
 /**
  * TODO: Existing limitation - the order in which resources are fetched from the uploads is random.
- * We cannot tell if which version of duplicated resources is kept.
+ * We cannot tell which version of duplicated resources is kept.
  */
 function deduplicateBundleEntries(
   uploads: BundleEntry<Resource>[],
@@ -198,9 +196,9 @@ function deduplicateBundleEntries(
 
   uploads.forEach(entry => {
     if (!entry.resource?.resourceType || !entry.resource?.id) {
+      // This should never be the case
       const msg = `Resource missing resourceType or ID`;
       log(msg);
-      // TODO: Maybe we should report? I dont think this error is possible tbh!
       return;
     }
 

@@ -19,8 +19,7 @@ export function cleanupSpecialCharsFromBundle<T extends Bundle | ValidBundle>(bu
  * SANDBOX ONLY. Checks if the incoming amount of resources, plus what's already stored, exceeds the limit.
  */
 export async function checkResourceLimit(incomingAmount: number, patient: Patient): Promise<void> {
-  // if (!Config.isCloudEnv() || Config.isSandbox()) {
-  if (Config.isSandbox()) {
+  if (!Config.isCloudEnv() || Config.isSandbox()) {
     const { total: currentAmount } = await countResources({
       patient: { id: patient.id, cxId: patient.cxId },
     });
