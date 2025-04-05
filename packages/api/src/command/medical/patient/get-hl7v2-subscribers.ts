@@ -101,7 +101,7 @@ function mapPatientsToSubscribers(patients: PatientModelReadOnly[]): Hl7v2Subscr
     const email = data.contact?.find(c => c.email)?.email;
 
     return {
-      id: p.id,
+      id: p.id, // TODO 2791: Combine and scramble the id + cxId
       cxId: p.cxId,
       lastName: data.lastName,
       firstName: data.firstName,
