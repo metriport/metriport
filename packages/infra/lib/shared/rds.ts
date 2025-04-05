@@ -1,9 +1,10 @@
+import * as cdk from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as rds from "aws-cdk-lib/aws-rds";
 import { Construct } from "constructs";
-import { mbToBytes } from "../shared/util";
 import { EnvConfig } from "../../config/env-config";
+import { mbToBytes } from "../shared/util";
 
 const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
 const DB_CONN_ALARM_THRESHOLD = 0.8;
@@ -94,13 +95,33 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
-  createAlarm({
-    metric: dbCluster.metricDatabaseConnections(),
-    name: "DatabaseConnectionsAlarm",
-    threshold: DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity),
-    evaluationPeriods: 2,
-    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+  // Create database connection alarm for each instance
+  const maxConnectionsPerInstance =
+    DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity);
+
+  const instances = dbCluster.node.children.filter(
+    (child): child is rds.CfnDBInstance => child instanceof rds.CfnDBInstance
+  );
+
+  instances.forEach((instance, index) => {
+    const instanceMetric = new cloudwatch.Metric({
+      namespace: "AWS/RDS",
+      metricName: "DatabaseConnections",
+      dimensionsMap: {
+        DBInstanceIdentifier: instance.ref,
+      },
+      statistic: "Maximum",
+      period: cdk.Duration.minutes(1),
+    });
+
+    createAlarm({
+      metric: instanceMetric,
+      name: `DatabaseConnectionsAlarm-${index + 1}`,
+      threshold: maxConnectionsPerInstance,
+      evaluationPeriods: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
   });
 
   /**
