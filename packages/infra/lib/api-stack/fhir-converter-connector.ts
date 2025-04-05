@@ -152,6 +152,22 @@ export function createQueueAndBucket({
     maxMessageCountAlarmThreshold,
     alarmMaxAgeOfOldestMessage,
   } = settings();
+  // TODO remove this after the release of the new ConversionResultNotifier connector (queue/lambda)
+  defaultCreateQueue({
+    stack,
+    name: "FHIRConverter2",
+    // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
+    // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
+    fifo: false,
+    visibilityTimeout,
+    maxReceiveCount,
+    createRetryLambda: true,
+    lambdaLayers: [lambdaLayers.shared],
+    envType,
+    alarmSnsAction,
+    alarmMaxAgeOfOldestMessage,
+    maxMessageCountAlarmThreshold,
+  });
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
@@ -160,8 +176,6 @@ export function createQueueAndBucket({
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
-    createRetryLambda: true,
-    lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
     alarmMaxAgeOfOldestMessage,
