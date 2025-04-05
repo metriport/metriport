@@ -1,7 +1,7 @@
 import { Hl7v2Subscriber, Hl7v2Subscription } from "@metriport/core/domain/patient-settings";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
-import { USState, errorToString } from "@metriport/shared";
+import { MetriportError, USState, errorToString } from "@metriport/shared";
 import { FindOptions, Op, Order, Sequelize, WhereOptions } from "sequelize";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { PatientSettingsModel } from "../../../models/patient-settings";
@@ -76,37 +76,7 @@ export async function getHl7v2Subscribers({
         states: states,
       },
     });
-    throw new Error(msg, { cause: error });
-  }
-}
-
-export async function getHl7v2SubscribersCount({
-  states,
-  subscriptions,
-}: GetHl7v2SubscribersParams): Promise<number> {
-  const { log } = out(`Get HL7v2 subscribers count`);
-  const statesString = combineStatesIntoReplacementObject(states);
-  log(`States: ${states}`);
-
-  try {
-    const findOptions = {
-      ...getCommonQueryOptions({ states: statesString, subscriptions }),
-      col: "id",
-    };
-
-    const count = await PatientModelReadOnly.count(findOptions);
-    log(`Done. Total count: ${count}`);
-    return count;
-  } catch (error) {
-    const msg = `Failed to get HL7v2 subscribers count`;
-    log(`${msg} - err: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        error,
-        states,
-      },
-    });
-    throw new Error(msg, { cause: error });
+    throw new MetriportError(msg, error, { states: states.toString() });
   }
 }
 
@@ -131,7 +101,7 @@ function mapPatientsToSubscribers(patients: PatientModelReadOnly[]): Hl7v2Subscr
     const email = data.contact?.find(c => c.email)?.email;
 
     return {
-      id: p.id,
+      id: p.id, // TODO 2791: Combine and scramble the id + cxId
       cxId: p.cxId,
       lastName: data.lastName,
       firstName: data.firstName,

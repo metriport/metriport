@@ -331,6 +331,7 @@ export class APIStack extends Stack {
         dlq: fhirConverterDLQ,
         bucket: fhirConverterBucket,
       },
+      hl7v2RosterUploadLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -582,6 +583,7 @@ export class APIStack extends Stack {
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    hl7v2RosterUploadLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     patientImportCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
