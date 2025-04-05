@@ -19,7 +19,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { queryToSearchParams } from "../../../routes/helpers/query";
 import { Config } from "../../../shared/config";
-import { getCxIdFromOidOrFail } from "./get-org-or-fail";
+import { getCxIdFromOidOrFail } from "./get-cxid-from-oid";
 import { proxyPrefix } from "./shared";
 
 const apiURL = Config.getApiUrl();
