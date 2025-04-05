@@ -95,27 +95,18 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
-  // Create database connection alarm for each instance
   const maxConnectionsPerInstance =
     DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity);
 
-  const instances = dbCluster.node.children.filter(
-    (child): child is rds.CfnDBInstance => child instanceof rds.CfnDBInstance
-  );
-
-  instances.forEach((instance, index) => {
-    const instanceMetric = new cloudwatch.Metric({
-      namespace: "AWS/RDS",
-      metricName: "DatabaseConnections",
-      dimensionsMap: {
-        DBInstanceIdentifier: instance.ref,
-      },
-      statistic: "Maximum",
-      period: cdk.Duration.minutes(1),
-    });
-
+  dbCluster.instanceIdentifiers.forEach((instanceId, index) => {
     createAlarm({
-      metric: instanceMetric,
+      metric: dbCluster.metricDatabaseConnections({
+        dimensionsMap: {
+          DBInstanceIdentifier: instanceId,
+        },
+        statistic: "Maximum",
+        period: cdk.Duration.minutes(1),
+      }),
       name: `DatabaseConnectionsAlarm-${index + 1}`,
       threshold: maxConnectionsPerInstance,
       evaluationPeriods: 2,
