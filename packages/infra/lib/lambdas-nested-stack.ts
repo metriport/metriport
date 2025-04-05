@@ -470,6 +470,7 @@ export class LambdasNestedStack extends NestedStack {
         alarmMaxAgeOfOldestMessage: Duration.minutes(5),
         maxMessageCountAlarmThreshold: 1_000,
         visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+        receiveMessageWaitTime: Duration.seconds(20),
       },
       lambda: {
         entry: "conversion-result-notifier",
@@ -488,29 +489,24 @@ export class LambdasNestedStack extends NestedStack {
     const conversionResultQueue = createQueue({
       stack: this,
       name,
-      visibilityTimeout: settings.queue.visibilityTimeout,
-      maxReceiveCount: settings.queue.maxReceiveCount,
       createRetryLambda: false,
       envType,
       alarmSnsAction: alarmAction,
-      alarmMaxAgeOfOldestMessage: settings.queue.alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold: settings.queue.maxMessageCountAlarmThreshold,
+      ...settings.queue,
     });
 
     const conversionResultLambda = createLambda({
       stack: this,
       name,
-      entry: settings.lambda.entry,
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         ...(sentryDSN ? { SENTRY_DSN: sentryDSN } : {}),
       },
       layers: [this.lambdaLayers.shared],
-      memory: settings.lambda.memory,
-      timeout: settings.lambda.timeout,
       vpc,
       alarmSnsAction: alarmAction,
+      ...settings.lambda,
     });
 
     conversionResultLambda.addEventSource(
