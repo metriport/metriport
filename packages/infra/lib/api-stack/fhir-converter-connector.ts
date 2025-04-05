@@ -7,6 +7,7 @@ import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
+import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
@@ -18,6 +19,7 @@ export type FHIRConverterConnector = {
   queue: IQueue;
   dlq: IQueue;
   bucket: s3.IBucket;
+  lambda: Lambda;
 };
 
 /**
@@ -35,7 +37,7 @@ function settings() {
   } = settingsFhirConverter();
   const lambdaTimeout = maxExecutionTimeout.minus(Duration.seconds(5));
   return {
-    connectorName: "FHIRConverter2",
+    connectorName: "FHIRConverter",
     lambdaMemory: 1024,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
@@ -60,6 +62,77 @@ function settings() {
   };
 }
 
+/**
+ * Creates a FHIR Converter connector.
+ *
+ * It's receives messages to convert a CDA to a FHIR bundle in the SQS queue, which are then picked
+ * up by the FHIR Converter lambda.
+ *
+ * The lambda puts the converted FHIR bundle in an S3 bucket and notifies the OSS API via an SQS
+ * queue that a new document is ready to be processed.
+ *
+ * @param stack - The stack to create the connector in.
+ * @param vpc - The VPC to create the connector in.
+ * @param lambdaLayers - The lambda layers to use for the connector.
+ * @param envType - The environment type to use for the connector.
+ * @param alarmSnsAction - The SNS action to use for the connector.
+ * @param config - The config to use for the connector.
+ * @param medicalDocumentsBucket - The medical documents bucket to use for the connector.
+ * @param featureFlagsTable - The feature flags table to use for the connector.
+ * @param apiNotifierQueue - The API notifier queue to use for the connector.
+ *
+ * @returns The FHIR Converter connector.
+ */
+export function create({
+  stack,
+  vpc,
+  lambdaLayers,
+  envType,
+  alarmSnsAction,
+  config,
+  medicalDocumentsBucket,
+  featureFlagsTable,
+  apiNotifierQueue,
+}: {
+  stack: Construct;
+  vpc: IVpc;
+  lambdaLayers: LambdaLayers;
+  envType: EnvType;
+  alarmSnsAction?: SnsAction;
+  config: EnvConfig;
+  medicalDocumentsBucket: s3.IBucket;
+  featureFlagsTable: dynamodb.Table;
+  apiNotifierQueue: IQueue;
+}): FHIRConverterConnector {
+  const { queue, dlq, bucket } = createQueueAndBucket({
+    stack,
+    lambdaLayers,
+    envType,
+    alarmSnsAction,
+  });
+  const fhirConverterLambda = createLambda({
+    envType,
+    stack,
+    lambdaLayers,
+    vpc,
+    sourceQueue: queue,
+    dlq,
+    fhirConverterBucket: bucket,
+    medicalDocumentsBucket,
+    fhirServerUrl: config.fhirServerUrl,
+    termServerUrl: config.termServerUrl,
+    alarmSnsAction,
+    featureFlagsTable,
+    apiNotifierQueue,
+  });
+  return {
+    queue,
+    dlq,
+    bucket,
+    lambda: fhirConverterLambda,
+  };
+}
+
 export function createQueueAndBucket({
   stack,
   lambdaLayers,
@@ -70,7 +143,7 @@ export function createQueueAndBucket({
   lambdaLayers: LambdaLayers;
   envType: EnvType;
   alarmSnsAction?: SnsAction;
-}): FHIRConverterConnector {
+}): Omit<FHIRConverterConnector, "lambda"> {
   const config = getConfig();
   const {
     connectorName,
@@ -124,9 +197,9 @@ export function createLambda({
   medicalDocumentsBucket,
   fhirServerUrl,
   termServerUrl,
-  apiServiceDnsAddress,
   alarmSnsAction,
   featureFlagsTable,
+  apiNotifierQueue,
 }: {
   lambdaLayers: LambdaLayers;
   envType: EnvType;
@@ -138,9 +211,9 @@ export function createLambda({
   medicalDocumentsBucket: s3.IBucket;
   fhirServerUrl: string;
   termServerUrl?: string;
-  apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
+  apiNotifierQueue: IQueue;
 }): Lambda {
   const config = getConfig();
   const {
@@ -163,13 +236,13 @@ export function createLambda({
     envVars: {
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      API_URL: `http://${apiServiceDnsAddress}`,
       FHIR_SERVER_URL: fhirServerUrl,
       ...(termServerUrl && { TERM_SERVER_URL: termServerUrl }),
       MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
+      CONVERSION_RESULT_QUEUE_URL: apiNotifierQueue.queueUrl,
       FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
     },
     timeout: lambdaTimeout,
@@ -190,6 +263,6 @@ export function createLambda({
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
-
+  provideAccessToQueue({ accessType: "send", queue: apiNotifierQueue, resource: conversionLambda });
   return conversionLambda;
 }
