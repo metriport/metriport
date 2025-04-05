@@ -2,8 +2,10 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import { groupBy } from "lodash";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
-import { ConversionResult, ConversionResultWithCount } from "./types";
 import { ConversionResultLocal } from "./conversion-result-local";
+import { ConversionResult, ConversionResultWithCount } from "./types";
+
+const keySeparator = "|";
 
 /**
  * Sends multiple conversion result notifications to the API.
@@ -23,20 +25,20 @@ export async function sendConversionResults({
   const resultsWithCount: ConversionResultWithCount[] = [];
 
   // TODO group this by patientId only, with the count move to an array of source/status
-  const groupedByPatientId = groupBy(results, r => r.patientId + "|" + r.source + "|" + r.status);
+  const groupedByPatientId = groupBy(results, encodeResultKey);
 
-  for (const [patientStatus, requests] of Object.entries(groupedByPatientId)) {
-    const [patientId, source, status] = patientStatus.split("|");
+  for (const [groupKey, groupedRequests] of Object.entries(groupedByPatientId)) {
+    const { patientId, source, status } = decodeResultKey(groupKey);
     const { log } = out(`patient ${patientId}, source ${source}, status ${status}`);
 
-    log(`${requests.length} requests to send as one`);
+    log(`${groupedRequests.length} requests to send as one`);
 
-    const firstRequest = requests[0];
+    const firstRequest = groupedRequests[0];
     if (!firstRequest) throw new MetriportError(`Programming error: missing first request`);
 
     const request: ConversionResultWithCount = {
       ...firstRequest,
-      count: requests.length,
+      count: groupedRequests.length,
     };
 
     try {
@@ -52,7 +54,7 @@ export async function sendConversionResults({
         context: "conversion-result-notifier",
         patientId,
         status,
-        requests,
+        requests: groupedRequests,
         error,
       };
       log(`${msg}, error: ${errorToString(error)}, extra: ${JSON.stringify(extra)}`);
@@ -61,4 +63,17 @@ export async function sendConversionResults({
   }
 
   return resultsWithCount;
+}
+
+function encodeResultKey(result: ConversionResult): string {
+  return `${result.patientId}${keySeparator}${result.source}${keySeparator}${result.status}`;
+}
+
+function decodeResultKey(patientStatus: string): {
+  patientId: string;
+  source: string;
+  status: string;
+} {
+  const [patientId, source, status] = patientStatus.split(keySeparator);
+  return { patientId, source, status };
 }
