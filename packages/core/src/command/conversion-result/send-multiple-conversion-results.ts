@@ -75,5 +75,10 @@ function decodeResultKey(patientStatus: string): {
   status: string;
 } {
   const [patientId, source, status] = patientStatus.split(keySeparator);
+  if (!patientId || !source || !status) {
+    throw new MetriportError(`Invalid result key format`, undefined, {
+      patientStatus: JSON.stringify(patientStatus),
+    });
+  }
   return { patientId, source, status };
 }
