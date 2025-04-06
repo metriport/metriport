@@ -1,4 +1,5 @@
 import { Hl7Server } from "@medplum/hl7";
+import { Hl7Message } from "@medplum/core";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
@@ -23,6 +24,13 @@ const TRIGGER_EVENT_COMPONENT = 1;
 const IDENTIFIER_FIELD = 3;
 const IDENTIFIER_COMPONENT = 1;
 
+/**
+ * Avoid using message.toString() as its not stringifying every segment
+ */
+function asString(message: Hl7Message) {
+  return message.segments.map(s => s.toString()).join("\n");
+}
+
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
 
@@ -35,11 +43,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         `${timestamp}> New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
       );
 
-      /**
-       * Avoid using message.toString() as its not stringifying every segment
-       */
-      const messageAsString = message.segments.map(s => s.toString()).join("\n");
-
       const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
       const { cxId, patientId } = unpackPidField(pid);
 
@@ -47,7 +50,11 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
       const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
 
-      await s3Utils
+      // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
+
+      connection.send(message.buildAck());
+
+      s3Utils
         .uploadFile({
           bucket: bucketName,
           key: buildS3Key({
@@ -57,17 +64,14 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
             messageType,
             messageCode,
           }),
-          file: Buffer.from(messageAsString),
+          file: Buffer.from(asString(message)),
           contentType: "application/json",
         })
         .catch(e => {
           logger.log(`S3 upload failed: ${e}`);
           Sentry.captureException(e);
         });
-      connection.send(message.buildAck());
     });
-
-    // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
 
     connection.addEventListener("error", error => {
       if (error instanceof Error) {
