@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import { Hl7Server } from "@medplum/hl7";
 import { Hl7Message } from "@medplum/core";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -5,11 +8,8 @@ import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/node";
-import * as dotenv from "dotenv";
 import { initSentry } from "./sentry";
 import { buildS3Key, unpackPidField } from "./utils";
-
-dotenv.config();
 
 initSentry();
 
@@ -35,8 +35,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
 
   const server = new Hl7Server(connection => {
-    logger.log("Connection received");
-
     connection.addEventListener("message", async ({ message }) => {
       const timestamp = new Date().toISOString();
       log(
