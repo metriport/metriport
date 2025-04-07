@@ -19,7 +19,7 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
 
 const MESSAGE_TYPE_FIELD = 9;
 const MESSAGE_CODE_COMPONENT = 1;
-const TRIGGER_EVENT_COMPONENT = 1;
+const TRIGGER_EVENT_COMPONENT = 2;
 
 const IDENTIFIER_FIELD = 3;
 const IDENTIFIER_COMPONENT = 1;
