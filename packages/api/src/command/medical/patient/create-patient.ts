@@ -14,7 +14,7 @@ import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { PatientWithIdentifiers, attachPatientIdentifiers, getPatientByDemo } from "./get-patient";
+import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
 import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
 
@@ -104,7 +104,6 @@ export async function createPatient({
       forceCommonwell,
     }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
   }
-  // why do we need to do this here, since the pt has just been created?
   const patientWithIdentifiers = await attachPatientIdentifiers(newPatient.dataValues);
   return patientWithIdentifiers;
 }

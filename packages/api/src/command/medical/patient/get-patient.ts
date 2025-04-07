@@ -342,7 +342,9 @@ export async function getPatientStates({
 }
 
 /**
- * @deprecated Let's join this in the DB while querying the patient
+ * Attaches the patient identifiers from the mappings table to the patient object.
+ *
+ * NOTE: avoid using this function, instead join this column in the DB while querying the patient
  */
 export async function attachPatientIdentifiers(
   patient: Patient,
