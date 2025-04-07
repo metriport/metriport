@@ -1,7 +1,7 @@
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
-import { NotFoundError, USStateForAddress } from "@metriport/shared";
+import { BadRequestError, NotFoundError, USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
 import { Op, QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
@@ -359,16 +359,20 @@ export async function getPatientByExternalId({
   source?: PatientMappingSource;
 }): Promise<PatientWithIdentifiers | undefined> {
   if (!source) {
-    const patient = await PatientModel.findOne({ where: { cxId, externalId } });
-    return patient ? await attachPatientIdentifiers(patient.dataValues) : undefined;
+    const patients = await PatientModel.findAll({ where: { cxId, externalId } });
+    if (patients.length < 1) return undefined;
+    if (patients.length > 1) {
+      throw new BadRequestError(`Found multiple patients with external ID ${externalId}`);
+    }
+    return await attachPatientIdentifiers(patients[0].dataValues);
   }
-  const patientMap = await getPatientMapping({
+  const patientMapping = await getPatientMapping({
     cxId,
     externalId,
     source,
   });
-  if (!patientMap) return undefined;
-  return await getPatientOrFail({ id: patientMap.patientId, cxId });
+  if (!patientMapping) return undefined;
+  return await getPatientOrFail({ id: patientMapping.patientId, cxId });
 }
 
 /**
