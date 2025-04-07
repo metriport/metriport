@@ -1,9 +1,10 @@
+import * as cdk from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as rds from "aws-cdk-lib/aws-rds";
 import { Construct } from "constructs";
-import { mbToBytes } from "../shared/util";
 import { EnvConfig } from "../../config/env-config";
+import { mbToBytes } from "../shared/util";
 
 const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
 const DB_CONN_ALARM_THRESHOLD = 0.8;
@@ -94,13 +95,24 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
-  createAlarm({
-    metric: dbCluster.metricDatabaseConnections(),
-    name: "DatabaseConnectionsAlarm",
-    threshold: DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity),
-    evaluationPeriods: 2,
-    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+  const maxConnectionsPerInstance =
+    DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity);
+
+  dbCluster.instanceIdentifiers.forEach((instanceId, index) => {
+    createAlarm({
+      metric: dbCluster.metricDatabaseConnections({
+        dimensionsMap: {
+          DBInstanceIdentifier: instanceId,
+        },
+        statistic: "Maximum",
+        period: cdk.Duration.minutes(1),
+      }),
+      name: `DatabaseConnectionsAlarm-${index + 1}`,
+      threshold: maxConnectionsPerInstance,
+      evaluationPeriods: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
   });
 
   /**
