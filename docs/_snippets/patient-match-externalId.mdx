@@ -1,9 +1,0 @@
-<ParamField query="externalId" type="string">
-  The exact external ID you're trying to match. For Athena external IDs,
-  it must include the practice prefix (e.g. `a-12345.E-6789`).
-</ParamField>
-
-<ParamField query="source" type="string" optional>
-  If not included, Metriport will search along the custom exteranl ID field. If included, it must be
-  `athenahealth`, `elation`, or `canvas`, and will filter along the respective EHR patient IDs of Metriport patients.
-</ParamField>
