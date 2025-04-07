@@ -80,6 +80,11 @@ export class SecretsStack extends Stack {
     }
 
     if (!isSandbox(props.config)) {
+      for (const secretName of Object.values(props.config.hl7Notification.secrets)) {
+        const secret = makeSecret(secretName);
+        logSecretInfo(this, secret, secretName);
+      }
+
       const vpnTunnelSecretNames = props.config.hl7Notification.vpnConfigs.flatMap(config => [
         `PresharedKey1-${config.partnerName}`,
         `PresharedKey2-${config.partnerName}`,
