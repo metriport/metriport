@@ -1,16 +1,24 @@
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
-import { NotFoundError, USStateForAddress } from "@metriport/shared";
+import { BadRequestError, NotFoundError, USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
 import { Op, QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
-import { PatientMapping, PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
+import {
+  PatientMapping,
+  PatientMappingSource,
+  PatientSourceIdentifierMap,
+} from "../../../domain/patient-mapping";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel, rawToDomain } from "../../../models/patient-mapping";
 import { paginationSqlExpressions } from "../../../shared/sql";
-import { getPatientMappings, getSourceMapForPatient } from "../../mapping/patient";
+import {
+  getPatientMapping,
+  getPatientMappings,
+  getSourceMapForPatient,
+} from "../../mapping/patient";
 import { Pagination, sortForPagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
@@ -339,6 +347,32 @@ export async function getPatientStates({
   const patients = await getPatients({ cxId, patientIds });
   const nonUniqueStates = patients.flatMap(getStatesFromAddresses).filter(s => s);
   return uniq(nonUniqueStates);
+}
+
+export async function getPatientByExternalId({
+  cxId,
+  externalId,
+  source,
+}: {
+  cxId: string;
+  externalId: string;
+  source?: PatientMappingSource;
+}): Promise<PatientWithIdentifiers | undefined> {
+  if (!source) {
+    const patients = await PatientModel.findAll({ where: { cxId, externalId } });
+    if (patients.length < 1) return undefined;
+    if (patients.length > 1) {
+      throw new BadRequestError(`Found multiple patients with external ID ${externalId}`);
+    }
+    return await attachPatientIdentifiers(patients[0].dataValues);
+  }
+  const patientMapping = await getPatientMapping({
+    cxId,
+    externalId,
+    source,
+  });
+  if (!patientMapping) return undefined;
+  return await getPatientOrFail({ id: patientMapping.patientId, cxId });
 }
 
 /**

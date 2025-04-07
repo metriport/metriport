@@ -1,6 +1,6 @@
 {
   "name": "@metriport/ihe-gateway-sdk",
-  "version": "0.17.3",
+  "version": "0.18.0-alpha.0",
   "description": "SDK to interact with other IHE Gateways - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -53,7 +53,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/shared": "^0.20.3",
+    "@metriport/shared": "^0.21.0-alpha.0",
     "axios": "^1.6.0",
     "zod": "^3.22.1"
   }
