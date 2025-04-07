@@ -1,8 +1,8 @@
 import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import axios from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import _ from "lodash";
 import Client from "ssh2-sftp-client";
 import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
@@ -16,8 +16,6 @@ import {
   Hl7v2SubscriberParams,
   SftpConfig,
 } from "./types";
-
-dayjs.extend(duration);
 
 const region = Config.getAWSRegion();
 
@@ -223,6 +221,6 @@ export function buildDocumentNameForHl7v2Roster(
   hieName: string,
   subscriptions: Hl7v2Subscription[]
 ): string {
-  const todaysDate = new Date().toISOString().split("T")[0];
+  const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
   return `${todaysDate}/${hieName}/${subscriptions.join("-")}${CSV_FILE_EXTENSION}`;
 }
