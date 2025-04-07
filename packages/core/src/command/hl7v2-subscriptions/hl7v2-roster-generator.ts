@@ -97,6 +97,7 @@ export async function generateAndUploadHl7v2Roster({
     return;
   }
 
+  // TODO 2791: Make sure the IDs is scrambled in the underlying get-subscribers function
   const convertedSubscribers = convertSubscribersToHieFormat(subscribers, hieConfig.schema);
   const rosterCsv = generateCsv(convertedSubscribers);
   log("Created CSV");
