@@ -10,7 +10,7 @@ import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel, rawToDomain } from "../../../models/patient-mapping";
 import { paginationSqlExpressions } from "../../../shared/sql";
-import { getSourceMapForPatient } from "../../mapping/patient";
+import { getPatientMappings, getSourceMapForPatient } from "../../mapping/patient";
 import { Pagination, sortForPagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
@@ -348,11 +348,7 @@ export async function attachPatientIdentifiers(
   patient: Patient,
   transaction?: Transaction
 ): Promise<PatientWithIdentifiers> {
-  const mappings = await PatientMappingModel.findAll({
-    where: { cxId: patient.cxId, patientId: patient.id },
-    order: [["createdAt", "ASC"]],
-    transaction,
-  });
+  const mappings = await getPatientMappings(patient, transaction);
   const additionalIds = getSourceMapForPatient({ mappings });
   return {
     ...patient,

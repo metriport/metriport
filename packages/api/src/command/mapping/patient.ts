@@ -1,6 +1,8 @@
+import { Patient } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { Transaction } from "sequelize";
 import {
   PatientMapping,
   PatientMappingPerSource,
@@ -57,6 +59,18 @@ export async function getPatientMappingOrFail({
     throw new NotFoundError("PatientMapping not found", undefined, { cxId, externalId, source });
   }
   return mapping;
+}
+
+export async function getPatientMappings(
+  { cxId, id: patientId }: Pick<Patient, "id" | "cxId">,
+  transaction?: Transaction
+): Promise<PatientMapping[]> {
+  const mappings = await PatientMappingModel.findAll({
+    where: { cxId, patientId },
+    order: [["createdAt", "ASC"]],
+    transaction,
+  });
+  return mappings.map(m => m.dataValues);
 }
 
 export async function deleteAllPatientMappings({
