@@ -191,10 +191,7 @@ router.get(
     const externalId = getFromQueryOrFail("externalId", req);
     const source = getFromQuery("source", req);
     if (source && !isPatientMappingSource(source)) {
-      throw new BadRequestError("Invalid source", undefined, {
-        externalId,
-        source,
-      });
+      throw new BadRequestError("Invalid source", undefined, { source });
     }
 
     const patient = await getPatientByExternalId({
