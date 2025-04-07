@@ -5,7 +5,7 @@ import {
   HieConfig,
   Hl7v2RosterConfig,
   // SftpConfig,
-} from "@metriport/core/command/hl7v2-subscriptions/get-subscribers";
+} from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { USState } from "@metriport/shared";
 import { getEnvVarOrFail } from "../../../api/src/shared/config";
