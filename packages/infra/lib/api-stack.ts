@@ -39,7 +39,6 @@ import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-c
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
-import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { EhrNestedStack } from "./ehr-nested-stack";
@@ -328,9 +327,10 @@ export class APIStack extends Stack {
       fhirToBundleLambda,
       fhirConverterConnector: {
         queue: fhirConverterQueue,
-        dlq: fhirConverterDLQ,
+        lambda: fhirConverterLambda,
         bucket: fhirConverterBucket,
       },
+      conversionResultNotifierLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -566,22 +566,6 @@ export class APIStack extends Stack {
       resource: apiService.service.taskDefinition.taskRole,
     });
 
-    const fhirConverterLambda = fhirConverterConnector.createLambda({
-      envType: props.config.environmentType,
-      stack: this,
-      lambdaLayers,
-      vpc: this.vpc,
-      sourceQueue: fhirConverterQueue,
-      dlq: fhirConverterDLQ,
-      fhirConverterBucket,
-      medicalDocumentsBucket,
-      fhirServerUrl: props.config.fhirServerUrl,
-      termServerUrl: props.config.termServerUrl,
-      apiServiceDnsAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-      featureFlagsTable,
-    });
-
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
@@ -594,13 +578,16 @@ export class APIStack extends Stack {
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrStartResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrCompleteResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
-    fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    medicalDocumentsBucket.grantRead(fhirConverterLambda);
 
     createDocQueryChecker({
       lambdaLayers,

@@ -144,6 +144,8 @@ router.post(
     const source = getFrom("query").optional("source", req);
     const details = getFrom("query").optional("details", req);
     const jobId = getFrom("query").optional("jobId", req);
+    const countRaw = getFrom("query").optional("count", req);
+    const count = countRaw ? parseInt(countRaw) : undefined;
     const convertResult = convertResultSchema.parse(status);
 
     // keeping the old logic for now, but we should avoid having these optional parameters that can
@@ -160,6 +162,7 @@ router.post(
       source,
       convertResult,
       details,
+      count,
     });
 
     return res.sendStatus(httpStatus.OK);

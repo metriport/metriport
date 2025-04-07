@@ -5,7 +5,7 @@ import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CwLink } from "../../../external/commonwell/cw-patient-data";
 import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
 import { CwPatientDataModel } from "../../../external/commonwell/models/cw-patient-data";
-import { CQDirectoryEntryModel } from "../../../external/carequality/models/cq-directory";
+import { CQDirectoryEntryViewModel } from "../../../external/carequality/models/cq-directory-view";
 import { orgDirectory } from "../../../external/commonwell/org-directory";
 import { patientResourceToNormalizedLinkDemographics as cqPatientResourceToNormalizedLinkDemographics } from "../../../external/carequality/patient-demographics";
 import { patientNetworkLinkToNormalizedLinkDemographics as cwPatientResourceToNormalizedLinkDemographics } from "../../../external/commonwell/patient-demographics";
@@ -42,7 +42,7 @@ async function getCqFacilityMatches(cqLinks: CQLink[]): Promise<PatientFacilityM
   const patientFacilityMatches: PatientFacilityMatch[] = [];
 
   for (const cqLink of cqLinks) {
-    const cqFacility = await CQDirectoryEntryModel.findOne({
+    const cqFacility = await CQDirectoryEntryViewModel.findOne({
       where: { id: cqLink.oid },
     });
 
