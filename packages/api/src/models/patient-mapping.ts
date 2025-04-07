@@ -58,6 +58,8 @@ export function rawToDomain(raw: Record<string, string>): PatientMapping {
   if (versionRaw == undefined) {
     throw new MetriportError("version is required to create a patient mapping");
   }
+  const version = parseInt(versionRaw);
+  if (isNaN(version)) throw new MetriportError("version must be a number");
   const id = raw[patientMappingColumnNames.id];
   const obj: PatientMapping = {
     id,
@@ -67,7 +69,7 @@ export function rawToDomain(raw: Record<string, string>): PatientMapping {
     cxId: raw[patientMappingColumnNames.cxId],
     createdAt: new Date(createdAtRaw),
     updatedAt: new Date(updatedAtRaw),
-    eTag: generateETag(id, parseInt(versionRaw)),
+    eTag: generateETag(id, version),
   };
   return obj;
 }
