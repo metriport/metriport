@@ -176,7 +176,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /patient/match/external-id
+ * GET /patient/match/external-id
  *
  * Searches for a patient previously created at Metriport, based on an external ID. Returns the matched patient, if it exists.
  *
