@@ -95,12 +95,10 @@ export async function getPatients({
       mappings: mappingsRaw.map(rawToDomain),
     };
   });
-  const patientsWithIdentifiers: PatientWithIdentifiers[] = await Promise.all(
-    patientAndMappings.map(pm => {
-      const additionalIds = getSourceMapForPatient({ mappings: pm.mappings });
-      return { ...pm.patient, additionalIds };
-    })
-  );
+  const patientsWithIdentifiers: PatientWithIdentifiers[] = patientAndMappings.map(pm => {
+    const additionalIds = getSourceMapForPatient({ mappings: pm.mappings });
+    return { ...pm.patient, additionalIds };
+  });
 
   const sortedPatients = sortForPagination(patientsWithIdentifiers, pagination);
   return sortedPatients;
