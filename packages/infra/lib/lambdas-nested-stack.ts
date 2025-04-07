@@ -15,10 +15,11 @@ import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
-import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
+import { isSandbox } from "./shared/util";
 import { createQueue } from "./shared/sqs";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -49,6 +50,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirToBundleLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
+  readonly hl7v2RosterUploadLambda: Lambda | undefined;
   readonly conversionResultNotifierLambda: lambda.Function;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
@@ -166,6 +168,29 @@ export class LambdasNestedStack extends NestedStack {
       notificationUrl: props.config.slack.SLACK_ALERT_URL,
       ...props.config.acmCertMonitor,
     });
+
+    if (!isSandbox(props.config)) {
+      const hl7v2RosterBucket = new s3.Bucket(this, "Hl7v2RosterBucket", {
+        bucketName: props.config.hl7Notification.hl7v2RosterUploadLambda.bucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          },
+        ],
+      });
+
+      this.hl7v2RosterUploadLambda = this.setupRosterUploadLambda({
+        lambdaLayers: this.lambdaLayers,
+        vpc: props.vpc,
+        hl7v2RosterBucket,
+        config: props.config,
+        alarmAction: props.alarmAction,
+      });
+    }
   }
 
   private setupCdaToVisualization(ownProps: {
@@ -658,5 +683,36 @@ export class LambdasNestedStack extends NestedStack {
     );
 
     return acmCertificateMonitorLambda;
+  }
+
+  private setupRosterUploadLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    hl7v2RosterBucket: s3.IBucket;
+    config: EnvConfig;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, hl7v2RosterBucket, config, alarmAction } = ownProps;
+    const sentryDsn = config.lambdasSentryDSN;
+    const envType = config.environmentType;
+
+    const hl7v2RosterUploadLambda = createLambda({
+      stack: this,
+      name: "Hl7v2RosterUpload",
+      entry: "hl7v2-roster",
+      envType,
+      envVars: {
+        BUCKET_NAME: hl7v2RosterBucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 4096,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    hl7v2RosterBucket.grantReadWrite(hl7v2RosterUploadLambda);
+
+    return hl7v2RosterUploadLambda;
   }
 }
