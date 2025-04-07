@@ -1,15 +1,15 @@
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
-import { EhrSources, NotFoundError, USStateForAddress } from "@metriport/shared";
+import { NotFoundError, USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
 import { Op, QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
-import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
+import { PatientMappingSource, PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
 import { paginationSqlExpressions } from "../../../shared/sql";
-import { getSourceMapForPatient, getPatientMapping } from "../../mapping/patient";
+import { getPatientMapping, getSourceMapForPatient } from "../../mapping/patient";
 import { Pagination, sortForPagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
@@ -314,7 +314,7 @@ export async function getPatientByExternalId({
 }: {
   cxId: string;
   externalId: string;
-  source?: EhrSources;
+  source?: PatientMappingSource;
 }): Promise<PatientWithIdentifiers | undefined> {
   if (!source) {
     const patient = await PatientModel.findOne({ where: { cxId, externalId } });
@@ -326,8 +326,7 @@ export async function getPatientByExternalId({
     source,
   });
   if (!patientMap) return undefined;
-  const patient = await getPatientOrFail({ id: patientMap.patientId, cxId });
-  return await attachPatientIdentifiers(patient);
+  return await getPatientOrFail({ id: patientMap.patientId, cxId });
 }
 
 export async function attachPatientIdentifiers(patient: Patient): Promise<PatientWithIdentifiers> {

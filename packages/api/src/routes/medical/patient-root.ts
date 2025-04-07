@@ -5,7 +5,6 @@ import {
   PaginatedResponse,
   stringToBoolean,
 } from "@metriport/shared";
-import { EhrSources, isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -22,6 +21,7 @@ import {
 import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
+import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
@@ -188,7 +188,7 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const externalId = getFromQueryOrFail("externalId", req);
     const source = getFromQuery("source", req);
-    if (source && !isEhrSource(source)) {
+    if (source && !isPatientMappingSource(source)) {
       throw new BadRequestError("Invalid source", undefined, {
         externalId,
         source,
@@ -198,7 +198,7 @@ router.post(
     const patient = await getPatientByExternalId({
       cxId,
       externalId,
-      ...(source ? { source: source as EhrSources } : {}),
+      ...(source ? { source: source as PatientMappingSource } : {}),
     });
 
     if (patient) return res.status(httpStatus.OK).json(dtoFromModel(patient));
