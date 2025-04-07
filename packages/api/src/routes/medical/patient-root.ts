@@ -1,4 +1,5 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { out } from "@metriport/core/util/log";
 import {
   BadRequestError,
   NotFoundError,
@@ -120,6 +121,7 @@ router.get(
 
     // TODO 483 remove this (and respected conditional) once pagination is fully rolled out
     if (!isPaginated(req)) {
+      out(`List patients - cx ${cxId}`).log(`Running without pagination`);
       const patients = await getPatients({ cxId, facilityId: facilityId, fullTextSearchFilters });
       const patientsData = patients.map(dtoFromModel);
       return res.status(httpStatus.OK).json({ patients: patientsData });
