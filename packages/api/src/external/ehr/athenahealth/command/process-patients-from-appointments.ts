@@ -1,4 +1,3 @@
-import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -6,15 +5,15 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
 import {
-  athenaSecondaryMappingsSchema,
+  AthenaSecondaryMappings,
   BookedAppointment,
+  athenaSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
-import { Config } from "../../../../shared/config";
 import {
   Appointment,
   delayBetweenPatientBatches,
@@ -29,10 +28,6 @@ import { SyncAthenaPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
 
-const CUSTOM_APPOINTMENT_TYPE_IDS = Config.isProdEnv()
-  ? ["81", "181", "141", "4", "201", "13", "221", "223", "222", "281", "21", "23"]
-  : ["2", "1472"];
-
 const subscriptionBackfillLookBack = dayjs.duration(12, "hours");
 const appointmentsLookForward = dayjs.duration(1, "day");
 
@@ -43,6 +38,7 @@ type GetAppointmentsParams = {
   practiceId: string;
   departmentIds?: string[];
   lookupMode: LookupMode;
+  appointmentTypesFilter?: string[];
 };
 
 export async function processPatientsFromAppointments({ lookupMode }: { lookupMode: LookupMode }) {
@@ -52,16 +48,27 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
     return;
   }
 
+  const secondaryMappingsMap = cxMappings.reduce((acc, cxMapping) => {
+    if (!cxMapping.secondaryMappings) {
+      throw new MetriportError("Athena secondary mappings not found", undefined, {
+        externalId: cxMapping.externalId,
+        source: EhrSources.athena,
+      });
+    }
+    const secondaryMappings = athenaSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
+    return { ...acc, [cxMapping.externalId]: secondaryMappings };
+  }, {} as Record<string, AthenaSecondaryMappings>);
+
   const allAppointments: AthenaAppointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.flatMap(mapping => {
-    if (!mapping.secondaryMappings) {
+    const secondaryMappings = secondaryMappingsMap[mapping.externalId];
+    if (!secondaryMappings) {
       throw new MetriportError("Athena secondary mappings not found", undefined, {
         externalId: mapping.externalId,
         source: EhrSources.athena,
       });
     }
-    const secondaryMappings = athenaSecondaryMappingsSchema.parse(mapping.secondaryMappings);
     if (
       secondaryMappings.backgroundAppointmentsDisabled &&
       lookupMode === LookupModes.Appointments
@@ -81,6 +88,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
         practiceId: mapping.externalId,
         departmentIds: secondaryMappings.departmentIds,
         lookupMode,
+        appointmentTypesFilter: secondaryMappings.appointmentTypesFilter,
       },
     ];
   });
@@ -136,6 +144,7 @@ async function getAppointments({
   practiceId,
   departmentIds,
   lookupMode,
+  appointmentTypesFilter,
 }: GetAppointmentsParams): Promise<{ appointments?: AthenaAppointment[]; error?: unknown }> {
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
@@ -149,9 +158,9 @@ async function getAppointments({
       lookupMode,
       log,
     });
-    if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
+    if (appointmentTypesFilter) {
       appointments = appointments.filter(appointment =>
-        CUSTOM_APPOINTMENT_TYPE_IDS.includes(appointment.appointmenttypeid)
+        appointmentTypesFilter.includes(appointment.appointmenttypeid)
       );
     }
     return {
