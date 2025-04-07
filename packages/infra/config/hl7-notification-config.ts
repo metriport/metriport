@@ -1,4 +1,8 @@
 export interface Hl7NotificationConfig {
+  secrets: {
+    HL7_BASE64_SCRAMBLER_SEED: string;
+  };
+  bucketName: string;
   vpnConfigs: Hl7NotificationVpnConfig[];
   mllpServer: {
     fargateCpu: number;

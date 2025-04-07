@@ -5,9 +5,11 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
@@ -18,6 +20,7 @@ import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
 import { isSandbox } from "./shared/util";
+import { createQueue } from "./shared/sqs";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -48,6 +51,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambda: Lambda | undefined;
+  readonly conversionResultNotifierLambda: lambda.Function;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -122,10 +126,23 @@ export class LambdasNestedStack extends NestedStack {
       maxPollingDuration: Duration.minutes(15),
     });
 
-    this.fhirConverterConnector = fhirConverterConnector.createQueueAndBucket({
+    const resultNotifierConnector = this.setupConversionResultNotifier({
+      vpc: props.vpc,
+      config: props.config,
+      alarmAction: props.alarmAction,
+    });
+    const conversionResultNotifierQueue = resultNotifierConnector.queue;
+    this.conversionResultNotifierLambda = resultNotifierConnector.lambda;
+
+    this.fhirConverterConnector = fhirConverterConnector.create({
       stack: this,
+      vpc: props.vpc,
       lambdaLayers: this.lambdaLayers,
       envType: props.config.environmentType,
+      config: props.config,
+      featureFlagsTable: props.featureFlagsTable,
+      medicalDocumentsBucket: props.medicalDocumentsBucket,
+      apiNotifierQueue: conversionResultNotifierQueue,
       alarmSnsAction: props.alarmAction,
     });
 
@@ -457,6 +474,70 @@ export class LambdasNestedStack extends NestedStack {
     dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
+  }
+
+  private setupConversionResultNotifier({
+    vpc,
+    alarmAction,
+    config,
+  }: {
+    vpc: ec2.IVpc;
+    alarmAction: SnsAction | undefined;
+    config: EnvConfig;
+  }): { queue: Queue; lambda: Lambda } {
+    const name = "ConversionResultNotifier";
+    const { environmentType: envType, sentryDSN } = config;
+
+    const lambdaTimeout = Duration.minutes(5);
+    const settings = {
+      queue: {
+        maxReceiveCount: 1,
+        alarmMaxAgeOfOldestMessage: Duration.minutes(5),
+        maxMessageCountAlarmThreshold: 1_000,
+        visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+        receiveMessageWaitTime: Duration.seconds(20),
+      },
+      lambda: {
+        entry: "conversion-result-notifier",
+        memory: 256,
+        timeout: lambdaTimeout,
+      },
+      eventSource: {
+        batchSize: 500,
+        maxBatchingWindow: Duration.seconds(20),
+        maxConcurrency: 2,
+        // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
+        reportBatchItemFailures: true,
+      },
+    };
+
+    const conversionResultQueue = createQueue({
+      stack: this,
+      name,
+      createRetryLambda: false,
+      envType,
+      alarmSnsAction: alarmAction,
+      ...settings.queue,
+    });
+
+    const conversionResultLambda = createLambda({
+      stack: this,
+      name,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        ...(sentryDSN ? { SENTRY_DSN: sentryDSN } : {}),
+      },
+      layers: [this.lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+      ...settings.lambda,
+    });
+
+    conversionResultLambda.addEventSource(
+      new SqsEventSource(conversionResultQueue, settings.eventSource)
+    );
+    return { queue: conversionResultQueue, lambda: conversionResultLambda };
   }
 
   /** AKA, get consolidated lambda */
