@@ -1,5 +1,11 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import { NotFoundError, PaginatedResponse, stringToBoolean } from "@metriport/shared";
+import {
+  BadRequestError,
+  NotFoundError,
+  PaginatedResponse,
+  stringToBoolean,
+} from "@metriport/shared";
+import { EhrSources, isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -7,6 +13,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import {
+  getPatientByExternalId,
   getPatientOrFail,
   getPatients,
   getPatientsCount,
@@ -162,6 +169,39 @@ router.post(
       await getPatientOrFail({ cxId, id: patient.id });
       return res.status(httpStatus.OK).json(dtoFromModel(patient));
     }
+    throw new NotFoundError("Cannot find patient");
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/match/externalId
+ *
+ * Searches for a patient previously created at Metriport, based on an external ID. Returns the matched patient, if it exists.
+ *
+ * @return The matched patient.
+ * @throws NotFoundError if the patient does not exist.
+ */
+router.post(
+  "/match",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    const source = getFromQuery("source", req);
+    if (source && !isEhrSource(source)) {
+      throw new BadRequestError("Invalid source", undefined, {
+        externalId,
+        source,
+      });
+    }
+
+    const patient = await getPatientByExternalId({
+      cxId,
+      externalId,
+      ...(source ? { source: source as EhrSources } : {}),
+    });
+
+    if (patient) return res.status(httpStatus.OK).json(dtoFromModel(patient));
     throw new NotFoundError("Cannot find patient");
   })
 );

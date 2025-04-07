@@ -385,6 +385,28 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Searches for a patient previously created at Metriport, based on external ID.
+   *
+   * @return The patient if found.
+   */
+  async matchPatientByExternalId(
+    externalId: string,
+    source?: string
+  ): Promise<PatientDTO | undefined> {
+    try {
+      const resp = await this.api.post(`${PATIENT_URL}/match/externalId`, undefined, {
+        params: { externalId, source },
+      });
+      if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+      return resp.data as PatientDTO;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.response?.status !== status.NOT_FOUND) throw err;
+      return undefined;
+    }
+  }
+
+  /**
    * Updates a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patient The patient data to be updated.
