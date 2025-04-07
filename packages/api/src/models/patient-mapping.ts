@@ -1,6 +1,21 @@
+import { MetriportError } from "@metriport/shared";
 import { DataTypes, Sequelize } from "sequelize";
 import { PatientMapping, PatientMappingSource } from "../domain/patient-mapping";
-import { BaseModel, ModelSetup } from "./_default";
+import { BaseModel, generateETag, ModelSetup } from "./_default";
+
+const patientMappingColumnNames: Record<
+  keyof (Omit<PatientMapping, "eTag"> & { version: string }),
+  string
+> = {
+  id: "id",
+  externalId: "external_id",
+  cxId: "cx_id",
+  patientId: "patient_id",
+  source: "source",
+  createdAt: "created_at",
+  updatedAt: "updated_at",
+  version: "version",
+};
 
 export class PatientMappingModel extends BaseModel<PatientMappingModel> implements PatientMapping {
   static NAME = "patient_mapping";
@@ -32,4 +47,27 @@ export class PatientMappingModel extends BaseModel<PatientMappingModel> implemen
       }
     );
   };
+}
+
+export function rawToDomain(raw: Record<string, string>): PatientMapping {
+  const createdAtRaw = raw[patientMappingColumnNames.createdAt];
+  if (!createdAtRaw) throw new MetriportError("createdAt is required to create a patient mapping");
+  const updatedAtRaw = raw[patientMappingColumnNames.updatedAt];
+  if (!updatedAtRaw) throw new MetriportError("updatedAt is required to create a patient mapping");
+  const versionRaw = raw[patientMappingColumnNames.version];
+  if (versionRaw == undefined) {
+    throw new MetriportError("version is required to create a patient mapping");
+  }
+  const id = raw[patientMappingColumnNames.id];
+  const obj: PatientMapping = {
+    id,
+    patientId: raw[patientMappingColumnNames.patientId],
+    externalId: raw[patientMappingColumnNames.externalId],
+    source: raw[patientMappingColumnNames.source] as PatientMappingSource,
+    cxId: raw[patientMappingColumnNames.cxId],
+    createdAt: new Date(createdAtRaw),
+    updatedAt: new Date(updatedAtRaw),
+    eTag: generateETag(id, parseInt(versionRaw)),
+  };
+  return obj;
 }

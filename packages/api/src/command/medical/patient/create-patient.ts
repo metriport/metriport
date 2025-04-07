@@ -104,6 +104,7 @@ export async function createPatient({
       forceCommonwell,
     }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
   }
+  // why do we need to do this here, since the pt has just been created?
   const patientWithIdentifiers = await attachPatientIdentifiers(newPatient.dataValues);
   return patientWithIdentifiers;
 }

@@ -73,22 +73,18 @@ export async function deleteAllPatientMappings({
 
 export const defaultSources = [EhrSources.athena, EhrSources.canvas, EhrSources.elation];
 
-export async function getSourceMapForPatient({
-  cxId,
-  patientId,
+export function getSourceMapForPatient({
+  mappings,
   sources = defaultSources,
 }: {
-  cxId: string;
-  patientId: string;
+  mappings: PatientMapping[];
   sources?: string[];
-}): Promise<PatientSourceIdentifierMap | undefined> {
-  const mappings = await PatientMappingModel.findAll({
-    where: { cxId, patientId, ...(sources ? { source: sources } : undefined) },
-    order: [["createdAt", "ASC"]],
-  });
+}): PatientSourceIdentifierMap | undefined {
   const sourceMap = mappings.reduce((acc, mapping) => {
-    const { source, externalId } = mapping.dataValues;
-    acc[source] = [...(acc[source] || []), parseExternalId(source, externalId)];
+    const { source, externalId } = mapping;
+    if (sources.includes(source)) {
+      acc[source] = [...(acc[source] || []), parseExternalId(source, externalId)];
+    }
     return acc;
   }, {} as PatientSourceIdentifierMap);
   return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
