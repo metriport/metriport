@@ -51,7 +51,7 @@ import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { addDBClusterPerformanceAlarms } from "./shared/rds";
+import { addDBClusterPerformanceAlarms, addDBInstancePerformanceAlarms } from "./shared/rds";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
@@ -212,6 +212,31 @@ export class APIStack extends Stack {
       dbConfig,
       slackNotification?.alarmAction
     );
+    const instances = dbCluster.instanceIdentifiers.map(instanceIdentifier => {
+      const endpointDomain = dbCluster.clusterEndpoint.hostname.split(".").slice(1).join(".");
+      return rds.DatabaseInstance.fromDatabaseInstanceAttributes(
+        this,
+        `${dbClusterName}-${instanceIdentifier}`,
+        {
+          instanceIdentifier,
+          instanceEndpointAddress: `${instanceIdentifier}.${endpointDomain.replace(
+            "cluster-",
+            ""
+          )}`,
+          port: dbCluster.clusterEndpoint.port,
+          securityGroups: dbCluster.connections.securityGroups,
+        }
+      );
+    });
+    instances.forEach(instance => {
+      addDBInstancePerformanceAlarms(
+        this,
+        instance,
+        `${dbClusterName}-${instance.instanceIdentifier}`,
+        dbConfig,
+        slackNotification?.alarmAction
+      );
+    });
 
     //----------------------------------------------------------
     // DynamoDB

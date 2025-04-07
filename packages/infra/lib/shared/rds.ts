@@ -2,8 +2,8 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as rds from "aws-cdk-lib/aws-rds";
 import { Construct } from "constructs";
-import { mbToBytes } from "../shared/util";
 import { EnvConfig } from "../../config/env-config";
+import { mbToBytes } from "../shared/util";
 
 const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
 const DB_CONN_ALARM_THRESHOLD = 0.8;
@@ -27,95 +27,129 @@ export function addDBClusterPerformanceAlarms(
 ) {
   if (!dbConfig.alarmThresholds) return;
 
-  const createAlarm = ({
-    name,
-    metric,
-    threshold,
-    evaluationPeriods,
-    comparisonOperator,
-    treatMissingData,
-  }: {
-    name: string;
-    metric: cloudwatch.Metric;
-    threshold: number;
-    evaluationPeriods: number;
-    comparisonOperator?: cloudwatch.ComparisonOperator;
-    treatMissingData?: cloudwatch.TreatMissingData;
-  }) => {
-    const alarm = metric.createAlarm(scope, `${dbClusterName}${name}`, {
-      threshold,
-      evaluationPeriods,
-      comparisonOperator,
-      treatMissingData,
-    });
-    alarmAction && alarm.addAlarmAction(alarmAction);
-    alarmAction && alarm.addOkAction(alarmAction);
-    return alarm;
-  };
-
   createAlarm({
-    metric: dbCluster.metricFreeableMemory(),
-    name: "FreeableMemoryAlarm",
-    threshold: mbToBytes(dbConfig.alarmThresholds.freeableMemoryMb),
-    evaluationPeriods: 1,
-    comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
-    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-  });
-
-  createAlarm({
-    metric: dbCluster.metricCPUUtilization(),
-    name: "CPUUtilizationAlarm",
-    threshold: dbConfig.alarmThresholds.cpuUtilizationPct,
-    evaluationPeriods: 1,
-    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-  });
-
-  createAlarm({
+    scope,
+    dbEntityName: dbClusterName,
+    metricName: "VolumeReadIOPsAlarm",
     metric: dbCluster.metricVolumeReadIOPs(),
-    name: "VolumeReadIOPsAlarm",
     threshold: dbConfig.alarmThresholds.volumeReadIops,
     evaluationPeriods: 1,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    alarmAction,
   });
-
   createAlarm({
+    scope,
+    dbEntityName: dbClusterName,
+    metricName: "VolumeWriteIOPsAlarm",
     metric: dbCluster.metricVolumeWriteIOPs(),
-    name: "VolumeWriteIOPsAlarm",
     threshold: dbConfig.alarmThresholds.volumeWriteIops,
     evaluationPeriods: 1,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    alarmAction,
   });
-
   createAlarm({
+    scope,
+    dbEntityName: dbClusterName,
+    metricName: "ACUUtilizationAlarm",
     metric: dbCluster.metricACUUtilization(),
-    name: "ACUUtilizationAlarm",
     threshold: dbConfig.alarmThresholds.acuUtilizationPct,
     evaluationPeriods: 2,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    alarmAction,
   });
-
-  createAlarm({
-    metric: dbCluster.metricDatabaseConnections(),
-    name: "DatabaseConnectionsAlarm",
-    threshold: DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity),
-    evaluationPeriods: 2,
-    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-  });
-
   /**
    * For Aurora Serverless, this alarm is not important as it auto-scales. However, we always
    * create this alarm because of compliance controls (SOC2).
    * @see: https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Overview.StorageReliability.html#aurora-storage-growth
    */
   createAlarm({
+    scope,
+    dbEntityName: dbClusterName,
+    metricName: "FreeLocalStorageAlarm",
     metric: dbCluster.metricFreeLocalStorage(),
-    name: "FreeLocalStorageAlarm",
     threshold: mbToBytes(
       dbConfig.alarmThresholds.freeLocalStorageMb ?? DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM
     ),
     evaluationPeriods: 1,
     comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    alarmAction,
   });
+}
+
+export function addDBInstancePerformanceAlarms(
+  scope: Construct,
+  dbInstance: rds.IDatabaseInstance,
+  dbInstanceName: string,
+  dbConfig: EnvConfig["apiDatabase"],
+  alarmAction?: SnsAction
+) {
+  if (!dbConfig.alarmThresholds) return;
+
+  createAlarm({
+    scope,
+    dbEntityName: dbInstanceName,
+    metricName: "FreeableMemoryAlarm",
+    metric: dbInstance.metricFreeableMemory(),
+    threshold: mbToBytes(dbConfig.alarmThresholds.freeableMemoryMb),
+    evaluationPeriods: 1,
+    comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
+    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    alarmAction,
+  });
+
+  createAlarm({
+    scope,
+    dbEntityName: dbInstanceName,
+    metricName: "CPUUtilizationAlarm",
+    metric: dbInstance.metricCPUUtilization(),
+    threshold: dbConfig.alarmThresholds.cpuUtilizationPct,
+    evaluationPeriods: 1,
+    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    alarmAction,
+  });
+
+  createAlarm({
+    scope,
+    dbEntityName: dbInstanceName,
+    metricName: "DatabaseConnectionsAlarm",
+    metric: dbInstance.metricDatabaseConnections(),
+    threshold: DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity),
+    evaluationPeriods: 2,
+    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    alarmAction,
+  });
+}
+
+function createAlarm({
+  scope,
+  dbEntityName,
+  metricName,
+  metric,
+  threshold,
+  evaluationPeriods,
+  comparisonOperator,
+  treatMissingData,
+  alarmAction,
+}: {
+  scope: Construct;
+  dbEntityName: string;
+  metricName: string;
+  metric: cloudwatch.Metric;
+  threshold: number;
+  evaluationPeriods: number;
+  comparisonOperator?: cloudwatch.ComparisonOperator;
+  treatMissingData?: cloudwatch.TreatMissingData;
+  alarmAction?: SnsAction;
+}) {
+  const alarm = metric.createAlarm(scope, `${dbEntityName}${metricName}`, {
+    threshold,
+    evaluationPeriods,
+    comparisonOperator,
+    treatMissingData,
+  });
+  alarmAction && alarm.addAlarmAction(alarmAction);
+  alarmAction && alarm.addOkAction(alarmAction);
+  return alarm;
 }
