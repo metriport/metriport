@@ -1,12 +1,12 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { makePatient } from "../../../external/fhir/__tests__/patient";
+import { buildEntryReference } from "../../../external/fhir/shared";
 import {
   makeBareEncounter,
   makePractitioner,
-} from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
-import { makePatient } from "../../__tests__/patient";
-import { buildEntryReference } from "../../shared";
-import { processBundleUploadTransaction } from "../transaction-response-bundle";
+} from "../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import { processBundleUploadTransaction } from "../process-upload-bundle";
 
 const makeTestBundle = (resources: Resource[]): Bundle<Resource> => ({
   resourceType: "Bundle",
