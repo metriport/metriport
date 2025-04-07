@@ -1,6 +1,8 @@
+import { Patient } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { Transaction } from "sequelize";
 import {
   PatientMapping,
   PatientMappingPerSource,
@@ -59,6 +61,18 @@ export async function getPatientMappingOrFail({
   return mapping;
 }
 
+export async function getPatientMappings(
+  { cxId, id: patientId }: Pick<Patient, "id" | "cxId">,
+  transaction?: Transaction
+): Promise<PatientMapping[]> {
+  const mappings = await PatientMappingModel.findAll({
+    where: { cxId, patientId },
+    order: [["createdAt", "ASC"]],
+    transaction,
+  });
+  return mappings.map(m => m.dataValues);
+}
+
 export async function deleteAllPatientMappings({
   cxId,
   patientId,
@@ -73,22 +87,18 @@ export async function deleteAllPatientMappings({
 
 export const defaultSources = [EhrSources.athena, EhrSources.canvas, EhrSources.elation];
 
-export async function getSourceMapForPatient({
-  cxId,
-  patientId,
+export function getSourceMapForPatient({
+  mappings,
   sources = defaultSources,
 }: {
-  cxId: string;
-  patientId: string;
+  mappings: PatientMapping[];
   sources?: string[];
-}): Promise<PatientSourceIdentifierMap | undefined> {
-  const mappings = await PatientMappingModel.findAll({
-    where: { cxId, patientId, ...(sources ? { source: sources } : undefined) },
-    order: [["createdAt", "ASC"]],
-  });
+}): PatientSourceIdentifierMap | undefined {
   const sourceMap = mappings.reduce((acc, mapping) => {
-    const { source, externalId } = mapping.dataValues;
-    acc[source] = [...(acc[source] || []), parseExternalId(source, externalId)];
+    const { source, externalId } = mapping;
+    if (sources.includes(source)) {
+      acc[source] = [...(acc[source] || []), parseExternalId(source, externalId)];
+    }
     return acc;
   }, {} as PatientSourceIdentifierMap);
   return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
