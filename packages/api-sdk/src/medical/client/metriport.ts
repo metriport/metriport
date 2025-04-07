@@ -394,7 +394,7 @@ export class MetriportMedicalApi {
     source?: string
   ): Promise<PatientDTO | undefined> {
     try {
-      const resp = await this.api.post(`${PATIENT_URL}/match/externalId`, undefined, {
+      const resp = await this.api.get(`${PATIENT_URL}/match/external-id`, {
         params: { externalId, source },
       });
       if (!resp.data) throw new Error(NO_DATA_MESSAGE);
