@@ -389,12 +389,12 @@ export class MetriportMedicalApi {
    *
    * @return The patient if found.
    */
-  async matchPatientByExternalId(
+  async getPatientByExternalId(
     externalId: string,
     source?: string
   ): Promise<PatientDTO | undefined> {
     try {
-      const resp = await this.api.get(`${PATIENT_URL}/match-by-external-id`, {
+      const resp = await this.api.get(`${PATIENT_URL}/external-id`, {
         params: { externalId, source },
       });
       if (!resp.data) throw new Error(NO_DATA_MESSAGE);
