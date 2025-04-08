@@ -82,7 +82,7 @@ export async function getPatients({
   });
 
   const { query: paginationQueryExpression, replacements: paginationReplacements } =
-    paginationSqlExpressions(pagination, patientAlias);
+    paginationSqlExpressions({ pagination, alias: patientAlias, addGroupBy: true });
   const queryFinal = queryFTS + paginationQueryExpression;
 
   const patients = await sequelize.query(queryFinal, {

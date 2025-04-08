@@ -2,7 +2,15 @@ import { Pagination } from "../command/pagination";
 
 const defaultPageSize = 50;
 
-export function paginationSqlExpressions(pagination: Pagination | undefined, alias?: string) {
+export function paginationSqlExpressions({
+  pagination,
+  addGroupBy,
+  alias,
+}: {
+  pagination: Pagination | undefined;
+  addGroupBy?: boolean;
+  alias?: string;
+}) {
   const aliasParsed = alias ? `${alias}.` : "";
 
   const { toItem, fromItem } = pagination ?? {};
@@ -10,10 +18,8 @@ export function paginationSqlExpressions(pagination: Pagination | undefined, ali
   const fromItemStr = fromItem ? ` AND ${aliasParsed}id <= :fromItem` : "";
   const queryPagination = " " + [toItemStr, fromItemStr].filter(Boolean).join("");
 
-  const queryOrder =
-    queryPagination +
-    ` GROUP BY ${aliasParsed}id ORDER BY ${aliasParsed}id ` +
-    (toItem ? "ASC" : "DESC");
+  const queryGroupBy = queryPagination + (addGroupBy ? ` GROUP BY ${aliasParsed}id` : "");
+  const queryOrder = queryGroupBy + ` ORDER BY ${aliasParsed}id ` + (toItem ? "ASC" : "DESC");
 
   const { count } = pagination ?? {};
   const query = queryOrder + (count ? ` LIMIT :count` : "");
