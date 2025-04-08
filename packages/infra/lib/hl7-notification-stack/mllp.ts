@@ -117,7 +117,7 @@ export class MllpStack extends cdk.NestedStack {
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
         HL7_NOTIFICATION_BUCKET_NAME: props.config.hl7Notification.bucketName,
-        QUEUE_URL: queueUrl,
+        HL7_NOTIFICATION_QUEUE_URL: queueUrl,
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
