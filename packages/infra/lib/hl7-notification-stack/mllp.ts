@@ -15,27 +15,16 @@ interface MllpStackProps extends cdk.StackProps {
   version: string | undefined;
   vpc: ec2.Vpc;
   ecrRepo: Repository;
+  hl7NotificationBucket: s3.Bucket;
 }
 
 export class MllpStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
-    const { vpc, ecrRepo } = props;
+    const { vpc, ecrRepo, hl7NotificationBucket } = props;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
-
-    new s3.Bucket(this, "HL7NotificationBucket", {
-      bucketName: props.config.hl7Notification.bucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
-        },
-      ],
-    });
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
@@ -97,11 +86,12 @@ export class MllpStack extends cdk.NestedStack {
       },
     });
 
-    // Create Fargate Service
     const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
       cpu: fargateCpu,
       memoryLimitMiB: fargateMemoryLimitMiB,
     });
+
+    hl7NotificationBucket.grantWrite(taskDefinition.taskRole);
 
     taskDefinition.addContainer("MllpServer", {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
