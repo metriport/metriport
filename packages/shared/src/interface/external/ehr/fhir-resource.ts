@@ -19,6 +19,6 @@ export type FhirResourceWrapper = z.infer<typeof fhirResourceWrapperSchema>;
 
 export const fhirResourceBundleSchema = z.object({
   resourceType: z.literal("Bundle"),
-  entry: fhirResourceWrapperSchema.array(),
+  entry: fhirResourceWrapperSchema.array().optional(),
 });
 export type FhirResourceBundle = z.infer<typeof fhirResourceBundleSchema>;

@@ -30,12 +30,13 @@ export async function saveCanvasResourceDiff({
     id: existingPatient.patientId,
   });
   if (direction === ResourceDiffDirection.DIFF_EHR) {
+    const fonud = matchedResourceIds.length > 0;
     await createOrUpdateResourceMappingReversed({
       cxId,
       patientId: metriportPatient.id,
       patientMappingExternalId: canvasPatientId,
       resourceId,
-      externalId: matchedResourceIds.sort().join(","),
+      externalId: fonud ? "found" : "not-found",
       source: EhrSources.canvas,
     });
   } else if (direction === ResourceDiffDirection.DIFF_METRIPORT) {

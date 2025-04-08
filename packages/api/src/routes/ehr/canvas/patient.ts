@@ -1,3 +1,4 @@
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
 import { isResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { Request, Response } from "express";
@@ -79,7 +80,9 @@ router.post(
     if (!isResourceDiffDirection(direction)) {
       throw new BadRequestError("Invalid direction", undefined, { direction });
     }
-    await startCanvasResourceDiff({ cxId, canvasPatientId, canvasPracticeId, direction });
+    startCanvasResourceDiff({ cxId, canvasPatientId, canvasPracticeId, direction }).catch(
+      processAsyncError("Canvas startCanvasResourceDiff")
+    );
     return res.sendStatus(httpStatus.OK);
   })
 );

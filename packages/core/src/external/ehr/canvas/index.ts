@@ -27,7 +27,6 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { ResourceTypeForConsolidation } from "@metriport/shared/medical";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
@@ -41,7 +40,29 @@ const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
 
-export const supportedCanvasDiffResources = ["Condition"];
+export const supportedCanvasDiffResources = [
+  /*
+  "AllergyIntolerance",
+  "Condition",
+  */
+  "DiagnosticReport",
+  /*
+  "Encounter",
+  */
+  //"Medication",
+  /*
+  "MedicationStatement",
+  "MedicationRequest",
+  //"Observation",
+  "Procedure",
+  */
+];
+export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
+export const isSupportedCanvasDiffResource = (
+  resourceType: string
+): resourceType is SupportedCanvasDiffResource => {
+  return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
+};
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -353,15 +374,17 @@ class CanvasApi {
     cxId,
     patientId,
     resourceType,
+    extraParams,
   }: {
     cxId: string;
     patientId: string;
-    resourceType: ResourceTypeForConsolidation;
+    resourceType: SupportedCanvasDiffResource;
+    extraParams?: Record<string, string>;
   }): Promise<FhirResources> {
     const { debug } = out(
       `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
     );
-    const params = { patient: `Patient/${patientId}` };
+    const params = { ...(extraParams ?? {}), patient: `Patient/${patientId}` };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
@@ -369,7 +392,7 @@ class CanvasApi {
       const bundle = await this.makeRequest<FhirResourceBundle>({
         cxId,
         patientId,
-        s3Path: "patient",
+        s3Path: `fhir-resources-${resourceType}`,
         method: "GET",
         url: resourceTypeUrl,
         schema: fhirResourceBundleSchema,
@@ -377,7 +400,7 @@ class CanvasApi {
         debug,
         useFhir: true,
       });
-      const invalidResource = bundle.entry.find(
+      const invalidResource = bundle.entry?.find(
         resource => resource.resource.resourceType !== resourceType
       );
       if (invalidResource) {
@@ -385,7 +408,7 @@ class CanvasApi {
           invalidResourceType: invalidResource.resource.resourceType,
         });
       }
-      return bundle.entry.map(resource => resource.resource);
+      return bundle.entry?.map(resource => resource.resource) ?? [];
     } catch (error) {
       if (error instanceof NotFoundError) return [];
       throw error;

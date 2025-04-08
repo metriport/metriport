@@ -2,6 +2,7 @@ import {
   AllergyIntolerance,
   Composition,
   Condition,
+  DiagnosticReport,
   Encounter,
   FamilyMemberHistory,
   Immunization,
@@ -21,6 +22,7 @@ import { BadRequestError } from "@metriport/shared";
 import { deduplicateAllergyIntolerances } from "../../../fhir-deduplication/resources/allergy-intolerance";
 import { deduplicateCompositions } from "../../../fhir-deduplication/resources/composition";
 import { deduplicateConditions } from "../../../fhir-deduplication/resources/condition";
+import { deduplicateDiagReports } from "../../../fhir-deduplication/resources/diagnostic-report";
 import { deduplicateEncounters } from "../../../fhir-deduplication/resources/encounter";
 import { deduplicateFamilyMemberHistories } from "../../../fhir-deduplication/resources/family-member-history";
 import { deduplicateImmunizations } from "../../../fhir-deduplication/resources/immunization";
@@ -77,6 +79,11 @@ export function computeResourceDiff({
       break;
     case "Encounter":
       deduplicatedResources = deduplicateEncounters(resources as Encounter[]).combinedResources;
+      break;
+    case "DiagnosticReport":
+      deduplicatedResources = deduplicateDiagReports(
+        resources as DiagnosticReport[]
+      ).combinedResources;
       break;
     case "FamilyMemberHistory":
       deduplicatedResources = deduplicateFamilyMemberHistories(

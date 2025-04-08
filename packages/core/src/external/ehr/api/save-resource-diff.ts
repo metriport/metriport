@@ -1,9 +1,18 @@
 import { errorToString, MetriportError } from "@metriport/shared";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
+import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+
+export type SaveResourceDiffParams = {
+  ehr: EhrSource;
+  cxId: string;
+  patientId: string;
+  resourceId: string;
+  direction: ResourceDiffDirection;
+  matchedResourceIds: string[];
+};
 
 /**
  * Sends a request to the API to sync a patient with Metriport.
@@ -22,14 +31,7 @@ export async function saveResourceDiff({
   resourceId,
   direction,
   matchedResourceIds,
-}: {
-  ehr: EhrSource;
-  cxId: string;
-  patientId: string;
-  resourceId: string;
-  direction: ResourceDiffDirection;
-  matchedResourceIds: string[];
-}): Promise<void> {
+}: SaveResourceDiffParams): Promise<void> {
   const { log, debug } = out(`Ehr saveResourceDiff - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({

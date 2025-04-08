@@ -1,9 +1,11 @@
 import { BadRequestError, sleep } from "@metriport/shared";
 import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { chunk } from "lodash";
 import { getConsolidated } from "../../../../command/consolidated/consolidated-get";
 import { computeResourceDiff } from "../../api/compute-resource-diff";
+import { saveResourceDiff, SaveResourceDiffParams } from "../../api/save-resource-diff";
 import { supportedCanvasDiffResources } from "../../canvas";
 import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
 
@@ -27,18 +29,35 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
         patientId: metriportPatientId,
       });
       if (!consolidatedBundle) return;
+      const saveResourceDiffPromises: SaveResourceDiffParams[] = [];
       const resourceDiffs = (consolidatedBundle.bundle?.entry ?? []).flatMap(resource => {
-        if (!resource.resource) return [];
+        if (!resource.resource || !resource.resource.id) return [];
         const resourceSafe = fhirResourceSchema.safeParse(resource.resource);
-        if (!resourceSafe.success) return [];
-        if (!supportedCanvasDiffResources.includes(resourceSafe.data.resourceType)) return [];
+        if (!resourceSafe.success) {
+          saveResourceDiffPromises.push({
+            ehr,
+            cxId,
+            patientId: ehrPatientId,
+            resourceId: resource.resource.id,
+            matchedResourceIds: [],
+            direction,
+          });
+          return [];
+        }
+        const fhirResource = resourceSafe.data;
+        if (
+          ehr === EhrSources.canvas &&
+          !supportedCanvasDiffResources.includes(fhirResource.resourceType)
+        ) {
+          return [];
+        }
         return [
           {
             ehr,
             cxId,
             practiceId,
             patientId: ehrPatientId,
-            resource: resourceSafe.data,
+            resource: fhirResource,
             direction,
           },
         ];
@@ -46,6 +65,11 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
       const chunks = chunk(resourceDiffs, MAX_RESOURCE_DIFFS_PER_BATCH);
       for (const chunk of chunks) {
         await Promise.all(chunk.map(params => computeResourceDiff(params)));
+        await sleep(SLEEP_TIME_IN_MILLIS);
+      }
+      const chunksSave = chunk(saveResourceDiffPromises, MAX_RESOURCE_DIFFS_PER_BATCH);
+      for (const chunk of chunksSave) {
+        await Promise.all(chunk.map(params => saveResourceDiff(params)));
         await sleep(SLEEP_TIME_IN_MILLIS);
       }
     } else if (direction === ResourceDiffDirection.DIFF_METRIPORT) {

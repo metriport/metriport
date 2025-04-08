@@ -115,7 +115,7 @@ router.post(
       canvasPatientId,
       resourceId,
       direction,
-      matchedResourceIds,
+      matchedResourceIds: matchedResourceIds.filter(id => id !== ""),
     }).catch(processAsyncError("Canvas saveCanvasResourceDiff"));
     return res.sendStatus(httpStatus.OK);
   })
