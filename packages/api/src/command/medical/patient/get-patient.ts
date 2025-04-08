@@ -189,8 +189,7 @@ function getPatientsSharedQueryUntilFTS(
       )`
       : "");
 
-  const query = queryFTS + ` GROUP BY ${alias}.id `;
-  return { query, patientAlias: alias };
+  return { query: queryFTS, patientAlias: alias };
 }
 
 function getPatientsSharedReplacements(

@@ -493,7 +493,7 @@ export class LambdasNestedStack extends NestedStack {
       queue: {
         maxReceiveCount: 1,
         alarmMaxAgeOfOldestMessage: Duration.minutes(5),
-        maxMessageCountAlarmThreshold: 1_000,
+        maxMessageCountAlarmThreshold: 100_000,
         visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
         receiveMessageWaitTime: Duration.seconds(20),
       },
