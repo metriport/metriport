@@ -22,9 +22,14 @@ function getSettings(props: FeatureFlagsNestedStackProps) {
     dynamoReplicationRegions: isProd(props.config) ? ["us-east-1"] : ["ca-central-1"],
     dynamoReplicationTimeout: Duration.hours(3),
     dynamoPointInTimeRecovery: true,
-    consumedWriteCapacityUnitsAlarmThreshold: isProd(props.config) ? 100 : 10,
+    // BOTH: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/on-demand-capacity-mode.html
+    // Starts w/ 4,000 writes/s
+    // Also see: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/metrics-dimensions.html#ConsumedWriteCapacityUnits
+    consumedWriteCapacityUnitsAlarmThreshold: isProd(props.config) ? 200_000 : 50_000,
     consumedWriteCapacityUnitsAlarmPeriod: 1,
-    consumedReadCapacityUnitsAlarmThreshold: isProd(props.config) ? 5000 : 100,
+    // Starts w/ 12,000 reads/s
+    // Also see: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/metrics-dimensions.html#ConsumedReadCapacityUnits
+    consumedReadCapacityUnitsAlarmThreshold: isProd(props.config) ? 600_000 : 150_000,
     consumedReadCapacityUnitsAlarmPeriod: 2,
   };
 }
