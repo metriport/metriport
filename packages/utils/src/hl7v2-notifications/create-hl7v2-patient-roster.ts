@@ -49,7 +49,7 @@ async function playground() {
       .invoke({
         FunctionName: lambdaName,
         InvocationType: "RequestResponse",
-        Payload: config,
+        Payload: JSON.stringify(config),
       })
       .promise();
 

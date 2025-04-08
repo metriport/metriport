@@ -703,6 +703,7 @@ export class LambdasNestedStack extends NestedStack {
       envType,
       envVars: {
         BUCKET_NAME: hl7v2RosterBucket.bucketName,
+        API_URL: config.loadBalancerDnsName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
