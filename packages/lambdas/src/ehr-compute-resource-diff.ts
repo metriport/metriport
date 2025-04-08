@@ -1,5 +1,5 @@
-import { ProcessResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/process/ehr-process-resource-diff";
-import { EhrProcessResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/process/ehr-process-resource-diff-local";
+import { ComputeResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff";
+import { EhrComputeResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff-local";
 import { errorToString, MetriportError, ResourceDiffDirection } from "@metriport/shared";
 import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -35,8 +35,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
     );
     log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-    const ehrResourceDiffHandler = new EhrProcessResourceDiffLocal(waitTimeInMillis);
-    await ehrResourceDiffHandler.processResourceDiff(parsedBody);
+    const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffLocal(waitTimeInMillis);
+    await ehrComputeResourceDiffHandler.computeResourceDiff(parsedBody);
 
     const finishedAt = new Date().getTime();
     log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -52,7 +52,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   }
 });
 
-const ehrResourceDiffSchema = z.object({
+const ehrComputeResourceDiffSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   cxId: z.string(),
   patientId: z.string(),
@@ -61,7 +61,7 @@ const ehrResourceDiffSchema = z.object({
   direction: z.nativeEnum(ResourceDiffDirection),
 });
 
-function parseBody(body?: unknown): ProcessResourceDiffRequest {
+function parseBody(body?: unknown): ComputeResourceDiffRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -69,5 +69,5 @@ function parseBody(body?: unknown): ProcessResourceDiffRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return ehrResourceDiffSchema.parse(bodyAsJson) as ProcessResourceDiffRequest;
+  return ehrComputeResourceDiffSchema.parse(bodyAsJson) as ComputeResourceDiffRequest;
 }

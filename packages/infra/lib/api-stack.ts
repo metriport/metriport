@@ -370,8 +370,8 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       startResourceDiffLambda: ehrStartResourceDiffLambda,
       startResourceDiffQueue: ehrStartResourceDiffQueue,
-      completeResourceDiffLambda: ehrCompleteResourceDiffLambda,
-      completeResourceDiffQueue: ehrCompleteResourceDiffQueue,
+      ComputeResourceDiffLambda: ehrComputeResourceDiffLambda,
+      ComputeResourceDiffQueue: ehrComputeResourceDiffQueue,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
       lambdaLayers,
@@ -491,7 +491,7 @@ export class APIStack extends Stack {
       patientImportBucket,
       ehrSyncPatientQueue,
       ehrStartResourceDiffQueue,
-      ehrCompleteResourceDiffQueue,
+      ehrComputeResourceDiffQueue,
       elationLinkPatientQueue,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -579,7 +579,7 @@ export class APIStack extends Stack {
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrStartResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrCompleteResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrComputeResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 

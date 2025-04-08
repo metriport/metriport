@@ -46,9 +46,9 @@ export function computeResourceDiff({
   existingResources: ResourceWithId[];
   newResource: ResourceWithId;
 }): string[] {
-  const mewResourceType = newResource.resourceType;
+  const newResourceType = newResource.resourceType;
   const invalidExistingResources = existingResources.filter(
-    resource => resource.resourceType !== mewResourceType
+    resource => resource.resourceType !== newResourceType
   );
   if (invalidExistingResources.length > 0) {
     throw new BadRequestError("Invalid existing resource types", undefined, {

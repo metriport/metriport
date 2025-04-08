@@ -14,7 +14,7 @@ import { createQueue } from "./shared/sqs";
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(1); // 60 patients/min
 const waitTimeStartResourceDiff = Duration.seconds(1); // 60 patients/min
-const waitTimeCompleteResourceDiff = Duration.seconds(1); // 60 patients/min
+const waitTimeComputeResourceDiff = Duration.seconds(1); // 60 patients/min
 
 function settings() {
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
@@ -74,30 +74,30 @@ function settings() {
     },
     waitTime: waitTimeStartResourceDiff,
   };
-  const completeResourceDiffLambdaTimeout = waitTimeCompleteResourceDiff.plus(Duration.minutes(5));
-  const completeResourceDiff: QueueAndLambdaSettings = {
-    name: "EhrCompleteResourceDiff",
-    entry: "ehr-complete-resource-diff",
+  const ComputeResourceDiffLambdaTimeout = waitTimeComputeResourceDiff.plus(Duration.minutes(5));
+  const ComputeResourceDiff: QueueAndLambdaSettings = {
+    name: "EhrComputeResourceDiff",
+    entry: "ehr-Compute-resource-diff",
     lambda: {
       memory: 1024,
       batchSize: 1,
-      timeout: completeResourceDiffLambdaTimeout,
+      timeout: ComputeResourceDiffLambdaTimeout,
       reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(completeResourceDiffLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(ComputeResourceDiffLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
-    waitTime: waitTimeCompleteResourceDiff,
+    waitTime: waitTimeComputeResourceDiff,
   };
   return {
     syncPatient,
     elationLinkPatient,
     startResourceDiff,
-    completeResourceDiff,
+    ComputeResourceDiff,
   };
 }
 
@@ -140,8 +140,8 @@ export class EhrNestedStack extends NestedStack {
   readonly elationLinkPatientQueue: Queue;
   readonly startResourceDiffLambda: Lambda;
   readonly startResourceDiffQueue: Queue;
-  readonly completeResourceDiffLambda: Lambda;
-  readonly completeResourceDiffQueue: Queue;
+  readonly ComputeResourceDiffLambda: Lambda;
+  readonly ComputeResourceDiffQueue: Queue;
 
   constructor(scope: Construct, id: string, props: EhrNestedStackProps) {
     super(scope, id, props);
@@ -178,15 +178,15 @@ export class EhrNestedStack extends NestedStack {
     this.startResourceDiffLambda = startResourceDiff.lambda;
     this.startResourceDiffQueue = startResourceDiff.queue;
 
-    const completeResourceDiff = this.setupCompleteResourceDiff({
+    const ComputeResourceDiff = this.setupComputeResourceDiff({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     });
-    this.completeResourceDiffLambda = completeResourceDiff.lambda;
-    this.completeResourceDiffQueue = completeResourceDiff.queue;
+    this.ComputeResourceDiffLambda = ComputeResourceDiff.lambda;
+    this.ComputeResourceDiffQueue = ComputeResourceDiff.queue;
   }
 
   private setupSyncPatient(ownProps: {
@@ -366,7 +366,7 @@ export class EhrNestedStack extends NestedStack {
     return { lambda, queue };
   }
 
-  private setupCompleteResourceDiff(ownProps: {
+  private setupComputeResourceDiff(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -386,7 +386,7 @@ export class EhrNestedStack extends NestedStack {
         createRetryLambda,
       },
       waitTime,
-    } = settings().completeResourceDiff;
+    } = settings().ComputeResourceDiff;
 
     const queue = createQueue({
       stack: this,
