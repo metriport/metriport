@@ -28,8 +28,11 @@ export async function createOrUpdateResourceMappingReversed({
     resourceId,
   });
   if (existing) {
-    await existing.update({ externalId });
-    return existing.dataValues;
+    existing.externalId = externalId;
+    existing.updatedAt = new Date();
+    existing.changed("externalId", true);
+    const updated = await existing.save();
+    return updated.dataValues;
   }
   const created = await ResourceMappingReversedModel.create({
     id: uuidv7(),
