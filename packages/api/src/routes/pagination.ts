@@ -152,7 +152,6 @@ function getPaginationUrl(
     }
   }
 
-  console.log("IS INTERNAL IS", isInternal);
   if ("_reconstructedRoute" in req) {
     return getHostUrl(isInternal) + req._reconstructedRoute + "?" + params.toString();
   }
