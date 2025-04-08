@@ -62,7 +62,7 @@ export function getRequestMeta(req: Request): Pagination {
  * @param additionalQueryParams - Additional query parameters to be included in the pagination URL.
  * @param getItems - A function that takes pagination settings and returns a list of items for a given page.
  * @param getTotalCount - A function that returns the total number of items in all pages.
- * @param isInternal - A flag to determine if the request is internal (for constructing URLs).
+ * @param hostUrl - The host URL to send the request to.
  * @returns An object containing the pagination metadata and the current page's items.
  */
 export async function paginated<T extends { id: string }>({
@@ -70,13 +70,13 @@ export async function paginated<T extends { id: string }>({
   additionalQueryParams,
   getItems,
   getTotalCount,
-  isInternal = false,
+  hostUrl = Config.getApiUrl(),
 }: {
   request: Request;
   additionalQueryParams: Record<string, string> | undefined;
   getItems: (pagination: Pagination) => Promise<T[]>;
   getTotalCount: () => Promise<number>;
-  isInternal?: boolean;
+  hostUrl?: string;
 }): Promise<PaginatedResponse<T, "items">> {
   const requestMeta = getRequestMeta(request);
 
@@ -94,7 +94,7 @@ export async function paginated<T extends { id: string }>({
             prevPageItemId,
             requestMeta.count,
             additionalQueryParams,
-            isInternal
+            hostUrl
           ),
         }
       : {}),
@@ -105,7 +105,7 @@ export async function paginated<T extends { id: string }>({
             nextPageItemId,
             requestMeta.count,
             additionalQueryParams,
-            isInternal
+            hostUrl
           ),
         }
       : {}),
@@ -120,10 +120,10 @@ function getPrevPageUrl(
   prePageToItem: string,
   count: number,
   additionalQueryParams: Record<string, string> | undefined,
-  isInternal: boolean
+  hostUrl: string
 ): string {
   const p: PaginationToItem = { toItem: prePageToItem };
-  return getPaginationUrl(req, p, count, additionalQueryParams, isInternal);
+  return getPaginationUrl(req, p, count, additionalQueryParams, hostUrl);
 }
 
 function getNextPageUrl(
@@ -131,10 +131,10 @@ function getNextPageUrl(
   nextPageFromItem: string,
   count: number,
   additionalQueryParams: Record<string, string> | undefined,
-  isInternal: boolean
+  hostUrl: string
 ): string {
   const p: PaginationFromItem = { fromItem: nextPageFromItem };
-  return getPaginationUrl(req, p, count, additionalQueryParams, isInternal);
+  return getPaginationUrl(req, p, count, additionalQueryParams, hostUrl);
 }
 
 function getPaginationUrl(
@@ -142,7 +142,7 @@ function getPaginationUrl(
   item: PaginationItem,
   count: number,
   additionalQueryParams: Record<string, string> | undefined,
-  isInternal: boolean
+  hostUrl: string
 ): string {
   const params = new URLSearchParams(item);
   params.append("count", count.toString());
@@ -153,11 +153,7 @@ function getPaginationUrl(
   }
 
   if ("_reconstructedRoute" in req) {
-    return getHostUrl(isInternal) + req._reconstructedRoute + "?" + params.toString();
+    return hostUrl + req._reconstructedRoute + "?" + params.toString();
   }
-  return getHostUrl(isInternal) + req.baseUrl + "?" + params.toString();
-}
-
-function getHostUrl(isInternal: boolean) {
-  return isInternal ? Config.getApiLoadBalancerAddress() : Config.getApiUrl();
+  return hostUrl + req.baseUrl + "?" + params.toString();
 }
