@@ -66,6 +66,7 @@ interface APIStackProps extends StackProps {
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
   public readonly alarmAction: SnsAction | undefined;
+  public readonly lambdasNestedStack: LambdasNestedStack;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -325,6 +326,19 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // General lambdas
     //-------------------------------------------
+    this.lambdasNestedStack = new LambdasNestedStack(this, "LambdasNestedStack", {
+      config: props.config,
+      vpc: this.vpc,
+      dbCluster,
+      dbCredsSecret,
+      secrets,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
+      alarmAction: slackNotification?.alarmAction,
+      bedrock: props.config.bedrock,
+      featureFlagsTable,
+    });
+
     const {
       lambdaLayers,
       cdaToVisualizationLambda,
@@ -342,18 +356,7 @@ export class APIStack extends Stack {
       },
       hl7v2RosterUploadLambda,
       conversionResultNotifierLambda,
-    } = new LambdasNestedStack(this, "LambdasNestedStack", {
-      config: props.config,
-      vpc: this.vpc,
-      dbCluster,
-      dbCredsSecret,
-      secrets,
-      medicalDocumentsBucket,
-      sandboxSeedDataBucket,
-      alarmAction: slackNotification?.alarmAction,
-      bedrock: props.config.bedrock,
-      featureFlagsTable,
-    });
+    } = this.lambdasNestedStack;
 
     //-------------------------------------------
     // Patient Import

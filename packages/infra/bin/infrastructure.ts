@@ -45,7 +45,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 3. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  new APIStack(app, config.stackName, { env, config, version });
+  const apiStack = new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 4. Deploy the HL7 Notification Routing stack.
@@ -56,6 +56,7 @@ async function deploy(config: EnvConfig) {
       config,
       version,
     });
+    hl7NotificationStack.addDependency(apiStack.lambdasNestedStack);
 
     config.hl7Notification.vpnConfigs.forEach((config, index) => {
       const vpnStack = new VpnStack(app, `VpnStack-${config.partnerName}`, {
