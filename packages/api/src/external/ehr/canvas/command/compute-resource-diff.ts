@@ -1,5 +1,5 @@
 import CanvasApi from "@metriport/core/external/ehr/canvas/index";
-import { ResourceWithId } from "@metriport/core/external/ehr/resource-diff/process/ehr-process-resource-diff";
+import { ResourceWithId } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff";
 import { buildEhrComputeResourceDiffHandler } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff-factory";
 import { BadRequestError } from "@metriport/shared";
 import {
