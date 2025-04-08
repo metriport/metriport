@@ -169,6 +169,7 @@ router.get(
         // There's no use for calculating the actual number of subscribers for this route
         return Promise.resolve(-1);
       },
+      isInternal: true,
     });
 
     const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {
