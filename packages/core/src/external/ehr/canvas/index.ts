@@ -41,21 +41,15 @@ const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
 
 export const supportedCanvasDiffResources = [
-  /*
   "AllergyIntolerance",
   "Condition",
-  */
   "DiagnosticReport",
-  /*
   "Encounter",
-  */
-  //"Medication",
-  /*
+  "Medication",
   "MedicationStatement",
   "MedicationRequest",
-  //"Observation",
+  "Observation",
   "Procedure",
-  */
 ];
 export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
 export const isSupportedCanvasDiffResource = (
