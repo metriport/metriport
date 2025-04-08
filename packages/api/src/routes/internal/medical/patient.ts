@@ -13,6 +13,7 @@ import {
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -169,6 +170,7 @@ router.get(
         // There's no use for calculating the actual number of subscribers for this route
         return Promise.resolve(-1);
       },
+      hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
     const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {

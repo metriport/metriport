@@ -62,6 +62,7 @@ export function getRequestMeta(req: Request): Pagination {
  * @param additionalQueryParams - Additional query parameters to be included in the pagination URL.
  * @param getItems - A function that takes pagination settings and returns a list of items for a given page.
  * @param getTotalCount - A function that returns the total number of items in all pages.
+ * @param hostUrl - The host URL to send the request to.
  * @returns An object containing the pagination metadata and the current page's items.
  */
 export async function paginated<T extends { id: string }>({
@@ -69,11 +70,13 @@ export async function paginated<T extends { id: string }>({
   additionalQueryParams,
   getItems,
   getTotalCount,
+  hostUrl = Config.getApiUrl(),
 }: {
   request: Request;
   additionalQueryParams: Record<string, string> | undefined;
   getItems: (pagination: Pagination) => Promise<T[]>;
   getTotalCount: () => Promise<number>;
+  hostUrl?: string;
 }): Promise<PaginatedResponse<T, "items">> {
   const requestMeta = getRequestMeta(request);
 
@@ -90,7 +93,8 @@ export async function paginated<T extends { id: string }>({
             request,
             prevPageItemId,
             requestMeta.count,
-            additionalQueryParams
+            additionalQueryParams,
+            hostUrl
           ),
         }
       : {}),
@@ -100,7 +104,8 @@ export async function paginated<T extends { id: string }>({
             request,
             nextPageItemId,
             requestMeta.count,
-            additionalQueryParams
+            additionalQueryParams,
+            hostUrl
           ),
         }
       : {}),
@@ -114,27 +119,30 @@ function getPrevPageUrl(
   req: Request,
   prePageToItem: string,
   count: number,
-  additionalQueryParams: Record<string, string> | undefined
+  additionalQueryParams: Record<string, string> | undefined,
+  hostUrl: string
 ): string {
   const p: PaginationToItem = { toItem: prePageToItem };
-  return getPaginationUrl(req, p, count, additionalQueryParams);
+  return getPaginationUrl(req, p, count, additionalQueryParams, hostUrl);
 }
 
 function getNextPageUrl(
   req: Request,
   nextPageFromItem: string,
   count: number,
-  additionalQueryParams: Record<string, string> | undefined
+  additionalQueryParams: Record<string, string> | undefined,
+  hostUrl: string
 ): string {
   const p: PaginationFromItem = { fromItem: nextPageFromItem };
-  return getPaginationUrl(req, p, count, additionalQueryParams);
+  return getPaginationUrl(req, p, count, additionalQueryParams, hostUrl);
 }
 
 function getPaginationUrl(
   req: Request,
   item: PaginationItem,
   count: number,
-  additionalQueryParams: Record<string, string> | undefined
+  additionalQueryParams: Record<string, string> | undefined,
+  hostUrl: string
 ): string {
   const params = new URLSearchParams(item);
   params.append("count", count.toString());
@@ -145,7 +153,7 @@ function getPaginationUrl(
   }
 
   if ("_reconstructedRoute" in req) {
-    return Config.getApiUrl() + req._reconstructedRoute + "?" + params.toString();
+    return hostUrl + req._reconstructedRoute + "?" + params.toString();
   }
-  return Config.getApiUrl() + req.baseUrl + "?" + params.toString();
+  return hostUrl + req.baseUrl + "?" + params.toString();
 }
