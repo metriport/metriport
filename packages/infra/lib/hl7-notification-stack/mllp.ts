@@ -7,7 +7,7 @@ import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
-import { MLLP_DEFAULT_PORT } from "./constants";
+import { MLLP_DEFAULT_PORT, MLLP_SERVER_NLB_PRIVATE_IP } from "./constants";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -54,6 +54,18 @@ export class MllpStack extends cdk.NestedStack {
         subnets: vpc.privateSubnets,
       },
     });
+
+    // Set static IP address for NLB in private subnet
+    const privateSubnet = vpc.privateSubnets[0];
+    if (!privateSubnet || vpc.privateSubnets.length !== 1) {
+      throw new Error("Should have exactly one private subnet");
+    }
+    (nlb.node.defaultChild as elbv2.CfnLoadBalancer).subnetMappings = [
+      {
+        subnetId: privateSubnet.subnetId,
+        privateIPv4Address: MLLP_SERVER_NLB_PRIVATE_IP,
+      },
+    ];
 
     const listener = nlb.addListener("MllpListener", {
       port: MLLP_DEFAULT_PORT,
