@@ -11,6 +11,7 @@ import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
 import { buildS3Key, unpackPidField, withErrorHandling } from "./utils";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 
 initSentry();
 
@@ -47,45 +48,53 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
         const { cxId, patientId } = unpackPidField(pid);
 
-      await buildHl7NotificationRouter().execute({
-        cxId,
-        patientId,
-        message: asString(message),
-        messageReceivedTimestamp: timestamp,
-      });
-
-      connection.send(message.buildAck());
-
-      await buildHl7NotificationRouter().execute({
-        cxId,
-        patientId,
-        message: asString(message),
-      });
-
-      connection.send(message.buildAck());
-
-      const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
-      const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
-      const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
-
-      s3Utils
-        .uploadFile({
-          bucket: bucketName,
-          key: buildS3Key({
-            cxId,
-            patientId,
-            timestamp,
-            messageType,
-            messageCode,
-          }),
-          file: Buffer.from(asString(message)),
-          contentType: "application/json",
-        })
-        .catch(e => {
-          logger.log(`S3 upload failed: ${e}`);
-          Sentry.captureException(e);
+        await buildHl7NotificationRouter().execute({
+          cxId,
+          patientId,
+          message: asString(message),
+          messageReceivedTimestamp: timestamp,
         });
-    }, logger));
+
+        connection.send(message.buildAck());
+
+        const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
+        const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
+        const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
+
+        s3Utils
+          .uploadFile({
+            bucket: bucketName,
+            key: buildS3Key({
+              cxId,
+              patientId,
+              timestamp,
+              messageType,
+              messageCode,
+            }),
+            file: Buffer.from(asString(message)),
+            contentType: "application/json",
+          })
+          .catch(e => {
+            logger.log(`S3 upload failed: ${e}`);
+            Sentry.captureException(e);
+          });
+
+        analytics(
+          {
+            distinctId: cxId,
+            event: EventTypes.hl7NotificationReceived,
+            properties: {
+              cxId,
+              patientId,
+              messageType,
+              messageCode,
+            },
+          },
+          undefined,
+          "mllp-server"
+        );
+      }, logger)
+    );
 
     connection.addEventListener(
       "error",
