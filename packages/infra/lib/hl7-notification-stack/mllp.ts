@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
@@ -23,6 +24,18 @@ export class MllpStack extends cdk.NestedStack {
     const { vpc, ecrRepo } = props;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
+
+    new s3.Bucket(this, "HL7NotificationBucket", {
+      bucketName: props.config.hl7Notification.bucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+        },
+      ],
+    });
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
