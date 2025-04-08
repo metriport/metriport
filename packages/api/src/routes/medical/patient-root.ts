@@ -176,7 +176,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /patient/match/external-id
+ * GET /patient/match-by-external-id
  *
  * Searches for a patient previously created at Metriport, based on an external ID. Returns the matched patient, if it exists.
  *
@@ -184,7 +184,7 @@ router.post(
  * @throws NotFoundError if the patient does not exist.
  */
 router.get(
-  "/match/external-id",
+  "/match-by-external-id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
