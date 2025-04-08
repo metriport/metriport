@@ -1,9 +1,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { Hl7Server } from "@medplum/hl7";
 import { Hl7Message } from "@medplum/core";
+import { Hl7Server } from "@medplum/hl7";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { buildHl7NotificationRouter } from "@metriport/core/command/hl7-notification/hl7-notification-router-factory";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
@@ -46,34 +47,36 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
         const { cxId, patientId } = unpackPidField(pid);
 
-        const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
-        const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
-        const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
-        Sentry.setExtras({ cxId, patientId, messageType, messageCode });
+      await buildHl7NotificationRouter().execute({
+        cxId,
+        patientId,
+        message: asString(message),
+      });
 
-        // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
+      connection.send(message.buildAck());
 
-        connection.send(message.buildAck());
+      const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
+      const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
+      const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
 
-        s3Utils
-          .uploadFile({
-            bucket: bucketName,
-            key: buildS3Key({
-              cxId,
-              patientId,
-              timestamp,
-              messageType,
-              messageCode,
-            }),
-            file: Buffer.from(asString(message)),
-            contentType: "text/plain",
-          })
-          .catch(e => {
-            logger.log(`S3 upload failed: ${e}`);
-            Sentry.captureException(e);
-          });
-      }, logger)
-    );
+      s3Utils
+        .uploadFile({
+          bucket: bucketName,
+          key: buildS3Key({
+            cxId,
+            patientId,
+            timestamp,
+            messageType,
+            messageCode,
+          }),
+          file: Buffer.from(asString(message)),
+          contentType: "application/json",
+        })
+        .catch(e => {
+          logger.log(`S3 upload failed: ${e}`);
+          Sentry.captureException(e);
+        });
+    }, logger));
 
     connection.addEventListener(
       "error",
