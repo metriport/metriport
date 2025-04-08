@@ -164,6 +164,9 @@ export const config: EnvConfigNonSandbox = {
       fargateTaskCountMin: 2,
       fargateTaskCountMax: 4,
     },
+    hl7v2RosterUploadLambda: {
+      bucketName: "your-roster-bucket",
+    },
   },
   acmCertMonitor: {
     scheduleExpressions: ["cw-schedule-expression"],
