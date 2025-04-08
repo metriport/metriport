@@ -10,6 +10,9 @@ export interface Hl7NotificationConfig {
     fargateTaskCountMin: number;
     fargateTaskCountMax: number;
   };
+  hl7v2RosterUploadLambda: {
+    bucketName: string;
+  };
 }
 
 export type Hl7NotificationVpnConfig = {

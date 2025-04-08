@@ -13,14 +13,15 @@ import {
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   BadRequestError,
+  PaginatedResponse,
   internalSendConsolidatedSchema,
   normalizeState,
-  PaginatedResponse,
   patientImportSchema,
   sleep,
   stringToBoolean,
@@ -44,18 +45,17 @@ import {
 } from "../../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
-  getHl7v2Subscribers,
-  getHl7v2SubscribersCount,
   GetHl7v2SubscribersParams,
+  getHl7v2Subscribers,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
+  getPatients,
 } from "../../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -166,7 +166,11 @@ router.get(
           pagination,
         });
       },
-      getTotalCount: () => getHl7v2SubscribersCount(params),
+      getTotalCount: () => {
+        // There's no use for calculating the actual number of subscribers for this route
+        return Promise.resolve(-1);
+      },
+      hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
     const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {
