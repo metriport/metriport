@@ -56,6 +56,14 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
       connection.send(message.buildAck());
 
+      await buildHl7NotificationRouter().execute({
+        cxId,
+        patientId,
+        message: asString(message),
+      });
+
+      connection.send(message.buildAck());
+
       const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
       const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
       const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
