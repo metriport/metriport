@@ -66,6 +66,7 @@ interface APIStackProps extends StackProps {
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
   public readonly alarmAction: SnsAction | undefined;
+  public readonly hl7NotificationBucket?: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -249,6 +250,14 @@ export class APIStack extends Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
     });
+
+    if (!isSandbox(props.config)) {
+      this.hl7NotificationBucket = new s3.Bucket(this, "HL7NotificationBucket", {
+        bucketName: props.config.hl7Notification.bucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+      });
+    }
 
     const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
       bucketName: props.config.medicalDocumentsBucketName,

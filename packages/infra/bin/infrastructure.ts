@@ -45,16 +45,17 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 3. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  new APIStack(app, config.stackName, { env, config, version });
+  const apiStack = new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 4. Deploy the HL7 Notification Routing stack.
   //---------------------------------------------------------------------------------
-  if (!isSandbox(config)) {
+  if (!isSandbox(config) && apiStack.hl7NotificationBucket) {
     const hl7NotificationStack = new Hl7NotificationStack(app, "Hl7NotificationStack", {
       env,
       config,
       version,
+      hl7NotificationBucket: apiStack.hl7NotificationBucket,
     });
 
     config.hl7Notification.vpnConfigs.forEach((config, index) => {
