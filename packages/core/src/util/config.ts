@@ -64,6 +64,9 @@ export class Config {
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
+  static getHl7Base64ScramblerSeed(): string {
+    return getEnvVarOrFail("HL7_BASE64_SCRAMBLER_SEED");
+  }
 
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
@@ -71,6 +74,9 @@ export class Config {
 
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  }
+  static getHl7NotificationBucketName(): string {
+    return getEnvVarOrFail("HL7_NOTIFICATION_BUCKET_NAME");
   }
   static getCdaToFhirConversionBucketName(): string | undefined {
     return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
@@ -130,11 +136,9 @@ export class Config {
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
   }
-  static getAppConfigAppId(): string {
-    return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
-  }
-  static getAppConfigConfigId(): string {
-    return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+
+  static getFeatureFlagsTableName(): string {
+    return getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
   }
 
   static getEhrResponsesBucketName(): string | undefined {
@@ -166,5 +170,9 @@ export class Config {
 
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
+  }
+
+  static getWriteToS3QueueUrl(): string {
+    return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
 }

@@ -1,5 +1,11 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import { NotFoundError, PaginatedResponse, stringToBoolean } from "@metriport/shared";
+import { out } from "@metriport/core/util/log";
+import {
+  BadRequestError,
+  NotFoundError,
+  PaginatedResponse,
+  stringToBoolean,
+} from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -7,6 +13,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import {
+  getPatientByExternalId,
   getPatientOrFail,
   getPatients,
   getPatientsCount,
@@ -15,6 +22,7 @@ import {
 import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
+import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
@@ -113,6 +121,7 @@ router.get(
 
     // TODO 483 remove this (and respected conditional) once pagination is fully rolled out
     if (!isPaginated(req)) {
+      out(`List patients - cx ${cxId}`).log(`Running without pagination`);
       const patients = await getPatients({ cxId, facilityId: facilityId, fullTextSearchFilters });
       const patientsData = patients.map(dtoFromModel);
       return res.status(httpStatus.OK).json({ patients: patientsData });
@@ -162,6 +171,36 @@ router.post(
       await getPatientOrFail({ cxId, id: patient.id });
       return res.status(httpStatus.OK).json(dtoFromModel(patient));
     }
+    throw new NotFoundError("Cannot find patient");
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/match/external-id
+ *
+ * Searches for a patient previously created at Metriport, based on an external ID. Returns the matched patient, if it exists.
+ *
+ * @return The matched patient.
+ * @throws NotFoundError if the patient does not exist.
+ */
+router.get(
+  "/match/external-id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    const source = getFromQuery("source", req);
+    if (source && !isPatientMappingSource(source)) {
+      throw new BadRequestError("Invalid source", undefined, { source });
+    }
+
+    const patient = await getPatientByExternalId({
+      cxId,
+      externalId,
+      ...(source ? { source: source as PatientMappingSource } : {}),
+    });
+
+    if (patient) return res.status(httpStatus.OK).json(dtoFromModel(patient));
     throw new NotFoundError("Cannot find patient");
   })
 );

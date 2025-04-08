@@ -147,6 +147,10 @@ export const config: EnvConfigNonSandbox = {
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
+    secrets: {
+      HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
+    },
+    bucketName: "test-hl7-notification-bucket",
     vpnConfigs: [
       {
         partnerName: "SampleHIE",
@@ -159,6 +163,9 @@ export const config: EnvConfigNonSandbox = {
       fargateMemoryLimitMiB: 2048,
       fargateTaskCountMin: 2,
       fargateTaskCountMax: 4,
+    },
+    hl7v2RosterUploadLambda: {
+      bucketName: "your-roster-bucket",
     },
   },
   acmCertMonitor: {

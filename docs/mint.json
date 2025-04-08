@@ -32,7 +32,7 @@
     },
     {
       "name": "Github",
-      "url": "https://github.com/mintlify/docs"
+      "url": "https://github.com/metriport/metriport"
     }
   ],
   "primaryTab": {
@@ -84,6 +84,7 @@
             "medical-api/api-reference/patient/get-patient",
             "medical-api/api-reference/patient/update-patient",
             "medical-api/api-reference/patient/match-patient",
+            "medical-api/api-reference/patient/match-patient-external-id",
             "medical-api/api-reference/patient/list-patients",
             "medical-api/api-reference/patient/delete-patient",
             "medical-api/api-reference/patient/hie-opt-out",

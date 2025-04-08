@@ -1,5 +1,9 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import {
+  getCxsWithCQDirectFeatureFlagValue,
+  getCxsWithEnhancedCoverageFeatureFlagValue,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
@@ -9,6 +13,7 @@ import {
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -45,7 +50,6 @@ import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
   GetHl7v2SubscribersParams,
   getHl7v2Subscribers,
-  getHl7v2SubscribersCount,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
@@ -59,10 +63,6 @@ import {
 } from "../../../command/medical/patient/update-patient";
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import {
-  getCxsWithCQDirectFeatureFlagValue,
-  getCxsWithEnhancedCoverageFeatureFlagValue,
-} from "../../../external/aws/app-config";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../../external/commonwell";
 import { findDuplicatedPersons } from "../../../external/commonwell/admin/find-patient-duplicates";
@@ -166,7 +166,11 @@ router.get(
           pagination,
         });
       },
-      getTotalCount: () => getHl7v2SubscribersCount(params),
+      getTotalCount: () => {
+        // There's no use for calculating the actual number of subscribers for this route
+        return Promise.resolve(-1);
+      },
+      hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
     const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {

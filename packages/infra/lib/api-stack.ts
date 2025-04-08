@@ -1,11 +1,11 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -39,17 +39,15 @@ import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-c
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
-import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
-import { createAppConfigStack } from "./app-config-stack";
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
+import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
-import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -141,11 +139,10 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const { appConfigAppId, appConfigConfigId, appConfigEnvId, deploymentStrategyId } =
-      createAppConfigStack({
-        stack: this,
-        props: { config: props.config },
-      });
+    const { featureFlagsTable } = new FeatureFlagsNestedStack(this, "FeatureFlags", {
+      config: props.config,
+      alarmAction: slackNotification?.alarmAction,
+    });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -330,9 +327,11 @@ export class APIStack extends Stack {
       fhirToBundleLambda,
       fhirConverterConnector: {
         queue: fhirConverterQueue,
-        dlq: fhirConverterDLQ,
+        lambda: fhirConverterLambda,
         bucket: fhirConverterBucket,
       },
+      hl7v2RosterUploadLambda,
+      conversionResultNotifierLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -343,10 +342,7 @@ export class APIStack extends Stack {
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
-      appConfigEnvVars: {
-        appId: appConfigAppId,
-        configId: appConfigConfigId,
-      },
+      featureFlagsTable,
     });
 
     //-------------------------------------------
@@ -432,7 +428,6 @@ export class APIStack extends Stack {
       );
     }
 
-    let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
     let fhirToMedicalRecordLambda2: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
       const lambdas = this.setupFhirToMedicalRecordLambda({
@@ -443,13 +438,9 @@ export class APIStack extends Stack {
         dashUrl: props.config.dashUrl,
         sentryDsn: props.config.lambdasSentryDSN,
         alarmAction: slackNotification?.alarmAction,
-        appConfigEnvVars: {
-          appId: appConfigAppId,
-          configId: appConfigConfigId,
-        },
+        featureFlagsTable,
         ...props.config.fhirToMedicalLambda,
       });
-      fhirToMedicalRecordLambda = lambdas.fhirToMedicalRecordLambda;
       fhirToMedicalRecordLambda2 = lambdas.fhirToMedicalRecordLambda2;
     }
 
@@ -500,8 +491,6 @@ export class APIStack extends Stack {
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
-      // TODO 1672 Keep only one when ready to rollout to all customers
-      fhirToMedicalRecordLambda,
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
@@ -510,12 +499,7 @@ export class APIStack extends Stack {
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
       searchIndexName: ccdaSearchIndexName,
-      appConfigEnvVars: {
-        appId: appConfigAppId,
-        configId: appConfigConfigId,
-        envId: appConfigEnvId,
-        deploymentStrategyId: deploymentStrategyId,
-      },
+      featureFlagsTable,
       cookieStore,
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
@@ -543,6 +527,7 @@ export class APIStack extends Stack {
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
+        alarmAction: slackNotification?.alarmAction,
       });
     }
 
@@ -576,50 +561,27 @@ export class APIStack extends Stack {
       resource: apiService.service.taskDefinition.taskRole,
     });
 
-    const fhirConverterLambda = fhirConverterConnector.createLambda({
-      envType: props.config.environmentType,
-      stack: this,
-      lambdaLayers,
-      vpc: this.vpc,
-      sourceQueue: fhirConverterQueue,
-      dlq: fhirConverterDLQ,
-      fhirConverterBucket,
-      medicalDocumentsBucket,
-      fhirServerUrl: props.config.fhirServerUrl,
-      termServerUrl: props.config.termServerUrl,
-      apiServiceDnsAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-      appConfigEnvVars: {
-        appId: appConfigAppId,
-        configId: appConfigConfigId,
-      },
-    });
-
     // Add ENV after the API service is created
-    fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    hl7v2RosterUploadLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     patientImportCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
-    fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
-
-    AppConfigUtils.allowReadConfig({
-      scope: this,
-      resourceName: "FhirConverterLambda",
-      resourceRole: fhirConverterLambda.role,
-      appConfigResources: ["*"],
-    });
+    medicalDocumentsBucket.grantRead(fhirConverterLambda);
 
     createDocQueryChecker({
       lambdaLayers,
@@ -1348,7 +1310,6 @@ export class APIStack extends Stack {
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {
-    nodeRuntimeArn: string;
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
@@ -1356,13 +1317,9 @@ export class APIStack extends Stack {
     dashUrl: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    appConfigEnvVars: {
-      appId: string;
-      configId: string;
-    };
-  }): { fhirToMedicalRecordLambda: Lambda; fhirToMedicalRecordLambda2: Lambda } {
+    featureFlagsTable: dynamodb.Table;
+  }): { fhirToMedicalRecordLambda2: Lambda } {
     const {
-      nodeRuntimeArn,
       lambdaLayers,
       vpc,
       sentryDsn,
@@ -1370,41 +1327,11 @@ export class APIStack extends Stack {
       dashUrl,
       alarmAction,
       medicalDocumentsBucket,
-      appConfigEnvVars,
+      featureFlagsTable,
     } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
-
-    const fhirToMedicalRecordLambda = createLambda({
-      stack: this,
-      name: "FhirToMedicalRecord",
-      runtime: lambda.Runtime.NODEJS_16_X,
-      // TODO https://github.com/metriport/metriport-internal/issues/1672
-      runtimeManagementMode: lambda.RuntimeManagementMode.manual(nodeRuntimeArn),
-      entry: "fhir-to-medical-record",
-      envType,
-      envVars: {
-        AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
-        PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
-        APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-        APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-        DASH_URL: dashUrl,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      layers: [
-        lambdaLayers.shared,
-        lambdaLayers.langchain,
-        lambdaLayers.chromium,
-        lambdaLayers.puppeteer,
-      ],
-      memory: 8192,
-      timeout: lambdaTimeout,
-      isEnableInsights: true,
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
 
     const fhirToMedicalRecordLambda2 = createLambda({
       stack: this,
@@ -1416,8 +1343,7 @@ export class APIStack extends Stack {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
-        APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-        APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         DASH_URL: dashUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -1429,23 +1355,11 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    AppConfigUtils.allowReadConfig({
-      scope: this,
-      resourceName: "FhirToMrLambda",
-      resourceRole: fhirToMedicalRecordLambda.role,
-      appConfigResources: ["*"],
-    });
-    AppConfigUtils.allowReadConfig({
-      scope: this,
-      resourceName: "FhirToMrLambda2",
-      resourceRole: fhirToMedicalRecordLambda2.role,
-      appConfigResources: ["*"],
-    });
+    featureFlagsTable.grantReadData(fhirToMedicalRecordLambda2);
 
-    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda2);
 
-    return { fhirToMedicalRecordLambda, fhirToMedicalRecordLambda2 };
+    return { fhirToMedicalRecordLambda2 };
   }
 
   private setupCWDocContribution(ownProps: {

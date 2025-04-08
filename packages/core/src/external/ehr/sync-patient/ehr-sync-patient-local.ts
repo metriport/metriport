@@ -11,6 +11,7 @@ export class EhrSyncPatientLocal implements EhrSyncPatientHandler {
     ehr,
     cxId,
     practiceId,
+    departmentId,
     patientId,
     triggerDq,
   }: ProcessSyncPatientRequest): Promise<void> {
@@ -24,6 +25,7 @@ export class EhrSyncPatientLocal implements EhrSyncPatientHandler {
         practiceId,
         patientId,
         triggerDq,
+        ...(departmentId ? { departmentId } : {}),
       });
 
       if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
