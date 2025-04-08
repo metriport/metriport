@@ -20,7 +20,6 @@ import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
-import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
@@ -29,7 +28,6 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
-import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
@@ -55,7 +53,7 @@ import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from 
 import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
 import { getSecrets, Secrets } from "./shared/secrets";
-import { createQueue, provideAccessToQueue } from "./shared/sqs";
+import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
@@ -336,6 +334,7 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
+      hl7NotificationRouterLambda,
       fhirConverterConnector: {
         queue: fhirConverterQueue,
         lambda: fhirConverterLambda,
@@ -453,23 +452,6 @@ export class APIStack extends Stack {
         ...props.config.fhirToMedicalLambda,
       });
       fhirToMedicalRecordLambda2 = lambdas.fhirToMedicalRecordLambda2;
-    }
-
-    let hl7NotificationRouterLambda: Lambda | undefined = undefined;
-    let hl7NotificationRouterQueue: IQueue | undefined = undefined;
-    if (!isSandbox(props.config)) {
-      const constructs = this.setupHl7NotificationRouterLambda({
-        lambdaLayers,
-        vpc: this.vpc,
-        medicalDocumentsBucket,
-        envType: props.config.environmentType,
-        sentryDsn: props.config.lambdasSentryDSN,
-        alarmAction: slackNotification?.alarmAction,
-        featureFlagsTable,
-        ...props.config.fhirToMedicalLambda,
-      });
-      hl7NotificationRouterLambda = constructs.hl7NotificationRouterLambda;
-      hl7NotificationRouterQueue = constructs.hl7NotificationRouterQueue;
     }
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
@@ -988,19 +970,6 @@ export class APIStack extends Stack {
       description: "Userpool for client secret based apps",
       value: userPoolClientSecret.userPoolId,
     });
-
-    if (hl7NotificationRouterQueue) {
-      new CfnOutput(this, "Hl7NotificationRouterQueueArn", {
-        description: "HL7 Message Router Queue ARN",
-        value: hl7NotificationRouterQueue.queueArn,
-        exportName: "Hl7NotificationRouterQueueArn",
-      });
-      new CfnOutput(this, "Hl7NotificationRouterQueueUrl", {
-        description: "HL7 Message Router Queue URL",
-        value: hl7NotificationRouterQueue.queueUrl,
-        exportName: "Hl7NotificationRouterQueueUrl",
-      });
-    }
   }
 
   createFeedbackRoutes({
@@ -1350,69 +1319,6 @@ export class APIStack extends Stack {
     bulkUrlSigningLambda.grantInvoke(apiTaskRole);
 
     return bulkUrlSigningLambda;
-  }
-
-  private setupHl7NotificationRouterLambda(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    medicalDocumentsBucket: s3.Bucket;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    featureFlagsTable: dynamodb.Table;
-  }): { hl7NotificationRouterLambda: Lambda; hl7NotificationRouterQueue: IQueue } {
-    const {
-      lambdaLayers,
-      vpc,
-      sentryDsn,
-      envType,
-      alarmAction,
-      medicalDocumentsBucket,
-      featureFlagsTable,
-    } = ownProps;
-
-    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
-    const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
-
-    const hl7NotificationRouterQueue = createQueue({
-      stack: this,
-      name: "Hl7NotificationRouterQueue",
-      fifo: true,
-      createDLQ: true,
-      visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
-      lambdaLayers: [lambdaLayers.shared],
-      envType,
-      alarmSnsAction: alarmAction,
-      alarmMaxAgeOfOldestMessage: Duration.minutes(5),
-      maxMessageCountAlarmThreshold: 5_000,
-      createRetryLambda: true,
-    });
-
-    const hl7NotificationRouterLambda = createLambda({
-      stack: this,
-      name: "Hl7NotificationRouter",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "hl7-notification-router",
-      envType,
-      envVars: {
-        AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
-        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      layers: [lambdaLayers.shared],
-      memory: 4096,
-      timeout: lambdaTimeout,
-      isEnableInsights: true,
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    featureFlagsTable.grantReadData(hl7NotificationRouterLambda);
-    medicalDocumentsBucket.grantReadWrite(hl7NotificationRouterLambda);
-    hl7NotificationRouterLambda.addEventSource(new SqsEventSource(hl7NotificationRouterQueue));
-
-    return { hl7NotificationRouterLambda, hl7NotificationRouterQueue };
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {
