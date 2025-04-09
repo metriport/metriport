@@ -53,47 +53,6 @@ export class MllpStack extends cdk.NestedStack {
       "Allow outbound traffic from MLLP server"
     );
 
-    const privateSubnet = vpc.privateSubnets[0];
-    if (!privateSubnet || vpc.privateSubnets.length !== 1) {
-      throw new Error("Should have exactly one private subnet");
-    }
-
-    // Create the load balancer using CfnLoadBalancer
-    const nlb = new elbv2.CfnLoadBalancer(this, "MllpNLB", {
-      type: "network",
-      scheme: "internal",
-      subnetMappings: [
-        {
-          subnetId: privateSubnet.subnetId,
-          privateIPv4Address: MLLP_SERVER_NLB_INTERNAL_IP,
-        },
-      ],
-    });
-
-    // Create the target group using CfnTargetGroup
-    const targetGroup = new elbv2.CfnTargetGroup(this, "MllpNLBTargets", {
-      port: MLLP_DEFAULT_PORT,
-      protocol: "TCP",
-      targetType: "ip",
-      vpcId: vpc.vpcId,
-      healthyThresholdCount: 3,
-      unhealthyThresholdCount: 2,
-      healthCheckTimeoutSeconds: 10,
-      healthCheckIntervalSeconds: 20,
-    });
-
-    new elbv2.CfnListener(this, "MllpNLBListener", {
-      loadBalancerArn: nlb.ref,
-      port: MLLP_DEFAULT_PORT,
-      protocol: "TCP",
-      defaultActions: [
-        {
-          type: "forward",
-          targetGroupArn: targetGroup.ref,
-        },
-      ],
-    });
-
     const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
       cpu: fargateCpu,
       memoryLimitMiB: fargateMemoryLimitMiB,
@@ -124,14 +83,47 @@ export class MllpStack extends cdk.NestedStack {
       securityGroups: [mllpSecurityGroup],
     });
 
-    new ecs.CfnService(this, "MllpServerServiceAttachment", {
-      cluster: cluster.clusterName,
-      serviceName: fargateService.serviceName,
-      loadBalancers: [
+    const privateSubnet = vpc.privateSubnets[0];
+    if (!privateSubnet || vpc.privateSubnets.length !== 1) {
+      throw new Error("Should have exactly one private subnet");
+    }
+
+    const nlb = new elbv2.CfnLoadBalancer(this, "MllpNLB", {
+      type: "network",
+      scheme: "internal",
+      subnetMappings: [
         {
+          subnetId: privateSubnet.subnetId,
+          privateIPv4Address: MLLP_SERVER_NLB_INTERNAL_IP,
+        },
+      ],
+    });
+
+    const targetGroup = new elbv2.CfnTargetGroup(this, "MllpNLBTargets", {
+      targets: [
+        {
+          id: fargateService.serviceName,
+          port: MLLP_DEFAULT_PORT,
+        },
+      ],
+      port: MLLP_DEFAULT_PORT,
+      protocol: "TCP",
+      targetType: "ip",
+      vpcId: vpc.vpcId,
+      healthyThresholdCount: 3,
+      unhealthyThresholdCount: 2,
+      healthCheckTimeoutSeconds: 10,
+      healthCheckIntervalSeconds: 20,
+    });
+
+    new elbv2.CfnListener(this, "MllpNLBListener", {
+      loadBalancerArn: nlb.ref,
+      port: MLLP_DEFAULT_PORT,
+      protocol: "TCP",
+      defaultActions: [
+        {
+          type: "forward",
           targetGroupArn: targetGroup.ref,
-          containerName: MLLP_SERVER_CONTAINER_NAME,
-          containerPort: MLLP_DEFAULT_PORT,
         },
       ],
     });
