@@ -60,7 +60,7 @@ export class MllpStack extends cdk.NestedStack {
       throw new Error("Should have exactly one private subnet");
     }
     const cfnNlb = nlb.node.defaultChild as elbv2.CfnLoadBalancer;
-    cfnNlb.subnets = undefined;
+    cfnNlb.addDeletionOverride("Properties.Subnets");
     cfnNlb.subnetMappings = [
       {
         subnetId: privateSubnet.subnetId,
