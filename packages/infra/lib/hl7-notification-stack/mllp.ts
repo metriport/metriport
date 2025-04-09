@@ -8,7 +8,11 @@ import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
-import { MLLP_DEFAULT_PORT, MLLP_SERVER_NLB_INTERNAL_IP } from "./constants";
+import {
+  MLLP_DEFAULT_PORT,
+  MLLP_SERVER_CONTAINER_NAME,
+  MLLP_SERVER_NLB_INTERNAL_IP,
+} from "./constants";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -49,41 +53,45 @@ export class MllpStack extends cdk.NestedStack {
       "Allow outbound traffic from MLLP server"
     );
 
-    const nlb = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB2", {
-      vpc,
-      internetFacing: false,
-      vpcSubnets: {
-        subnets: vpc.privateSubnets,
-      },
-    });
-
-    // Set static IP address for NLB in private subnet
     const privateSubnet = vpc.privateSubnets[0];
     if (!privateSubnet || vpc.privateSubnets.length !== 1) {
       throw new Error("Should have exactly one private subnet");
     }
-    (nlb.node.defaultChild as elbv2.CfnLoadBalancer).subnetMappings = [
-      {
-        subnetId: privateSubnet.subnetId,
-        privateIPv4Address: MLLP_SERVER_NLB_INTERNAL_IP,
-      },
-    ];
 
-    const listener = nlb.addListener("MllpListener", {
-      port: MLLP_DEFAULT_PORT,
+    // Create the load balancer using CfnLoadBalancer
+    const nlb = new elbv2.CfnLoadBalancer(this, "MllpNLB", {
+      type: "network",
+      scheme: "internal",
+      subnetMappings: [
+        {
+          subnetId: privateSubnet.subnetId,
+          privateIPv4Address: MLLP_SERVER_NLB_INTERNAL_IP,
+        },
+      ],
     });
 
-    const targetGroup = listener.addTargets("MllpTargets", {
+    // Create the target group using CfnTargetGroup
+    const targetGroup = new elbv2.CfnTargetGroup(this, "MllpNLBTargets", {
       port: MLLP_DEFAULT_PORT,
-      protocol: elbv2.Protocol.TCP,
-      healthCheck: {
-        port: MLLP_DEFAULT_PORT.toString(),
-        protocol: elbv2.Protocol.TCP,
-        healthyThresholdCount: 3,
-        unhealthyThresholdCount: 2,
-        timeout: Duration.seconds(10),
-        interval: Duration.seconds(20),
-      },
+      protocol: "TCP",
+      targetType: "ip",
+      vpcId: vpc.vpcId,
+      healthyThresholdCount: 3,
+      unhealthyThresholdCount: 2,
+      healthCheckTimeoutSeconds: 10,
+      healthCheckIntervalSeconds: 20,
+    });
+
+    new elbv2.CfnListener(this, "MllpNLBListener", {
+      loadBalancerArn: nlb.ref,
+      port: MLLP_DEFAULT_PORT,
+      protocol: "TCP",
+      defaultActions: [
+        {
+          type: "forward",
+          targetGroupArn: targetGroup.ref,
+        },
+      ],
     });
 
     const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
@@ -93,7 +101,7 @@ export class MllpStack extends cdk.NestedStack {
 
     hl7NotificationBucket.grantWrite(taskDefinition.taskRole);
 
-    taskDefinition.addContainer("MllpServer", {
+    taskDefinition.addContainer(MLLP_SERVER_CONTAINER_NAME, {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
       secrets: secretsToECS(buildSecrets(this, props.config.hl7Notification.secrets)),
       environment: {
@@ -116,7 +124,17 @@ export class MllpStack extends cdk.NestedStack {
       securityGroups: [mllpSecurityGroup],
     });
 
-    targetGroup.addTarget(fargateService);
+    new ecs.CfnService(this, "MllpServerServiceAttachment", {
+      cluster: cluster.clusterName,
+      serviceName: fargateService.serviceName,
+      loadBalancers: [
+        {
+          targetGroupArn: targetGroup.ref,
+          containerName: MLLP_SERVER_CONTAINER_NAME,
+          containerPort: MLLP_DEFAULT_PORT,
+        },
+      ],
+    });
 
     const scaling = fargateService.autoScaleTaskCount({
       minCapacity: fargateTaskCountMin,
@@ -144,11 +162,6 @@ export class MllpStack extends cdk.NestedStack {
     new cdk.CfnOutput(this, "MllpServiceArn", {
       value: fargateService.serviceArn,
       description: "ARN of the MLLP Fargate Service",
-    });
-
-    new cdk.CfnOutput(this, "MllpNlbDnsName", {
-      value: nlb.loadBalancerDnsName,
-      description: "DNS name of the Network Load Balancer for MLLP",
     });
   }
 }
