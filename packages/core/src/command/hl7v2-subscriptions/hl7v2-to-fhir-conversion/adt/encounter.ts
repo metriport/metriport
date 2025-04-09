@@ -1,13 +1,13 @@
-import { Hl7Message, Hl7Segment } from "@medplum/core";
+import { Hl7Message } from "@medplum/core";
 import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
 import { buildPatientReference } from "../../../../external/fhir/shared/references";
-import { buildPeriod } from "../../../../external/fhir/shared/timestamps";
 import { uuidv7 } from "../../../../util/uuid-v7";
 import { MessageType } from "../msh";
 import { getSegmentByNameOrFail } from "../shared";
 import { getAdmitReasonFromPatientVisitAddon } from "./condition";
 import { getLocationFromAdt } from "./location";
 import { getParticipantsFromAdt } from "./practitioner";
+import { getPatientClassCode, getPeriodFromPatientVisit } from "./utils";
 
 const adtPatientClass = ["B", "C", "E", "I", "N", "O", "P", "R", "U"] as const;
 export type AdtPatientClass = (typeof adtPatientClass)[number];
@@ -48,8 +48,8 @@ export function mapEncounterAndRelatedResources(
 ): Resource[] {
   const status = inferStatusFromMessage(messageType);
   const pv1Segment = getSegmentByNameOrFail(adt, "PV1");
-  const encounterClass = getClassFromPatientVisit(pv1Segment);
-  const period = getPeriodFromPatientVisit(pv1Segment);
+  const encounterClass = getClassFromPatientVisit(adt);
+  const period = getPeriodFromPatientVisit(adt);
   const participants = getParticipantsFromAdt(pv1Segment);
 
   const admitReason = getAdmitReasonFromPatientVisitAddon(adt, patientId);
@@ -100,8 +100,8 @@ function inferStatusFromMessage(messageType: MessageType): NonNullable<Encounter
   }
 }
 
-function getClassFromPatientVisit(pv1Segment: Hl7Segment): Coding {
-  const patientClassCode = pv1Segment.getField(2).getComponent(1);
+function getClassFromPatientVisit(adt: Hl7Message): Coding {
+  const patientClassCode = getPatientClassCode(adt);
 
   if (!isAdtPatientClass(patientClassCode)) {
     return DEFAULT_ENCOUNTER_CLASS;
@@ -128,11 +128,4 @@ function mapAdtPatientClassToFhirEncounterClass(adtPatientClass: AdtPatientClass
     display: fhirClass.display,
     system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
   };
-}
-
-function getPeriodFromPatientVisit(pv1Segment: Hl7Segment): Encounter["period"] | undefined {
-  const start = pv1Segment.getField(44)?.getComponent(1);
-  const end = pv1Segment.getField(45)?.getComponent(1);
-
-  return buildPeriod(start, end);
 }

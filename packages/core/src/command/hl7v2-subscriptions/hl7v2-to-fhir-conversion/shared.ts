@@ -49,6 +49,33 @@ export function unpackPidFieldOrFail(pid: string) {
   return { cxId, patientId };
 }
 
+export function getRequiredValueFromMessage(
+  msg: Hl7Message,
+  targetSegmentName: string,
+  fieldIndex: number,
+  componentIndex: number
+): string {
+  const segment = msg.getSegment(targetSegmentName);
+  if (!segment) throw new Error(); // TODO: Fix this
+
+  const value = getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
+  if (!value) throw new Error(); // TODO: Fix this
+
+  return value;
+}
+
+export function getOptionalValueFromMessage(
+  msg: Hl7Message,
+  targetSegmentName: string,
+  fieldIndex: number,
+  componentIndex: number
+): string | undefined {
+  const segment = msg.getSegment(targetSegmentName);
+  if (!segment) return undefined;
+
+  return getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
+}
+
 export function getSegmentByNameOrFail(msg: Hl7Message, targetSegmentName: string): Hl7Segment {
   const segment = msg.getSegment(targetSegmentName);
   if (!segment) {
