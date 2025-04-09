@@ -49,7 +49,7 @@ export class MllpStack extends cdk.NestedStack {
       "Allow outbound traffic from MLLP server"
     );
 
-    const nlb = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB", {
+    const nlb = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB2", {
       vpc,
       internetFacing: false,
       vpcSubnets: {
