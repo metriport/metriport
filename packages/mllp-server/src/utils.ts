@@ -38,10 +38,10 @@ export function buildS3Key({
   return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
 }
 
-export const withErrorHandling = <T>(
+export function withErrorHandling<T>(
   handler: (data: T) => void,
   logger: Logger
-): ((data: T) => Promise<void>) => {
+): (data: T) => Promise<void> {
   return async (data: T) => {
     try {
       await handler(data);
@@ -50,4 +50,4 @@ export const withErrorHandling = <T>(
       Sentry.captureException(error);
     }
   };
-};
+}
