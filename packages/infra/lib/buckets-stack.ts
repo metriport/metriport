@@ -1,4 +1,4 @@
-import { RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
+import { Stack, StackProps } from "aws-cdk-lib";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -20,9 +20,6 @@ export class BucketsStack extends Stack {
     if (!isSandbox(props.config)) {
       this.hl7NotificationBucket = createBucket(this, {
         bucketName: props.config.hl7Notification.bucketName,
-
-        // TODO: remove this before asking for review
-        removalPolicy: RemovalPolicy.DESTROY,
       });
     }
   }
