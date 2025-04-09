@@ -1,0 +1,100 @@
+import { Hl7Context, Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
+import { MetriportError } from "@metriport/shared";
+import { Base64Scrambler } from "../../../util/base64-scrambler";
+import { Config } from "../../../util/config";
+import {
+  CPT_URL,
+  CVX_URL,
+  HL7_ACT_URL,
+  ICD_10_URL,
+  ICD_9_URL,
+  LOINC_URL,
+  NDC_URL,
+  RXNORM_URL,
+  SNOMED_URL,
+} from "../../../util/constants";
+import { packUuid, unpackUuid } from "../../../util/pack-uuid";
+
+const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
+
+// TODO: Ensure the ADT system values are correct and up to date
+const adtSystemToUrlMap: Record<string, string> = {
+  SCT: SNOMED_URL, // SNOMED CT
+  LN: LOINC_URL, // LOINC
+  ICD10: ICD_10_URL, // ICD-10
+  ICD9: ICD_9_URL, // ICD-9
+  RXNORM: RXNORM_URL, // RxNorm
+  NDC: NDC_URL, // National Drug Code
+  CVX: CVX_URL, // CVX Vaccine Codes
+  CPT: CPT_URL, // Current Procedural Terminology
+  HL7: HL7_ACT_URL, // HL7 Act Code
+};
+
+export function parseHl7v2Message(msgSegments: Hl7Segment[], context?: Hl7Context) {
+  return new Hl7Message(msgSegments, context);
+}
+
+function reformUuid(shortId: string) {
+  return unpackUuid(crypto.unscramble(shortId));
+}
+
+export function formFromUuid(uuid: string) {
+  return crypto.scramble(packUuid(uuid));
+}
+
+export function unpackPidFieldOrFail(pid: string) {
+  const [cxId, patientId] = pid.split("_").map(reformUuid);
+  if (!cxId || !patientId) throw new MetriportError("Invalid PID format");
+
+  return { cxId, patientId };
+}
+
+export function getSegmentByNameOrFail(msg: Hl7Message, targetSegmentName: string): Hl7Segment {
+  const segment = msg.getSegment(targetSegmentName);
+  if (!segment) {
+    throw new MetriportError(`Segment ${targetSegmentName} not found in message`);
+  }
+  return segment;
+}
+
+export function getOptionalValueFromSegment(
+  segment: Hl7Segment,
+  fieldIndex: number,
+  componentIndex: number
+): string | undefined {
+  const component = segment.getComponent(fieldIndex, componentIndex).trim();
+  return component.length > 0 ? component : undefined;
+}
+
+export function getOptionalValueFromField(
+  field: Hl7Field,
+  componentIndex: number
+): string | undefined {
+  const component = field.getComponent(componentIndex).trim();
+  return component.length > 0 ? component : undefined;
+}
+
+/**
+ * Maps an ADT system name to its corresponding FHIR URL.
+ * Returns undefined if the system name is not recognized.
+ */
+export function mapAdtSystemNameToSystemUrl(systemName: string | undefined): string | undefined {
+  if (!systemName) return undefined;
+  return adtSystemToUrlMap[systemName.trim().toUpperCase()];
+}
+
+export function buildHl7MessageFileKey({
+  cxId,
+  patientId,
+  timestamp,
+  messageType,
+  messageCode,
+}: {
+  cxId: string;
+  patientId: string;
+  timestamp: string;
+  messageType: string;
+  messageCode: string;
+}) {
+  return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
+}

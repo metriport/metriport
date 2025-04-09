@@ -68,6 +68,27 @@ export function buildDayjs(date?: ConfigType, format?: string, strict?: boolean)
   return dayjs.utc(date, format, strict);
 }
 
+// TODO 2883: Write some unit tests
+function tryParseCompactDate(input: string): string | undefined {
+  const match = input.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})([+-])(\d{2})(\d{2})$/);
+  if (!match) return undefined;
+
+  const [, year, month, day, hour, minute, second, sign, tzHour, tzMinute] = match;
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}${sign}${tzHour}:${tzMinute}`;
+}
+
+export function buildDayjsFromCompactDate(
+  date?: ConfigType,
+  format?: string,
+  strict?: boolean
+): dayjs.Dayjs {
+  if (typeof date === "string") {
+    const parsed = tryParseCompactDate(date);
+    if (parsed) return dayjs.utc(parsed, format, strict);
+  }
+  return dayjs.utc(date, format, strict);
+}
+
 export function sortDate(
   date1: ConfigType,
   date2: ConfigType,
