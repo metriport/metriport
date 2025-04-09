@@ -65,7 +65,7 @@ export function computeResourceDiff({
 
   const resources = existingResources.concat([newResource]);
   let deduplicatedResources: Resource[];
-  switch (mewResourceType) {
+  switch (newResourceType) {
     case "AllergyIntolerance":
       deduplicatedResources = deduplicateAllergyIntolerances(
         resources as AllergyIntolerance[]
@@ -138,8 +138,8 @@ export function computeResourceDiff({
       ).combinedResources;
       break;
     default:
-      throw new BadRequestError(`Unsupported resource type: ${mewResourceType}`, undefined, {
-        resourceType: mewResourceType,
+      throw new BadRequestError(`Unsupported resource type: ${newResourceType}`, undefined, {
+        resourceType: newResourceType,
       });
   }
 
