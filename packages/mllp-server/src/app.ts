@@ -66,7 +66,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
               messageCode,
             }),
             file: Buffer.from(asString(message)),
-            contentType: "application/json",
+            contentType: "text/plain",
           })
           .catch(e => {
             logger.log(`S3 upload failed: ${e}`);
