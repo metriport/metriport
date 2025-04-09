@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
@@ -11,6 +12,7 @@ import { NetworkStack } from "./network";
 export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
+  hl7NotificationBucket: s3.Bucket;
 }
 
 const NUM_AZS = 1;
@@ -47,6 +49,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       version: props.version,
       vpc,
       ecrRepo,
+      hl7NotificationBucket: props.hl7NotificationBucket,
       description: "HL7 Notification Routing MLLP Server",
     });
 
