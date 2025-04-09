@@ -78,7 +78,12 @@ export async function getResourceMappingReversedOrFail({
     resourceId,
   });
   if (!mapping) {
-    throw new NotFoundError("ResourceMappingReversed not found", undefined, { cxId, resourceId });
+    throw new NotFoundError("ResourceMappingReversed not found", undefined, {
+      cxId,
+      patientId,
+      patientMappingExternalId,
+      resourceId,
+    });
   }
   return mapping;
 }
@@ -109,7 +114,12 @@ export async function getResourceMappingModelReversedOrFail({
     resourceId,
   });
   if (!mapping) {
-    throw new NotFoundError("ResourceMappingReversed not found", undefined, { cxId, resourceId });
+    throw new NotFoundError("ResourceMappingReversed not found", undefined, {
+      cxId,
+      patientId,
+      patientMappingExternalId,
+      resourceId,
+    });
   }
   return mapping;
 }
