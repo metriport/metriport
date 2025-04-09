@@ -4,7 +4,7 @@ import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { chunk } from "lodash";
 import { getConsolidated } from "../../../../command/consolidated/consolidated-get";
-import { computeResourceDiff } from "../../api/compute-resource-diff";
+import { computeResourceDiff } from "../../api/resource-diff/compute-resource-diff";
 import { supportedCanvasDiffResources } from "../../canvas";
 import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
 
@@ -23,12 +23,14 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
     direction,
   }: StartResourceDiffRequest): Promise<void> {
     if (direction === ResourceDiffDirection.DIFF_EHR) {
-      const consolidatedBundle = await getConsolidated({
+      const consolidated = await getConsolidated({
         cxId,
         patientId: metriportPatientId,
       });
-      if (!consolidatedBundle) return;
-      const resourceDiffs = (consolidatedBundle.bundle?.entry ?? []).flatMap(resource => {
+      if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length === 0) {
+        return;
+      }
+      const resourceDiffs = consolidated.bundle.entry.flatMap(resource => {
         if (!resource.resource) return [];
         const resourceSafe = fhirResourceSchema.safeParse(resource.resource);
         if (!resourceSafe.success) return [];

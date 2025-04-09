@@ -1,15 +1,13 @@
-import { Resource } from "@medplum/fhirtypes";
+import { FhirResource } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-
-export type ResourceWithId = Omit<Resource, "id"> & { id: string };
 
 export type ComputeResourceDiffRequest = {
   ehr: EhrSource;
   cxId: string;
   patientId: string;
-  existingResources: ResourceWithId[];
-  newResource: ResourceWithId;
+  existingResources: FhirResource[];
+  newResource: FhirResource;
   direction: ResourceDiffDirection;
 };
 

@@ -1,8 +1,9 @@
 import { buildEhrStartResourceDiffHandler } from "@metriport/core/external/ehr/resource-diff/start/ehr-start-resource-diff-factory";
+import { MetriportError } from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
+import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
+import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 
 export type StartResourceDiffParams = {
   cxId: string;
@@ -26,6 +27,11 @@ export async function startCanvasResourceDiff({
     cxId,
     id: existingPatient.patientId,
   });
+  if (direction !== ResourceDiffDirection.DIFF_EHR) {
+    throw new MetriportError("Cannot start resource diff in this direction", undefined, {
+      direction,
+    });
+  }
   const ehrResourceDiffHandler = buildEhrStartResourceDiffHandler();
   await ehrResourceDiffHandler.startResourceDiff({
     ehr: EhrSources.canvas,

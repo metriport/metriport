@@ -4,8 +4,8 @@ import { isResourceDiffDirection } from "@metriport/shared/interface/external/eh
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { getCanvasResourceDiffFromEhr } from "../../../external/ehr/canvas/command/get-resource-diff";
-import { startCanvasResourceDiff } from "../../../external/ehr/canvas/command/start-resource-diff";
+import { getCanvasResourceDiffFromEhr } from "../../../external/ehr/canvas/command/resource-diff/get-resource-diff";
+import { startCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/start-resource-diff";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";

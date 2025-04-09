@@ -47,7 +47,7 @@ export type GetConsolidatedParams = {
   documentIds?: string[];
 } & GetConsolidatedFilters;
 
-export type GetConsolidatedPatientData = {
+type GetConsolidatedPatientData = {
   patient: Patient;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;

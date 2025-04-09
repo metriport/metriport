@@ -19,6 +19,7 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
+import { FhirResource } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { deduplicateAllergyIntolerances } from "../../../fhir-deduplication/resources/allergy-intolerance";
 import { deduplicateCompositions } from "../../../fhir-deduplication/resources/composition";
 import { deduplicateConditions } from "../../../fhir-deduplication/resources/condition";
@@ -37,14 +38,13 @@ import { deduplicatePractitioners } from "../../../fhir-deduplication/resources/
 import { deduplicateProcedures } from "../../../fhir-deduplication/resources/procedure";
 import { deduplicateRelatedPersons } from "../../../fhir-deduplication/resources/related-person";
 import { artifactRelatedArtifactUrl } from "../../../fhir-deduplication/shared";
-import { ResourceWithId } from "./compute/ehr-compute-resource-diff";
 
 export function computeResourceDiff({
   existingResources,
   newResource,
 }: {
-  existingResources: ResourceWithId[];
-  newResource: ResourceWithId;
+  existingResources: FhirResource[];
+  newResource: FhirResource;
 }): string[] {
   const newResourceType = newResource.resourceType;
   const invalidExistingResources = existingResources.filter(

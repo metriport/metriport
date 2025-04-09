@@ -2,8 +2,8 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
-import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
 
 export type SaveResourceDiffParams = {
   ehr: EhrSource;
@@ -15,7 +15,7 @@ export type SaveResourceDiffParams = {
 };
 
 /**
- * Sends a request to the API to sync a patient with Metriport.
+ * Sends a request to the API to save a resource diff.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.

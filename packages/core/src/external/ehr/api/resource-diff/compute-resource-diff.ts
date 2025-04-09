@@ -3,18 +3,26 @@ import { FhirResource } from "@metriport/shared/interface/external/ehr/fhir-reso
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
-import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+
+export type ComputeResourceDiffParams = {
+  ehr: EhrSource;
+  cxId: string;
+  practiceId: string;
+  patientId: string;
+  resource: FhirResource;
+  direction: ResourceDiffDirection;
+};
 
 /**
- * Sends a request to the API to sync a patient with Metriport.
+ * Sends a request to the API to compute a resource diff.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param patientId - The patient ID.
- * @param resourceId - The resource ID.
+ * @param resource - The resource to compute the diff for.
  * @param direction - The direction of the resource diff.
- * @param matchedResourceIds - The matched resource IDs.
  */
 export async function computeResourceDiff({
   ehr,
@@ -23,14 +31,7 @@ export async function computeResourceDiff({
   patientId,
   resource,
   direction,
-}: {
-  ehr: EhrSource;
-  cxId: string;
-  practiceId: string;
-  patientId: string;
-  resource: FhirResource;
-  direction: ResourceDiffDirection;
-}): Promise<void> {
+}: ComputeResourceDiffParams): Promise<void> {
   const { log, debug } = out(`Ehr computeResourceDiff - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({

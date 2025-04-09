@@ -5,9 +5,9 @@ import { isResourceDiffDirection } from "@metriport/shared/interface/external/eh
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { computeCanvasResourceDiff } from "../../../../external/ehr/canvas/command/compute-resource-diff";
+import { computeCanvasResourceDiff } from "../../../../external/ehr/canvas/command/resource-diff/compute-resource-diff";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
-import { saveCanvasResourceDiff } from "../../../../external/ehr/canvas/command/save-resource-diff";
+import { saveCanvasResourceDiff } from "../../../../external/ehr/canvas/command/resource-diff/save-resource-diff";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";

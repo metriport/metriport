@@ -1,9 +1,9 @@
-import { sleep } from "@metriport/shared";
-import { saveResourceDiff } from "../../api/save-resource-diff";
+import { BadRequestError, ResourceDiffDirection, sleep } from "@metriport/shared";
+import { saveResourceDiff } from "../../api/resource-diff/save-resource-diff";
 import { computeResourceDiff } from "../utils";
 import {
-  EhrComputeResourceDiffHandler,
   ComputeResourceDiffRequest,
+  EhrComputeResourceDiffHandler,
 } from "./ehr-compute-resource-diff";
 
 export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandler {
@@ -17,6 +17,9 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
     newResource,
     direction,
   }: ComputeResourceDiffRequest): Promise<void> {
+    if (direction !== ResourceDiffDirection.DIFF_EHR) {
+      throw new BadRequestError("This direction is not supported yet", undefined, { direction });
+    }
     if (existingResources.length < 0) return;
     const resourceId = newResource.id;
     const matchedResourceIds = computeResourceDiff({
