@@ -29,10 +29,13 @@ export async function createOrUpdateResourceMappingReversed({
     resourceId,
   });
   if (existing) {
-    if (externalId) existing.externalId = externalId;
+    if (externalId) {
+      existing.externalId = externalId;
+      existing.changed("externalId", true);
+    }
     existing.isMapped = isMapped;
-    existing.updatedAt = new Date();
     existing.changed("isMapped", true);
+    existing.updatedAt = new Date();
     const updated = await existing.save();
     return updated.dataValues;
   }
