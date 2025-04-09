@@ -10,7 +10,7 @@ export type ResourceMappingReversedParams = ResourceMappingReversedPerSource;
 
 export type ResourceMappingReversedLookUpParams = Omit<
   ResourceMappingReversedParams,
-  "source" | "externalId"
+  "source" | "externalId" | "isMapped"
 >;
 
 export async function createOrUpdateResourceMappingReversed({
@@ -19,6 +19,7 @@ export async function createOrUpdateResourceMappingReversed({
   patientMappingExternalId,
   resourceId,
   externalId,
+  isMapped,
   source,
 }: ResourceMappingReversedParams): Promise<ResourceMappingReversed> {
   const existing = await getResourceMappingModelReversed({
@@ -28,9 +29,10 @@ export async function createOrUpdateResourceMappingReversed({
     resourceId,
   });
   if (existing) {
-    existing.externalId = externalId;
+    if (externalId) existing.externalId = externalId;
+    existing.isMapped = isMapped;
     existing.updatedAt = new Date();
-    existing.changed("externalId", true);
+    existing.changed("isMapped", true);
     const updated = await existing.save();
     return updated.dataValues;
   }
@@ -41,6 +43,7 @@ export async function createOrUpdateResourceMappingReversed({
     patientMappingExternalId,
     resourceId,
     externalId,
+    isMapped,
     source,
   });
   return created.dataValues;
@@ -110,7 +113,8 @@ export async function getResourceMappingModelReversedOrFail({
 
 export type ResourceMappingReversedMapped = {
   resourceId: string;
-  externalId: string;
+  externalId?: string;
+  isMapped: boolean;
   updatedAt: Date;
 };
 
@@ -129,6 +133,7 @@ export async function getMappedResourceIdsByPatientMappingExternalId({
   return mappings.map(mapping => ({
     resourceId: mapping.dataValues.resourceId,
     externalId: mapping.dataValues.externalId,
+    isMapped: mapping.dataValues.isMapped,
     updatedAt: mapping.dataValues.updatedAt,
   }));
 }

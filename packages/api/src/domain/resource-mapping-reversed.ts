@@ -10,7 +10,8 @@ export function isResourceMappingReversedSource(
 }
 
 export type ResourceMappingReversedPerSource = {
-  externalId: string;
+  externalId?: string;
+  isMapped: boolean;
   cxId: string;
   patientId: string;
   patientMappingExternalId: string;

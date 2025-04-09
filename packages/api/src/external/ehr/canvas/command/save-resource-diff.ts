@@ -36,7 +36,7 @@ export async function saveCanvasResourceDiff({
       patientId: metriportPatient.id,
       patientMappingExternalId: canvasPatientId,
       resourceId,
-      externalId: fonud ? "found" : "not-found",
+      isMapped: fonud,
       source: EhrSources.canvas,
     });
   } else if (direction === ResourceDiffDirection.DIFF_METRIPORT) {

@@ -10,7 +10,13 @@ import {
   Patient as PatientFhir,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { errorToString, JwtTokenInfo, MetriportError, NotFoundError } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  JwtTokenInfo,
+  MetriportError,
+  NotFoundError,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -21,6 +27,7 @@ import {
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
 import {
+  FhirResource,
   FhirResourceBundle,
   fhirResourceBundleSchema,
   FhirResources,
@@ -362,6 +369,35 @@ class CanvasApi {
       useFhir: true,
     });
     return patient;
+  }
+
+  async getFhirResourcesByResource({
+    cxId,
+    patientId,
+    resource,
+  }: {
+    cxId: string;
+    patientId: string;
+    resource: FhirResource;
+  }): Promise<FhirResources> {
+    const resourceType = resource.resourceType;
+    const params: Record<string, string> = {};
+    if (resourceType === "Medication") {
+      const code = resource.code.coding[0].code;
+      const system = resource.code.coding[0].system;
+      if (!code || !system) {
+        throw new BadRequestError("Medication resource must have a code", undefined, {
+          resource: JSON.stringify(resource),
+        });
+      }
+      params["code"] = `${system}|${code}`;
+    }
+    return await this.getFhirResourcesByResourceType({
+      cxId,
+      patientId,
+      resourceType,
+      extraParams: params,
+    });
   }
 
   async getFhirResourcesByResourceType({

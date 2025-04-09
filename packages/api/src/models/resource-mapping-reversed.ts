@@ -10,7 +10,8 @@ export class ResourceMappingReversedModel
   implements ResourceMappingReversed
 {
   static NAME = "resource_mapping_reversed";
-  declare externalId: string;
+  declare externalId: string | undefined;
+  declare isMapped: boolean;
   declare cxId: string;
   declare patientId: string;
   declare patientMappingExternalId: string;
@@ -38,6 +39,11 @@ export class ResourceMappingReversedModel
         },
         externalId: {
           type: DataTypes.STRING,
+          allowNull: true,
+        },
+        isMapped: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
         },
       },
       {

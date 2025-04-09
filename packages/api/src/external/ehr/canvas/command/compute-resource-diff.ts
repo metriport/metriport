@@ -55,31 +55,13 @@ export async function computeCanvasResourceDiff({
         resourceType,
       });
     }
-    const extraParams: Record<string, string> = {};
-    if (resource.resourceType === "Medication") {
-      const code = resource.code.coding[0].code;
-      const system = resource.code.coding[0].system;
-      if (!code || !system) {
-        await saveCanvasResourceDiff({
-          cxId,
-          canvasPatientId,
-          resourceId: resource.id,
-          matchedResourceIds: [],
-          direction,
-        });
-        throw new BadRequestError("Medication resource must have a code", undefined, {
-          resource: JSON.stringify(resource),
-        });
-      }
-      extraParams["code"] = `${system}|${code}`;
-    }
+
     const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
     try {
-      existingResources = await canvasApi.getFhirResourcesByResourceType({
+      existingResources = await canvasApi.getFhirResourcesByResource({
         cxId,
         patientId: canvasPatientId,
-        resourceType,
-        extraParams,
+        resource,
       });
     } catch (error) {
       const msg = "Error getting existing resources @ Canvas";
@@ -94,6 +76,14 @@ export async function computeCanvasResourceDiff({
         },
         level: "warning",
       });
+      await saveCanvasResourceDiff({
+        cxId,
+        canvasPatientId,
+        resourceId: resource.id,
+        matchedResourceIds: [],
+        direction,
+      });
+      return;
     }
   } else if (direction === ResourceDiffDirection.DIFF_METRIPORT) {
     if (!isResourceTypeForConsolidation(resourceType)) {
@@ -101,6 +91,7 @@ export async function computeCanvasResourceDiff({
         resourceType,
       });
     }
+
     const payload: GetConsolidatedPatientData = {
       patient: metriportPatient,
       resources: [resourceType],
