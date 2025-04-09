@@ -31,9 +31,8 @@ export function getLocationFromAdt(
 export function buildLocation(params: Partial<Location> = {}): LocationWithId {
   const { id, name, address, ...remainingParams } = params;
 
-  const deterministicID = createUuidFromText(`${JSON.stringify(name)}${JSON.stringify(address)}`);
   return {
-    id: id ?? deterministicID,
+    id: id ?? createUuidFromText(`${JSON.stringify(name)}${JSON.stringify(address)}`),
     resourceType: "Location",
     ...(name ? { name } : undefined),
     ...(address ? { address } : undefined),

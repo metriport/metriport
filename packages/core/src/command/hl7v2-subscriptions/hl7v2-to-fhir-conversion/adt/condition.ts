@@ -31,7 +31,7 @@ export function getAdmitReasonFromPatientVisitAddon(
   patientId: string
 ): AdmitReason | undefined {
   const pv2Segment = getSegmentByNameOrFail(adt, "PV2");
-  if (pv2Segment.fields.length === 0) return undefined;
+  if (pv2Segment.fields.length < 1) return undefined;
 
   const reasonCode = getOptionalValueFromSegment(pv2Segment, 3, 1);
   const reasonDisplay = getOptionalValueFromSegment(pv2Segment, 3, 2);
@@ -56,14 +56,14 @@ export function getAdmitReasonFromPatientVisitAddon(
   });
 
   if (!mainCode && !secondaryCode) return undefined;
-  const codings = [mainCode, secondaryCode].flatMap(c => c || []);
+  const coding = [mainCode, secondaryCode].flatMap(c => c ?? []);
 
   // TODO 2883: See if we can parse (or infer) onsetDateTime and other fields
-  const condition = buildCondition({ code: { coding: codings } }, patientId);
+  const condition = buildCondition({ code: { coding } }, patientId);
   const diagnosisReference = buildConditionReference({ resource: condition });
 
   return {
-    reasonCode: [{ coding: codings }],
+    reasonCode: [{ coding }],
     condition,
     diagnosis: [diagnosisReference],
   };
@@ -90,9 +90,8 @@ function buildConditionCoding({
 export function buildCondition(params: ConditionWithCode, patientId: string): ConditionWithId {
   const { id, code, ...remainingParams } = params;
 
-  const deterministicID = createUuidFromText(JSON.stringify(code));
   return {
-    id: id ?? deterministicID,
+    id: id ?? createUuidFromText(JSON.stringify(code)),
     resourceType: "Condition",
     code,
     subject: buildPatientReference(patientId),

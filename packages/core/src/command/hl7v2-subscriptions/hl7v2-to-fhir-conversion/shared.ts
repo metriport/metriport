@@ -62,16 +62,24 @@ export function getOptionalValueFromSegment(
   fieldIndex: number,
   componentIndex: number
 ): string | undefined {
-  const component = segment.getComponent(fieldIndex, componentIndex).trim();
-  return component.length > 0 ? component : undefined;
+  try {
+    const component = segment.getComponent(fieldIndex, componentIndex).trim();
+    return component.length > 0 ? component : undefined;
+  } catch (error) {
+    return undefined;
+  }
 }
 
 export function getOptionalValueFromField(
   field: Hl7Field,
   componentIndex: number
 ): string | undefined {
-  const component = field.getComponent(componentIndex).trim();
-  return component.length > 0 ? component : undefined;
+  try {
+    const component = field.getComponent(componentIndex).trim();
+    return component.length > 0 ? component : undefined;
+  } catch (error) {
+    return undefined;
+  }
 }
 
 /**
