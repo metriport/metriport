@@ -1,8 +1,8 @@
 import { out } from "../../util/log";
 import { Hl7Notification, Hl7NotificationRouter } from "./hl7-notification-router";
 
-export class Hl7NotificationRouterLocal implements Hl7NotificationRouter {
-  private readonly lambdaName = "hl7-notification-router-local";
+export class Hl7NotificationRouterDirect implements Hl7NotificationRouter {
+  private readonly lambdaName = "hl7-notification-router-direct";
   private readonly log;
 
   constructor() {
