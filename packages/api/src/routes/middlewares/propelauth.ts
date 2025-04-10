@@ -7,13 +7,14 @@ import ForbiddenError from "../../errors/forbidden";
 
 export type PropelAuth = ReturnType<typeof initBaseAuth>;
 
-const authUrl = getEnvVarOrFail("PROPELAUTH_AUTH_URL");
-const apiKey = getEnvVarOrFail("PROPELAUTH_API_KEY");
-const publicKey = getEnvVarOrFail("PROPELAUTH_PUBLIC_KEY");
-
 let auth: PropelAuth | undefined;
 export function getAuth(): PropelAuth {
   if (auth) return auth;
+
+  const authUrl = getEnvVarOrFail("PROPELAUTH_AUTH_URL");
+  const apiKey = getEnvVarOrFail("PROPELAUTH_API_KEY");
+  const publicKey = getEnvVarOrFail("PROPELAUTH_PUBLIC_KEY");
+
   out("PropelAuth").log(
     `authUrl ${authUrl}, apiKey ${apiKey && apiKey.trim().length ? "***" : undefined}, publicKey ${
       publicKey && publicKey.trim().length ? "***" : undefined
