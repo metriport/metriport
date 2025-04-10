@@ -2,18 +2,17 @@ import { base64ToString } from "@metriport/core/util/base64";
 import { out } from "@metriport/core/util/log";
 import { NextFunction, Request, Response } from "express";
 import status from "http-status";
-import * as jwt from "jsonwebtoken";
 import { hasMapiAccess } from "../../command/medical/mapi-access";
+import ForbiddenError from "../../errors/forbidden";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
-import { getAuth, getCxId, PropelAuth } from "./propelauth";
+import { getCxIdFromJwt } from "./propelauth";
 
 /**
  * Process the API key and get the customer id.
  * The customer id is stored on the Request, property 'cxId'.
  */
 export async function processCxId(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { log } = out("processCxId");
   try {
     // Just gets the cxId from the API Key, the actual auth is done on API GW.
     // Downstream routes should check whether `cxId` is present on the request or not.
@@ -21,57 +20,22 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
     req.cxId = getCxIdFromApiKey(encodedApiKey);
   } catch (error) {
     try {
-      // TODO 1986 Remove this after we're fully off of Cognito
-      req.cxId = getCxIdFromCognitoJwt(req);
-      log(`Cognito - cxId ${req.cxId}`);
+      // If the API Key is not present, get the cxId from the JWT (requests from the Dash).
+      req.cxId = await getCxIdFromJwt(req);
     } catch (error) {
-      log(`Cognito - ${error}`);
-      // validate it has the needed info
-      const auth = getAuth();
-      try {
-        // TODO 1986 Remove the conditional after we're fully off of Cognito
-        if (auth) {
-          req.cxId = await getCxIdFromJwt(req, auth);
-          log(`PropelAuth - cxId ${req.cxId}`);
-        }
-      } catch (error) {
-        log(`PropelAuth - ${error}`);
-        // noop - auth is done on API GW level, this is just to make data available downstream
-      }
+      return next(new ForbiddenError());
     }
   }
   next();
 }
 
 export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {
-  if (!encodedApiKey) throw new Error("No API Key provided");
+  if (!encodedApiKey) throw new ForbiddenError();
   const apiKey = base64ToString(encodedApiKey);
   const splitApiKey = apiKey.split(":");
-  if (splitApiKey.length !== 2) throw new Error("Invalid API Key format");
+  if (splitApiKey.length !== 2) throw new ForbiddenError();
   const cxId = splitApiKey[1];
-  if (!isValidCxId(cxId)) throw new Error("Invalid API Key format");
-  return cxId;
-}
-
-export async function getCxIdFromJwt(req: Request, auth: PropelAuth): Promise<string> {
-  const jwtStr = req.header("Authorization");
-  if (!jwtStr) throw new Error("Missing token");
-  const user = await auth.validateAccessTokenAndGetUser(jwtStr);
-  const cxId = getCxId(user);
-  if (!cxId) throw new Error("Could not determine cxId from JWT");
-  return cxId;
-}
-
-// TODO 1935 1986 Remove this after we're fully off of Cognito
-export function getCxIdFromCognitoJwt(req: Request): string {
-  const jwtStr = req.header("Authorization");
-  if (!jwtStr) throw new Error("Missing token");
-  const rawToken = jwt.decode(jwtStr);
-  if (!rawToken) throw new Error("Invalid token");
-  const token = (typeof rawToken === "string" ? JSON.parse(rawToken) : rawToken) as jwt.JwtPayload;
-  const cxId = token["name"] ?? token["sub"];
-  if (!isValidCxId(cxId)) throw new Error("Invalid cxId");
-  console.log(`Got cxId from Cognito JWT ${cxId}`);
+  if (!isValidCxId(cxId)) throw new ForbiddenError();
   return cxId;
 }
 
@@ -90,15 +54,14 @@ export async function checkMAPIAccess(
     if (hasMAPIAccess || Config.isSandbox()) {
       next();
       return;
-    } else {
-      res.sendStatus(status.FORBIDDEN);
-      return;
     }
   } catch (error) {
     out().log(`Failed checking MAPI access with error ${error}`);
     res.sendStatus(status.INTERNAL_SERVER_ERROR);
     return;
   }
+  res.sendStatus(status.FORBIDDEN);
+  return;
 }
 
 function isValidCxId(cxId: string | undefined): cxId is string {
