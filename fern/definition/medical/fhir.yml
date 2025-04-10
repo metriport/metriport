@@ -9,21 +9,21 @@ service:
     startConsolidatedQuery:
       display-name: Start Consolidated Data Query
       docs: |
-          Trigger a consolidated data query for the given patient.
-          When executed,
-          this endpoint triggers an asynchronous query to retrieve a Patient's consolidated data from the FHIR repository.
-          Once the data is consolidated and ready for consumption,
-          a webhook request is sent to your configured URL containing the Patient's
-          data in FHIR-compliant format,
-          based on the parameters used to trigger the query.
-          You'll be able to query multiple times for the same Patient which will be added to the queue and
-          processed in order. If the parameters are the same as a previous query that is still processing,
-          the new query will be ignored and you'll get the status and request ID of the previous one.
-          You can check the status of the data query by calling get consolidated data query.
-          This endpoint also provides the ability to render a Medical Record Summary
-          from the FHIR bundle as a PDF or HTML document. This will be returned via a webhook
-          as a FHIR bundle with a DocumentReference resource
-          that will contain a URL to retrieve the data from.,
+        Trigger a consolidated data query for the given patient.
+        When executed,
+        this endpoint triggers an asynchronous query to retrieve a Patient's consolidated data from the FHIR repository.
+        Once the data is consolidated and ready for consumption,
+        a webhook request is sent to your configured URL containing the Patient's
+        data in FHIR-compliant format,
+        based on the parameters used to trigger the query.
+        You'll be able to query multiple times for the same Patient which will be added to the queue and
+        processed in order. If the parameters are the same as a previous query that is still processing,
+        the new query will be ignored and you'll get the status and request ID of the previous one.
+        You can check the status of the data query by calling get consolidated data query.
+        This endpoint also provides the ability to render a Medical Record Summary
+        from the FHIR bundle as a PDF or HTML document. This will be returned via a webhook
+        as a FHIR bundle with a DocumentReference resource
+        that will contain a URL to retrieve the data from.,
       method: POST
       path: /patient/{id}/consolidated/query
       path-parameters:
@@ -36,7 +36,7 @@ service:
           resources:
             docs: |
               A comma separated, case sensitive list of resources to be returned. If none are provided all
-              resources will be included. Metriport will automatically hydrate the initially filtered 
+              resources will be included. Metriport will automatically hydrate the initially filtered
               resources with referenced ones to create bundle consistency.
             type: optional<string>
           dateFrom:
@@ -62,14 +62,14 @@ service:
           type: optional<map<string, string>>
 
       response:
-        type: StartConsolidatedQueryResponse
+        type: PatientConsolidatedDataStatus
         docs: Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).
       examples:
         - name: Example1
           path-parameters:
             id: "00000000-0000-0000-0000-000000000000"
           response:
-            body: $StartConsolidatedQueryResponse.Example0
+            body: $PatientConsolidatedDataStatus.Example0
 
     getConsolidatedQueryStatus:
       display-name: Get Consolidated Data Query Status
@@ -114,7 +114,6 @@ service:
             requestId: "00000000-0000-0000-0000-000000000000"
           response:
             body: $PatientConsolidatedDataStatus.Example0
-
 
     createPatientConsolidated:
       display-name: Create Patient's Consolidated Data
@@ -190,15 +189,6 @@ service:
       response: ConsolidatedCountResponse
 
 types:
-  StartConsolidatedQueryResponse:
-    properties:
-      query: PatientConsolidatedDataStatus
-      message: optional<string>
-    examples:
-      - name: Example0
-        value:
-          query: $PatientConsolidatedDataStatus.Example0
-
   PatientConsolidatedDataStatus:
     properties:
       requestId:
@@ -210,7 +200,7 @@ types:
       dateTo:
         type: optional<string>
       conversionType:
-        type: ConversionTypeFHIR
+        type: optional<ConversionTypeFHIR>
       status:
         type: DocumentQueryStatusFHIR
     examples:
