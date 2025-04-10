@@ -534,7 +534,7 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
-      patientImportLambda: patientImportParseLambda,
+      patientImportParseLambda,
       patientImportResultLambda,
       patientImportBucket,
       ehrSyncPatientQueue,
