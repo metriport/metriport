@@ -107,6 +107,8 @@ export function createAPIService({
   patientImportBucket,
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
+  ehrStartResourceDiffQueue,
+  ehrComputeResourceDiffQueue,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
@@ -143,6 +145,8 @@ export function createAPIService({
   patientImportBucket: s3.IBucket;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
+  ehrStartResourceDiffQueue: IQueue;
+  ehrComputeResourceDiffQueue: IQueue;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -272,6 +276,8 @@ export function createAPIService({
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
+          EHR_START_RESOURCE_DIFF_QUEUE_URL: ehrStartResourceDiffQueue.queueUrl,
+          EHR_COMPUTE_RESOURCE_DIFF_QUEUE_URL: ehrComputeResourceDiffQueue.queueUrl,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda2 && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME: fhirToMedicalRecordLambda2.functionName,
@@ -425,6 +431,16 @@ export function createAPIService({
   provideAccessToQueue({
     accessType: "send",
     queue: elationLinkPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrStartResourceDiffQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrComputeResourceDiffQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
 

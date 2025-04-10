@@ -10,7 +10,13 @@ import {
   Patient as PatientFhir,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  JwtTokenInfo,
+  MetriportError,
+  NotFoundError,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -20,12 +26,25 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
+import {
+  FhirResource,
+  FhirResourceBundle,
+  fhirResourceBundleSchema,
+  FhirResources,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
-import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
+import {
+  ApiConfig,
+  formatDate,
+  getSavedResponseFromS3,
+  GetSavedResponseFromS3ParamsInEhr,
+  makeRequest,
+  MakeRequestParamsInEhr,
+} from "../shared";
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -34,6 +53,26 @@ interface CanvasApiConfig extends ApiConfig {
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
+
+export const supportedCanvasDiffResources = [
+  "AllergyIntolerance",
+  "Condition",
+  "DiagnosticReport",
+  "Encounter",
+  "Medication",
+  "MedicationStatement",
+  "MedicationRequest",
+  "Observation",
+  "Procedure",
+];
+export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
+export const isSupportedCanvasDiffResource = (
+  resourceType: string
+): resourceType is SupportedCanvasDiffResource => {
+  return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
+};
+
+type MakeRequestParams<T> = MakeRequestParamsInEhr<T> & { useFhir?: boolean };
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -341,6 +380,88 @@ class CanvasApi {
     return patient;
   }
 
+  async getFhirResourcesByResource({
+    cxId,
+    patientId,
+    resource,
+    useS3 = false,
+  }: {
+    cxId: string;
+    patientId: string;
+    resource: FhirResource;
+    useS3?: boolean;
+  }): Promise<FhirResources> {
+    const resourceType = resource.resourceType;
+    const params: Record<string, string> = {};
+    if (resourceType === "Medication") {
+      const code = resource.code.coding[0].code;
+      const system = resource.code.coding[0].system;
+      if (!code || !system) {
+        throw new BadRequestError("Medication resource must have a code", undefined, {
+          resource: JSON.stringify(resource),
+        });
+      }
+      params["code"] = `${system}|${code}`;
+    }
+    return await this.getFhirResourcesByResourceType({
+      cxId,
+      patientId,
+      resourceType,
+      extraParams: params,
+      useS3,
+    });
+  }
+
+  async getFhirResourcesByResourceType({
+    cxId,
+    patientId,
+    resourceType,
+    extraParams,
+    useS3 = false,
+  }: {
+    cxId: string;
+    patientId: string;
+    resourceType: SupportedCanvasDiffResource;
+    extraParams?: Record<string, string>;
+    useS3?: boolean;
+  }): Promise<FhirResources> {
+    const { debug } = out(
+      `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
+    );
+    const params = { ...(extraParams ?? {}), patient: `Patient/${patientId}` };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
+    try {
+      const makeRequestArgs = {
+        cxId,
+        patientId,
+        s3Path: `fhir-resources-${resourceType}`,
+        method: "GET" as const,
+        url: resourceTypeUrl,
+        schema: fhirResourceBundleSchema,
+        additionalInfo,
+        debug,
+        useFhir: true,
+      };
+      const bundle = useS3
+        ? await this.makeRequestOrUseSavedResponse<FhirResourceBundle>(makeRequestArgs)
+        : await this.makeRequest<FhirResourceBundle>(makeRequestArgs);
+      const invalidResource = bundle.entry?.find(
+        resource => resource.resource.resourceType !== resourceType
+      );
+      if (invalidResource) {
+        throw new MetriportError(`Invalid resource type found`, undefined, {
+          invalidResourceType: invalidResource.resource.resourceType,
+        });
+      }
+      return bundle.entry?.map(resource => resource.resource) ?? [];
+    } catch (error) {
+      if (error instanceof NotFoundError) return [];
+      throw error;
+    }
+  }
+
   async getAppointments({
     cxId,
     fromDate,
@@ -410,7 +531,7 @@ class CanvasApi {
     additionalInfo,
     debug,
     useFhir = false,
-  }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
+  }: MakeRequestParams<T>): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
     return await makeRequest<T>({
       ehr: EhrSources.canvas,
@@ -426,6 +547,69 @@ class CanvasApi {
       schema,
       additionalInfo,
       debug,
+    });
+  }
+
+  /**
+   * Cannot be used for paginated responses
+   */
+  private async getSavedResponse<T>({
+    cxId,
+    patientId,
+    s3Path,
+    schema,
+  }: GetSavedResponseFromS3ParamsInEhr<T>): Promise<T | undefined> {
+    return await getSavedResponseFromS3<T>({
+      ehr: EhrSources.canvas,
+      cxId,
+      patientId,
+      s3Path,
+      schema,
+    });
+  }
+
+  /**
+   * Cannot be used for paginated responses
+   */
+  private async makeRequestOrUseSavedResponse<T>({
+    cxId,
+    patientId,
+    s3Path,
+    url,
+    method,
+    data,
+    headers,
+    schema,
+    additionalInfo,
+    debug,
+    useFhir = false,
+  }: MakeRequestParams<T>): Promise<T> {
+    console.log("here2");
+    const { log } = out(
+      `Canvas makeRequestOrUseSavedResponse - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} s3Path ${s3Path} url ${url}}`
+    );
+    const response = await this.getSavedResponse<T>({
+      cxId,
+      patientId,
+      s3Path,
+      schema,
+    });
+    if (response) {
+      log(`Found cached response for ${s3Path}`);
+      return response;
+    }
+    return await this.makeRequest<T>({
+      cxId,
+      patientId,
+      s3Path,
+      method,
+      url,
+      data,
+      headers,
+      schema,
+      additionalInfo,
+      debug,
+      useFhir,
     });
   }
 

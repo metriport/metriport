@@ -164,6 +164,18 @@ export class Config {
     return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
   }
 
+  static getEhrStartResourceDiffQueueUrl(): string {
+    return getEnvVarOrFail("EHR_START_RESOURCE_DIFF_QUEUE_URL");
+  }
+
+  static getEhrComputeResourceDiffQueueUrl(): string {
+    return getEnvVarOrFail("EHR_COMPUTE_RESOURCE_DIFF_QUEUE_URL");
+  }
+
+  static getEhrRefreshResourceDiffQueueUrl(): string {
+    return getEnvVarOrFail("EHR_REFRESH_RESOURCE_DIFF_QUEUE_URL");
+  }
+
   static getElationLinkPatientQueueUrl(): string {
     return getEnvVarOrFail("ELATION_LINK_PATIENT_QUEUE_URL");
   }

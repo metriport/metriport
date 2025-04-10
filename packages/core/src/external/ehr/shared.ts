@@ -10,6 +10,7 @@ import {
 import { buildDayjs } from "@metriport/shared/common/date";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import dayjs from "dayjs";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
@@ -22,6 +23,7 @@ import { S3Utils } from "../aws/s3";
 
 const region = Config.getAWSRegion();
 const responsesBucket = Config.getEhrResponsesBucketName();
+const maxS3Age = dayjs.duration(1, "day");
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -36,8 +38,12 @@ export interface ApiConfig {
 
 export type RequestData = { [key: string]: string | boolean | object | undefined };
 
+function buildS3Prefix(ehr: string, path: string, key: string): string {
+  return `${ehr}/${path}/${key}`;
+}
+
 function buildS3Path(ehr: string, path: string, key: string): string {
-  return `${ehr}/${path}/${key}/${uuidv7()}.json`;
+  return `${buildS3Prefix(ehr, path, key)}/${uuidv7()}.json`;
 }
 
 export function formatDate(date: string | undefined, format: string): string | undefined {
@@ -66,7 +72,7 @@ export type MakeRequestParams<T> = {
 
 export type MakeRequestParamsInEhr<T> = Omit<
   MakeRequestParams<T>,
-  "ehr" | "practiceId" | "axiosInstance" | "responsesBucket" | "s3Utils"
+  "ehr" | "practiceId" | "axiosInstance"
 >;
 
 export async function makeRequest<T>({
@@ -118,7 +124,7 @@ export async function makeRequest<T>({
           patientId: patientId ?? "global",
           date: new Date(),
         });
-        const key = buildS3Path(ehr, s3Path, `${filePath}-error`);
+        const key = buildS3Path(ehr, s3Path, `${filePath}/error`);
         const s3Utils = getS3UtilsInstance();
         s3Utils
           .uploadFile({
@@ -163,7 +169,7 @@ export async function makeRequest<T>({
       patientId: patientId ?? "global",
       date: new Date(),
     });
-    const key = buildS3Path(ehr, s3Path, filePath);
+    const key = buildS3Path(ehr, s3Path, `${filePath}/response`);
     const s3Utils = getS3UtilsInstance();
     s3Utils
       .uploadFile({
@@ -226,4 +232,78 @@ export function getConditionStatus(condition: Condition): string | undefined {
     return [code];
   });
   return condition.clinicalStatus?.text ?? statusFromCoding[0];
+}
+
+export type GetSavedResponseFromS3Params<T> = Omit<
+  MakeRequestParams<T>,
+  | "practiceId"
+  | "axiosInstance"
+  | "url"
+  | "method"
+  | "headers"
+  | "data"
+  | "additionalInfo"
+  | "debug"
+> & {
+  maxRelativeAgeInMillis?: number;
+};
+
+export type GetSavedResponseFromS3ParamsInEhr<T> = Omit<GetSavedResponseFromS3Params<T>, "ehr">;
+
+export async function getSavedResponseFromS3<T>({
+  ehr,
+  cxId,
+  patientId,
+  s3Path,
+  schema,
+  maxRelativeAgeInMillis = maxS3Age.asMilliseconds(),
+}: GetSavedResponseFromS3Params<T>): Promise<T | undefined> {
+  if (!responsesBucket) return undefined;
+  if (maxRelativeAgeInMillis > maxS3Age.asMilliseconds()) {
+    throw new BadRequestError(
+      `maxRelativeAgeInMillis is greater than max supported age`,
+      undefined,
+      {
+        maxRelativeAgeInMillis,
+        maxS3Age: maxS3Age.asMilliseconds(),
+      }
+    );
+  }
+  const s3Utils = getS3UtilsInstance();
+  const currentDate = buildDayjs();
+  const previousDate = currentDate.subtract(1, "day");
+  const paths = [
+    createHivePartitionFilePath({
+      cxId,
+      patientId: patientId ?? "global",
+      date: currentDate.toDate(),
+    }),
+    createHivePartitionFilePath({
+      cxId,
+      patientId: patientId ?? "global",
+      date: previousDate.toDate(),
+    }),
+  ];
+  const filesByPath = await Promise.all(
+    paths.map(path =>
+      s3Utils.listObjects(responsesBucket, buildS3Prefix(ehr, s3Path, `${path}/response`))
+    )
+  );
+  const files = filesByPath.flat();
+  if (files.length < 1) return undefined;
+  const filteredFiles = files.filter(
+    file =>
+      file.LastModified &&
+      file.LastModified > currentDate.subtract(maxRelativeAgeInMillis, "ms").toDate()
+  );
+  if (filteredFiles.length < 1) return undefined;
+  const sortedFiles = filteredFiles.sort(
+    (a, b) => (b.LastModified?.getTime() as number) - (a.LastModified?.getTime() as number)
+  );
+  const youngestFile = sortedFiles[0];
+  if (!youngestFile || !youngestFile.Key) return undefined;
+  const fileAsString = await s3Utils.getFileContentsAsString(responsesBucket, youngestFile.Key);
+  const parsedSafe = schema.safeParse(JSON.parse(fileAsString));
+  if (!parsedSafe.success) return undefined;
+  return parsedSafe.data;
 }
