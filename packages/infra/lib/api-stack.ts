@@ -66,6 +66,7 @@ interface APIStackProps extends StackProps {
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
   public readonly alarmAction: SnsAction | undefined;
+  public readonly lambdasNestedStack: LambdasNestedStack;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -101,6 +102,15 @@ export class APIStack extends Stack {
       domainName: props.config.host,
     });
     const dnsZones = { privateZone, publicZone };
+
+    //-------------------------------------------
+    // Vpc Endpoints
+    //-------------------------------------------
+    new ec2.InterfaceVpcEndpoint(this, "ApiVpcSqsEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SQS,
+      privateDnsEnabled: true,
+    });
 
     //-------------------------------------------
     // Security Setup
@@ -316,23 +326,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // General lambdas
     //-------------------------------------------
-    const {
-      lambdaLayers,
-      cdaToVisualizationLambda,
-      documentDownloaderLambda,
-      fhirToCdaConverterLambda,
-      outboundPatientDiscoveryLambda,
-      outboundDocumentQueryLambda,
-      outboundDocumentRetrievalLambda,
-      fhirToBundleLambda,
-      fhirConverterConnector: {
-        queue: fhirConverterQueue,
-        lambda: fhirConverterLambda,
-        bucket: fhirConverterBucket,
-      },
-      hl7v2RosterUploadLambda,
-      conversionResultNotifierLambda,
-    } = new LambdasNestedStack(this, "LambdasNestedStack", {
+    this.lambdasNestedStack = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
       dbCluster,
@@ -344,6 +338,25 @@ export class APIStack extends Stack {
       bedrock: props.config.bedrock,
       featureFlagsTable,
     });
+
+    const {
+      lambdaLayers,
+      cdaToVisualizationLambda,
+      documentDownloaderLambda,
+      fhirToCdaConverterLambda,
+      outboundPatientDiscoveryLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
+      fhirToBundleLambda,
+      hl7NotificationRouterLambda,
+      fhirConverterConnector: {
+        queue: fhirConverterQueue,
+        lambda: fhirConverterLambda,
+        bucket: fhirConverterBucket,
+      },
+      hl7v2RosterUploadLambda,
+      conversionResultNotifierLambda,
+    } = this.lambdasNestedStack;
 
     //-------------------------------------------
     // Patient Import
@@ -494,6 +507,7 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
+      hl7NotificationRouterLambda,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
@@ -563,6 +577,7 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    hl7NotificationRouterLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);

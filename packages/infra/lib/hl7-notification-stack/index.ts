@@ -38,6 +38,12 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       ],
     });
 
+    new ec2.InterfaceVpcEndpoint(this, "Hl7NotificationVpcSqsEndpoint", {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SQS,
+      privateDnsEnabled: true,
+    });
+
     const ecrRepo = new Repository(this, "MllpServerRepo", {
       repositoryName: "metriport/mllp-server",
       lifecycleRules: [{ maxImageCount: 5000 }],
