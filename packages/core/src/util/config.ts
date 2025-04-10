@@ -154,13 +154,7 @@ export class Config {
   static getPatientImportBucket(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_BUCKET_NAME");
   }
-  // TODO 2330 We should prob remove this as the cloud implementation of the parse step
-  // should only be triggered by S3, not the API.
   static getPatientImportParseLambdaName(): string {
-    // TODO 2330 Update this on infra
-    // TODO 2330 Update this on infra
-    // TODO 2330 Update this on infra
-    // TODO 2330 Update this on infra
     return getEnvVarOrFail("PATIENT_IMPORT_PARSE_LAMBDA_NAME");
   }
   static getPatientImportCreateQueueUrl(): string {
