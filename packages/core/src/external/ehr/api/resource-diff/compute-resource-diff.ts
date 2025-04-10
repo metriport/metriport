@@ -9,9 +9,9 @@ import { out } from "../../../../util/log";
 export type ComputeResourceDiffParams = {
   ehr: EhrSource;
   cxId: string;
-  practiceId: string;
   patientId: string;
-  resource: FhirResource;
+  newResource: FhirResource;
+  existingResources: FhirResource[];
   direction: ResourceDiffDirection;
 };
 
@@ -21,28 +21,31 @@ export type ComputeResourceDiffParams = {
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param patientId - The patient ID.
- * @param resource - The resource to compute the diff for.
+ * @param newResource - The new resource.
+ * @param existingResources - The existing resources.
  * @param direction - The direction of the resource diff.
  */
 export async function computeResourceDiff({
   ehr,
   cxId,
-  practiceId,
   patientId,
-  resource,
+  newResource,
+  existingResources,
   direction,
 }: ComputeResourceDiffParams): Promise<void> {
   const { log, debug } = out(`Ehr computeResourceDiff - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
-    practiceId,
     patientId,
     direction,
   });
   const computeResourceDiffUrl = `/internal/ehr/${ehr}/patient/compute-resource-diff?${queryParams.toString()}`;
   try {
-    const response = await api.post(computeResourceDiffUrl, resource);
+    const response = await api.post(computeResourceDiffUrl, {
+      newResource,
+      existingResources,
+    });
     if (!response.data) throw new Error(`No body returned from ${computeResourceDiffUrl}`);
     debug(`${computeResourceDiffUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {
@@ -52,6 +55,7 @@ export async function computeResourceDiff({
       ehr,
       cxId,
       patientId,
+      resouceId: newResource.id,
       direction,
       url: computeResourceDiffUrl,
       context: "ehr.computeResourceDiff",

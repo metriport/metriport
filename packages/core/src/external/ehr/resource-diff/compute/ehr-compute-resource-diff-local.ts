@@ -20,17 +20,12 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
     if (direction !== ResourceDiffDirection.DIFF_EHR) {
       throw new BadRequestError("This direction is not supported yet", undefined, { direction });
     }
-    if (existingResources.length < 0) return;
-    const resourceId = newResource.id;
-    const matchedResourceIds = computeResourceDiff({
-      existingResources,
-      newResource,
-    });
+    const matchedResourceIds = computeResourceDiff({ existingResources, newResource });
     await saveResourceDiff({
       ehr,
       cxId,
       patientId,
-      resourceId,
+      resourceId: newResource.id,
       direction,
       matchedResourceIds,
     });

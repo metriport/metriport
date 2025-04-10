@@ -1,4 +1,4 @@
-import { MetriportError } from "@metriport/shared";
+import { BadRequestError } from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
@@ -20,6 +20,9 @@ export async function saveCanvasResourceDiff({
   matchedResourceIds,
   direction,
 }: SaveResourceDiffParams): Promise<void> {
+  if (direction !== ResourceDiffDirection.DIFF_EHR) {
+    throw new BadRequestError("This direction is not supported yet", undefined, { direction });
+  }
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -30,16 +33,12 @@ export async function saveCanvasResourceDiff({
     id: existingPatient.patientId,
   });
   const fonud = matchedResourceIds.length > 0;
-  if (direction === ResourceDiffDirection.DIFF_EHR) {
-    await createOrUpdateResourceMappingReversed({
-      cxId,
-      patientId: metriportPatient.id,
-      patientMappingExternalId: canvasPatientId,
-      resourceId,
-      isMapped: fonud,
-      source: EhrSources.canvas,
-    });
-  } else {
-    throw new MetriportError("Cannot save resources in this direction", undefined, { direction });
-  }
+  await createOrUpdateResourceMappingReversed({
+    cxId,
+    patientId: metriportPatient.id,
+    patientMappingExternalId: canvasPatientId,
+    resourceId,
+    isMapped: fonud,
+    source: EhrSources.canvas,
+  });
 }

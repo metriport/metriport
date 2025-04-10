@@ -10,8 +10,8 @@ export type SaveResourceDiffParams = {
   cxId: string;
   patientId: string;
   resourceId: string;
-  direction: ResourceDiffDirection;
   matchedResourceIds: string[];
+  direction: ResourceDiffDirection;
 };
 
 /**
@@ -21,16 +21,16 @@ export type SaveResourceDiffParams = {
  * @param cxId - The CX ID.
  * @param patientId - The patient ID.
  * @param resourceId - The resource ID.
- * @param direction - The direction of the resource diff.
  * @param matchedResourceIds - The matched resource IDs.
+ * @param direction - The direction of the resource diff.
  */
 export async function saveResourceDiff({
   ehr,
   cxId,
   patientId,
   resourceId,
-  direction,
   matchedResourceIds,
+  direction,
 }: SaveResourceDiffParams): Promise<void> {
   const { log, debug } = out(`Ehr saveResourceDiff - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
@@ -39,11 +39,12 @@ export async function saveResourceDiff({
     patientId,
     resourceId,
     direction,
-    matchedResourceIds: matchedResourceIds.join(","),
   });
   const saveResourceDiffUrl = `/internal/ehr/${ehr}/patient/save-resource-diff?${queryParams.toString()}`;
   try {
-    const response = await api.post(saveResourceDiffUrl);
+    const response = await api.post(saveResourceDiffUrl, {
+      matchedResourceIds,
+    });
     if (!response.data) throw new Error(`No body returned from ${saveResourceDiffUrl}`);
     debug(`${saveResourceDiffUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {

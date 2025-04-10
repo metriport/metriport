@@ -37,7 +37,14 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
-import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
+import {
+  ApiConfig,
+  formatDate,
+  getSavedResponseFromS3,
+  GetSavedResponseFromS3ParamsInEhr,
+  makeRequest,
+  MakeRequestParamsInEhr,
+} from "../shared";
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -64,6 +71,8 @@ export const isSupportedCanvasDiffResource = (
 ): resourceType is SupportedCanvasDiffResource => {
   return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
 };
+
+type MakeRequestParams<T> = MakeRequestParamsInEhr<T> & { useFhir?: boolean };
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -375,10 +384,12 @@ class CanvasApi {
     cxId,
     patientId,
     resource,
+    useS3 = false,
   }: {
     cxId: string;
     patientId: string;
     resource: FhirResource;
+    useS3?: boolean;
   }): Promise<FhirResources> {
     const resourceType = resource.resourceType;
     const params: Record<string, string> = {};
@@ -397,6 +408,7 @@ class CanvasApi {
       patientId,
       resourceType,
       extraParams: params,
+      useS3,
     });
   }
 
@@ -405,11 +417,13 @@ class CanvasApi {
     patientId,
     resourceType,
     extraParams,
+    useS3 = false,
   }: {
     cxId: string;
     patientId: string;
     resourceType: SupportedCanvasDiffResource;
     extraParams?: Record<string, string>;
+    useS3?: boolean;
   }): Promise<FhirResources> {
     const { debug } = out(
       `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
@@ -419,17 +433,20 @@ class CanvasApi {
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
     try {
-      const bundle = await this.makeRequest<FhirResourceBundle>({
+      const makeRequestArgs = {
         cxId,
         patientId,
         s3Path: `fhir-resources-${resourceType}`,
-        method: "GET",
+        method: "GET" as const,
         url: resourceTypeUrl,
         schema: fhirResourceBundleSchema,
         additionalInfo,
         debug,
         useFhir: true,
-      });
+      };
+      const bundle = useS3
+        ? await this.makeRequestOrUseSavedResponse<FhirResourceBundle>(makeRequestArgs)
+        : await this.makeRequest<FhirResourceBundle>(makeRequestArgs);
       const invalidResource = bundle.entry?.find(
         resource => resource.resource.resourceType !== resourceType
       );
@@ -514,7 +531,7 @@ class CanvasApi {
     additionalInfo,
     debug,
     useFhir = false,
-  }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
+  }: MakeRequestParams<T>): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
     return await makeRequest<T>({
       ehr: EhrSources.canvas,
@@ -530,6 +547,69 @@ class CanvasApi {
       schema,
       additionalInfo,
       debug,
+    });
+  }
+
+  /**
+   * Cannot be used for paginated responses
+   */
+  private async getSavedResponse<T>({
+    cxId,
+    patientId,
+    s3Path,
+    schema,
+  }: GetSavedResponseFromS3ParamsInEhr<T>): Promise<T | undefined> {
+    return await getSavedResponseFromS3<T>({
+      ehr: EhrSources.canvas,
+      cxId,
+      patientId,
+      s3Path,
+      schema,
+    });
+  }
+
+  /**
+   * Cannot be used for paginated responses
+   */
+  private async makeRequestOrUseSavedResponse<T>({
+    cxId,
+    patientId,
+    s3Path,
+    url,
+    method,
+    data,
+    headers,
+    schema,
+    additionalInfo,
+    debug,
+    useFhir = false,
+  }: MakeRequestParams<T>): Promise<T> {
+    console.log("here2");
+    const { log } = out(
+      `Canvas makeRequestOrUseSavedResponse - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} s3Path ${s3Path} url ${url}}`
+    );
+    const response = await this.getSavedResponse<T>({
+      cxId,
+      patientId,
+      s3Path,
+      schema,
+    });
+    if (response) {
+      log(`Found cached response for ${s3Path}`);
+      return response;
+    }
+    return await this.makeRequest<T>({
+      cxId,
+      patientId,
+      s3Path,
+      method,
+      url,
+      data,
+      headers,
+      schema,
+      additionalInfo,
+      debug,
+      useFhir,
     });
   }
 

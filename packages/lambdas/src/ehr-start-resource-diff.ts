@@ -27,10 +27,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { ehr, cxId, metriportPatientId, ehrPatientId, direction } = parsedBody;
+    const { ehr, cxId, metriportPatientId, ehrPatientId } = parsedBody;
 
     const log = prefixedLog(
-      `ehr ${ehr}, cxId ${cxId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, direction ${direction}`
+      `ehr ${ehr}, cxId ${cxId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}`
     );
     log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 

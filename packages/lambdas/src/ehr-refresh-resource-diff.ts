@@ -1,7 +1,6 @@
-import { ComputeResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff";
-import { EhrComputeResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff-local";
-import { errorToString, MetriportError, ResourceDiffDirection } from "@metriport/shared";
-import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { RefreshResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/refresh/ehr-refresh-resource-diff";
+import { EhrRefreshResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/refresh/ehr-refresh-resource-diff-local";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -28,15 +27,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { ehr, cxId, patientId, newResource } = parsedBody;
+    const { ehr, cxId, patientId } = parsedBody;
 
-    const log = prefixedLog(
-      `ehr ${ehr}, cxId ${cxId}, patientId ${patientId} resourceId ${newResource.id}`
-    );
+    const log = prefixedLog(`ehr ${ehr}, cxId ${cxId}, patientId ${patientId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-    const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffLocal(waitTimeInMillis);
-    await ehrComputeResourceDiffHandler.computeResourceDiff(parsedBody);
+    const ehrResourceDiffHandler = new EhrRefreshResourceDiffLocal(waitTimeInMillis);
+    await ehrResourceDiffHandler.refreshResourceDiff(parsedBody);
 
     const finishedAt = new Date().getTime();
     log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -52,16 +49,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   }
 });
 
-const ehrComputeResourceDiffSchema = z.object({
+const ehrRefreshResourceDiffSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   cxId: z.string(),
+  practiceId: z.string(),
   patientId: z.string(),
-  existingResources: fhirResourceSchema.array(),
-  newResource: fhirResourceSchema,
-  direction: z.nativeEnum(ResourceDiffDirection),
 });
 
-function parseBody(body?: unknown): ComputeResourceDiffRequest {
+function parseBody(body?: unknown): RefreshResourceDiffRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -69,5 +64,5 @@ function parseBody(body?: unknown): ComputeResourceDiffRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return ehrComputeResourceDiffSchema.parse(bodyAsJson);
+  return ehrRefreshResourceDiffSchema.parse(bodyAsJson);
 }

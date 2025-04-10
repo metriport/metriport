@@ -1,4 +1,4 @@
-import { MetriportError } from "@metriport/shared";
+import { BadRequestError } from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
@@ -19,6 +19,9 @@ export async function getCanvasResourceDiffFromEhr({
   canvasPatientId,
   direction,
 }: GetResourceDiffParams): Promise<ResourceMappingReversedData[]> {
+  if (direction !== ResourceDiffDirection.DIFF_EHR) {
+    throw new BadRequestError("This direction is not supported yet", undefined, { direction });
+  }
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -28,13 +31,9 @@ export async function getCanvasResourceDiffFromEhr({
     cxId,
     id: existingPatient.patientId,
   });
-  if (direction === ResourceDiffDirection.DIFF_EHR) {
-    return await getResourceMappingsReversed({
-      cxId,
-      patientId: metriportPatient.id,
-      patientMappingExternalId: canvasPatientId,
-    });
-  } else {
-    throw new MetriportError("Cannot get resources in this direction", undefined, { direction });
-  }
+  return await getResourceMappingsReversed({
+    cxId,
+    patientId: metriportPatient.id,
+    patientMappingExternalId: canvasPatientId,
+  });
 }

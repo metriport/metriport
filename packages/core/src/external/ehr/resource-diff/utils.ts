@@ -18,7 +18,7 @@ import {
   RelatedPerson,
   Resource,
 } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, EhrSource, EhrSources } from "@metriport/shared";
 import { FhirResource } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { deduplicateAllergyIntolerances } from "../../../fhir-deduplication/resources/allergy-intolerance";
 import { deduplicateCompositions } from "../../../fhir-deduplication/resources/composition";
@@ -38,6 +38,7 @@ import { deduplicatePractitioners } from "../../../fhir-deduplication/resources/
 import { deduplicateProcedures } from "../../../fhir-deduplication/resources/procedure";
 import { deduplicateRelatedPersons } from "../../../fhir-deduplication/resources/related-person";
 import { artifactRelatedArtifactUrl } from "../../../fhir-deduplication/shared";
+import { supportedCanvasDiffResources } from "../canvas";
 
 export function computeResourceDiff({
   existingResources,
@@ -161,4 +162,9 @@ function resourceIsDerivedFromExistingResource(resource: Resource): boolean {
     extension => extension.url === artifactRelatedArtifactUrl
   );
   return derivedFrom !== undefined;
+}
+
+export function getSupportedResources(ehr: EhrSource) {
+  if (ehr === EhrSources.canvas) return supportedCanvasDiffResources;
+  return [];
 }
