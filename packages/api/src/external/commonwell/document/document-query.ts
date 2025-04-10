@@ -16,6 +16,7 @@ import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -313,7 +314,9 @@ export async function internalGetDocuments({
   const cwErrs: OperationOutcome[] = [];
   const queryStart = Date.now();
   try {
-    const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
+    const queryResponse = await executeWithRetriesCw(() =>
+      commonWell.queryDocumentsFull(queryMeta, cwData.patientId)
+    );
     reportDocQueryMetric(queryStart);
     debug(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 

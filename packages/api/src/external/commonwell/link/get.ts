@@ -16,6 +16,7 @@ import { AdditionalInfo } from "@metriport/commonwell-sdk/common/commonwell-erro
 import { isCWEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -269,7 +270,9 @@ async function findNetworkLinks(
   if (!patientCWData) return undefined;
   const { log } = out("cw.findNetworkLinks");
 
-  const respLinks = await commonWell.getNetworkLinks(queryMeta, patientCWData.patientId);
+  const respLinks = await executeWithRetriesCw(() =>
+    commonWell.getNetworkLinks(queryMeta, patientCWData.patientId)
+  );
   const allLinks = respLinks._embedded.networkLink
     ? respLinks._embedded.networkLink.flatMap(filterTruthy)
     : [];

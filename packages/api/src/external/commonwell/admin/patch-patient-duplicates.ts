@@ -1,10 +1,11 @@
 import { getPersonId, getPersonIdFromUrl } from "@metriport/commonwell-sdk";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import MetriportError from "../../../errors/metriport-error";
-import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "../link/shared";
 import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
+import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "../link/shared";
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
@@ -40,7 +41,10 @@ export async function patchDuplicatedPersonsForPatient(
 
   try {
     // make sure the person exists @ CW
-    await commonWell.getPersonById(queryMeta, chosenPersonId);
+    await executeWithRetriesCw(() => commonWell.getPersonById(queryMeta, chosenPersonId), {
+      maxAttempts: 3,
+      initialDelay: 1000,
+    });
 
     // get the linked person
     const cwPatient = await commonWell.getPatient(queryMeta, cwPatientId);
@@ -53,11 +57,17 @@ export async function patchDuplicatedPersonsForPatient(
     // if not the same, unlink/unenroll the currently linked person
     if (currentLinkedPersonId && currentLinkedPersonId !== chosenPersonId) {
       log(`unlinking/unenrolling current person ${currentLinkedPersonId}...`);
-      await commonWell.resetPatientLink(queryMeta, currentLinkedPersonId, cwPatientId);
-      const currentLinkedPerson = await commonWell.getPersonById(queryMeta, currentLinkedPersonId);
+      await executeWithRetriesCw(() =>
+        commonWell.resetPatientLink(queryMeta, currentLinkedPersonId, cwPatientId)
+      );
+      const currentLinkedPerson = await executeWithRetriesCw(() =>
+        commonWell.getPersonById(queryMeta, currentLinkedPersonId)
+      );
       if (isEnrolledBy(orgName, currentLinkedPerson)) {
-        await commonWell.unenrollPerson(queryMeta, currentLinkedPersonId);
-        await commonWell.deletePerson(queryMeta, currentLinkedPersonId);
+        await executeWithRetriesCw(() =>
+          commonWell.unenrollPerson(queryMeta, currentLinkedPersonId)
+        );
+        await executeWithRetriesCw(() => commonWell.deletePerson(queryMeta, currentLinkedPersonId));
       }
     }
 
@@ -97,7 +107,9 @@ export async function patchDuplicatedPersonsForPatient(
 
     if (unenrollByDemographics) {
       log(`unenrolling by demographics...`);
-      const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, cwPatientId);
+      const respSearch = await executeWithRetriesCw(() =>
+        commonWell.searchPersonByPatientDemo(queryMeta, cwPatientId)
+      );
       const persons = respSearch._embedded?.person
         ? respSearch._embedded.person.flatMap(p => (p && getPersonId(p) ? p : []))
         : [];
@@ -106,7 +118,7 @@ export async function patchDuplicatedPersonsForPatient(
         if (!personId) continue;
         if (personId === chosenPersonId) continue; // don't unenroll the chosen person!
         if (isEnrolledBy(orgName, person)) {
-          await commonWell.unenrollPerson(queryMeta, personId);
+          await executeWithRetriesCw(() => commonWell.unenrollPerson(queryMeta, personId));
         }
       }
     }

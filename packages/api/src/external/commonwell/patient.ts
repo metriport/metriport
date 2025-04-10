@@ -14,6 +14,7 @@ import {
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -696,7 +697,10 @@ export async function get(
     const { commonWellAPI, queryMeta } = await setupApiAndCwPatient({ patient, facilityId });
     commonWell = commonWellAPI;
 
-    const respPatient = await commonWell.getPatient(queryMeta, commonwellPatientId);
+    const cwApi: CommonWellAPI = commonWell; // makes the compiler happy inside executeWithRetriesCw
+    const respPatient = await executeWithRetriesCw(() =>
+      cwApi.getPatient(queryMeta, commonwellPatientId)
+    );
     debug(`resp getPatient: `, JSON.stringify(respPatient));
 
     return respPatient;
@@ -736,8 +740,9 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     const { commonWellAPI, queryMeta } = await setupApiAndCwPatient({ patient, facilityId });
     commonWell = commonWellAPI;
 
+    const cwApi: CommonWellAPI = commonWell; // makes the compiler happy inside executeWithRetriesCw
     await Promise.all([
-      commonWell.deletePatient(queryMeta, commonwellPatientId),
+      executeWithRetriesCw(() => cwApi.deletePatient(queryMeta, commonwellPatientId)),
       deleteCwPatientData({ id: patient.id, cxId: patient.cxId }),
     ]);
   } catch (error) {
@@ -877,7 +882,9 @@ async function updatePersonAndLink({
   const person = makePersonForPatient(commonwellPatient);
   try {
     try {
-      const respPerson = await commonWell.updatePerson(queryMeta, person, personId);
+      const respPerson = await executeWithRetriesCw(() =>
+        commonWell.updatePerson(queryMeta, person, personId)
+      );
       debug(`resp updatePerson: `, JSON.stringify(respPerson));
 
       if (!respPerson.enrolled) {
@@ -1006,10 +1013,8 @@ async function updatePatient({
 }): Promise<{ patientRefLink: string }> {
   const { log, debug } = out(`CW updatePatient - CW patientId ${commonwellPatientId}`);
 
-  const respUpdate = await commonWell.updatePatient(
-    queryMeta,
-    commonwellPatient,
-    commonwellPatientId
+  const respUpdate = await executeWithRetriesCw(() =>
+    commonWell.updatePatient(queryMeta, commonwellPatient, commonwellPatientId)
   );
   debug(`resp updatePatient: `, JSON.stringify(respUpdate));
 
@@ -1038,7 +1043,9 @@ async function getLinkInfo({
 }): Promise<{ hasLink: boolean; isLinkLola3Plus: boolean }> {
   const { debug } = out(`CW getLinkInfo - CW patientId ${commonwellPatientId}`);
 
-  const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
+  const respLinks = await executeWithRetriesCw(() =>
+    commonWell.getPatientLinks(queryMeta, personId)
+  );
   debug(`resp getPatientLinks: `, JSON.stringify(respLinks));
 
   const linkToPatient = respLinks._embedded.patientLink.find(l =>
