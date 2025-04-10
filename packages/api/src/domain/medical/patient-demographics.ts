@@ -28,6 +28,8 @@ import { normalizeSsn as normalizeSsnFromShared } from "@metriport/shared/domain
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
+const SCORE_THRESHOLD = 17;
+const SCORE_THRESHOLD_WITH_SSN = 18;
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
  *
@@ -49,7 +51,7 @@ export function checkDemoMatch({
   | { isMatched: true; comparison: LinkDemographicsComparison }
   | { isMatched: false; comparison: undefined } {
   const matchedFields: LinkDemographicsComparison = {};
-  let scoreThreshold = 17;
+  let scoreThreshold = SCORE_THRESHOLD;
   let score = 0;
   if (coreDemographics.dob && linkDemographics.dob) {
     if (coreDemographics.dob === linkDemographics.dob) {
@@ -136,7 +138,7 @@ export function checkDemoMatch({
     // Email approximate match
     // TODO
   }
-  if (linkDemographics.ssns.length > 0) scoreThreshold = 21;
+  if (linkDemographics.ssns.length > 0) scoreThreshold = SCORE_THRESHOLD_WITH_SSN;
   const overLapSsn = linkDemographics.ssns.filter(ssn => coreDemographics.ssns.includes(ssn));
   // SSN exact match
   if (overLapSsn.length > 0) {
