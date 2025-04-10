@@ -5,13 +5,15 @@ import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  PatientImportUploadMetadata,
+  toS3Metadata,
+} from "@metriport/shared/domain/patient/patient-import/metadata";
 import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import {
-  metaToRecord,
   PatientImport,
   PatientImportParamsCx,
   PatientImportParamsOps,
-  PatientImportUploadMetadata,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -116,14 +118,14 @@ async function storeAtDb(jobCreate: PatientImport): Promise<PatientImport> {
 
 async function createUploadUrl({ cxId, jobId }: { cxId: string; jobId: string }) {
   const s3Utils = new S3Utils(Config.getAWSRegion());
-  const s3BucketName = Config.getPatientImportBucket();
+  const bucketName = Config.getPatientImportBucket();
   const key = createFileKeyRaw(cxId, jobId);
-  const metadata = metaToRecord(getUploadMetadata());
+  const metadata = toS3Metadata(getUploadMetadata());
   const s3Url = await s3Utils.getPresignedUploadUrl({
-    bucket: s3BucketName,
+    bucket: bucketName,
     key,
     durationSeconds: presignedUploadUrlDuration.asSeconds(),
-    metadata,
+    metadata: metadata,
   });
   return s3Url;
 }

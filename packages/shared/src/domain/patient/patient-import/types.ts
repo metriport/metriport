@@ -42,36 +42,6 @@ export type PatientImportEntryStatus =
   | PatientImportEntryStatusFailed
   | PatientImportEntryStatusParsed;
 
-const isDevKey = "isDev";
-
-/**
- * Used to store metadata on the upload URL.
- */
-export type PatientImportUploadMetadata = {
-  [isDevKey]?: boolean;
-};
-
-export function metaToRecord(
-  metadata: PatientImportUploadMetadata
-): Record<keyof PatientImportUploadMetadata, string> {
-  return {
-    [isDevKey]: metadata[isDevKey] ? "true" : "false",
-  };
-}
-
-export function recordToMeta(record: Record<string, string>): PatientImportUploadMetadata {
-  return {
-    ...(record[isDevKey] ? { [isDevKey]: record[isDevKey] === "true" } : {}),
-  };
-}
-
-export function isPatientImportRunningOnDev(
-  metadata: PatientImportUploadMetadata | undefined
-): boolean {
-  const isDevProp = metadata?.[isDevKey];
-  return isDevProp ? [true, "true"].includes(isDevProp) : false;
-}
-
 export function isDryRun(job: Pick<PatientImport, "paramsCx" | "paramsOps">): boolean {
   return job.paramsOps?.dryRun ?? job.paramsCx?.dryRun ?? false;
 }
