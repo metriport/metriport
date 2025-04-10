@@ -11,8 +11,10 @@ export class Hl7NotificationRouterLocal implements Hl7NotificationRouter {
   }
 
   async execute(params: Hl7Notification): Promise<void> {
-    const { cxId, patientId } = params;
+    const { cxId, patientId, messageReceivedTimestamp } = params;
 
-    this.log(`Invoking execute for cxId ${cxId} + patientId ${patientId}`);
+    this.log(
+      `[${messageReceivedTimestamp}] Invoking execute for cxId ${cxId} + patientId ${patientId}`
+    );
   }
 }
