@@ -14,6 +14,7 @@ export type Hl7ToFhirParams = {
   patientId: string;
   timestampString: string;
 };
+
 /**
  * Converts an HL7v2 message to a FHIR Bundle. Currently only supports ADT messages.
  */
@@ -38,9 +39,9 @@ export function convertHl7v2MessageToFhir({
 
   if (messageType.code === "ADT") {
     const resources = convertAdtNotificationToFhir(hl7Message, messageType, patientId);
-    // TODO: Make a wrapper here to add extension to all resources
     const bundle = buildBundleFromResources({ type: "collection", resources });
     const duration = Date.now() - startedAt;
+
     log(`Conversion completed in ${duration} ms`);
     return addHl7SourceExtension(bundle, filePath);
   }

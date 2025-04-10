@@ -43,8 +43,14 @@ export function formFromUuid(uuid: string) {
 }
 
 export function unpackPidFieldOrFail(pid: string) {
+  if (!pid || !pid.includes("_")) {
+    throw new MetriportError("Invalid PID format: missing separator");
+  }
+
   const [cxId, patientId] = pid.split("_").map(reformUuid);
-  if (!cxId || !patientId) throw new MetriportError("Invalid PID format");
+  if (!cxId || !patientId) {
+    throw new MetriportError("Invalid PID format: could not unpack identifiers");
+  }
 
   return { cxId, patientId };
 }

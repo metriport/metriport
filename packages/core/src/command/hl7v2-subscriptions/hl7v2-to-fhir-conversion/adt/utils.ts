@@ -15,6 +15,14 @@ import { buildConditionCoding } from "./condition";
 
 type ConditionOffset = 0 | 3;
 
+type HumanNameDetails = {
+  family: string;
+  given: string;
+  secondaryGivenNames: string | undefined;
+  suffix: string | undefined;
+  prefix: string | undefined;
+};
+
 export function getPeriodFromPatientVisit(adt: Hl7Message): Encounter["period"] | undefined {
   const pv1Segment = getSegmentByNameOrFail(adt, "PV1");
 
@@ -43,14 +51,6 @@ export function getFacilityName(adt: Hl7Message): string | undefined {
   const assignedPatientLocationFacility = getOptionalValueFromSegment(pv1, 3, 4);
   return assignedPatientLocationFacility ?? undefined;
 }
-
-type HumanNameDetails = {
-  family: string;
-  given: string;
-  secondaryGivenNames: string | undefined;
-  suffix: string | undefined;
-  prefix: string | undefined;
-};
 
 export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails | undefined {
   const pv1Segment = getSegmentByNameOrFail(adt, "PV1");
