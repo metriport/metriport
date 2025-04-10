@@ -1,23 +1,25 @@
 import { out } from "@metriport/core/util";
-import { getEnvVar } from "@metriport/shared";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { OrgMemberInfo, User } from "@propelauth/express";
 import { initBaseAuth } from "@propelauth/node";
+import { Request } from "express";
+import ForbiddenError from "../../errors/forbidden";
 
 export type PropelAuth = ReturnType<typeof initBaseAuth>;
 
-// TODO 1986 Move this back to getAuth() and make them required there - getAuth() doesn't return undefined anymore
-const authUrl = getEnvVar("PROPELAUTH_AUTH_URL");
-const apiKey = getEnvVar("PROPELAUTH_API_KEY");
-const publicKey = getEnvVar("PROPELAUTH_PUBLIC_KEY");
-
 let auth: PropelAuth | undefined;
-export function getAuth(): PropelAuth | undefined {
+export function getAuth(): PropelAuth {
+  if (auth) return auth;
+
+  const authUrl = getEnvVarOrFail("PROPELAUTH_AUTH_URL");
+  const apiKey = getEnvVarOrFail("PROPELAUTH_API_KEY");
+  const publicKey = getEnvVarOrFail("PROPELAUTH_PUBLIC_KEY");
+
   out("PropelAuth").log(
     `authUrl ${authUrl}, apiKey ${apiKey && apiKey.trim().length ? "***" : undefined}, publicKey ${
       publicKey && publicKey.trim().length ? "***" : undefined
     }`
   );
-  if (auth || !authUrl || !apiKey || !publicKey) return auth;
   auth = initBaseAuth({
     authUrl,
     apiKey,
@@ -27,6 +29,20 @@ export function getAuth(): PropelAuth | undefined {
     },
   });
   return auth;
+}
+
+export async function getCxIdFromJwt(req: Request): Promise<string> {
+  const auth = getAuth();
+
+  const jwtStr = req.header("Authorization");
+  if (!jwtStr) throw new ForbiddenError();
+
+  const user = await auth.validateAccessTokenAndGetUser(jwtStr);
+
+  const cxId = getCxId(user);
+  if (!cxId) throw new ForbiddenError();
+
+  return cxId;
 }
 
 export function getCxId(user: User): string | undefined {

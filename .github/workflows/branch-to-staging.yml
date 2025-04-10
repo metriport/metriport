@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       jobs_to_run:
-        description: 'Select jobs to run (comma-separated): api,mllp-server,infra-api-lambdas,redeploy-api-gw,e2e-tests'
+        description: 'Select jobs to run (comma-separated): api,mllp-server,infra-api-lambdas,infra-hl7-notification,redeploy-api-gw,e2e-tests'
         required: true
-        default: 'api,mllp-server,infra-api-lambdas,redeploy-api-gw,e2e-tests'
+        default: 'api,mllp-server,infra-api-lambdas,infra-hl7-notification,redeploy-api-gw,e2e-tests'
         type: string
 
 jobs:

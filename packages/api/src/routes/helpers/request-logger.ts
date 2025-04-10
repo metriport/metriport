@@ -24,7 +24,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         : undefined;
 
     console.log(
-      "%s ..........Begins %s %s %s %s",
+      "%s ....Begins %s %s %s %s",
       reqId,
       method,
       url,
@@ -39,7 +39,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       const elapsedHrTime = process.hrtime(startHrTime);
       const elapsedTimeInMs = elapsedHrTime[0] * 1000 + elapsedHrTime[1] / 1e6;
       console.log(
-        "%s ..........Done %s %s | %d | %fms",
+        "%s ....Done %s %s | %d | %fms",
         reqId,
         method,
         url,

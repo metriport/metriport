@@ -11,6 +11,7 @@ import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
 import { buildS3Key, unpackPidField, withErrorHandling } from "./utils";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 
 initSentry();
 
@@ -71,12 +72,27 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
               messageCode,
             }),
             file: Buffer.from(asString(message)),
-            contentType: "text/plain",
+            contentType: "application/json",
           })
           .catch(e => {
             logger.log(`S3 upload failed: ${e}`);
             Sentry.captureException(e);
           });
+
+        analytics(
+          {
+            distinctId: cxId,
+            event: EventTypes.hl7NotificationReceived,
+            properties: {
+              cxId,
+              patientId,
+              messageType,
+              messageCode,
+            },
+          },
+          undefined,
+          "mllp-server"
+        );
       }, logger)
     );
 
