@@ -15,15 +15,15 @@ export class Hl7NotificationRouterCloud implements Hl7NotificationRouter {
   }
 
   async execute(params: Hl7Notification): Promise<void> {
-    const { cxId, patientId } = params;
-    const payload = JSON.stringify(params);
+    const { cxId, patientId, messageReceivedTimestamp } = params;
     capture.setExtra({
       cxId,
       patientId,
-      payload,
+      messageReceivedTimestamp: messageReceivedTimestamp,
       context: "hl7-notification-router-cloud.execute",
     });
 
+    const payload = JSON.stringify(params);
     await sqsClient.sendMessageToQueue(this.queueUrl, payload, {
       fifo: true,
       messageGroupId: `${cxId}_${patientId}`,
