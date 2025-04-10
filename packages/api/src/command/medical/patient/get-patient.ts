@@ -73,15 +73,16 @@ export async function getPatients({
    * If/when we move to Sequelize v7 we can replace the raw query with ORM:
    * https://sequelize.org/docs/v7/querying/operators/#tsquery-matching-operator
    */
-  const { query: queryFTS, patientAlias } = getPatientsSharedQueryUntilFTS(
-    `${aliasReplacement}.*`,
+  const { query: queryFTS, patientAlias } = getPatientsSharedQueryUntilFTS({
+    selectColumns: `${aliasReplacement}.*`,
     facilityId,
     patientIds,
-    fullTextSearchFilters
-  );
+    fullTextSearchFilters,
+    isCount: false,
+  });
 
   const { query: paginationQueryExpression, replacements: paginationReplacements } =
-    paginationSqlExpressions(pagination, patientAlias);
+    paginationSqlExpressions({ pagination, alias: patientAlias, addGroupBy: true });
   const queryFinal = queryFTS + paginationQueryExpression;
 
   const patients = await sequelize.query(queryFinal, {
@@ -126,12 +127,13 @@ export async function getPatientsCount({
   const sequelize = PatientModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const { query: queryFTS } = getPatientsSharedQueryUntilFTS(
-    `count(${aliasReplacement}.id)`,
+  const { query: queryFTS } = getPatientsSharedQueryUntilFTS({
+    selectColumns: `count(${aliasReplacement}.id)`,
     facilityId,
     patientIds,
-    fullTextSearchFilters
-  );
+    fullTextSearchFilters,
+    isCount: true,
+  });
 
   const queryFinal = queryFTS;
   const result = await sequelize.query(queryFinal, {
@@ -145,15 +147,23 @@ export async function getPatientsCount({
   return parseInt((result[0] as unknown as any).count);
 }
 
-function getPatientsSharedQueryUntilFTS(
-  selectColumns: string,
-  facilityId?: string,
-  patientIds?: string[],
-  fullTextSearchFilters?: string
-): { query: string; patientAlias: string } {
+function getPatientsSharedQueryUntilFTS({
+  selectColumns,
+  facilityId,
+  patientIds,
+  fullTextSearchFilters,
+  isCount,
+}: {
+  selectColumns: string;
+  facilityId?: string;
+  patientIds?: string[];
+  fullTextSearchFilters?: string;
+  isCount: boolean;
+}): { query: string; patientAlias: string } {
   const alias = "p";
-  const querySelect = `SELECT ${selectColumns.replace(aliasReplacement, alias)}, 
-  COALESCE(
+  const querySelectBase = `SELECT ${selectColumns.replace(aliasReplacement, alias)}`;
+  const querySelectMapping = `,
+    COALESCE(
     jsonb_agg(
       CASE WHEN pm.id IS NOT NULL 
       THEN jsonb_build_object(
@@ -167,18 +177,26 @@ function getPatientsSharedQueryUntilFTS(
       ELSE NULL END
     ) FILTER (WHERE pm.id IS NOT NULL),
     '[]'::jsonb
-  ) as ${mappingsAlias}
-  FROM ${PatientModel.tableName} ${alias}
-  LEFT OUTER JOIN ${PatientMappingModel.tableName} pm ON ${alias}.id = pm.patient_id
-  WHERE ${alias}.cx_id = :cxId`;
+  ) as ${mappingsAlias}`;
+  const queryFrom = ` FROM ${PatientModel.tableName} ${alias}`;
+  const queryJoin = ` LEFT OUTER JOIN ${PatientMappingModel.tableName} pm ON ${alias}.id = pm.patient_id`;
+  const queryWhere = ` WHERE ${alias}.cx_id = :cxId`;
+  const queryFacility = facilityId
+    ? ` AND ${alias}.facility_ids::text[] && :facilityIds::text[]`
+    : "";
+  const queryPatientIds = patientIds ? ` AND ${alias}.id IN (:patientIds)` : "";
 
-  const queryFacility =
-    querySelect + (facilityId ? ` AND ${alias}.facility_ids::text[] && :facilityIds::text[]` : "");
-
-  const queryPatientIds = queryFacility + (patientIds ? ` AND ${alias}.id IN (:patientIds)` : "");
+  const queryBase =
+    querySelectBase +
+    (isCount ? "" : querySelectMapping) +
+    queryFrom +
+    (isCount ? "" : queryJoin) +
+    queryWhere +
+    queryFacility +
+    queryPatientIds;
 
   const queryFTS =
-    queryPatientIds +
+    queryBase +
     (fullTextSearchFilters
       ? ` AND (
         ${alias}.search_criteria @@ websearch_to_tsquery('english', :filters) 

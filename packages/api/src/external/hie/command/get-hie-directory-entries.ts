@@ -22,7 +22,7 @@ export async function getHieDirectoryEntriesByFilter({
       ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
       : "");
 
-  const { query, replacements } = paginationSqlExpressions(pagination);
+  const { query, replacements } = paginationSqlExpressions({ pagination });
   const queryFinal = queryFTS + query;
 
   const networkEntries = await sequelize.query(queryFinal, {

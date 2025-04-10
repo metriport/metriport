@@ -10,7 +10,7 @@ import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
-import { buildS3Key, unpackPidField } from "./utils";
+import { buildS3Key, unpackPidField, withErrorHandling } from "./utils";
 
 initSentry();
 
@@ -20,7 +20,7 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
 
 const MESSAGE_TYPE_FIELD = 9;
 const MESSAGE_CODE_COMPONENT = 1;
-const TRIGGER_EVENT_COMPONENT = 1;
+const TRIGGER_EVENT_COMPONENT = 2;
 
 const IDENTIFIER_FIELD = 3;
 const IDENTIFIER_COMPONENT = 1;
@@ -36,54 +36,60 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
 
   const server = new Hl7Server(connection => {
-    connection.addEventListener("message", async ({ message }) => {
-      const timestamp = new Date().toISOString();
-      log(
-        `${timestamp}> New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
-      );
+    connection.addEventListener(
+      "message",
+      withErrorHandling(async ({ message }) => {
+        const timestamp = new Date().toISOString();
+        log(
+          `${timestamp}> New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
+        );
 
-      const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
-      const { cxId, patientId } = unpackPidField(pid);
+        const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
+        const { cxId, patientId } = unpackPidField(pid);
 
-      await buildHl7NotificationRouter().execute({
-        cxId,
-        patientId,
-        message: asString(message),
-      });
-
-      connection.send(message.buildAck());
-
-      const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
-      const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
-      const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
-
-      s3Utils
-        .uploadFile({
-          bucket: bucketName,
-          key: buildS3Key({
-            cxId,
-            patientId,
-            timestamp,
-            messageType,
-            messageCode,
-          }),
-          file: Buffer.from(asString(message)),
-          contentType: "application/json",
-        })
-        .catch(e => {
-          logger.log(`S3 upload failed: ${e}`);
-          Sentry.captureException(e);
+        await buildHl7NotificationRouter().execute({
+          cxId,
+          patientId,
+          message: asString(message),
         });
-    });
 
-    connection.addEventListener("error", error => {
-      if (error instanceof Error) {
-        logger.log("Connection error:", error);
-        Sentry.captureException(error);
-      } else {
-        logger.log("Connection terminated by client");
-      }
-    });
+        connection.send(message.buildAck());
+
+        const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
+        const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
+        const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
+
+        s3Utils
+          .uploadFile({
+            bucket: bucketName,
+            key: buildS3Key({
+              cxId,
+              patientId,
+              timestamp,
+              messageType,
+              messageCode,
+            }),
+            file: Buffer.from(asString(message)),
+            contentType: "text/plain",
+          })
+          .catch(e => {
+            logger.log(`S3 upload failed: ${e}`);
+            Sentry.captureException(e);
+          });
+      }, logger)
+    );
+
+    connection.addEventListener(
+      "error",
+      withErrorHandling(error => {
+        if (error instanceof Error) {
+          logger.log("Connection error:", error);
+          Sentry.captureException(error);
+        } else {
+          logger.log("Connection terminated by client");
+        }
+      }, logger)
+    );
 
     connection.addEventListener("close", () => {
       logger.log("Connection closed");
