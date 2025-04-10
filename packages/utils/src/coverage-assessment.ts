@@ -4,7 +4,7 @@ dotenv.config();
 import { DocumentQuery, MetriportMedicalApi } from "@metriport/api-sdk";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
-import { getEnvVarOrFail, sleep } from "@metriport/shared";
+import { executeWithNetworkRetries, getEnvVarOrFail, sleep } from "@metriport/shared";
 import axios from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
@@ -55,7 +55,7 @@ const sdk = new MetriportMedicalApi(apiKey, {
 const api = axios.create({ baseURL: apiUrl });
 
 // query stuff
-const minimumDelayTime = dayjs.duration(3, "seconds");
+const minimumDelayTime = dayjs.duration(1, "seconds"); // to get to 1s need to be ABSOLUTELY sure the infra will take it (scale it out if needed)
 const defaultDelayTime = dayjs.duration(10, "seconds");
 const numberOfParallelExecutions = 5;
 const confirmationTime = dayjs.duration(10, "seconds");
@@ -143,9 +143,9 @@ async function getCoverageForPatient(
 ) {
   try {
     const [patient, docQueryStatus, fhir] = await Promise.all([
-      sdk.getPatient(patientId),
-      getDocQueryStatus(cxId, patientId),
-      sdk.countPatientConsolidated(patientId),
+      executeWithNetworkRetries(() => sdk.getPatient(patientId)),
+      executeWithNetworkRetries(() => getDocQueryStatus(cxId, patientId)),
+      executeWithNetworkRetries(() => sdk.countPatientConsolidated(patientId)),
     ]);
     if (!docQueryStatus) {
       throw new Error(`Document query status not found for patient ${patientId}`);
