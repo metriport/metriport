@@ -7,7 +7,6 @@ import {
   getOptionalValueFromField,
   getOptionalValueFromMessage,
   getOptionalValueFromSegment,
-  getRequiredValueFromMessage,
   getSegmentByNameOrFail,
   mapAdtSystemNameToSystemUrl,
 } from "../shared";
@@ -24,7 +23,8 @@ type HumanNameDetails = {
 };
 
 export function getPeriodFromPatientVisit(adt: Hl7Message): Encounter["period"] | undefined {
-  const pv1Segment = getSegmentByNameOrFail(adt, "PV1");
+  const pv1Segment = adt.getSegment("PV1");
+  if (!pv1Segment) return undefined;
 
   const start = getOptionalValueFromSegment(pv1Segment, 44, 1);
   const end = getOptionalValueFromSegment(pv1Segment, 45, 1);
@@ -32,8 +32,8 @@ export function getPeriodFromPatientVisit(adt: Hl7Message): Encounter["period"] 
   return buildPeriod(start, end);
 }
 
-export function getPatientClassCode(adt: Hl7Message): string {
-  return getRequiredValueFromMessage(adt, "PV1", 2, 1);
+export function getPatientClassCode(adt: Hl7Message): string | undefined {
+  return getOptionalValueFromMessage(adt, "PV1", 2, 1);
 }
 
 export function getFacilityName(adt: Hl7Message): string | undefined {
@@ -44,16 +44,20 @@ export function getFacilityName(adt: Hl7Message): string | undefined {
     return [eventFacilityNamespace, eventFacilityUniversalId].filter(Boolean).join(" - ");
   }
 
-  const pv1 = getSegmentByNameOrFail(adt, "PV1");
-  const servicingFacilityName = getOptionalValueFromSegment(pv1, 39, 1);
+  const pv1Segment = adt.getSegment("PV1");
+  if (!pv1Segment) return undefined;
+
+  const servicingFacilityName = getOptionalValueFromSegment(pv1Segment, 39, 1);
   if (servicingFacilityName) return servicingFacilityName;
 
-  const assignedPatientLocationFacility = getOptionalValueFromSegment(pv1, 3, 4);
+  const assignedPatientLocationFacility = getOptionalValueFromSegment(pv1Segment, 3, 4);
   return assignedPatientLocationFacility ?? undefined;
 }
 
 export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails | undefined {
-  const pv1Segment = getSegmentByNameOrFail(adt, "PV1");
+  const pv1Segment = adt.getSegment("PV1");
+  if (!pv1Segment) return undefined;
+
   const attendingDoctorField = pv1Segment.getField(7);
   if (attendingDoctorField.components.length < 1) return undefined;
 
@@ -83,16 +87,25 @@ export function getConditionCoding(
   });
 }
 
-export function createEncounterId(adt: Hl7Message, patientId: string) {
+export function getPotentialIdentifiers(adt: Hl7Message) {
   const visitNumber = getOptionalValueFromMessage(adt, "PV1", 19, 1);
-  if (visitNumber) return createUuidFromText(`${visitNumber}-${patientId}`);
-
   const accountNumber = getOptionalValueFromMessage(adt, "PV1", 18, 1);
-  if (accountNumber) return createUuidFromText(`${accountNumber}-${patientId}`);
-
   const mrn = getOptionalValueFromMessage(adt, "PID", 3, 1);
   const admitDate = getOptionalValueFromMessage(adt, "PV1", 44, 1);
 
+  return {
+    visitNumber,
+    accountNumber,
+    mrn,
+    admitDate,
+  };
+}
+
+export function createEncounterId(adt: Hl7Message, patientId: string) {
+  const { visitNumber, accountNumber, mrn, admitDate } = getPotentialIdentifiers(adt);
+
+  if (visitNumber) return createUuidFromText(`${visitNumber}-${patientId}`);
+  if (accountNumber) return createUuidFromText(`${accountNumber}-${patientId}`);
   if (mrn && admitDate) {
     return createUuidFromText(`${mrn}-${admitDate}`);
   }

@@ -17,7 +17,9 @@ export function getParticipantsFromAdt(adt: Hl7Message): AdtParticipants | undef
   const practitioners: PractitionerWithId[] = [];
 
   const attendingDoctorDetails = getAttendingDoctorDetailsFromAdt(adt);
-  practitioners.push(buildPractitioner(attendingDoctorDetails));
+  if (attendingDoctorDetails) {
+    practitioners.push(buildPractitioner(attendingDoctorDetails));
+  }
 
   // TODO 2883: Add other practitioners from the ADT message, if available
 
@@ -59,7 +61,7 @@ function buildHumanName(
   ];
 }
 
-export function buildPractitioner(params: Partial<Practitioner> = {}): PractitionerWithId {
+export function buildPractitioner(params: Partial<Practitioner>): PractitionerWithId {
   const { id, name, ...remainingParams } = params;
 
   return {

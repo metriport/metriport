@@ -36,7 +36,7 @@ export function mapEncounterAndRelatedResources(
     ...(admitReason
       ? {
           reasonCode: admitReason.reasonCode,
-          diagnosis: admitReason.diagnosis, // TODO 2883: Use DG1 segment to get >1 diagnoses, if present
+          diagnosis: admitReason.diagnosis,
         }
       : undefined),
     subject: buildPatientReference(patientId),
@@ -74,7 +74,7 @@ function inferStatusFromMessage(messageType: MessageType): NonNullable<Encounter
 function getClassFromPatientVisit(adt: Hl7Message): Coding {
   const patientClassCode = getPatientClassCode(adt);
 
-  if (!isAdtPatientClass(patientClassCode)) {
+  if (!patientClassCode || !isAdtPatientClass(patientClassCode)) {
     return DEFAULT_ENCOUNTER_CLASS;
   }
 

@@ -14,6 +14,7 @@ import {
   SNOMED_URL,
 } from "../../../util/constants";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
+import { getPotentialIdentifiers } from "./adt/utils";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
@@ -61,18 +62,13 @@ export function getRequiredValueFromMessage(
   fieldIndex: number,
   componentIndex: number
 ): string {
-  const segment = msg.getSegment(targetSegmentName);
-  if (!segment) {
-    throw new MetriportError("Missing required segment", undefined, {
-      msg: JSON.stringify(msg),
-      targetSegmentName,
-    });
-  }
-
+  const segment = getSegmentByNameOrFail(msg, targetSegmentName);
   const value = getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
   if (!value) {
+    // TODO 2883: Need a more universal way to get the message identifiers that aren't exclusive to ADTs
+    const ids = getPotentialIdentifiers(msg);
     throw new MetriportError("Missing required value", undefined, {
-      msg: JSON.stringify(msg),
+      msg: JSON.stringify(ids),
       targetSegmentName,
       fieldIndex,
       componentIndex,
@@ -97,7 +93,12 @@ export function getOptionalValueFromMessage(
 export function getSegmentByNameOrFail(msg: Hl7Message, targetSegmentName: string): Hl7Segment {
   const segment = msg.getSegment(targetSegmentName);
   if (!segment) {
-    throw new MetriportError(`Segment ${targetSegmentName} not found in message`);
+    // TODO 2883: Need a more universal way to get the message identifiers that aren't exclusive to ADTs
+    const ids = getPotentialIdentifiers(msg);
+    throw new MetriportError("Missing required segment", undefined, {
+      msg: JSON.stringify(ids),
+      targetSegmentName,
+    });
   }
   return segment;
 }
