@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
-import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import { WebhookBulkPatientImportPayload, WebhookMetadata } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
