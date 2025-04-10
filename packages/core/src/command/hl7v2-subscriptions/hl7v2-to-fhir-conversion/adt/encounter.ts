@@ -1,45 +1,17 @@
 import { Hl7Message } from "@medplum/core";
 import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
 import { buildPatientReference } from "../../../../external/fhir/shared/references";
-import { uuidv7 } from "../../../../util/uuid-v7";
 import { MessageType } from "../msh";
-import { getSegmentByNameOrFail } from "../shared";
 import { getAdmitReasonFromPatientVisitAddon } from "./condition";
 import { getLocationFromAdt } from "./location";
+import {
+  AdtPatientClass,
+  DEFAULT_ENCOUNTER_CLASS,
+  adtToFhirEncounterClassMap,
+  isAdtPatientClass,
+} from "./mappings";
 import { getParticipantsFromAdt } from "./practitioner";
-import { getPatientClassCode, getPeriodFromPatientVisit } from "./utils";
-
-const adtPatientClass = ["B", "C", "E", "I", "N", "O", "P", "R", "U"] as const;
-export type AdtPatientClass = (typeof adtPatientClass)[number];
-
-type CodingWithCodeAndDisplay = Coding & {
-  code: string;
-  display: string;
-};
-
-// TODO 2883: Not sure this is a good class for default
-const DEFAULT_ENCOUNTER_CLASS: CodingWithCodeAndDisplay = {
-  code: "AMB",
-  display: "ambulatory",
-};
-
-/**
- * Contains the mapping for HL7 ADT Patient Class code to FHIR R4 Encounter class code.
- *
- * @see {@link https://hl7-definition.caristix.com/v2/HL7v2.5.1/Tables/0004}
- * @see {@link https://hl7.org/fhir/R4/v3/ActEncounterCode/vs.html}
- */
-const adtToFhirEncounterClassMap: Record<AdtPatientClass, CodingWithCodeAndDisplay> = {
-  B: { code: "IMP", display: "inpatient encounter" }, // Obstetrics → Inpatient
-  C: { code: "AMB", display: "ambulatory" }, // Commercial Account → Ambulatory
-  E: { code: "EMER", display: "emergency" }, // Emergency → Emergency
-  I: { code: "IMP", display: "inpatient encounter" }, // Inpatient → Inpatient
-  N: DEFAULT_ENCOUNTER_CLASS, // Not Applicable → Default to Ambulatory
-  O: { code: "AMB", display: "ambulatory" }, // Outpatient → Ambulatory
-  P: { code: "PRENC", display: "pre-admission" }, // Preadmit → Pre-admission
-  R: { code: "SS", display: "short stay" }, // Recurring patient → Short stay
-  U: DEFAULT_ENCOUNTER_CLASS, // Unknown → Default to Ambulatory
-};
+import { createEncounterId, getPatientClassCode, getPeriodFromPatientVisit } from "./utils";
 
 export function mapEncounterAndRelatedResources(
   adt: Hl7Message,
@@ -47,17 +19,16 @@ export function mapEncounterAndRelatedResources(
   patientId: string
 ): Resource[] {
   const status = inferStatusFromMessage(messageType);
-  const pv1Segment = getSegmentByNameOrFail(adt, "PV1");
   const encounterClass = getClassFromPatientVisit(adt);
   const period = getPeriodFromPatientVisit(adt);
-  const participants = getParticipantsFromAdt(pv1Segment);
+  const participants = getParticipantsFromAdt(adt);
 
   const admitReason = getAdmitReasonFromPatientVisitAddon(adt, patientId);
 
   const location = getLocationFromAdt(adt);
 
   const encounter: Encounter = {
-    id: uuidv7(), // TODO 2883: replace with actual ID generation logic, keeping it consistent across A01/A03. See if PV1.19 can be used here
+    id: createEncounterId(adt, patientId),
     resourceType: "Encounter",
     status,
     class: encounterClass,
@@ -65,7 +36,7 @@ export function mapEncounterAndRelatedResources(
     ...(admitReason
       ? {
           reasonCode: admitReason.reasonCode,
-          diagnosis: admitReason.diagnosis,
+          diagnosis: admitReason.diagnosis, // TODO 2883: Use DG1 segment to get >1 diagnoses, if present
         }
       : undefined),
     subject: buildPatientReference(patientId),
@@ -108,10 +79,6 @@ function getClassFromPatientVisit(adt: Hl7Message): Coding {
   }
 
   return mapAdtPatientClassToFhirEncounterClass(patientClassCode as AdtPatientClass);
-}
-
-function isAdtPatientClass(code: string): code is AdtPatientClass {
-  return adtPatientClass.includes(code as AdtPatientClass);
 }
 
 /**

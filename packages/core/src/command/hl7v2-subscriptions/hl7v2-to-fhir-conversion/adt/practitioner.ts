@@ -1,8 +1,8 @@
-import { Hl7Field, Hl7Segment } from "@medplum/core";
+import { Hl7Message } from "@medplum/core";
 import { EncounterParticipant, HumanName, Practitioner } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { buildEncounterParticipant } from "../../../../external/fhir/shared/references";
-import { getOptionalValueFromField } from "../shared";
+import { getAttendingDoctorNameDetails } from "./utils";
 
 type PractitionerWithId = Practitioner & {
   id: string;
@@ -13,30 +13,28 @@ type AdtParticipants = {
   references: EncounterParticipant[];
 };
 
-export function getParticipantsFromAdt(pv1Segment: Hl7Segment): AdtParticipants | undefined {
-  const attendingDoctorField = pv1Segment.getField(7);
-  if (attendingDoctorField.components.length < 1) return undefined;
+export function getParticipantsFromAdt(adt: Hl7Message): AdtParticipants | undefined {
+  const practitioners: PractitionerWithId[] = [];
 
-  const attendingDoctorDetails = getPractitionerDetailsFromField(attendingDoctorField);
-  const attendingPractitioner = buildPractitioner(attendingDoctorDetails);
+  const attendingDoctorDetails = getAttendingDoctorDetailsFromAdt(adt);
+  practitioners.push(buildPractitioner(attendingDoctorDetails));
 
-  const practitioners = [attendingPractitioner];
+  // TODO 2883: Add other practitioners from the ADT message, if available
 
   const references = buildParticipantReferences(practitioners.map(p => p.id));
-
   return {
     practitioners,
     references,
   };
 }
 
-function getPractitionerDetailsFromField(docField: Hl7Field): Partial<Practitioner> {
-  const family = docField.getComponent(2);
-  const given = docField.getComponent(3);
-  const secondaryGivenNames = getOptionalValueFromField(docField, 4);
-  const suffix = getOptionalValueFromField(docField, 5);
-  const prefix = getOptionalValueFromField(docField, 6);
+function getAttendingDoctorDetailsFromAdt(adt: Hl7Message): Partial<Practitioner> | undefined {
+  const attendingDocNameDetails = getAttendingDoctorNameDetails(adt);
+  if (!attendingDocNameDetails) return undefined;
 
+  const { family, given, secondaryGivenNames, suffix, prefix } = attendingDocNameDetails;
+
+  // TODO: Improve mapping from what's returned from ADT to buildHumanName.. This current version is kinda clunky
   const givenNames = [given, secondaryGivenNames].flatMap(n => n ?? []);
   const name = buildHumanName(family, givenNames, prefix, suffix);
 

@@ -5,11 +5,8 @@ import {
   buildConditionReference,
   buildPatientReference,
 } from "../../../../external/fhir/shared/references";
-import {
-  getOptionalValueFromSegment,
-  getSegmentByNameOrFail,
-  mapAdtSystemNameToSystemUrl,
-} from "../shared";
+import { getSegmentByNameOrFail } from "../shared";
+import { getConditionCoding } from "./utils";
 
 type ConditionWithId = Condition & {
   id: string;
@@ -25,7 +22,6 @@ type ConditionWithCode = Partial<Condition> & {
   code: CodeableConcept;
 };
 
-// TODO 2883: see if Transfer Reason (PVE2.4) can be used to complement admit reason
 export function getAdmitReasonFromPatientVisitAddon(
   adt: Hl7Message,
   patientId: string
@@ -33,32 +29,10 @@ export function getAdmitReasonFromPatientVisitAddon(
   const pv2Segment = getSegmentByNameOrFail(adt, "PV2");
   if (pv2Segment.fields.length < 1) return undefined;
 
-  const reasonCode = getOptionalValueFromSegment(pv2Segment, 3, 1);
-  const reasonDisplay = getOptionalValueFromSegment(pv2Segment, 3, 2);
-  const reasonSystem = getOptionalValueFromSegment(pv2Segment, 3, 3);
-  const system = mapAdtSystemNameToSystemUrl(reasonSystem);
+  const coding = getConditionCodingsFromPatientVisitAddon(adt);
+  if (!coding) return undefined;
 
-  const mainCode = buildConditionCoding({
-    code: reasonCode,
-    display: reasonDisplay,
-    system,
-  });
-
-  const secondaryReasonCode = getOptionalValueFromSegment(pv2Segment, 3, 4);
-  const secondaryReasonDisplay = getOptionalValueFromSegment(pv2Segment, 3, 5);
-  const secondaryReasonSystem = getOptionalValueFromSegment(pv2Segment, 3, 6);
-  const secondarySystem = mapAdtSystemNameToSystemUrl(secondaryReasonSystem);
-
-  const secondaryCode = buildConditionCoding({
-    code: secondaryReasonCode,
-    display: secondaryReasonDisplay,
-    system: secondarySystem,
-  });
-
-  if (!mainCode && !secondaryCode) return undefined;
-  const coding = [mainCode, secondaryCode].flatMap(c => c ?? []);
-
-  // TODO 2883: See if we can parse (or infer) onsetDateTime and other fields
+  // TODO 2883: See if we can parse (or infer) onsetDateTime and other fields (so far looks like a no)
   const condition = buildCondition({ code: { coding } }, patientId);
   const diagnosisReference = buildConditionReference({ resource: condition });
 
@@ -69,7 +43,17 @@ export function getAdmitReasonFromPatientVisitAddon(
   };
 }
 
-function buildConditionCoding({
+function getConditionCodingsFromPatientVisitAddon(adt: Hl7Message): Coding[] | undefined {
+  const pv2Segment = getSegmentByNameOrFail(adt, "PV2");
+  const mainCoding = getConditionCoding(pv2Segment);
+  const secondaryCoding = getConditionCoding(pv2Segment, 3);
+  const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
+  if (coding.length < 1) return undefined;
+
+  return coding;
+}
+
+export function buildConditionCoding({
   code,
   display,
   system,
@@ -80,10 +64,11 @@ function buildConditionCoding({
 }): Coding | undefined {
   if (!code && !display) return undefined;
 
+  const systemUrl = system ?? inferConditionSystem(code);
   return {
     ...(code ? { code } : undefined),
     ...(display ? { display } : undefined),
-    ...(system ? { system } : undefined),
+    ...(systemUrl ? { system: systemUrl } : undefined),
   };
 }
 
@@ -97,4 +82,11 @@ export function buildCondition(params: ConditionWithCode, patientId: string): Co
     subject: buildPatientReference(patientId),
     ...remainingParams,
   };
+}
+
+function inferConditionSystem(code: string | undefined): string | undefined {
+  if (!code) return undefined;
+
+  // TODO 2883: See if we can infer the system being ICD-10 / LOINC / SNOMED
+  return undefined;
 }
