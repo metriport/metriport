@@ -48,6 +48,7 @@ export async function processCcdRequest({
     const fhirOrg = toFhirOrganization(organization);
 
     const ccd = await generateCcd(patient, organization, requestId);
+
     const docRef = createDocRef(patient.id);
     log(`CCD generated. Starting the upload...`);
     await cdaDocumentUploaderHandler({
@@ -60,6 +61,7 @@ export async function processCcdRequest({
       docId: CCD_SUFFIX,
       docRef,
     });
+
     log(`CCD uploaded into ${medicalBucket}`);
   } catch (error) {
     const msg = `Error creating and uploading CCD`;
