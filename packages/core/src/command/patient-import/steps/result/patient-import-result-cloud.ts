@@ -4,7 +4,6 @@ import {
   makeLambdaClient,
 } from "../../../../external/aws/lambda";
 import { Config } from "../../../../util/config";
-import { processAsyncError } from "../../../../util/error/shared";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { updateJobAtApi } from "../../api/update-job-status";
@@ -20,23 +19,17 @@ export class PatientImportResultHandlerCloud implements PatientImportResult {
     const { cxId, jobId } = params;
     const { log } = out(`PatientImport processPatientResult.cloud - cxId ${cxId} jobId ${jobId}`);
     try {
-      lambdaClient
+      const res = await lambdaClient
         .invoke({
           FunctionName: this.patientResultLambdaName,
           InvocationType: "Event",
           Payload: JSON.stringify(params),
         })
-        .promise()
-        .then(
-          defaultLambdaInvocationResponseHandler({
-            lambdaName: this.patientResultLambdaName,
-          })
-        )
-        .catch(
-          processAsyncError(
-            "Failed to invoke lambda to generate the result of the bulk patient import"
-          )
-        );
+        .promise();
+      const lambdaRespHandler = defaultLambdaInvocationResponseHandler({
+        lambdaName: this.patientResultLambdaName,
+      });
+      lambdaRespHandler(res);
     } catch (error) {
       const msg = `Failure while processing patient result @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
