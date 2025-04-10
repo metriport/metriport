@@ -63,7 +63,8 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
         practiceId,
         patientId: ehrPatientId,
         resourceType,
-        useS3: false,
+        direction,
+        useS3: true,
       });
       this.fetchedResourceMap.set(resourceType, existingResources);
     }

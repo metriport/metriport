@@ -6,7 +6,7 @@ import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { deleteAllPatientMappings } from "../../mapping/patient";
-import { deleteAllResourceMappingReverseds } from "../../mapping/resource-reversed";
+import { deleteAllResourceMappingsReversed } from "../../mapping/resource-reversed";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientModelOrFail } from "./get-patient";
 import { deletePatientSettings } from "./settings/delete-patient-settings";
@@ -43,7 +43,7 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
       fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
       cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
       deleteAllPatientMappings({ cxId, patientId: id }),
-      deleteAllResourceMappingReverseds({ cxId, patientId: id }),
+      deleteAllResourceMappingsReversed({ cxId, patientId: id }),
       deletePatientSettings({ cxId, patientId: id }),
     ]);
     await patient.destroy();

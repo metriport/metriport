@@ -1,4 +1,4 @@
-import { sleep } from "@metriport/shared";
+import { ResourceDiffDirection, sleep } from "@metriport/shared";
 import { fetchResources } from "../../api/resource-diff/fetch-resources";
 import { getSupportedResources } from "../utils";
 import {
@@ -24,6 +24,7 @@ export class EhrRefreshResourceDiffLocal implements EhrRefreshResourceDiffHandle
           practiceId,
           patientId,
           resourceType,
+          direction: ResourceDiffDirection.DIFF_EHR,
           useS3: false,
         })
       )

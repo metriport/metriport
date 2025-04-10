@@ -61,11 +61,11 @@ router.post(
 /**
  * GET /internal/ehr/canvas/patient/fetch-resources
  *
- * Fetches the resources for the canvas patient
+ * Fetches the resources for the canvas patient by resource type
  * @returns Resources
  */
-router.post(
-  "/compute-resource-diff",
+router.get(
+  "/fetch-resources",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

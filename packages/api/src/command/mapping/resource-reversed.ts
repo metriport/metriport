@@ -153,7 +153,7 @@ export async function getResourceMappingsReversed({
   return mappings.map(mapping => mappingToData(mapping.dataValues));
 }
 
-export async function deleteAllResourceMappingReverseds({
+export async function deleteAllResourceMappingsReversed({
   cxId,
   patientId,
 }: {

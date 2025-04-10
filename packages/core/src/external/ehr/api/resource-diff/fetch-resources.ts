@@ -1,4 +1,9 @@
-import { errorToString, FhirResource, MetriportError } from "@metriport/shared";
+import {
+  errorToString,
+  FhirResource,
+  MetriportError,
+  ResourceDiffDirection,
+} from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { Config } from "../../../../util/config";
@@ -10,6 +15,7 @@ export type FetchResourcesParams = {
   practiceId: string;
   patientId: string;
   resourceType: string;
+  direction: ResourceDiffDirection;
   useS3: boolean;
 };
 
@@ -29,6 +35,7 @@ export async function fetchResources({
   practiceId,
   patientId,
   resourceType,
+  direction,
   useS3,
 }: FetchResourcesParams): Promise<FhirResource[]> {
   const { log, debug } = out(`Ehr fetchResources - cxId ${cxId}`);
@@ -38,11 +45,12 @@ export async function fetchResources({
     practiceId,
     patientId,
     resourceType,
+    direction,
     useS3: useS3.toString(),
   });
   const fetchResourcesUrl = `/internal/ehr/${ehr}/patient/fetch-resources?${queryParams.toString()}`;
   try {
-    const response = await api.post(fetchResourcesUrl);
+    const response = await api.get(fetchResourcesUrl);
     if (!response.data) throw new Error(`No body returned from ${fetchResourcesUrl}`);
     debug(`${fetchResourcesUrl} resp: ${JSON.stringify(response.data)}`);
     return response.data;
