@@ -62,10 +62,22 @@ export function getRequiredValueFromMessage(
   componentIndex: number
 ): string {
   const segment = msg.getSegment(targetSegmentName);
-  if (!segment) throw new Error(); // TODO: Fix this
+  if (!segment) {
+    throw new MetriportError("Missing required segment", undefined, {
+      msg: JSON.stringify(msg),
+      targetSegmentName,
+    });
+  }
 
   const value = getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
-  if (!value) throw new Error(); // TODO: Fix this
+  if (!value) {
+    throw new MetriportError("Missing required value", undefined, {
+      msg: JSON.stringify(msg),
+      targetSegmentName,
+      fieldIndex,
+      componentIndex,
+    });
+  }
 
   return value;
 }

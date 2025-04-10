@@ -54,6 +54,7 @@ export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T>
 export type BundleWithEntry<T extends Resource = Resource> = Bundle<Resource> & {
   entry: BundleEntry<T>[];
 };
+
 /**
  * Returns the references found in the given resources, including the missing ones.
  *
