@@ -67,13 +67,8 @@ export function elapsedTimeFromNow(
 export function buildDayjs(date?: ConfigType, format?: string, strict?: boolean): dayjs.Dayjs {
   const dayjsObj = dayjs.utc(date, format, strict);
   
-  // Only check for years less than 1900 if we have a valid date
   if (date !== undefined && dayjsObj.isValid() && dayjsObj.year() < 1900) {
-    throw new BadRequestError(
-      `Date year cannot be less than 1900`,
-      undefined,
-      { date: typeof date === 'object' ? dayjsObj.format() : date, year: dayjsObj.year() }
-    );
+    return dayjs.utc("invalid-date");
   }
   return dayjsObj;
 }
