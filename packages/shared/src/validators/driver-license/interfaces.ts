@@ -24,13 +24,13 @@ export interface ValidationMatch {
 /**
  * Supported country codes.
  */
-export type countryCode = 'US' | 'CA';
+export type CountryCode = 'US' | 'CA';
 
 /**
  * Validate options.
  */
 export interface ValidateOptions {
-  country?: countryCode;
+  country?: CountryCode;
   states?: string | string[];
   ignoreCase?: boolean;
 }
