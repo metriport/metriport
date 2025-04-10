@@ -14,23 +14,22 @@ import { chunk } from "lodash";
  *
  * To run:
  * 1. Set the env vars:
- *  -CX_ID
- *  -API_URL
+ *  - CX_ID
+ *  - API_URL
  * 2. Set the patientIds and rerunPdOnNewDemographics
  * 3. Run the script with `ts-node src/bulk-trigger-patient-discovery.ts`
  */
 
 dayjs.extend(duration);
 
+const patientIds: string[] = [];
+const rerunPdOnNewDemographics = true;
+
 const confirmationTime = dayjs.duration(10, "seconds");
-const delayTime = confirmationTime.asMilliseconds();
+const delayTime = dayjs.duration(10, "seconds");
 const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
-const CHUNK_DELAY_MAX_MS = dayjs.duration({ seconds: 1 }).asMilliseconds();
-const PATIENT_CHUNK_SIZE = 5;
-
-const patientIds: string[] = [];
-const rerunPdOnNewDemographics = false;
+const PATIENT_CHUNK_SIZE = 2;
 
 type PdResponse = {
   data: {
@@ -59,7 +58,7 @@ async function main() {
         log(`Request ID - ${JSON.stringify(resp.data.requestId)}`);
       }
       if (i < patientChunks.length - 1) {
-        const sleepTime = CHUNK_DELAY_MAX_MS * patients.length;
+        const sleepTime = delayTime.asMilliseconds();
         console.log(`Chunk ${i + 1} finished. Sleeping for ${sleepTime} ms...`);
         await sleep(sleepTime);
       }
@@ -73,9 +72,9 @@ async function main() {
 async function displayInitialWarningAndConfirmation(numberPatients: number) {
   console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
   console.log(
-    `Triggering patient discovery for ${numberPatients} patients. CX: ${cxId}. Sleeping ${delayTime} ms before starting.`
+    `Triggering patient discovery for ${numberPatients} patients. CX: ${cxId}. Sleeping ${confirmationTime.asMilliseconds()} ms before starting.`
   );
-  await sleep(delayTime);
+  await sleep(confirmationTime.asMilliseconds());
 }
 
 main();
