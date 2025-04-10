@@ -33,7 +33,7 @@ import { ISO_DATE } from "../../shared/date";
  *
  * This function uses a point system for different matching demographics. Each exact or partial match awards a
  * certain number of points, which are added to an overall score. This score must be higher than the given threshold
- * (20 or 21 if SSNs are present) in order for the input linked demograhics to be considered a usable "match".
+ * (17 or 18 if SSNs are present) in order for the input linked demograhics to be considered a usable "match".
  *
  * @param coreDemographics The patient core demographics.
  * @param linkDemographics The incoming link demographics from CQ or CW.
@@ -49,7 +49,7 @@ export function checkDemoMatch({
   | { isMatched: true; comparison: LinkDemographicsComparison }
   | { isMatched: false; comparison: undefined } {
   const matchedFields: LinkDemographicsComparison = {};
-  let scoreThreshold = 20;
+  let scoreThreshold = 17;
   let score = 0;
   if (coreDemographics.dob && linkDemographics.dob) {
     if (coreDemographics.dob === linkDemographics.dob) {
