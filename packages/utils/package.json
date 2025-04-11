@@ -22,6 +22,7 @@
     "bulk-insert": "ts-node src/bulk-insert-patients",
     "bulk-query": "ts-node src/bulk-query-patients",
     "coverage-assessment": "ts-node src/coverage-assessment",
+    "find-patients": "ts-node src/find-patients-by-demo",
     "create-medical-records": "ts-node src/customer-requests/medical-records-create",
     "get-consolidated": "ts-node src/customer-requests/get-consolidated",
     "download-docs": "ts-node src/customer-requests/download-docs",

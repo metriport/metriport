@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Address, Contact, MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
+import { MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
@@ -29,6 +29,7 @@ import { elapsedTimeAsStr } from "./shared/duration";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 import { logNotDryRun } from "./shared/log";
+import { dedupPatientCreates, storePatientCreates } from "./shared/patient-create";
 
 dayjs.extend(duration);
 
@@ -90,12 +91,17 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
-  console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
-  initRunsFolder();
   program.parse();
   const { dryrun: dryRunParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
+  console.log(
+    `############## Started at ${new Date(startedAt).toISOString()} ############## ${
+      dryRun ? "DRY RUN" : ""
+    }`
+  );
+
+  initRunsFolder();
 
   const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId);
   if (!localFacilityId) throw new Error("No facility found");
@@ -190,72 +196,6 @@ async function loadData(
   console.log(`Done, inserted ${successfulCount} patients.`);
 }
 
-export function dedupPatientCreates(patients: PatientCreate[]): PatientCreate[] {
-  const patientMap = new Map<string, PatientCreate>();
-  patients.forEach(patient => {
-    const nameKey = `${patient.firstName} ${patient.lastName}`;
-    const existing = patientMap.get(nameKey);
-    if (existing) {
-      const mergedPatient = mergePatients(existing, patient);
-      patientMap.set(nameKey, mergedPatient);
-    } else {
-      patientMap.set(nameKey, patient);
-    }
-  });
-  return Array.from(patientMap.values());
-}
-
-export function mergePatients(p1: PatientCreate, p2: PatientCreate): PatientCreate {
-  const addresses = [
-    ...(Array.isArray(p1.address) ? p1.address : [p1.address]),
-    ...(Array.isArray(p2.address) ? p2.address : [p2.address]),
-  ];
-  const uniqueAddresses = deduplicateAddresses(addresses);
-
-  const contacts = [
-    ...(Array.isArray(p1.contact) ? p1.contact : p1.contact ? [p1.contact] : []),
-    ...(Array.isArray(p2.contact) ? p2.contact : p2.contact ? [p2.contact] : []),
-  ];
-  const uniqueContacts = deduplicateContacts(contacts);
-
-  return {
-    ...p1,
-    address: [uniqueAddresses[0], ...uniqueAddresses.slice(1)],
-    contact: uniqueContacts,
-  };
-}
-
-export function deduplicateAddresses(addresses: Address[]): Address[] {
-  const uniqueMap = new Map<string, Address>();
-
-  addresses.forEach(addr => {
-    const key = `${addr.addressLine1}|${addr.addressLine2 ?? ""}|${addr.city}|${addr.state}|${
-      addr.zip
-    }`;
-    if (!uniqueMap.has(key)) {
-      uniqueMap.set(key, addr);
-    }
-  });
-
-  return Array.from(uniqueMap.values());
-}
-
-export function deduplicateContacts(contacts: Contact[]): Contact[] {
-  // Split contacts into separate phone and email arrays
-  const phones = contacts.filter(c => c.phone).map(c => ({ phone: c.phone }));
-  const emails = contacts.filter(c => c.email).map(c => ({ email: c.email }));
-  // Deduplicate phones and emails separately
-  const uniquePhones = Array.from(new Set(phones.map(p => p.phone))).map(phone => ({ phone }));
-  const uniqueEmails = Array.from(new Set(emails.map(e => e.email))).map(email => ({ email }));
-  // Merge phones and emails into combined contacts, matching by array position
-  const maxLength = Math.max(uniquePhones.length, uniqueEmails.length);
-  const deduplicatedContacts = Array.from({ length: maxLength }, (_, i) => ({
-    ...(uniquePhones[i] ?? {}),
-    ...(uniqueEmails[i] ?? {}),
-  }));
-  return deduplicatedContacts;
-}
-
 async function displayWarningAndConfirmation(
   patientCount: number,
   orgName: string,
@@ -273,10 +213,6 @@ export function initPatientIdRepository(folderName: string) {
   if (!fs.existsSync(folderName)) {
     fs.mkdirSync(folderName, { recursive: true });
   }
-}
-
-export function storePatientCreates(patientCreate: PatientCreate[], fileName: string) {
-  fs.appendFileSync(fileName, JSON.stringify(patientCreate, null, 2));
 }
 
 function buildStorePatientId(outputFolderName: string) {
