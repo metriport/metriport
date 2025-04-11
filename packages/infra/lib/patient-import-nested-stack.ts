@@ -189,8 +189,16 @@ export class PatientImportNestedStack extends NestedStack {
   }): Lambda {
     if (!ownProps.notificationUrl) throw new Error("Notification URL is required");
 
-    const { lambdaLayers, vpc, bucket, envType, patientCreateQueue, sentryDsn, alarmAction } =
-      ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      bucket,
+      envType,
+      patientCreateQueue,
+      resultLambda,
+      sentryDsn,
+      alarmAction,
+    } = ownProps;
     const { name, entry, lambdaMemory, lambdaTimeout } = settings().fileParse;
 
     const lambda = createLambda({
@@ -203,7 +211,7 @@ export class PatientImportNestedStack extends NestedStack {
         PATIENT_IMPORT_BUCKET_NAME: bucket.bucketName,
         PATIENT_IMPORT_CREATE_QUEUE_URL: patientCreateQueue.queueUrl,
         SLACK_NOTIFICATION_URL: ownProps.notificationUrl,
-        PATIENT_IMPORT_RESULT_LAMBDA_NAME: ownProps.resultLambda.functionName,
+        PATIENT_IMPORT_RESULT_LAMBDA_NAME: resultLambda.functionName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -215,6 +223,7 @@ export class PatientImportNestedStack extends NestedStack {
 
     bucket.grantReadWrite(lambda);
     patientCreateQueue.grantSendMessages(lambda);
+    resultLambda.grantInvoke(lambda);
 
     return lambda;
   }
