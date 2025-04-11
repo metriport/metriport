@@ -90,6 +90,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { parseISODate } from "../../../shared/date";
 import { getETag } from "../../../shared/http";
+import { capture } from "@metriport/core/util";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { dtoFromModel } from "../../medical/dtos/patientDTO";
@@ -1087,6 +1088,7 @@ router.post(
     const dryRun = getFromQueryAsBooleanOrFail("dryRun", req);
     // request param - just being passed as parameter to this particular request
     const forceStatusUpdate = getFromQueryAsBoolean("forceStatusUpdate", req);
+    capture.setExtra({ cxId, jobId });
 
     await updatePatientImportParams({
       cxId,
@@ -1127,6 +1129,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromParamsOrFail("id", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
+    capture.setExtra({ cxId, jobId });
 
     const job = await getPatientImportJobOrFail({ cxId, id: jobId });
 
@@ -1159,6 +1162,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromParamsOrFail("id", req);
     const updateParams = updateJobSchema.parse(req.body);
+    capture.setExtra({ cxId, jobId });
 
     const patientImport = await updatePatientImportStatus({
       jobId,
