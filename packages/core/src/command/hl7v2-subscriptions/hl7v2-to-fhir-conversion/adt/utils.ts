@@ -12,7 +12,8 @@ import {
 } from "../shared";
 import { buildConditionCoding } from "./condition";
 
-type ConditionOffset = 0 | 3;
+const NUMBER_OF_DATA_POINTS_PER_CONDITION = 3;
+type ConditionOffset = 0 | 1;
 
 type HumanNameDetails = {
   family: string;
@@ -72,8 +73,10 @@ export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails
 
 export function getConditionCoding(
   pv2Segment: Hl7Segment,
-  offset: ConditionOffset = 0
+  offsetMultiplier: ConditionOffset
 ): Coding | undefined {
+  const offset = offsetMultiplier * NUMBER_OF_DATA_POINTS_PER_CONDITION;
+
   const conditionCode = getOptionalValueFromSegment(pv2Segment, 3, 1 + offset);
   const conditionDisplay = getOptionalValueFromSegment(pv2Segment, 3, 2 + offset);
   const conditionSystem = getOptionalValueFromSegment(pv2Segment, 3, 3 + offset);

@@ -25,8 +25,8 @@ export function getAdmitReason(adt: Hl7Message, patientId: string): AdmitReason 
   const pv2Segment = adt.getSegment("PV2");
   if (!pv2Segment || pv2Segment.fields.length < 1) return undefined;
 
-  const mainCoding = getConditionCoding(pv2Segment);
-  const secondaryCoding = getConditionCoding(pv2Segment, 3);
+  const mainCoding = getConditionCoding(pv2Segment, 0);
+  const secondaryCoding = getConditionCoding(pv2Segment, 1);
 
   const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
   if (coding.length < 1) return undefined;
