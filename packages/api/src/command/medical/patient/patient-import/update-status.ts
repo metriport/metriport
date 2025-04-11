@@ -5,7 +5,7 @@ import {
   PatientImportStatus,
   validateNewStatus,
 } from "@metriport/shared/domain/patient/patient-import/status";
-import { isDryRun, PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { PatientImportModel } from "../../../../models/medical/patient-import";
@@ -51,12 +51,11 @@ export async function updatePatientImportStatus({
   // TODO 2330 move to the model version for consistency
   const job = await getPatientImportJobOrFail({ cxId, id: jobId });
   const { disableWebhooks } = job.paramsOps ?? {};
-  const dryRun = isDryRun(job);
   const oldStatus = job.status;
   const newStatus = status
     ? forceStatusUpdate
       ? status
-      : validateNewStatus(job.status, status, dryRun)
+      : validateNewStatus(job.status, status)
     : undefined;
 
   const jobToUpdate: PatientImport = {
