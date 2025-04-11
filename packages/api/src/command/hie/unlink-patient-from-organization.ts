@@ -96,7 +96,7 @@ export async function unlinkPatientFromOrganization({
 
     try {
       log(`Processing document ${document.id}`);
-      await Promise.allSettled([
+      await Promise.all([
         findAndRemoveConversionResultsFromS3(fileName, dryRun, log),
         findAndRemoveMedicalDocumentFromS3(fileName, dryRun, log),
         findAndRemoveConsolidatedDocumentFromS3(cxId, patientId, dryRun, log),
