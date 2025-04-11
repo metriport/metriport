@@ -96,18 +96,15 @@ export class PatientImportCreateLocal implements PatientImportCreate {
         log(`Failure while setting patient record to failed @ PatientImport. Cause: ${errorMsg}`);
         errorToUpdateRecordToFailed = errorMsg;
       }
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          context: "PatientImportCreateLocal.processPatientCreate",
-          ...(errorToUpdateRecordToFailed
-            ? { alsoFailedToUpdateRecordToFailed: true, errorToUpdateRecordToFailed }
-            : {}),
-          error,
-        },
+      capture.setExtra({
+        cxId,
+        jobId,
+        context: "PatientImportCreateLocal.processPatientCreate",
+        ...(errorToUpdateRecordToFailed
+          ? { alsoFailedToUpdateRecordToFailed: true, errorToUpdateRecordToFailed }
+          : {}),
+        error,
       });
-
       throw error;
     }
   }

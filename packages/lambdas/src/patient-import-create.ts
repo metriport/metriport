@@ -1,6 +1,6 @@
 import { ProcessPatientCreateRequest } from "@metriport/core/command/patient-import/steps/create/patient-import-create";
 import { PatientImportCreateLocal } from "@metriport/core/command/patient-import/steps/create/patient-import-create-local";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -26,8 +26,7 @@ const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event: SQSEvent) {
-  let errorHandled = false;
-  const errorMsg = "Error processing event on " + lambdaName;
+  capture.setExtra({ event, context: lambdaName });
   const startedAt = new Date().getTime();
   try {
     const message = getSingleMessageOrFail(event.Records, lambdaName);
@@ -35,6 +34,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
+    capture.setExtra({ ...parsedBody });
     const {
       cxId,
       facilityId,
@@ -46,50 +46,33 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
     } = parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}`);
-    try {
-      log(
-        `Parsed: ${JSON.stringify(
-          parsedBody
-        )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
-      );
+    log(
+      `Parsed: ${JSON.stringify(
+        parsedBody
+      )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
+    );
 
-      const processPatientCreateRequest: ProcessPatientCreateRequest = {
-        cxId,
-        facilityId,
-        jobId,
-        rowNumber,
-        triggerConsolidated,
-        disableWebhooks,
-        rerunPdOnNewDemographics,
-      };
-      const patientImportHandler = new PatientImportCreateLocal(
-        patientImportBucket,
-        waitTimeInMillis
-      );
+    const processPatientCreateRequest: ProcessPatientCreateRequest = {
+      cxId,
+      facilityId,
+      jobId,
+      rowNumber,
+      triggerConsolidated,
+      disableWebhooks,
+      rerunPdOnNewDemographics,
+    };
+    const patientImportHandler = new PatientImportCreateLocal(
+      patientImportBucket,
+      waitTimeInMillis
+    );
 
-      await patientImportHandler.processPatientCreate(processPatientCreateRequest);
+    await patientImportHandler.processPatientCreate(processPatientCreateRequest);
 
-      const finishedAt = new Date().getTime();
-      log(`Done local duration: ${finishedAt - startedAt}ms`);
-    } catch (error) {
-      errorHandled = true;
-      log(`${errorMsg}: ${errorToString(error)}`);
-      capture.error(errorMsg, {
-        extra: { event, context: lambdaName, error },
-      });
-      throw new MetriportError(errorMsg, error, {
-        ...{ ...parsedBody, patientPayload: undefined },
-      });
-    }
+    const finishedAt = new Date().getTime();
+    log(`Done local duration: ${finishedAt - startedAt}ms`);
   } catch (error) {
-    if (errorHandled) throw error;
-    console.log(`${errorMsg}: ${errorToString(error)}`);
-    capture.error(errorMsg, {
-      extra: { event, context: lambdaName, error },
-    });
-    throw new MetriportError(errorMsg, error);
-  } finally {
-    await Sentry.close();
+    console.log(`Error processing event on ${lambdaName}: ${errorToString(error)}`);
+    throw error;
   }
 });
 

@@ -3,13 +3,13 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { executeAsynchronously } from "../../../../util/concurrency";
 import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
 import { updateJobAtApi } from "../../api/update-job-status";
 import { ResultEntry, storeResults } from "../../csv/store-results";
 import { PatientRecord } from "../../patient-import";
 import { getS3UtilsInstance } from "../../patient-import-shared";
 import { listPatientRecords } from "../../record/list-patient-records";
 import { PatientImportResult, ProcessPatientResult } from "./patient-import-result";
+
 dayjs.extend(duration);
 
 const numberOfParallelExecutions = 20;
@@ -42,14 +42,6 @@ export class PatientImportResultLocal implements PatientImportResult {
     } catch (error) {
       const msg = `Failure while processing job result @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          context: "patient-import-result-local.processJobResult",
-          error,
-        },
-      });
       await updateJobAtApi({ cxId, jobId, status: "failed" });
       throw error;
     }
