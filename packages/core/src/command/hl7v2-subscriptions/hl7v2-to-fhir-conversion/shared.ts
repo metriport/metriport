@@ -1,18 +1,9 @@
 import { Hl7Context, Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
+import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
-import {
-  CPT_URL,
-  CVX_URL,
-  HL7_ACT_URL,
-  ICD_10_URL,
-  ICD_9_URL,
-  LOINC_URL,
-  NDC_URL,
-  RXNORM_URL,
-  SNOMED_URL,
-} from "../../../util/constants";
+import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
 import { getPotentialIdentifiers } from "./adt/utils";
 
@@ -21,14 +12,11 @@ const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 // TODO: Ensure the HL7 coding system values are correct and up to date
 const hl7CodingSystemToUrlMap: Record<string, string> = {
   SCT: SNOMED_URL, // SNOMED CT
-  LN: LOINC_URL, // LOINC
-  ICD10: ICD_10_URL, // ICD-10
-  ICD9: ICD_9_URL, // ICD-9
-  RXNORM: RXNORM_URL, // RxNorm
-  NDC: NDC_URL, // National Drug Code
-  CVX: CVX_URL, // CVX Vaccine Codes
-  CPT: CPT_URL, // Current Procedural Terminology
-  HL7: HL7_ACT_URL, // HL7 Act Code
+  L: LOINC_URL, // LOINC
+  I10: ICD_10_URL, // ICD-10
+  "ICD-10": ICD_10_URL, // ICD-10
+  I9: ICD_9_URL, // ICD-9
+  "ICD-9": ICD_9_URL, // ICD-9
 };
 
 export function parseHl7v2Message(msgSegments: Hl7Segment[], context?: Hl7Context) {
@@ -134,7 +122,21 @@ export function getOptionalValueFromField(
  */
 export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): string | undefined {
   if (!systemName) return undefined;
-  return hl7CodingSystemToUrlMap[systemName.trim().toUpperCase()];
+
+  const systemUrl = hl7CodingSystemToUrlMap[systemName.trim().toUpperCase()];
+  if (!systemUrl) {
+    const { log } = out(`mapHl7SystemNameToSystemUrl`);
+    const msg = "Failed to map HL7 system name to URL";
+    log(`${msg}: ${systemName}`);
+    capture.message(msg, {
+      extra: {
+        systemName,
+      },
+      level: "warning",
+    });
+  }
+
+  return systemUrl;
 }
 
 export function buildHl7MessageFileKey({
