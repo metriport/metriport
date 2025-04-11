@@ -1,4 +1,10 @@
-import { BadRequestError, errorToString, MetriportError, NotFoundError } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  executeWithNetworkRetries,
+  MetriportError,
+  NotFoundError,
+} from "@metriport/shared";
 import { UpdateJobSchema } from "@metriport/shared/domain/patient/patient-import/schemas";
 import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
@@ -35,7 +41,7 @@ export async function updateJobAtApi({
   const payload: UpdateJobSchema = { status, total, failed, forceStatusUpdate };
   try {
     log(`Updating API w/ status ${status}, payload ${JSON.stringify(payload)}`);
-    const response = await api.post(url, payload);
+    const response = await executeWithNetworkRetries(() => api.post(url, payload));
     if (!response.data) {
       throw new MetriportError(`No body returned from API - updateJobAtApi`, undefined, { url });
     }
