@@ -21,6 +21,7 @@ export function getParticipantsFromAdt(adt: Hl7Message): AdtParticipants | undef
     practitioners.push(buildPractitioner(attendingDoctorDetails));
   }
 
+  if (practitioners.length < 1) return undefined;
   // TODO 2883: Add other practitioners from the ADT message, if available
 
   const references = buildParticipantReferences(practitioners.map(p => p.id));
