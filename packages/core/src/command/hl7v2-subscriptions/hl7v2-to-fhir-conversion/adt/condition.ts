@@ -25,8 +25,11 @@ export function getAdmitReason(adt: Hl7Message, patientId: string): AdmitReason 
   const pv2Segment = adt.getSegment("PV2");
   if (!pv2Segment || pv2Segment.fields.length < 1) return undefined;
 
-  const coding = getConditionCodingsFromPatientVisitAddon(adt);
-  if (!coding) return undefined;
+  const mainCoding = getConditionCoding(pv2Segment);
+  const secondaryCoding = getConditionCoding(pv2Segment, 3);
+
+  const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
+  if (coding.length < 1) return undefined;
 
   // TODO 2883: See if we can parse (or infer) onsetDateTime and other fields (so far looks like a no)
   const condition = buildCondition({ code: { coding } }, patientId);
@@ -37,18 +40,6 @@ export function getAdmitReason(adt: Hl7Message, patientId: string): AdmitReason 
     condition,
     diagnosis: [diagnosisReference],
   };
-}
-
-function getConditionCodingsFromPatientVisitAddon(adt: Hl7Message): Coding[] | undefined {
-  const pv2Segment = adt.getSegment("PV2");
-  if (!pv2Segment || pv2Segment.fields.length < 1) return undefined;
-
-  const mainCoding = getConditionCoding(pv2Segment);
-  const secondaryCoding = getConditionCoding(pv2Segment, 3);
-  const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
-  if (coding.length < 1) return undefined;
-
-  return coding;
 }
 
 export function buildConditionCoding({

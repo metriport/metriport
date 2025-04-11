@@ -1,4 +1,4 @@
-import { Hl7Context, Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
+import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
 import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
@@ -18,10 +18,6 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
   I9: ICD_9_URL, // ICD-9
   "ICD-9": ICD_9_URL, // ICD-9
 };
-
-export function parseHl7v2Message(msgSegments: Hl7Segment[], context?: Hl7Context) {
-  return new Hl7Message(msgSegments, context);
-}
 
 function decompressUuid(shortId: string) {
   return unpackUuid(crypto.unscramble(shortId));
