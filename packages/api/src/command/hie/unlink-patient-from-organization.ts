@@ -351,7 +351,7 @@ async function findAndInvalidateLinks(
       );
     }
 
-    await Promise.all([
+    await Promise.allSettled([
       createOrUpdateInvalidLinks({ id: patientId, cxId, invalidLinks }),
       updateCQPatientData({ id: patientId, cxId, cqLinksToInvalidate: invalidLinks.carequality }),
       updateCwPatientData({ id: patientId, cxId, cwLinksToInvalidate: invalidLinks.commonwell }),
