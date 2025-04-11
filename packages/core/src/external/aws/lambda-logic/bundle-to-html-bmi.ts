@@ -1615,30 +1615,28 @@ function createObservationLaboratorySection(
   const latestComprehensivePanels = comprehensiveMetabolicPanels.slice(0, 2);
   const latestLipidPanels = lipidPanels.slice(0, 2);
   const latestThyroidPanels = thyroidPanels.slice(0, 2);
-  // Check if any panels were found
-  const noPanelsFound =
-    latestBasicPanels.length === 0 &&
-    latestComprehensivePanels.length === 0 &&
-    latestLipidPanels.length === 0 &&
-    latestThyroidPanels.length === 0;
 
-  // Create content for each panel type
-  const basicPanelContent = createPanelSection(
-    "Basic Metabolic Panel",
-    latestBasicPanels,
-    observations
-  );
-  const comprehensivePanelContent = createPanelSection(
-    "Comprehensive Metabolic Panel",
-    latestComprehensivePanels,
-    observations
-  );
-  const lipidPanelContent = createPanelSection("Lipid Panel", latestLipidPanels, observations);
-  const thyroidPanelContent = createPanelSection("Thyroid", latestThyroidPanels, observations);
-  // Generate panel content or "No lab panels found" message
+  // Combine all panels and limit to overall max of 4 panels
+  const allPanels = [
+    ...latestBasicPanels.map(p => ({ type: "Basic Metabolic Panel", panel: p })),
+    ...latestComprehensivePanels.map(p => ({ type: "Comprehensive Metabolic Panel", panel: p })),
+    ...latestLipidPanels.map(p => ({ type: "Lipid Panel", panel: p })),
+    ...latestThyroidPanels.map(p => ({ type: "Thyroid", panel: p })),
+  ]
+    .sort((a, b) => {
+      const dateA = a.panel.effectiveDateTime || a.panel.effectivePeriod?.start || "";
+      const dateB = b.panel.effectiveDateTime || b.panel.effectivePeriod?.start || "";
+      return dayjs(dateB).diff(dayjs(dateA)); // Most recent first
+    })
+    .slice(0, 4); // Limit to max 4 panels total
+
+  // Check if any panels were found
+  const noPanelsFound = allPanels.length === 0;
+
+  // Generate panel content
   const panelContent = noPanelsFound
     ? `<div><h4>Lab Panels</h4><table><tbody><tr><td>No lab panels found</td></tr></tbody></table></div>`
-    : `${basicPanelContent}${comprehensivePanelContent}${lipidPanelContent}${thyroidPanelContent}`;
+    : allPanels.map(({ type, panel }) => createPanelSection(type, [panel], observations)).join("");
 
   return createSection("Laboratory", `${panelContent}`);
 }
