@@ -3,6 +3,7 @@ import { PatientImportEntryStatus } from "@metriport/shared/domain/patient/patie
 import { out } from "../../../util/log";
 import {
   createFileKeyHeaders,
+  createFileKeyInvalid,
   createFileKeyResults,
   getS3UtilsInstance,
 } from "../patient-import-shared";
@@ -24,6 +25,7 @@ export type ResultEntry = {
 
 /**
  * Stores the results of a bulk patient import in S3.
+ * It also stores the invalid entries in a separate file.
  *
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
@@ -38,31 +40,48 @@ export async function storeResults({
 }: StoreResultCmd): Promise<void> {
   const { log } = out(`PatientImport storeResults - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyResults(cxId, jobId);
+  const keyResult = createFileKeyResults(cxId, jobId);
+  const keyInvalid = createFileKeyInvalid(cxId, jobId);
   try {
     const headersFileKey = createFileKeyHeaders(cxId, jobId);
     const headers = await s3Utils.getFileContentsAsString(bucketName, headersFileKey);
     const headersWithResultColumns = headers + ",metriportId,status,reason";
     const sortedEntries = resultEntries.sort((a, b) => a.rowNumber - b.rowNumber);
-    const entriesAsCsv = sortedEntries
-      .map(e => `${e.rowCsv},${e.patientId ?? ""},${e.status},${e.reason ?? ""}`)
+    const resultEntriesAsCsv = sortedEntries.map(entryToCsv).join("\n");
+    const invalidEntriesAsCsv = sortedEntries
+      .filter(e => e.status === "failed")
+      .map(entryToCsv)
       .join("\n");
-    const csvContents = [headersWithResultColumns, entriesAsCsv].join("\n");
+    const resultCsvContents = [headersWithResultColumns, resultEntriesAsCsv].join("\n");
+    const invalidCsvContents = [headersWithResultColumns, invalidEntriesAsCsv].join("\n");
 
-    await s3Utils.uploadFile({
-      bucket: bucketName,
-      key,
-      file: Buffer.from(csvContents, "utf8"),
-      contentType: "text/csv",
-    });
+    await Promise.all([
+      s3Utils.uploadFile({
+        bucket: bucketName,
+        key: keyResult,
+        file: Buffer.from(resultCsvContents, "utf8"),
+        contentType: "text/csv",
+      }),
+      s3Utils.uploadFile({
+        bucket: bucketName,
+        key: keyInvalid,
+        file: Buffer.from(invalidCsvContents, "utf8"),
+        contentType: "text/csv",
+      }),
+    ]);
   } catch (error) {
     const msg = `Failure validating and parsing import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
       jobId,
-      key,
+      keyResult,
+      keyInvalidEntries: keyInvalid,
       context: "patient-import.validateAndParsePatientImportCsvFromS3",
     });
   }
+}
+
+function entryToCsv(e: ResultEntry): string {
+  return `${e.rowCsv},${e.patientId ?? ""},${e.status},${e.reason ?? ""}`;
 }
