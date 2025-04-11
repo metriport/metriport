@@ -112,7 +112,10 @@ export async function finishSinglePatientImport({
       });
     };
 
-    const [updatedJob] = await Promise.all([updateTotalsOnDb(), updatePatientRecordOnS3()]);
+    // Keep the order of operations, we want to make sure S3 is updated before we try to finish the job,
+    // so there's no chance the result is incomplete
+    await updatePatientRecordOnS3();
+    const updatedJob = await updateTotalsOnDb();
 
     if (updatedJob) {
       await tryToFinishPatientImport(updatedJob);
