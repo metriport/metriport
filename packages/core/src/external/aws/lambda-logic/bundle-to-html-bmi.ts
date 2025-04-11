@@ -970,21 +970,17 @@ function getLocationFromEncounters(
 ): Location | undefined {
   if (!conditionId) return undefined;
 
-  // Find encounter that has this condition as a diagnosis
   const encounter = encounters.find(enc =>
     enc.diagnosis?.some(diag => diag.condition?.reference?.includes(conditionId))
   );
 
   if (!encounter) return undefined;
 
-  // Check if encounter has a location reference
   const locationReference = encounter.location?.[0]?.location?.reference;
   if (!locationReference) return undefined;
 
-  // Extract location ID from reference (format: "Location/id")
   const locationId = locationReference.split("/")[1];
 
-  // Find and return the location
   return locations.find(location => location.id === locationId);
 }
 
@@ -1601,7 +1597,6 @@ function createObservationLaboratorySection(
     );
   }
 
-  // Find Basic, Comprehensive Metabolic, and Lipid Panels in diagnostic reports
   const basicMetabolicPanels = findMetabolicPanels(diagnosticReports, "Basic Metabolic Panel");
   const comprehensiveMetabolicPanels = findMetabolicPanels(
     diagnosticReports,
@@ -1610,13 +1605,11 @@ function createObservationLaboratorySection(
   const lipidPanels = findMetabolicPanels(diagnosticReports, "Lipid Panel");
   const thyroidPanels = findMetabolicPanels(diagnosticReports, "Thyroid");
 
-  // Get the latest 2 panels of each type
   const latestBasicPanels = basicMetabolicPanels.slice(0, 2);
   const latestComprehensivePanels = comprehensiveMetabolicPanels.slice(0, 2);
   const latestLipidPanels = lipidPanels.slice(0, 2);
   const latestThyroidPanels = thyroidPanels.slice(0, 2);
 
-  // Combine all panels and limit to overall max of 4 panels
   const allPanels = [
     ...latestBasicPanels.map(p => ({ type: "Basic Metabolic Panel", panel: p })),
     ...latestComprehensivePanels.map(p => ({ type: "Comprehensive Metabolic Panel", panel: p })),
@@ -1626,14 +1619,12 @@ function createObservationLaboratorySection(
     .sort((a, b) => {
       const dateA = a.panel.effectiveDateTime || a.panel.effectivePeriod?.start || "";
       const dateB = b.panel.effectiveDateTime || b.panel.effectivePeriod?.start || "";
-      return dayjs(dateB).diff(dayjs(dateA)); // Most recent first
+      return dayjs(dateB).diff(dayjs(dateA));
     })
-    .slice(0, 4); // Limit to max 4 panels total
+    .slice(0, 4);
 
-  // Check if any panels were found
   const noPanelsFound = allPanels.length === 0;
 
-  // Generate panel content
   const panelContent = noPanelsFound
     ? `<div><h4>Lab Panels</h4><table><tbody><tr><td>No lab panels found</td></tr></tbody></table></div>`
     : allPanels.map(({ type, panel }) => createPanelSection(type, [panel], observations)).join("");
@@ -1645,18 +1636,14 @@ function findMetabolicPanels(
   diagnosticReports: DiagnosticReport[],
   panelType: string
 ): DiagnosticReport[] {
-  // Find reports matching the panel type
   const matchingReports = diagnosticReports.filter(report => {
-    // Check in code.text
     if (report.code?.text?.toLowerCase().includes(panelType.toLowerCase())) return true;
 
-    // Check in code.coding.display
     return report.code?.coding?.some(coding =>
       coding.display?.toLowerCase().includes(panelType.toLowerCase())
     );
   });
 
-  // Sort by effectiveDateTime, most recent first
   return matchingReports.sort((a, b) => {
     const dateA = a.effectiveDateTime || a.effectivePeriod?.start || a.effectivePeriod?.end || "";
     const dateB = b.effectiveDateTime || b.effectivePeriod?.start || b.effectivePeriod?.end || "";
@@ -1696,7 +1683,6 @@ function getPanelObservations(
 ): Observation[] {
   if (!panel.result || panel.result.length === 0) return [];
 
-  // Map observation references from the panel to actual observation objects
   return panel.result
     .map(reference => {
       const observationId = reference.reference?.split("/")[1];
@@ -1708,14 +1694,11 @@ function getPanelObservations(
 function createObservationTable(observations: Observation[]): string {
   const blacklistReferenceRangeText = ["unknown", "not detected"];
 
-  // Filter observations to only include those with numeric values
   const numericObservations = observations.filter(observation => {
-    // Check if valueQuantity is a number
     if (typeof observation.valueQuantity?.value === "number") {
       return true;
     }
 
-    // Check if valueString can be parsed as a number
     if (observation.valueString) {
       const parsedValue = parseFloat(observation.valueString);
       return !isNaN(parsedValue);
