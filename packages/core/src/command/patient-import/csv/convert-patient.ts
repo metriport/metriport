@@ -21,7 +21,10 @@ import { mapCsvAddresses } from "./address";
 import { mapCsvContacts } from "./contact";
 import { ParsingError } from "./shared";
 
-export type RowError = { rowColumns: string[]; error: string };
+const firstNameFieldName = "firstName";
+const lastNameFieldName = "lastName";
+const dobFieldName = "dob";
+const genderFieldName = "gender";
 
 /**
  * Maps a record/map of CSV patient data to a Metriport patient.
@@ -34,37 +37,37 @@ export type RowError = { rowColumns: string[]; error: string };
  */
 export function mapCsvPatientToMetriportPatient(
   csvPatient: Record<string, string>
-): PatientPayload | Array<{ field: string; error: string }> {
+): PatientPayload | ParsingError[] {
   const errors: ParsingError[] = [];
 
   let firstName: string | undefined = undefined;
   try {
-    firstName = normalizeName(csvPatient.firstname, "firstname");
+    firstName = normalizeName(csvPatient.firstname ?? csvPatient.firstName, firstNameFieldName);
   } catch (error) {
-    errors.push({ field: "firstName", error: errorToString(error) });
+    errors.push({ field: firstNameFieldName, error: errorToString(error) });
   }
 
   let lastName: string | undefined = undefined;
   try {
-    lastName = normalizeName(csvPatient.lastname, "lastname");
+    lastName = normalizeName(csvPatient.lastname ?? csvPatient.lastName, lastNameFieldName);
   } catch (error) {
-    errors.push({ field: "lastName", error: errorToString(error) });
+    errors.push({ field: lastNameFieldName, error: errorToString(error) });
   }
 
   let dob: string | undefined = undefined;
   try {
-    dob = normalizeDobSafe(csvPatient.dob ?? "");
+    dob = normalizeDobSafe(csvPatient.dob ?? csvPatient.DOB ?? "");
     if (!dob) throw new BadRequestError(`Missing dob`);
   } catch (error) {
-    errors.push({ field: "dob", error: errorToString(error) });
+    errors.push({ field: dobFieldName, error: errorToString(error) });
   }
 
   let genderAtBirth: GenderAtBirth | undefined = undefined;
   try {
-    genderAtBirth = normalizeGenderSafe(csvPatient.gender ?? "");
+    genderAtBirth = normalizeGenderSafe(csvPatient.gender ?? csvPatient.genderAtBirth ?? "");
     if (!genderAtBirth) throw new BadRequestError(`Missing gender`);
   } catch (error) {
-    errors.push({ field: "gender", error: errorToString(error) });
+    errors.push({ field: genderFieldName, error: errorToString(error) });
   }
 
   const { addresses, errors: addressErrors } = mapCsvAddresses(csvPatient);
@@ -75,7 +78,9 @@ export function mapCsvPatientToMetriportPatient(
 
   const externalId = csvPatient.id
     ? normalizeExternalId(csvPatient.id)
-    : normalizeExternalId(csvPatient.externalid) ?? undefined;
+    : normalizeExternalId(csvPatient.externalId) ??
+      normalizeExternalId(csvPatient.externalid) ??
+      undefined;
 
   const { ssn, errors: ssnErrors } = mapCsvSsn(csvPatient);
   errors.push(...ssnErrors);

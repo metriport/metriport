@@ -11,12 +11,19 @@ export function makeLambdaClient(region: string, timeoutInMillis?: number) {
   });
 }
 
+/**
+ * Returns a function that can be used to handle the result of a lambda invocation.
+ * This function will return the payload of the lambda invocation as string, or undefined if the
+ * lambda invocation failed or if the lambda invocation returns an empty response.
+ */
 export function defaultLambdaInvocationResponseHandler(params: {
   lambdaName?: string;
   failGracefully?: boolean | false;
-}) {
-  return function (result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>) {
-    getLambdaResultPayload({ result, failOnEmptyResponse: false, ...params });
+}): (result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>) => string | undefined {
+  return function (
+    result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>
+  ): string | undefined {
+    return getLambdaResultPayload({ result, failOnEmptyResponse: false, ...params });
   };
 }
 

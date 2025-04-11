@@ -19,7 +19,11 @@ export async function createPatient({
   const patientUrl = `/internal/patient?cxId=${cxId}&facilityId=${facilityId}`;
   try {
     const response = await api.post(patientUrl, patientPayload);
-    if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
+    if (!response.data) {
+      throw new MetriportError(`No body returned while creating patient`, undefined, {
+        patientUrl,
+      });
+    }
     debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
     return patientCreateResponseSchema.parse(response.data).id;
   } catch (error) {

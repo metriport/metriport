@@ -71,11 +71,11 @@ export const processPatientDocumentRequest = async (
         },
       ],
     };
-    const metadata = getMetadata(whType, patient.data);
+    const cxMetadata = getCxMetadata(whType, patient.data);
 
     // send it to the customer and update the request status
-    if (!isWebhookDisabled(metadata)) {
-      log(`Sending WH... metadata: ${metadata}`);
+    if (!isWebhookDisabled(cxMetadata)) {
+      log(`Sending WH... cxMetadata: ${cxMetadata}`);
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,
@@ -87,10 +87,10 @@ export const processPatientDocumentRequest = async (
         webhookRequest,
         settings,
         requestId ? { requestId } : undefined,
-        metadata
+        cxMetadata
       );
     } else {
-      log(`WH disabled. Not sending it - metadata: ${JSON.stringify(metadata)}`);
+      log(`WH disabled. Not sending it - metadata: ${JSON.stringify(cxMetadata)}`);
       await createWebhookRequest({
         cxId,
         type: whType,
@@ -112,7 +112,7 @@ export const processPatientDocumentRequest = async (
       );
     }
 
-    patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata, whType });
+    patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata: cxMetadata, whType });
 
     const shouldReportUsage =
       status === MAPIWebhookStatus.completed &&
@@ -131,7 +131,7 @@ export const processPatientDocumentRequest = async (
   }
 };
 
-function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
+function getCxMetadata(whType: MAPIWebhookType, patientData: PatientData): unknown {
   if (whType === "medical.document-download" || whType === "medical.document-conversion") {
     return patientData.cxDocumentRequestMetadata;
   } else if (whType === "medical.consolidated-data") {
