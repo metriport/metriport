@@ -59,6 +59,16 @@ export async function unlinkPatientFromOrganization({
   );
   log(`Unlinking patient from organization ${oid}`);
 
+  const [cqPatientData, cwPatientData] = await Promise.all([
+    getCQPatientData({ id: patientId, cxId }),
+    getCwPatientData({ id: patientId, cxId }),
+  ]);
+
+  const cwLink = findCwLinkWithOid(cwPatientData?.data, oid);
+  const cqLink = findCqLinkWithOid(cqPatientData?.data, oid);
+
+  await findAndInvalidateLinks(cwLink, cqLink, cxId, patientId, dryRun, log);
+
   const documents = await getDocuments({ cxId, patientId });
 
   if (documents.length === 0) {
@@ -75,16 +85,6 @@ export async function unlinkPatientFromOrganization({
 
   log(`Found ${documentsWithOid.length} documents to process`);
 
-  const [cqPatientData, cwPatientData] = await Promise.all([
-    getCQPatientData({ id: patientId, cxId }),
-    getCwPatientData({ id: patientId, cxId }),
-  ]);
-
-  const cwLink = findCwLinkWithOid(cwPatientData?.data, oid);
-  const cqLink = findCqLinkWithOid(cqPatientData?.data, oid);
-
-  await findAndInvalidateLinks(cwLink, cqLink, cxId, patientId, dryRun, log);
-
   const errors: { documentId: string; error: unknown }[] = [];
 
   for (const document of documentsWithOid) {
@@ -96,7 +96,7 @@ export async function unlinkPatientFromOrganization({
 
     try {
       log(`Processing document ${document.id}`);
-      await Promise.all([
+      await Promise.allSettled([
         findAndRemoveConversionResultsFromS3(fileName, dryRun, log),
         findAndRemoveMedicalDocumentFromS3(fileName, dryRun, log),
         findAndRemoveConsolidatedDocumentFromS3(cxId, patientId, dryRun, log),
@@ -161,8 +161,14 @@ function getDocumentsWithOid(
     const patient = document.contained?.find(isPatient);
     if (!patient) continue;
 
-    const identifier = patient.identifier?.find(identifier => identifier.system === urnOid);
+    const identifier = patient.identifier?.find(identifier => identifier.system?.includes(urnOid));
     if (identifier) {
+      matchingDocumentRefs.push(document);
+    }
+
+    const masterIdentifier = document.masterIdentifier?.value?.includes(oid);
+
+    if (masterIdentifier) {
       matchingDocumentRefs.push(document);
     }
   }
