@@ -329,7 +329,10 @@ async function findAndInvalidateLinks(
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const cwAccess = await getCWAccessForPatient(patient);
-    if (cwAccess.error != null) throw new MetriportError(cwAccess.error);
+    if (cwAccess.error != null)
+      throw new MetriportError("Error invalidating CW link", undefined, {
+        reason: cwAccess.error,
+      });
     const { commonWell, queryMeta } = cwAccess;
 
     const downgradeRequests: Promise<NetworkLink>[] = [];
