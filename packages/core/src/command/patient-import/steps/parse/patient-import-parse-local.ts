@@ -107,14 +107,6 @@ export class PatientImportParseLocal implements PatientImportParse {
     } catch (error) {
       const msg = `Failure while parsing the job of patient import @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          context: "patient-import-parse-local.processJobParse",
-          error,
-        },
-      });
       await updateJobAtApi({ cxId, jobId, status: "failed" });
       throw error;
     }

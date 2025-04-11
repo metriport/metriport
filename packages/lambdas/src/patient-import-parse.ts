@@ -1,7 +1,7 @@
 import { PatientImportParseRequest } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse";
 import { PatientImportParseLocal } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-local";
 import { out } from "@metriport/core/util/log";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -16,6 +16,7 @@ const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (params: PatientImportParseRequest): Promise<void> => {
+    capture.setExtra({ ...params, context: lambdaName });
     const { cxId, jobId } = params;
     const { log } = out(`bulk import parse - cx ${cxId} job ${jobId}`);
     log(`Running the bulk import parse w/ params ${JSON.stringify(params)}`);
@@ -30,10 +31,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const finishedAt = new Date().getTime();
       log(`Done local duration: ${finishedAt - startedAt}ms`);
     } catch (error) {
-      const errorMsg = "Error processing event on " + lambdaName;
-      log(`${errorMsg}: ${errorToString(error)}`);
-      Sentry.setExtras({ ...params, context: lambdaName, error });
-      throw new MetriportError(errorMsg, error, { ...params });
+      log(` Error processing event on ${lambdaName}: ${errorToString(error)}`);
+      throw error;
     }
   }
 );

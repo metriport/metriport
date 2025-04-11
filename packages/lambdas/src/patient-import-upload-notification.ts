@@ -3,9 +3,8 @@ import { PatientImportParseCloud } from "@metriport/core/command/patient-import/
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { sendToSlack } from "@metriport/core/external/slack/index";
 import { Config } from "@metriport/core/util/config";
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { fromS3Metadata } from "@metriport/shared/domain/patient/patient-import/metadata";
-import * as Sentry from "@sentry/serverless";
 import { S3Event } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -19,6 +18,7 @@ const patientImportParseLambdaName = getEnvOrFail("PATIENT_IMPORT_PARSE_LAMBDA_N
 const isSandbox = Config.isSandbox();
 
 export async function handler(event: S3Event) {
+  capture.setExtra({ context: `patient-import-upload-notification`, event });
   const errors: unknown[] = [];
   for (const record of event.Records) {
     const sourceBucket = record.s3.bucket.name;
@@ -78,19 +78,13 @@ export async function handler(event: S3Event) {
       const payload: PatientImportParseRequest = { cxId, jobId };
       await parseCloud.processJobParse(payload);
     } catch (error) {
-      const msg = `Error processing new patient import file`;
-      console.log(msg, sourceKey, errorToString(error));
-      Sentry.setExtras({
-        context: `patient-import-upload-notification`,
-        sourceBucket,
-        sourceKey,
-        sourceSizeInBytes,
-        error,
-      });
+      console.log("Error processing new patient import file", sourceKey, errorToString(error));
       errors.push(error);
     }
   }
   if (errors.length > 0) {
-    throw new Error(`Error processing new patient import file`);
+    throw new MetriportError(`Errors processing new patient import file`, undefined, {
+      count: errors.length,
+    });
   }
 }
