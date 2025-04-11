@@ -1,5 +1,15 @@
-import { Reference, Resource, ResourceType } from "@medplum/fhirtypes";
+import {
+  EncounterDiagnosis,
+  EncounterLocation,
+  EncounterParticipant,
+  Patient,
+  Reference,
+  Resource,
+  ResourceType,
+} from "@medplum/fhirtypes";
 import { chunk, groupBy } from "lodash";
+import { XOR } from "ts-essentials";
+import { buildEntryReference } from ".";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { makeFhirApi } from "../api/api-factory";
 
@@ -88,4 +98,35 @@ export function isReferenceOfType(ref: Reference, resourceType: ResourceType): r
     if (ref.reference.includes(`/${resourceType}/`)) return true;
   }
   return false;
+}
+
+export function buildPatientReference(id: string): Reference<Patient> {
+  return { reference: `Patient/${id}` };
+}
+
+type EncounterParticipantInput = XOR<{ practitionerId: string }, { resource: Resource }>;
+export function buildEncounterParticipant(input: EncounterParticipantInput): EncounterParticipant {
+  if ("practitionerId" in input) {
+    return { individual: { reference: `Practitioner/${input.practitionerId}` } };
+  }
+
+  return { individual: { reference: buildEntryReference(input.resource) } };
+}
+
+type EncounterLocationInput = XOR<{ locationId: string }, { resource: Resource }>;
+export function buildLocationReference(input: EncounterLocationInput): EncounterLocation {
+  if ("locationId" in input) {
+    return { location: { reference: `Location/${input.locationId}` } };
+  }
+
+  return { location: { reference: buildEntryReference(input.resource) } };
+}
+
+type EncounterDiagnosisInput = XOR<{ conditionId: string }, { resource: Resource }>;
+export function buildConditionReference(input: EncounterDiagnosisInput): EncounterDiagnosis {
+  if ("conditionId" in input) {
+    return { condition: { reference: `Condition/${input.conditionId}` } };
+  }
+
+  return { condition: { reference: buildEntryReference(input.resource) } };
 }

@@ -51,6 +51,10 @@ const qualifyingBundleTypesForRequest = ["batch", "transaction", "history"];
 export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T> &
   Required<Pick<Reference<T>, "id" | "type">>;
 
+export type BundleWithEntry<T extends Resource = Resource> = Bundle<Resource> & {
+  entry: BundleEntry<T>[];
+};
+
 /**
  * Returns the references found in the given resources, including the missing ones.
  *
@@ -152,6 +156,21 @@ export function buildBundle({
   entries?: BundleEntry[];
 } = {}): Bundle {
   return { resourceType: "Bundle", total: entries.length, type, entry: entries };
+}
+
+export function buildBundleFromResources({
+  type = "searchset",
+  resources,
+}: {
+  type?: Bundle["type"];
+  resources: Resource[];
+}): BundleWithEntry {
+  return {
+    resourceType: "Bundle",
+    total: resources.length,
+    type,
+    entry: resources.map(buildBundleEntry),
+  };
 }
 
 export function buildSearchSetBundle<T extends Resource = Resource>({

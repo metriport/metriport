@@ -1,4 +1,9 @@
-import { isValidISODate, validateDateIsAfter1900, validateIsPastOrPresentSafe } from "../date";
+import {
+  buildDayjsFromCompactDate,
+  isValidISODate,
+  validateDateIsAfter1900,
+  validateIsPastOrPresentSafe,
+} from "../date";
 
 describe("shared date functions", () => {
   describe("isValidISODate", () => {
@@ -39,5 +44,37 @@ describe("validateDateIsAfter1900", () => {
 
   it("returns true for 1900-01-01", () => {
     expect(validateDateIsAfter1900("1900-01-01")).toBe(true);
+  });
+});
+
+describe("buildDayjsFromCompactDate", () => {
+  it("parses compact date format correctly", () => {
+    const compactDate = "20240226123000+0000";
+    const result = buildDayjsFromCompactDate(compactDate);
+    expect(result.format()).toBe("2024-02-26T12:30:00Z");
+  });
+
+  it("correctly handless offset", () => {
+    const compactDate = "20240226123000+0130";
+    const result = buildDayjsFromCompactDate(compactDate);
+    expect(result.format()).toBe("2024-02-26T11:00:00Z");
+  });
+
+  it("handles regular date format", () => {
+    const regularDate = "2024-02-26T12:30:00Z";
+    const result = buildDayjsFromCompactDate(regularDate);
+    expect(result.format()).toBe("2024-02-26T12:30:00Z");
+  });
+
+  it("handles short date format", () => {
+    const regularDate = "2024-02-26";
+    const result = buildDayjsFromCompactDate(regularDate);
+    expect(result.format()).toBe("2024-02-26T00:00:00Z");
+  });
+
+  it("falls back to regular date parsing for invalid compact date format", () => {
+    const invalidDate = "20240226123000";
+    const result = buildDayjsFromCompactDate(invalidDate);
+    expect(result.format()).toBe("2024-02-26T12:30:00Z");
   });
 });
