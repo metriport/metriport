@@ -28,21 +28,23 @@ export function validateNewStatus(
   newStatus: PatientImportStatus,
   dryRun?: boolean
 ): PatientImportStatus {
+  const additionalInfo = {
+    currentStatus,
+    newStatus,
+  };
   switch (newStatus) {
     case "waiting":
-      throw new BadRequestError(`Waiting is not a valid status to update`, undefined, {
-        currentStatus,
-        newStatus,
-      });
+      throw new BadRequestError(
+        `Waiting is not a valid status to update to`,
+        undefined,
+        additionalInfo
+      );
     case "processing":
       if (currentStatus !== "waiting" && currentStatus !== "processing") {
         throw new BadRequestError(
           `Import job is not in a valid state to update to processing`,
           undefined,
-          {
-            currentStatus,
-            newStatus,
-          }
+          additionalInfo
         );
       }
       break;
@@ -57,30 +59,21 @@ export function validateNewStatus(
         throw new BadRequestError(
           `Import job is not processing, cannot update to completed`,
           undefined,
-          {
-            currentStatus,
-            newStatus,
-          }
+          additionalInfo
         );
       }
       break;
     case "failed":
-      if (currentStatus !== "processing") {
+      if (currentStatus === "completed") {
         throw new BadRequestError(
-          `Import job is not processing, cannot update to failed`,
+          `Import job is completed, cannot update to failed`,
           undefined,
-          {
-            currentStatus,
-            newStatus,
-          }
+          additionalInfo
         );
       }
       break;
     default:
-      throw new BadRequestError(`Invalid import job status`, undefined, {
-        currentStatus,
-        newStatus,
-      });
+      throw new BadRequestError(`Invalid import job status`, undefined, additionalInfo);
   }
   return newStatus;
 }

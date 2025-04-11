@@ -68,18 +68,26 @@ describe("validateNewStatus", () => {
   describe("new status is failed", () => {
     const destinationStatus = "failed";
 
+    it("allows updating from waiting", () => {
+      expect(validateNewStatus("waiting", destinationStatus)).toBe(destinationStatus);
+    });
+
     it("allows updating from processing", () => {
       expect(validateNewStatus("processing", destinationStatus)).toBe(destinationStatus);
     });
 
+    it("allows updating from failed", () => {
+      expect(validateNewStatus("failed", destinationStatus)).toBe(destinationStatus);
+    });
+
     describe("throws", () => {
-      for (const currentStatus of ["waiting", "completed", "failed"] as const) {
+      for (const currentStatus of ["completed"] as const) {
         it(`throws when updating from ${currentStatus}`, () => {
           expect(() => validateNewStatus(currentStatus, destinationStatus)).toThrow(
             BadRequestError
           );
           expect(() => validateNewStatus(currentStatus, destinationStatus)).toThrow(
-            "Import job is not processing, cannot update to failed"
+            "Import job is completed, cannot update to failed"
           );
         });
       }
