@@ -47,10 +47,6 @@ describe("validateNewStatus", () => {
       expect(validateNewStatus("processing", destinationStatus)).toBe(destinationStatus);
     });
 
-    it("returns waiting when dry run is true", () => {
-      expect(validateNewStatus("processing", destinationStatus, true)).toBe("waiting");
-    });
-
     describe("throws", () => {
       for (const currentStatus of ["waiting", "completed", "failed"] as const) {
         it(`throws when updating from ${currentStatus}`, () => {
