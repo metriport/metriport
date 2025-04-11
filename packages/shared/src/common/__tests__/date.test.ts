@@ -45,6 +45,14 @@ describe("validateDateIsAfter1900", () => {
   it("returns true for 1900-01-01", () => {
     expect(validateDateIsAfter1900("1900-01-01")).toBe(true);
   });
+
+  it("returns false for 0007-01-01", () => {
+    expect(validateDateIsAfter1900("0007-01-01")).toBe(false);
+  });
+
+  it("returns false for 0014-01-01", () => {
+    expect(validateDateIsAfter1900("0014-01-01")).toBe(false);
+  });
 });
 
 describe("buildDayjsFromCompactDate", () => {

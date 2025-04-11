@@ -32,9 +32,8 @@ export function validateIsPastOrPresentSafe(date: string): boolean {
 }
 
 export function validateDateIsAfter1900(date: string): boolean {
-  const dateToCheck = buildDayjs(date);
-  const year1900 = buildDayjs("1900-01-01");
-  return dateToCheck.isSame(year1900) || dateToCheck.isAfter(year1900);
+  const yearToCheck = date.split("-")[0];
+  return Number(yearToCheck) >= 1900;
 }
 
 export function validateDateRange(start: string, end: string): boolean {
