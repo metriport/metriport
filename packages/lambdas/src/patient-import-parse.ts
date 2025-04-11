@@ -23,10 +23,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const startedAt = new Date().getTime();
     try {
-      const processJobParseRequest: PatientImportParseRequest = { cxId, jobId };
       const patientImportParser = new PatientImportParseLocal(patientImportBucket);
 
-      await patientImportParser.processJobParse(processJobParseRequest);
+      await patientImportParser.processJobParse(params);
 
       const finishedAt = new Date().getTime();
       log(`Done local duration: ${finishedAt - startedAt}ms`);
