@@ -8,7 +8,7 @@ const folderFiles = "files";
 const folderPatients = "patients";
 const folderMappings = "mappings";
 
-export type FileStages = "raw" | "headers" | "result";
+export type FileStages = "raw" | "headers" | "result" | "invalid";
 
 function createCxJobPrefix(cxId: string, jobId: string): string {
   return `cxid=${cxId}/jobid=${jobId}`;
@@ -57,6 +57,9 @@ export function createFileKeyRaw(cxId: string, jobId: string): string {
 }
 export function createFileKeyHeaders(cxId: string, jobId: string): string {
   return createFileKeyStage(cxId, jobId, "headers");
+}
+export function createFileKeyInvalid(cxId: string, jobId: string): string {
+  return createFileKeyStage(cxId, jobId, "invalid");
 }
 export function createFileKeyResults(cxId: string, jobId: string): string {
   return createFileKeyStage(cxId, jobId, "result");
