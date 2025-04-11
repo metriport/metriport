@@ -1,6 +1,6 @@
-import { Hl7Segment } from "@medplum/core";
+import { Hl7Message } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
-import { getOptionalValueFromSegment } from "./shared";
+import { getOptionalValueFromSegment, getSegmentByNameOrFail } from "./shared";
 
 const MSH_9_MESSAGE_TYPE = 9;
 const MSH_9_CODE_IDENTIFIER = 1;
@@ -12,10 +12,16 @@ export type MessageType = {
   structure: string;
 };
 
-export function getMessageTypeOrFail(msh: Hl7Segment): MessageType {
-  const messageCode = getOptionalValueFromSegment(msh, MSH_9_MESSAGE_TYPE, MSH_9_CODE_IDENTIFIER);
+export function getMessageTypeOrFail(hl7Message: Hl7Message): MessageType {
+  const mshSegment = getSegmentByNameOrFail(hl7Message, "MSH");
+
+  const messageCode = getOptionalValueFromSegment(
+    mshSegment,
+    MSH_9_MESSAGE_TYPE,
+    MSH_9_CODE_IDENTIFIER
+  );
   const messageStructure = getOptionalValueFromSegment(
-    msh,
+    mshSegment,
     MSH_9_MESSAGE_TYPE,
     MSH_9_STRUCTURE_IDENTIFIER
   );
@@ -28,7 +34,7 @@ export function getMessageTypeOrFail(msh: Hl7Segment): MessageType {
   }
 
   const triggerEvent = getOptionalValueFromSegment(
-    msh,
+    mshSegment,
     MSH_9_MESSAGE_TYPE,
     MSH_9_TRIGGER_EVENT_IDENTIFIER
   );

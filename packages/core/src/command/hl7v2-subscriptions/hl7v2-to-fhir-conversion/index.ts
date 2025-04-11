@@ -6,7 +6,7 @@ import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extension
 import { capture, out } from "../../../util";
 import { convertAdtNotificationToFhir } from "./adt";
 import { getMessageTypeOrFail } from "./msh";
-import { buildHl7MessageFileKey, getSegmentByNameOrFail } from "./shared";
+import { buildHl7MessageFileKey } from "./shared";
 
 export type Hl7ToFhirParams = {
   hl7Message: Hl7Message;
@@ -28,7 +28,7 @@ export function convertHl7v2MessageToFhir({
   log("Beginning conversion.");
 
   const startedAt = Date.now();
-  const messageType = getMessageTypeOrFail(getSegmentByNameOrFail(hl7Message, "MSH"));
+  const messageType = getMessageTypeOrFail(hl7Message);
   const filePath = buildHl7MessageFileKey({
     cxId,
     patientId,
