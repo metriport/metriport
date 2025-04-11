@@ -1,6 +1,7 @@
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { out } from "@metriport/core/util/log";
-import { MetriportError } from "@metriport/shared";
+import { MetriportError, executeWithNetworkRetries } from "@metriport/shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
@@ -130,7 +131,7 @@ function findCwLinkWithOid(cwPatientData: CwData | undefined, oid: string): CwLi
     const patient = cwLink.patient;
     if (!patient) continue;
 
-    if (patient.identifier?.some(identifier => identifier.system === addOidPrefix(oid))) {
+    if (patient.identifier?.some(identifier => identifier.system.includes(addOidPrefix(oid)))) {
       return cwLink;
     }
   }
@@ -333,23 +334,18 @@ async function findAndInvalidateLinks(
 
     const downgradeRequests: Promise<NetworkLink>[] = [];
     for (const link of invalidLinks.commonwell) {
-      if (!link._links?.downgrade?.href) continue;
-      const downgradeRequest = commonWell
-        .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
-        .catch(error => {
-          const msg = `Failed to downgrade link`;
-          log(`${msg}. Cause: ${errorToString(error)}`);
-          capture.error(msg, {
-            extra: {
-              patientId,
-              cxId,
-              cwReference: commonWell.lastReferenceHeader,
-              error,
-            },
-          });
+      const downgradeHref = link._links?.downgrade?.href;
+      if (!downgradeHref) continue;
+
+      downgradeRequests.push(
+        executeWithNetworkRetries(
+          () => commonWell.upgradeOrDowngradeNetworkLink(queryMeta, downgradeHref),
+          { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 }
+        ).catch(error => {
+          processAsyncError("Failed to downgrade link");
           throw error;
-        });
-      downgradeRequests.push(downgradeRequest);
+        })
+      );
     }
 
     await Promise.all([
