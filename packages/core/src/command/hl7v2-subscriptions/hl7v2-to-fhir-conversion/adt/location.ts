@@ -24,13 +24,13 @@ export function getLocationFromAdt(
 }
 
 export function buildLocation(params: Partial<Location> = {}): LocationWithId {
-  const { id, name, address, ...remainingParams } = params;
+  const { id, name, address, ...rest } = params;
 
   return {
     id: id ?? createUuidFromText(`${JSON.stringify(name)}${JSON.stringify(address)}`),
     resourceType: "Location",
     ...(name ? { name } : undefined),
     ...(address ? { address } : undefined),
-    ...remainingParams,
+    ...rest,
   };
 }

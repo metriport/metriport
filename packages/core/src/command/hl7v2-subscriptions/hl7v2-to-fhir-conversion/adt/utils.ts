@@ -8,7 +8,7 @@ import {
   getOptionalValueFromMessage,
   getOptionalValueFromSegment,
   getSegmentByNameOrFail,
-  mapAdtSystemNameToSystemUrl,
+  mapHl7SystemNameToSystemUrl,
 } from "../shared";
 import { buildConditionCoding } from "./condition";
 
@@ -78,7 +78,7 @@ export function getConditionCoding(
   const conditionDisplay = getOptionalValueFromSegment(pv2Segment, 3, 2 + offset);
   const conditionSystem = getOptionalValueFromSegment(pv2Segment, 3, 3 + offset);
 
-  const system = mapAdtSystemNameToSystemUrl(conditionSystem);
+  const system = mapHl7SystemNameToSystemUrl(conditionSystem);
 
   return buildConditionCoding({
     code: conditionCode,

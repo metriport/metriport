@@ -68,6 +68,14 @@ export function buildDayjs(date?: ConfigType, format?: string, strict?: boolean)
   return dayjs.utc(date, format, strict);
 }
 
+/**
+ * Tries to parse a compact date string in the format YYYYMMDDhhmmss±hhmm
+ * (year, month, day, hour, minute, second, timezone)
+ * and converts it to ISO 8601 format.
+ *
+ * @param input The compact date string to parse
+ * @returns ISO 8601 formatted date string or undefined if input doesn't match expected format
+ */
 function tryParseCompactDate(input: string): string | undefined {
   const match = input.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})([+-])(\d{2})(\d{2})$/);
   if (!match) return undefined;
@@ -83,9 +91,9 @@ export function buildDayjsFromCompactDate(
 ): dayjs.Dayjs {
   if (typeof date === "string") {
     const parsed = tryParseCompactDate(date);
-    if (parsed) return dayjs.utc(parsed, format, strict);
+    if (parsed) return buildDayjs(parsed, format, strict);
   }
-  return dayjs.utc(date, format, strict);
+  return buildDayjs(date, format, strict);
 }
 
 export function sortDate(

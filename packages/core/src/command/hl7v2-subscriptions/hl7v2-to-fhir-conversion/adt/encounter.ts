@@ -2,7 +2,7 @@ import { Hl7Message } from "@medplum/core";
 import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
 import { buildPatientReference } from "../../../../external/fhir/shared/references";
 import { MessageType } from "../msh";
-import { getAdmitReasonFromPatientVisitAddon } from "./condition";
+import { getAdmitReason } from "./condition";
 import { getLocationFromAdt } from "./location";
 import {
   AdtPatientClass,
@@ -18,12 +18,12 @@ export function mapEncounterAndRelatedResources(
   messageType: MessageType,
   patientId: string
 ): Resource[] {
-  const status = inferStatusFromMessage(messageType);
+  const status = getPatientStatus(messageType);
   const encounterClass = getClassFromPatientVisit(adt);
   const period = getPeriodFromPatientVisit(adt);
   const participants = getParticipantsFromAdt(adt);
 
-  const admitReason = getAdmitReasonFromPatientVisitAddon(adt, patientId);
+  const admitReason = getAdmitReason(adt, patientId);
 
   const location = getLocationFromAdt(adt);
 
@@ -53,14 +53,15 @@ export function mapEncounterAndRelatedResources(
 }
 
 /**
- * Maps HL7 message type to FHIR Encounter status.
+ * Infers the Encounter status from the message type.
+ * i.e. ADT_A01 => in-progress
  *
  * TODO: See if we can get the status from the ADT message itself
  * TODO: Handle more message types
  *
  * @see {@link https://hl7.org/fhir/R4/valueset-encounter-status.html}
  */
-function inferStatusFromMessage(messageType: MessageType): NonNullable<Encounter["status"]> {
+function getPatientStatus(messageType: MessageType): NonNullable<Encounter["status"]> {
   switch (messageType.structure) {
     case "ADT_A01":
       return "in-progress";

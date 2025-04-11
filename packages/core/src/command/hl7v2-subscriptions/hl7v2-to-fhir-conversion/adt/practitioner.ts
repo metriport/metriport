@@ -62,13 +62,13 @@ function buildHumanName(
 }
 
 export function buildPractitioner(params: Partial<Practitioner>): PractitionerWithId {
-  const { id, name, ...remainingParams } = params;
+  const { id, name, ...rest } = params;
 
   return {
     id: id ?? createUuidFromText(JSON.stringify(name)),
     resourceType: "Practitioner",
     ...(name ? { name } : undefined),
-    ...remainingParams,
+    ...rest,
   };
 }
 

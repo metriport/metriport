@@ -72,7 +72,7 @@ describe("buildDayjsFromCompactDate", () => {
     expect(result.format()).toBe("2024-02-26T00:00:00Z");
   });
 
-  it("returns undefined for invalid compact date format", () => {
+  it("falls back to regular date parsing for invalid compact date format", () => {
     const invalidDate = "20240226123000";
     const result = buildDayjsFromCompactDate(invalidDate);
     expect(result.format()).toBe("2024-02-26T12:30:00Z");

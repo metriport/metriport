@@ -18,8 +18,8 @@ import { getPotentialIdentifiers } from "./adt/utils";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
-// TODO: Ensure the ADT system values are correct and up to date
-const adtSystemToUrlMap: Record<string, string> = {
+// TODO: Ensure the HL7 coding system values are correct and up to date
+const hl7CodingSystemToUrlMap: Record<string, string> = {
   SCT: SNOMED_URL, // SNOMED CT
   LN: LOINC_URL, // LOINC
   ICD10: ICD_10_URL, // ICD-10
@@ -35,11 +35,11 @@ export function parseHl7v2Message(msgSegments: Hl7Segment[], context?: Hl7Contex
   return new Hl7Message(msgSegments, context);
 }
 
-function reformUuid(shortId: string) {
+function decompressUuid(shortId: string) {
   return unpackUuid(crypto.unscramble(shortId));
 }
 
-export function formFromUuid(uuid: string) {
+export function compressUuid(uuid: string) {
   return crypto.scramble(packUuid(uuid));
 }
 
@@ -48,7 +48,7 @@ export function unpackPidFieldOrFail(pid: string) {
     throw new MetriportError("Invalid PID format: missing separator");
   }
 
-  const [cxId, patientId] = pid.split("_").map(reformUuid);
+  const [cxId, patientId] = pid.split("_").map(decompressUuid);
   if (!cxId || !patientId) {
     throw new MetriportError("Invalid PID format: could not unpack identifiers");
   }
@@ -129,12 +129,12 @@ export function getOptionalValueFromField(
 }
 
 /**
- * Maps an ADT system name to its corresponding FHIR URL.
+ * Maps an HL7 coding system name to its corresponding URL.
  * Returns undefined if the system name is not recognized.
  */
-export function mapAdtSystemNameToSystemUrl(systemName: string | undefined): string | undefined {
+export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): string | undefined {
   if (!systemName) return undefined;
-  return adtSystemToUrlMap[systemName.trim().toUpperCase()];
+  return hl7CodingSystemToUrlMap[systemName.trim().toUpperCase()];
 }
 
 export function buildHl7MessageFileKey({

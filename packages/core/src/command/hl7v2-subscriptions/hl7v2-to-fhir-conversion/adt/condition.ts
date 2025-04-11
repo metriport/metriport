@@ -21,10 +21,7 @@ type ConditionWithCode = Partial<Condition> & {
   code: CodeableConcept;
 };
 
-export function getAdmitReasonFromPatientVisitAddon(
-  adt: Hl7Message,
-  patientId: string
-): AdmitReason | undefined {
+export function getAdmitReason(adt: Hl7Message, patientId: string): AdmitReason | undefined {
   const pv2Segment = adt.getSegment("PV2");
   if (!pv2Segment || pv2Segment.fields.length < 1) return undefined;
 
@@ -74,14 +71,14 @@ export function buildConditionCoding({
 }
 
 export function buildCondition(params: ConditionWithCode, patientId: string): ConditionWithId {
-  const { id, code, ...remainingParams } = params;
+  const { id, code, ...rest } = params;
 
   return {
     id: id ?? createUuidFromText(JSON.stringify(code)),
     resourceType: "Condition",
     code,
     subject: buildPatientReference(patientId),
-    ...remainingParams,
+    ...rest,
   };
 }
 
