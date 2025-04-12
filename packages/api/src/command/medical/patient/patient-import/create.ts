@@ -3,13 +3,11 @@ import { createJobRecord } from "@metriport/core/command/patient-import/record/c
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { createPatientImport as createDomain } from "@metriport/shared/domain/patient/patient-import/create";
 import {
   PatientImportUploadMetadata,
   toS3Metadata,
 } from "@metriport/shared/domain/patient/patient-import/metadata";
-import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import {
   PatientImport,
   PatientImportParamsCx,
@@ -59,42 +57,8 @@ export async function createPatientImport({
     `Creating job w/ paramsCx ${JSON.stringify(paramsCx)}, paramsOps ${JSON.stringify(paramsOps)}`
   );
 
-  const { dryRun: dryRunCx = false } = paramsCx;
-  const initializedParamsCx: PatientImportParamsCx = {
-    dryRun: dryRunCx,
-  };
-
-  const {
-    rerunPdOnNewDemographics = false,
-    triggerConsolidated = false,
-    disableWebhooks = false,
-  } = paramsOps;
-  const initializedParamsOps: PatientImportParamsOps = {
-    rerunPdOnNewDemographics,
-    triggerConsolidated,
-    disableWebhooks,
-    ...(paramsOps?.dryRun ? { dryRun: paramsOps.dryRun } : {}),
-  };
-
-  const jobId = uuidv7();
-  const status: PatientImportStatus = "waiting";
-  const createdAt = buildDayjs().toDate();
-
-  const jobToCreate: PatientImport = {
-    id: jobId,
-    cxId,
-    facilityId,
-    status,
-    reason: undefined,
-    createdAt,
-    startedAt: undefined,
-    finishedAt: undefined,
-    total: undefined,
-    successful: undefined,
-    failed: undefined,
-    paramsCx: initializedParamsCx,
-    paramsOps: initializedParamsOps,
-  };
+  const jobToCreate = createDomain({ cxId, facilityId, paramsCx, paramsOps });
+  const jobId = jobToCreate.id;
 
   const [job, uploadUrl] = await Promise.all([
     storeAtDb(jobToCreate),
