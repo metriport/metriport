@@ -76,7 +76,7 @@ export async function unlinkPatientFromOrganization({
     return;
   }
 
-  const documentsWithOid = getDocumentsWithOid(documents, oid);
+  const documentsWithOid = getDocumentsWithOid(documents, oid, log);
 
   if (documentsWithOid.length === 0) {
     log(`No documents found for patient ${patientId} with oid ${oid}`);
@@ -149,7 +149,8 @@ function findCqLinkWithOid(cqPatientData: CQData | undefined, oid: string): CQLi
 
 function getDocumentsWithOid(
   documents: DocumentReferenceWithId[],
-  oid: string
+  oid: string,
+  log: typeof console.log
 ): DocumentReferenceWithId[] {
   const urnOid = addOidPrefix(oid);
   const commonwellDocuments = documents.filter(hasCommonwellExtension);
@@ -161,15 +162,23 @@ function getDocumentsWithOid(
     const patient = document.contained?.find(isPatient);
     if (!patient) continue;
 
-    const identifier = patient.identifier?.find(identifier => identifier.system?.includes(urnOid));
+    const identifier = patient.identifier?.find(identifier => identifier.system === urnOid);
     if (identifier) {
       matchingDocumentRefs.push(document);
+    } else if (
+      patient.identifier?.find(identifier => identifier.system?.includes(addOidPrefix(oid)))
+    ) {
+      log(`Found potential identifier ${identifier} for patient ${patient.id}`);
     }
 
-    const masterIdentifier = document.masterIdentifier?.value?.includes(oid);
+    const masterIdentifier = document.masterIdentifier?.value === oid;
 
     if (masterIdentifier) {
       matchingDocumentRefs.push(document);
+    } else if (document.masterIdentifier?.value?.includes(oid)) {
+      log(
+        `Found potential master identifier ${document.masterIdentifier?.value} for patient ${patient.id}`
+      );
     }
   }
 
