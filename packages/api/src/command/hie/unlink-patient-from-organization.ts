@@ -163,12 +163,15 @@ function getDocumentsWithOid(
     if (!patient) continue;
 
     const identifier = patient.identifier?.find(identifier => identifier.system === urnOid);
+    const potentialIdentifier = patient.identifier?.find(identifier =>
+      identifier.system?.includes(addOidPrefix(oid))
+    );
+
     if (identifier) {
       matchingDocumentRefs.push(document);
-    } else if (
-      patient.identifier?.find(identifier => identifier.system?.includes(addOidPrefix(oid)))
-    ) {
-      log(`Found potential identifier ${identifier} for patient ${patient.id}`);
+      continue;
+    } else if (potentialIdentifier) {
+      log(`Found potential identifier ${potentialIdentifier.system} for patient ${patient.id}`);
     }
 
     const masterIdentifier = document.masterIdentifier?.value === oid;
