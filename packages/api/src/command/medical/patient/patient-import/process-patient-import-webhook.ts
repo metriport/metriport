@@ -13,6 +13,7 @@ import {
   createWebhookRequest,
   CreateWebhookRequestCommand,
 } from "../../../webhook/webhook-request";
+
 dayjs.extend(duration);
 
 const presignedResultUrlDuration = dayjs.duration(3, "minutes");
@@ -23,7 +24,7 @@ export async function processPatientImportWebhook(job: PatientImport): Promise<v
   try {
     const settings = await getSettingsOrFail({ id: cxId });
 
-    const presignedUrl = await getBulkPatientImportPresignedUrl(job);
+    const presignedUrl = await getBulkPatientImportPresignedDownloadUrl(job);
 
     const whType = "medical.bulk-patient-create";
     // `meta` is added by processRequest()
@@ -60,7 +61,9 @@ export async function processPatientImportWebhook(job: PatientImport): Promise<v
   }
 }
 
-async function getBulkPatientImportPresignedUrl(job: PatientImport): Promise<string | undefined> {
+async function getBulkPatientImportPresignedDownloadUrl(
+  job: PatientImport
+): Promise<string | undefined> {
   const { cxId, id: jobId, status } = job;
 
   if (status !== "completed") return undefined;
