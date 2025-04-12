@@ -59,22 +59,6 @@ export async function unlinkPatientFromOrganization({
   );
   log(`Unlinking patient from organization ${oid}`);
 
-  const documents = await getDocuments({ cxId, patientId });
-
-  if (documents.length === 0) {
-    log(`No documents found for patient ${patientId}`);
-    return;
-  }
-
-  const documentsWithOid = getDocumentsWithOid(documents, oid);
-
-  if (documentsWithOid.length === 0) {
-    log(`No documents found for patient ${patientId} with oid ${oid}`);
-    return;
-  }
-
-  log(`Found ${documentsWithOid.length} documents to process`);
-
   const [cqPatientData, cwPatientData] = await Promise.all([
     getCQPatientData({ id: patientId, cxId }),
     getCwPatientData({ id: patientId, cxId }),
@@ -84,6 +68,22 @@ export async function unlinkPatientFromOrganization({
   const cqLink = findCqLinkWithOid(cqPatientData?.data, oid);
 
   await findAndInvalidateLinks(cwLink, cqLink, cxId, patientId, dryRun, log);
+
+  const documents = await getDocuments({ cxId, patientId });
+
+  if (documents.length === 0) {
+    log(`No documents found for patient ${patientId}`);
+    return;
+  }
+
+  const documentsWithOid = getDocumentsWithOid(documents, oid, log);
+
+  if (documentsWithOid.length === 0) {
+    log(`No documents found for patient ${patientId} with oid ${oid}`);
+    return;
+  }
+
+  log(`Found ${documentsWithOid.length} documents to process`);
 
   const errors: { documentId: string; error: unknown }[] = [];
 
@@ -149,7 +149,8 @@ function findCqLinkWithOid(cqPatientData: CQData | undefined, oid: string): CQLi
 
 function getDocumentsWithOid(
   documents: DocumentReferenceWithId[],
-  oid: string
+  oid: string,
+  log: typeof console.log
 ): DocumentReferenceWithId[] {
   const urnOid = addOidPrefix(oid);
   const commonwellDocuments = documents.filter(hasCommonwellExtension);
@@ -162,8 +163,27 @@ function getDocumentsWithOid(
     if (!patient) continue;
 
     const identifier = patient.identifier?.find(identifier => identifier.system === urnOid);
+    const potentialIdentifier = patient.identifier?.find(
+      identifier => identifier.system?.startsWith(urnOid) && identifier.system !== urnOid
+    );
+
     if (identifier) {
       matchingDocumentRefs.push(document);
+      continue;
+    } else if (potentialIdentifier) {
+      log(`Found potential identifier ${potentialIdentifier.system} for patient ${patient.id}`);
+    }
+
+    const masterIdentifier = document.masterIdentifier?.value === oid;
+    const potentialMasterIdentifier =
+      document.masterIdentifier?.value?.includes(oid) && !masterIdentifier;
+
+    if (masterIdentifier) {
+      matchingDocumentRefs.push(document);
+    } else if (potentialMasterIdentifier) {
+      log(
+        `Found potential master identifier ${document.masterIdentifier?.value} for patient ${patient.id}`
+      );
     }
   }
 
