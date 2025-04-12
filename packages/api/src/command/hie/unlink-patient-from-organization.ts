@@ -170,7 +170,7 @@ function getDocumentsWithOid(
     if (identifier) {
       matchingDocumentRefs.push(document);
       continue;
-    } else if (potentialIdentifier) {
+    } else if (potentialIdentifier && !identifier) {
       log(`Found potential identifier ${potentialIdentifier.system} for patient ${patient.id}`);
     }
 
@@ -178,7 +178,7 @@ function getDocumentsWithOid(
 
     if (masterIdentifier) {
       matchingDocumentRefs.push(document);
-    } else if (document.masterIdentifier?.value?.includes(oid)) {
+    } else if (document.masterIdentifier?.value?.includes(oid) && !masterIdentifier) {
       log(
         `Found potential master identifier ${document.masterIdentifier?.value} for patient ${patient.id}`
       );
