@@ -31,7 +31,7 @@ const defaultReasonForDev = "failed";
  * @param jobId - The bulk import job ID.
  * @param patientId - The patient ID.
  * @param status - The status of the patient import.
- * @throws BadRequestError if no facility ID is provided and there's more than one facility for the customer.
+ * @param reasonForDev - The reason for the patient import failure.
  */
 export async function finishSinglePatientImport({
   cxId,
@@ -65,67 +65,13 @@ export async function finishSinglePatientImport({
       rowNumber,
     });
 
-    const updateTotalsOnDb = async (): Promise<FinishPatientImportParams | undefined> => {
-      const [[updatedRows]] = await PatientImportModel.increment(
-        [
-          ...(status === "successful" ? ["successful" as const] : []),
-          ...(status === "failed" ? ["failed" as const] : []),
-        ],
-        {
-          where: {
-            cxId,
-            id: jobId,
-          },
-          // Sequelize types are a mismatch, had to force this
-        } as IncrementDecrementOptionsWithBy<PatientImportModel>
-      );
-      // Using any because Sequelize doesn't map the columns to the model, even using mapToModel/model
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updatedRaw = (updatedRows as unknown as any[] | undefined)?.[0];
-      if (!updatedRaw) return undefined;
-      return {
-        id: updatedRaw[patientImportRawColumnNames.id],
-        cxId: updatedRaw[patientImportRawColumnNames.cxId],
-        status: updatedRaw[patientImportRawColumnNames.status],
-        successful: updatedRaw[patientImportRawColumnNames.successful],
-        failed: updatedRaw[patientImportRawColumnNames.failed],
-        total: updatedRaw[patientImportRawColumnNames.total],
-      };
-    };
-
-    const updatePatientRecordOnS3 = async (): Promise<PatientRecord> => {
-      const statusAndReason =
-        status === "failed"
-          ? {
-              status: "failed" as const,
-              reasonForCx: defaultReasonForCx,
-              reasonForDev: reasonForDev ?? defaultReasonForDev,
-            }
-          : { status };
-      const updatedPatientRecord = {
-        ...patientRecord,
-        ...statusAndReason,
-      };
-      return updatePatientRecord({
-        ...updatedPatientRecord,
-        bucketName,
-      });
-    };
-
     // Keep the order of operations, we want to make sure S3 is updated before we try to finish the job,
     // so there's no chance the result is incomplete
-    await updatePatientRecordOnS3();
-    const updatedJob = await updateTotalsOnDb();
+    await updatePatientRecordOnS3({ patientRecord, status, reasonForDev });
 
-    if (updatedJob) {
-      await tryToFinishPatientImport(updatedJob);
-      return;
-    }
+    const updatedJob = await updateTotalsOnDb({ cxId, jobId, status });
 
-    const msg = `updatedJob is undefined, this is not expected`;
-    log(msg);
-    capture.message(msg, { extra: { cxId, jobId, patientId }, level: "warning" });
-    return;
+    await tryToFinishPatientImport(updatedJob);
   } catch (error) {
     const msg = `Error finishing single patient import`;
     log(`${msg}: ${errorToString(error)}`);
@@ -136,12 +82,70 @@ export async function finishSinglePatientImport({
       status,
       context: "patient-import.finishSinglePatientImport",
     };
-    capture.error(msg, {
-      extra: {
-        ...additionalInfo,
-        error,
-      },
-    });
+    capture.error(msg, { extra: { ...additionalInfo, error } });
     throw new MetriportError(msg, error, additionalInfo);
   }
+}
+
+async function updateTotalsOnDb({
+  cxId,
+  jobId,
+  status,
+}: {
+  cxId: string;
+  jobId: string;
+  status: PatientImportEntryStatus;
+}): Promise<FinishPatientImportParams> {
+  const [[updatedRows]] = await PatientImportModel.increment(
+    [
+      ...(status === "successful" ? ["successful" as const] : []),
+      ...(status === "failed" ? ["failed" as const] : []),
+    ],
+    {
+      where: {
+        cxId,
+        id: jobId,
+      },
+      // Sequelize types are a mismatch, had to force this
+    } as IncrementDecrementOptionsWithBy<PatientImportModel>
+  );
+  // Using any because Sequelize doesn't map the columns to the model, even using mapToModel/model
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updatedRaw = (updatedRows as unknown as any[] | undefined)?.[0];
+  if (!updatedRaw) throw new MetriportError("Failed to get updated total from DB");
+  return {
+    id: updatedRaw[patientImportRawColumnNames.id],
+    cxId: updatedRaw[patientImportRawColumnNames.cxId],
+    status: updatedRaw[patientImportRawColumnNames.status],
+    successful: updatedRaw[patientImportRawColumnNames.successful],
+    failed: updatedRaw[patientImportRawColumnNames.failed],
+    total: updatedRaw[patientImportRawColumnNames.total],
+  };
+}
+
+async function updatePatientRecordOnS3({
+  patientRecord,
+  status,
+  reasonForDev,
+}: {
+  patientRecord: PatientRecord;
+  status: PatientImportEntryStatus;
+  reasonForDev?: string | undefined;
+}): Promise<PatientRecord> {
+  const statusAndReason =
+    status === "failed"
+      ? {
+          status: "failed" as const,
+          reasonForCx: defaultReasonForCx,
+          reasonForDev: reasonForDev ?? defaultReasonForDev,
+        }
+      : { status };
+  const updatedPatientRecord = {
+    ...patientRecord,
+    ...statusAndReason,
+  };
+  return updatePatientRecord({
+    ...updatedPatientRecord,
+    bucketName,
+  });
 }
