@@ -1,6 +1,7 @@
-import { US_DL } from './us-dl';
-import { CA_DL } from './ca-dl';
-import { ValidateOptions, ValidationMatch } from './interfaces';
+import { US_DL } from "./us-dl";
+import { CA_DL } from "./ca-dl";
+import { ValidateOptions, ValidationMatch } from "./interfaces";
+import { MetriportError } from "../../error/metriport-error";
 
 /**
  * Supported countries.
@@ -34,17 +35,17 @@ export function getMatches(dl: string, options: ValidateOptions = {}) {
     return null;
   }
 
-  const country = options.country || 'US';
+  const country = options.country || "US";
   const countryFormats = COUNTRIES[country];
 
   if (!countryFormats) {
-    throw new Error(`Country ${country} not supported`);
+    throw new MetriportError(`Country ${country} not supported`, undefined, { country });
   }
 
   // Filter by state if provided
   let states: string[] = [];
   if (options.states) {
-    if (typeof options.states === 'string') {
+    if (typeof options.states === "string") {
       states = [options.states];
     } else {
       states = options.states;
@@ -53,7 +54,10 @@ export function getMatches(dl: string, options: ValidateOptions = {}) {
     // Validate states
     for (const state of states) {
       if (!countryFormats[state]) {
-        throw new Error(`State ${state} not supported for country ${country}`);
+        throw new MetriportError(`State ${state} not supported for country ${country}`, undefined, {
+          state,
+          country,
+        });
       }
     }
   } else {
@@ -66,14 +70,12 @@ export function getMatches(dl: string, options: ValidateOptions = {}) {
   // Check each state
   for (const state of states) {
     const stateFormats = countryFormats[state];
-    
+
     if (!stateFormats) continue;
 
     // Check each format for the state
     for (const format of stateFormats) {
-      const regex = options.ignoreCase
-        ? new RegExp(format.regex.source, 'i')
-        : format.regex;
+      const regex = options.ignoreCase ? new RegExp(format.regex.source, "i") : format.regex;
 
       if (regex.test(dl)) {
         matches.push({
