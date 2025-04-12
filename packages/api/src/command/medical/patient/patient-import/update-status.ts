@@ -57,6 +57,8 @@ export async function updatePatientImportStatus({
       ? status
       : validateNewStatus(job.status, status)
     : undefined;
+  const justTurnedProcessing = newStatus === "processing" && oldStatus !== "processing";
+  const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
 
   const jobToUpdate: PatientImport = {
     ...job,
@@ -70,15 +72,13 @@ export async function updatePatientImportStatus({
   if (failed != undefined) {
     jobToUpdate.failed = failed;
   }
-  if (newStatus === "processing" && oldStatus !== "processing") {
+  if (justTurnedProcessing) {
     jobToUpdate.startedAt = buildDayjs().toDate();
   }
   await PatientImportModel.update(jobToUpdate, {
     where: { cxId, id: jobId },
   });
 
-  const justTurnedProcessing = newStatus === "processing" && oldStatus === "waiting";
-  const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
   const shouldSendWebhook = !disableWebhooks && (justTurnedProcessing || justTurnedCompleted);
   if (shouldSendWebhook) {
     log(
