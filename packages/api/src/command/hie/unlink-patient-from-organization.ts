@@ -164,8 +164,7 @@ function getDocumentsWithOid(
 
     const identifier = patient.identifier?.find(identifier => identifier.system === urnOid);
     const potentialIdentifier = patient.identifier?.find(
-      identifier =>
-        identifier.system?.startsWith(addOidPrefix(oid)) && identifier.system !== addOidPrefix(oid)
+      identifier => identifier.system?.startsWith(urnOid) && identifier.system !== urnOid
     );
 
     if (identifier) {
