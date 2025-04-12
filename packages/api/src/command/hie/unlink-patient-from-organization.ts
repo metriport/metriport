@@ -163,22 +163,25 @@ function getDocumentsWithOid(
     if (!patient) continue;
 
     const identifier = patient.identifier?.find(identifier => identifier.system === urnOid);
-    const potentialIdentifier = patient.identifier?.find(identifier =>
-      identifier.system?.includes(addOidPrefix(oid))
+    const potentialIdentifier = patient.identifier?.find(
+      identifier =>
+        identifier.system?.startsWith(addOidPrefix(oid)) && identifier.system !== addOidPrefix(oid)
     );
 
     if (identifier) {
       matchingDocumentRefs.push(document);
       continue;
-    } else if (potentialIdentifier && !identifier) {
+    } else if (potentialIdentifier) {
       log(`Found potential identifier ${potentialIdentifier.system} for patient ${patient.id}`);
     }
 
     const masterIdentifier = document.masterIdentifier?.value === oid;
+    const potentialMasterIdentifier =
+      document.masterIdentifier?.value?.includes(oid) && !masterIdentifier;
 
     if (masterIdentifier) {
       matchingDocumentRefs.push(document);
-    } else if (document.masterIdentifier?.value?.includes(oid) && !masterIdentifier) {
+    } else if (potentialMasterIdentifier) {
       log(
         `Found potential master identifier ${document.masterIdentifier?.value} for patient ${patient.id}`
       );
