@@ -16,19 +16,16 @@ interface MllpStackProps extends cdk.StackProps {
   version: string | undefined;
   vpc: ec2.Vpc;
   ecrRepo: Repository;
-  hl7NotificationBucket: s3.Bucket;
+  incomingHl7NotificationBucket: s3.Bucket;
 }
 
 export class MllpStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
-    const { vpc, ecrRepo, hl7NotificationBucket } = props;
+    const { vpc, ecrRepo, incomingHl7NotificationBucket } = props;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
-
-    const queueArn = cdk.Fn.importValue("Hl7NotificationRouterQueueArn");
-    const queueUrl = cdk.Fn.importValue("Hl7NotificationRouterQueueUrl");
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
@@ -93,13 +90,6 @@ export class MllpStack extends cdk.NestedStack {
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
     });
 
-    taskRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["sqs:SendMessage"],
-        resources: [queueArn],
-      })
-    );
-
     // Create Fargate Service
     const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
       cpu: fargateCpu,
@@ -107,7 +97,7 @@ export class MllpStack extends cdk.NestedStack {
       taskRole,
     });
 
-    hl7NotificationBucket.grantWrite(taskDefinition.taskRole);
+    incomingHl7NotificationBucket.grantWrite(taskDefinition.taskRole);
 
     taskDefinition.addContainer("MllpServer", {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
@@ -116,8 +106,7 @@ export class MllpStack extends cdk.NestedStack {
         NODE_ENV: "production",
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-        HL7_NOTIFICATION_BUCKET_NAME: props.config.hl7Notification.bucketName,
-        HL7_NOTIFICATION_QUEUE_URL: queueUrl,
+        HL7_NOTIFICATION_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],

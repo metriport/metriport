@@ -37,6 +37,7 @@ async function deploy(config: EnvConfig) {
   // 2. Deploy the buckets stack to create shared buckets.
   //---------------------------------------------------------------------------------
   const bucketsStack = new BucketsStack(app, "BucketsStack", { env, config });
+  const { incomingHl7NotificationBucket } = bucketsStack;
 
   //---------------------------------------------------------------------------------
   // 3. Deploy the location services stack to initialize all geo services.
@@ -51,19 +52,18 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 4. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  new APIStack(app, config.stackName, { env, config, bucketsStack, version });
 
   //---------------------------------------------------------------------------------
   // 5. Deploy the HL7 Notification Routing stack.
   //---------------------------------------------------------------------------------
-  if (!isSandbox(config) && bucketsStack.hl7NotificationBucket) {
+  if (!isSandbox(config) && incomingHl7NotificationBucket) {
     const hl7NotificationStack = new Hl7NotificationStack(app, "Hl7NotificationStack", {
       env,
       config,
       version,
-      hl7NotificationBucket: bucketsStack.hl7NotificationBucket,
+      incomingHl7NotificationBucket,
     });
-    hl7NotificationStack.addDependency(apiStack.lambdasNestedStack);
 
     config.hl7Notification.vpnConfigs.forEach((config, index) => {
       const vpnStack = new VpnStack(app, `VpnStack-${config.partnerName}`, {
