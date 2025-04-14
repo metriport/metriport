@@ -3,20 +3,20 @@ dotenv.config();
 // keep that ^ on top
 import { DocumentQuery, MetriportMedicalApi } from "@metriport/api-sdk";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
-import { sleep } from "@metriport/core/util/sleep";
+import { executeWithNetworkRetries, getEnvVarOrFail, sleep } from "@metriport/shared";
 import axios from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import { cloneDeep } from "lodash";
 import { getPatientIds } from "./patient/get-ids";
+import { getDelayTime } from "./shared/duration";
 import { initFile } from "./shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 import { logErrorToFile } from "./shared/log";
-import { cloneDeep } from "lodash";
 
 dayjs.extend(duration);
 
@@ -32,6 +32,11 @@ dayjs.extend(duration);
  * The results are saved in a CSV file in the `runs` folder, named with the customer's
  * name and timestamp
  *
+ * The delay time between requests is saved in a file called `delay-time-in-seconds.txt` in the
+ * packages/utils folder. It should contain a single line, with the delay time in seconds.
+ * If the file doesn't exist, it will use the default delay time.
+ * @see shared/duration.ts for more details
+ *
  * Execute this with:
  * $ npm run coverage-assessment
  */
@@ -45,17 +50,19 @@ const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const sdk = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
+  timeout: 600_000,
 });
 const api = axios.create({ baseURL: apiUrl });
 
 // query stuff
-const delayTime = dayjs.duration(5, "seconds");
-const numberOfParallelExecutions = 10;
+const minimumDelayTime = dayjs.duration(1, "seconds"); // to get to 1s need to be ABSOLUTELY sure the infra will take it (scale it out if needed)
+const defaultDelayTime = dayjs.duration(10, "seconds");
+const numberOfParallelExecutions = 5;
 const confirmationTime = dayjs.duration(10, "seconds");
 
 // output stuff
 const csvHeader =
-  "patientId,firstName,lastName,state,downloadStatus,docCount,convertStatus,fhirResourceCount,fhirResourceDetails\n";
+  "externalId,patientId,firstName,lastName,state,downloadStatus,docCount,convertStatus,fhirResourceCount,fhirResourceDetails\n";
 const getOutputFileName = buildGetDirPathInside(`coverage-assessment`);
 const patientsWithErrors: string[] = [];
 
@@ -95,7 +102,9 @@ async function main() {
     async patientId => {
       await getCoverageForPatient(patientId, outputFileName, errorFileName, log);
       log(`>>> Progress: ${++ptIndex}/${patientIdsToQuery.length} patients complete`);
-      await sleep(delayTime.asMilliseconds());
+      const delayTime = getDelayTime({ log, minimumDelayTime, defaultDelayTime });
+      log(`... ... sleeping for ${delayTime} ms`);
+      await sleep(delayTime);
     },
     { numberOfParallelExecutions }
   );
@@ -134,15 +143,15 @@ async function getCoverageForPatient(
 ) {
   try {
     const [patient, docQueryStatus, fhir] = await Promise.all([
-      sdk.getPatient(patientId),
-      getDocQueryStatus(cxId, patientId),
-      sdk.countPatientConsolidated(patientId),
+      executeWithNetworkRetries(() => sdk.getPatient(patientId)),
+      executeWithNetworkRetries(() => getDocQueryStatus(cxId, patientId)),
+      executeWithNetworkRetries(() => sdk.countPatientConsolidated(patientId)),
     ]);
     if (!docQueryStatus) {
       throw new Error(`Document query status not found for patient ${patientId}`);
     }
 
-    const { id, firstName, lastName } = patient;
+    const { id, firstName, lastName, externalId } = patient;
     const state = Array.isArray(patient.address) ? patient.address[0].state : patient.address.state;
 
     const { download, convert } = docQueryStatus;
@@ -156,8 +165,7 @@ async function getCoverageForPatient(
     delete resources.Patient;
     const fhirDetails = JSON.stringify(resources).replaceAll(",", " ");
 
-    // "patientId,firstName,lastName,state,downloadStatus,docCount,convertStatus,fhirResourceCount,fhirResourceDetails\n";
-    const csvRow = `${id},${firstName},${lastName},${state},${downloadStatus},${docCount},${convertStatus},${fhirCount},${fhirDetails}\n`;
+    const csvRow = `${externalId},${id},${firstName},${lastName},${state},${downloadStatus},${docCount},${convertStatus},${fhirCount},${fhirDetails}\n`;
     fs.appendFileSync(outputFileName, csvRow);
     log(`>>> Done doc query for patient ${patient.id}...`);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
