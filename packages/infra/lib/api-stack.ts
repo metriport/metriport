@@ -56,17 +56,19 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { BucketsStack } from "./buckets-stack";
+import { Hl7NotificationRouterNestedStack } from "./hl7-notification-router-nested-stack";
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
+  bucketsStack: BucketsStack;
 }
 
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
   public readonly alarmAction: SnsAction | undefined;
-  public readonly lambdasNestedStack: LambdasNestedStack;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -326,7 +328,23 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // General lambdas
     //-------------------------------------------
-    this.lambdasNestedStack = new LambdasNestedStack(this, "LambdasNestedStack", {
+    const {
+      lambdaLayers,
+      cdaToVisualizationLambda,
+      documentDownloaderLambda,
+      fhirToCdaConverterLambda,
+      outboundPatientDiscoveryLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
+      fhirToBundleLambda,
+      fhirConverterConnector: {
+        queue: fhirConverterQueue,
+        lambda: fhirConverterLambda,
+        bucket: fhirConverterBucket,
+      },
+      hl7v2RosterUploadLambda,
+      conversionResultNotifierLambda,
+    } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
       dbCluster,
@@ -339,24 +357,26 @@ export class APIStack extends Stack {
       featureFlagsTable,
     });
 
-    const {
-      lambdaLayers,
-      cdaToVisualizationLambda,
-      documentDownloaderLambda,
-      fhirToCdaConverterLambda,
-      outboundPatientDiscoveryLambda,
-      outboundDocumentQueryLambda,
-      outboundDocumentRetrievalLambda,
-      fhirToBundleLambda,
-      hl7NotificationRouterLambda,
-      fhirConverterConnector: {
-        queue: fhirConverterQueue,
-        lambda: fhirConverterLambda,
-        bucket: fhirConverterBucket,
-      },
-      hl7v2RosterUploadLambda,
-      conversionResultNotifierLambda,
-    } = this.lambdasNestedStack;
+    //-------------------------------------------
+    // HL7 Notification Router
+    //-------------------------------------------
+    let hl7NotificationRouterLambda: lambda.Function | undefined;
+    const outgoingHl7NotificationBucket = props.bucketsStack.outgoingHl7NotificationBucket;
+    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+      const { lambda } = new Hl7NotificationRouterNestedStack(
+        this,
+        "HL7NotificationRouterNestedStack",
+        {
+          config: props.config,
+          lambdaLayers,
+          vpc: this.vpc,
+          alarmAction: slackNotification?.alarmAction,
+          outgoingHl7NotificationBucket,
+        }
+      );
+
+      hl7NotificationRouterLambda = lambda;
+    }
 
     //-------------------------------------------
     // Patient Import
@@ -507,7 +527,6 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
-      hl7NotificationRouterLambda,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,

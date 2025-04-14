@@ -1,4 +1,4 @@
-import { CfnOutput, Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -9,7 +9,7 @@ import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
@@ -170,18 +170,6 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     if (!isSandbox(props.config)) {
-      const constructs = this.setupHl7NotificationRouterLambda({
-        lambdaLayers: this.lambdaLayers,
-        vpc: props.vpc,
-        medicalDocumentsBucket: props.medicalDocumentsBucket,
-        envType: props.config.environmentType,
-        sentryDsn: props.config.lambdasSentryDSN,
-        alarmAction: props.alarmAction,
-        featureFlagsTable: props.featureFlagsTable,
-        ...props.config.fhirToMedicalLambda,
-      });
-      this.hl7NotificationRouterLambda = constructs.hl7NotificationRouterLambda;
-
       const hl7v2RosterBucket = new s3.Bucket(this, "Hl7v2RosterBucket", {
         bucketName: props.config.hl7Notification.hl7v2RosterUploadLambda.bucketName,
         publicReadAccess: false,
@@ -201,17 +189,6 @@ export class LambdasNestedStack extends NestedStack {
         hl7v2RosterBucket,
         config: props.config,
         alarmAction: props.alarmAction,
-      });
-
-      new CfnOutput(this, "Hl7NotificationRouterQueueArn", {
-        description: "HL7 Message Router Queue ARN",
-        value: constructs.hl7NotificationRouterQueue.queueArn,
-        exportName: "Hl7NotificationRouterQueueArn",
-      });
-      new CfnOutput(this, "Hl7NotificationRouterQueueUrl", {
-        description: "HL7 Message Router Queue URL",
-        value: constructs.hl7NotificationRouterQueue.queueUrl,
-        exportName: "Hl7NotificationRouterQueueUrl",
       });
     }
   }
@@ -635,69 +612,6 @@ export class LambdasNestedStack extends NestedStack {
     fhirToBundleLambda.addToRolePolicy(bedrockPolicyStatement);
 
     return fhirToBundleLambda;
-  }
-
-  private setupHl7NotificationRouterLambda(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    medicalDocumentsBucket: s3.Bucket;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    featureFlagsTable: dynamodb.Table;
-  }): { hl7NotificationRouterLambda: Lambda; hl7NotificationRouterQueue: IQueue } {
-    const {
-      lambdaLayers,
-      vpc,
-      sentryDsn,
-      envType,
-      alarmAction,
-      medicalDocumentsBucket,
-      featureFlagsTable,
-    } = ownProps;
-
-    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
-    const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
-
-    const hl7NotificationRouterQueue = createQueue({
-      stack: this,
-      name: "Hl7NotificationRouterQueue",
-      fifo: true,
-      createDLQ: true,
-      visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
-      lambdaLayers: [lambdaLayers.shared],
-      envType,
-      alarmSnsAction: alarmAction,
-      alarmMaxAgeOfOldestMessage: Duration.minutes(5),
-      maxMessageCountAlarmThreshold: 5_000,
-      createRetryLambda: true,
-    });
-
-    const hl7NotificationRouterLambda = createLambda({
-      stack: this,
-      name: "Hl7NotificationRouter",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "hl7-notification-router",
-      envType,
-      envVars: {
-        AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
-        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      layers: [lambdaLayers.shared],
-      memory: 4096,
-      timeout: lambdaTimeout,
-      isEnableInsights: true,
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    featureFlagsTable.grantReadData(hl7NotificationRouterLambda);
-    medicalDocumentsBucket.grantReadWrite(hl7NotificationRouterLambda);
-    hl7NotificationRouterLambda.addEventSource(new SqsEventSource(hl7NotificationRouterQueue));
-
-    return { hl7NotificationRouterLambda, hl7NotificationRouterQueue };
   }
 
   /**
