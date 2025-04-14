@@ -4,6 +4,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { searchDocuments } from "@metriport/core/external/opensearch/search-documents";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
+import { generateSearchSummary } from "@metriport/core/command/search-summary/create";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
@@ -41,6 +42,26 @@ const getDocSchema = z.object({
   content: z.string().min(3).nullish(),
   output: z.enum(["fhir", "dto"]).nullish(),
 });
+
+router.post(
+  "/search-summary",
+  requestLogger,
+  patientAuthorization("query"),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const { dateFrom, dateTo, content } = getDocSchema.parse(req.query);
+
+    const documents = await searchDocuments({
+      cxId,
+      patientId,
+      dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
+      contentFilter: content ? sanitize(content) : undefined,
+    });
+
+    const summary = await generateSearchSummary(documents, content ?? "");
+    return res.status(OK).json({ summary });
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * GET /document
