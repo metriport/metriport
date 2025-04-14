@@ -8,7 +8,7 @@ import { cloneDeep } from "lodash";
 import { PatientCreateCmd } from "./create-patient";
 import { PatientMatchCmd } from "./get-patient";
 import { PatientUpdateCmd } from "./update-patient";
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 
 export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | PatientMatchCmd>(
   patient: T
