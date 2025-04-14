@@ -1683,12 +1683,17 @@ function getPanelObservations(
 ): Observation[] {
   if (!panel.result || panel.result.length === 0) return [];
 
-  return panel.result
-    .map(reference => {
-      const observationId = reference.reference?.split("/")[1];
-      return allObservations.find(obs => obs.id === observationId);
-    })
-    .filter(obs => obs !== undefined);
+  const observationResults: Observation[] = [];
+
+  panel.result.forEach(reference => {
+    const observationId = reference.reference?.split("/")[1];
+    const observation = allObservations.find(obs => obs.id === observationId);
+    if (observation) {
+      observationResults.push(observation);
+    }
+  });
+
+  return observationResults;
 }
 
 function createObservationTable(observations: Observation[]): string {
