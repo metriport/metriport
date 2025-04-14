@@ -1,8 +1,14 @@
 import { Brief, convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
+import {
+  isADHDFeatureFlagEnabledForCx,
+  isBmiFeatureFlagEnabledForCx,
+  isDermFeatureFlagEnabledForCx,
+  isLogoEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -13,7 +19,6 @@ import {
   S3Utils,
 } from "@metriport/core/external/aws/s3";
 import { wkHtmlToPdf, WkOptions } from "@metriport/core/external/wk-html-to-pdf/index";
-import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { logDuration } from "@metriport/shared/common/duration";
@@ -37,9 +42,10 @@ const region = getEnvOrFail("AWS_REGION");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const apiUrl = getEnvOrFail("API_URL");
 const dashUrl = getEnvOrFail("DASH_URL");
-const appConfigAppId = getEnvOrFail("APPCONFIG_APPLICATION_ID");
-const appConfigConfigId = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
 
 const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
@@ -72,14 +78,17 @@ export async function handler({
       `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
   );
   try {
-    const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
-    const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
-    const cxsWithNoMrLogoFeatureFlagValue = await getCxsWithNoMrLogoFeatureFlagValue();
-    const isLogoEnabled = !cxsWithNoMrLogoFeatureFlagValue.includes(cxId);
-    const cxsWithBmiFeatureFlagValue = await getCxsWithBmiFeatureFlagValue();
-    const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
-    const cxsWithDermFeatureFlagValue = await getCxsWithDermFeatureFlagValue();
-    const isDermFeatureFlagEnabled = cxsWithDermFeatureFlagValue.includes(cxId);
+    const [
+      isADHDFeatureFlagEnabled,
+      isLogoEnabled,
+      isBmiFeatureFlagEnabled,
+      isDermFeatureFlagEnabled,
+    ] = await Promise.all([
+      isADHDFeatureFlagEnabledForCx(cxId),
+      isLogoEnabledForCx(cxId),
+      isBmiFeatureFlagEnabledForCx(cxId),
+      isDermFeatureFlagEnabledForCx(cxId),
+    ]);
 
     const bundle = await getBundleFromS3(fhirFileName);
 
@@ -233,62 +242,6 @@ async function convertAndStorePdf({
     timestamp: new Date(),
   };
   log(`Done storing on S3`);
-}
-
-async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValueStringArray(
-    region,
-    appConfigAppId,
-    appConfigConfigId,
-    getEnvType(),
-    "cxsWithADHDMRFeatureFlag"
-  );
-
-  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-
-  return [];
-}
-
-async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValueStringArray(
-    region,
-    appConfigAppId,
-    appConfigConfigId,
-    getEnvType(),
-    "cxsWithBmiMrFeatureFlag"
-  );
-
-  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-
-  return [];
-}
-
-async function getCxsWithNoMrLogoFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValueStringArray(
-    region,
-    appConfigAppId,
-    appConfigConfigId,
-    getEnvType(),
-    "cxsWithNoMrLogoFeatureFlag"
-  );
-
-  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-
-  return [];
-}
-
-async function getCxsWithDermFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValueStringArray(
-    region,
-    appConfigAppId,
-    appConfigConfigId,
-    getEnvType(),
-    "cxsWithDermMrFeatureFlag"
-  );
-
-  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-
-  return [];
 }
 
 function doesMrSummaryHaveContents(html: string): boolean {

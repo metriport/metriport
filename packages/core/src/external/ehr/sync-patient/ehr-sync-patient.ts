@@ -4,6 +4,7 @@ export type ProcessSyncPatientRequest = {
   ehr: EhrSource;
   cxId: string;
   practiceId: string;
+  departmentId?: string;
   patientId: string;
   triggerDq: boolean;
 };

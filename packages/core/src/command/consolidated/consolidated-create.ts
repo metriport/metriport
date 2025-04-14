@@ -6,7 +6,7 @@ import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
+import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
@@ -19,7 +19,7 @@ import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consol
 
 dayjs.extend(duration);
 
-const AI_BRIEF_TIMEOUT = dayjs.duration(1.5, "minutes");
+const AI_BRIEF_TIMEOUT = dayjs.duration(2, "minutes");
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const TIMED_OUT = Symbol("TIMED_OUT");
 

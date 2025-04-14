@@ -12,7 +12,6 @@ import { getCQData } from "../../../external/carequality/patient";
 import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
-import { getPatientOrFail } from "../patient/get-patient";
 import { updateConversionProgress } from "./document-query";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
@@ -24,6 +23,7 @@ export async function calculateDocumentConversionStatus({
   source,
   convertResult,
   details,
+  count: countParam,
 }: {
   patientId: string;
   cxId: string;
@@ -32,26 +32,25 @@ export async function calculateDocumentConversionStatus({
   source?: string;
   convertResult: ConvertResult;
   details?: string;
+  count?: number;
 }) {
   const { log } = out(`Doc conversion status - patient ${patientId}, requestId ${requestId}`);
 
   const hasSource = isMedicalDataSource(source);
 
+  const count = countParam == undefined ? 1 : countParam;
+
   log(
     `Converted document ${docId} with status ${convertResult}, source: ${source}, ` +
-      `details: ${details}, result: ${JSON.stringify(convertResult)}`
+      `count: ${count}, details: ${details}, result: ${JSON.stringify(convertResult)}`
   );
-
-  const patient = await getPatientOrFail({ id: patientId, cxId });
-  const docQueryProgress = patient.data.documentQueryProgress;
-  log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
   if (hasSource) {
     const updatedPatient = await tallyDocQueryProgress({
-      patient: patient,
+      patient: { id: patientId, cxId },
       type: "convert",
       progress: {
-        ...(convertResult === "success" ? { successful: 1 } : { errors: 1 }),
+        ...(convertResult === "success" ? { successful: count } : { errors: count }),
       },
       requestId,
       source,
@@ -123,6 +122,7 @@ export async function calculateDocumentConversionStatus({
     const expectedPatient = await updateConversionProgress({
       patient: { id: patientId, cxId },
       convertResult,
+      count,
     });
 
     const isConversionCompleted = isProgressStatusValid({
@@ -133,7 +133,7 @@ export async function calculateDocumentConversionStatus({
 
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
-      await recreateConsolidated({ patient, context: "calculate-no-source" });
+      await recreateConsolidated({ patient: expectedPatient, context: "calculate-no-source" });
 
       processPatientDocumentRequest(
         cxId,

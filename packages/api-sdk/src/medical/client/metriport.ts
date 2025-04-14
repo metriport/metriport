@@ -368,6 +368,24 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Returns a patient based on external ID.
+   *
+   * @param externalId The external ID of the patient to be returned.
+   * @param source The source of the external ID, if required.
+   * @return The patient.
+   */
+  async getPatientByExternalId(
+    externalId: string,
+    source?: string
+  ): Promise<PatientDTO | undefined> {
+    const resp = await this.api.get(`${PATIENT_URL}/external-id`, {
+      params: { externalId, source },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data as PatientDTO;
+  }
+
+  /**
    * Searches for a patient previously created at Metriport, based on demographics.
    *
    * @return The patient if found.

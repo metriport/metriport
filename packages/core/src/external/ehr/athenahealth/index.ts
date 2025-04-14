@@ -303,9 +303,11 @@ class AthenaHealthApi {
   async getCustomFieldsForPatient({
     cxId,
     patientId,
+    departmentId,
   }: {
     cxId: string;
     patientId: string;
+    departmentId?: string;
   }): Promise<PatientCustomField[]> {
     const { debug } = out(
       `AthenaHealth getCustomFieldsForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -313,6 +315,7 @@ class AthenaHealthApi {
     const params = {
       showprivacycustomfields: "true",
       showcustomfields: "true",
+      ...(departmentId ? { departmentid: this.stripDepartmentId(departmentId) } : {}),
     };
     const queryParams = new URLSearchParams(params);
     const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
@@ -919,6 +922,12 @@ class AthenaHealthApi {
 
   stripDepartmentId(id: string) {
     return id.replace(`a-${this.practiceId}.${athenaDepartmentPrefix}-`, "");
+  }
+
+  createDepartmentId(id: string) {
+    const prefix = `a-${this.practiceId}.${athenaDepartmentPrefix}-`;
+    if (id.startsWith(prefix)) return id;
+    return `${prefix}${id}`;
   }
 
   private createVitalsData(

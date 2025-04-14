@@ -249,10 +249,7 @@ async function handleDocReferences(
             id: patientId,
             cxId,
           },
-          document: {
-            id: docRef.metriportId ?? "",
-            content: { mimeType: docRef.contentType ?? "" },
-          },
+          document: { id: docRef.metriportId ?? "" },
           s3FileName: docPath,
           s3BucketName: docLocation,
           requestId,

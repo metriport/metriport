@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.23.2",
+  "version": "1.24.1",
   "description": "",
   "main": "mock-webhook.js",
   "private": true,
@@ -22,6 +22,7 @@
     "bulk-insert": "ts-node src/bulk-insert-patients",
     "bulk-query": "ts-node src/bulk-query-patients",
     "coverage-assessment": "ts-node src/coverage-assessment",
+    "find-patients": "ts-node src/find-patients-by-demo",
     "create-medical-records": "ts-node src/customer-requests/medical-records-create",
     "get-consolidated": "ts-node src/customer-requests/get-consolidated",
     "download-docs": "ts-node src/customer-requests/download-docs",
@@ -56,6 +57,7 @@
     "@opensearch-project/opensearch": "^2.3.1",
     "@playwright/browser-chromium": "^1.39.0",
     "@playwright/browser-firefox": "^1.39.0",
+    "@streamparser/json": "^0.0.22",
     "aws-sdk": "2.1243",
     "axios": "^1.4.0",
     "commander": "^10.0.0",

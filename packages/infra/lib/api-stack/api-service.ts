@@ -42,6 +42,8 @@ type EnvSpecificSettings = {
   desiredTaskCount: number;
   maxTaskCount: number;
   memoryLimitMiB: number;
+  maxHealthyPercent: number;
+  minHealthyPercent: number;
 };
 type Settings = EnvSpecificSettings & {
   loadBalancerIdleTimeout: Duration;
@@ -52,8 +54,10 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
       desiredTaskCount: 12,
-      maxTaskCount: 16,
+      maxTaskCount: 20,
       memoryLimitMiB: 4096,
+      maxHealthyPercent: 120,
+      minHealthyPercent: 80,
     };
   }
   if (isSandbox(config)) {
@@ -61,12 +65,16 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
       desiredTaskCount: 2,
       maxTaskCount: 10,
       memoryLimitMiB: 2048,
+      maxHealthyPercent: 200,
+      minHealthyPercent: 50,
     };
   }
   return {
     desiredTaskCount: 1,
     maxTaskCount: 5,
     memoryLimitMiB: 2048,
+    maxHealthyPercent: 200,
+    minHealthyPercent: 50,
   };
 }
 function getSettings(config: EnvConfig): Settings {
@@ -111,7 +119,7 @@ export function createAPIService({
   searchEndpoint,
   searchAuth,
   searchIndexName,
-  appConfigEnvVars,
+  featureFlagsTable,
   cookieStore,
 }: {
   stack: Construct;
@@ -147,12 +155,7 @@ export function createAPIService({
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
-  appConfigEnvVars: {
-    appId: string;
-    configId: string;
-    envId: string;
-    deploymentStrategyId: string;
-  };
+  featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
 }): {
   cluster: ecs.Cluster;
@@ -188,8 +191,15 @@ export function createAPIService({
   const listenerPort = 80;
   const containerPort = 8080;
   const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
-  const { cpu, memoryLimitMiB, desiredTaskCount, maxTaskCount, loadBalancerIdleTimeout } =
-    getSettings(props.config);
+  const {
+    cpu,
+    memoryLimitMiB,
+    desiredTaskCount,
+    maxTaskCount,
+    loadBalancerIdleTimeout,
+    maxHealthyPercent,
+    minHealthyPercent,
+  } = getSettings(props.config);
   const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
     "APIFargateServiceAlb",
@@ -294,11 +304,7 @@ export function createAPIService({
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
-          // app config
-          APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-          APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-          APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
-          APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
+          FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -323,6 +329,8 @@ export function createAPIService({
       listenerPort,
       publicLoadBalancer: false,
       idleTimeout: loadBalancerIdleTimeout,
+      maxHealthyPercent,
+      minHealthyPercent,
     }
   );
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
@@ -381,6 +389,7 @@ export function createAPIService({
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -427,19 +436,11 @@ export function createAPIService({
   });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
 
-  // Setting permissions for AppConfig
   fargateService.taskDefinition.taskRole.attachInlinePolicy(
-    new iam.Policy(stack, "OSSAPIPermissionsForAppConfig", {
+    new iam.Policy(stack, "OssApiSpecialPermissions", {
       statements: [
         new iam.PolicyStatement({
-          actions: [
-            "appconfig:StartConfigurationSession",
-            "appconfig:GetLatestConfiguration",
-            "appconfig:GetConfiguration",
-            "appconfig:CreateHostedConfigurationVersion",
-            "appconfig:StartDeployment",
-            "apigateway:GET",
-          ],
+          actions: ["apigateway:GET"],
           resources: ["*"],
         }),
         new iam.PolicyStatement({
@@ -504,7 +505,7 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 80,
+    targetUtilizationPercent: 60,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });

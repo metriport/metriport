@@ -2,13 +2,15 @@ import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
+import { BucketsStack } from "../lib/buckets-stack";
+import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 import { Hl7NotificationStack } from "../lib/hl7-notification-stack";
+import { VpnStack } from "../lib/hl7-notification-stack/vpn";
+import { IHEStack } from "../lib/ihe-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar, isSandbox } from "../lib/shared/util";
-import { IHEStack } from "../lib/ihe-stack";
-import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 
 const app = new cdk.App();
 
@@ -32,7 +34,12 @@ async function deploy(config: EnvConfig) {
   new SecretsStack(app, config.secretsStackName, { env, config });
 
   //---------------------------------------------------------------------------------
-  // 2. Deploy the location services stack to initialize all geo services.
+  // 2. Deploy the buckets stack to create shared buckets.
+  //---------------------------------------------------------------------------------
+  const bucketsStack = new BucketsStack(app, "BucketsStack", { env, config });
+
+  //---------------------------------------------------------------------------------
+  // 3. Deploy the location services stack to initialize all geo services.
   //---------------------------------------------------------------------------------
   if (config.locationService) {
     new LocationServicesStack(app, config.locationService.stackName, {
@@ -42,23 +49,35 @@ async function deploy(config: EnvConfig) {
   }
 
   //---------------------------------------------------------------------------------
-  // 3. Deploy the API stack once all secrets are defined.
+  // 4. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
   new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
-  // 4. Deploy the HL7 Notification Routing stack.
+  // 5. Deploy the HL7 Notification Routing stack.
   //---------------------------------------------------------------------------------
-  if (!isSandbox(config)) {
-    new Hl7NotificationStack(app, "Hl7NotificationStack", {
+  if (!isSandbox(config) && bucketsStack.hl7NotificationBucket) {
+    const hl7NotificationStack = new Hl7NotificationStack(app, "Hl7NotificationStack", {
       env,
       config,
       version,
+      hl7NotificationBucket: bucketsStack.hl7NotificationBucket,
+    });
+
+    config.hl7Notification.vpnConfigs.forEach((config, index) => {
+      const vpnStack = new VpnStack(app, `VpnStack-${config.partnerName}`, {
+        vpnConfig: { ...config },
+        index,
+        networkStackId: "NestedNetworkStack",
+        description: `VPN Configuration for routing HL7 messages from ${config.partnerName}`,
+      });
+
+      vpnStack.addDependency(hl7NotificationStack);
     });
   }
 
   //---------------------------------------------------------------------------------
-  // 5. Deploy the IHE stack. Lambdas for IHE Inbound, and IHE API Gateway.
+  // 6. Deploy the IHE stack. Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
   if (config.iheGateway) {
     new IHEStack(app, "IHEStack", {
@@ -69,7 +88,7 @@ async function deploy(config: EnvConfig) {
   }
 
   //---------------------------------------------------------------------------------
-  // 6. Deploy the Connect widget stack.
+  // 7. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
   if (!isSandbox(config)) {
     new ConnectWidgetStack(app, config.connectWidget.stackName, {

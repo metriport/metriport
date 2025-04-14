@@ -1,5 +1,9 @@
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import {
+  isCarequalityEnabled,
+  isCommonwellEnabled,
+} from "@metriport/core/command/feature-flags/domain-ffs";
+import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
@@ -14,7 +18,6 @@ import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/app-config";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
@@ -172,11 +175,15 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
+  count?: number;
+  log?: typeof console.log;
 };
 
 export async function updateConversionProgress({
   patient: { id, cxId },
   convertResult,
+  count,
+  log = out(`updateConversionProgress - patient ${id}, cxId ${cxId}`).log,
 }: UpdateResult): Promise<Patient> {
   const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -186,9 +193,13 @@ export async function updateConversionProgress({
       transaction,
     });
 
+    const docQueryProgress = patient.data.documentQueryProgress;
+    log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
+
     const documentQueryProgress = calculateConversionProgress({
       patient,
       convertResult,
+      count,
     });
 
     const updatedPatient = {

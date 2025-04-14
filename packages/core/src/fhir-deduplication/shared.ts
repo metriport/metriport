@@ -361,9 +361,6 @@ export function extractNpi(identifiers: Identifier[] | undefined): string | unde
   return npiIdentifier?.value;
 }
 
-/**
- * @deprecated - use the one from core/external/fhir/coding.ts
- */
 export const unknownCoding = {
   system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
   code: "UNK",

@@ -2,7 +2,6 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
-import { VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
 
 const IPSEC_1 = "ipsec.1";
 
@@ -45,7 +44,7 @@ export class NetworkStack extends cdk.NestedStack {
 
     const networkAcl = new ec2.NetworkAcl(this, "VpnAccessibleMllpServerNacl", {
       vpc,
-      subnetSelection: { subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME },
+      subnetSelection: { subnets: vpc.privateSubnets },
     });
 
     // Ephemeral ports to allow for TCP handshakes with ECR
@@ -70,13 +69,7 @@ export class NetworkStack extends cdk.NestedStack {
      * Read more about needing to set the dependency here:
      * https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/CfnVPNGatewayRoutePropagation.html
      * */
-
-    // Enable route propagation for each of our private subnets back out to the vgw
-    const vpnAccessibleSubnets = vpc.selectSubnets({
-      subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
-    }).subnets;
-
-    vpnAccessibleSubnets.forEach((subnet, index) => {
+    vpc.privateSubnets.forEach((subnet, index) => {
       const routePropagation = new ec2.CfnVPNGatewayRoutePropagation(
         this,
         `RouteTablePropagation${index}`,
@@ -87,6 +80,16 @@ export class NetworkStack extends cdk.NestedStack {
       );
 
       routePropagation.node.addDependency(vgwAttachment);
+    });
+
+    new cdk.CfnOutput(this, "NetworkAclId", {
+      value: networkAcl.networkAclId,
+      exportName: `NestedNetworkStack-NetworkAclId`,
+    });
+
+    new cdk.CfnOutput(this, "VgwId", {
+      value: vgw.ref,
+      exportName: `NestedNetworkStack-VgwId`,
     });
 
     this.output = {

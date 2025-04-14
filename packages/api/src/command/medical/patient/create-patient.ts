@@ -14,7 +14,7 @@ import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { PatientWithIdentifiers, attachPatientIdentifiers, getPatientByDemo } from "./get-patient";
+import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
 import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
 
