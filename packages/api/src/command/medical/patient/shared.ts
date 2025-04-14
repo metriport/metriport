@@ -8,7 +8,6 @@ import { cloneDeep } from "lodash";
 import { PatientCreateCmd } from "./create-patient";
 import { PatientMatchCmd } from "./get-patient";
 import { PatientUpdateCmd } from "./update-patient";
-import { BadRequestError } from "@metriport/shared";
 
 export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | PatientMatchCmd>(
   patient: T
@@ -25,11 +24,7 @@ export function validate<T extends PatientCreateCmd | PatientUpdateCmd | Patient
   patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriod(pid.period));
 
   if (patient.dob) {
-    try {
-      if (!validateDateOfBirth(patient.dob)) return false;
-    } catch (error) {
-      throw new BadRequestError(`Invalid date of birth`);
-    }
+    if (!validateDateOfBirth(patient.dob)) return false;
   }
   return true;
 }
