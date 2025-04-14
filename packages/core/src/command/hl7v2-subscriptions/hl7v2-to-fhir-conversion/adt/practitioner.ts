@@ -24,7 +24,7 @@ export function getParticipantsFromAdt(adt: Hl7Message): AdtParticipants | undef
   if (practitioners.length < 1) return undefined;
   // TODO 2883: Add other practitioners from the ADT message, if available
 
-  const references = buildParticipantReferences(practitioners.map(p => p.id));
+  const references = practitioners.map(p => buildEncounterParticipant({ practitionerId: p.id }));
   return {
     practitioners,
     references,
@@ -42,7 +42,7 @@ function getAttendingDoctorDetailsFromAdt(adt: Hl7Message): Partial<Practitioner
   const name = buildHumanName(family, givenNames, prefix, suffix);
 
   return {
-    name,
+    name: [name],
   };
 }
 
@@ -51,15 +51,13 @@ function buildHumanName(
   given: string[],
   prefix?: string | undefined,
   suffix?: string | undefined
-): HumanName[] {
-  return [
-    {
-      ...(prefix ? { prefix: [prefix] } : undefined),
-      family,
-      given,
-      ...(suffix ? { suffix: [suffix] } : undefined),
-    },
-  ];
+): HumanName {
+  return {
+    ...(prefix ? { prefix: [prefix] } : undefined),
+    family,
+    given,
+    ...(suffix ? { suffix: [suffix] } : undefined),
+  };
 }
 
 export function buildPractitioner(params: Partial<Practitioner>): PractitionerWithId {
@@ -71,14 +69,4 @@ export function buildPractitioner(params: Partial<Practitioner>): PractitionerWi
     ...(name ? { name } : undefined),
     ...rest,
   };
-}
-
-export function buildParticipantReferences(ids: string[]): EncounterParticipant[] {
-  const participants: EncounterParticipant[] = [];
-
-  for (const id of ids) {
-    participants.push(buildEncounterParticipant({ practitionerId: id }));
-  }
-
-  return participants;
 }

@@ -1,26 +1,18 @@
 import { Hl7Message } from "@medplum/core";
 import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
 import { buildPatientReference } from "../../../../external/fhir/shared/references";
-import { MessageType } from "../msh";
+import { MessageType, getMessageTypeOrFail } from "../msh";
 import { getAdmitReason } from "./condition";
 import { getLocationFromAdt } from "./location";
-import {
-  AdtPatientClass,
-  DEFAULT_ENCOUNTER_CLASS,
-  adtToFhirEncounterClassMap,
-  isAdtPatientClass,
-} from "./mappings";
+import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass } from "./mappings";
 import { getParticipantsFromAdt } from "./practitioner";
-import { createEncounterId, getPatientClassCode, getPeriodFromPatientVisit } from "./utils";
+import { createEncounterId, getPatientClassCode, getEncounterPeriod } from "./utils";
 
-export function mapEncounterAndRelatedResources(
-  adt: Hl7Message,
-  messageType: MessageType,
-  patientId: string
-): Resource[] {
+export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: string): Resource[] {
+  const messageType = getMessageTypeOrFail(adt);
   const status = getPatientStatus(messageType);
-  const encounterClass = getClassFromPatientVisit(adt);
-  const period = getPeriodFromPatientVisit(adt);
+  const encounterClass = getEncounterClass(adt);
+  const period = getEncounterPeriod(adt);
   const participants = getParticipantsFromAdt(adt);
 
   const admitReason = getAdmitReason(adt, patientId);
@@ -72,28 +64,22 @@ function getPatientStatus(messageType: MessageType): NonNullable<Encounter["stat
   }
 }
 
-function getClassFromPatientVisit(adt: Hl7Message): Coding {
+/**
+ * Maps an HL7 ADT Patient Class code to a FHIR R4 Encounter class code.
+ *
+ * @returns {Coding} - The corresponding FHIR Encounter class coding.
+ */
+function getEncounterClass(adt: Hl7Message): Coding {
   const patientClassCode = getPatientClassCode(adt);
 
   if (!patientClassCode || !isAdtPatientClass(patientClassCode)) {
     return DEFAULT_ENCOUNTER_CLASS;
   }
-
-  return mapAdtPatientClassToFhirEncounterClass(patientClassCode as AdtPatientClass);
-}
-
-/**
- * Maps an HL7 ADT Patient Class code to a FHIR R4 Encounter class code.
- *
- * @param {AdtPatientClass} adtPatientClass - The HL7 ADT Patient Class code.
- * @returns {Coding} - The corresponding FHIR Encounter class coding.
- */
-function mapAdtPatientClassToFhirEncounterClass(adtPatientClass: AdtPatientClass): Coding {
-  const fhirClass = adtToFhirEncounterClassMap[adtPatientClass];
+  const encounterClass = adtToFhirEncounterClassMap[patientClassCode];
 
   return {
-    code: fhirClass.code,
-    display: fhirClass.display,
+    code: encounterClass.code,
+    display: encounterClass.display,
     system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
   };
 }

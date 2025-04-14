@@ -1,10 +1,11 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { BundleWithEntry, buildBundleFromResources } from "../../../external/fhir/shared/bundle";
 import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extensions/doc-id-extension";
 import { capture, out } from "../../../util";
-import { convertAdtNotificationToFhir } from "./adt";
+import { mapEncounterAndRelatedResources } from "./adt/encounter";
 import { getMessageTypeOrFail } from "./msh";
 import { buildHl7MessageFileKey } from "./shared";
 
@@ -27,7 +28,7 @@ export function convertHl7v2MessageToFhir({
   const { log } = out(`hl7v2 to fhir - cx: ${cxId}, pt: ${patientId}`);
   log("Beginning conversion.");
 
-  const startedAt = Date.now();
+  const startedAt = new Date();
   const messageType = getMessageTypeOrFail(hl7Message);
   const filePath = buildHl7MessageFileKey({
     cxId,
@@ -38,9 +39,9 @@ export function convertHl7v2MessageToFhir({
   });
 
   if (messageType.code === "ADT") {
-    const resources = convertAdtNotificationToFhir(hl7Message, messageType, patientId);
+    const resources = mapEncounterAndRelatedResources(hl7Message, patientId);
     const bundle = buildBundleFromResources({ type: "collection", resources });
-    const duration = Date.now() - startedAt;
+    const duration = elapsedTimeFromNow(startedAt);
 
     log(`Conversion completed in ${duration} ms`);
     return addHl7SourceExtension(bundle, filePath);

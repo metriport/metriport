@@ -1,7 +1,7 @@
 import { Hl7Message, Hl7Segment } from "@medplum/core";
 import { Coding, Encounter } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { buildPeriod } from "../../../../external/fhir/shared/timestamps";
+import { buildPeriod } from "../../../../external/fhir/shared/datetime";
 import { uuidv7 } from "../../../../util/uuid-v7";
 import {
   getOptionalValueFromField,
@@ -23,7 +23,10 @@ type HumanNameDetails = {
   prefix: string | undefined;
 };
 
-export function getPeriodFromPatientVisit(adt: Hl7Message): Encounter["period"] | undefined {
+/**
+ * Gets period from the Patient Visit (PV1) segment.
+ */
+export function getEncounterPeriod(adt: Hl7Message): Encounter["period"] | undefined {
   const pv1Segment = adt.getSegment("PV1");
   if (!pv1Segment) return undefined;
 

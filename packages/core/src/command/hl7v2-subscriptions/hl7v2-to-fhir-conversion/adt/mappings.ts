@@ -1,5 +1,3 @@
-import { Coding } from "@medplum/fhirtypes";
-
 const adtPatientClass = ["B", "C", "E", "I", "N", "O", "P", "R", "U"] as const;
 export type AdtPatientClass = (typeof adtPatientClass)[number];
 
@@ -7,12 +5,11 @@ export function isAdtPatientClass(code: string): code is AdtPatientClass {
   return adtPatientClass.includes(code as AdtPatientClass);
 }
 
-type CodingWithCodeAndDisplay = Coding & {
+type CodingWithCodeAndDisplay = {
   code: string;
   display: string;
 };
 
-// TODO 2883: Not sure this is a good class for default
 export const DEFAULT_ENCOUNTER_CLASS: CodingWithCodeAndDisplay = {
   code: "AMB",
   display: "ambulatory",
