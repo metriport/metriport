@@ -648,11 +648,11 @@ function createHba1cFromObservationVitalsSection(observations: Observation[]): {
     return !!observationDisplay;
   });
 
-  const observationsLast5Years = hba1cObservations.filter(observation => {
+  const observationsLast2Years = hba1cObservations.filter(observation => {
     return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
   });
 
-  const observationsSortedByDate = observationsLast5Years.sort((a, b) => {
+  const observationsSortedByDate = observationsLast2Years.sort((a, b) => {
     return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
   });
 
@@ -940,7 +940,7 @@ function createWeightComoborbidities(
       ${removeDuplicate
         .map(condition => {
           const recorder = getPractitionerFromRecorderId(condition.recorderId, practitioners);
-          const location = getLocationFromEncounters(condition.id, encounters, locations);
+          const location = getLocationFromEncounterDiagnosis(condition.id, encounters, locations);
           return `
             <tr>
               <td>${condition.name}</td>
@@ -963,7 +963,7 @@ function createWeightComoborbidities(
   return createSection("Weight-related Comorbidities", conditionTableContents);
 }
 
-function getLocationFromEncounters(
+function getLocationFromEncounterDiagnosis(
   conditionId: string | undefined,
   encounters: Encounter[],
   locations: Location[]
@@ -1688,7 +1688,7 @@ function getPanelObservations(
       const observationId = reference.reference?.split("/")[1];
       return allObservations.find(obs => obs.id === observationId);
     })
-    .filter((obs): obs is Observation => obs !== undefined);
+    .filter(obs => obs !== undefined);
 }
 
 function createObservationTable(observations: Observation[]): string {
