@@ -12,6 +12,9 @@ import {
 } from "../../../util/constants";
 import { isCodeableConcept, isUsefulDisplay, isValidCoding } from "../codeable-concept";
 
+export const LOINC_CODE_REGEX = /^[a-zA-Z0-9]{3,8}-\d{1}$/;
+export const SNOMED_CODE_REGEX = /^[0-9]{6,18}$/;
+
 export function sortCodings(bundle: Bundle<Resource>): Bundle<Resource> {
   const updatedBundle = cloneDeep(bundle);
   updatedBundle.entry?.forEach(entry => {
@@ -54,6 +57,37 @@ export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConc
       : undefined),
     coding: sortedCodings,
   };
+}
+
+export function normalizeCoding(coding: Coding): Coding {
+  const normCoding = cloneDeep(coding);
+  if (!normCoding.system) return normCoding;
+  if (!normCoding.code) {
+    return normCoding.display
+      ? { system: normCoding.system, display: normCoding.display }
+      : { system: normCoding.system };
+  }
+
+  // Validate SNOMED code. If it's invalid, but matches LOINC, reassing system to LOINC. Otherwise, set code to UNK
+  if (normCoding.system === SNOMED_URL) {
+    if (!SNOMED_CODE_REGEX.test(normCoding.code)) {
+      if (LOINC_CODE_REGEX.test(normCoding.code)) {
+        normCoding.system = LOINC_URL;
+        return normCoding;
+      } else if (normCoding.display) {
+        return { display: normCoding.display };
+      }
+    }
+  }
+
+  // Validate LOINC code, and set code to UNK if it's invalid
+  if (normCoding.system === LOINC_URL) {
+    if (!LOINC_CODE_REGEX.test(normCoding.code) && normCoding.display) {
+      return { display: normCoding.display };
+    }
+  }
+
+  return normCoding;
 }
 
 // TODO: 2626 - Improve sorting for codes from the same system
