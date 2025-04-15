@@ -47,8 +47,7 @@ export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConc
   if (!concept.coding) return concept;
   const codings = concept.coding;
   const normalizedCodings = codings.flatMap(normalizeCoding);
-  const filteredCodings =
-    normalizedCodings.length > 1 ? normalizedCodings.filter(isValidCoding) : normalizedCodings;
+  const filteredCodings = ensureAtLeastOneValidCoding(normalizedCodings);
   const sortedCodings = [...filteredCodings].sort((a, b) => rankCoding(a) - rankCoding(b));
   const replacementText = sortedCodings.find(c => c.display && isUsefulDisplay(c.display))?.display;
 
@@ -59,6 +58,15 @@ export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConc
       : undefined),
     coding: sortedCodings,
   };
+}
+
+// We don't want to remove the only coding because that might render the resource invalid.
+function ensureAtLeastOneValidCoding(codings: Coding[]): Coding[] {
+  const primaryCoding = codings[0];
+  if (!primaryCoding || codings.length <= 1) return codings;
+
+  const validCodings = codings.filter(isValidCoding);
+  return validCodings.length > 0 ? validCodings : [primaryCoding];
 }
 
 export function normalizeCoding(coding: Coding): Coding {
