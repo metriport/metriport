@@ -70,7 +70,6 @@ describe("normalizeCodeableConcept", () => {
     const normalized = normalizeCodeableConcept(concept);
     expect(normalized.coding).toHaveLength(1);
     expect(normalized.coding?.[0]).toEqual({ system: CPT_URL, code: "456", display: "Cpt Term" });
-    expect(normalized.coding?.[1]).toEqual({ system: SNOMED_URL });
   });
 
   it("should not set text if highest priority coding has no display", () => {
