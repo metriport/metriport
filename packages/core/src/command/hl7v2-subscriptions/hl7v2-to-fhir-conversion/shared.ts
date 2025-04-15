@@ -4,9 +4,18 @@ import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
+import { JSON_FILE_EXTENSION } from "../../../util/mime";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
 import { getPatientIdsOrFail } from "./adt/utils";
 import { getMessageDatetime } from "./msh";
+
+type Hl7FileKeyParams = {
+  cxId: string;
+  patientId: string;
+  timestamp: string;
+  messageType: string;
+  messageCode: string;
+};
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
@@ -136,12 +145,10 @@ export function buildHl7MessageFileKey({
   timestamp,
   messageType,
   messageCode,
-}: {
-  cxId: string;
-  patientId: string;
-  timestamp: string;
-  messageType: string;
-  messageCode: string;
-}) {
+}: Hl7FileKeyParams) {
   return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
+}
+
+export function buildHl7MessageFhirBundleFileKey(params: Hl7FileKeyParams) {
+  return `${buildHl7MessageFileKey(params)}${JSON_FILE_EXTENSION}`;
 }
