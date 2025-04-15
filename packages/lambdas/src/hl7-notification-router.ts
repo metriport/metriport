@@ -13,5 +13,5 @@ export async function handler(params: Hl7Notification): Promise<void> {
     context: "hl7-notification-router-cloud.execute",
   });
 
-  new Hl7NotificationRouterDirect().execute(params);
+  await new Hl7NotificationRouterDirect().execute(params);
 }

@@ -98,7 +98,6 @@ export class MllpStack extends cdk.NestedStack {
       })
     );
 
-    // Create Fargate Service
     const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
       cpu: fargateCpu,
       memoryLimitMiB: fargateMemoryLimitMiB,
