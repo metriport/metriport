@@ -45,8 +45,8 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
 }
 
 /**
- * Infers the Encounter status from the message type.
- * i.e. ADT_A01 => in-progress
+ * Infers the Encounter status from the message trigger event type.
+ * i.e. A01 => in-progress
  *
  * TODO: See if we can get the status from the ADT message itself
  * TODO: Handle more message types
@@ -55,9 +55,9 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
  */
 function getPatientStatus(messageType: Hl7MessageIdentifier): NonNullable<Encounter["status"]> {
   switch (messageType.triggerEvent) {
-    case "ADT_A01":
+    case "A01":
       return "in-progress";
-    case "ADT_A03":
+    case "A03":
       return "finished";
     default:
       return "unknown";
