@@ -90,7 +90,6 @@ export class MllpStack extends cdk.NestedStack {
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
     });
 
-    // Create Fargate Service
     const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
       cpu: fargateCpu,
       memoryLimitMiB: fargateMemoryLimitMiB,

@@ -53,6 +53,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
         const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
         const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
+        Sentry.setExtras({ cxId, patientId, messageType, messageCode });
 
         s3Utils
           .uploadFile({
@@ -65,7 +66,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
               messageCode,
             }),
             file: Buffer.from(asString(message)),
-            contentType: "application/json",
+            contentType: "text/plain",
           })
           .catch(e => {
             logger.log(`S3 upload failed: ${e}`);
