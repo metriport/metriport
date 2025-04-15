@@ -6,7 +6,7 @@ import { BundleWithEntry, buildBundleFromResources } from "../../../external/fhi
 import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extensions/doc-id-extension";
 import { capture, out } from "../../../util";
 import { mapEncounterAndRelatedResources } from "./adt/encounter";
-import { getMessageTypeOrFail } from "./msh";
+import { getHl7MessageIdentifierOrFail } from "./msh";
 import { buildHl7MessageFileKey } from "./shared";
 
 export type Hl7ToFhirParams = {
@@ -29,16 +29,16 @@ export function convertHl7v2MessageToFhir({
   log("Beginning conversion.");
 
   const startedAt = new Date();
-  const messageType = getMessageTypeOrFail(hl7Message);
+  const msgIdentifier = getHl7MessageIdentifierOrFail(hl7Message);
   const filePath = buildHl7MessageFileKey({
     cxId,
     patientId,
     timestamp: timestampString,
-    messageType: messageType.structure,
-    messageCode: messageType.code,
+    messageType: msgIdentifier.triggerEvent,
+    messageCode: msgIdentifier.messageType,
   });
 
-  if (messageType.code === "ADT") {
+  if (msgIdentifier.messageType === "ADT") {
     const resources = mapEncounterAndRelatedResources(hl7Message, patientId);
     const bundle = buildBundleFromResources({ type: "collection", resources });
     const duration = elapsedTimeFromNow(startedAt);
@@ -48,12 +48,12 @@ export function convertHl7v2MessageToFhir({
   }
 
   const msg = "HL7 message type isn't supported";
-  log(`${msg} ${messageType.code}. Skipping conversion.`);
+  log(`${msg} ${msgIdentifier.messageType}. Skipping conversion.`);
 
   const extraProps = {
     patientId,
     cxId,
-    messageType: JSON.stringify(messageType),
+    messageType: JSON.stringify(msgIdentifier),
   };
 
   capture.message(msg, {

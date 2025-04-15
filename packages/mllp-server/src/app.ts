@@ -5,7 +5,7 @@ import { Hl7Server } from "@medplum/hl7";
 import { Hl7Message } from "@medplum/core";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
-import { getMessageTypeOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import { getHl7MessageIdentifierOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/node";
@@ -43,12 +43,12 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
         const { cxId, patientId } = unpackPidField(pid);
 
-        const messageType = getMessageTypeOrFail(message);
+        const msgIdentifier = getHl7MessageIdentifierOrFail(message);
         Sentry.setExtras({
           cxId,
           patientId,
-          messageType: messageType.code,
-          messageCode: messageType.structure,
+          messageType: msgIdentifier.messageType,
+          messageCode: msgIdentifier.triggerEvent,
         });
 
         // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
@@ -62,8 +62,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
               cxId,
               patientId,
               timestamp,
-              messageType: messageType.code,
-              messageCode: messageType.structure,
+              messageType: msgIdentifier.messageType,
+              messageCode: msgIdentifier.triggerEvent,
             }),
             file: Buffer.from(asString(message)),
             contentType: "text/plain",

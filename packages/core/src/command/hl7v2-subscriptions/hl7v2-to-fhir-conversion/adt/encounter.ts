@@ -1,7 +1,7 @@
 import { Hl7Message } from "@medplum/core";
 import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
 import { buildPatientReference } from "../../../../external/fhir/shared/references";
-import { MessageType, getMessageTypeOrFail } from "../msh";
+import { Hl7MessageIdentifier, getHl7MessageIdentifierOrFail } from "../msh";
 import { getAdmitReason } from "./condition";
 import { getLocationFromAdt } from "./location";
 import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass } from "./mappings";
@@ -9,8 +9,8 @@ import { getParticipantsFromAdt } from "./practitioner";
 import { createEncounterId, getPatientClassCode, getEncounterPeriod } from "./utils";
 
 export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: string): Resource[] {
-  const messageType = getMessageTypeOrFail(adt);
-  const status = getPatientStatus(messageType);
+  const msgIdentifier = getHl7MessageIdentifierOrFail(adt);
+  const status = getPatientStatus(msgIdentifier);
   const encounterClass = getEncounterClass(adt);
   const period = getEncounterPeriod(adt);
   const participants = getParticipantsFromAdt(adt);
@@ -53,8 +53,8 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
  *
  * @see {@link https://hl7.org/fhir/R4/valueset-encounter-status.html}
  */
-function getPatientStatus(messageType: MessageType): NonNullable<Encounter["status"]> {
-  switch (messageType.structure) {
+function getPatientStatus(messageType: Hl7MessageIdentifier): NonNullable<Encounter["status"]> {
+  switch (messageType.triggerEvent) {
     case "ADT_A01":
       return "in-progress";
     case "ADT_A03":

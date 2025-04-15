@@ -7,47 +7,29 @@ import {
 } from "./shared";
 
 const MSH_9_MESSAGE_TYPE = 9;
-const MSH_9_CODE_IDENTIFIER = 1;
-const MSH_9_TRIGGER_EVENT_IDENTIFIER = 2;
-const MSH_9_STRUCTURE_IDENTIFIER = 3;
 
-export type MessageType = {
-  code: string;
-  structure: string;
+export type Hl7MessageIdentifier = {
+  messageType: string;
+  triggerEvent: string;
 };
 
-export function getMessageTypeOrFail(hl7Message: Hl7Message): MessageType {
+export function getHl7MessageIdentifierOrFail(hl7Message: Hl7Message): Hl7MessageIdentifier {
   const mshSegment = getSegmentByNameOrFail(hl7Message, "MSH");
+  const messageType = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 1);
+  const triggerEvent = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 2);
+  const messageStructure = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 3);
 
-  const messageCode = getOptionalValueFromSegment(
-    mshSegment,
-    MSH_9_MESSAGE_TYPE,
-    MSH_9_CODE_IDENTIFIER
-  );
-  const messageStructure = getOptionalValueFromSegment(
-    mshSegment,
-    MSH_9_MESSAGE_TYPE,
-    MSH_9_STRUCTURE_IDENTIFIER
-  );
-  if (!messageCode) {
-    throw new MetriportError("Message type code not found in MSH segment");
+  if (!messageType) {
+    throw new MetriportError("Message type not found in MSH segment");
   }
 
-  if (messageStructure) {
-    return { code: messageCode, structure: messageStructure };
+  const derivedTriggerEvent = triggerEvent ?? messageStructure?.split("_")[1];
+
+  if (!derivedTriggerEvent) {
+    throw new MetriportError("Trigger event not found in MSH segment");
   }
 
-  const triggerEvent = getOptionalValueFromSegment(
-    mshSegment,
-    MSH_9_MESSAGE_TYPE,
-    MSH_9_TRIGGER_EVENT_IDENTIFIER
-  );
-
-  if (!triggerEvent) {
-    throw new MetriportError("Message type structure not found in MSH segment");
-  }
-
-  return { code: messageCode, structure: `${messageCode}_${triggerEvent}` };
+  return { messageType, triggerEvent: derivedTriggerEvent };
 }
 
 export function getMessageDatetime(msg: Hl7Message): string | undefined {
