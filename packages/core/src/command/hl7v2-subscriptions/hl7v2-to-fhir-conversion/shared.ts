@@ -5,7 +5,8 @@ import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
-import { getPotentialIdentifiers } from "./adt/utils";
+import { getPatientIdsOrFail } from "./adt/utils";
+import { getMessageDatetime } from "./msh";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
@@ -50,12 +51,14 @@ export function getRequiredValueFromMessage(
   const value = getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
   if (!value) {
     // TODO 2883: Need a more universal way to get the message identifiers that aren't exclusive to ADTs
-    const ids = getPotentialIdentifiers(msg);
+    const patientIds = getPatientIdsOrFail(msg);
+    const datetime = getMessageDatetime(msg);
     throw new MetriportError("Missing required value", undefined, {
-      msg: JSON.stringify(ids),
+      ids: JSON.stringify(patientIds),
       targetSegmentName,
       fieldIndex,
       componentIndex,
+      datetime,
     });
   }
 
@@ -78,10 +81,12 @@ export function getSegmentByNameOrFail(msg: Hl7Message, targetSegmentName: strin
   const segment = msg.getSegment(targetSegmentName);
   if (!segment) {
     // TODO 2883: Need a more universal way to get the message identifiers that aren't exclusive to ADTs
-    const ids = getPotentialIdentifiers(msg);
+    const patientIds = getPatientIdsOrFail(msg);
+    const datetime = getMessageDatetime(msg);
     throw new MetriportError("Missing required segment", undefined, {
-      msg: JSON.stringify(ids),
+      ids: JSON.stringify(patientIds),
       targetSegmentName,
+      datetime,
     });
   }
   return segment;

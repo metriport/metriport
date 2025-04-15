@@ -1,6 +1,10 @@
 import { Hl7Message } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
-import { getOptionalValueFromSegment, getSegmentByNameOrFail } from "./shared";
+import {
+  getOptionalValueFromMessage,
+  getOptionalValueFromSegment,
+  getSegmentByNameOrFail,
+} from "./shared";
 
 const MSH_9_MESSAGE_TYPE = 9;
 const MSH_9_CODE_IDENTIFIER = 1;
@@ -44,4 +48,8 @@ export function getMessageTypeOrFail(hl7Message: Hl7Message): MessageType {
   }
 
   return { code: messageCode, structure: `${messageCode}_${triggerEvent}` };
+}
+
+export function getMessageDatetime(msg: Hl7Message): string | undefined {
+  return getOptionalValueFromMessage(msg, "MSH", 7, 1);
 }
