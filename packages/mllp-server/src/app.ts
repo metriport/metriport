@@ -9,6 +9,7 @@ import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
+import { buildHl7NotificationRouter } from "@metriport/core/command/hl7-notification/hl7-notification-router-factory";
 import { buildS3Key, unpackPidField, withErrorHandling } from "./utils";
 
 initSentry();
@@ -46,7 +47,12 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
         const { cxId, patientId } = unpackPidField(pid);
 
-        log("TODO: Send message to queue - see next PR");
+        await buildHl7NotificationRouter().execute({
+          cxId,
+          patientId,
+          message: asString(message),
+          messageReceivedTimestamp: timestamp,
+        });
 
         connection.send(message.buildAck());
 
