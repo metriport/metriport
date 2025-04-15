@@ -13,5 +13,5 @@ export async function handler(params: Hl7Notification): Promise<void> {
     context: "hl7-notification-webhook-sender-cloud.execute",
   });
 
-  new Hl7NotificationWebhookSenderDirect().execute(params);
+  await new Hl7NotificationWebhookSenderDirect().execute(params);
 }
