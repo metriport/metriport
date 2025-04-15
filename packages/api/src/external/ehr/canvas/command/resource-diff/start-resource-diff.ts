@@ -1,4 +1,4 @@
-import { buildEhrStartResourceDiffHandler } from "@metriport/core/external/ehr/resource-diff/start/ehr-start-resource-diff-factory";
+import { buildEhrStartResourceDiffHandler } from "@metriport/core/external/ehr/resource-diff/steps/start/ehr-start-resource-diff-factory";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
