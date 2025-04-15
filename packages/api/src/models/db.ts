@@ -36,7 +36,6 @@ import { PatientModel } from "./medical/patient";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
-import { ResourceMappingReversedModel } from "./resource-mapping-reversed";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 
@@ -66,7 +65,6 @@ const models: ModelSetup[] = [
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
-  ResourceMappingReversedModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
