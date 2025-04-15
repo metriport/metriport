@@ -4,6 +4,10 @@ export interface Hl7NotificationConfig {
   };
   incomingMessageBucketName: string;
   outgoingMessageBucketName: string;
+  notificationRouterQueue: {
+    arn: string;
+    url: string;
+  };
   vpnConfigs: Hl7NotificationVpnConfig[];
   mllpServer: {
     fargateCpu: number;
