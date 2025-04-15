@@ -46,7 +46,9 @@ function normalizeResource(resource: Resource): void {
 export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConcept {
   if (!concept.coding) return concept;
   const codings = concept.coding;
-  const filteredCodings = codings.length > 1 ? codings.filter(isValidCoding) : codings;
+  const normalizedCodings = codings.flatMap(normalizeCoding);
+  const filteredCodings =
+    normalizedCodings.length > 1 ? normalizedCodings.filter(isValidCoding) : normalizedCodings;
   const sortedCodings = [...filteredCodings].sort((a, b) => rankCoding(a) - rankCoding(b));
   const replacementText = sortedCodings.find(c => c.display && isUsefulDisplay(c.display))?.display;
 
