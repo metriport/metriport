@@ -1,5 +1,5 @@
 import { sleep } from "@metriport/shared";
-import { fetchOrReplaceBundle } from "../../../api/fetch-or-replace-bundle";
+import { fetchBundle } from "../../../api/fetch-bundle";
 import { getSupportedResourcesByEhr } from "../../resource-dfff-shared";
 import { EhrRefreshBundleHandler, RefreshBundleRequest } from "./ehr-refresh-resource-bundle";
 
@@ -9,7 +9,7 @@ export class EhrRefreshBundleLocal implements EhrRefreshBundleHandler {
   async refreshBundle({ ehr, cxId, practiceId, patientId }: RefreshBundleRequest): Promise<void> {
     const supportedResources = getSupportedResourcesByEhr(ehr);
     for (const resourceType of supportedResources) {
-      await fetchOrReplaceBundle({
+      await fetchBundle({
         ehr,
         cxId,
         practiceId,

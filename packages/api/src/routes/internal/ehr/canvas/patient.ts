@@ -5,7 +5,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
-import { fetchOrReplaceCanvasBundle } from "../../../../external/ehr/canvas/command/resource-diff/fetch-or-replace-bundle";
+import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/resource-diff/fetch-bundle";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
@@ -55,7 +55,7 @@ router.post(
 );
 
 /**
- * GET /internal/ehr/canvas/patient/fetch-or-replace-bundle
+ * GET /internal/ehr/canvas/patient/fetch-bundle
  *
  * Fetches the bundle for the canvas patient by resource type
  * @param req.query.resourceType The resource type to fetch (optional, all resources if not provided)
@@ -63,7 +63,7 @@ router.post(
  * @returns Bundle
  */
 router.get(
-  "/fetch-or-replace-bundle",
+  "/bundle",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -76,7 +76,7 @@ router.get(
         resourceType,
       });
     }
-    const bundle = await fetchOrReplaceCanvasBundle({
+    const bundle = await fetchCanvasBundle({
       cxId,
       canvasPracticeId,
       canvasPatientId,

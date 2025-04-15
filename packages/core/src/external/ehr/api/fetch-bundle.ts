@@ -27,7 +27,7 @@ export type FetchBundleParams = {
  * @param resourceType - The resource type.
  * @param useExistingBundle - Whether to use the existing bundle.
  */
-export async function fetchOrReplaceBundle({
+export async function fetchBundle({
   ehr,
   cxId,
   practiceId,
@@ -35,7 +35,7 @@ export async function fetchOrReplaceBundle({
   resourceType,
   useExistingBundle,
 }: FetchBundleParams): Promise<Bundle> {
-  const { log, debug } = out(`Ehr fetchOrReplaceBundle - cxId ${cxId}`);
+  const { log, debug } = out(`Ehr fetchBundle - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
@@ -44,14 +44,14 @@ export async function fetchOrReplaceBundle({
     resourceType,
     useExistingBundle: useExistingBundle.toString(),
   });
-  const fetchOrReplaceBundleUrl = `/internal/ehr/${ehr}/patient/fetch-or-replace-bundle?${queryParams.toString()}`;
+  const fetchBundleUrl = `/internal/ehr/${ehr}/patient/bundle?${queryParams.toString()}`;
   try {
-    const response = await api.get(fetchOrReplaceBundleUrl);
-    if (!response.data) throw new Error(`No body returned from ${fetchOrReplaceBundleUrl}`);
-    debug(`${fetchOrReplaceBundleUrl} resp: ${JSON.stringify(response.data)}`);
+    const response = await api.get(fetchBundleUrl);
+    if (!response.data) throw new Error(`No body returned from ${fetchBundleUrl}`);
+    debug(`${fetchBundleUrl} resp: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {
-    const msg = `Failure while fetching or replacing bundle @ Ehr`;
+    const msg = `Failure while fetching bundle @ Ehr`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
@@ -60,8 +60,8 @@ export async function fetchOrReplaceBundle({
       patientId,
       resourceType,
       useExistingBundle,
-      url: fetchOrReplaceBundleUrl,
-      context: "ehr.fetchOrReplaceBundle",
+      url: fetchBundleUrl,
+      context: "ehr.fetchBundle",
     });
   }
 }

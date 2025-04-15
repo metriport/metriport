@@ -10,7 +10,7 @@ import { getPatientMappingOrFail } from "../../../../../command/mapping/patient"
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { createCanvasClient } from "../../shared";
 
-export type FetchOrReplaceCanvasBundleParams = {
+export type FetchCanvasBundleParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
@@ -19,14 +19,14 @@ export type FetchOrReplaceCanvasBundleParams = {
   useExistingBundle?: boolean;
 };
 
-export async function fetchOrReplaceCanvasBundle({
+export async function fetchCanvasBundle({
   cxId,
   canvasPracticeId,
   canvasPatientId,
   api,
   resourceType,
   useExistingBundle = false,
-}: FetchOrReplaceCanvasBundleParams): Promise<Bundle> {
+}: FetchCanvasBundleParams): Promise<Bundle> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
