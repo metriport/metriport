@@ -77,6 +77,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
+    "@medplum/core": "^3.2.33",
     "@medplum/fhirtypes": "^2.2.10",
     "@tsconfig/recommended": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",
