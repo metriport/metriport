@@ -1,5 +1,5 @@
 import { sleep } from "@metriport/shared";
-import { updateBundle } from "../../bundle/update-bundle";
+import { updateBundle as updateBundleOnS3 } from "../../bundle/update-bundle";
 import { BundleType } from "../../resource-dfff-shared";
 import { computeResourceDiff } from "../../utils";
 import {
@@ -15,7 +15,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
       const { ehr, cxId, metriportPatientId, ehrPatientId, existingResources, newResource } = param;
       const matchedResourceIds = computeResourceDiff({ existingResources, newResource });
       if (matchedResourceIds.length > 0) {
-        await updateBundle({
+        await updateBundleOnS3({
           ehr,
           cxId,
           metriportPatientId,

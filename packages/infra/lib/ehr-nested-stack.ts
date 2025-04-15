@@ -3,6 +3,7 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -15,6 +16,7 @@ const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(1); // 60 patients/min
 const waitTimeStartResourceDiff = Duration.seconds(1); // 60 patients/min
 const waitTimeComputeResourceDiff = Duration.seconds(1); // 60 patients/min
+const waitTimeRefreshBundle = Duration.seconds(1); // 60 patients/min
 
 function settings() {
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
@@ -75,7 +77,7 @@ function settings() {
     waitTime: waitTimeStartResourceDiff,
   };
   const ComputeResourceDiffLambdaTimeout = waitTimeComputeResourceDiff.plus(Duration.minutes(5));
-  const ComputeResourceDiff: QueueAndLambdaSettings = {
+  const computeResourceDiff: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiff",
     entry: "ehr-Compute-resource-diff",
     lambda: {
@@ -93,11 +95,31 @@ function settings() {
     },
     waitTime: waitTimeComputeResourceDiff,
   };
+  const RefreshBundleLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(5));
+  const refreshBundle: QueueAndLambdaSettings = {
+    name: "EhrRefreshBundle",
+    entry: "ehr-refresh-bundle",
+    lambda: {
+      memory: 1024,
+      batchSize: 1,
+      timeout: RefreshBundleLambdaTimeout,
+      reportBatchItemFailures: true,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      maxMessageCountAlarmThreshold: 15_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(RefreshBundleLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    waitTime: waitTimeRefreshBundle,
+  };
   return {
     syncPatient,
     elationLinkPatient,
     startResourceDiff,
-    ComputeResourceDiff,
+    computeResourceDiff,
+    refreshBundle,
   };
 }
 
@@ -140,13 +162,24 @@ export class EhrNestedStack extends NestedStack {
   readonly elationLinkPatientQueue: Queue;
   readonly startResourceDiffLambda: Lambda;
   readonly startResourceDiffQueue: Queue;
-  readonly ComputeResourceDiffLambda: Lambda;
-  readonly ComputeResourceDiffQueue: Queue;
+  readonly computeResourceDiffLambda: Lambda;
+  readonly computeResourceDiffQueue: Queue;
+  readonly refreshBundleLambda: Lambda;
+  readonly refreshBundleQueue: Queue;
+  readonly ehrBundleBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: EhrNestedStackProps) {
     super(scope, id, props);
 
     this.terminationProtection = true;
+
+    const ehrBundleBucket = new s3.Bucket(this, "EhrBundleBucket", {
+      bucketName: props.config.ehrBundleBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+    });
+    this.ehrBundleBucket = ehrBundleBucket;
 
     const syncPatient = this.setupSyncPatient({
       lambdaLayers: props.lambdaLayers,
@@ -178,15 +211,28 @@ export class EhrNestedStack extends NestedStack {
     this.startResourceDiffLambda = startResourceDiff.lambda;
     this.startResourceDiffQueue = startResourceDiff.queue;
 
-    const ComputeResourceDiff = this.setupComputeResourceDiff({
+    const computeResourceDiff = this.setupComputeResourceDiff({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     });
-    this.ComputeResourceDiffLambda = ComputeResourceDiff.lambda;
-    this.ComputeResourceDiffQueue = ComputeResourceDiff.queue;
+    this.computeResourceDiffLambda = computeResourceDiff.lambda;
+    this.computeResourceDiffQueue = computeResourceDiff.queue;
+
+    const refreshBundle = this.setupRefreshBundle({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+    this.refreshBundleLambda = refreshBundle.lambda;
+    this.refreshBundleQueue = refreshBundle.queue;
+
+    this.computeResourceDiffQueue.grantSendMessages(this.startResourceDiffLambda);
+    this.ehrBundleBucket.grantWrite(this.computeResourceDiffLambda);
   }
 
   private setupSyncPatient(ownProps: {
@@ -386,7 +432,66 @@ export class EhrNestedStack extends NestedStack {
         createRetryLambda,
       },
       waitTime,
-    } = settings().ComputeResourceDiff;
+    } = settings().computeResourceDiff;
+
+    const queue = createQueue({
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      visibilityTimeout,
+      maxReceiveCount,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+      alarmMaxAgeOfOldestMessage,
+      maxMessageCountAlarmThreshold,
+      createRetryLambda,
+    });
+
+    const lambda = createLambda({
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: memory,
+      timeout: timeout,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
+
+    return { lambda, queue };
+  }
+
+  private setupRefreshBundle(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      name,
+      entry,
+      lambda: { memory, timeout, batchSize, reportBatchItemFailures },
+      queue: {
+        visibilityTimeout,
+        maxReceiveCount,
+        alarmMaxAgeOfOldestMessage,
+        maxMessageCountAlarmThreshold,
+        createRetryLambda,
+      },
+      waitTime,
+    } = settings().refreshBundle;
 
     const queue = createQueue({
       stack: this,

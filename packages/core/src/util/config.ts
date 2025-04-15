@@ -163,17 +163,17 @@ export class Config {
   static getEhrSyncPatientQueueUrl(): string {
     return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
   }
-  static getEhrRefreshBundleQueueUrl(): string {
-    return getEnvVarOrFail("EHR_REFRESH_BUNDLE_QUEUE_URL");
-  }
   static getElationLinkPatientQueueUrl(): string {
     return getEnvVarOrFail("ELATION_LINK_PATIENT_QUEUE_URL");
   }
-  static getEhrBundleBucketName(): string {
-    return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
-  }
   static getEhrStartResourceDiffQueueUrl(): string {
     return getEnvVarOrFail("EHR_START_RESOURCE_DIFF_QUEUE_URL");
+  }
+  static getEhrRefreshBundleQueueUrl(): string {
+    return getEnvVarOrFail("EHR_REFRESH_BUNDLE_QUEUE_URL");
+  }
+  static getEhrBundleBucketName(): string {
+    return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
   }
   static getEhrComputeResourceDiffQueueUrl(): string {
     return getEnvVarOrFail("EHR_COMPUTE_RESOURCE_DIFF_QUEUE_URL");

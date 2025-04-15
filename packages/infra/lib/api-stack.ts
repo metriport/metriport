@@ -370,8 +370,9 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       startResourceDiffLambda: ehrStartResourceDiffLambda,
       startResourceDiffQueue: ehrStartResourceDiffQueue,
-      ComputeResourceDiffLambda: ehrComputeResourceDiffLambda,
-      ComputeResourceDiffQueue: ehrComputeResourceDiffQueue,
+      refreshBundleLambda: ehrRefreshBundleLambda,
+      refreshBundleQueue: ehrRefreshBundleQueue,
+      ehrBundleBucket,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
       lambdaLayers,
@@ -490,9 +491,10 @@ export class APIStack extends Stack {
       patientImportLambda: patientImportParseLambda,
       patientImportBucket,
       ehrSyncPatientQueue,
-      ehrStartResourceDiffQueue,
-      ehrComputeResourceDiffQueue,
       elationLinkPatientQueue,
+      ehrStartResourceDiffQueue,
+      ehrRefreshBundleQueue,
+      ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
@@ -579,7 +581,7 @@ export class APIStack extends Stack {
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrStartResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrComputeResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrRefreshBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
@@ -590,6 +592,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    medicalDocumentsBucket.grantRead(ehrStartResourceDiffLambda);
 
     createDocQueryChecker({
       lambdaLayers,

@@ -5,7 +5,7 @@ import {
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../command/consolidated/consolidated-get";
-import { fetchBundle } from "../../../api/fetch-bundle";
+import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
 import { getSupportedResourcesByEhr } from "../../resource-dfff-shared";
 import { buildEhrComputeResourceDiffHandler } from "../compute/ehr-compute-resource-diff-factory";
 import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
@@ -50,7 +50,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
       ];
     });
     for (const resourceType of resourceTypes) {
-      const existingResourcesBundle = await fetchBundle({
+      const existingResourcesBundle = await fetchBundleFromApi({
         ehr,
         cxId,
         practiceId,
