@@ -1,4 +1,5 @@
 import { Hl7Notification } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender";
+import { Hl7NotificationWebhookSenderDirect } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-direct";
 import { capture } from "./shared/capture";
 
 // Keep this as early on the file as possible
@@ -12,5 +13,5 @@ export async function handler(params: Hl7Notification): Promise<void> {
     context: "hl7-notification-webhook-sender-cloud.execute",
   });
 
-  console.log("TODO: Send message to queue - see next PR");
+  new Hl7NotificationWebhookSenderDirect().execute(params);
 }

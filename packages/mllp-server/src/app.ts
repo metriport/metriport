@@ -3,6 +3,7 @@ dotenv.config();
 
 import { Hl7Message } from "@medplum/core";
 import { Hl7Server } from "@medplum/hl7";
+import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
