@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { fetchCanvasMetriportOnlyBundle } from "../../../external/ehr/canvas/command/resource-diff/fetch-metriport-only-bundle";
+import { fetchCanvasMetriportOnlyBundle } from "../../../external/ehr/canvas/command/bundle/fetch-metriport-only-bundle";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";

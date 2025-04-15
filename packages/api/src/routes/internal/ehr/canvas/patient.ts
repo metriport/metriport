@@ -5,7 +5,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
-import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/resource-diff/fetch-bundle";
+import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/fetch-bundle";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
@@ -55,7 +55,7 @@ router.post(
 );
 
 /**
- * GET /internal/ehr/canvas/patient/fetch-bundle
+ * GET /internal/ehr/canvas/patient/bundle
  *
  * Fetches the bundle for the canvas patient by resource type
  * @param req.query.resourceType The resource type to fetch (optional, all resources if not provided)
@@ -72,7 +72,7 @@ router.get(
     const resourceType = getFromQueryOrFail("resourceType", req);
     const useExistingBundle = getFromQueryAsBoolean("useExistingBundle", req);
     if (!isSupportedCanvasDiffResource(resourceType)) {
-      throw new BadRequestError("Resource type is not supported for resource diff", undefined, {
+      throw new BadRequestError("Resource type is not supported for bundle", undefined, {
         resourceType,
       });
     }

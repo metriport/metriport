@@ -69,8 +69,6 @@ export const isSupportedCanvasDiffResource = (
   return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
 };
 
-type MakeRequestParams<T> = MakeRequestParamsInEhr<T> & { useFhir?: boolean };
-
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceCustomApi: AxiosInstance;
@@ -382,20 +380,18 @@ class CanvasApi {
     metriportPatientId,
     canvasPatientId,
     resourceType,
-    extraParams,
     useExistingBundle = true,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
-    extraParams?: Record<string, string>;
     useExistingBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
       `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
-    const params = { ...(extraParams ?? {}), patient: `Patient/${canvasPatientId}` };
+    const params = { patient: `Patient/${canvasPatientId}` };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
@@ -537,7 +533,7 @@ class CanvasApi {
     additionalInfo,
     debug,
     useFhir = false,
-  }: MakeRequestParams<T>): Promise<T> {
+  }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
     return await makeRequest<T>({
       ehr: EhrSources.canvas,
