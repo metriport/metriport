@@ -2,6 +2,8 @@ import { CodeableConcept } from "@medplum/fhirtypes";
 import { CPT_URL, ICD_10_URL, LOINC_URL, RXNORM_URL, SNOMED_URL } from "../../../../util/constants";
 import { normalizeCodeableConcept } from "../coding";
 
+const snomedExample = "1234567";
+
 describe("normalizeCodeableConcept", () => {
   it("should return concept unchanged when no coding array present", () => {
     const concept: CodeableConcept = {
@@ -13,9 +15,9 @@ describe("normalizeCodeableConcept", () => {
   it("should sort codings based on system priority", () => {
     const concept: CodeableConcept = {
       coding: [
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: snomedExample, display: "Snomed Term" },
         { system: RXNORM_URL, code: "456", display: "Rxnorm Term" },
-        { system: LOINC_URL, code: "789", display: "Loinc Term" },
+        { system: LOINC_URL, code: "12345-1", display: "Loinc Term" },
       ],
     };
 
@@ -34,7 +36,7 @@ describe("normalizeCodeableConcept", () => {
   it("should set text to highest priority coding display if no text exists", () => {
     const concept: CodeableConcept = {
       coding: [
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: snomedExample, display: "Snomed Term" },
         { system: CPT_URL, code: "456", display: "Cpt Term" },
       ],
     };
@@ -43,23 +45,38 @@ describe("normalizeCodeableConcept", () => {
     expect(normalized.text).toBe("Cpt Term");
   });
 
-  it("should remove the coding from a known system if its code is UNK", () => {
+  it("should handle empty string codes by preserving system and display", () => {
     const concept: CodeableConcept = {
       coding: [
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
-        { system: CPT_URL, code: "UNK" },
+        { system: SNOMED_URL, code: "", display: "Snomed Term" },
+        { system: CPT_URL, code: "456", display: "Cpt Term" },
       ],
     };
 
     const normalized = normalizeCodeableConcept(concept);
-    expect(normalized.coding?.length).toEqual(1);
-    expect(normalized.text).toBe("Snomed Term");
+    expect(normalized.coding).toHaveLength(2);
+    expect(normalized.coding?.[0]).toEqual({ system: CPT_URL, code: "456", display: "Cpt Term" });
+    expect(normalized.coding?.[1]).toEqual({ system: SNOMED_URL, display: "Snomed Term" });
+  });
+
+  it("should handle empty string codes with no display", () => {
+    const concept: CodeableConcept = {
+      coding: [
+        { system: SNOMED_URL, code: "" },
+        { system: CPT_URL, code: "456", display: "Cpt Term" },
+      ],
+    };
+
+    const normalized = normalizeCodeableConcept(concept);
+    expect(normalized.coding).toHaveLength(1);
+    expect(normalized.coding?.[0]).toEqual({ system: CPT_URL, code: "456", display: "Cpt Term" });
+    expect(normalized.coding?.[1]).toEqual({ system: SNOMED_URL });
   });
 
   it("should not set text if highest priority coding has no display", () => {
     const concept: CodeableConcept = {
       coding: [
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: snomedExample, display: "Snomed Term" },
         { system: CPT_URL, code: "456" },
       ],
     };
@@ -71,7 +88,7 @@ describe("normalizeCodeableConcept", () => {
   it("should filter out invalid codings when multiple codings exist", () => {
     const concept: CodeableConcept = {
       coding: [
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: snomedExample, display: "Snomed Term" },
         { system: ICD_10_URL },
         { system: CPT_URL, code: "456", display: "Cpt Term" },
       ],
@@ -97,7 +114,7 @@ describe("normalizeCodeableConcept", () => {
     const concept: CodeableConcept = {
       coding: [
         { system: CPT_URL, code: "456", display: "Unknown" },
-        { system: SNOMED_URL, code: "123", display: "Snomed Term" },
+        { system: SNOMED_URL, code: snomedExample, display: "Snomed Term" },
       ],
     };
 
