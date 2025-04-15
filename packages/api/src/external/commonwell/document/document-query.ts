@@ -293,7 +293,7 @@ export async function internalGetDocuments({
   initiator: HieInitiator;
 }): Promise<Document[]> {
   const context = "cw.queryDocument";
-  const { log } = out(`CW internalGetDocuments - M patient ${patient.id}`);
+  const { log, debug } = out(`CW internalGetDocuments - M patient ${patient.id}`);
 
   const cwData = patient.data.externalData.COMMONWELL;
 
@@ -315,7 +315,7 @@ export async function internalGetDocuments({
   try {
     const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
     reportDocQueryMetric(queryStart);
-    log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
+    debug(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 
     for (const item of queryResponse.entry) {
       if (item.content?.resourceType === documentReferenceResourceType) {

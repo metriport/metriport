@@ -1,9 +1,8 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { ConsolidatedCountResponse, MetriportMedicalApi } from "@metriport/api-sdk";
-import { DetailedConfig } from "@metriport/core/domain/document-query/trigger-and-query";
-import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-query/trigger-and-query-remote";
+import { DocumentQuery, MetriportMedicalApi } from "@metriport/api-sdk";
+import { disableWHMetadata } from "@metriport/core/domain/document-query/trigger-and-query";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { sleep } from "@metriport/core/util/sleep";
@@ -31,12 +30,16 @@ dayjs.extend(duration);
  * want to trigger document queries for, otherwise it will do it for all
  * Patients of the respective customer.
  *
+ * This is a simplified/leaner version of bulk-query-patients.ts.
+ * - this: just triggers the DQ
+ * - bulk-query-patients: triggers the DQ, waits for it to complete, and logs the results
+ *
  * This supports updating the delay time in-flight, by editing the delay-time-in-seconds.txt file.
  * @see shared/duration.ts for more details
  *
  * Execute this with:
- * $ npm run bulk-query -- --dryrun
- * $ npm run bulk-query
+ * $ ts-node src/bulk-query-patients-simplified.ts -- --dryrun
+ * $ ts-node src/bulk-query-patients-simplified.ts
  */
 
 // add patient IDs here to kick off queries for specific patient IDs
@@ -53,18 +56,15 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
   timeout: 120_000,
 });
+const apiInternal = axios.create({
+  baseURL: apiUrl,
+  timeout: 120_000,
+});
 
 // query stuff
 const minimumDelayTime = dayjs.duration(3, "seconds");
 const defaultDelayTime = dayjs.duration(10, "seconds");
-const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "10");
-const detailedConfig: DetailedConfig = {
-  patientChunkDelayJitterMs: parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000"),
-  queryPollDurationMs: 10_000,
-  maxQueryDurationMs: 71_000, // CW has a 70s timeout, so this is the maximum duration any doc query can take
-  maxDocQueryAttempts: 3,
-  minDocsToConsiderCompleted: 2,
-};
+const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "1");
 const confirmationTime = dayjs.duration(10, "seconds");
 
 // output stuff
@@ -72,7 +72,6 @@ const csvHeader =
   "patientId,firstName,lastName,state,queryAttemptCount,docCount,fhirResourceCount,fhirResourceDetails,status\n";
 const getOutputFileName = buildGetDirPathInside(`bulk-query`);
 const patientsWithErrors: string[] = [];
-const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(apiUrl);
 
 async function displayWarningAndConfirmation(
   patientCount: number | undefined,
@@ -98,22 +97,8 @@ async function queryDocsForPatient(
   log: typeof console.log
 ) {
   try {
-    let docCount = 0;
-    let totalFhirResourceCount = 0;
-    let status: "completed" | "docs-not-found" = "docs-not-found";
-    let fhirResourceTypesToCounts: ConsolidatedCountResponse = {
-      filter: { resources: "" },
-      resources: {},
-      total: 0,
-    };
     const docQueryPromise = async () =>
-      triggerAndQueryDocRefs.queryDocsForPatient({
-        cxId,
-        patientId,
-        triggerWHNotificationsToCx,
-        config: detailedConfig,
-        log,
-      });
+      triggerDocQuery(cxId, patientId, triggerWHNotificationsToCx);
     const getPatientPromise = async () => metriportAPI.getPatient(patientId);
 
     if (dryRun) {
@@ -125,38 +110,16 @@ async function queryDocsForPatient(
       return;
     }
 
-    const [patient, docQueryResult] = await Promise.all([getPatientPromise(), docQueryPromise()]);
-    const { queryComplete, docQueryAttempts } = docQueryResult;
+    await docQueryPromise();
 
-    if (queryComplete) {
-      status = "completed";
-      // get count of resulting FHIR resources
-      fhirResourceTypesToCounts = await metriportAPI.countPatientConsolidated(patientId);
-      // get total doc refs for the patient
-      const docRefs = await metriportAPI.listDocuments(patientId);
-      docCount = docRefs.documents.length;
-      for (const val of Object.values(fhirResourceTypesToCounts.resources)) {
-        totalFhirResourceCount += val;
-      }
-    }
-
-    // write line to results csv
-    const state = Array.isArray(patient.address) ? patient.address[0].state : patient.address.state;
-    fs.appendFileSync(
-      outputFileName,
-      `${patient.id},${patient.firstName},${
-        patient.lastName
-      },${state},${docQueryAttempts},${docCount},${totalFhirResourceCount},${JSON.stringify(
-        fhirResourceTypesToCounts
-      ).replaceAll(",", " ")},${status}\n`
-    );
-    log(`>>> Done doc query for patient ${patient.id} with status ${status}...`);
+    fs.appendFileSync(outputFileName, `${patientId}\n`);
+    log(`>>> Done triggering doc query for patient ${patientId}...`);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     const msg = `ERROR processing patient ${patientId}: `;
     log(msg, error.message);
     patientsWithErrors.push(patientId);
-    fs.appendFileSync(outputFileName + "_error_ids.txt", `${patientId}\n`);
+    fs.appendFileSync(outputFileName + "_error.txt", `${patientId}\n`);
     logErrorToFile(errorFileName, msg, error);
   }
 }
@@ -166,7 +129,7 @@ type Params = {
 };
 const program = new Command();
 program
-  .name("bulk-query-patients")
+  .name("bulk-query-patients-simplified")
   .description("CLI to trigger Document Queries for multiple patients.")
   .option(`--dryrun`, "Just simulate DQ without actually triggering it.")
   .showHelpAfterError();
@@ -223,7 +186,7 @@ async function main() {
 
     if (parseInt(i) < chunks.length - 1) {
       const delayTime = localGetDelay(log);
-      log(`>>> Sleeping for ${delayTime} ms before the next chunk...`);
+      log(`... ... sleeping for ${delayTime} ms before the next chunk...`);
       await sleep(delayTime);
     }
   }
@@ -242,6 +205,19 @@ async function main() {
 
 function localGetDelay(log: typeof console.log) {
   return getDelayTime({ log, minimumDelayTime, defaultDelayTime });
+}
+
+async function triggerDocQuery(
+  cxId: string,
+  patientId: string,
+  triggerWHNotifs: boolean
+): Promise<DocumentQuery | undefined> {
+  const payload = triggerWHNotifs ? {} : { metadata: disableWHMetadata };
+  const resp = await apiInternal.post(
+    `/internal/docs/query?cxId=${cxId}&patientId=${patientId}`,
+    payload
+  );
+  return resp.data.documentQueryProgress ?? undefined;
 }
 
 main();
