@@ -30,8 +30,8 @@ import { initRunsFolder, buildGetDirPathInside } from "../shared/folder";
  * 3. Run the script with ts-node src/hl7v2-notifications/convert-adt-to-fhir-local-example.ts
  */
 
-const inputFilePath = "/Users/ramilgaripov/Documents/phi/adt/suvida/apr9/apr10/";
-const fileName = "886_sample_messages.hl7";
+const inputFilePath = "";
+const fileName = "";
 const getDirPath = buildGetDirPathInside("hl7v2-conversion");
 
 async function convertAdtToFhir() {
