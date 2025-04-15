@@ -79,7 +79,7 @@ function settings() {
   const ComputeResourceDiffLambdaTimeout = waitTimeComputeResourceDiff.plus(Duration.minutes(5));
   const computeResourceDiff: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiff",
-    entry: "ehr-Compute-resource-diff",
+    entry: "ehr-compute-resource-diff",
     lambda: {
       memory: 1024,
       batchSize: 1,

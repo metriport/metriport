@@ -1,6 +1,6 @@
-import { ComputeResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff";
-import { EhrComputeResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/compute/ehr-compute-resource-diff-local";
-import { errorToString, MetriportError, ResourceDiffDirection } from "@metriport/shared";
+import { ComputeResourceDiffRequests } from "@metriport/core/external/ehr/resource-diff/steps/compute/ehr-compute-resource-diff";
+import { EhrComputeResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/steps/compute/ehr-compute-resource-diff-local";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
@@ -28,15 +28,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { ehr, cxId, patientId, newResource } = parsedBody;
+    const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, newResource } = parsedBody;
 
     const log = prefixedLog(
-      `ehr ${ehr}, cxId ${cxId}, patientId ${patientId} resourceId ${newResource.id}`
+      `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceId ${newResource.id}`
     );
     log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
     const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffLocal(waitTimeInMillis);
-    await ehrComputeResourceDiffHandler.computeResourceDiff(parsedBody);
+    await ehrComputeResourceDiffHandler.computeResourceDiff([parsedBody]);
 
     const finishedAt = new Date().getTime();
     log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -55,13 +55,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 const ehrComputeResourceDiffSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   cxId: z.string(),
-  patientId: z.string(),
+  practiceId: z.string(),
+  metriportPatientId: z.string(),
+  ehrPatientId: z.string(),
   existingResources: fhirResourceSchema.array(),
   newResource: fhirResourceSchema,
-  direction: z.nativeEnum(ResourceDiffDirection),
 });
 
-function parseBody(body?: unknown): ComputeResourceDiffRequest {
+function parseBody(body?: unknown): ComputeResourceDiffRequests[number] {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;

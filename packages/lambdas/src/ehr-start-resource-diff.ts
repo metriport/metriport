@@ -1,6 +1,6 @@
-import { StartResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/start/ehr-start-resource-diff";
-import { EhrStartResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/start/ehr-start-resource-diff-local";
-import { errorToString, MetriportError, ResourceDiffDirection } from "@metriport/shared";
+import { StartResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/steps/start/ehr-start-resource-diff";
+import { EhrStartResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/steps/start/ehr-start-resource-diff-local";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -57,7 +57,6 @@ const ehrResourceDiffSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
-  direction: z.nativeEnum(ResourceDiffDirection),
 });
 
 function parseBody(body?: unknown): StartResourceDiffRequest {

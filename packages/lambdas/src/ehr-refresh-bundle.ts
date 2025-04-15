@@ -1,5 +1,5 @@
-import { RefreshResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/refresh/ehr-refresh-resource-diff";
-import { EhrRefreshResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/refresh/ehr-refresh-resource-diff-local";
+import { EhrRefreshBundleLocal } from "@metriport/core/external/ehr/resource-diff/steps/refresh/ehr-refresh-resource-bundle-local";
+import { RefreshBundleRequest } from "@metriport/core/external/ehr/resource-diff/steps/refresh/ehr-refresh-resource-bundle";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
@@ -27,13 +27,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { ehr, cxId, patientId } = parsedBody;
+    const { ehr, cxId, practiceId, patientId } = parsedBody;
 
-    const log = prefixedLog(`ehr ${ehr}, cxId ${cxId}, patientId ${patientId}`);
+    const log = prefixedLog(
+      `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`
+    );
     log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-    const ehrResourceDiffHandler = new EhrRefreshResourceDiffLocal(waitTimeInMillis);
-    await ehrResourceDiffHandler.refreshResourceDiff(parsedBody);
+    const ehrRefreshBundleHandler = new EhrRefreshBundleLocal(waitTimeInMillis);
+    await ehrRefreshBundleHandler.refreshBundle(parsedBody);
 
     const finishedAt = new Date().getTime();
     log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -49,14 +51,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   }
 });
 
-const ehrRefreshResourceDiffSchema = z.object({
+const ehrRefreshBundleSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   cxId: z.string(),
   practiceId: z.string(),
   patientId: z.string(),
 });
 
-function parseBody(body?: unknown): RefreshResourceDiffRequest {
+function parseBody(body?: unknown): RefreshBundleRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -64,5 +66,5 @@ function parseBody(body?: unknown): RefreshResourceDiffRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return ehrRefreshResourceDiffSchema.parse(bodyAsJson);
+  return ehrRefreshBundleSchema.parse(bodyAsJson);
 }
