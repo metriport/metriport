@@ -13,7 +13,6 @@ import {
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { buildHl7NotificationRouter } from "@metriport/core/command/hl7-notification/hl7-notification-router-factory";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
@@ -57,7 +56,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           messageCode: msgType.triggerEvent,
         });
 
-        await buildHl7NotificationRouter().execute({
+        await buildHl7NotificationWebhookSender().execute({
           cxId,
           patientId,
           message: asString(message),
