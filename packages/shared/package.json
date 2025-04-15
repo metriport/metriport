@@ -23,7 +23,9 @@
     "./domain": "./dist/domain/index.js",
     "./domain/*": "./dist/domain/*.js",
     "./interface/*": "./dist/interface/*.js",
-    "./medical": "./dist/medical/index.js"
+    "./medical": "./dist/medical/index.js",
+    "./validators": "./dist/validators/index.js",
+    "./validators/*": "./dist/validators/*.js"
   },
   "typesVersions": {
     "*": {
@@ -53,6 +55,12 @@
       ],
       "medical": [
         "dist/medical/index.d.ts"
+      ],
+      "validators": [
+        "dist/validators/index.d.ts"
+      ],
+      "validators/*": [
+        "dist/validators/*"
       ]
     }
   },
