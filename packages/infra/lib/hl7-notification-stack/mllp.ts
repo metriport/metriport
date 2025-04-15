@@ -24,7 +24,8 @@ export class MllpStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
-    const { vpc, ecrRepo, incomingHl7NotificationBucket, hl7NotificationBucket } = props;
+    const { vpc, ecrRepo, incomingHl7NotificationBucket, hl7NotificationBucket, config } = props;
+    const { notificationRouterQueue } = config.hl7Notification;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
 
@@ -87,14 +88,23 @@ export class MllpStack extends cdk.NestedStack {
       },
     });
 
+    const taskRole = new iam.Role(this, "MllpServerTaskRole", {
+      assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+    });
+
+    taskRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["sqs:SendMessage"],
+        resources: [notificationRouterQueue.arn],
+      })
+    );
+
     const fargateService = new ecs.FargateService(this, "MllpServerService", {
       cluster,
       taskDefinition: new ecs.FargateTaskDefinition(this, "MllpServerTask", {
         cpu: fargateCpu,
         memoryLimitMiB: fargateMemoryLimitMiB,
-        taskRole: new iam.Role(this, "MllpServerTaskRole", {
-          assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
-        }),
+        taskRole,
       }),
       desiredCount: fargateTaskCountMin,
       vpcSubnets: {
@@ -111,6 +121,7 @@ export class MllpStack extends cdk.NestedStack {
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
         HL7_NOTIFICATION_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
+        HL7_NOTIFICATION_QUEUE_URL: notificationRouterQueue.url,
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
