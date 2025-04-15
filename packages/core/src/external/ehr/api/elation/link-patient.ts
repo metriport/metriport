@@ -32,14 +32,14 @@ export async function linkPatient({
     if (!response.data) throw new Error(`No body returned from ${linkPatientUrl}`);
     debug(`${linkPatientUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {
-    const msg = `Failure while linking patient @ Ehr`;
+    const msg = `Failure while linking patient @ Elation`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
       practiceId,
       patientId,
       url: linkPatientUrl,
-      context: "ehr.linkPatient",
+      context: "ehr.elation.linkPatient",
     });
   }
 }

@@ -1,26 +1,19 @@
 import { buildEhrStartResourceDiffHandler } from "@metriport/core/external/ehr/resource-diff/start/ehr-start-resource-diff-factory";
-import { BadRequestError } from "@metriport/shared";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 
-export type StartResourceDiffParams = {
+export type StartCanvasResourceDiffParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
-  direction: ResourceDiffDirection;
 };
 
 export async function startCanvasResourceDiff({
   cxId,
   canvasPracticeId,
   canvasPatientId,
-  direction,
-}: StartResourceDiffParams): Promise<void> {
-  if (direction !== ResourceDiffDirection.DIFF_EHR) {
-    throw new BadRequestError("This direction is not supported yet", undefined, { direction });
-  }
+}: StartCanvasResourceDiffParams): Promise<void> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -37,6 +30,5 @@ export async function startCanvasResourceDiff({
     practiceId: canvasPracticeId,
     metriportPatientId: metriportPatient.id,
     ehrPatientId: canvasPatientId,
-    direction,
   });
 }

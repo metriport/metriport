@@ -1,4 +1,3 @@
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
 export type StartResourceDiffRequest = {
@@ -7,7 +6,6 @@ export type StartResourceDiffRequest = {
   practiceId: string;
   metriportPatientId: string;
   ehrPatientId: string;
-  direction: ResourceDiffDirection;
 };
 
 export interface EhrStartResourceDiffHandler {

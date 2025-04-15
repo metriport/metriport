@@ -1,16 +1,13 @@
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { Config } from "../../../../util/config";
-import { SQSClient } from "../../../aws/sqs";
-import {
-  EhrRefreshResourceDiffHandler,
-  RefreshResourceDiffRequest,
-} from "./ehr-refresh-resource-diff";
+import { Config } from "../../../../../util/config";
+import { SQSClient } from "../../../../aws/sqs";
+import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
 
-export class EhrRefreshResourceDiffCloud implements EhrRefreshResourceDiffHandler {
+export class EhrStartResourceDiffCloud implements EhrStartResourceDiffHandler {
   private readonly sqsClient: SQSClient;
 
   constructor(
-    private readonly ehrRefreshResourceDiffQueueUrl: string,
+    private readonly ehrStartResourceDiffQueueUrl: string,
     region?: string,
     sqsClient?: SQSClient
   ) {
@@ -21,10 +18,10 @@ export class EhrRefreshResourceDiffCloud implements EhrRefreshResourceDiffHandle
     }
   }
 
-  async refreshResourceDiff(params: RefreshResourceDiffRequest): Promise<void> {
+  async startResourceDiff(params: StartResourceDiffRequest): Promise<void> {
     const { cxId } = params;
     const payload = JSON.stringify(params);
-    await this.sqsClient.sendMessageToQueue(this.ehrRefreshResourceDiffQueueUrl, payload, {
+    await this.sqsClient.sendMessageToQueue(this.ehrStartResourceDiffQueueUrl, payload, {
       fifo: true,
       messageDeduplicationId: createUuidFromText(payload),
       messageGroupId: cxId,

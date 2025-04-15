@@ -1,15 +1,11 @@
+import { isSupportedCanvasDiffResource } from "@metriport/core/external/ehr/canvas";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
-import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { isResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { z } from "zod";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
-import { computeCanvasResourceDiff } from "../../../../external/ehr/canvas/command/resource-diff/compute-resource-diff";
-import { fetchCanvasOrMetriportResources } from "../../../../external/ehr/canvas/command/resource-diff/fetch-resources";
-import { saveCanvasResourceDiff } from "../../../../external/ehr/canvas/command/resource-diff/save-resource-diff";
+import { fetchOrReplaceCanvasBundle } from "../../../../external/ehr/canvas/command/resource-diff/fetch-or-replace-bundle";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
@@ -59,99 +55,35 @@ router.post(
 );
 
 /**
- * GET /internal/ehr/canvas/patient/fetch-resources
+ * GET /internal/ehr/canvas/patient/fetch-or-replace-bundle
  *
- * Fetches the resources for the canvas patient by resource type
- * @returns Resources
+ * Fetches the bundle for the canvas patient by resource type
+ * @param req.query.resourceType The resource type to fetch (optional, all resources if not provided)
+ * @param req.query.replace Whether to replace the resources (optional, false by default)
+ * @returns Bundle
  */
 router.get(
-  "/fetch-resources",
+  "/fetch-or-replace-bundle",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const canvasPatientId = getFromQueryOrFail("patientId", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const resourceType = getFromQueryOrFail("resourceType", req);
-    const direction = getFromQueryOrFail("direction", req);
-    const useS3 = getFromQueryAsBoolean("useS3", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, { direction });
+    const useExistingBundle = getFromQueryAsBoolean("useExistingBundle", req);
+    if (!isSupportedCanvasDiffResource(resourceType)) {
+      throw new BadRequestError("Resource type is not supported for resource diff", undefined, {
+        resourceType,
+      });
     }
-    const resources = await fetchCanvasOrMetriportResources({
+    const bundle = await fetchOrReplaceCanvasBundle({
       cxId,
       canvasPracticeId,
       canvasPatientId,
       resourceType,
-      direction,
-      useS3,
+      useExistingBundle,
     });
-    return res.status(httpStatus.OK).json(resources);
-  })
-);
-
-const conputeResourceSchema = z.object({
-  newResource: fhirResourceSchema,
-  existingResources: fhirResourceSchema.array(),
-});
-
-/**
- * POST /internal/ehr/canvas/patient/compute-resource-diff
- *
- * Computes the resource diff for the canvas patient asynchronously
- * @returns 200 OK
- */
-router.post(
-  "/compute-resource-diff",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const canvasPatientId = getFromQueryOrFail("patientId", req);
-    const direction = getFromQueryOrFail("direction", req);
-    const { existingResources, newResource } = conputeResourceSchema.parse(req.body);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, { direction });
-    }
-    computeCanvasResourceDiff({
-      cxId,
-      canvasPatientId,
-      newResource,
-      existingResources,
-      direction,
-    }).catch(processAsyncError("Canvas computeCanvasResourceDiff"));
-    return res.sendStatus(httpStatus.OK);
-  })
-);
-
-const saveResourceSchema = z.object({
-  matchedResourceIds: z.string().array(),
-});
-
-/**
- * POST /internal/ehr/canvas/patient/save-resource-diff
- *
- * Saves the resource diff for the canvas patient asynchronously
- * @returns 200 OK
- */
-router.post(
-  "/save-resource-diff",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const canvasPatientId = getFromQueryOrFail("patientId", req);
-    const resourceId = getFromQueryOrFail("resourceId", req);
-    const { matchedResourceIds } = saveResourceSchema.parse(req.body);
-    const direction = getFromQueryOrFail("direction", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, { direction });
-    }
-    saveCanvasResourceDiff({
-      cxId,
-      canvasPatientId,
-      resourceId,
-      matchedResourceIds,
-      direction,
-    }).catch(processAsyncError("Canvas saveCanvasResourceDiff"));
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.OK).json(bundle);
   })
 );
 
