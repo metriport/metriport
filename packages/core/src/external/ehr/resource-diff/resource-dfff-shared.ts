@@ -1,6 +1,6 @@
 import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { S3Utils } from "../../../external/aws/s3";
+import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
 import { supportedCanvasDiffResources } from "../canvas";
 

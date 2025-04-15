@@ -41,7 +41,7 @@ import {
   FetchBundleParams,
   fetchBundleYoungerThanMaxAge,
 } from "../resource-diff/bundle/fetch-bundle";
-import { BundleType } from "../resource-diff/shared";
+import { BundleType } from "../resource-diff/resource-dfff-shared";
 import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
 
 interface CanvasApiConfig extends ApiConfig {
@@ -380,35 +380,35 @@ class CanvasApi {
   async getBundleByResourceType({
     cxId,
     metriportPatientId,
-    ehrPatientId,
+    canvasPatientId,
     resourceType,
     extraParams,
     useExistingBundle = true,
   }: {
     cxId: string;
     metriportPatientId: string;
-    ehrPatientId: string;
+    canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
     extraParams?: Record<string, string>;
     useExistingBundle?: boolean;
-  }): Promise<Bundle | undefined> {
+  }): Promise<Bundle> {
     const { debug } = out(
-      `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
+      `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
-    const params = { ...(extraParams ?? {}), patient: `Patient/${ehrPatientId}` };
+    const params = { ...(extraParams ?? {}), patient: `Patient/${canvasPatientId}` };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
       cxId,
       practiceId: this.practiceId,
-      patientId: ehrPatientId,
+      patientId: canvasPatientId,
       resourceType,
     };
     if (useExistingBundle) {
       const bundle = await this.getBundleFromS3({
         cxId,
         metriportPatientId,
-        ehrPatientId,
+        canvasPatientId,
         bundleType: BundleType.TOTAL,
         resourceType,
       });
@@ -422,7 +422,7 @@ class CanvasApi {
       if (!url) return acc;
       const fhirResourceBundle = await api.makeRequest<FhirResourceBundle>({
         cxId,
-        patientId: ehrPatientId,
+        patientId: canvasPatientId,
         s3Path: `fhir-resources-${resourceType}`,
         method: "GET",
         url,
@@ -440,7 +440,7 @@ class CanvasApi {
     await this.writeBundleToS3({
       cxId,
       metriportPatientId,
-      ehrPatientId,
+      canvasPatientId,
       bundleType: BundleType.TOTAL,
       bundle,
       resourceType,
@@ -451,18 +451,18 @@ class CanvasApi {
   async getMetriportOnlyBundleByResourceType({
     cxId,
     metriportPatientId,
-    ehrPatientId,
+    canvasPatientId,
     resourceType,
   }: {
     cxId: string;
     metriportPatientId: string;
-    ehrPatientId: string;
+    canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
   }): Promise<Bundle | undefined> {
     return this.getBundleFromS3({
       cxId,
       metriportPatientId,
-      ehrPatientId,
+      canvasPatientId,
       bundleType: BundleType.METRIPORT_ONLY,
       resourceType,
     });
@@ -559,15 +559,17 @@ class CanvasApi {
   private async getBundleFromS3({
     cxId,
     metriportPatientId,
-    ehrPatientId,
+    canvasPatientId,
     bundleType,
     resourceType,
-  }: Omit<FetchBundleParams, "ehr">): Promise<Bundle | undefined> {
+  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
+    canvasPatientId: string;
+  }): Promise<Bundle | undefined> {
     const bundleWithLastModified = await fetchBundleYoungerThanMaxAge({
       ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
-      ehrPatientId,
+      ehrPatientId: canvasPatientId,
       bundleType,
       resourceType,
     });
@@ -578,16 +580,18 @@ class CanvasApi {
   private async writeBundleToS3({
     cxId,
     metriportPatientId,
-    ehrPatientId,
+    canvasPatientId,
     bundleType,
     bundle,
     resourceType,
-  }: Omit<CreateOrReplaceBundleParams, "ehr">): Promise<void> {
+  }: Omit<CreateOrReplaceBundleParams, "ehr" | "ehrPatientId"> & {
+    canvasPatientId: string;
+  }): Promise<void> {
     return await createOrReplaceBundle({
       ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
-      ehrPatientId,
+      ehrPatientId: canvasPatientId,
       bundleType,
       bundle,
       resourceType,

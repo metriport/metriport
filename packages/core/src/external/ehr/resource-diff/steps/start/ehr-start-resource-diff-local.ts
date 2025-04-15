@@ -6,7 +6,7 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../command/consolidated/consolidated-get";
 import { fetchOrReplaceBundle } from "../../../api/fetch-or-replace-bundle";
-import { getSupportedResourcesByEhr } from "../../shared";
+import { getSupportedResourcesByEhr } from "../../resource-dfff-shared";
 import { buildEhrComputeResourceDiffHandler } from "../compute/ehr-compute-resource-diff-factory";
 import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
 

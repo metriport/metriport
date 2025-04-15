@@ -1,7 +1,7 @@
 import { sleep } from "@metriport/shared";
 import { updateBundle } from "../../bundle/update-bundle";
-import { computeResourceDiff } from "../../compute-diff";
-import { BundleType } from "../../shared";
+import { BundleType } from "../../resource-dfff-shared";
+import { computeResourceDiff } from "../../utils";
 import {
   ComputeResourceDiffRequests,
   EhrComputeResourceDiffHandler,

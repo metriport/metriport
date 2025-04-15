@@ -23,12 +23,13 @@ export async function startCanvasResourceDiff({
     cxId,
     id: existingPatient.patientId,
   });
+  const metriportPatientId = metriportPatient.id;
   const ehrResourceDiffHandler = buildEhrStartResourceDiffHandler();
   await ehrResourceDiffHandler.startResourceDiff({
     ehr: EhrSources.canvas,
     cxId,
     practiceId: canvasPracticeId,
-    metriportPatientId: metriportPatient.id,
+    metriportPatientId,
     ehrPatientId: canvasPatientId,
   });
 }

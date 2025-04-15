@@ -14,18 +14,18 @@ export type FetchOrReplaceCanvasBundleParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
+  api?: CanvasApi;
   resourceType?: SupportedCanvasDiffResource;
   useExistingBundle?: boolean;
-  api?: CanvasApi;
 };
 
 export async function fetchOrReplaceCanvasBundle({
   cxId,
   canvasPracticeId,
   canvasPatientId,
+  api,
   resourceType,
   useExistingBundle = false,
-  api,
 }: FetchOrReplaceCanvasBundleParams): Promise<Bundle> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
@@ -36,23 +36,25 @@ export async function fetchOrReplaceCanvasBundle({
     cxId,
     id: existingPatient.patientId,
   });
+  const metriportPatientId = metriportPatient.id;
   if (resourceType && !isSupportedCanvasDiffResource(resourceType)) {
-    throw new BadRequestError("Resource type is not supported for resource diff", undefined, {
+    throw new BadRequestError("Resource type is not supported for bundle", undefined, {
       resourceType,
     });
   }
+
   const bundle: Bundle = { resourceType: "Bundle", entry: [] };
   const resourceTypes = resourceType ? [resourceType] : supportedCanvasDiffResources;
+
+  const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
   for (const resourceType of resourceTypes) {
-    const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
     const resourceBundle = await canvasApi.getBundleByResourceType({
       cxId,
-      metriportPatientId: metriportPatient.id,
-      ehrPatientId: canvasPatientId,
+      metriportPatientId,
+      canvasPatientId,
       resourceType,
       useExistingBundle,
     });
-    if (!resourceBundle) continue;
     bundle.entry.push(...resourceBundle.entry);
   }
   return bundle;
