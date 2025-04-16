@@ -18,12 +18,3 @@ export const presignedUrlSchema = z
     },
     { message: "URL must be a valid S3 url" }
   );
-
-/**
- * Schema for HL7 webhook request parameters
- */
-export const hl7WebhookParamsSchema = z.object({
-  patientId: z.string().uuid(),
-  cxId: z.string().uuid(),
-  presignedUrl: presignedUrlSchema,
-});

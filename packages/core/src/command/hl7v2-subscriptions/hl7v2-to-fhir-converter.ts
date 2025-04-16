@@ -110,16 +110,13 @@ export async function convertHl7MessageToFhirAndUpload({
     try {
       await executeWithNetworkRetries(
         async () =>
-          await axios.post(
-            internalHl7RouteUrl,
-            { url: bundlePresignedUrl },
-            {
-              params: {
-                cxId,
-                patientId,
-              },
-            }
-          )
+          await axios.post(internalHl7RouteUrl, undefined, {
+            params: {
+              cxId,
+              patientId,
+              presignedUrl: bundlePresignedUrl,
+            },
+          })
       );
     } catch (err) {
       log(`Error hitting the ${INTERNAL_HL7_ENDPOINT} endpoint: - ${errorToString(err)}`);
