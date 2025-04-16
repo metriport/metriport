@@ -5,19 +5,17 @@ import { Hl7Message } from "@medplum/core";
 import { Hl7Server } from "@medplum/hl7";
 import {
   getHl7MessageTypeOrFail,
-  getMessageDatetime,
   getMessageUniqueIdentifier,
+  getOrCreateMessageDatetime,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
   buildHl7MessageFileKey,
-  formatDateToHl7,
-  getPatientIdsOrFail,
+  getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
 import { withErrorHandling } from "./utils";
@@ -42,13 +40,13 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(async ({ message }) => {
-        const timestamp = getMessageDatetime(message) ?? formatDateToHl7(new Date());
-        const messageId = getMessageUniqueIdentifier(message) ?? uuidv7();
+        const timestamp = getOrCreateMessageDatetime(message);
+        const messageId = getMessageUniqueIdentifier(message);
         log(
           `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
         );
 
-        const { cxId, patientId } = getPatientIdsOrFail(message);
+        const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
 
         const msgType = getHl7MessageTypeOrFail(message);
         Sentry.setExtras({

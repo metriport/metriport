@@ -6,7 +6,7 @@ import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
-import { getMessageDatetime } from "./msh";
+import { getMessageDatetime, getMessageUniqueIdentifier } from "./msh";
 
 type Hl7FileKeyParams = {
   messageId: string;
@@ -50,7 +50,7 @@ export function unpackPidFieldOrFail(pid: string) {
   return { cxId, patientId };
 }
 
-export function getPatientIdsOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
+export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
   const pid = getSegmentByNameOrFail(msg, "PID");
   const idComponent = pid.getComponent(3, 1);
   return unpackPidFieldOrFail(idComponent);
@@ -65,15 +65,16 @@ export function getRequiredValueFromMessage(
   const segment = getSegmentByNameOrFail(msg, targetSegmentName);
   const value = getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
   if (!value) {
-    // TODO 2883: Need a more universal way to get the message identifiers that aren't exclusive to ADTs
-    const patientIds = getPatientIdsOrFail(msg);
+    const patientIds = getCxIdAndPatientIdOrFail(msg);
     const datetime = getMessageDatetime(msg);
+    const messageId = getMessageUniqueIdentifier(msg);
     throw new MetriportError("Missing required value", undefined, {
       ids: JSON.stringify(patientIds),
       targetSegmentName,
       fieldIndex,
       componentIndex,
       datetime,
+      messageId,
     });
   }
 
@@ -95,13 +96,14 @@ export function getOptionalValueFromMessage(
 export function getSegmentByNameOrFail(msg: Hl7Message, targetSegmentName: string): Hl7Segment {
   const segment = msg.getSegment(targetSegmentName);
   if (!segment) {
-    // TODO 2883: Need a more universal way to get the message identifiers that aren't exclusive to ADTs
-    const patientIds = getPatientIdsOrFail(msg);
+    const patientIds = getCxIdAndPatientIdOrFail(msg);
     const datetime = getMessageDatetime(msg);
+    const messageId = getMessageUniqueIdentifier(msg);
     throw new MetriportError("Missing required segment", undefined, {
       ids: JSON.stringify(patientIds),
       targetSegmentName,
       datetime,
+      messageId,
     });
   }
   return segment;
