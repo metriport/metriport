@@ -10,7 +10,7 @@ import {
   Patient as PatientFhir,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -432,6 +432,13 @@ class CanvasApi {
       return paginateFhirResources(api, nextUrl, acc);
     }
     const fhirResources = await paginateFhirResources(this, resourceTypeUrl);
+    const invalidEntry = fhirResources.find(r => r.resourceType !== resourceType);
+    if (invalidEntry) {
+      throw new BadRequestError("Invalid bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: invalidEntry.resourceType,
+      });
+    }
     const bundle = createBundleFromResourceList(fhirResources);
     await this.writeBundleToS3({
       cxId,

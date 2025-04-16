@@ -62,10 +62,10 @@ export async function updateBundle({
       s3BucketName,
     });
     if (existingBundle) {
-      const findInvalidEntry = existingBundle.bundle.entry.find(
+      const invalidEntry = existingBundle.bundle.entry.find(
         entry => entry.resource.resourceType !== resource.resourceType
       );
-      if (findInvalidEntry) {
+      if (invalidEntry) {
         throw new BadRequestError("Invalid bundle existing bundle", undefined, {
           ehr,
           cxId,
@@ -73,7 +73,7 @@ export async function updateBundle({
           ehrPatientId,
           bundleType,
           resourceType,
-          existingBundleResourceType: findInvalidEntry.resource.resourceType,
+          existingBundleResourceType: invalidEntry.resource.resourceType,
         });
       }
       newBundle.entry = uniqBy([...existingBundle.bundle.entry, ...newBundle.entry], "resource.id");
