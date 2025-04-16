@@ -6,7 +6,7 @@ import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler } from "../../util";
-import { hl7WebhookParamsSchema } from "./schemas";
+import { presignedUrlSchema } from "./schemas";
 
 const router = Router();
 
@@ -31,11 +31,8 @@ router.post(
       throw new BadRequestError("presignedUrl is required in query parameters");
     }
 
-    const { presignedUrl: validatedUrl } = hl7WebhookParamsSchema.parse({
-      patientId,
-      cxId,
-      presignedUrl,
-    });
+    const validatedUrl = presignedUrlSchema.parse(presignedUrl);
+
     await processHl7FhirBundleWebhook({ cxId, patientId, presignedUrl: validatedUrl });
     return res.sendStatus(httpStatus.OK);
   })

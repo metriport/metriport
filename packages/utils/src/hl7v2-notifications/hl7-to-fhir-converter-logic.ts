@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { Hl7Message } from "@medplum/core";
 import { getMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { getPatientIdsOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/pid";
+import { getPatientIdsOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/utils";
 import { convertHl7MessageToFhirAndUpload } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-converter";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import fs from "fs";
