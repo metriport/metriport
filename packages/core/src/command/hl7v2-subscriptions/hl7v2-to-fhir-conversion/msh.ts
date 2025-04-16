@@ -13,7 +13,7 @@ export type Hl7MessageIdentifier = {
   triggerEvent: string;
 };
 
-export function getHl7MessageIdentifierOrFail(hl7Message: Hl7Message): Hl7MessageIdentifier {
+export function getHl7MessageTypeIdentifierOrFail(hl7Message: Hl7Message): Hl7MessageIdentifier {
   const mshSegment = getSegmentByNameOrFail(hl7Message, "MSH");
   const messageType = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 1);
   const triggerEvent = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 2);
@@ -34,4 +34,8 @@ export function getHl7MessageIdentifierOrFail(hl7Message: Hl7Message): Hl7Messag
 
 export function getMessageDatetime(msg: Hl7Message): string | undefined {
   return getOptionalValueFromMessage(msg, "MSH", 7, 1);
+}
+
+export function getMessageUniqueIdentifier(msg: Hl7Message): string | undefined {
+  return getOptionalValueFromMessage(msg, "MSH", 10, 1);
 }

@@ -1,12 +1,21 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
-import { getPatientIdsOrFail } from "./adt/utils";
 import { getMessageDatetime } from "./msh";
+
+type Hl7FileKeyParams = {
+  messageId: string;
+  cxId: string;
+  patientId: string;
+  timestamp: string;
+  messageType: string;
+  messageCode: string;
+};
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
@@ -39,6 +48,12 @@ export function unpackPidFieldOrFail(pid: string) {
   }
 
   return { cxId, patientId };
+}
+
+export function getPatientIdsOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
+  const pid = getSegmentByNameOrFail(msg, "PID");
+  const idComponent = pid.getComponent(3, 1);
+  return unpackPidFieldOrFail(idComponent);
 }
 
 export function getRequiredValueFromMessage(
@@ -133,15 +148,14 @@ export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): str
 export function buildHl7MessageFileKey({
   cxId,
   patientId,
+  messageId,
   timestamp,
   messageType,
   messageCode,
-}: {
-  cxId: string;
-  patientId: string;
-  timestamp: string;
-  messageType: string;
-  messageCode: string;
-}) {
-  return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
+}: Hl7FileKeyParams) {
+  return `${cxId}/${patientId}/${timestamp}_${messageId}_${messageType}_${messageCode}.hl7`;
+}
+
+export function formatDateToHl7(date: Date): string {
+  return buildDayjs(date).format("YYYYMMDDHHmmss");
 }

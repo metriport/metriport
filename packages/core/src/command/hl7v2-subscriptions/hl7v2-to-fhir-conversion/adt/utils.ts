@@ -9,7 +9,6 @@ import {
   getOptionalValueFromSegment,
   getSegmentByNameOrFail,
   mapHl7SystemNameToSystemUrl,
-  unpackPidFieldOrFail,
 } from "../shared";
 import { buildConditionCoding } from "./condition";
 
@@ -118,10 +117,4 @@ export function createEncounterId(adt: Hl7Message, patientId: string) {
   }
 
   return uuidv7();
-}
-
-export function getPatientIdsOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
-  const pid = getSegmentByNameOrFail(msg, "PID");
-  const idComponent = pid.getComponent(3, 1);
-  return unpackPidFieldOrFail(idComponent);
 }
