@@ -49,7 +49,6 @@ export class LambdasNestedStack extends NestedStack {
   readonly outboundDocumentRetrievalLambda: lambda.Function;
   readonly fhirToBundleLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
-  readonly hl7NotificationRouterLambda: Lambda | undefined;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambda: Lambda | undefined;
   readonly conversionResultNotifierLambda: lambda.Function;
