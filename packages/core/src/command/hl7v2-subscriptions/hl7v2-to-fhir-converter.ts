@@ -1,16 +1,14 @@
 import { Hl7Message } from "@medplum/core";
 import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { out } from "../../util";
 import { Config } from "../../util/config";
-import { CSV_FILE_EXTENSION, JSON_APP_MIME_TYPE } from "../../util/mime";
+import { JSON_APP_MIME_TYPE } from "../../util/mime";
 import { convertHl7v2MessageToFhir } from "./hl7v2-to-fhir-conversion";
 import { getHl7MessageIdentifierOrFail } from "./hl7v2-to-fhir-conversion/msh";
 import { buildHl7MessageFhirBundleFileKey } from "./hl7v2-to-fhir-conversion/shared";
@@ -136,12 +134,4 @@ export async function convertHl7MessageToFhirAndUpload({
 
   log("Unexpected message type: ", msgIdentifier.triggerEvent);
   return;
-}
-
-export function buildDocumentNameForHl7v2Roster(
-  hieName: string,
-  subscriptions: Hl7v2Subscription[]
-): string {
-  const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
-  return `${todaysDate}/${hieName}/${subscriptions.join("-")}${CSV_FILE_EXTENSION}`;
 }
