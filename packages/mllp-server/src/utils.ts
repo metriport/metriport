@@ -22,22 +22,6 @@ export function unpackPidField(pid: string | undefined) {
   return { cxId, patientId };
 }
 
-export function buildS3Key({
-  cxId,
-  patientId,
-  timestamp,
-  messageType,
-  messageCode,
-}: {
-  cxId: string;
-  patientId: string;
-  timestamp: string;
-  messageType: string;
-  messageCode: string;
-}) {
-  return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
-}
-
 export function withErrorHandling<T>(
   handler: (data: T) => void,
   logger: Logger
