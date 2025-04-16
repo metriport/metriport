@@ -4,7 +4,7 @@ dotenv.config();
 import { Hl7Message } from "@medplum/core";
 import { Hl7Server } from "@medplum/hl7";
 import {
-  getHl7MessageTypeIdentifierOrFail,
+  getHl7MessageTypeOrFail,
   getMessageDatetime,
   getMessageUniqueIdentifier,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
@@ -50,12 +50,12 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         const { cxId, patientId } = getPatientIdsOrFail(message);
 
-        const msgIdentifier = getHl7MessageTypeIdentifierOrFail(message);
+        const msgType = getHl7MessageTypeOrFail(message);
         Sentry.setExtras({
           cxId,
           patientId,
-          messageType: msgIdentifier.messageType,
-          messageCode: msgIdentifier.triggerEvent,
+          messageType: msgType.messageType,
+          messageCode: msgType.triggerEvent,
         });
 
         // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
@@ -70,8 +70,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
               patientId,
               timestamp,
               messageId,
-              messageType: msgIdentifier.messageType,
-              messageCode: msgIdentifier.triggerEvent,
+              messageType: msgType.messageType,
+              messageCode: msgType.triggerEvent,
             }),
             file: Buffer.from(asString(message)),
             contentType: "text/plain",

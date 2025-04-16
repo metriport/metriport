@@ -8,12 +8,12 @@ import {
 
 const MSH_9_MESSAGE_TYPE = 9;
 
-export type Hl7MessageIdentifier = {
+export type Hl7MessageType = {
   messageType: string;
   triggerEvent: string;
 };
 
-export function getHl7MessageTypeIdentifierOrFail(hl7Message: Hl7Message): Hl7MessageIdentifier {
+export function getHl7MessageTypeOrFail(hl7Message: Hl7Message): Hl7MessageType {
   const mshSegment = getSegmentByNameOrFail(hl7Message, "MSH");
   const messageType = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 1);
   const triggerEvent = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 2);
