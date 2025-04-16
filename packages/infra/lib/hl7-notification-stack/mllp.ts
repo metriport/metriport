@@ -86,19 +86,25 @@ export class MllpStack extends cdk.NestedStack {
       },
     });
 
-    const taskRole = new iam.Role(this, "MllpServerTaskRole", {
-      assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+    const fargateService = new ecs.FargateService(this, "MllpServerService", {
+      cluster,
+      taskDefinition: new ecs.FargateTaskDefinition(this, "MllpServerTask", {
+        cpu: fargateCpu,
+        memoryLimitMiB: fargateMemoryLimitMiB,
+        taskRole: new iam.Role(this, "MllpServerTaskRole", {
+          assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+        }),
+      }),
+      desiredCount: fargateTaskCountMin,
+      vpcSubnets: {
+        subnets: vpc.privateSubnets,
+      },
+      securityGroups: [mllpSecurityGroup],
     });
 
-    const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
-      cpu: fargateCpu,
-      memoryLimitMiB: fargateMemoryLimitMiB,
-      taskRole,
-    });
+    targetGroup.addTarget(fargateService);
 
-    incomingHl7NotificationBucket.grantWrite(taskDefinition.taskRole);
-
-    taskDefinition.addContainer("MllpServer", {
+    fargateService.taskDefinition.addContainer("MllpServer", {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
       secrets: secretsToECS(buildSecrets(this, props.config.hl7Notification.secrets)),
       environment: {
@@ -111,17 +117,7 @@ export class MllpStack extends cdk.NestedStack {
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
     });
 
-    const fargateService = new ecs.FargateService(this, "MllpServerService", {
-      cluster,
-      taskDefinition,
-      desiredCount: fargateTaskCountMin,
-      vpcSubnets: {
-        subnets: vpc.privateSubnets,
-      },
-      securityGroups: [mllpSecurityGroup],
-    });
-
-    targetGroup.addTarget(fargateService);
+    incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
       minCapacity: fargateTaskCountMin,
