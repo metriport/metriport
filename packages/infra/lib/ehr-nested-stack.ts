@@ -201,16 +201,6 @@ export class EhrNestedStack extends NestedStack {
     this.elationLinkPatientLambda = elationLinkPatient.lambda;
     this.elationLinkPatientQueue = elationLinkPatient.queue;
 
-    const startResourceDiff = this.setupStartResourceDiff({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-    });
-    this.startResourceDiffLambda = startResourceDiff.lambda;
-    this.startResourceDiffQueue = startResourceDiff.queue;
-
     const computeResourceDiff = this.setupComputeResourceDiff({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -221,6 +211,21 @@ export class EhrNestedStack extends NestedStack {
     this.computeResourceDiffLambda = computeResourceDiff.lambda;
     this.computeResourceDiffQueue = computeResourceDiff.queue;
 
+    this.ehrBundleBucket.grantReadWrite(this.computeResourceDiffLambda);
+
+    const startResourceDiff = this.setupStartResourceDiff({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+      computeResourceDiffQueue: this.computeResourceDiffQueue,
+    });
+    this.startResourceDiffLambda = startResourceDiff.lambda;
+    this.startResourceDiffQueue = startResourceDiff.queue;
+
+    this.computeResourceDiffQueue.grantSendMessages(this.startResourceDiffLambda);
+
     const refreshBundle = this.setupRefreshBundle({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -230,9 +235,6 @@ export class EhrNestedStack extends NestedStack {
     });
     this.refreshBundleLambda = refreshBundle.lambda;
     this.refreshBundleQueue = refreshBundle.queue;
-
-    this.computeResourceDiffQueue.grantSendMessages(this.startResourceDiffLambda);
-    this.ehrBundleBucket.grantWrite(this.computeResourceDiffLambda);
   }
 
   private setupSyncPatient(ownProps: {
@@ -359,6 +361,7 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    computeResourceDiffQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
     const {
@@ -398,6 +401,7 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        COMPUTE_RESOURCE_DIFF_QUEUE_URL: ownProps.computeResourceDiffQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
