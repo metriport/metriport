@@ -70,7 +70,7 @@ import {
   CreatePatientImportMappingCmd,
 } from "../../../command/medical/patient/patient-import/mapping/create";
 import { updatePatientImportParams } from "../../../command/medical/patient/patient-import/update-params";
-import { updatePatientImportTracking } from "../../../command/medical/patient/patient-import/update-status";
+import { updatePatientImportTracking } from "../../../command/medical/patient/patient-import/update-tracking";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
@@ -1035,7 +1035,8 @@ router.post(
  *        on this PD run.
  * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on
  *        conversion finish.
- * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
+ * @param req.query.disableWebhooks Optional: Indicates whether send webhooks, applies to both
+ *        the data pipeline and the bulk import webhooks.
  * @param req.query.dryRun Whether to simply validate or run the assessment.
  *
  */
@@ -1077,7 +1078,8 @@ router.post(
  * @param req.query.cxId The customer ID.
  * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
  * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
- * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
+ * @param req.query.disableWebhooks Optional: Indicates whether send webhooks, applies to both
+ *        the data pipeline and the bulk import webhooks.
  * @param req.query.forceStatusUpdate Optional: Indicates whether to bypass the job status validation (state machine).
  * @param req.query.dryRun Whether to simply validate or run the assessment, overrides the cx
  *                         provided one (optional, defaults to cx provided or false if none provides it).
@@ -1127,7 +1129,8 @@ router.post(
  *
  * @param req.params.id The patient import job ID.
  * @param req.query.cxId The customer ID.
- * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
+ * @param req.query.disableWebhooks Optional: Indicates whether send webhooks, applies to both
+ *        the data pipeline and the bulk import webhooks.
  */
 router.post(
   "/bulk/:id/done",
