@@ -56,6 +56,14 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           messageCode: msgType.triggerEvent,
         });
 
+<<<<<<< HEAD
+=======
+        const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
+        const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
+        const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
+        Sentry.setExtras({ cxId, patientId, messageType, messageCode });
+
+>>>>>>> e784b9c3e (feat(infra): lift sentry extras setting)
         log("TODO: Send message to queue - see next PR");
 
         connection.send(message.buildAck());
