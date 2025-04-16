@@ -38,7 +38,7 @@ export type PatientImportCreateResponse = PatientImport & {
  *
  * @param cxId - The customer ID.
  * @param facilityId - The facility ID (optional).
- * @param dryRun - Whether to simply validate the bundle or actually import it (optional, defaults to false).
+ * @param dryRun - Whether to simply validate the file or actually import it (optional, defaults to false).
  * @returns the bulk import job ID and the URL to upload the CSV file.
  * @throws BadRequestError if no facility ID is provided and there's more than one facility for the customer.
  */

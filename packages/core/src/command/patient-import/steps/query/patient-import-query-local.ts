@@ -1,4 +1,5 @@
 import { errorToString, sleep } from "@metriport/shared";
+import { randomIntBetween } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { out } from "../../../../util/log";
@@ -10,7 +11,7 @@ import { PatientImportQuery, ProcessPatientQueryRequest } from "./patient-import
 
 dayjs.extend(duration);
 
-const waitTimeBetweenPdAndDq = dayjs.duration(100, "milliseconds");
+const waitTimeBetweenPdAndDq = () => dayjs.duration(randomIntBetween(80, 120), "milliseconds");
 
 export class PatientImportQueryLocal implements PatientImportQuery {
   constructor(
@@ -23,30 +24,32 @@ export class PatientImportQueryLocal implements PatientImportQuery {
     jobId,
     rowNumber,
     patientId,
+    requestId,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,
   }: ProcessPatientQueryRequest) {
-    const { log } = out(
-      `PatientImport processPatientQuery.local - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
-    );
     try {
       await startPatientQuery({
         cxId,
         patientId,
+        requestId,
         rerunPdOnNewDemographics,
       });
-      await sleep(waitTimeBetweenPdAndDq.asMilliseconds());
+      await sleep(waitTimeBetweenPdAndDq().asMilliseconds());
       await startDocumentQuery({
         cxId,
-        jobId,
+        requestId,
         patientId,
         triggerConsolidated,
         disableWebhooks,
       });
       if (this.waitTimeAtTheEndInMillis > 0) await sleep(this.waitTimeAtTheEndInMillis);
     } catch (error) {
-      const msg = `Failure while processing patient query @ PatientImport`;
+      const { log } = out(`PatientImport processPatientQuery.local - cx ${cxId}, job ${jobId}`);
+      const msg =
+        `Failure while processing patient query @ PatientImport - row ${rowNumber}, ` +
+        `patient ${patientId}, request ${requestId}`;
       const errorMsg = errorToString(error);
       log(`${msg}. Cause: ${errorMsg}`);
       capture.error(msg, {
@@ -63,7 +66,7 @@ export class PatientImportQueryLocal implements PatientImportQuery {
         jobId,
         rowNumber,
         status: "failed",
-        reasonForCx: "internal error",
+        reasonForCx: "Internal error",
         reasonForDev: errorMsg,
         bucketName: this.patientImportBucket,
       });

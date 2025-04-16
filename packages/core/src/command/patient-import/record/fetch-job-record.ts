@@ -3,7 +3,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { JobRecord } from "../patient-import";
 import { createFileKeyJob, getS3UtilsInstance } from "../patient-import-shared";
-import { checkJobRecordExistsOrFail } from "./check-job-record-exists";
+import { checkJobRecordExists } from "./check-job-record-exists";
 
 /**
  * Returns the Job record from S3. It includes information about the bulk patient import job.
@@ -23,7 +23,7 @@ export async function fetchJobRecord({
   const key = createFileKeyJob(cxId, jobId);
   try {
     const bucketName = Config.getPatientImportBucket();
-    const fileExists = await checkJobRecordExistsOrFail({ cxId, jobId, s3BucketName: bucketName });
+    const fileExists = await checkJobRecordExists({ cxId, jobId, s3BucketName: bucketName });
     if (!fileExists) return undefined;
     const file = await s3Utils.getFileContentsAsString(bucketName, key);
     return JSON.parse(file);

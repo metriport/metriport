@@ -1,7 +1,7 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { createFilePathPatientRecords, getS3UtilsInstance } from "../patient-import-shared";
+import { createFolderNamePatientRecords, getS3UtilsInstance } from "../patient-import-shared";
 
 /**
  * Lists all patient records for a given job.
@@ -18,11 +18,10 @@ export async function listPatientRecords({
   bucketName?: string;
 }): Promise<string[]> {
   const { log } = out(`PatientImport listPatientRecords - cxId ${cxId} jobId ${jobId}`);
-  const key = createFilePathPatientRecords(cxId, jobId);
+  const key = createFolderNamePatientRecords(cxId, jobId);
   try {
     const s3Utils = getS3UtilsInstance();
     const files = await s3Utils.listObjects(bucketName, key);
-    if (!files) return [];
     return files.flatMap(file => file.Key ?? []);
   } catch (error) {
     const msg = `Failure while listing patient records @ PatientImport`;

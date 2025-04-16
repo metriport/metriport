@@ -53,13 +53,18 @@ export abstract class BaseModel<T extends Model<any, any>>
   private declare version: CreationOptional<number>;
   declare eTag: CreationOptional<string>;
 
-  static override attributes() {
+  static attributesNoVersion() {
     return {
       id: {
         type: DataTypes.UUID,
         primaryKey: true,
       },
       ...BaseModelNoId.attributes(),
+    };
+  }
+  static override attributes() {
+    return {
+      ...BaseModel.attributesNoVersion(),
       // Full definition because this determines in-memory behavior to Sequelize
       version: {
         type: DataTypes.INTEGER,

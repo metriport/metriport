@@ -30,7 +30,7 @@ export async function updateJobAtApi({
 }: {
   cxId: string;
   jobId: string;
-  status: PatientImportStatus | "completed";
+  status: PatientImportStatus;
   total?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
@@ -66,6 +66,6 @@ export async function updateJobAtApi({
 }
 
 function buildUrl(cxId: string, jobId: string) {
-  const urlParams = new URLSearchParams({ cxId, jobId });
+  const urlParams = new URLSearchParams({ cxId });
   return `/internal/patient/bulk/${jobId}?${urlParams.toString()}`;
 }

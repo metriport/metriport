@@ -1,8 +1,9 @@
 import { errorToString, MetriportError, sleep } from "@metriport/shared";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
+import { uuidv7 } from "../../../../util/uuid-v7";
 import { createPatient } from "../../api/create-patient";
-import { createPatientMapping } from "../../record/create-or-update-patient-mapping";
+import { createPatientMapping } from "../../api/create-patient-mapping";
 import { updatePatientRecord } from "../../record/create-or-update-patient-record";
 import { ProcessPatientQueryRequest } from "../query/patient-import-query";
 import { buildPatientImportQueryHandler } from "../query/patient-import-query-factory";
@@ -42,6 +43,8 @@ export class PatientImportCreateLocal implements PatientImportCreate {
         });
       }
 
+      const requestId = uuidv7();
+
       const patientId = await createPatient({
         cxId,
         facilityId,
@@ -59,7 +62,7 @@ export class PatientImportCreateLocal implements PatientImportCreate {
           jobId,
           rowNumber,
           patientId,
-          bucketName: this.patientImportBucket,
+          requestId,
         }),
       ]);
 
@@ -68,6 +71,7 @@ export class PatientImportCreateLocal implements PatientImportCreate {
         jobId,
         rowNumber,
         patientId,
+        requestId,
         rerunPdOnNewDemographics,
         triggerConsolidated,
         disableWebhooks,
@@ -86,7 +90,7 @@ export class PatientImportCreateLocal implements PatientImportCreate {
           jobId,
           rowNumber,
           status: "failed",
-          reasonForCx: "internal error",
+          reasonForCx: "Internal error",
           reasonForDev: errorMsg,
           bucketName: this.patientImportBucket,
         });

@@ -32,13 +32,14 @@ export type PatientImportUpdateStatusCmd = {
  * @param status - The new status of the job.
  * @param total - The total number of patients in the job. If provided, the `successful` and
  *                `failed` counters are reset.
+ * @param failed - The number of failed patients in the job.
  * @param forceStatusUpdate - Whether to force the status update (only to be used by internal
  *                            flows/endpoints).
  * @returns the updated job.
  * @throws BadRequestError if the status is not valid based on the current state.
  * @throws NotFoundError if the job doesn't exist.
  */
-export async function updatePatientImportStatus({
+export async function updatePatientImportTracking({
   cxId,
   jobId,
   status,
@@ -46,7 +47,7 @@ export async function updatePatientImportStatus({
   failed,
   forceStatusUpdate = false,
 }: PatientImportUpdateStatusCmd): Promise<PatientImport> {
-  const { log } = out(`updatePatientImportStatus - cxId ${cxId} jobId ${jobId}`);
+  const { log } = out(`updatePatientImportTracking - cxId ${cxId} jobId ${jobId}`);
 
   // TODO 2330 move to the model version for consistency
   const job = await getPatientImportJobOrFail({ cxId, id: jobId });
@@ -62,7 +63,7 @@ export async function updatePatientImportStatus({
 
   const jobToUpdate: PatientImport = {
     ...job,
-    status: newStatus ?? job.status,
+    status: newStatus ?? oldStatus,
   };
   if (total != undefined) {
     jobToUpdate.total = total;

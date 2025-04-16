@@ -77,10 +77,15 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   if (!patientIdRaw) throw new Error(`Missing patientId`);
   if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
 
+  const requestIdRaw = bodyAsJson.requestId;
+  if (!requestIdRaw) throw new Error(`Missing requestId`);
+  if (typeof requestIdRaw !== "string") throw new Error(`Invalid requestId`);
+
   const cxId = cxIdRaw;
   const jobId = jobIdRaw;
   const rowNumber = rowNumberRaw;
   const patientId = patientIdRaw;
+  const requestId = requestIdRaw;
   const triggerConsolidated = triggerConsolidatedRaw;
   const disableWebhooks = disableWebhooksRaw;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw;
@@ -90,6 +95,7 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
     jobId,
     rowNumber,
     patientId,
+    requestId,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,

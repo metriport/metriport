@@ -77,7 +77,7 @@ export async function storeResults({
       jobId,
       keyResult,
       keyInvalidEntries: keyInvalid,
-      context: "patient-import.validateAndParsePatientImportCsvFromS3",
+      context: "patient-import.storeResults",
     });
   }
 }

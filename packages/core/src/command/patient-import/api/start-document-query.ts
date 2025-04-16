@@ -1,4 +1,9 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import {
+  defaultOptionsRequestNotAccepted,
+  errorToString,
+  executeWithNetworkRetries,
+  MetriportError,
+} from "@metriport/shared";
 import axios from "axios";
 import { disableWHMetadata } from "../../../domain/document-query/trigger-and-query";
 import { Config } from "../../../util/config";
@@ -14,23 +19,25 @@ import { out } from "../../../util/log";
  */
 export async function startDocumentQuery({
   cxId,
-  jobId,
   patientId,
+  requestId,
   triggerConsolidated,
   disableWebhooks,
 }: {
   cxId: string;
-  jobId: string;
   patientId: string;
+  requestId: string;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
 }): Promise<void> {
   const { log } = out(`PatientImport startDocumentQuery - cxId ${cxId} patientId ${patientId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const dqUrl = buildDocumentQueryUrl(cxId, jobId, patientId, triggerConsolidated);
+  const dqUrl = buildDocumentQueryUrl({ cxId, patientId, requestId, triggerConsolidated });
   const payload = disableWebhooks ? { metadata: disableWHMetadata } : {};
   try {
-    await api.post(dqUrl, payload);
+    await executeWithNetworkRetries(() => api.post(dqUrl, payload), {
+      ...defaultOptionsRequestNotAccepted,
+    });
   } catch (error) {
     const msg = `Failure while starting document query @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -46,17 +53,21 @@ export async function startDocumentQuery({
   }
 }
 
-function buildDocumentQueryUrl(
-  cxId: string,
-  jobId: string,
-  patientId: string,
-  triggerConsolidated: boolean
-) {
+function buildDocumentQueryUrl({
+  cxId,
+  patientId,
+  requestId,
+  triggerConsolidated,
+}: {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+  triggerConsolidated: boolean;
+}) {
   const urlParams = new URLSearchParams({
     cxId,
     patientId,
-    // Sending jobId as requestId so we can find the job at the end of DQ
-    requestId: jobId,
+    requestId,
     triggerConsolidated: triggerConsolidated.toString(),
     forceQuery: "false",
   });

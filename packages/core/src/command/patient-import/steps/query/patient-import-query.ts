@@ -3,6 +3,7 @@ export type ProcessPatientQueryRequest = {
   jobId: string;
   rowNumber: number;
   patientId: string;
+  requestId: string;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
   rerunPdOnNewDemographics?: boolean | undefined;
