@@ -35,7 +35,7 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
-import { PatientImportDto, patientImportDtoFromModel } from "./dtos/patient-import";
+import { PatientImportDto, fromCreateResponseToDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
 
@@ -213,7 +213,7 @@ router.get(
  * @param req.query.facilityId The ID of the Facility the Patients should be associated with
  *        (optional if there's only one facility for the customer, fails if not provided and
  *        there's more than one facility for the customer).
- * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
+ * @param req.query.dryRun Whether to simply validate the file or actually import it (optional,
  *        defaults to false).
  * @returns an object containing the information about the bulk import job:
  * - `requestId` - the bulk import request ID
@@ -238,7 +238,7 @@ router.post(
       paramsCx: { dryRun: dryRunParam },
     });
 
-    const respPayload: PatientImportDto = patientImportDtoFromModel(patientImportResponse);
+    const respPayload: PatientImportDto = fromCreateResponseToDto(patientImportResponse);
     return res.status(httpStatus.OK).json(respPayload);
   })
 );

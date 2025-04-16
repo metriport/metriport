@@ -20,7 +20,6 @@ export async function createJobRecord(
   const key = createFileKeyJob(cxId, jobId);
   try {
     const bucketName = Config.getPatientImportBucket();
-    log(`Creating job record jobId ${jobId}, key ${key}`);
     const payload: JobRecord = {
       cxId,
       facilityId,

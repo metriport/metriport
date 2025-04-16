@@ -33,3 +33,12 @@ export const updateJobSchema = z.object({
   forceStatusUpdate: z.boolean().optional(),
 });
 export type UpdateJobSchema = z.infer<typeof updateJobSchema>;
+
+export const addPatientMappingSchema = z.object({
+  cxId: z.string(),
+  jobId: z.string(),
+  rowNumber: z.number(),
+  patientId: z.string(),
+  requestId: z.string(),
+});
+export type AddPatientMappingSchema = z.infer<typeof addPatientMappingSchema>;

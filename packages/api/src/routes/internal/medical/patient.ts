@@ -14,11 +14,11 @@ import {
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { capture } from "@metriport/core/util";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   BadRequestError,
   internalSendConsolidatedSchema,
@@ -29,7 +29,10 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
-import { updateJobSchema } from "@metriport/shared/domain/patient/patient-import/schemas";
+import {
+  addPatientMappingSchema,
+  updateJobSchema,
+} from "@metriport/shared/domain/patient/patient-import/schemas";
 import { validateNewStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -62,8 +65,12 @@ import {
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import { createPatientImport } from "../../../command/medical/patient/patient-import/create";
 import { getPatientImportJobOrFail } from "../../../command/medical/patient/patient-import/get";
+import {
+  createPatientImportMapping,
+  CreatePatientImportMappingCmd,
+} from "../../../command/medical/patient/patient-import/mapping/create";
 import { updatePatientImportParams } from "../../../command/medical/patient/patient-import/update-params";
-import { updatePatientImportStatus } from "../../../command/medical/patient/patient-import/update-status";
+import { updatePatientImportTracking } from "../../../command/medical/patient/patient-import/update-status";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
@@ -90,7 +97,6 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { parseISODate } from "../../../shared/date";
 import { getETag } from "../../../shared/http";
-import { capture } from "@metriport/core/util";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { dtoFromModel } from "../../medical/dtos/patientDTO";
@@ -827,6 +833,7 @@ router.get(
  * Kicks off patient discovery for the given patient on both CQ and CW.
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
+ * @param req.query.requestId Optional. The request ID to be used for the data pipeline execution.
  * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
  */
 router.post(
@@ -836,10 +843,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
+    const requestId = getFrom("query").optional("requestId", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const patient = await getPatientOrFail({ cxId, id });
     const facilityId = patient.facilityIds[0];
-    const requestId = uuidv7();
 
     await runOrSchedulePatientDiscoveryAcrossHies({
       patient,
@@ -1016,13 +1023,13 @@ router.post(
  * which can be triggered by a cx through the public POST /medical/v1/patient/bulk or this endpoint
  * by our team.
  *
- * Tipically used during onboarding, when we're doing a Coverage Assessment for a new customer.
+ * Typically used during onboarding, when we're doing a Coverage Assessment for a new customer.
  *
  * @param req.query.cxId The customer ID.
  * @param req.query.facilityId The ID of the Facility the Patients should be associated with
  *        (optional if there's only one facility for the customer, fails if not provided and
  *        there's more than one facility for the customer).
- * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
+ * @param req.query.dryRun Whether to simply validate the file or actually import it (optional,
  *        defaults to false).
  * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation
  *        on this PD run.
@@ -1164,7 +1171,7 @@ router.post(
     const updateParams = updateJobSchema.parse(req.body);
     capture.setExtra({ cxId, jobId });
 
-    const patientImport = await updatePatientImportStatus({
+    const patientImport = await updatePatientImportTracking({
       jobId,
       cxId,
       status: updateParams.status,
@@ -1186,8 +1193,8 @@ const detailSchema = z.enum(["info", "debug"]).optional().default("info");
  *
  * @param req.params.id The patient import job ID.
  * @param req.query.cxId The customer ID.
- * @param req.quer.debug Whether to include status detail FOR EACH PATIENT if the job if the
- *        job is `processin`, can be either `info` or `debug`. Optional, defailts to 'info'
+ * @param req.query.level Whether to include status detail FOR EACH PATIENT if the job if the
+ *        job is `processing`, can be either `info` or `debug`. Optional, defaults to 'info'.
  * @return The patient import job.
  */
 router.get(
@@ -1239,6 +1246,33 @@ router.get(
       };
       return res.status(status.OK).json(detailedResponse);
     }
+
+    return res.status(status.OK).json(patientImport);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/bulk/:id/patient-mapping",
+ *
+ * Updates the status of a bulk patient import job. To be called by the parse lambda to
+ * indicate the CSV file has been parsed and the job has been started or failed.
+ *
+ * @param req.params.id The patient import job ID.
+ * @param req.query.cxId The customer ID.
+ * @param req.query.status The new status of the job.
+ * @param req.query.forceStatusUpdate Optional: Indicates whether to bypass the job status validation (state machine).
+ */
+router.post(
+  "/bulk/:id/patient-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const jobId = getFromParamsOrFail("id", req);
+    const params = addPatientMappingSchema.parse(req.body);
+
+    const createPatientImportMappingCmd: CreatePatientImportMappingCmd = { ...params, jobId };
+    capture.setExtra(createPatientImportMappingCmd);
+
+    const patientImport = await createPatientImportMapping(createPatientImportMappingCmd);
 
     return res.status(status.OK).json(patientImport);
   })

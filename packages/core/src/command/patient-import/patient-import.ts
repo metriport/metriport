@@ -35,11 +35,6 @@ export type PatientRecord = {
   patientId?: string | undefined;
 } & (FailedPatientRecord | ParsedPatientRecord);
 
-export type PatientMapping = {
-  rowNumber: number;
-  patientId: string;
-};
-
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
 
 export type ParsedPatientBase = { rowNumber: number; raw: string };

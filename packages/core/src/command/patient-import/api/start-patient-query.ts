@@ -1,25 +1,41 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import {
+  defaultOptionsRequestNotAccepted,
+  errorToString,
+  executeWithNetworkRetries,
+  MetriportError,
+} from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 
-// TODO 2330 add TSDoc
+/**
+ * Starts the patient query for a patient, in the context of a bulk patient import.
+ *
+ * @param cxId - The ID of the customer.
+ * @param patientId - The ID of the patient.
+ * @param rerunPdOnNewDemographics - Whether to rerun patient discovery on new demographics.
+ * @throws MetriportError if the patient query fails.
+ */
 export async function startPatientQuery({
   cxId,
   patientId,
+  requestId,
   rerunPdOnNewDemographics,
 }: {
   cxId: string;
   patientId: string;
+  requestId: string;
   rerunPdOnNewDemographics?: boolean | undefined;
 }): Promise<void> {
   const { log, debug } = out(
     `PatientImport startPatientQuery - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const patientUrl = buildPatientDiscoveryUrl(cxId, patientId, rerunPdOnNewDemographics);
+  const patientUrl = buildPatientDiscoveryUrl(cxId, patientId, requestId, rerunPdOnNewDemographics);
   try {
-    const response = await api.post(patientUrl, {});
+    const response = await executeWithNetworkRetries(() => api.post(patientUrl, {}), {
+      ...defaultOptionsRequestNotAccepted,
+    });
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
     debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {
@@ -38,10 +54,12 @@ export async function startPatientQuery({
 function buildPatientDiscoveryUrl(
   cxId: string,
   patientId: string,
+  requestId: string,
   rerunPdOnNewDemographics?: boolean | undefined
 ) {
   const urlParams = new URLSearchParams({
     cxId,
+    requestId,
     ...(rerunPdOnNewDemographics
       ? { rerunPdOnNewDemographics: rerunPdOnNewDemographics.toString() }
       : undefined),

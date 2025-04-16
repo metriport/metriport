@@ -34,9 +34,9 @@ export class PatientImportModel extends BaseModel<PatientImportModel> implements
   declare reason: string | undefined;
   declare startedAt: Date | undefined;
   declare finishedAt: Date | undefined;
-  declare total: number | undefined;
-  declare successful: number | undefined;
-  declare failed: number | undefined;
+  declare total: number;
+  declare successful: number;
+  declare failed: number;
   declare paramsCx: PatientImportParamsCx;
   declare paramsOps: PatientImportParamsOps;
 
