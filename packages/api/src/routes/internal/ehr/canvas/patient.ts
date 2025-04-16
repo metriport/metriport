@@ -1,11 +1,11 @@
-import { isSupportedCanvasDiffResource } from "@metriport/core/external/ehr/canvas";
+import { isSupportedCanvasDiffResource } from "@metriport/core/external/ehr/canvas/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
 import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/fetch-bundle";
+import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
@@ -58,9 +58,9 @@ router.post(
  * GET /internal/ehr/canvas/patient/bundle
  *
  * Fetches the bundle for the canvas patient by resource type
- * @param req.query.resourceType The resource type to fetch (optional, all resources if not provided)
- * @param req.query.replace Whether to replace the resources (optional, false by default)
- * @returns Bundle
+ * @param req.query.resourceType The resource type to fetch
+ * @param req.query.useExistingBundle Whether to use the existing bundle (optional, false by default)
+ * @returns Canvas bundle
  */
 router.get(
   "/bundle",

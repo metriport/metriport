@@ -45,3 +45,8 @@ export function createBundleFromResourceList(resourceList: FhirResource[]): Bund
     entry: resourceList.map(resource => ({ resource })),
   };
 }
+
+export const defaultBundle: Bundle = {
+  resourceType: "Bundle",
+  entry: [],
+};

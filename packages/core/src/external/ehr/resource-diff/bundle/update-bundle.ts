@@ -62,6 +62,20 @@ export async function updateBundle({
       s3BucketName,
     });
     if (existingBundle) {
+      const findInvalidEntry = existingBundle.bundle.entry.find(
+        entry => entry.resource.resourceType !== resource.resourceType
+      );
+      if (findInvalidEntry) {
+        throw new BadRequestError("Invalid bundle existing bundle", undefined, {
+          ehr,
+          cxId,
+          metriportPatientId,
+          ehrPatientId,
+          bundleType,
+          resourceType,
+          existingBundleResourceType: findInvalidEntry.resource.resourceType,
+        });
+      }
       newBundle.entry = uniqBy([...existingBundle.bundle.entry, ...newBundle.entry], "resource.id");
     }
     await s3Utils.uploadFile({

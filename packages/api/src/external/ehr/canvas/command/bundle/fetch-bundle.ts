@@ -4,7 +4,7 @@ import CanvasApi, {
   supportedCanvasDiffResources,
 } from "@metriport/core/external/ehr/canvas/index";
 import { BadRequestError } from "@metriport/shared";
-import { Bundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { Bundle, defaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
@@ -43,7 +43,7 @@ export async function fetchCanvasBundle({
     });
   }
 
-  const bundle: Bundle = { resourceType: "Bundle", entry: [] };
+  const bundle: Bundle = defaultBundle;
   const resourceTypes = resourceType ? [resourceType] : supportedCanvasDiffResources;
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
