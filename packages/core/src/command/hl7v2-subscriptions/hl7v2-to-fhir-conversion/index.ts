@@ -38,8 +38,8 @@ export function convertHl7v2MessageToFhir({
     patientId,
     timestamp: timestampString,
     messageId,
-    messageType: msgType.triggerEvent,
-    messageCode: msgType.messageType,
+    messageType: msgType.messageType,
+    messageCode: msgType.triggerEvent,
   });
 
   if (msgType.messageType === "ADT") {
