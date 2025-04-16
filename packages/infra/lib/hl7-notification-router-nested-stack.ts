@@ -7,9 +7,37 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
-import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
+import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
+
+const waitTimeHl7NotificationRouter = Duration.millis(50); // 1200 messages/min
+
+function settings(): { hl7NotificationRouter: QueueAndLambdaSettings } {
+  const timeout = Duration.minutes(3);
+  const hl7NotificationRouter: QueueAndLambdaSettings = {
+    name: "Hl7NotificationRouter",
+    entry: "hl7-notification-router",
+    lambda: {
+      memory: 1024,
+      batchSize: 1,
+      timeout,
+      reportBatchItemFailures: true,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.minutes(5),
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    waitTime: waitTimeHl7NotificationRouter,
+  };
+
+  return {
+    hl7NotificationRouter,
+  };
+}
 
 interface Hl7NotificationRouterNestedStackProps extends NestedStackProps {
   config: EnvConfig;
@@ -49,40 +77,43 @@ export class Hl7NotificationRouterNestedStack extends NestedStack {
   }): { lambda: Lambda } {
     const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, outgoingHl7NotificationBucket } =
       ownProps;
-
-    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
+    const {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      waitTime,
+    } = settings().hl7NotificationRouter;
 
     const queue = createQueue({
+      ...queueSettings,
+      name,
       stack: this,
-      name: "Hl7NotificationRouterQueue",
       fifo: true,
       createDLQ: true,
-      visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
-      alarmMaxAgeOfOldestMessage: Duration.minutes(5),
       maxMessageCountAlarmThreshold: 5_000,
-      createRetryLambda: true,
     });
 
     const lambda = createLambda({
+      ...lambdaSettings,
+      name,
+      entry,
       stack: this,
-      name: "Hl7NotificationRouter",
-      entry: "hl7-notification-router",
       envType,
-      envVars: {
-        // API_URL set on the api-stack after the OSS API is created
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
       layers: [lambdaLayers.shared],
-      memory: 1024,
-      timeout: lambdaTimeout,
       vpc,
       alarmSnsAction: alarmAction,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
     });
 
-    outgoingHl7NotificationBucket.grantReadWrite(lambda);
+    outgoingHl7NotificationBucket.grantWrite(lambda);
     lambda.addEventSource(new SqsEventSource(queue));
 
     new CfnOutput(this, "Hl7NotificationRouterQueueArn", {
