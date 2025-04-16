@@ -1,0 +1,37 @@
+import { Hl7Message } from "@medplum/core";
+import { MetriportError } from "@metriport/shared";
+import {
+  getOptionalValueFromMessage,
+  getOptionalValueFromSegment,
+  getSegmentByNameOrFail,
+} from "./shared";
+
+const MSH_9_MESSAGE_TYPE = 9;
+
+export type Hl7MessageIdentifier = {
+  messageType: string;
+  triggerEvent: string;
+};
+
+export function getHl7MessageIdentifierOrFail(hl7Message: Hl7Message): Hl7MessageIdentifier {
+  const mshSegment = getSegmentByNameOrFail(hl7Message, "MSH");
+  const messageType = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 1);
+  const triggerEvent = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 2);
+  const messageStructure = getOptionalValueFromSegment(mshSegment, MSH_9_MESSAGE_TYPE, 3);
+
+  if (!messageType) {
+    throw new MetriportError("Message type not found in MSH segment");
+  }
+
+  const derivedTriggerEvent = triggerEvent ?? messageStructure?.split("_")[1];
+
+  if (!derivedTriggerEvent) {
+    throw new MetriportError("Trigger event not found in MSH segment");
+  }
+
+  return { messageType, triggerEvent: derivedTriggerEvent };
+}
+
+export function getMessageDatetime(msg: Hl7Message): string | undefined {
+  return getOptionalValueFromMessage(msg, "MSH", 7, 1);
+}

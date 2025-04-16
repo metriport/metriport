@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { Hl7Server } from "@medplum/hl7";
 import { Hl7Message } from "@medplum/core";
+import { Hl7Server } from "@medplum/hl7";
+import { getHl7MessageIdentifierOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
@@ -16,10 +17,6 @@ initSentry();
 const MLLP_DEFAULT_PORT = 2575;
 const bucketName = Config.getHl7NotificationBucketName();
 const s3Utils = new S3Utils(Config.getAWSRegion());
-
-const MESSAGE_TYPE_FIELD = 9;
-const MESSAGE_CODE_COMPONENT = 1;
-const TRIGGER_EVENT_COMPONENT = 2;
 
 const IDENTIFIER_FIELD = 3;
 const IDENTIFIER_COMPONENT = 1;
@@ -46,10 +43,13 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
         const { cxId, patientId } = unpackPidField(pid);
 
-        const messageTypeField = message.getSegment("MSH")?.getField(MESSAGE_TYPE_FIELD);
-        const messageType = messageTypeField?.getComponent(MESSAGE_CODE_COMPONENT) ?? "UNK";
-        const messageCode = messageTypeField?.getComponent(TRIGGER_EVENT_COMPONENT) ?? "UNK";
-        Sentry.setExtras({ cxId, patientId, messageType, messageCode });
+        const msgIdentifier = getHl7MessageIdentifierOrFail(message);
+        Sentry.setExtras({
+          cxId,
+          patientId,
+          messageType: msgIdentifier.messageType,
+          messageCode: msgIdentifier.triggerEvent,
+        });
 
         // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
 
@@ -62,8 +62,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
               cxId,
               patientId,
               timestamp,
-              messageType,
-              messageCode,
+              messageType: msgIdentifier.messageType,
+              messageCode: msgIdentifier.triggerEvent,
             }),
             file: Buffer.from(asString(message)),
             contentType: "text/plain",
