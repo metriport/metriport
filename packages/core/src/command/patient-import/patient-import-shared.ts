@@ -21,14 +21,14 @@ export function createFileKeyJob(cxId: string, jobId: string): string {
   return key;
 }
 
-export function createFilePathPatientRecords(cxId: string, jobId: string): string {
+export function createFolderNamePatientRecords(cxId: string, jobId: string): string {
   const prefix = createCxJobPrefix(cxId, jobId);
-  const fileName = `records`;
-  const key = `${globalPrefix}/${prefix}/${folderPatients}/${fileName}`;
+  const folderName = `records`;
+  const key = `${globalPrefix}/${prefix}/${folderPatients}/${folderName}`;
   return key;
 }
 export function createFileKeyPatientRecord(cxId: string, jobId: string, rowNumber: number): string {
-  const prefix = createFilePathPatientRecords(cxId, jobId);
+  const prefix = createFolderNamePatientRecords(cxId, jobId);
   const fileName = `${rowNumber}.json`;
   const key = `${prefix}/${fileName}`;
   return key;

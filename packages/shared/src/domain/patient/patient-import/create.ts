@@ -54,9 +54,9 @@ export function createPatientImport({
     createdAt,
     startedAt: undefined,
     finishedAt: undefined,
-    total: undefined,
-    successful: undefined,
-    failed: undefined,
+    total: 0,
+    successful: 0,
+    failed: 0,
     paramsCx: initializedParamsCx,
     paramsOps: initializedParamsOps,
   };

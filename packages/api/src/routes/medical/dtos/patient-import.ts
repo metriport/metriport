@@ -14,8 +14,8 @@ export type PatientImportDto = {
   createdAt: string;
 };
 
-export function patientImportDtoFromModel(model: PatientImportCreateResponse): PatientImportDto {
-  const { id: jobId, facilityId, status, paramsCx, createdAt, uploadUrl } = model;
+export function fromCreateResponseToDto(domain: PatientImportCreateResponse): PatientImportDto {
+  const { id: jobId, facilityId, status, paramsCx, createdAt, uploadUrl } = domain;
   const { dryRun } = paramsCx;
 
   const dto = {
