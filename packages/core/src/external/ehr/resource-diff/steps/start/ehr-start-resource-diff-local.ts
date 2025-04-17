@@ -3,10 +3,12 @@ import {
   Bundle,
   fhirResourceSchema,
   SupportedResourceType,
+  getDefaultBundle,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../command/consolidated/consolidated-get";
 import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
-import { getSupportedResourcesByEhr } from "../../../bundle/bundle-shared";
+import { BundleType, getSupportedResourcesByEhr } from "../../../bundle/bundle-shared";
+import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../bundle/commands/create-or-replace-bundle";
 import { buildEhrComputeResourceDiffHandler } from "../compute/ehr-compute-resource-diff-factory";
 import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
 
@@ -50,15 +52,25 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
       ];
     });
     for (const resourceType of resourceTypes) {
-      const existingResourcesBundle = await fetchBundleFromApi({
-        ehr,
-        cxId,
-        practiceId,
-        patientId: ehrPatientId,
-        resourceType,
-        useExistingBundle: false,
-      });
-      if (existingResourcesBundle.entry.length < 1) continue;
+      const [existingResourcesBundle] = await Promise.all([
+        fetchBundleFromApi({
+          ehr,
+          cxId,
+          practiceId,
+          patientId: ehrPatientId,
+          resourceType,
+          useExistingBundle: false,
+        }),
+        createOrReplaceBundleOnS3({
+          ehr,
+          cxId,
+          metriportPatientId,
+          ehrPatientId,
+          bundleType: BundleType.METRIPORT_ONLY,
+          bundle: getDefaultBundle(),
+          resourceType,
+        }),
+      ]);
       this.fetchedBundles.set(resourceType, existingResourcesBundle);
     }
     const computeResourceDiffParams = resourceDiffParams.flatMap(param => {

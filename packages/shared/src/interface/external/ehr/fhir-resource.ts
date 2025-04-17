@@ -46,7 +46,9 @@ export function createBundleFromResourceList(resourceList: FhirResource[]): Bund
   };
 }
 
-export const defaultBundle: Bundle = {
-  resourceType: "Bundle",
-  entry: [],
-};
+export function getDefaultBundle(): Bundle {
+  return {
+    resourceType: "Bundle",
+    entry: [],
+  };
+}

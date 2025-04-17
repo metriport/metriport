@@ -4,7 +4,7 @@ import CanvasApi, {
   supportedCanvasDiffResources,
 } from "@metriport/core/external/ehr/canvas/index";
 import { BadRequestError } from "@metriport/shared";
-import { Bundle, defaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { Bundle, getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
@@ -24,7 +24,7 @@ export async function fetchCanvasBundle({
   canvasPracticeId,
   canvasPatientId,
   api,
-  resourceType,
+  resourceType: resourceTypeParam,
   useExistingBundle = true,
 }: FetchCanvasBundleParams): Promise<Bundle> {
   const existingPatient = await getPatientMappingOrFail({
@@ -37,14 +37,14 @@ export async function fetchCanvasBundle({
     id: existingPatient.patientId,
   });
   const metriportPatientId = metriportPatient.id;
-  if (resourceType && !isSupportedCanvasDiffResource(resourceType)) {
+  if (resourceTypeParam && !isSupportedCanvasDiffResource(resourceTypeParam)) {
     throw new BadRequestError("Resource type is not supported for bundle", undefined, {
-      resourceType,
+      resourceType: resourceTypeParam,
     });
   }
 
-  const bundle: Bundle = defaultBundle;
-  const resourceTypes = resourceType ? [resourceType] : supportedCanvasDiffResources;
+  const bundle: Bundle = getDefaultBundle();
+  const resourceTypes = resourceTypeParam ? [resourceTypeParam] : supportedCanvasDiffResources;
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
   for (const resourceType of resourceTypes) {
