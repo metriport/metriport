@@ -1,0 +1,64 @@
+---
+title: "Condition Chronicity"
+description: "Indicates whether a medical condition is chronic or not."
+---
+
+The chronicity extension is used in FHIR Condition resources to specify whether a medical condition is chronic.
+
+## Properties
+
+Example extension:
+
+```json
+{
+  "url": "http://hl7.org/fhir/StructureDefinition/condition-related",
+  "valueCoding": {
+    "code": "C",
+    "display": "Chronic",
+    "system": "https://public.metriport.com/fhir/StructureDefinition/condition-chronicity.json"
+  }
+}
+```
+
+<Tip>
+  You can use the value of the `valueString` property as
+  input to the [Get Document URL
+  endpoint](/medical-api/api-reference/document/get-document)
+  to download the C-CDA Document from which the FHIR
+  Resource was derived from.
+</Tip>
+
+<ResponseField name="url" type="string" required>
+  The URL of this extension's JSON structure specification.
+</ResponseField>
+
+<ResponseField name="valueCoding" type="object" required>
+  Contains the chronicity classification of the condition.
+</ResponseField>
+
+<ResponseField
+  name="valueCoding.code"
+  type="string"
+  required
+>
+  The code indicating chronicity status. Currently supports:
+  - "C" for Chronic 
+  - "NC" for Not-Chronic 
+  - "U" for Unknown
+</ResponseField>
+
+<ResponseField
+  name="valueCoding.display"
+  type="string"
+  required
+>
+  The human-readable display text for the chronicity status.
+</ResponseField>
+
+<ResponseField
+  name="valueCoding.system"
+  type="string"
+  required
+>
+  The system that defines the chronicity codes.
+</ResponseField>
