@@ -7,7 +7,7 @@ export type ComputeResourceDiffRequests = {
   practiceId: string;
   metriportPatientId: string;
   ehrPatientId: string;
-  existingResources: FhirResource[];
+  existingResources?: FhirResource[] | undefined;
   newResource: FhirResource;
   requestId: string;
   workflowId: string;

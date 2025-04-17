@@ -1,4 +1,5 @@
-import { sleep } from "@metriport/shared";
+import { EhrSource, FhirResource, sleep, SupportedResourceType } from "@metriport/shared";
+import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
 import { updateWorkflowTotals } from "../../../api/update-workflow-totals";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
@@ -15,6 +16,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
       const {
         ehr,
         cxId,
+        practiceId,
         metriportPatientId,
         ehrPatientId,
         existingResources,
@@ -23,7 +25,20 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
         requestId,
       } = param;
       try {
-        const matchedResourceIds = computeResourceDiff({ existingResources, newResource });
+        const resourceType = newResource.resourceType;
+        const existingResourcesToUse: FhirResource[] =
+          existingResources ??
+          (await getExistingResourcesFromApi({
+            ehr,
+            cxId,
+            practiceId,
+            patientId: ehrPatientId,
+            resourceType,
+          }));
+        const matchedResourceIds = computeResourceDiff({
+          existingResources: existingResourcesToUse,
+          newResource,
+        });
         if (matchedResourceIds.length > 0) {
           await updateBundleOnS3({
             ehr,
@@ -32,7 +47,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
             ehrPatientId,
             bundleType: BundleType.METRIPORT_ONLY,
             resource: newResource,
-            resourceType: newResource.resourceType,
+            resourceType,
           });
         }
         await updateWorkflowTotals({
@@ -56,4 +71,28 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
+}
+
+async function getExistingResourcesFromApi({
+  ehr,
+  cxId,
+  practiceId,
+  patientId,
+  resourceType,
+}: {
+  ehr: EhrSource;
+  cxId: string;
+  patientId: string;
+  practiceId: string;
+  resourceType: SupportedResourceType;
+}): Promise<FhirResource[]> {
+  const existingResourcesBundle = await fetchBundleFromApi({
+    ehr,
+    cxId,
+    practiceId,
+    patientId,
+    resourceType,
+    useExistingBundle: true,
+  });
+  return existingResourcesBundle.entry.map(entry => entry.resource);
 }
