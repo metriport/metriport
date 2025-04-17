@@ -12,7 +12,7 @@ import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_APP_MIME_TYPE } from "../../util/mime";
 import { convertHl7v2MessageToFhir } from "./hl7v2-to-fhir-conversion";
-import { getHl7MessageTypeOrFail } from "./hl7v2-to-fhir-conversion/msh";
+import { Hl7MessageType, getHl7MessageTypeOrFail } from "./hl7v2-to-fhir-conversion/msh";
 import {
   buildHl7MessageCombinedBundleFileKey,
   buildHl7MessageFhirBundleFileKey,
@@ -68,7 +68,7 @@ export async function convertHl7MessageToFhirAndUpload({
     timestampString: messageReceivedTimestamp,
   });
 
-  let fullBundle: undefined | Bundle<Resource>;
+  let newBundle: Bundle<Resource> | undefined;
   try {
     const patient = await executeWithNetworkRetries(
       async () => await axios.get(internalGetPatientUrl)
@@ -76,7 +76,7 @@ export async function convertHl7MessageToFhirAndUpload({
     const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
     const fhirPatientEntry = buildBundleEntry(fhirPatient);
     const combinedEntries = fhirBundle.entry ? [fhirPatientEntry, ...fhirBundle.entry] : [];
-    fullBundle = buildBundle({ type: "collection", entries: combinedEntries });
+    newBundle = buildBundle({ type: "collection", entries: combinedEntries });
   } catch (error) {
     const msg = "Error retrieving patient data on HL7-to-FHIR conversion";
     log(`${msg}: ${errorToString(error)}`);
@@ -93,8 +93,7 @@ export async function convertHl7MessageToFhirAndUpload({
   }
 
   const msgType = getHl7MessageTypeOrFail(hl7Message);
-  const combinedBundleFileName = buildHl7MessageCombinedBundleFileKey(cxId, patientId);
-  const bundleFileName = buildHl7MessageFhirBundleFileKey({
+  const newBundleFileName = buildHl7MessageFhirBundleFileKey({
     cxId,
     patientId,
     timestamp: messageReceivedTimestamp,
@@ -102,33 +101,34 @@ export async function convertHl7MessageToFhirAndUpload({
     messageType: msgType.messageType,
     messageCode: msgType.triggerEvent,
   });
+  const combinedBundleFileName = buildHl7MessageCombinedBundleFileKey(cxId, patientId);
+
+  const sharedUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
+    s3Utils: s3Client,
+    bucketName,
+    contentType: JSON_APP_MIME_TYPE,
+    log,
+    errorConfig: {
+      errorMessage: "Error uploading HL7 FHIR bundle to S3",
+      context: "convertHl7MessageToFhirAndUpload",
+      captureParams: {
+        patientId,
+        cxId,
+        messageReceivedTimestamp,
+      },
+      shouldCapture: true,
+    },
+  };
 
   // For create messages, we send the FHIR bundle directly to the API
   if (createMessageTypes.includes(msgType.triggerEvent)) {
-    const sharedUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
-      s3Utils: s3Client,
-      bucketName,
-      contentType: JSON_APP_MIME_TYPE,
-      log,
-      errorConfig: {
-        errorMessage: "Error uploading HL7 FHIR bundle to S3",
-        context: "convertHl7MessageToFhirAndUpload",
-        captureParams: {
-          patientId,
-          cxId,
-          messageReceivedTimestamp,
-        },
-        shouldCapture: true,
-      },
-    };
-
     const newBundleUploadPromise = storeInS3WithRetries({
       ...sharedUploadParams,
-      payload: JSON.stringify(fullBundle),
-      fileName: bundleFileName,
+      payload: JSON.stringify(newBundle),
+      fileName: newBundleFileName,
     });
 
-    let combinedBundle = fullBundle;
+    let combinedBundle = newBundle;
     try {
       const existingCombinedBundle = await s3Client.downloadFile({
         bucket: bucketName,
@@ -137,7 +137,7 @@ export async function convertHl7MessageToFhirAndUpload({
 
       // If we found an existing bundle, combine it with the new one
       const existingBundle = JSON.parse(existingCombinedBundle.toString());
-      const combinedEntries = [...(existingBundle.entry || []), ...(fullBundle.entry || [])];
+      const combinedEntries = [...(existingBundle.entry || []), ...(newBundle.entry || [])];
       const updatedCombinedBundle = buildBundle({
         type: "collection",
         entries: combinedEntries,
@@ -165,27 +165,17 @@ export async function convertHl7MessageToFhirAndUpload({
 
     await Promise.all([newBundleUploadPromise, combinedBundleUploadPromise]);
 
-    let bundlePresignedUrl: string | undefined;
-    try {
-      bundlePresignedUrl = await s3Client.getSignedUrl({
-        bucketName,
-        fileName: bundleFileName,
-        durationSeconds: SIGNED_URL_DURATION_SECONDS,
-      });
-    } catch (error) {
-      const msg = "Error generating presigned URL for HL7 FHIR bundle";
-      log(`${msg}: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          patientId,
-          cxId,
-          messageId,
-          timestamp: messageReceivedTimestamp,
-          messageType: msgType,
-        },
-      });
-      throw error;
-    }
+    const bundlePresignedUrl = await getPresignedUrl({
+      s3Client,
+      bucketName,
+      fileName: newBundleFileName,
+      cxId,
+      messageId,
+      timestamp: messageReceivedTimestamp,
+      messageType: msgType,
+      patientId,
+      log,
+    });
 
     try {
       await executeWithNetworkRetries(
@@ -216,4 +206,48 @@ export async function convertHl7MessageToFhirAndUpload({
 
   log("Unexpected message type: ", msgType.triggerEvent);
   return;
+}
+
+async function getPresignedUrl({
+  s3Client,
+  bucketName,
+  fileName,
+  cxId,
+  messageId,
+  timestamp,
+  messageType,
+  patientId,
+  log,
+}: {
+  s3Client: S3Utils;
+  bucketName: string;
+  fileName: string;
+  cxId: string;
+  messageId: string;
+  timestamp: string;
+  messageType: Hl7MessageType;
+  patientId: string;
+  log: typeof console.log;
+}): Promise<string> {
+  try {
+    const bundlePresignedUrl = await s3Client.getSignedUrl({
+      bucketName,
+      fileName,
+      durationSeconds: SIGNED_URL_DURATION_SECONDS,
+    });
+    return bundlePresignedUrl;
+  } catch (error) {
+    const msg = "Error generating presigned URL for HL7 FHIR bundle";
+    log(`${msg}: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        patientId,
+        cxId,
+        messageId,
+        timestamp,
+        messageType,
+      },
+    });
+    throw error;
+  }
 }
