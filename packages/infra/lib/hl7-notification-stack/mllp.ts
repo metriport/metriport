@@ -25,7 +25,7 @@ export class MllpStack extends cdk.NestedStack {
     super(scope, id, props);
 
     const { vpc, ecrRepo, incomingHl7NotificationBucket, hl7NotificationBucket, config } = props;
-    const { notificationRouterQueue } = config.hl7Notification;
+    const { notificationWebhookSenderQueue } = config.hl7Notification;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
 
@@ -95,7 +95,7 @@ export class MllpStack extends cdk.NestedStack {
     taskRole.addToPolicy(
       new iam.PolicyStatement({
         actions: ["sqs:SendMessage"],
-        resources: [notificationRouterQueue.arn],
+        resources: [notificationWebhookSenderQueue.arn],
       })
     );
 
@@ -121,7 +121,7 @@ export class MllpStack extends cdk.NestedStack {
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
         HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
-        HL7_NOTIFICATION_QUEUE_URL: notificationRouterQueue.url,
+        HL7_NOTIFICATION_QUEUE_URL: notificationWebhookSenderQueue.url,
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],

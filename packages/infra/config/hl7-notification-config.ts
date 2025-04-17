@@ -5,7 +5,7 @@ export interface Hl7NotificationConfig {
   deprecatedIncomingMessageBucketName: string;
   incomingMessageBucketName: string;
   outgoingMessageBucketName: string;
-  notificationRouterQueue: {
+  notificationWebhookSenderQueue: {
     arn: string;
     url: string;
   };
