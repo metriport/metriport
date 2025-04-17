@@ -1,4 +1,5 @@
 import { Hl7Message } from "@medplum/core";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -7,7 +8,7 @@ import { S3Utils, StoreInS3Params, storeInS3WithRetries } from "../../external/a
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_APP_MIME_TYPE } from "../../util/mime";
 import { convertHl7v2MessageToFhir } from "./hl7v2-to-fhir-conversion";
@@ -67,16 +68,31 @@ export async function convertHl7MessageToFhirAndUpload({
     timestampString: messageReceivedTimestamp,
   });
 
-  const patient = await executeWithNetworkRetries(
-    async () => await axios.get(internalGetPatientUrl)
-  );
-  const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
-  const fhirPatientEntry = buildBundleEntry(fhirPatient);
-  const combinedEntries = fhirBundle.entry ? [fhirPatientEntry, ...fhirBundle.entry] : [];
-  const fullBundle = buildBundle({ type: "collection", entries: combinedEntries });
+  let fullBundle: undefined | Bundle<Resource>;
+  try {
+    const patient = await executeWithNetworkRetries(
+      async () => await axios.get(internalGetPatientUrl)
+    );
+    const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
+    const fhirPatientEntry = buildBundleEntry(fhirPatient);
+    const combinedEntries = fhirBundle.entry ? [fhirPatientEntry, ...fhirBundle.entry] : [];
+    fullBundle = buildBundle({ type: "collection", entries: combinedEntries });
+  } catch (error) {
+    const msg = "Error retrieving patient data on HL7-to-FHIR conversion";
+    log(`${msg}: ${errorToString(error)}`);
+    capture.message(msg, {
+      extra: {
+        patientId,
+        cxId,
+        messageId,
+        timestamp: messageReceivedTimestamp,
+      },
+    });
+
+    throw error;
+  }
 
   const msgType = getHl7MessageTypeOrFail(hl7Message);
-
   const combinedBundleFileName = buildHl7MessageCombinedBundleFileKey(cxId, patientId);
   const bundleFileName = buildHl7MessageFhirBundleFileKey({
     cxId,
@@ -149,11 +165,27 @@ export async function convertHl7MessageToFhirAndUpload({
 
     await Promise.all([newBundleUploadPromise, combinedBundleUploadPromise]);
 
-    const bundlePresignedUrl = await s3Client.getSignedUrl({
-      bucketName,
-      fileName: bundleFileName,
-      durationSeconds: SIGNED_URL_DURATION_SECONDS,
-    });
+    let bundlePresignedUrl: string | undefined;
+    try {
+      bundlePresignedUrl = await s3Client.getSignedUrl({
+        bucketName,
+        fileName: bundleFileName,
+        durationSeconds: SIGNED_URL_DURATION_SECONDS,
+      });
+    } catch (error) {
+      const msg = "Error generating presigned URL for HL7 FHIR bundle";
+      log(`${msg}: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          patientId,
+          cxId,
+          messageId,
+          timestamp: messageReceivedTimestamp,
+          messageType: msgType,
+        },
+      });
+      throw error;
+    }
 
     try {
       await executeWithNetworkRetries(
@@ -178,7 +210,7 @@ export async function convertHl7MessageToFhirAndUpload({
   // For update messages, we need to retrieve and update it before sending to the API
   if (updateMessageTypes.includes(msgType.triggerEvent)) {
     // TODO 2883: Implement this functionality
-    console.log("Need to retrieve and update existing entries");
+    log("Need to retrieve and update existing entries");
     return;
   }
 
