@@ -7,7 +7,7 @@ import {
 import { uniqBy } from "lodash";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { BundleType, createKeyMap, getS3UtilsInstance } from "../resource-dfff-shared";
+import { BundleType, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
 import { fetchBundle } from "./fetch-bundle";
 
 export type CreateOrReplaceBundleParams = {

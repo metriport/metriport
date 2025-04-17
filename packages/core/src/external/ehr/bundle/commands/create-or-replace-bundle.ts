@@ -5,7 +5,7 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { BundleType, createKeyMap, getS3UtilsInstance } from "../resource-dfff-shared";
+import { BundleType, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
 
 export type CreateOrReplaceBundleParams = {
   ehr: EhrSource;

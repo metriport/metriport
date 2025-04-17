@@ -1,6 +1,6 @@
 import { sleep } from "@metriport/shared";
-import { updateBundle as updateBundleOnS3 } from "../../bundle/update-bundle";
-import { BundleType } from "../../resource-dfff-shared";
+import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
+import { BundleType } from "../../../bundle/bundle-shared";
 import { computeResourceDiff } from "../../utils";
 import {
   ComputeResourceDiffRequests,

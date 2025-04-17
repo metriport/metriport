@@ -1,6 +1,6 @@
 import { sleep } from "@metriport/shared";
-import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
-import { getSupportedResourcesByEhr } from "../../resource-dfff-shared";
+import { fetchBundle as fetchBundleFromApi } from "../../api/fetch-bundle";
+import { getSupportedResourcesByEhr } from "../bundle-shared";
 import { EhrRefreshBundleHandler, RefreshBundleRequest } from "./ehr-refresh-resource-bundle";
 
 export class EhrRefreshBundleLocal implements EhrRefreshBundleHandler {

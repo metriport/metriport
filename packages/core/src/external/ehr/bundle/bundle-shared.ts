@@ -7,7 +7,7 @@ import { supportedCanvasDiffResources } from "../canvas";
 const globalPrefix = "resource-diff";
 const region = Config.getAWSRegion();
 
-type CreateCxMetriportPrefixParams = {
+type CreateBundlePrefixParams = {
   ehr: EhrSource;
   cxId: string;
   metriportPatientId: string;
@@ -21,7 +21,7 @@ function createBundlePrefix({
   metriportPatientId,
   ehrPatientId,
   resourceType,
-}: CreateCxMetriportPrefixParams): string {
+}: CreateBundlePrefixParams): string {
   return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportid=${metriportPatientId}/patientid=${ehrPatientId}/resourceType=${resourceType}`;
 }
 
@@ -31,7 +31,7 @@ export function createFileKeyTotal({
   metriportPatientId,
   ehrPatientId,
   resourceType,
-}: CreateCxMetriportPrefixParams): string {
+}: CreateBundlePrefixParams): string {
   return `${createBundlePrefix({
     ehr,
     cxId,
@@ -47,7 +47,7 @@ export function createFileKeyEhrOnly({
   metriportPatientId,
   ehrPatientId,
   resourceType,
-}: CreateCxMetriportPrefixParams): string {
+}: CreateBundlePrefixParams): string {
   return `${createBundlePrefix({
     ehr,
     cxId,
@@ -63,7 +63,7 @@ export function createFileKeyMetriportOnly({
   metriportPatientId,
   ehrPatientId,
   resourceType,
-}: CreateCxMetriportPrefixParams): string {
+}: CreateBundlePrefixParams): string {
   return `${createBundlePrefix({
     ehr,
     cxId,
@@ -79,7 +79,7 @@ export function createFileKeyBoth({
   metriportPatientId,
   ehrPatientId,
   resourceType,
-}: CreateCxMetriportPrefixParams): string {
+}: CreateBundlePrefixParams): string {
   return `${createBundlePrefix({
     ehr,
     cxId,
@@ -104,7 +104,7 @@ export enum BundleType {
   METRIPORT_ONLY = "MetriportOnly",
   BOTH = "Both",
 }
-export const createKeyMap: Record<BundleType, (params: CreateCxMetriportPrefixParams) => string> = {
+export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams) => string> = {
   [BundleType.TOTAL]: createFileKeyTotal,
   [BundleType.EHR_ONLY]: createFileKeyEhrOnly,
   [BundleType.METRIPORT_ONLY]: createFileKeyMetriportOnly,

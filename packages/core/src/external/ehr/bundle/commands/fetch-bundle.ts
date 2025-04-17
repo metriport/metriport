@@ -13,7 +13,7 @@ import {
 import dayjs from "dayjs";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { BundleType, createKeyMap, getS3UtilsInstance } from "../resource-dfff-shared";
+import { BundleType, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
 
 const MAX_AGE = dayjs.duration(24, "hours");
 

@@ -5,6 +5,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/fetch-bundle";
+import { refreshCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/refresh-bundle";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
@@ -50,6 +51,29 @@ router.post(
       canvasPatientId,
       triggerDq,
     }).catch(processAsyncError("Canvas syncCanvasPatientIntoMetriport"));
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/canvas/patient/refresh-bundle
+ *
+ * Refreshes the bundle for the canvas patient
+ * @param req.params.id The ID of Canvas Patient.
+ * @returns 200 OK
+ */
+router.post(
+  "/refresh-bundle",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const canvasPatientId = getFromQueryOrFail("patientId", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    refreshCanvasBundle({
+      cxId,
+      canvasPracticeId,
+      canvasPatientId,
+    }).catch(processAsyncError("Canvas refreshCanvasBundle"));
     return res.sendStatus(httpStatus.OK);
   })
 );
