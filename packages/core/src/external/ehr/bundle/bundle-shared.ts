@@ -22,7 +22,7 @@ function createBundlePrefix({
   ehrPatientId,
   resourceType,
 }: CreateBundlePrefixParams): string {
-  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportid=${metriportPatientId}/patientid=${ehrPatientId}/resourceType=${resourceType}`;
+  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourceType=${resourceType}`;
 }
 
 export function createFileKeyTotal({
@@ -38,7 +38,7 @@ export function createFileKeyTotal({
     metriportPatientId,
     ehrPatientId,
     resourceType,
-  })}/total.json`;
+  })}/ehr-total.json`;
 }
 
 export function createFileKeyEhrOnly({
@@ -73,22 +73,6 @@ export function createFileKeyMetriportOnly({
   })}/metriport-only.json`;
 }
 
-export function createFileKeyBoth({
-  ehr,
-  cxId,
-  metriportPatientId,
-  ehrPatientId,
-  resourceType,
-}: CreateBundlePrefixParams): string {
-  return `${createBundlePrefix({
-    ehr,
-    cxId,
-    metriportPatientId,
-    ehrPatientId,
-    resourceType,
-  })}/both.json`;
-}
-
 export function getSupportedResourcesByEhr(ehr: EhrSource): SupportedResourceType[] {
   if (ehr === EhrSources.canvas) return supportedCanvasDiffResources as SupportedResourceType[];
   return [];
@@ -102,11 +86,9 @@ export enum BundleType {
   TOTAL = "Total",
   EHR_ONLY = "EhrOnly",
   METRIPORT_ONLY = "MetriportOnly",
-  BOTH = "Both",
 }
 export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams) => string> = {
   [BundleType.TOTAL]: createFileKeyTotal,
   [BundleType.EHR_ONLY]: createFileKeyEhrOnly,
   [BundleType.METRIPORT_ONLY]: createFileKeyMetriportOnly,
-  [BundleType.BOTH]: createFileKeyBoth,
 };
