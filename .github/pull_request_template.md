@@ -1,4 +1,4 @@
-Ticket: #_[ticket-number]_
+Issue: https://linear.app/metriport/issue/ENG-xxx
 
 ### Dependencies
 
