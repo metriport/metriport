@@ -102,8 +102,6 @@ export class MllpStack extends cdk.NestedStack {
       securityGroups: [mllpSecurityGroup],
     });
 
-    targetGroup.addTarget(fargateService);
-
     fargateService.taskDefinition.addContainer("MllpServer", {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
       secrets: secretsToECS(buildSecrets(this, props.config.hl7Notification.secrets)),
@@ -117,6 +115,7 @@ export class MllpStack extends cdk.NestedStack {
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
     });
 
+    targetGroup.addTarget(fargateService);
     incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
