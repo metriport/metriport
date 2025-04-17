@@ -100,6 +100,12 @@ export async function processConsolidatedDataWebhook({
       });
     }
 
+    await updateConsolidatedQueryProgress({
+      patient,
+      requestId,
+      progress: { status },
+    });
+
     if (status === "completed") {
       // Intentionally async
       startResourceDiff({
