@@ -23,7 +23,7 @@ export async function fetchCanvasMetriportOnlyBundle({
   canvasPracticeId,
   canvasPatientId,
   api,
-  resourceType,
+  resourceType: resourceTypeParam,
 }: FetchCanvasMetriportOnlyBundleParams): Promise<Bundle> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
@@ -35,14 +35,14 @@ export async function fetchCanvasMetriportOnlyBundle({
     id: existingPatient.patientId,
   });
   const metriportPatientId = metriportPatient.id;
-  if (resourceType && !isSupportedCanvasDiffResource(resourceType)) {
+  if (resourceTypeParam && !isSupportedCanvasDiffResource(resourceTypeParam)) {
     throw new BadRequestError("Resource type is not supported for bundle", undefined, {
-      resourceType,
+      resourceType: resourceTypeParam,
     });
   }
 
   const bundle: Bundle = getDefaultBundle();
-  const resourceTypes = resourceType ? [resourceType] : supportedCanvasDiffResources;
+  const resourceTypes = resourceTypeParam ? [resourceTypeParam] : supportedCanvasDiffResources;
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
   for (const resourceType of resourceTypes) {
