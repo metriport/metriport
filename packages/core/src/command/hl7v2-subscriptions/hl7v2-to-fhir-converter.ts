@@ -60,7 +60,7 @@ export async function convertHl7MessageToFhirAndUpload({
   const internalHl7RouteUrl = `${apiUrl}/${INTERNAL_HL7_ENDPOINT}`;
   const internalGetPatientUrl = `${apiUrl}/${INTERNAL_GET_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
 
-  const fhirBundle = convertHl7v2MessageToFhir({
+  const convertedBundle = convertHl7v2MessageToFhir({
     hl7Message,
     cxId,
     patientId,
@@ -68,40 +68,15 @@ export async function convertHl7MessageToFhirAndUpload({
     timestampString: messageReceivedTimestamp,
   });
 
-  let newBundle: Bundle<Resource> | undefined;
-  try {
-    const patient = await executeWithNetworkRetries(
-      async () => await axios.get(internalGetPatientUrl)
-    );
-    const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
-    const fhirPatientEntry = buildBundleEntry(fhirPatient);
-    const combinedEntries = fhirBundle.entry ? [fhirPatientEntry, ...fhirBundle.entry] : [];
-    newBundle = buildBundle({ type: "collection", entries: combinedEntries });
-  } catch (error) {
-    const msg = "Error retrieving patient data on HL7-to-FHIR conversion";
-    log(`${msg}: ${errorToString(error)}`);
-    capture.message(msg, {
-      extra: {
-        patientId,
-        cxId,
-        messageId,
-        timestamp: messageReceivedTimestamp,
-      },
-    });
-
-    throw error;
-  }
-
-  const msgType = getHl7MessageTypeOrFail(hl7Message);
-  const newBundleFileName = buildHl7MessageFhirBundleFileKey({
-    cxId,
+  const newBundle = await saturateConvertedBundle({
+    bundle: convertedBundle,
     patientId,
-    timestamp: messageReceivedTimestamp,
+    cxId,
     messageId,
-    messageType: msgType.messageType,
-    messageCode: msgType.triggerEvent,
+    messageReceivedTimestamp,
+    internalGetPatientUrl,
+    log,
   });
-  const combinedBundleFileName = buildHl7MessageCombinedBundleFileKey(cxId, patientId);
 
   const sharedUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
     s3Utils: s3Client,
@@ -120,92 +95,172 @@ export async function convertHl7MessageToFhirAndUpload({
     },
   };
 
-  // For create messages, we send the FHIR bundle directly to the API
-  if (createMessageTypes.includes(msgType.triggerEvent)) {
-    const newBundleUploadPromise = storeInS3WithRetries({
-      ...sharedUploadParams,
-      payload: JSON.stringify(newBundle),
-      fileName: newBundleFileName,
-    });
+  const msgType = getHl7MessageTypeOrFail(hl7Message);
+  const newBundleFileName = buildHl7MessageFhirBundleFileKey({
+    cxId,
+    patientId,
+    timestamp: messageReceivedTimestamp,
+    messageId,
+    messageType: msgType.messageType,
+    messageCode: msgType.triggerEvent,
+  });
 
-    let combinedBundle = newBundle;
-    try {
-      const existingCombinedBundle = await s3Client.downloadFile({
-        bucket: bucketName,
-        key: combinedBundleFileName,
+  const newBundleUploadPromise = storeInS3WithRetries({
+    ...sharedUploadParams,
+    payload: JSON.stringify(newBundle),
+    fileName: newBundleFileName,
+  });
+
+  const combinedBundleFileName = buildHl7MessageCombinedBundleFileKey(cxId, patientId);
+  let combinedBundle = newBundle;
+  try {
+    const existingCombinedBundleRaw = await s3Client.downloadFile({
+      bucket: bucketName,
+      key: combinedBundleFileName,
+    });
+    const existingBundle = JSON.parse(JSON.stringify(existingCombinedBundleRaw));
+    combinedBundle = existingBundle;
+
+    if (createMessageTypes.includes(msgType.triggerEvent)) {
+      const mergedBundle = await mergeIncomingBundleIntoCombined({
+        cxId,
+        patientId,
+        existingBundle,
+        incomingBundle: newBundle,
+        log,
       });
-
-      // If we found an existing bundle, combine it with the new one
-      const existingBundle = JSON.parse(existingCombinedBundle.toString());
-      const combinedEntries = [...(existingBundle.entry || []), ...(newBundle.entry || [])];
-      const updatedCombinedBundle = buildBundle({
-        type: "collection",
-        entries: combinedEntries,
-      });
-
-      combinedBundle = await deduplicate({ cxId, patientId, bundle: updatedCombinedBundle });
-    } catch (err) {
-      log(`No existing bundle found. Creating a new combined bundle`);
-      // intentionally not throwing
+      combinedBundle = mergedBundle;
+    } else if (updateMessageTypes.includes(msgType.triggerEvent)) {
+      // For update messages, we need to retrieve and update it before sending to the API
+      log("Need to retrieve and update existing entries");
+      return;
+    } else {
+      log(`Not handling this message type yet: ${msgType.triggerEvent}`);
+      // TODO: Think of what to do here
     }
+  } catch (err) {
+    log(`No existing combined bundle found. Creating a new one.`);
+    // intentionally not throwing
+  }
 
-    const combinedBundleUploadPromise = storeInS3WithRetries({
-      ...sharedUploadParams,
-      payload: JSON.stringify(combinedBundle),
-      fileName: combinedBundleFileName,
-      ...(sharedUploadParams.errorConfig
-        ? {
-            errorConfig: {
-              ...sharedUploadParams.errorConfig,
-              errorMessage: "Error uploading updated HL7 Combined FHIR bundle to S3",
-            },
-          }
-        : undefined),
-    });
+  const combinedBundleUploadPromise = storeInS3WithRetries({
+    ...sharedUploadParams,
+    payload: JSON.stringify(combinedBundle),
+    fileName: combinedBundleFileName,
+    ...(sharedUploadParams.errorConfig
+      ? {
+          errorConfig: {
+            ...sharedUploadParams.errorConfig,
+            errorMessage: "Error uploading updated HL7 Combined FHIR bundle to S3",
+          },
+        }
+      : undefined),
+  });
 
-    await Promise.all([newBundleUploadPromise, combinedBundleUploadPromise]);
+  const bundlePresignedUrlPromise = getPresignedUrl({
+    s3Client,
+    bucketName,
+    fileName: newBundleFileName,
+    cxId,
+    messageId,
+    timestamp: messageReceivedTimestamp,
+    messageType: msgType,
+    patientId,
+    log,
+  });
+  const [, , bundlePresignedUrl] = await Promise.all([
+    newBundleUploadPromise,
+    combinedBundleUploadPromise,
+    bundlePresignedUrlPromise,
+  ]);
 
-    const bundlePresignedUrl = await getPresignedUrl({
-      s3Client,
-      bucketName,
-      fileName: newBundleFileName,
-      cxId,
-      messageId,
-      timestamp: messageReceivedTimestamp,
-      messageType: msgType,
-      patientId,
-      log,
-    });
-
-    try {
-      await executeWithNetworkRetries(
-        async () =>
-          await axios.post(internalHl7RouteUrl, undefined, {
-            params: {
-              cxId,
-              patientId,
-              presignedUrl: bundlePresignedUrl,
-            },
-          })
-      );
-    } catch (err) {
-      log(`Error hitting the ${INTERNAL_HL7_ENDPOINT} endpoint: - ${errorToString(err)}`);
-      throw err;
-    }
-
+  try {
+    await executeWithNetworkRetries(
+      async () =>
+        await axios.post(internalHl7RouteUrl, undefined, {
+          params: {
+            cxId,
+            patientId,
+            presignedUrl: bundlePresignedUrl,
+          },
+        })
+    );
     log(`Successfully sent HL7 FHIR bundle to ${internalHl7RouteUrl}`);
     return;
+  } catch (err) {
+    log(`Error hitting the ${INTERNAL_HL7_ENDPOINT} endpoint: - ${errorToString(err)}`);
+    throw err;
   }
+}
 
-  // For update messages, we need to retrieve and update it before sending to the API
-  if (updateMessageTypes.includes(msgType.triggerEvent)) {
-    // TODO 2883: Implement this functionality
-    log("Need to retrieve and update existing entries");
-    return;
+async function saturateConvertedBundle({
+  bundle,
+  patientId,
+  cxId,
+  messageId,
+  messageReceivedTimestamp,
+  internalGetPatientUrl,
+  log,
+}: {
+  bundle: Bundle<Resource>;
+  patientId: string;
+  cxId: string;
+  messageId: string;
+  messageReceivedTimestamp: string;
+  internalGetPatientUrl: string;
+  log: typeof console.log;
+}) {
+  try {
+    const patient = await executeWithNetworkRetries(
+      async () => await axios.get(internalGetPatientUrl)
+    );
+    const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
+    const fhirPatientEntry = buildBundleEntry(fhirPatient);
+    const combinedEntries = bundle.entry ? [fhirPatientEntry, ...bundle.entry] : [];
+    return buildBundle({ type: "collection", entries: combinedEntries });
+  } catch (error) {
+    const msg = "Error retrieving patient data on HL7-to-FHIR conversion";
+    log(`${msg}: ${errorToString(error)}`);
+    capture.message(msg, {
+      extra: {
+        patientId,
+        cxId,
+        messageId,
+        timestamp: messageReceivedTimestamp,
+      },
+    });
+
+    throw error;
   }
+}
 
-  log("Unexpected message type: ", msgType.triggerEvent);
-  return;
+async function mergeIncomingBundleIntoCombined({
+  cxId,
+  patientId,
+  existingBundle,
+  incomingBundle,
+  log,
+}: {
+  cxId: string;
+  patientId: string;
+  existingBundle: Bundle<Resource>;
+  incomingBundle: Bundle<Resource>;
+  log: typeof console.log;
+}) {
+  const combinedEntries = [...(existingBundle.entry || []), ...(incomingBundle.entry || [])];
+  const combinedBundle = buildBundle({
+    type: "collection",
+    entries: combinedEntries,
+  });
+
+  const dedupedCombinedBundle = await deduplicate({
+    cxId,
+    patientId,
+    bundle: combinedBundle,
+  });
+  log(`Combined and deduped the incoming bundle with the existing one.`);
+
+  return dedupedCombinedBundle;
 }
 
 async function getPresignedUrl({
