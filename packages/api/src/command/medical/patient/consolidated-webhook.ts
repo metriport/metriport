@@ -1,18 +1,18 @@
 import { Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { emptyFunction, errorToString } from "@metriport/shared";
 import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { startResourceDiff } from "../../../external/ehr/resource-diff";
-import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { getPatientOrFail } from "./get-patient";
 
-const log = Util.log(`Consolidated Webhook`);
+const log = out(`Consolidated Webhook`).log;
 
 const consolidatedWebhookStatus = ["completed", "failed"] as const;
 export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[number];
