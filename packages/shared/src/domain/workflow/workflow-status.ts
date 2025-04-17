@@ -2,6 +2,7 @@ import { BadRequestError } from "../../error/bad-request";
 
 export const workflowStatus = ["waiting", "processing", "completed", "failed"] as const;
 export type WorkflowStatus = (typeof workflowStatus)[number];
+export const initialStatus: WorkflowStatus = "waiting";
 
 export function isWorkflowDone(status: WorkflowStatus): boolean {
   return status === "completed" || status === "failed";

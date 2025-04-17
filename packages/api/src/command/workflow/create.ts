@@ -1,12 +1,11 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Workflow } from "@metriport/shared/domain/workflow/types";
+import { initialStatus } from "@metriport/shared/domain/workflow/workflow-status";
 import { WorkflowModel } from "../../models/workflow";
 
-export type WorkflowParams = Workflow;
-
-export type WorkflowLookUpParams = Pick<
-  WorkflowParams,
-  "cxId" | "patientId" | "facilityId" | "workflowId" | "requestId"
+export type WorkflowParams = Omit<
+  Workflow,
+  "id" | "status" | "startedAt" | "finishedAt" | "reason" | "total" | "successful" | "failed"
 >;
 
 export async function createWorkflow({
@@ -15,13 +14,6 @@ export async function createWorkflow({
   facilityId,
   workflowId,
   requestId,
-  status,
-  reason,
-  startedAt,
-  finishedAt,
-  total,
-  successful,
-  failed,
   paramsCx,
   paramsOps,
   data,
@@ -33,13 +25,10 @@ export async function createWorkflow({
     facilityId,
     workflowId,
     requestId,
-    status,
-    reason,
-    startedAt,
-    finishedAt,
-    total,
-    successful,
-    failed,
+    status: initialStatus,
+    total: 0,
+    successful: 0,
+    failed: 0,
     paramsCx,
     paramsOps,
     data,
