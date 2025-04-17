@@ -22,8 +22,6 @@ export type ConsolidatedSnapshotRequestSync = ConsolidatedSnapshotRequest & {
   isAsync: false;
   requestId?: string | undefined;
   fromDashboard?: boolean | undefined;
-  // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
-  forceDataFromFhir?: boolean | undefined;
 };
 
 export type ConsolidatedSnapshotResponse = {
