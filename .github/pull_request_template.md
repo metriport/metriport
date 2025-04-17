@@ -1,5 +1,3 @@
-Ticket: #_[ticket-number]_
-
 ### Dependencies
 
 - Upstream: _[this PR points to another PR or depends on its release]_
