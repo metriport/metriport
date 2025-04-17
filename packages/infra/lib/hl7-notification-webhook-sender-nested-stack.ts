@@ -21,7 +21,6 @@ function settings(): { hl7NotificationWebhookSender: QueueAndLambdaSettings } {
     entry: "hl7-notification-webhook-sender",
     lambda: {
       memory: 1024,
-      batchSize: 1,
       timeout,
       reportBatchItemFailures: true,
     },
@@ -31,6 +30,11 @@ function settings(): { hl7NotificationWebhookSender: QueueAndLambdaSettings } {
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
       maxMessageCountAlarmThreshold: 5_000,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: 20,
     },
     waitTime: waitTimeHl7NotificationWebhookSender,
   };
@@ -83,6 +87,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
+      eventSource: eventSourceSettings,
       waitTime,
     } = settings().hl7NotificationWebhookSender;
 
@@ -114,7 +119,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     });
 
     outgoingHl7NotificationBucket.grantWrite(lambda);
-    lambda.addEventSource(new SqsEventSource(queue));
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     new CfnOutput(this, "Hl7NotificationWebhookSenderQueueArn", {
       description: "HL7 Message Router Queue ARN",
