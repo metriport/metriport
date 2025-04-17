@@ -3,11 +3,12 @@ import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
 import { updateWorkflowTotals } from "../../../api/update-workflow-totals";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
-import { computeResourceDiff } from "../../utils";
+import { resourceIsDerivedFromExistingResources } from "../../utils";
 import {
   ComputeResourceDiffRequests,
   EhrComputeResourceDiffHandler,
 } from "./ehr-compute-resource-diff";
+
 export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
@@ -35,11 +36,11 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
             patientId: ehrPatientId,
             resourceType,
           }));
-        const matchedResourceIds = computeResourceDiff({
+        const isDerived = resourceIsDerivedFromExistingResources({
           existingResources: existingResourcesToUse,
           newResource,
         });
-        if (matchedResourceIds.length > 0) {
+        if (!isDerived) {
           await updateBundleOnS3({
             ehr,
             cxId,

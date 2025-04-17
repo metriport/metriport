@@ -84,7 +84,7 @@ router.post(
  *
  * Retrieves the resource diff status
  * @param req.params.id The ID of Canvas Patient.
- * @returns 200 OK
+ * @returns Resource diff status
  */
 router.get(
   "/:id/resource-diff",
