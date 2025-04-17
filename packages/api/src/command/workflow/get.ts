@@ -2,10 +2,8 @@ import { NotFoundError } from "@metriport/shared";
 import { Workflow } from "@metriport/shared/domain/workflow/types";
 import { WorkflowModel } from "../../models/workflow";
 
-export type WorkflowLookUpParams = Pick<
-  Workflow,
-  "cxId" | "patientId" | "facilityId" | "workflowId" | "requestId"
->;
+export type WorkflowLookUpParams = Pick<Workflow, "cxId" | "workflowId" | "requestId"> &
+  Partial<Pick<Workflow, "patientId" | "facilityId">>;
 
 export async function getWorkflow({
   cxId,

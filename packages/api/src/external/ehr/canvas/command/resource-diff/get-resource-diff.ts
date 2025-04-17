@@ -28,9 +28,8 @@ export async function getCanvasResourceDiff({
   const workflow = await getWorkflowOrFail({
     cxId,
     patientId: metriportPatient.id,
-    facilityId: undefined,
-    requestId,
     workflowId: getResourceDiffWorkflowId(),
+    requestId,
   });
   return workflow;
 }
