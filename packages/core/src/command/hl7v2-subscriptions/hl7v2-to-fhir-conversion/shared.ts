@@ -1,15 +1,16 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
 import { JSON_FILE_EXTENSION } from "../../../util/mime";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
-import { getPatientIdsOrFail } from "./adt/utils";
-import { getMessageDatetime } from "./msh";
+import { getMessageDatetime, getMessageUniqueIdentifier } from "./msh";
 
 type Hl7FileKeyParams = {
+  messageId: string;
   cxId: string;
   patientId: string;
   timestamp: string;
@@ -50,6 +51,12 @@ export function unpackPidFieldOrFail(pid: string) {
   return { cxId, patientId };
 }
 
+export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
+  const pid = getSegmentByNameOrFail(msg, "PID");
+  const idComponent = pid.getComponent(3, 1);
+  return unpackPidFieldOrFail(idComponent);
+}
+
 export function getRequiredValueFromMessage(
   msg: Hl7Message,
   targetSegmentName: string,
@@ -59,15 +66,16 @@ export function getRequiredValueFromMessage(
   const segment = getSegmentByNameOrFail(msg, targetSegmentName);
   const value = getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
   if (!value) {
-    // TODO 2883: Need a more universal way to get the message identifiers that aren't exclusive to ADTs
-    const patientIds = getPatientIdsOrFail(msg);
+    const patientIds = getCxIdAndPatientIdOrFail(msg);
     const datetime = getMessageDatetime(msg);
+    const messageId = getMessageUniqueIdentifier(msg);
     throw new MetriportError("Missing required value", undefined, {
       ids: JSON.stringify(patientIds),
       targetSegmentName,
       fieldIndex,
       componentIndex,
       datetime,
+      messageId,
     });
   }
 
@@ -89,13 +97,14 @@ export function getOptionalValueFromMessage(
 export function getSegmentByNameOrFail(msg: Hl7Message, targetSegmentName: string): Hl7Segment {
   const segment = msg.getSegment(targetSegmentName);
   if (!segment) {
-    // TODO 2883: Need a more universal way to get the message identifiers that aren't exclusive to ADTs
-    const patientIds = getPatientIdsOrFail(msg);
+    const patientIds = getCxIdAndPatientIdOrFail(msg);
     const datetime = getMessageDatetime(msg);
+    const messageId = getMessageUniqueIdentifier(msg);
     throw new MetriportError("Missing required segment", undefined, {
       ids: JSON.stringify(patientIds),
       targetSegmentName,
       datetime,
+      messageId,
     });
   }
   return segment;
@@ -142,11 +151,16 @@ export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): str
 export function buildHl7MessageFileKey({
   cxId,
   patientId,
+  messageId,
   timestamp,
   messageType,
   messageCode,
 }: Hl7FileKeyParams) {
-  return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
+  return `${cxId}/${patientId}/${timestamp}_${messageId}_${messageType}_${messageCode}.hl7`;
+}
+
+export function formatDateToHl7(date: Date): string {
+  return buildDayjs(date).format("YYYYMMDDHHmmss");
 }
 
 export function buildHl7MessageFhirBundleFileKey(params: Hl7FileKeyParams) {

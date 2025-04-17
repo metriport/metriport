@@ -3,23 +3,28 @@ dotenv.config();
 
 import { Hl7Message } from "@medplum/core";
 import { Hl7Server } from "@medplum/hl7";
-import { getHl7MessageIdentifierOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import {
+  getHl7MessageTypeOrFail,
+  getMessageUniqueIdentifier,
+  getOrCreateMessageDatetime,
+} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import {
+  buildHl7MessageFileKey,
+  getCxIdAndPatientIdOrFail,
+} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
-import { buildS3Key, unpackPidField, withErrorHandling } from "./utils";
+import { withErrorHandling } from "./utils";
 
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
 const bucketName = Config.getHl7NotificationBucketName();
 const s3Utils = new S3Utils(Config.getAWSRegion());
-
-const IDENTIFIER_FIELD = 3;
-const IDENTIFIER_COMPONENT = 1;
 
 /**
  * Avoid using message.toString() as its not stringifying every segment
@@ -35,20 +40,20 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(async ({ message }) => {
-        const timestamp = new Date().toISOString();
+        const timestamp = getOrCreateMessageDatetime(message);
+        const messageId = getMessageUniqueIdentifier(message);
         log(
-          `${timestamp}> New Message from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
+          `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
         );
 
-        const pid = message.getSegment("PID")?.getComponent(IDENTIFIER_FIELD, IDENTIFIER_COMPONENT);
-        const { cxId, patientId } = unpackPidField(pid);
+        const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
 
-        const msgIdentifier = getHl7MessageIdentifierOrFail(message);
+        const msgType = getHl7MessageTypeOrFail(message);
         Sentry.setExtras({
           cxId,
           patientId,
-          messageType: msgIdentifier.messageType,
-          messageCode: msgIdentifier.triggerEvent,
+          messageType: msgType.messageType,
+          messageCode: msgType.triggerEvent,
         });
 
         // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
@@ -58,12 +63,13 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         s3Utils
           .uploadFile({
             bucket: bucketName,
-            key: buildS3Key({
+            key: buildHl7MessageFileKey({
               cxId,
               patientId,
               timestamp,
-              messageType: msgIdentifier.messageType,
-              messageCode: msgIdentifier.triggerEvent,
+              messageId,
+              messageType: msgType.messageType,
+              messageCode: msgType.triggerEvent,
             }),
             file: Buffer.from(asString(message)),
             contentType: "text/plain",
