@@ -45,6 +45,4 @@ export async function createCanvasClient(
   });
 }
 
-export function getResourceDiffWorkflowId(): string {
-  return "canvas-resource-diff";
-}
+export const canvasResourceDiffWorkflowId = "canvas-resource-diff";
