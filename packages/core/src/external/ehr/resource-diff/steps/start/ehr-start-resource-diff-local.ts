@@ -32,7 +32,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
       return;
     }
     const resourceTypes = new Set<SupportedResourceType>();
-    const resourceDiffParams = consolidated.bundle.entry.flatMap(bundleEntry => {
+    const computeResourceDiffParams = consolidated.bundle.entry.flatMap(bundleEntry => {
       if (!bundleEntry.resource) return [];
       const newResourceSafeParsed = fhirResourceSchema.safeParse(bundleEntry.resource);
       if (!newResourceSafeParsed.success) return [];
@@ -73,14 +73,15 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
       ]);
       this.fetchedBundles.set(resourceType, existingResourcesBundle);
     }
-    const computeResourceDiffParams = resourceDiffParams.flatMap(param => {
-      const existingResourcesBundle = this.fetchedBundles.get(param.newResource.resourceType);
-      if (!existingResourcesBundle) return [];
-      return [
-        { ...param, existingResources: existingResourcesBundle.entry.map(entry => entry.resource) },
-      ];
-    });
-    await this.next.computeResourceDiff(computeResourceDiffParams);
+    const computeResourceDiffParamsWithExistingResources = computeResourceDiffParams.flatMap(
+      param => {
+        const existingResourcesBundle = this.fetchedBundles.get(param.newResource.resourceType);
+        if (!existingResourcesBundle) return [];
+        const existingResources = existingResourcesBundle.entry.map(entry => entry.resource);
+        return [{ ...param, existingResources }];
+      }
+    );
+    await this.next.computeResourceDiff(computeResourceDiffParamsWithExistingResources);
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
 }
