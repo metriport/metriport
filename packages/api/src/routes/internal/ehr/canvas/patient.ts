@@ -7,6 +7,7 @@ import httpStatus from "http-status";
 import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/fetch-bundle";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
+import { refreshCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/refresh-bundle";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
@@ -17,6 +18,7 @@ const router = Router();
  * POST /internal/ehr/canvas/patient/appointments
  *
  * Fetches appointments in the time range and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments",
@@ -34,7 +36,7 @@ router.post(
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Canvas Patient.
- * @returns Metriport Patient if found.
+ * @returns 200 OK
  */
 router.post(
   "/",
@@ -50,6 +52,29 @@ router.post(
       canvasPatientId,
       triggerDq,
     }).catch(processAsyncError("Canvas syncCanvasPatientIntoMetriport"));
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/canvas/patient/refresh-bundle
+ *
+ * Refreshes the bundle for the canvas patient
+ * @param req.params.id The ID of Canvas Patient.
+ * @returns 200 OK
+ */
+router.post(
+  "/refresh-bundle",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const canvasPatientId = getFromQueryOrFail("patientId", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    refreshCanvasBundle({
+      cxId,
+      canvasPracticeId,
+      canvasPatientId,
+    }).catch(processAsyncError("Canvas refreshCanvasBundle"));
     return res.sendStatus(httpStatus.OK);
   })
 );

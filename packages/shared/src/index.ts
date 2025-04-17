@@ -33,6 +33,8 @@ export * from "./domain/patient/patient";
 export * from "./domain/patient/patient-import";
 export * from "./domain/rate-limiting";
 export * from "./domain/secrets";
+export * from "./domain/workflow/workflow-status";
+export * from "./domain/workflow/types";
 export { BadRequestError } from "./error/bad-request";
 export { AdditionalInfo, MetriportError } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";

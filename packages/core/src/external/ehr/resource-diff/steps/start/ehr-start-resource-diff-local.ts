@@ -6,7 +6,8 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../command/consolidated/consolidated-get";
 import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
-import { getSupportedResourcesByEhr } from "../../resource-dfff-shared";
+import { updateWorkflowTracking } from "../../../api/update-workflow-tracking";
+import { getSupportedResourcesByEhr } from "../../../bundle/bundle-shared";
 import { buildEhrComputeResourceDiffHandler } from "../compute/ehr-compute-resource-diff-factory";
 import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
 
@@ -24,6 +25,8 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
     practiceId,
     metriportPatientId,
     ehrPatientId,
+    requestId,
+    workflowId,
   }: StartResourceDiffRequest): Promise<void> {
     const consolidated = await getConsolidated({ cxId, patientId: metriportPatientId });
     if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length < 1) {
@@ -46,6 +49,8 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
           metriportPatientId,
           ehrPatientId,
           newResource,
+          workflowId,
+          requestId,
         },
       ];
     });
@@ -61,18 +66,21 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
       if (existingResourcesBundle.entry.length < 1) continue;
       this.fetchedBundles.set(resourceType, existingResourcesBundle);
     }
-    await this.next.computeResourceDiff(
-      resourceDiffParams.flatMap(param => {
-        const existingResourcesBundle = this.fetchedBundles.get(param.newResource.resourceType);
-        if (!existingResourcesBundle) return [];
-        return [
-          {
-            ...param,
-            existingResources: existingResourcesBundle.entry.map(entry => entry.resource),
-          },
-        ];
-      })
-    );
+    const computeResourceDiffRequests = resourceDiffParams.flatMap(param => {
+      const existingResourcesBundle = this.fetchedBundles.get(param.newResource.resourceType);
+      if (!existingResourcesBundle) return [];
+      const existingResources = existingResourcesBundle.entry.map(entry => entry.resource);
+      return [{ ...param, existingResources }];
+    });
+    await updateWorkflowTracking({
+      ehr,
+      cxId,
+      patientId: metriportPatientId,
+      workflowId,
+      requestId,
+      total: computeResourceDiffRequests.length,
+    });
+    await this.next.computeResourceDiff(computeResourceDiffRequests);
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
 }
