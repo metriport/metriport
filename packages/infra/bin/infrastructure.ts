@@ -55,7 +55,7 @@ async function deploy(config: EnvConfig) {
   new APIStack(app, config.stackName, { env, config, bucketsStack, version });
 
   //---------------------------------------------------------------------------------
-  // 5. Deploy the HL7 Notification Routing stack.
+  // 5. Deploy the HL7 Notification Webhook Sender stack.
   //---------------------------------------------------------------------------------
   if (!isSandbox(config) && incomingHl7NotificationBucket) {
     const hl7NotificationStack = new Hl7NotificationStack(app, "Hl7NotificationStack", {

@@ -358,14 +358,14 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // HL7 Notification Router
+    // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
     const outgoingHl7NotificationBucket = props.bucketsStack.outgoingHl7NotificationBucket;
     if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
-        "HL7NotificationRouterNestedStack",
+        "Hl7NotificationWebhookSenderNestedStack",
         {
           config: props.config,
           lambdaLayers,

@@ -56,14 +56,14 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       vpc,
       ecrRepo,
       incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
-      description: "HL7 Notification Routing MLLP Server",
+      description: "HL7 Notification MLLP Server",
     });
 
     new NetworkStack(this, "NestedNetworkStack", {
       stackName: "NestedNetworkStack",
       config: props.config,
       vpc,
-      description: "HL7 Notification Routing Network Infrastructure",
+      description: "HL7 Notification Network Infrastructure",
     });
 
     new cdk.CfnOutput(this, "MllpECRRepoURI", {
