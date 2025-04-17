@@ -57,7 +57,7 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { BucketsStack } from "./buckets-stack";
-import { Hl7NotificationRouterNestedStack } from "./hl7-notification-router-nested-stack";
+import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
@@ -360,10 +360,10 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // HL7 Notification Router
     //-------------------------------------------
-    let hl7NotificationRouterLambda: lambda.Function | undefined;
+    let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
     const outgoingHl7NotificationBucket = props.bucketsStack.outgoingHl7NotificationBucket;
     if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
-      const { lambda } = new Hl7NotificationRouterNestedStack(
+      const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
         "HL7NotificationRouterNestedStack",
         {
@@ -375,7 +375,7 @@ export class APIStack extends Stack {
         }
       );
 
-      hl7NotificationRouterLambda = lambda;
+      hl7NotificationWebhookSenderLambda = lambda;
     }
 
     //-------------------------------------------
@@ -596,7 +596,7 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    hl7NotificationRouterLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    hl7NotificationWebhookSenderLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);

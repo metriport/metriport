@@ -12,13 +12,13 @@ import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const waitTimeHl7NotificationRouter = Duration.millis(50); // 1200 messages/min
+const waitTimeHl7NotificationWebhookSender = Duration.millis(50); // 1200 messages/min
 
-function settings(): { hl7NotificationRouter: QueueAndLambdaSettings } {
+function settings(): { hl7NotificationWebhookSender: QueueAndLambdaSettings } {
   const timeout = Duration.minutes(3);
-  const hl7NotificationRouter: QueueAndLambdaSettings = {
-    name: "Hl7NotificationRouter",
-    entry: "hl7-notification-router",
+  const hl7NotificationWebhookSender: QueueAndLambdaSettings = {
+    name: "Hl7NotificationWebhookSender",
+    entry: "hl7-notification-webhook-sender",
     lambda: {
       memory: 1024,
       batchSize: 1,
@@ -31,15 +31,15 @@ function settings(): { hl7NotificationRouter: QueueAndLambdaSettings } {
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
-    waitTime: waitTimeHl7NotificationRouter,
+    waitTime: waitTimeHl7NotificationWebhookSender,
   };
 
   return {
-    hl7NotificationRouter,
+    hl7NotificationWebhookSender,
   };
 }
 
-interface Hl7NotificationRouterNestedStackProps extends NestedStackProps {
+interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
@@ -47,15 +47,15 @@ interface Hl7NotificationRouterNestedStackProps extends NestedStackProps {
   outgoingHl7NotificationBucket: s3.Bucket;
 }
 
-export class Hl7NotificationRouterNestedStack extends NestedStack {
+export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
   public readonly lambda: Lambda;
 
-  constructor(scope: Construct, id: string, props: Hl7NotificationRouterNestedStackProps) {
+  constructor(scope: Construct, id: string, props: Hl7NotificationWebhookSenderNestedStackProps) {
     super(scope, id, props);
 
     this.terminationProtection = true;
 
-    const setup = this.setupHl7NotificationRouterLambda({
+    const setup = this.setupHl7NotificationWebhookSenderLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -67,7 +67,7 @@ export class Hl7NotificationRouterNestedStack extends NestedStack {
     this.lambda = setup.lambda;
   }
 
-  private setupHl7NotificationRouterLambda(ownProps: {
+  private setupHl7NotificationWebhookSenderLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -83,7 +83,7 @@ export class Hl7NotificationRouterNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       waitTime,
-    } = settings().hl7NotificationRouter;
+    } = settings().hl7NotificationWebhookSender;
 
     const queue = createQueue({
       ...queueSettings,
@@ -116,15 +116,15 @@ export class Hl7NotificationRouterNestedStack extends NestedStack {
     outgoingHl7NotificationBucket.grantWrite(lambda);
     lambda.addEventSource(new SqsEventSource(queue));
 
-    new CfnOutput(this, "Hl7NotificationRouterQueueArn", {
+    new CfnOutput(this, "Hl7NotificationWebhookSenderQueueArn", {
       description: "HL7 Message Router Queue ARN",
       value: queue.queueArn,
-      exportName: "Hl7NotificationRouterQueueArn",
+      exportName: "Hl7NotificationWebhookSenderQueueArn",
     });
-    new CfnOutput(this, "Hl7NotificationRouterQueueUrl", {
+    new CfnOutput(this, "Hl7NotificationWebhookSenderQueueUrl", {
       description: "HL7 Message Router Queue URL",
       value: queue.queueUrl,
-      exportName: "Hl7NotificationRouterQueueUrl",
+      exportName: "Hl7NotificationWebhookSenderQueueUrl",
     });
 
     return { lambda };

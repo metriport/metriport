@@ -5,6 +5,6 @@ export type Hl7Notification = {
   messageReceivedTimestamp: string;
 };
 
-export interface Hl7NotificationRouter {
+export interface Hl7NotificationWebhookSender {
   execute(request: Hl7Notification): Promise<void>;
 }
