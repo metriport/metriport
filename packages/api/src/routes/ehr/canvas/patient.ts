@@ -82,9 +82,9 @@ router.post(
 /**
  * GET /ehr/canvas/patient/:id/resource-diff
  *
- * Retrieves the resource diff status
+ * Retrieves the resource diff workflow
  * @param req.params.id The ID of Canvas Patient.
- * @returns Resource diff status
+ * @returns Resource diff workflow
  */
 router.get(
   "/:id/resource-diff",
