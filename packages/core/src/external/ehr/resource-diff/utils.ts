@@ -39,14 +39,14 @@ import { deduplicateProcedures } from "../../../fhir-deduplication/resources/pro
 import { deduplicateRelatedPersons } from "../../../fhir-deduplication/resources/related-person";
 import { artifactRelatedArtifactUrl } from "../../../fhir-deduplication/shared";
 
-export function computeResourceDiff({
+export function resourceIsDerivedFromExistingResources({
   existingResources,
-  newResource,
+  newResource: newResourceRaw,
 }: {
   existingResources: FhirResource[];
   newResource: FhirResource;
-}): string[] {
-  const newResourceType = newResource.resourceType;
+}): boolean {
+  const newResourceType = newResourceRaw.resourceType;
   const invalidExistingResources = existingResources.filter(
     resource => resource.resourceType !== newResourceType
   );
@@ -59,10 +59,11 @@ export function computeResourceDiff({
     });
   }
   const newResourceAlreadyExists = existingResources.find(
-    resource => resource.id === newResource.id
+    resource => resource.id === newResourceRaw.id
   );
-  if (newResourceAlreadyExists) return [];
+  if (newResourceAlreadyExists) return true;
 
+  const newResource = removeDerivedFromExtension(newResourceRaw as Resource);
   const resources = existingResources.concat([newResource]);
   let deduplicatedResources: Resource[];
   switch (newResourceType) {
@@ -143,22 +144,27 @@ export function computeResourceDiff({
       });
   }
 
-  const existingResourceIds = existingResources.map(resource => resource.id);
   const newResourceInDeduplicatedResources = deduplicatedResources.find(
     resource => resource.id === newResource.id
   );
-  if (!newResourceInDeduplicatedResources) return existingResourceIds;
-  const newResourceIsDerivedFromExistingResource = resourceIsDerivedFromExistingResource(
-    newResourceInDeduplicatedResources
-  );
-  if (newResourceIsDerivedFromExistingResource) return existingResourceIds;
-  return [];
+  if (!newResourceInDeduplicatedResources) return true;
+  const newResourceIsDerived = resourceIsDerived(newResourceInDeduplicatedResources);
+  if (newResourceIsDerived) return true;
+  return false;
 }
 
-function resourceIsDerivedFromExistingResource(resource: Resource): boolean {
+function resourceIsDerived(resource: Resource): boolean {
   if (!("extension" in resource)) return false;
   const derivedFrom = resource.extension.find(
     extension => extension.url === artifactRelatedArtifactUrl
   );
   return derivedFrom !== undefined;
+}
+
+function removeDerivedFromExtension(resource: Resource): FhirResource {
+  if (!("extension" in resource)) return resource as FhirResource;
+  const newExtensions = resource.extension.filter(
+    extension => extension.url !== artifactRelatedArtifactUrl
+  );
+  return { ...resource, extension: newExtensions } as FhirResource;
 }

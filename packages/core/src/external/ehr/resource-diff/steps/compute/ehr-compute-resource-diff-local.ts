@@ -2,7 +2,7 @@ import { EhrSource, FhirResource, sleep, SupportedResourceType } from "@metripor
 import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
-import { computeResourceDiff } from "../../utils";
+import { resourceIsDerivedFromExistingResources } from "../../utils";
 import {
   ComputeResourceDiffRequests,
   EhrComputeResourceDiffHandler,
@@ -32,11 +32,11 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           patientId: ehrPatientId,
           resourceType,
         }));
-      const matchedResourceIds = computeResourceDiff({
+      const isDerived = resourceIsDerivedFromExistingResources({
         existingResources: existingResourcesToUse,
         newResource,
       });
-      if (matchedResourceIds.length < 1) {
+      if (!isDerived) {
         await updateBundleOnS3({
           ehr,
           cxId,
