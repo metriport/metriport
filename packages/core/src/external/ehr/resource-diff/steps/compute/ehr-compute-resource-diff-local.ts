@@ -36,7 +36,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
         existingResources: existingResourcesToUse,
         newResource,
       });
-      if (matchedResourceIds.length > 0) {
+      if (matchedResourceIds.length < 1) {
         await updateBundleOnS3({
           ehr,
           cxId,
