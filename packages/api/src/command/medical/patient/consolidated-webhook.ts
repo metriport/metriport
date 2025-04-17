@@ -99,9 +99,8 @@ export async function processConsolidatedDataWebhook({
         requestId,
       });
     }
-
     await updateConsolidatedQueryProgress({
-      patient,
+      patient: currentPatient,
       requestId,
       progress: { status },
     });
