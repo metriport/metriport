@@ -2,6 +2,7 @@ import { MetriportError } from "@metriport/shared";
 import { WorkflowEntryStatus } from "@metriport/shared/domain/workflow/types";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
 import { WorkflowModel, workflowRawColumnNames } from "../../models/workflow";
+import { updateWorkflowTracking } from "./update-tracking";
 
 /**
  * Updates the totals on the workflow entry.
@@ -28,6 +29,8 @@ export async function updateWorkflowTotals({
   workflowId,
   requestId,
   status,
+  onCompleted,
+  onCompletedOverride,
 }: {
   cxId: string;
   patientId?: string;
@@ -35,6 +38,8 @@ export async function updateWorkflowTotals({
   workflowId: string;
   requestId: string;
   status: WorkflowEntryStatus;
+  onCompleted?: () => Promise<void> | undefined;
+  onCompletedOverride?: () => Promise<void> | undefined;
 }): Promise<{
   id: string;
   cxId: string;
@@ -63,7 +68,7 @@ export async function updateWorkflowTotals({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updatedRaw = (updatedRows as unknown as any[] | undefined)?.[0];
   if (!updatedRaw) throw new MetriportError("Failed to get updated total from DB");
-  return {
+  const updatedWorkflow = {
     id: updatedRaw[workflowRawColumnNames.id],
     cxId: updatedRaw[workflowRawColumnNames.cxId],
     status: updatedRaw[workflowRawColumnNames.status],
@@ -71,4 +76,21 @@ export async function updateWorkflowTotals({
     failed: updatedRaw[workflowRawColumnNames.failed],
     total: updatedRaw[workflowRawColumnNames.total],
   };
+  const { successful, failed, total, status: currentStatus } = updatedWorkflow;
+  if (currentStatus !== "completed" && successful + failed >= total) {
+    if (onCompletedOverride) {
+      await onCompletedOverride();
+    } else {
+      await updateWorkflowTracking({
+        cxId,
+        patientId,
+        facilityId,
+        workflowId,
+        requestId,
+        status: "completed",
+        onCompleted,
+      });
+    }
+  }
+  return updatedWorkflow;
 }

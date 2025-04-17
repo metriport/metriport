@@ -1,8 +1,9 @@
 import { Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
+import { emptyFunction, errorToString } from "@metriport/shared";
 import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
-import { errorToString } from "../../../shared/log";
+import { startResourceDiff } from "../../../external/ehr/resource-diff";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
@@ -98,11 +99,14 @@ export async function processConsolidatedDataWebhook({
         requestId,
       });
     }
-    await updateConsolidatedQueryProgress({
-      patient: currentPatient,
-      requestId,
-      progress: { status },
-    });
+
+    if (status === "completed") {
+      // Intentionally async
+      startResourceDiff({
+        cxId,
+        patientId: currentPatient.id,
+      }).catch(emptyFunction);
+    }
   } catch (err) {
     log(`Error on processConsolidatedDataWebhook: ${errorToString(err)}`);
     capture.error(err, {

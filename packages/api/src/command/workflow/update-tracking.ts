@@ -55,7 +55,6 @@ export async function updateWorkflowTracking({
   const { log } = out(
     `updateWorkflowTracking - cxId ${cxId} patientId ${patientId} facilityId ${facilityId} workflowId ${workflowId} requestId ${requestId}`
   );
-
   const workflowModel = await getWorkflowModelOrFail({
     cxId,
     patientId,
@@ -73,22 +72,21 @@ export async function updateWorkflowTracking({
   const justTurnedProcessing = newStatus === "processing" && oldStatus !== "processing";
   const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
 
-  const workflowToUpdate: Workflow = {
-    ...workflow,
+  const fieldsToUpdate: Partial<Workflow> = {
     status: newStatus ?? oldStatus,
   };
   if (total != undefined) {
-    workflowToUpdate.total = total;
-    workflowToUpdate.successful = 0;
-    workflowToUpdate.failed = 0;
+    fieldsToUpdate.total = total;
+    fieldsToUpdate.successful = 0;
+    fieldsToUpdate.failed = 0;
   }
   if (failed != undefined) {
-    workflowToUpdate.failed = failed;
+    fieldsToUpdate.failed = failed;
   }
   if (justTurnedProcessing) {
-    workflowToUpdate.startedAt = buildDayjs().toDate();
+    fieldsToUpdate.startedAt = buildDayjs().toDate();
   }
-  const updatedWorkflow = await workflowModel.update(workflowToUpdate);
+  const updatedWorkflow = await workflowModel.update(fieldsToUpdate);
 
   if (justTurnedCompleted && onCompleted) {
     log("o Calling onCompleted");
