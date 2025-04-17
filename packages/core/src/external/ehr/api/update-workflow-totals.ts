@@ -24,7 +24,7 @@ export type UpdateWorkflowTotalParams = {
  * @param requestId - The request ID.
  * @param status - The status of the workflow entry.
  */
-export async function updateWorkflowTotal({
+export async function updateWorkflowTotals({
   ehr,
   cxId,
   patientId,
@@ -41,14 +41,14 @@ export async function updateWorkflowTotal({
     requestId,
     status,
   });
-  const updateWorkflowUrl = `/internal/ehr/${ehr}/workflow/update-total?${queryParams.toString()}`;
+  const updateWorkflowUrl = `/internal/ehr/${ehr}/workflow/update-totals?${queryParams.toString()}`;
   try {
     const response = await api.post(updateWorkflowUrl);
     if (!response.data) throw new Error(`No body returned from ${updateWorkflowUrl}`);
     debug(`${updateWorkflowUrl} resp: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {
-    const msg = `Failure while updating workflow total @ Ehr`;
+    const msg = `Failure while updating workflow totals @ Ehr`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,

@@ -12,18 +12,18 @@ import { asyncHandler, getFromQueryOrFail } from "../../../util";
 const router = Router();
 
 /**
- * POST /internal/ehr/canvas/workflow/update-total
+ * POST /internal/ehr/canvas/workflow/update-totals
  *
  * Updates the total number of resources to process.
  * @param req.query.cxId The CX ID.
  * @param req.query.patientId The patient ID.
  * @param req.query.workflowId The workflow ID.
  * @param req.query.requestId The request ID.
- * @param req.query.total The total number of resources to process.
+ * @param req.query.status The status of the entry.
  * @returns 200 OK
  */
 router.post(
-  "/update-total",
+  "/update-totals",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

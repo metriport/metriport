@@ -1,5 +1,5 @@
 import { sleep } from "@metriport/shared";
-import { updateWorkflowTotal } from "../../../api/update-workflow-total";
+import { updateWorkflowTotals } from "../../../api/update-workflow-totals";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
 import { computeResourceDiff } from "../../utils";
@@ -35,7 +35,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
             resourceType: newResource.resourceType,
           });
         }
-        await updateWorkflowTotal({
+        await updateWorkflowTotals({
           ehr,
           cxId,
           patientId: metriportPatientId,
@@ -44,7 +44,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           status: "successful",
         });
       } catch (error) {
-        await updateWorkflowTotal({
+        await updateWorkflowTotals({
           ehr,
           cxId,
           patientId: metriportPatientId,
