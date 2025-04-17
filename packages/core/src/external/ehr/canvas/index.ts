@@ -33,12 +33,12 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
+import { BundleType } from "../bundle/bundle-shared";
 import {
   createOrReplaceBundle,
   CreateOrReplaceBundleParams,
 } from "../bundle/commands/create-or-replace-bundle";
 import { FetchBundleParams, fetchBundleYoungerThanMaxAge } from "../bundle/commands/fetch-bundle";
-import { BundleType } from "../bundle/bundle-shared";
 import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
 
 interface CanvasApiConfig extends ApiConfig {

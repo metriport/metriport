@@ -1,7 +1,7 @@
 import { Config } from "../../../../util/config";
+import { EhrRefreshBundleHandler } from "./ehr-refresh-resource-bundle";
 import { EhrRefreshBundleCloud } from "./ehr-refresh-resource-bundle-cloud";
 import { EhrRefreshBundleLocal } from "./ehr-refresh-resource-bundle-local";
-import { EhrRefreshBundleHandler } from "./ehr-refresh-resource-bundle";
 
 export function buildEhrRefreshBundleHandler(): EhrRefreshBundleHandler {
   if (Config.isDev()) {

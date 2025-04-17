@@ -56,23 +56,19 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
         practiceId,
         patientId: ehrPatientId,
         resourceType,
-        useExistingBundle: true,
+        useExistingBundle: false,
       });
       if (existingResourcesBundle.entry.length < 1) continue;
       this.fetchedBundles.set(resourceType, existingResourcesBundle);
     }
-    await this.next.computeResourceDiff(
-      resourceDiffParams.flatMap(param => {
-        const existingResourcesBundle = this.fetchedBundles.get(param.newResource.resourceType);
-        if (!existingResourcesBundle) return [];
-        return [
-          {
-            ...param,
-            existingResources: existingResourcesBundle.entry.map(entry => entry.resource),
-          },
-        ];
-      })
-    );
+    const computeResourceDiffParams = resourceDiffParams.flatMap(param => {
+      const existingResourcesBundle = this.fetchedBundles.get(param.newResource.resourceType);
+      if (!existingResourcesBundle) return [];
+      return [
+        { ...param, existingResources: existingResourcesBundle.entry.map(entry => entry.resource) },
+      ];
+    });
+    await this.next.computeResourceDiff(computeResourceDiffParams);
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
 }

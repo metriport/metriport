@@ -25,7 +25,7 @@ export async function fetchCanvasBundle({
   canvasPatientId,
   api,
   resourceType,
-  useExistingBundle = false,
+  useExistingBundle = true,
 }: FetchCanvasBundleParams): Promise<Bundle> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
