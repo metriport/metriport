@@ -12,31 +12,28 @@ import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const waitTimeHl7NotificationWebhookSender = Duration.millis(50); // 1200 messages/min
-
-function settings(): { hl7NotificationWebhookSender: QueueAndLambdaSettings } {
+function settings() {
   const timeout = Duration.seconds(61);
-  const hl7NotificationWebhookSender: QueueAndLambdaSettings = {
+  const hl7NotificationWebhookSender: Omit<QueueAndLambdaSettings, "waitTime"> = {
     name: "Hl7NotificationWebhookSender",
     entry: "hl7-notification-webhook-sender",
     lambda: {
-      memory: 1024,
+      memory: 1024 as const,
       timeout,
       reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.minutes(5),
       maxReceiveCount: 3,
+      maxMessageCountAlarmThreshold: 1_000,
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
-      maxMessageCountAlarmThreshold: 5_000,
     },
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
       maxConcurrency: 20,
     },
-    waitTime: waitTimeHl7NotificationWebhookSender,
   };
 
   return {
@@ -88,7 +85,6 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-      waitTime,
     } = settings().hl7NotificationWebhookSender;
 
     const queue = createQueue({
@@ -113,7 +109,6 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
