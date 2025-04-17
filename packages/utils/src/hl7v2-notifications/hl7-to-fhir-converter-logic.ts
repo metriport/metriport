@@ -2,8 +2,11 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Hl7Message } from "@medplum/core";
-import { getMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { getPatientIdsOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/utils";
+import {
+  getMessageUniqueIdentifier,
+  getOrCreateMessageDatetime,
+} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { convertHl7MessageToFhirAndUpload } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-converter";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import fs from "fs";
@@ -54,15 +57,17 @@ function invokeLambdaLogic() {
   const errors: unknown[] = [];
   chunks.forEach(message => {
     const hl7Message = Hl7Message.parse(message);
-    const timestamp = getMessageDatetime(hl7Message);
+    const timestamp = getOrCreateMessageDatetime(hl7Message);
+    const messageId = getMessageUniqueIdentifier(hl7Message);
 
     try {
-      const { cxId, patientId } = getPatientIdsOrFail(hl7Message);
+      const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
       convertHl7MessageToFhirAndUpload({
         cxId,
         patientId,
         message,
-        messageReceivedTimestamp: timestamp ?? new Date().toISOString(),
+        messageId,
+        messageReceivedTimestamp: timestamp,
         apiUrl,
         bucketName,
       });
