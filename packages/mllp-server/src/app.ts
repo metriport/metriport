@@ -24,7 +24,7 @@ import { withErrorHandling } from "./utils";
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
-const bucketName = Config.getHl7NotificationBucketName();
+const bucketName = Config.getHl7IncomingMessageBucketName();
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
 /**
