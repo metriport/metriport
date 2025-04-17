@@ -20,9 +20,10 @@ const router = Router();
  * @param req.query.workflowId The workflow ID.
  * @param req.query.requestId The request ID.
  * @param req.query.total The total number of resources to process.
+ * @returns 200 OK
  */
 router.post(
-  "/",
+  "/update-total",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -53,6 +54,7 @@ router.post(
  * @param req.query.workflowId The workflow ID.
  * @param req.query.requestId The request ID.
  * @param req.query.total The total number of resources to process.
+ * @returns 200 OK
  */
 router.post(
   "/update-tracking",
@@ -66,7 +68,6 @@ router.post(
     await updateWorkflowTracking({
       cxId,
       patientId,
-      facilityId: undefined,
       workflowId,
       requestId,
       total: +total,

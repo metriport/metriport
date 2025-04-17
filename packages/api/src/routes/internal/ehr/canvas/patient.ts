@@ -8,7 +8,6 @@ import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/bundl
 import { refreshCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/refresh-bundle";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
-import { refreshCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/refresh-bundle";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
