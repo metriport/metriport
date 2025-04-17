@@ -10,7 +10,7 @@ module.exports = {
   },
   parserPreset: {
     parserOpts: {
-      issuePrefixes: ["Part of ENG-", "Fixes ENG-"],
+      issuePrefixes: ["Ref ENG-", "References ENG-", "Part of ENG-", "Fixes ENG-", "Closes ENG-"],
     },
   },
   ignores: [message => /^Bumps \[.+]\(.+\) from .+ to .+\.$/m.test(message)],
