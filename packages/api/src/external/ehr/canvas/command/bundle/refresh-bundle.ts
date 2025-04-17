@@ -1,4 +1,4 @@
-import { buildEhrRefreshBundleHandler } from "@metriport/core/external/ehr/resource-diff/steps/refresh/ehr-refresh-resource-bundle-factory";
+import { buildEhrRefreshBundleHandler } from "@metriport/core/external/ehr/bundle/refresh/ehr-refresh-resource-bundle-factory";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 
 export type RefreshBundleParams = {

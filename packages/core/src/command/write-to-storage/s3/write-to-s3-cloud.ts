@@ -2,11 +2,13 @@ import { BadRequestError, sleep } from "@metriport/shared";
 import { chunk } from "lodash";
 import { SQSClient } from "../../../external/aws/sqs";
 import { Config } from "../../../util/config";
+import {
+  MAX_SQS_MESSAGE_BATCH_SIZE,
+  MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP,
+  MAX_SQS_MESSAGE_SIZE,
+} from "../../../util/sqs";
 import { S3Writer, WriteToS3Request } from "./write-to-s3";
 
-const MAX_SQS_MESSAGE_SIZE = 256000;
-const MAX_SQS_MESSAGE_BATCH_SIZE = 100;
-const MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP = 1000;
 /** ---------------------------------------------------------------------------
  * This class is used to write to S3 in a cloud environment via SQS. The max
  * payload size is 256KB.
