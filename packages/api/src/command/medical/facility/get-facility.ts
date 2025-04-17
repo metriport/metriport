@@ -27,9 +27,6 @@ export async function getFacilityOrFail({ cxId, id }: GetFacilityQuery): Promise
 
 export async function getSingleFacilityOrFail(cxId: string): Promise<Facility> {
   const facilities = await getFacilities({ cxId });
-  if (!facilities || facilities.length < 1) {
-    throw new NotFoundError(`Could not find facility`, undefined, { cxId });
-  }
   if (facilities.length > 1) {
     throw new BadRequestError(
       `More than one facility found, please specify a facility ID`,
@@ -37,7 +34,11 @@ export async function getSingleFacilityOrFail(cxId: string): Promise<Facility> {
       { cxId }
     );
   }
-  return facilities[0];
+  const facility = facilities[0];
+  if (!facility) {
+    throw new NotFoundError(`Could not find facility`, undefined, { cxId });
+  }
+  return facility;
 }
 
 /**
