@@ -72,14 +72,31 @@ export async function tallyDocQueryProgress({
     return updatedPatient;
   });
 
-  await processDocQueryProgressWebhook({
-    patient,
-    documentQueryProgress: patient.data.documentQueryProgress,
-    requestId,
-    progressType: type,
-  });
-
   return patient;
+}
+
+export async function tallyDocQueryProgressAndProcessWebhook({
+  patient: { id, cxId },
+  requestId,
+  progress,
+  type,
+  source,
+}: TallyDocQueryProgress): Promise<void> {
+  const updatedPatient = await tallyDocQueryProgress({
+    patient: { id, cxId },
+    requestId,
+    progress,
+    type,
+    source,
+  });
+  if (updatedPatient.data.documentQueryProgress) {
+    await processDocQueryProgressWebhook({
+      patient: updatedPatient,
+      documentQueryProgress: updatedPatient.data.documentQueryProgress,
+      requestId,
+      progressType: type,
+    });
+  }
 }
 
 export function setHIETallyCount(
