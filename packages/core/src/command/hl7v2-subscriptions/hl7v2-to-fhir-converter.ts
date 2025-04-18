@@ -122,7 +122,7 @@ export async function convertHl7MessageToFhirAndUpload({
       bucket: bucketName,
       key: combinedBundleFileName,
     });
-    const existingBundle = JSON.parse(JSON.stringify(existingCombinedBundleRaw));
+    const existingBundle = JSON.parse(existingCombinedBundleRaw.toString("utf-8"));
     const mergedBundle = await mergeIncomingBundleIntoCombined({
       cxId,
       patientId,
@@ -246,20 +246,37 @@ async function mergeIncomingBundleIntoCombined({
   incomingBundle: Bundle<Resource>;
   log: typeof console.log;
 }) {
-  const combinedEntries = [...(existingBundle.entry || []), ...(incomingBundle.entry || [])];
-  const combinedBundle = buildBundle({
-    type: "collection",
-    entries: combinedEntries,
-  });
+  try {
+    const combinedEntries = [...(existingBundle.entry || []), ...(incomingBundle.entry || [])];
+    const combinedBundle = buildBundle({
+      type: "collection",
+      entries: combinedEntries,
+    });
 
-  const dedupedCombinedBundle = await deduplicate({
-    cxId,
-    patientId,
-    bundle: combinedBundle,
-  });
-  log(`Combined and deduped the incoming bundle with the existing one.`);
+    const dedupedCombinedBundle = await deduplicate({
+      cxId,
+      patientId,
+      bundle: combinedBundle,
+    });
+    log(`Combined and deduped the incoming bundle with the existing one.`);
 
-  return dedupedCombinedBundle;
+    return dedupedCombinedBundle;
+  } catch (error) {
+    log(`Error during bundle merging or deduplication: ${errorToString(error)}`);
+    capture.error("Failed to merge or deduplicate bundles", {
+      extra: {
+        patientId,
+        cxId,
+        error,
+        entriesCount: {
+          existing: existingBundle.entry?.length || 0,
+          incoming: incomingBundle.entry?.length || 0,
+        },
+      },
+    });
+    // Return the incoming bundle as fallback
+    return incomingBundle;
+  }
 }
 
 async function getPresignedUrl({
