@@ -13,7 +13,7 @@ import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter"
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
-import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
+import { tallyDocQueryProgressAndProcessWebhook } from "../../hie/tally-doc-query-progress";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { formatDate } from "../shared";
 import {
@@ -168,7 +168,7 @@ export async function processOutboundDocumentRetrievalResps({
       });
     }
 
-    await tallyDocQueryProgress({
+    await tallyDocQueryProgressAndProcessWebhook({
       patient: { id: patientId, cxId: cxId },
       progress: {
         successful: successDocsRetrievedCount,

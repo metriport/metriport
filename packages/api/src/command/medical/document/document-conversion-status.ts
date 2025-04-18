@@ -4,6 +4,7 @@ import {
   DocumentQueryStatus,
   ProgressType,
 } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
@@ -13,7 +14,7 @@ import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { updateConversionProgress } from "./document-query";
-import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
+import { processDocQueryProgressWebhook } from "./process-doc-query-webhook";
 
 export async function calculateDocumentConversionStatus({
   patientId,
@@ -109,13 +110,21 @@ export async function calculateDocumentConversionStatus({
       recreateConsolidated({
         patient: updatedPatient,
         conversionType: "pdf",
-        context: `Post-DQ getConsolidated ${source}`,
+        context: `Post-DQ getConsolidated triggerConsolidated`,
+        ...recreateConsolidatedOnCompleteParams({
+          patient: updatedPatient,
+          requestId,
+        }),
       });
     } else if (isGlobalConversionCompleted) {
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
         context: "Post-DQ getConsolidated GLOBAL",
+        ...recreateConsolidatedOnCompleteParams({
+          patient: updatedPatient,
+          requestId,
+        }),
       });
     }
   } else {
@@ -133,15 +142,14 @@ export async function calculateDocumentConversionStatus({
 
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
-      await recreateConsolidated({ patient: expectedPatient, context: "calculate-no-source" });
-
-      processPatientDocumentRequest(
-        cxId,
-        patientId,
-        "medical.document-conversion",
-        MAPIWebhookStatus.completed,
-        ""
-      );
+      await recreateConsolidated({
+        patient: expectedPatient,
+        context: "calculate-no-source",
+        ...recreateConsolidatedOnCompleteParams({
+          patient: expectedPatient,
+          requestId,
+        }),
+      });
     }
   }
 }
@@ -156,4 +164,28 @@ function isProgressStatusValid({
   status: DocumentQueryStatus;
 }): boolean {
   return documentQueryProgress?.[progressType]?.status === status;
+}
+
+function recreateConsolidatedOnCompleteParams({
+  patient,
+  requestId,
+}: {
+  patient: Patient;
+  requestId: string;
+}): {
+  onCompleteSuccess?: () => Promise<void>;
+  onCompleteFinal?: () => Promise<void>;
+} {
+  return {
+    onCompleteFinal: async () => {
+      if (patient.data.documentQueryProgress) {
+        processDocQueryProgressWebhook({
+          patient,
+          documentQueryProgress: patient.data.documentQueryProgress,
+          requestId,
+          progressType: "convert",
+        });
+      }
+    },
+  };
 }
