@@ -93,3 +93,22 @@ export async function getWorkflowModelOrFail({
   }
   return workflow;
 }
+
+export async function getLatestWorkflow({
+  cxId,
+  patientId,
+  facilityId,
+  workflowId,
+}: Omit<WorkflowLookUpParams, "requestId">): Promise<Workflow | undefined> {
+  const workflows = await WorkflowModel.findAll({
+    where: {
+      cxId,
+      ...(patientId ? { patientId } : {}),
+      ...(facilityId ? { facilityId } : {}),
+      workflowId,
+    },
+    order: [["createdAt", "DESC"]],
+  });
+  if (workflows.length < 1) return undefined;
+  return workflows[0].dataValues;
+}

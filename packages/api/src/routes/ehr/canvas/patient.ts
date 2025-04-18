@@ -3,6 +3,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { fetchCanvasMetriportOnlyBundle } from "../../../external/ehr/canvas/command/bundle/fetch-metriport-only-bundle";
 import { getCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/get-resource-diff";
+import { getLatestCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/get-resource-diff-latest";
 import { startCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/start-resource-diff";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
@@ -95,6 +96,25 @@ router.get(
     const canvasPatientId = getFrom("params").orFail("id", req);
     const requestId = getFromQueryOrFail("requestId", req);
     const workflow = await getCanvasResourceDiff({ cxId, canvasPatientId, requestId });
+    return res.status(httpStatus.OK).json(workflow);
+  })
+);
+
+/**
+ * GET /ehr/canvas/patient/:id/latest-resource-diff
+ *
+ * Retrieves the latest resource diff workflow
+ * @param req.params.id The ID of Canvas Patient.
+ * @returns Resource diff workflow
+ */
+router.get(
+  "/:id/latest-resource-diff",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const workflow = await getLatestCanvasResourceDiff({ cxId, canvasPatientId });
     return res.status(httpStatus.OK).json(workflow);
   })
 );
