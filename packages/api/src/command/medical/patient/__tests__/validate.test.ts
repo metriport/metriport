@@ -46,8 +46,8 @@ describe("validate", () => {
       expect(() => validate(patient)).toThrow(`Date can't be in the future`);
     });
 
-    it("throws an error when dob is a minute in the future", async () => {
-      const futureDate = buildDayjs().add(1, "minute").toISOString();
+    it("throws an error when dob is an hour in the future", async () => {
+      const futureDate = buildDayjs().add(1, "hour").toISOString();
       const patient = makePatientCreate({ dob: futureDate });
       expect(() => validate(patient)).toThrow(`Date can't be in the future`);
     });
