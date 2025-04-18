@@ -60,6 +60,11 @@ export async function convertHl7MessageToFhirAndUpload({
   const internalHl7RouteUrl = `${apiUrl}/${INTERNAL_HL7_ENDPOINT}`;
   const internalGetPatientUrl = `${apiUrl}/${INTERNAL_GET_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
 
+  const msgType = getHl7MessageTypeOrFail(hl7Message);
+  const shouldNotifyApi =
+    createMessageTypes.includes(msgType.triggerEvent) ||
+    updateMessageTypes.includes(msgType.triggerEvent);
+
   const convertedBundle = convertHl7v2MessageToFhir({
     hl7Message,
     cxId,
@@ -95,7 +100,6 @@ export async function convertHl7MessageToFhirAndUpload({
     },
   };
 
-  const msgType = getHl7MessageTypeOrFail(hl7Message);
   const newBundleFileName = buildHl7MessageFhirBundleFileKey({
     cxId,
     patientId,
@@ -133,7 +137,6 @@ export async function convertHl7MessageToFhirAndUpload({
     } else if (updateMessageTypes.includes(msgType.triggerEvent)) {
       // For update messages, we need to retrieve and update it before sending to the API
       log("Need to retrieve and update existing entries");
-      return;
     } else {
       log(`Not handling this message type yet: ${msgType.triggerEvent}`);
       // TODO: Think of what to do here
@@ -157,39 +160,46 @@ export async function convertHl7MessageToFhirAndUpload({
       : undefined),
   });
 
-  const bundlePresignedUrlPromise = getPresignedUrl({
-    s3Client,
-    bucketName,
-    fileName: newBundleFileName,
-    cxId,
-    messageId,
-    timestamp: messageReceivedTimestamp,
-    messageType: msgType,
-    patientId,
-    log,
-  });
+  const bundlePresignedUrlPromise = shouldNotifyApi
+    ? getPresignedUrl({
+        s3Client,
+        bucketName,
+        fileName: newBundleFileName,
+        cxId,
+        messageId,
+        timestamp: messageReceivedTimestamp,
+        messageType: msgType,
+        patientId,
+        log,
+      })
+    : Promise.resolve("");
+
   const [, , bundlePresignedUrl] = await Promise.all([
     newBundleUploadPromise,
     combinedBundleUploadPromise,
     bundlePresignedUrlPromise,
   ]);
 
-  try {
-    await executeWithNetworkRetries(
-      async () =>
-        await axios.post(internalHl7RouteUrl, undefined, {
-          params: {
-            cxId,
-            patientId,
-            presignedUrl: bundlePresignedUrl,
-          },
-        })
-    );
-    log(`Successfully sent HL7 FHIR bundle to ${internalHl7RouteUrl}`);
-    return;
-  } catch (err) {
-    log(`Error hitting the ${INTERNAL_HL7_ENDPOINT} endpoint: - ${errorToString(err)}`);
-    throw err;
+  if (shouldNotifyApi && bundlePresignedUrl) {
+    console.log("WILL SEND?1");
+    try {
+      await executeWithNetworkRetries(
+        async () =>
+          await axios.post(internalHl7RouteUrl, undefined, {
+            params: {
+              cxId,
+              patientId,
+              presignedUrl: bundlePresignedUrl,
+            },
+          })
+      );
+      log(`Successfully sent HL7 FHIR bundle to ${internalHl7RouteUrl}`);
+    } catch (err) {
+      log(`Error hitting the ${INTERNAL_HL7_ENDPOINT} endpoint: - ${errorToString(err)}`);
+      throw err;
+    }
+  } else {
+    log(`Skipping API notification for message type: ${msgType.triggerEvent}`);
   }
 }
 
