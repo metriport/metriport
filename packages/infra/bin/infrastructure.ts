@@ -37,7 +37,7 @@ async function deploy(config: EnvConfig) {
   // 2. Deploy the buckets stack to create shared buckets.
   //---------------------------------------------------------------------------------
   const bucketsStack = new BucketsStack(app, "BucketsStack", { env, config });
-  const { incomingHl7NotificationBucket } = bucketsStack;
+  const { incomingHl7NotificationBucket, hl7NotificationBucket } = bucketsStack;
 
   //---------------------------------------------------------------------------------
   // 3. Deploy the location services stack to initialize all geo services.
@@ -57,11 +57,12 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 5. Deploy the HL7 Notification Webhook Sender stack.
   //---------------------------------------------------------------------------------
-  if (!isSandbox(config) && incomingHl7NotificationBucket) {
+  if (!isSandbox(config) && incomingHl7NotificationBucket && hl7NotificationBucket) {
     const hl7NotificationStack = new Hl7NotificationStack(app, "Hl7NotificationStack", {
       env,
       config,
       version,
+      hl7NotificationBucket,
       incomingHl7NotificationBucket,
     });
 

@@ -12,6 +12,7 @@ import { NetworkStack } from "./network";
 export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
+  hl7NotificationBucket: s3.Bucket;
   incomingHl7NotificationBucket: s3.Bucket;
 }
 
@@ -55,6 +56,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       version: props.version,
       vpc,
       ecrRepo,
+      hl7NotificationBucket: props.hl7NotificationBucket,
       incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
       description: "HL7 Notification MLLP Server",
     });
