@@ -10,12 +10,14 @@ export type StartCanvasResourceDiffParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
+  requestId?: string | undefined;
 };
 
 export async function startCanvasResourceDiff({
   cxId,
   canvasPracticeId,
   canvasPatientId,
+  requestId: requestIdParam,
 }: StartCanvasResourceDiffParams): Promise<string> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
@@ -27,7 +29,7 @@ export async function startCanvasResourceDiff({
     id: existingPatient.patientId,
   });
   const metriportPatientId = metriportPatient.id;
-  const requestId = uuidv7();
+  const requestId = requestIdParam ?? uuidv7();
   const workflowId = canvasResourceDiffWorkflowId;
   await createWorkflow({
     cxId,
