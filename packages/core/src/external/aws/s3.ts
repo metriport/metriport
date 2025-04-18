@@ -50,6 +50,21 @@ export type UploadParams = {
   metadata?: Record<string, string>;
 };
 
+export type StoreInS3Params = {
+  s3Utils: S3Utils;
+  payload: string;
+  bucketName: string;
+  fileName: string;
+  contentType: string;
+  log: typeof console.log;
+  errorConfig?: {
+    errorMessage: string;
+    context: string;
+    captureParams?: Record<string, unknown>;
+    shouldCapture: boolean;
+  };
+};
+
 export async function executeWithRetriesS3<T>(
   fn: () => Promise<T>,
   options?: ExecuteWithRetriesOptions<T>
@@ -531,20 +546,7 @@ export async function storeInS3WithRetries({
   contentType,
   log,
   errorConfig,
-}: {
-  s3Utils: S3Utils;
-  payload: string;
-  bucketName: string;
-  fileName: string;
-  contentType: string;
-  log: typeof console.log;
-  errorConfig?: {
-    errorMessage: string;
-    context: string;
-    captureParams?: Record<string, unknown>;
-    shouldCapture: boolean;
-  };
-}): Promise<void> {
+}: StoreInS3Params): Promise<void> {
   try {
     await executeWithRetriesS3(
       () =>

@@ -55,7 +55,7 @@ function buildHumanName(
   return {
     ...(prefix ? { prefix: [prefix] } : undefined),
     family,
-    given,
+    ...(given.length > 0 ? { given } : undefined),
     ...(suffix ? { suffix: [suffix] } : undefined),
   };
 }

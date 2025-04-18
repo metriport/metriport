@@ -17,7 +17,7 @@ type ConditionOffset = 0 | 1;
 
 type HumanNameDetails = {
   family: string;
-  given: string;
+  given: string | undefined;
   secondaryGivenNames: string | undefined;
   suffix: string | undefined;
   prefix: string | undefined;
@@ -65,8 +65,10 @@ export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails
   const attendingDoctorField = pv1Segment.getField(7);
   if (attendingDoctorField.components.length < 1) return undefined;
 
-  const family = attendingDoctorField.getComponent(2);
-  const given = attendingDoctorField.getComponent(3);
+  const family = getOptionalValueFromField(attendingDoctorField, 2);
+  if (!family) return undefined;
+
+  const given = getOptionalValueFromField(attendingDoctorField, 3);
   const secondaryGivenNames = getOptionalValueFromField(attendingDoctorField, 4);
   const suffix = getOptionalValueFromField(attendingDoctorField, 5);
   const prefix = getOptionalValueFromField(attendingDoctorField, 6);

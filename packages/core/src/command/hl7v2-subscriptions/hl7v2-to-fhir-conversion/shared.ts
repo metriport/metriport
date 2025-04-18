@@ -1,10 +1,12 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createFolderName } from "../../../domain/filename";
 import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
+import { JSON_FILE_EXTENSION } from "../../../util/mime";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
 import { getMessageDatetime, getMessageUniqueIdentifier } from "./msh";
 
@@ -160,4 +162,12 @@ export function buildHl7MessageFileKey({
 
 export function formatDateToHl7(date: Date): string {
   return buildDayjs(date).format("YYYYMMDDHHmmss");
+}
+
+export function buildHl7MessageFhirBundleFileKey(params: Hl7FileKeyParams) {
+  return `${buildHl7MessageFileKey(params)}${JSON_FILE_EXTENSION}`;
+}
+
+export function buildHl7MessageCombinedBundleFileKey(cxId: string, patientId: string) {
+  return `${createFolderName(cxId, patientId)}/COMBINED_BUNDLE${JSON_FILE_EXTENSION}`;
 }
