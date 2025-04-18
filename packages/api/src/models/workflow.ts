@@ -3,8 +3,8 @@ import {
   WorkflowData,
   WorkflowParamsCx,
   WorkflowParamsOps,
-} from "@metriport/shared/domain/workflow/types";
-import { WorkflowStatus } from "@metriport/shared/domain/workflow/workflow-status";
+  WorkflowStatus,
+} from "@metriport/shared";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "./_default";
 

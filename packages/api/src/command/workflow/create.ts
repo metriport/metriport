@@ -2,10 +2,10 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   Workflow,
   WorkflowData,
+  workflowInitialStatus,
   WorkflowParamsCx,
   WorkflowParamsOps,
-} from "@metriport/shared/domain/workflow/types";
-import { initialStatus } from "@metriport/shared/domain/workflow/workflow-status";
+} from "@metriport/shared";
 import { WorkflowModel } from "../../models/workflow";
 
 export type WorkflowParams = Omit<
@@ -48,7 +48,7 @@ export async function createWorkflow({
     facilityId,
     workflowId,
     requestId,
-    status: initialStatus,
+    status: workflowInitialStatus,
     total: 0,
     successful: 0,
     failed: 0,

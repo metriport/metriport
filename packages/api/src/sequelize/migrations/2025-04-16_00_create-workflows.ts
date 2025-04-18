@@ -3,7 +3,7 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const workflowTableName = "workflow";
-const workflowTableIdFields = ["cxId", "patientId", "facilityId", "workflowId", "requestId"];
+const workflowTableIdFields = ["cx_id", "patient_id", "facility_id", "workflow_id", "request_id"];
 const workflowTableConstraintName = "cxid_patientid_facilityid_workflowid_requestid_constraint";
 
 export const up: Migration = async ({ context: queryInterface }) => {

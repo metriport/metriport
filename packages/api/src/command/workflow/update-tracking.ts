@@ -1,27 +1,24 @@
 import { out } from "@metriport/core/util/log";
+import { Workflow, WorkflowStatus, validateNewWorkflowStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { Workflow } from "@metriport/shared/domain/workflow/types";
-import {
-  WorkflowStatus,
-  validateNewStatus,
-} from "@metriport/shared/domain/workflow/workflow-status";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getWorkflowModelOrFail } from "./get";
 
 dayjs.extend(duration);
 
-export type WorkflowUpdateTrackingCmd = {
+export type WorkflowUpdateTrackingParams = {
   cxId: string;
   patientId?: string;
   facilityId?: string;
   workflowId: string;
   requestId: string;
-  status?: WorkflowStatus;
+  status: WorkflowStatus;
   total?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
   onCompleted?: () => Promise<void> | undefined;
+  onCompletedOverride?: () => Promise<void> | undefined;
 };
 
 /**
@@ -51,7 +48,8 @@ export async function updateWorkflowTracking({
   failed,
   forceStatusUpdate = false,
   onCompleted,
-}: WorkflowUpdateTrackingCmd): Promise<Workflow> {
+  onCompletedOverride,
+}: WorkflowUpdateTrackingParams): Promise<Workflow> {
   const { log } = out(
     `updateWorkflowTracking - cxId ${cxId} patientId ${patientId} facilityId ${facilityId} workflowId ${workflowId} requestId ${requestId}`
   );
@@ -67,7 +65,7 @@ export async function updateWorkflowTracking({
   const newStatus = status
     ? forceStatusUpdate
       ? status
-      : validateNewStatus(workflow.status, status)
+      : validateNewWorkflowStatus(workflow.status, status)
     : undefined;
   const justTurnedProcessing = newStatus === "processing" && oldStatus !== "processing";
   const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
@@ -88,9 +86,13 @@ export async function updateWorkflowTracking({
   }
   const updatedWorkflow = await workflowModel.update(fieldsToUpdate);
 
-  if (justTurnedCompleted && onCompleted) {
-    log("o Calling onCompleted");
-    await onCompleted();
+  if (justTurnedCompleted && (onCompleted || onCompletedOverride)) {
+    log("onCompleted callback triggered");
+    if (onCompletedOverride) {
+      await onCompletedOverride();
+    } else if (onCompleted) {
+      await onCompleted();
+    }
   }
 
   return updatedWorkflow.dataValues;

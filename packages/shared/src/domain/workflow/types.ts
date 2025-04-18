@@ -32,11 +32,15 @@ export type WorkflowEntryStatusParsed = "waiting" | "processing" | typeof succes
 export type WorkflowEntryStatus = WorkflowEntryStatusFailed | WorkflowEntryStatusParsed;
 export type WorkflowEntryStatusFinal = typeof failed | typeof successful;
 
-export function isValidEntryStatus(status: string): status is WorkflowEntryStatus {
+export function isValidWorkflowEntryStatus(status: string): status is WorkflowEntryStatus {
   return (
     status === "waiting" ||
     status === "processing" ||
     status === "successful" ||
     status === "failed"
   );
+}
+
+export function isValidWorkflowStatus(status: string): status is WorkflowStatus {
+  return status === "waiting" || status === "processing" || status === "completed";
 }

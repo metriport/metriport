@@ -1,5 +1,4 @@
-import { NotFoundError } from "@metriport/shared";
-import { Workflow } from "@metriport/shared/domain/workflow/types";
+import { NotFoundError, Workflow } from "@metriport/shared";
 import { WorkflowModel } from "../../models/workflow";
 
 export type WorkflowLookUpParams = Pick<Workflow, "cxId" | "workflowId" | "requestId"> &
@@ -57,7 +56,13 @@ export async function getWorkflowModel({
   requestId,
 }: WorkflowLookUpParams): Promise<WorkflowModel | undefined> {
   const existing = await WorkflowModel.findOne({
-    where: { cxId, patientId, facilityId, workflowId, requestId },
+    where: {
+      cxId,
+      ...(patientId ? { patientId } : {}),
+      ...(facilityId ? { facilityId } : {}),
+      workflowId,
+      requestId,
+    },
   });
   if (!existing) return undefined;
   return existing;

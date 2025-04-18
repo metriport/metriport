@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
 import { getPatientMappings } from "../../command/mapping/patient";
@@ -14,6 +15,7 @@ export async function startResourceDiff({
 }: StartResourceDiffParams): Promise<void> {
   const patientMappings = await getPatientMappings({ cxId, id: patientId });
   if (patientMappings.length < 0) return;
+  const requestId = uuidv7();
   for (const patientMapping of patientMappings) {
     if (patientMapping.source === EhrSources.canvas) {
       const cxMapping = await getCxMappingOrFail({
@@ -24,6 +26,7 @@ export async function startResourceDiff({
         cxId,
         canvasPracticeId: cxMapping.externalId,
         canvasPatientId: patientMapping.externalId,
+        requestId,
       });
     }
   }

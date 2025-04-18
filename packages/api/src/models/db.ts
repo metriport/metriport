@@ -38,7 +38,7 @@ import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
-
+import { WorkflowModel } from "./workflow";
 // models to setup with sequelize
 const models: ModelSetup[] = [
   ConnectedUser.setup,
@@ -65,6 +65,7 @@ const models: ModelSetup[] = [
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
+  WorkflowModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];

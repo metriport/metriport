@@ -57,7 +57,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           patientId: metriportPatientId,
           workflowId,
           requestId,
-          status: "successful",
+          entryStatus: "successful",
         });
       } catch (error) {
         await updateWorkflowTotals({
@@ -66,7 +66,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           patientId: metriportPatientId,
           workflowId,
           requestId,
-          status: "failed",
+          entryStatus: "failed",
         });
       }
     }

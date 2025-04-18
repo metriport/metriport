@@ -97,6 +97,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
       patientId: metriportPatientId,
       workflowId,
       requestId,
+      status: "processing",
       total: computeResourceDiffParamsWithExistingResources.length,
     });
     await this.next.computeResourceDiff(computeResourceDiffParamsWithExistingResources);

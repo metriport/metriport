@@ -1,5 +1,8 @@
-import { isValidEntryStatus } from "@metriport/shared/dist/domain/workflow/types";
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import {
+  BadRequestError,
+  isValidWorkflowEntryStatus,
+  isValidWorkflowStatus,
+} from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -30,8 +33,8 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const workflowId = getFromQueryOrFail("workflowId", req);
     const requestId = getFromQueryOrFail("requestId", req);
-    const status = getFromQueryOrFail("status", req);
-    if (!isValidEntryStatus(status)) {
+    const entryStatus = getFromQueryOrFail("entryStatus", req);
+    if (!isValidWorkflowEntryStatus(entryStatus)) {
       throw new BadRequestError("Status must be either successful or failed");
     }
     await updateWorkflowTotals({
@@ -39,7 +42,7 @@ router.post(
       patientId,
       workflowId,
       requestId,
-      status,
+      entryStatus,
     });
     return res.sendStatus(httpStatus.OK);
   })
@@ -53,6 +56,7 @@ router.post(
  * @param req.query.patientId The patient ID.
  * @param req.query.workflowId The workflow ID.
  * @param req.query.requestId The request ID.
+ * @param req.query.status The status of the workflow.
  * @param req.query.total The total number of resources to process.
  * @returns 200 OK
  */
@@ -64,12 +68,17 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const workflowId = getFromQueryOrFail("workflowId", req);
     const requestId = getFromQueryOrFail("requestId", req);
+    const status = getFromQueryOrFail("status", req);
+    if (!isValidWorkflowStatus(status)) {
+      throw new BadRequestError("Status must be either waiting, processing, or completed");
+    }
     const total = getFromQueryOrFail("total", req);
     await updateWorkflowTracking({
       cxId,
       patientId,
       workflowId,
       requestId,
+      status,
       total: +total,
     });
     return res.sendStatus(httpStatus.OK);

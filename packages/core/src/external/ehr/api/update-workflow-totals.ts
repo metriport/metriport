@@ -11,7 +11,7 @@ export type UpdateWorkflowTotalParams = {
   patientId: string;
   workflowId: string;
   requestId: string;
-  status: WorkflowEntryStatus;
+  entryStatus: WorkflowEntryStatus;
 };
 
 /**
@@ -22,7 +22,7 @@ export type UpdateWorkflowTotalParams = {
  * @param patientId - The patient ID.
  * @param workflowId - The workflow ID.
  * @param requestId - The request ID.
- * @param status - The status of the workflow entry.
+ * @param entryStatus - The status of the workflow entry.
  */
 export async function updateWorkflowTotals({
   ehr,
@@ -30,7 +30,7 @@ export async function updateWorkflowTotals({
   patientId,
   workflowId,
   requestId,
-  status,
+  entryStatus,
 }: UpdateWorkflowTotalParams): Promise<void> {
   const { log, debug } = out(`Ehr updateWorkflow - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
@@ -39,7 +39,7 @@ export async function updateWorkflowTotals({
     patientId,
     workflowId,
     requestId,
-    status,
+    entryStatus,
   });
   const updateWorkflowUrl = `/internal/ehr/${ehr}/workflow/update-totals?${queryParams.toString()}`;
   try {

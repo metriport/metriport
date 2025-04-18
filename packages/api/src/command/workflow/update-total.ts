@@ -1,8 +1,18 @@
-import { MetriportError } from "@metriport/shared";
-import { WorkflowEntryStatus } from "@metriport/shared/domain/workflow/types";
+import { MetriportError, WorkflowEntryStatus } from "@metriport/shared";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
 import { WorkflowModel, workflowRawColumnNames } from "../../models/workflow";
 import { updateWorkflowTracking } from "./update-tracking";
+
+export type UpdateWorkflowTotalsParams = {
+  cxId: string;
+  patientId?: string;
+  facilityId?: string;
+  workflowId: string;
+  requestId: string;
+  entryStatus: WorkflowEntryStatus;
+  onCompleted?: () => Promise<void> | undefined;
+  onCompletedOverride?: () => Promise<void> | undefined;
+};
 
 /**
  * Updates the totals on the workflow entry.
@@ -19,7 +29,7 @@ import { updateWorkflowTracking } from "./update-tracking";
  * @param facilityId - The facility ID.
  * @param workflowId - The workflow ID.
  * @param requestId - The request ID.
- * @param status - The status of the workflow entry.
+ * @param entryStatus - The status of the workflow entry.
  * @returns the updated workflow entry.
  */
 export async function updateWorkflowTotals({
@@ -28,19 +38,10 @@ export async function updateWorkflowTotals({
   facilityId,
   workflowId,
   requestId,
-  status,
+  entryStatus,
   onCompleted,
   onCompletedOverride,
-}: {
-  cxId: string;
-  patientId?: string;
-  facilityId?: string;
-  workflowId: string;
-  requestId: string;
-  status: WorkflowEntryStatus;
-  onCompleted?: () => Promise<void> | undefined;
-  onCompletedOverride?: () => Promise<void> | undefined;
-}): Promise<{
+}: UpdateWorkflowTotalsParams): Promise<{
   id: string;
   cxId: string;
   status: WorkflowEntryStatus;
@@ -50,14 +51,14 @@ export async function updateWorkflowTotals({
 }> {
   const [[updatedRows]] = await WorkflowModel.increment(
     [
-      ...(status === "successful" ? ["successful" as const] : []),
-      ...(status === "failed" ? ["failed" as const] : []),
+      ...(entryStatus === "successful" ? ["successful" as const] : []),
+      ...(entryStatus === "failed" ? ["failed" as const] : []),
     ],
     {
       where: {
         cxId,
-        patientId,
-        facilityId,
+        ...(patientId ? { patientId } : {}),
+        ...(facilityId ? { facilityId } : {}),
         workflowId,
         requestId,
       },
@@ -78,19 +79,16 @@ export async function updateWorkflowTotals({
   };
   const { successful, failed, total, status: currentStatus } = updatedWorkflow;
   if (currentStatus !== "completed" && successful + failed >= total) {
-    if (onCompletedOverride) {
-      await onCompletedOverride();
-    } else {
-      await updateWorkflowTracking({
-        cxId,
-        patientId,
-        facilityId,
-        workflowId,
-        requestId,
-        status: "completed",
-        onCompleted,
-      });
-    }
+    await updateWorkflowTracking({
+      cxId,
+      patientId,
+      facilityId,
+      workflowId,
+      requestId,
+      status: "completed",
+      onCompleted,
+      onCompletedOverride,
+    });
   }
   return updatedWorkflow;
 }

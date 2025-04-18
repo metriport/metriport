@@ -1,4 +1,4 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import { WorkflowStatus, errorToString, MetriportError } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { Config } from "../../../util/config";
@@ -10,6 +10,7 @@ export type UpdateWorkflowTrackingParams = {
   patientId: string;
   workflowId: string;
   requestId: string;
+  status: WorkflowStatus;
   total: number;
 };
 
@@ -28,6 +29,7 @@ export async function updateWorkflowTracking({
   cxId,
   patientId,
   workflowId,
+  status,
   requestId,
   total,
 }: UpdateWorkflowTrackingParams): Promise<void> {
@@ -38,6 +40,7 @@ export async function updateWorkflowTracking({
     patientId,
     workflowId,
     requestId,
+    status,
     total: total.toString(),
   });
   const updateWorkflowUrl = `/internal/ehr/${ehr}/workflow/update-tracking?${queryParams.toString()}`;

@@ -1,4 +1,4 @@
-import { Workflow } from "@metriport/shared/domain/workflow/types";
+import { Workflow } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
