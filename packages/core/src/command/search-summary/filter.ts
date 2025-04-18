@@ -62,7 +62,7 @@ export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof cons
 
   log(`Bundle filtering metrics: ${JSON.stringify(metrics)}`);
 
-  const bundleText = JSON.stringify(slimPayloadBundle);
+  const bundleText = JSON.stringify(slimPayloadBundle).replace(/\s+/g, "");
   return bundleText;
 }
 
@@ -138,6 +138,8 @@ function removeUselessAttributes(res: Resource) {
   if ("extension" in res) delete res.extension;
   if ("telecom" in res) delete res.telecom;
   if ("encounter" in res && res.resourceType !== "DiagnosticReport") delete res.encounter;
+  if (res.resourceType === "Observation" && "_status" in res) delete res._status;
+  if (res.resourceType === "Observation" && "issued" in res) delete res.issued;
 
   // Remove unknown coding displays, empty arrays, and "unknown" string values recursively
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

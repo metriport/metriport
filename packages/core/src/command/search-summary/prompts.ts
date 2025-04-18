@@ -41,6 +41,7 @@ export function createPromptWithJsonOutput(query: string, bundleText: string): s
 
     Please create a concise summary that extracts the key medical information associated with the search query.
     Include citations to the resource where the information was found by using the number in brackets [1], [2], etc. after each key piece of information.
+    Limit to 4 citations.
 
     Also, include the relevant resources UUIDs from the FHIR resources associated with the search query in the "relevantResources" array.
     Also make sure that any resources that are included in the relevantResources array also include any resources that are referenced in the resource.
