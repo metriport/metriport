@@ -14,6 +14,7 @@ import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { updateConversionProgress } from "./document-query";
+import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 import { processDocQueryProgressWebhook } from "./process-doc-query-webhook";
 
 export async function calculateDocumentConversionStatus({
@@ -145,10 +146,15 @@ export async function calculateDocumentConversionStatus({
       await recreateConsolidated({
         patient: expectedPatient,
         context: "calculate-no-source",
-        ...recreateConsolidatedOnCompleteParams({
-          patient: expectedPatient,
-          requestId,
-        }),
+        onCompleteFinal: async () => {
+          processPatientDocumentRequest(
+            cxId,
+            patientId,
+            "medical.document-conversion",
+            MAPIWebhookStatus.completed,
+            ""
+          );
+        },
       });
     }
   }
