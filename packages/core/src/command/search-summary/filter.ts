@@ -16,16 +16,17 @@ import { cloneDeep } from "lodash";
 import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 import { sizeInBytes } from "../../util/string";
 
-const NUM_HISTORICAL_YEARS = 1;
-const MAX_REPORTS_PER_GROUP = 3;
+const NUM_HISTORICAL_YEARS = 5;
+const MAX_REPORTS_PER_GROUP = 50;
 
-const referenceResources = ["Practitioner", "Organization", "Observation", "Location"];
+const referenceResources = ["Practitioner", "Organization", "Location"];
 
 const relevantResources = [
   "AllergyIntolerance",
   "DiagnosticReport",
   "Immunization",
   "Location",
+  "Encounter",
   "Procedure",
   "Medication",
   "MedicationAdministration",
@@ -136,7 +137,7 @@ function removeUselessAttributes(res: Resource) {
   if ("identifier" in res) delete res.identifier;
   if ("extension" in res) delete res.extension;
   if ("telecom" in res) delete res.telecom;
-  if ("encounter" in res) delete res.encounter;
+  if ("encounter" in res && res.resourceType !== "DiagnosticReport") delete res.encounter;
 
   // Remove unknown coding displays, empty arrays, and "unknown" string values recursively
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -511,7 +512,7 @@ function removeReferencesAndLeftOverResources(
     if (referenceResources.includes(entry.resourceType)) return;
     if (entry.id && containedResourceIds.includes(entry.id)) return;
 
-    delete entry.id;
+    // delete entry.id;
     cleanPayload.push({ ...entry });
   });
   cleanPayload.push(slimmerPatient);

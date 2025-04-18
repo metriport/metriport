@@ -30,7 +30,7 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-
+import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
 const router = Router();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -43,23 +43,24 @@ const getDocSchema = z.object({
   output: z.enum(["fhir", "dto"]).nullish(),
 });
 
+const searchSummarySchema = z.object({
+  question: z.string().min(3),
+});
+
 router.post(
   "/search-summary",
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, id: patientId } = getPatientInfoOrFail(req);
-    const { dateFrom, dateTo, content } = getDocSchema.parse(req.query);
-
-    const documents = await searchDocuments({
-      cxId,
-      patientId,
-      dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
-      contentFilter: content ? sanitize(content) : undefined,
+    const { question } = searchSummarySchema.parse(req.query);
+    const { patient } = getPatientInfoOrFail(req);
+    const data = await getConsolidatedPatientData({
+      patient,
+      fromDashboard: true,
     });
 
-    const summary = await generateSearchSummary(documents, content ?? "");
-    return res.status(OK).json({ summary });
+    const summary = await generateSearchSummary(question, data);
+    return res.status(OK).json(summary);
   })
 );
 
