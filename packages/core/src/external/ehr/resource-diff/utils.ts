@@ -46,6 +46,7 @@ export function resourceIsDerivedFromExistingResources({
   existingResources: FhirResource[];
   newResource: FhirResource;
 }): boolean {
+  if (existingResources.length < 1) return false;
   const newResourceType = newResourceRaw.resourceType;
   const invalidExistingResources = existingResources.filter(
     resource => resource.resourceType !== newResourceType
