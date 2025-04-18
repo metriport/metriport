@@ -182,9 +182,9 @@ export async function convertHl7MessageToFhirAndUpload({
             },
           })
       );
-      log(`Successfully sent HL7 FHIR bundle to ${internalHl7RouteUrl}`);
+      log(`Successfully sent HL7 FHIR bundle to the API`);
     } catch (err) {
-      log(`Error hitting the ${INTERNAL_HL7_ENDPOINT} endpoint: - ${errorToString(err)}`);
+      log(`Error hitting the API endpoint: - ${errorToString(err)}`);
       throw err;
     }
   } else {
