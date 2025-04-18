@@ -10,7 +10,14 @@ module.exports = {
   },
   parserPreset: {
     parserOpts: {
-      issuePrefixes: ["Ref ENG-", "References ENG-", "Part of ENG-", "Fixes ENG-", "Closes ENG-"],
+      issuePrefixes: [
+        " #", // TODO REMOVE THIS ASAP, this is a temporary fix to allow commitlint to work with existing commits that reference GH issues
+        "Ref ENG-",
+        "References ENG-",
+        "Part of ENG-",
+        "Fixes ENG-",
+        "Closes ENG-",
+      ],
     },
   },
   ignores: [message => /^Bumps \[.+]\(.+\) from .+ to .+\.$/m.test(message)],
