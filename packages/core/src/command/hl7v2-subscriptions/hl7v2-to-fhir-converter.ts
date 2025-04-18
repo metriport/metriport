@@ -125,7 +125,10 @@ export async function convertHl7MessageToFhirAndUpload({
     const existingBundle = JSON.parse(JSON.stringify(existingCombinedBundleRaw));
     combinedBundle = existingBundle;
 
-    if (createMessageTypes.includes(msgType.triggerEvent)) {
+    if (
+      createMessageTypes.includes(msgType.triggerEvent) ||
+      updateMessageTypes.includes(msgType.triggerEvent)
+    ) {
       const mergedBundle = await mergeIncomingBundleIntoCombined({
         cxId,
         patientId,
@@ -134,9 +137,6 @@ export async function convertHl7MessageToFhirAndUpload({
         log,
       });
       combinedBundle = mergedBundle;
-    } else if (updateMessageTypes.includes(msgType.triggerEvent)) {
-      // For update messages, we need to retrieve and update it before sending to the API
-      log("Need to retrieve and update existing entries");
     } else {
       log(`Not handling this message type yet: ${msgType.triggerEvent}`);
       // TODO: Think of what to do here
@@ -181,7 +181,6 @@ export async function convertHl7MessageToFhirAndUpload({
   ]);
 
   if (shouldNotifyApi && bundlePresignedUrl) {
-    console.log("WILL SEND?1");
     try {
       await executeWithNetworkRetries(
         async () =>
