@@ -1,9 +1,9 @@
-import { sleep } from "@metriport/shared";
+import { MetriportError, sleep } from "@metriport/shared";
 import {
   Bundle,
   fhirResourceSchema,
-  SupportedResourceType,
   getDefaultBundle,
+  SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../command/consolidated/consolidated-get";
 import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
@@ -35,7 +35,12 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
     const computeResourceDiffParams = consolidated.bundle.entry.flatMap(bundleEntry => {
       if (!bundleEntry.resource) return [];
       const newResourceSafeParsed = fhirResourceSchema.safeParse(bundleEntry.resource);
-      if (!newResourceSafeParsed.success) return [];
+      if (!newResourceSafeParsed.success) {
+        throw new MetriportError("Invalid resource when starting resource diff", undefined, {
+          resourceType: bundleEntry.resource.resourceType,
+          resourceId: bundleEntry.resource.id,
+        });
+      }
       const newResource = newResourceSafeParsed.data;
       const supportedResources = getSupportedResourcesByEhr(ehr);
       if (!supportedResources.includes(newResource.resourceType)) return [];
