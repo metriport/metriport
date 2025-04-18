@@ -123,24 +123,14 @@ export async function convertHl7MessageToFhirAndUpload({
       key: combinedBundleFileName,
     });
     const existingBundle = JSON.parse(JSON.stringify(existingCombinedBundleRaw));
-    combinedBundle = existingBundle;
-
-    if (
-      createMessageTypes.includes(msgType.triggerEvent) ||
-      updateMessageTypes.includes(msgType.triggerEvent)
-    ) {
-      const mergedBundle = await mergeIncomingBundleIntoCombined({
-        cxId,
-        patientId,
-        existingBundle,
-        incomingBundle: newBundle,
-        log,
-      });
-      combinedBundle = mergedBundle;
-    } else {
-      log(`Not handling this message type yet: ${msgType.triggerEvent}`);
-      // TODO: Think of what to do here
-    }
+    const mergedBundle = await mergeIncomingBundleIntoCombined({
+      cxId,
+      patientId,
+      existingBundle,
+      incomingBundle: newBundle,
+      log,
+    });
+    combinedBundle = mergedBundle;
   } catch (err) {
     log(`No existing combined bundle found. Creating a new one.`);
     // intentionally not throwing
