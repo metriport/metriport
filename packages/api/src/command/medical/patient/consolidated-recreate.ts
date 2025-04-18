@@ -13,7 +13,8 @@ import { getConsolidated } from "../patient/consolidated-get";
  * @param patient - The patient to recreate the consolidated bundle for.
  * @param organization - The organization to recreate the consolidated bundle for.
  * @param conversionType - The conversion type to use when converting to consolidatd.
- * @param onComplete - Optional callback to run after the consolidated bundle is recreated.
+ * @param onCompleteSuccess - Optional callback to run after the consolidated bundle is recreated.
+ * @param onCompleteFinal - Optional callback to at the end of the process.
  * @param context - Optional context to log.
  */
 export async function recreateConsolidated({
