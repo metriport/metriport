@@ -15,7 +15,7 @@ import { createQueue } from "./shared/sqs";
 const waitTimeHl7NotificationWebhookSender = Duration.millis(50); // 1200 messages/min
 
 function settings(): { hl7NotificationWebhookSender: QueueAndLambdaSettings } {
-  const timeout = Duration.minutes(3);
+  const timeout = Duration.seconds(61);
   const hl7NotificationWebhookSender: QueueAndLambdaSettings = {
     name: "Hl7NotificationWebhookSender",
     entry: "hl7-notification-webhook-sender",
@@ -30,6 +30,7 @@ function settings(): { hl7NotificationWebhookSender: QueueAndLambdaSettings } {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
+      maxMessageCountAlarmThreshold: 5_000,
     },
     waitTime: waitTimeHl7NotificationWebhookSender,
   };
@@ -94,7 +95,6 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
-      maxMessageCountAlarmThreshold: 5_000,
     });
 
     const lambda = createLambda({
