@@ -25,8 +25,14 @@ import {
  *      - Condition name (from code->text or coding->display)
  * 2. Combine the Conditions in each group into one master condition and return the array of only unique and maximally filled out Conditions
  */
-export function deduplicateConditions(conditions: Condition[]): DeduplicationResult<Condition> {
-  const { conditionsMap, refReplacementMap, danglingReferences } = groupSameConditions(conditions);
+export function deduplicateConditions(
+  conditions: Condition[],
+  isExtensionIncluded = true
+): DeduplicationResult<Condition> {
+  const { conditionsMap, refReplacementMap, danglingReferences } = groupSameConditions(
+    conditions,
+    isExtensionIncluded
+  );
   return {
     combinedResources: combineResources({
       combinedMaps: [conditionsMap],
@@ -36,7 +42,10 @@ export function deduplicateConditions(conditions: Condition[]): DeduplicationRes
   };
 }
 
-export function groupSameConditions(conditions: Condition[]): {
+export function groupSameConditions(
+  conditions: Condition[],
+  isExtensionIncluded: boolean
+): {
   conditionsMap: Map<string, Condition>;
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
@@ -101,6 +110,7 @@ export function groupSameConditions(conditions: Condition[]): {
         targetResource: condition,
         refReplacementMap,
         applySpecialModifications: removeOtherCodes,
+        isExtensionIncluded,
       });
     } else {
       danglingReferences.add(createRef(condition));

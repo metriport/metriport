@@ -28,10 +28,10 @@ export function convertHl7v2MessageToFhir({
   timestampString,
 }: Hl7ToFhirParams): Bundle<Resource> {
   const { log } = out(`hl7v2 to fhir - cx: ${cxId}, pt: ${patientId}`);
-  log("Beginning conversion.");
+  const msgType = getHl7MessageTypeOrFail(hl7Message);
+  log(`Beginning conversion for type ${msgType.messageType}-${msgType.triggerEvent}`);
 
   const startedAt = new Date();
-  const msgType = getHl7MessageTypeOrFail(hl7Message);
 
   const filePath = buildHl7MessageFileKey({
     cxId,
