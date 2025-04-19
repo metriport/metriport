@@ -56,7 +56,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           messageCode: msgType.triggerEvent,
         });
 
-        // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
+        log("TODO: Send message to queue - see next PR");
 
         connection.send(message.buildAck());
 

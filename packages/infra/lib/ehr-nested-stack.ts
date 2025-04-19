@@ -10,11 +10,15 @@ import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createQueue } from "./shared/sqs";
+import { QueueAndLambdaSettings } from "./shared/settings";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(1); // 60 patients/min
 
-function settings() {
+function settings(): {
+  syncPatient: QueueAndLambdaSettings;
+  elationLinkPatient: QueueAndLambdaSettings;
+} {
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
   const syncPatient: QueueAndLambdaSettings = {
     name: "EhrSyncPatient",
@@ -58,31 +62,6 @@ function settings() {
     elationLinkPatient,
   };
 }
-
-type QueueAndLambdaSettings = {
-  name: string;
-  entry: string;
-  lambda: {
-    memory: 512 | 1024 | 2048 | 4096;
-    /** Number of messages the lambda pull from SQS at once  */
-    batchSize: number;
-    /** How long can the lambda run for, max is 900 seconds (15 minutes)  */
-    timeout: Duration;
-    /** Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html */
-    reportBatchItemFailures: boolean;
-  };
-  queue: {
-    alarmMaxAgeOfOldestMessage: Duration;
-    maxMessageCountAlarmThreshold?: number;
-    /** The number of times a message can be unsuccesfully dequeued before being moved to the dead-letter queue. */
-    maxReceiveCount: number;
-    /** How long messages should be invisible for other consumers, based on the lambda timeout */
-    /** We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ */
-    visibilityTimeout: Duration;
-    createRetryLambda: boolean;
-  };
-  waitTime: Duration;
-};
 
 interface EhrNestedStackProps extends NestedStackProps {
   config: EnvConfig;

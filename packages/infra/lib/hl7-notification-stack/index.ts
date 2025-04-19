@@ -13,6 +13,7 @@ export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
   hl7NotificationBucket: s3.Bucket;
+  incomingHl7NotificationBucket: s3.Bucket;
 }
 
 const NUM_AZS = 1;
@@ -38,6 +39,12 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       ],
     });
 
+    new ec2.InterfaceVpcEndpoint(this, "Hl7NotificationVpcSqsEndpoint", {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SQS,
+      privateDnsEnabled: true,
+    });
+
     const ecrRepo = new Repository(this, "MllpServerRepo", {
       repositoryName: "metriport/mllp-server",
       lifecycleRules: [{ maxImageCount: 5000 }],
@@ -50,14 +57,15 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       vpc,
       ecrRepo,
       hl7NotificationBucket: props.hl7NotificationBucket,
-      description: "HL7 Notification Routing MLLP Server",
+      incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
+      description: "HL7 Notification MLLP Server",
     });
 
     new NetworkStack(this, "NestedNetworkStack", {
       stackName: "NestedNetworkStack",
       config: props.config,
       vpc,
-      description: "HL7 Notification Routing Network Infrastructure",
+      description: "HL7 Notification Network Infrastructure",
     });
 
     new cdk.CfnOutput(this, "MllpECRRepoURI", {

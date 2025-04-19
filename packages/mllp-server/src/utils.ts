@@ -27,11 +27,14 @@ export function withErrorHandling<T>(
   logger: Logger
 ): (data: T) => Promise<void> {
   return async (data: T) => {
-    try {
-      await handler(data);
-    } catch (error) {
-      logger.log(`Error in handler: ${error}`);
-      Sentry.captureException(error);
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    await Sentry.withScope(async (_: Sentry.Scope) => {
+      try {
+        await handler(data);
+      } catch (error) {
+        logger.log(`Error in handler: ${error}`);
+        Sentry.captureException(error);
+      }
+    });
   };
 }
