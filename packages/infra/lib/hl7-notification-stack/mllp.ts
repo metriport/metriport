@@ -6,10 +6,12 @@ import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
 import { MLLP_DEFAULT_PORT, MLLP_SERVER_NLB_INTERNAL_IP } from "./constants";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -113,6 +115,12 @@ export class MllpStack extends cdk.NestedStack {
       securityGroups: [mllpSecurityGroup],
     });
 
+    const logGroup = new LogGroup(this, "MllpServerLogGroup", {
+      logGroupName: "/aws/ecs/mllp-server",
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     fargateService.taskDefinition.addContainer("MllpServer", {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
       secrets: secretsToECS(buildSecrets(this, props.config.hl7Notification.secrets)),
@@ -125,6 +133,10 @@ export class MllpStack extends cdk.NestedStack {
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
+      logging: ecs.LogDriver.awsLogs({
+        logGroup,
+        streamPrefix: "mllp-server",
+      }),
     });
 
     targetGroup.addTarget(fargateService);
