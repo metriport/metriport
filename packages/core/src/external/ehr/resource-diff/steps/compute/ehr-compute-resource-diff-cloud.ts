@@ -20,11 +20,7 @@ export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandle
     region?: string,
     sqsClient?: SQSClient
   ) {
-    if (!sqsClient) {
-      this.sqsClient = new SQSClient({ region: region ?? Config.getAWSRegion() });
-    } else {
-      this.sqsClient = sqsClient;
-    }
+    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
   async computeResourceDiff(params: ComputeResourceDiffRequests): Promise<void> {
@@ -40,14 +36,14 @@ export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandle
       payloadsTooBigWithoutResources,
       p => Buffer.from(JSON.stringify(p)).length > MAX_SQS_MESSAGE_SIZE
     );
-    const badPayload = payloadsStillTooBig[0];
-    if (badPayload) {
+    const invalidPayload = payloadsStillTooBig[0];
+    if (invalidPayload) {
       throw new BadRequestError("Payload size exceeds SQS message size limit", undefined, {
-        cxId: badPayload.cxId,
-        practiceId: badPayload.practiceId,
-        metriportPatientId: badPayload.metriportPatientId,
-        ehrPatientId: badPayload.ehrPatientId,
-        resourceId: badPayload.newResource.id,
+        cxId: invalidPayload.cxId,
+        practiceId: invalidPayload.practiceId,
+        metriportPatientId: invalidPayload.metriportPatientId,
+        ehrPatientId: invalidPayload.ehrPatientId,
+        resourceId: invalidPayload.newResource.id,
       });
     }
     const chunks = chunk(

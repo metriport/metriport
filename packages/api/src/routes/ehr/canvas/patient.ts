@@ -17,6 +17,7 @@ const router = Router();
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Metriport Patient if found.
  */
 router.get(
@@ -41,6 +42,7 @@ router.get(
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Metriport Patient if found.
  */
 router.post(
@@ -63,8 +65,9 @@ router.post(
 /**
  * POST /ehr/canvas/patient/:id/resource-diff
  *
- * Starts the resource diff process
+ * Starts the resource diff workflow
  * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns 200 OK
  */
 router.post(
@@ -122,8 +125,9 @@ router.get(
 /**
  * GET /ehr/canvas/patient/:id/metriport-only-bundle
  *
- * Retrieves the metriport only bundle
+ * Retrieves the Metriport only bundle for all supported resource types
  * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Metriport only bundle
  */
 router.get(

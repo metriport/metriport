@@ -14,9 +14,9 @@ import { createQueue } from "./shared/sqs";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(1); // 60 patients/min
-const waitTimeStartResourceDiff = Duration.seconds(1); // 60 patients/min
+const waitTimeStartResourceDiff = Duration.seconds(10); // 6 patients/min
 const waitTimeComputeResourceDiff = Duration.seconds(1); // 60 patients/min
-const waitTimeRefreshBundle = Duration.seconds(1); // 60 patients/min
+const waitTimeRefreshBundle = Duration.seconds(10); // 6 patients/min
 
 function settings() {
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
@@ -207,11 +207,10 @@ export class EhrNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      ehrBundleBucket: this.ehrBundleBucket,
     });
     this.computeResourceDiffLambda = computeResourceDiff.lambda;
     this.computeResourceDiffQueue = computeResourceDiff.queue;
-
-    this.ehrBundleBucket.grantReadWrite(this.computeResourceDiffLambda);
 
     const startResourceDiff = this.setupStartResourceDiff({
       lambdaLayers: props.lambdaLayers,
@@ -223,8 +222,6 @@ export class EhrNestedStack extends NestedStack {
     });
     this.startResourceDiffLambda = startResourceDiff.lambda;
     this.startResourceDiffQueue = startResourceDiff.queue;
-
-    this.computeResourceDiffQueue.grantSendMessages(this.startResourceDiffLambda);
 
     const refreshBundle = this.setupRefreshBundle({
       lambdaLayers: props.lambdaLayers,
@@ -401,7 +398,7 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
-        COMPUTE_RESOURCE_DIFF_QUEUE_URL: ownProps.computeResourceDiffQueue.queueUrl,
+        EHR_COMPUTE_RESOURCE_DIFF_QUEUE_URL: ownProps.computeResourceDiffQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -413,6 +410,8 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
 
+    ownProps.computeResourceDiffQueue.grantSendMessages(lambda);
+
     return { lambda, queue };
   }
 
@@ -422,6 +421,7 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    ehrBundleBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
     const {
@@ -461,6 +461,7 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -471,6 +472,8 @@ export class EhrNestedStack extends NestedStack {
     });
 
     lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
+
+    ownProps.ehrBundleBucket.grantReadWrite(lambda);
 
     return { lambda, queue };
   }

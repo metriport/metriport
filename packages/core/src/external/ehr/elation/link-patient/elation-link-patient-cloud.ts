@@ -11,11 +11,7 @@ export class ElationLinkPatientCloud implements ElationLinkPatientHandler {
     region?: string,
     sqsClient?: SQSClient
   ) {
-    if (!sqsClient) {
-      this.sqsClient = new SQSClient({ region: region ?? Config.getAWSRegion() });
-    } else {
-      this.sqsClient = sqsClient;
-    }
+    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
   async processLinkPatient(params: ProcessLinkPatientRequest): Promise<void> {

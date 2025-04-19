@@ -7,6 +7,13 @@ export type RefreshBundleParams = {
   canvasPatientId: string;
 };
 
+/**
+ * Refreshes the Canvas bundle for the patient in s3 across all supported resource types.
+ *
+ * @param cxId - The cxId of the patient.
+ * @param canvasPracticeId - The canvas practice id of the patient.
+ * @param canvasPatientId - The canvas patient id of the patient.
+ */
 export async function refreshCanvasBundle({
   cxId,
   canvasPracticeId,

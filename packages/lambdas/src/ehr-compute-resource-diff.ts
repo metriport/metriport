@@ -26,7 +26,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
     const message = getSingleMessageOrFail(event.Records, lambdaName);
     if (!message) return;
 
-    console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
     const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, newResource } = parsedBody;
 
@@ -58,7 +57,7 @@ const ehrComputeResourceDiffSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
-  existingResources: fhirResourceSchema.array(),
+  existingResources: fhirResourceSchema.array().optional(),
   newResource: fhirResourceSchema,
   requestId: z.string(),
   workflowId: z.string(),
