@@ -4,7 +4,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { createWorkflow } from "../../../../../command/workflow/create";
-import { canvasResourceDiffWorkflowId } from "../../shared";
+import { getCanvasResourceDiffWorkflowId } from "../../shared";
 
 export type StartCanvasResourceDiffParams = {
   cxId: string;
@@ -38,7 +38,7 @@ export async function startCanvasResourceDiff({
   });
   const metriportPatientId = metriportPatient.id;
   const requestId = requestIdParam ?? uuidv7();
-  const workflowId = canvasResourceDiffWorkflowId;
+  const workflowId = getCanvasResourceDiffWorkflowId(canvasPatientId);
   await createWorkflow({
     cxId,
     patientId: metriportPatientId,
