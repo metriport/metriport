@@ -13,6 +13,7 @@ import {
   buildHl7MessageFileKey,
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
@@ -78,12 +79,27 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
               messageCode: msgType.triggerEvent,
             }),
             file: Buffer.from(asString(message)),
-            contentType: "text/plain",
+            contentType: "application/json",
           })
           .catch(e => {
             logger.log(`S3 upload failed: ${e}`);
             Sentry.captureException(e);
           });
+
+        analytics(
+          {
+            distinctId: cxId,
+            event: EventTypes.hl7NotificationReceived,
+            properties: {
+              cxId,
+              patientId,
+              messageType: msgType.messageType,
+              messageCode: msgType.triggerEvent,
+            },
+          },
+          undefined,
+          "mllp-server"
+        );
       }, logger)
     );
 

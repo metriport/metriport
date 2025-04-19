@@ -19,7 +19,11 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
 const defaultPostHogApiKey = Config.getPostHogApiKey();
 const groupType = "customer";
 
-export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
+export function analytics(
+  params: EventMessageV1,
+  postApiKey?: string,
+  platform?: string
+): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
 
   if (!apiKey) return;
@@ -29,7 +33,7 @@ export function analytics(params: EventMessageV1, postApiKey?: string): PostHog 
   params.properties = {
     ...(params.properties ? { ...params.properties } : undefined),
     environment: Config.getEnvType(),
-    platform: "oss-api",
+    platform: platform ?? "oss-api",
   };
   params.groups = { [groupType]: params.distinctId };
   posthog.capture(params);
@@ -53,6 +57,7 @@ export enum EventTypes {
   error = "error",
   addressRelevance = "addressRelevance",
   aiBriefGeneration = "aiBriefGeneration",
+  hl7NotificationReceived = "hl7NotificationReceived",
   patientDiscovery = "patientDiscovery",
   rerunOnNewDemographics = "rerunOnNewDemographics",
   runScheduledPatientDiscovery = "runScheduledPatientDiscovery",
