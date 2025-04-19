@@ -9,6 +9,8 @@ export type ComputeResourceDiffRequests = {
   ehrPatientId: string;
   existingResources?: FhirResource[] | undefined;
   newResource: FhirResource;
+  requestId: string;
+  workflowId: string;
 }[];
 
 export interface EhrComputeResourceDiffHandler {

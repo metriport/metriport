@@ -6,6 +6,8 @@ export type StartResourceDiffRequest = {
   practiceId: string;
   metriportPatientId: string;
   ehrPatientId: string;
+  requestId: string;
+  workflowId: string;
 };
 
 export interface EhrStartResourceDiffHandler {

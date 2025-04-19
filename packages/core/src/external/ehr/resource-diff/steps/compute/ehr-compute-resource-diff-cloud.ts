@@ -1,15 +1,16 @@
 import { BadRequestError, sleep } from "@metriport/shared";
 import { chunk, partition } from "lodash";
 import { Config } from "../../../../../util/config";
+import {
+  MAX_SQS_MESSAGE_BATCH_SIZE,
+  MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP,
+  MAX_SQS_MESSAGE_SIZE,
+} from "../../../../../util/sqs";
 import { SQSClient } from "../../../../aws/sqs";
 import {
   ComputeResourceDiffRequests,
   EhrComputeResourceDiffHandler,
 } from "./ehr-compute-resource-diff";
-
-export const MAX_SQS_MESSAGE_SIZE = 256000;
-const MAX_SQS_MESSAGE_BATCH_SIZE = 100;
-const MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP = 1000;
 
 export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandler {
   private readonly sqsClient: SQSClient;

@@ -57,6 +57,8 @@ const ehrResourceDiffSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
+  requestId: z.string(),
+  workflowId: z.string(),
 });
 
 function parseBody(body?: unknown): StartResourceDiffRequest {

@@ -7,6 +7,7 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../command/consolidated/consolidated-get";
 import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
+import { updateWorkflowTracking } from "../../../api/update-workflow-tracking";
 import { BundleType, getSupportedResourcesByEhr } from "../../../bundle/bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../bundle/commands/create-or-replace-bundle";
 import { buildEhrComputeResourceDiffHandler } from "../compute/ehr-compute-resource-diff-factory";
@@ -26,6 +27,8 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
     practiceId,
     metriportPatientId,
     ehrPatientId,
+    requestId,
+    workflowId,
   }: StartResourceDiffRequest): Promise<void> {
     const consolidated = await getConsolidated({ cxId, patientId: metriportPatientId });
     if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length < 1) {
@@ -53,6 +56,8 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
           metriportPatientId,
           ehrPatientId,
           newResource,
+          workflowId,
+          requestId,
         },
       ];
     });
@@ -86,6 +91,15 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
         return [{ ...param, existingResources }];
       }
     );
+    await updateWorkflowTracking({
+      ehr,
+      cxId,
+      patientId: metriportPatientId,
+      workflowId,
+      requestId,
+      status: "processing",
+      total: computeResourceDiffParamsWithExistingResources.length,
+    });
     await this.next.computeResourceDiff(computeResourceDiffParamsWithExistingResources);
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }

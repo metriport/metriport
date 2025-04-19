@@ -59,6 +59,8 @@ const ehrComputeResourceDiffSchema = z.object({
   ehrPatientId: z.string(),
   existingResources: fhirResourceSchema.array().optional(),
   newResource: fhirResourceSchema,
+  requestId: z.string(),
+  workflowId: z.string(),
 });
 
 function parseBody(body?: unknown): ComputeResourceDiffRequests[number] {

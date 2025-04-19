@@ -18,6 +18,7 @@ const router = Router();
  * POST /internal/ehr/canvas/patient/appointments
  *
  * Fetches appointments in the time range and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments",

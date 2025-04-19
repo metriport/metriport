@@ -1,5 +1,6 @@
 import { EhrSource, FhirResource, sleep, SupportedResourceType } from "@metriport/shared";
 import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
+import { updateWorkflowTotals } from "../../../api/update-workflow-totals";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
 import { resourceIsDerivedFromExistingResources } from "../../utils";
@@ -21,30 +22,51 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
         ehrPatientId,
         existingResources,
         newResource,
+        workflowId,
+        requestId,
       } = param;
-      const resourceType = newResource.resourceType;
-      const existingResourcesToUse: FhirResource[] =
-        existingResources ??
-        (await getExistingResourcesFromApi({
+      try {
+        const resourceType = newResource.resourceType;
+        const existingResourcesToUse: FhirResource[] =
+          existingResources ??
+          (await getExistingResourcesFromApi({
+            ehr,
+            cxId,
+            practiceId,
+            patientId: ehrPatientId,
+            resourceType,
+          }));
+        const isDerived = resourceIsDerivedFromExistingResources({
+          existingResources: existingResourcesToUse,
+          newResource,
+        });
+        if (!isDerived) {
+          await updateBundleOnS3({
+            ehr,
+            cxId,
+            metriportPatientId,
+            ehrPatientId,
+            bundleType: BundleType.METRIPORT_ONLY,
+            resource: newResource,
+            resourceType,
+          });
+        }
+        await updateWorkflowTotals({
           ehr,
           cxId,
-          practiceId,
-          patientId: ehrPatientId,
-          resourceType,
-        }));
-      const isDerived = resourceIsDerivedFromExistingResources({
-        existingResources: existingResourcesToUse,
-        newResource,
-      });
-      if (!isDerived) {
-        await updateBundleOnS3({
+          patientId: metriportPatientId,
+          workflowId,
+          requestId,
+          entryStatus: "successful",
+        });
+      } catch (error) {
+        await updateWorkflowTotals({
           ehr,
           cxId,
-          metriportPatientId,
-          ehrPatientId,
-          bundleType: BundleType.METRIPORT_ONLY,
-          resource: newResource,
-          resourceType,
+          patientId: metriportPatientId,
+          workflowId,
+          requestId,
+          entryStatus: "failed",
         });
       }
     }

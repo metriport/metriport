@@ -44,3 +44,7 @@ export async function createCanvasClient(
     getClient: CanvasApi.create,
   });
 }
+
+export function getCanvasResourceDiffWorkflowId(canvasPatientId: string): string {
+  return `canvas-resource-diff-${canvasPatientId}`;
+}
