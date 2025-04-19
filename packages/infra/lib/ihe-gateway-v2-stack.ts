@@ -43,11 +43,7 @@ function settings() {
     entry: "ihe-gateway-v2-outbound-patient-discovery-write-to-s3",
     lambda: {
       memory: 2048,
-      batchSize: 500,
-      maxBatchingWindow: writeToS3LambdaMaxBatchingWindow,
-      maxConcurrency: 2,
       timeout: writeToS3LambdaTimeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -55,6 +51,12 @@ function settings() {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(writeToS3LambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 500,
+      reportBatchItemFailures: true,
+      maxConcurrency: 2,
+      maxBatchingWindow: writeToS3LambdaMaxBatchingWindow,
     },
   };
   return {
@@ -170,38 +172,23 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     const {
       name,
       entry,
-      lambda: {
-        memory,
-        timeout,
-        batchSize,
-        maxBatchingWindow,
-        maxConcurrency,
-        reportBatchItemFailures,
-      },
-      queue: {
-        visibilityTimeout,
-        maxReceiveCount,
-        alarmMaxAgeOfOldestMessage,
-        maxMessageCountAlarmThreshold,
-        createRetryLambda,
-      },
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
     } = settings().writeToS3;
 
     const queue = createQueue({
+      ...queueSettings,
       stack: this,
       name,
       createDLQ: true,
-      visibilityTimeout,
-      maxReceiveCount,
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold,
-      createRetryLambda,
     });
 
     const lambda = createLambda({
+      ...lambdaSettings,
       stack: this,
       name,
       entry,
@@ -211,20 +198,11 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: memory,
-      timeout: timeout,
       vpc,
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(
-      new SqsEventSource(queue, {
-        batchSize,
-        reportBatchItemFailures,
-        maxBatchingWindow,
-        maxConcurrency,
-      })
-    );
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     return { lambda, queue };
   }

@@ -75,8 +75,14 @@ export class Config {
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
-  static getHl7NotificationBucketName(): string {
-    return getEnvVarOrFail("HL7_NOTIFICATION_BUCKET_NAME");
+  static getHl7IncomingMessageBucketName(): string {
+    return getEnvVarOrFail("HL7_INCOMING_MESSAGE_BUCKET_NAME");
+  }
+  static getHl7OutgoingMessageBucketName(): string {
+    return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
+  }
+  static getHl7NotificationQueueUrl(): string {
+    return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
   static getCdaToFhirConversionBucketName(): string | undefined {
     return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
