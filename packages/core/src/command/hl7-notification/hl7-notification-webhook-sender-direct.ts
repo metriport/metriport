@@ -1,3 +1,4 @@
+import axios from "axios";
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
 import { out } from "../../util/log";
@@ -26,8 +27,11 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       contentType: "text/plain",
     });
 
+    const api = axios.create({ baseURL: Config.getApiUrl() });
     this.log(
       `[${messageReceivedTimestamp}] Invoking execute for cxId ${cxId} + patientId ${patientId}`
     );
+    const response = await api.get("/");
+    this.log(`[${messageReceivedTimestamp}] response: ${JSON.stringify(response.data)}`);
   }
 }
