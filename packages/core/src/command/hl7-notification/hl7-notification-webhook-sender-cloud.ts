@@ -25,7 +25,7 @@ export class Hl7NotificationWebhookSenderCloud implements Hl7NotificationWebhook
     const payload = JSON.stringify(params);
     await this.sqsClient.sendMessageToQueue(this.queueUrl, payload, {
       fifo: true,
-      messageGroupId: `${cxId}_${patientId}`,
+      messageGroupId: patientId,
       messageDeduplicationId: createUuidFromText(payload),
     });
   }
