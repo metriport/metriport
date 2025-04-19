@@ -18,7 +18,7 @@ export type FetchBundleParams = {
 };
 
 /**
- * Sends a request to the API to save a resource diff.
+ * Fetches the EHR bundle for the given resource type from the API.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -26,6 +26,7 @@ export type FetchBundleParams = {
  * @param patientId - The patient ID.
  * @param resourceType - The resource type.
  * @param useExistingBundle - Whether to use the existing bundle.
+ * @returns The EHR bundle.
  */
 export async function fetchBundle({
   ehr,

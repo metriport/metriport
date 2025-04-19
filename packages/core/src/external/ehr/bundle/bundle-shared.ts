@@ -4,7 +4,7 @@ import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
 import { supportedCanvasDiffResources } from "../canvas";
 
-const globalPrefix = "resource-diff";
+const globalPrefix = "bundle";
 const region = Config.getAWSRegion();
 
 type CreateBundlePrefixParams = {
@@ -22,7 +22,7 @@ function createBundlePrefix({
   ehrPatientId,
   resourceType,
 }: CreateBundlePrefixParams): string {
-  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourceType=${resourceType}`;
+  return `${globalPrefix}/ehr=${ehr}/cx_id=${cxId}/metriport_patient_id=${metriportPatientId}/ehr_patient_id=${ehrPatientId}/resource_type=${resourceType}`;
 }
 
 export function createFileKeyTotal({

@@ -21,7 +21,7 @@ export type FetchCanvasBundleParams = {
 
 /**
  * Fetches the resources for the patient that are in Canvas and returns a bundle of them.
- * If useExistingBundle is true, a previously fetched bundle less the cache age will be used if available.
+ * If useExistingBundle is true, a previously fetched cached bundle used if available and valid.
  *
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.
@@ -55,7 +55,7 @@ export async function fetchCanvasBundle({
     });
   }
 
-  const bundle: Bundle = getDefaultBundle();
+  const bundle = getDefaultBundle();
   const resourceTypes = resourceTypeParam ? [resourceTypeParam] : supportedCanvasDiffResources;
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));

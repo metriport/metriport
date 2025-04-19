@@ -19,8 +19,8 @@ export type FetchCanvasMetriportOnlyBundleParams = {
 };
 
 /**
- * Fetches the resources for the patient that are in Metriport and not in Canvas, and returns a bundle of them.
- * Uses a precomputed bundle derived from the resource diff workflow.
+ * Fetches the precomputed bundle of resources for the patient that are in Metriport and not in Canvas.
+ * The bundle is derived from the resource diff workflow.
  *
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.
@@ -52,7 +52,7 @@ export async function fetchCanvasMetriportOnlyBundle({
     });
   }
 
-  const bundle: Bundle = getDefaultBundle();
+  const bundle = getDefaultBundle();
   const resourceTypes = resourceTypeParam ? [resourceTypeParam] : supportedCanvasDiffResources;
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));

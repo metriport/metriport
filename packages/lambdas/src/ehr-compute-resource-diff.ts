@@ -58,7 +58,7 @@ const ehrComputeResourceDiffSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
-  existingResources: fhirResourceSchema.array(),
+  existingResources: fhirResourceSchema.array().optional(),
   newResource: fhirResourceSchema,
 });
 

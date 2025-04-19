@@ -386,7 +386,7 @@ class CanvasApi {
     useExistingBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `Canvas getFhirResourcesByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
     const params = { patient: `Patient/${canvasPatientId}` };
     const urlParams = new URLSearchParams(params);

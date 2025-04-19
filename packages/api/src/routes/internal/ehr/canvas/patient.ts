@@ -34,7 +34,10 @@ router.post(
  * POST /internal/ehr/canvas/patient
  *
  * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.cxId The cxId of the patient.
+ * @param req.query.patientId The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @param req.query.triggerDq Whether to trigger a DQ (optional).
  * @returns Metriport Patient if found.
  */
 router.post(
@@ -59,7 +62,9 @@ router.post(
  * POST /internal/ehr/canvas/patient/refresh-bundle
  *
  * Refreshes the bundle for the canvas patient
- * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.cxId The cxId of the patient.
+ * @param req.query.patientId The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns 200 OK
  */
 router.post(
@@ -81,9 +86,12 @@ router.post(
 /**
  * GET /internal/ehr/canvas/patient/bundle
  *
- * Fetches the bundle for the canvas patient by resource type
+ * Fetches the Canvas bundle for the canvas patient by resource type
+ * @param req.query.cxId The cxId of the patient.
+ * @param req.query.patientId The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @param req.query.resourceType The resource type to fetch
- * @param req.query.useExistingBundle Whether to use the existing bundle (optional, false by default)
+ * @param req.query.useExistingBundle Whether to use the existing bundle (optional)
  * @returns Canvas bundle
  */
 router.get(

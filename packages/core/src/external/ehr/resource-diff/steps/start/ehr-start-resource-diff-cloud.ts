@@ -11,11 +11,7 @@ export class EhrStartResourceDiffCloud implements EhrStartResourceDiffHandler {
     region?: string,
     sqsClient?: SQSClient
   ) {
-    if (!sqsClient) {
-      this.sqsClient = new SQSClient({ region: region ?? Config.getAWSRegion() });
-    } else {
-      this.sqsClient = sqsClient;
-    }
+    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
   async startResourceDiff(params: StartResourceDiffRequest): Promise<void> {

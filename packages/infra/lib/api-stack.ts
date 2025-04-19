@@ -370,6 +370,7 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       startResourceDiffLambda: ehrStartResourceDiffLambda,
       startResourceDiffQueue: ehrStartResourceDiffQueue,
+      computeResourceDiffLambda: ehrComputeResourceDiffLambda,
       refreshBundleLambda: ehrRefreshBundleLambda,
       refreshBundleQueue: ehrRefreshBundleQueue,
       ehrBundleBucket,
@@ -581,6 +582,7 @@ export class APIStack extends Stack {
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrStartResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrComputeResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrRefreshBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);

@@ -27,8 +27,8 @@ export type CreateOrReplaceBundleParams = {
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param bundle - The bundle.
- * @param resourceType - The resource type to include in the bundle.
- * @param s3BucketName - The S3 bucket name.
+ * @param resourceType - The resource type of the bundle.
+ * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  */
 export async function createOrReplaceBundle({
   ehr,

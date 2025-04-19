@@ -28,7 +28,7 @@ export type FetchBundleParams = {
 };
 
 /**
- * Fetches a bundle from S3.
+ * Fetches a bundle from S3 for the given bundle type and resource type.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -36,8 +36,8 @@ export type FetchBundleParams = {
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
- * @param s3BucketName - The S3 bucket name.
- * @returns The bundle with the last modified date.
+ * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
+ * @returns The bundle with the last modified date or undefined if the bundle is not found.
  */
 export async function fetchBundle({
   ehr,
@@ -82,7 +82,8 @@ export async function fetchBundle({
 }
 
 /**
- * Fetches a bundle from S3.
+ * Fetches a bundle from S3 for the given bundle type and resource type
+ * If the bundle is not found, it throws a NotFoundError.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -90,7 +91,7 @@ export async function fetchBundle({
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
- * @param s3BucketName - The S3 bucket name.
+ * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date.
  * @throws NotFoundError if the bundle is not found.
  */
@@ -127,7 +128,8 @@ export async function fetchBundleOrFail({
 }
 
 /**
- * Fetches a bundle from S3 and checks if it is younger than the max age.
+ * Fetches a bundle from S3 for the given bundle type and resource type
+ * Checks if the bundle is younger than the max age, if so, it returns the bundle, otherwise it returns undefined.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -135,7 +137,7 @@ export async function fetchBundleOrFail({
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
- * @param s3BucketName - The S3 bucket name.
+ * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date if it is younger than the max age, otherwise undefined.
  */
 export async function fetchBundleYoungerThanMaxAge({

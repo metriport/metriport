@@ -28,7 +28,7 @@ export class S3WriterLocal implements S3Writer {
         }
       >
     );
-    await Promise.allSettled(
+    await Promise.all(
       Object.entries(messagesByBucketAndFilePath).flatMap(([key, messagesMap]) => {
         const { bucket, filePath } = splitFileLookupKey(key);
         const filePathNoTrailingSlash = filePath.endsWith("/") ? filePath.slice(0, -1) : filePath;

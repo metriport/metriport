@@ -31,6 +31,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
     if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length < 1) {
       return;
     }
+    const supportedResources = getSupportedResourcesByEhr(ehr);
     const resourceTypes = new Set<SupportedResourceType>();
     const computeResourceDiffParams = consolidated.bundle.entry.flatMap(bundleEntry => {
       if (!bundleEntry.resource) return [];
@@ -42,7 +43,6 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
         });
       }
       const newResource = newResourceSafeParsed.data;
-      const supportedResources = getSupportedResourcesByEhr(ehr);
       if (!supportedResources.includes(newResource.resourceType)) return [];
       resourceTypes.add(newResource.resourceType);
       return [
