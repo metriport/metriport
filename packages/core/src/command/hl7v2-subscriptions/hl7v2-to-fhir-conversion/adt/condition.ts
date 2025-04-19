@@ -1,14 +1,22 @@
 import { Hl7Message } from "@medplum/core";
-import { CodeableConcept, Coding, Condition, EncounterDiagnosis } from "@medplum/fhirtypes";
+import { CodeableConcept, Condition, EncounterDiagnosis } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
+import _ from "lodash";
 import {
   buildConditionReference,
   buildPatientReference,
 } from "../../../../external/fhir/shared/references";
-import { getConditionCoding } from "./utils";
+import { deduplicateConditions } from "../../../../fhir-deduplication/resources/condition";
+import { getCoding } from "./utils";
 
 type ConditionWithId = Condition & {
   id: string;
+};
+
+type ConditionsAndReferences = {
+  reasonCode: CodeableConcept[] | undefined;
+  conditions: Condition[];
+  refs: EncounterDiagnosis[];
 };
 
 type AdmitReason = {
@@ -21,12 +29,33 @@ type ConditionWithCode = Partial<Condition> & {
   code: CodeableConcept;
 };
 
+export function getConditionsAndReferences(
+  adt: Hl7Message,
+  patientId: string
+): ConditionsAndReferences {
+  const admitReason = getAdmitReason(adt, patientId);
+  const diagnoses = getDiagnoses(adt, patientId);
+
+  const combinedDiagnoses = _.concat(admitReason?.condition ?? [], diagnoses ?? []);
+  const uniqueConditions = deduplicateConditions(combinedDiagnoses, false).combinedResources;
+  const conditionReferences = uniqueConditions.map(condition =>
+    buildConditionReference({ resource: condition })
+  );
+
+  return {
+    reasonCode: admitReason?.reasonCode,
+    conditions: uniqueConditions,
+    refs: conditionReferences,
+  };
+}
+
 export function getAdmitReason(adt: Hl7Message, patientId: string): AdmitReason | undefined {
   const pv2Segment = adt.getSegment("PV2");
   if (!pv2Segment || pv2Segment.fields.length < 1) return undefined;
 
-  const mainCoding = getConditionCoding(pv2Segment, 0);
-  const secondaryCoding = getConditionCoding(pv2Segment, 1);
+  const codedConditionField = pv2Segment.getField(3);
+  const mainCoding = getCoding(codedConditionField, 0);
+  const secondaryCoding = getCoding(codedConditionField, 1);
 
   const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
   if (coding.length < 1) return undefined;
@@ -42,23 +71,25 @@ export function getAdmitReason(adt: Hl7Message, patientId: string): AdmitReason 
   };
 }
 
-export function buildConditionCoding({
-  code,
-  display,
-  system,
-}: {
-  code?: string | undefined;
-  display?: string | undefined;
-  system?: string | undefined;
-}): Coding | undefined {
-  if (!code && !display) return undefined;
+export function getDiagnoses(adt: Hl7Message, patientId: string): Condition[] | undefined {
+  const dg1Segments = adt.getAllSegments("DG1");
+  if (!dg1Segments || dg1Segments.length < 1) return undefined;
 
-  const systemUrl = system ?? inferConditionSystem(code);
-  return {
-    ...(code ? { code } : undefined),
-    ...(display ? { display } : undefined),
-    ...(systemUrl ? { system: systemUrl } : undefined),
-  };
+  const conditions: ConditionWithId[] = [];
+
+  for (const dg1Segment of dg1Segments) {
+    const diagnosisCodingField = dg1Segment.getField(3);
+    const mainCoding = getCoding(diagnosisCodingField, 0);
+    const secondaryCoding = getCoding(diagnosisCodingField, 1);
+
+    const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
+    if (coding.length < 1) return undefined;
+
+    const condition = buildCondition({ code: { coding } }, patientId);
+    conditions.push(condition);
+  }
+
+  return conditions;
 }
 
 export function buildCondition(params: ConditionWithCode, patientId: string): ConditionWithId {
@@ -71,11 +102,4 @@ export function buildCondition(params: ConditionWithCode, patientId: string): Co
     subject: buildPatientReference(patientId),
     ...rest,
   };
-}
-
-function inferConditionSystem(code: string | undefined): string | undefined {
-  if (!code) return undefined;
-
-  // TODO 2883: See if we can infer the system being ICD-10 / LOINC / SNOMED
-  return undefined;
 }

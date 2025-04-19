@@ -2,7 +2,7 @@ import { Hl7Message } from "@medplum/core";
 import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
 import { buildPatientReference } from "../../../../external/fhir/shared/references";
 import { Hl7MessageType, getHl7MessageTypeOrFail } from "../msh";
-import { getAdmitReason } from "./condition";
+import { getConditionsAndReferences } from "./condition";
 import { getLocationFromAdt } from "./location";
 import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass } from "./mappings";
 import { getParticipantsFromAdt } from "./practitioner";
@@ -14,9 +14,7 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
   const encounterClass = getEncounterClass(adt);
   const period = getEncounterPeriod(adt);
   const participants = getParticipantsFromAdt(adt);
-
-  const admitReason = getAdmitReason(adt, patientId);
-
+  const conditionsAndRefs = getConditionsAndReferences(adt, patientId);
   const location = getLocationFromAdt(adt);
 
   const encounter: Encounter = {
@@ -25,12 +23,8 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
     status,
     class: encounterClass,
     ...(period ? { period } : undefined),
-    ...(admitReason
-      ? {
-          reasonCode: admitReason.reasonCode,
-          diagnosis: admitReason.diagnosis,
-        }
-      : undefined),
+    ...(conditionsAndRefs.reasonCode ? { reasonCode: conditionsAndRefs.reasonCode } : undefined),
+    ...(conditionsAndRefs.refs.length > 0 ? { diagnosis: conditionsAndRefs.refs } : undefined),
     subject: buildPatientReference(patientId),
     ...(participants ? { participant: participants.references } : undefined),
     ...(location ? { location: [location.locationReference] } : undefined),
@@ -38,7 +32,7 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
 
   return [
     encounter,
-    ...(admitReason ? [admitReason.condition] : []),
+    ...conditionsAndRefs.conditions,
     ...(participants?.practitioners ?? []),
     ...(location ? [location.location] : []),
   ];
