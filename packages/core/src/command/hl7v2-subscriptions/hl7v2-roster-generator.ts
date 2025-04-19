@@ -222,5 +222,5 @@ export function buildDocumentNameForHl7v2Roster(
   subscriptions: Hl7v2Subscription[]
 ): string {
   const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
-  return `${todaysDate}/${hieName}/${subscriptions.join("-")}${CSV_FILE_EXTENSION}`;
+  return `${todaysDate}/${hieName}/${subscriptions.join("-")}.${CSV_FILE_EXTENSION}`;
 }
