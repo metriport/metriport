@@ -5,13 +5,13 @@ import { out } from "../../util/log";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {
-  private readonly lambdaName = "hl7-notification-webhook-sender-direct";
+  private readonly context = "hl7-notification-webhook-sender";
   private readonly log;
   private readonly bucketName: string;
   private readonly s3Utils: S3Utils;
 
   constructor() {
-    const { log } = out(this.lambdaName);
+    const { log } = out(this.context);
     this.log = log;
     this.bucketName = Config.getHl7OutgoingMessageBucketName();
     this.s3Utils = new S3Utils(Config.getAWSRegion());

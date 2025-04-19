@@ -5,6 +5,5 @@ import { Hl7NotificationWebhookSenderDirect } from "./hl7-notification-webhook-s
 
 export function buildHl7NotificationWebhookSender(): Hl7NotificationWebhookSender {
   if (Config.isDev()) return new Hl7NotificationWebhookSenderDirect();
-  const queueUrl = Config.getHl7NotificationQueueUrl();
-  return new Hl7NotificationWebhookSenderCloud(queueUrl);
+  return new Hl7NotificationWebhookSenderCloud(Config.getHl7NotificationQueueUrl());
 }

@@ -5,11 +5,11 @@ import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notificatio
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 
 export class Hl7NotificationWebhookSenderCloud implements Hl7NotificationWebhookSender {
-  private readonly queueUrl: string;
+  private readonly hl7NotificationWebhookSenderQueue: string;
   private readonly sqsClient: SQSClient;
 
-  constructor(queueUrl: string, sqsClient?: SQSClient) {
-    this.queueUrl = queueUrl;
+  constructor(hl7NotificationWebhookSenderQueue: string, sqsClient?: SQSClient) {
+    this.hl7NotificationWebhookSenderQueue = hl7NotificationWebhookSenderQueue;
     this.sqsClient = sqsClient ?? new SQSClient({ region: Config.getAWSRegion() });
   }
 
@@ -23,7 +23,7 @@ export class Hl7NotificationWebhookSenderCloud implements Hl7NotificationWebhook
     });
 
     const payload = JSON.stringify(params);
-    await this.sqsClient.sendMessageToQueue(this.queueUrl, payload, {
+    await this.sqsClient.sendMessageToQueue(this.hl7NotificationWebhookSenderQueue, payload, {
       fifo: true,
       messageGroupId: patientId,
       messageDeduplicationId: createUuidFromText(payload),
