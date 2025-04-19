@@ -118,6 +118,5 @@ function isCommonwellEnabledForPatient(patient: Patient): boolean {
 }
 
 export function getLinkOid(link: CwLink): string | undefined {
-  return link.patient?.details.identifier?.find(identifier => identifier.assigner !== "Commonwell")
-    ?.system;
+  return link.patient?.identifier?.find(identifier => identifier.assigner !== "Commonwell")?.system;
 }

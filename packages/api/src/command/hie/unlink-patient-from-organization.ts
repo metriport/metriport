@@ -1,9 +1,12 @@
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { out } from "@metriport/core/util/log";
+import { MetriportError, executeWithNetworkRetries } from "@metriport/shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { createMRSummaryFileNameWithSuffix } from "@metriport/core/domain/medical-record-summary";
+import { getPatientOrFail } from "../medical/patient/get-patient";
 import {
   createConsolidatedSnapshotFileNameWithSuffix,
   createConsolidatedDataFileNameWithSuffix,
@@ -13,6 +16,7 @@ import { capture } from "@metriport/core/util";
 import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
 import { updateCQPatientData } from "../../external/carequality/command/cq-patient-data/update-cq-data";
 import { updateCwPatientData } from "../../external/commonwell/command/cw-patient-data/update-cw-data";
+import { getCWAccessForPatient } from "../../external/commonwell/admin/shared";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
 import { isOrganization, isPatient } from "@metriport/core/external/fhir/shared/index";
@@ -26,6 +30,7 @@ import { CwLink } from "../../external/commonwell/cw-patient-data";
 import { CQLink } from "../../external/carequality/cq-patient-data";
 import { Config } from "../../shared/config";
 import { makeFhirApi } from "../../external/fhir/api/api-factory";
+import { NetworkLink } from "@metriport/commonwell-sdk/models/link";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3ConversionResultBucketName = getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
@@ -54,22 +59,6 @@ export async function unlinkPatientFromOrganization({
   );
   log(`Unlinking patient from organization ${oid}`);
 
-  const documents = await getDocuments({ cxId, patientId });
-
-  if (documents.length === 0) {
-    log(`No documents found for patient ${patientId}`);
-    return;
-  }
-
-  const documentsWithOid = getDocumentsWithOid(documents, oid);
-
-  if (documentsWithOid.length === 0) {
-    log(`No documents found for patient ${patientId} with oid ${oid}`);
-    return;
-  }
-
-  log(`Found ${documentsWithOid.length} documents to process`);
-
   const [cqPatientData, cwPatientData] = await Promise.all([
     getCQPatientData({ id: patientId, cxId }),
     getCwPatientData({ id: patientId, cxId }),
@@ -79,6 +68,22 @@ export async function unlinkPatientFromOrganization({
   const cqLink = findCqLinkWithOid(cqPatientData?.data, oid);
 
   await findAndInvalidateLinks(cwLink, cqLink, cxId, patientId, dryRun, log);
+
+  const documents = await getDocuments({ cxId, patientId });
+
+  if (documents.length === 0) {
+    log(`No documents found for patient ${patientId}`);
+    return;
+  }
+
+  const documentsWithOid = getDocumentsWithOid(documents, oid, log);
+
+  if (documentsWithOid.length === 0) {
+    log(`No documents found for patient ${patientId} with oid ${oid}`);
+    return;
+  }
+
+  log(`Found ${documentsWithOid.length} documents to process`);
 
   const errors: { documentId: string; error: unknown }[] = [];
 
@@ -126,7 +131,7 @@ function findCwLinkWithOid(cwPatientData: CwData | undefined, oid: string): CwLi
     const patient = cwLink.patient;
     if (!patient) continue;
 
-    if (patient.identifier?.some(identifier => identifier.system === addOidPrefix(oid))) {
+    if (patient.identifier?.some(identifier => identifier.system.includes(addOidPrefix(oid)))) {
       return cwLink;
     }
   }
@@ -144,7 +149,8 @@ function findCqLinkWithOid(cqPatientData: CQData | undefined, oid: string): CQLi
 
 function getDocumentsWithOid(
   documents: DocumentReferenceWithId[],
-  oid: string
+  oid: string,
+  log: typeof console.log
 ): DocumentReferenceWithId[] {
   const urnOid = addOidPrefix(oid);
   const commonwellDocuments = documents.filter(hasCommonwellExtension);
@@ -157,8 +163,27 @@ function getDocumentsWithOid(
     if (!patient) continue;
 
     const identifier = patient.identifier?.find(identifier => identifier.system === urnOid);
+    const potentialIdentifier = patient.identifier?.find(
+      identifier => identifier.system?.startsWith(urnOid) && identifier.system !== urnOid
+    );
+
     if (identifier) {
       matchingDocumentRefs.push(document);
+      continue;
+    } else if (potentialIdentifier) {
+      log(`Found potential identifier ${potentialIdentifier.system} for patient ${patient.id}`);
+    }
+
+    const masterIdentifier = document.masterIdentifier?.value === oid;
+    const potentialMasterIdentifier =
+      document.masterIdentifier?.value?.includes(oid) && !masterIdentifier;
+
+    if (masterIdentifier) {
+      matchingDocumentRefs.push(document);
+    } else if (potentialMasterIdentifier) {
+      log(
+        `Found potential master identifier ${document.masterIdentifier?.value} for patient ${patient.id}`
+      );
     }
   }
 
@@ -322,10 +347,35 @@ async function findAndInvalidateLinks(
       return;
     }
 
-    await Promise.all([
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const cwAccess = await getCWAccessForPatient(patient);
+    if (cwAccess.error != null)
+      throw new MetriportError("Error invalidating CW link", undefined, {
+        reason: cwAccess.error,
+      });
+    const { commonWell, queryMeta } = cwAccess;
+
+    const downgradeRequests: Promise<NetworkLink>[] = [];
+    for (const link of invalidLinks.commonwell) {
+      const downgradeHref = link._links?.downgrade?.href;
+      if (!downgradeHref) continue;
+
+      downgradeRequests.push(
+        executeWithNetworkRetries(
+          () => commonWell.upgradeOrDowngradeNetworkLink(queryMeta, downgradeHref),
+          { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 }
+        ).catch(error => {
+          processAsyncError("Failed to downgrade link");
+          throw error;
+        })
+      );
+    }
+
+    await Promise.allSettled([
       createOrUpdateInvalidLinks({ id: patientId, cxId, invalidLinks }),
       updateCQPatientData({ id: patientId, cxId, cqLinksToInvalidate: invalidLinks.carequality }),
       updateCwPatientData({ id: patientId, cxId, cwLinksToInvalidate: invalidLinks.commonwell }),
+      ...downgradeRequests,
     ]);
   } catch (error) {
     log(`Error invalidating links: ${errorToString(error)}`);

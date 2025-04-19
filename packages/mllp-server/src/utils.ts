@@ -22,32 +22,19 @@ export function unpackPidField(pid: string | undefined) {
   return { cxId, patientId };
 }
 
-export function buildS3Key({
-  cxId,
-  patientId,
-  timestamp,
-  messageType,
-  messageCode,
-}: {
-  cxId: string;
-  patientId: string;
-  timestamp: string;
-  messageType: string;
-  messageCode: string;
-}) {
-  return `${cxId}/${patientId}/${timestamp}_${messageType}_${messageCode}.hl7`;
-}
-
 export function withErrorHandling<T>(
   handler: (data: T) => void,
   logger: Logger
 ): (data: T) => Promise<void> {
   return async (data: T) => {
-    try {
-      await handler(data);
-    } catch (error) {
-      logger.log(`Error in handler: ${error}`);
-      Sentry.captureException(error);
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    await Sentry.withScope(async (_: Sentry.Scope) => {
+      try {
+        await handler(data);
+      } catch (error) {
+        logger.log(`Error in handler: ${error}`);
+        Sentry.captureException(error);
+      }
+    });
   };
 }

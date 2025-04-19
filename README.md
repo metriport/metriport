@@ -212,11 +212,11 @@ Scope is optional, and we can use one of these, or empty (no scope):
 - docs
 - ... (usually subdirectories of `./packages`)
 
-The footer should have the ticket number supporting the commit:
+The footer should have the issue number supporting the commit:
 
 ```
 ...
-Ref: #<ticket-number>
+Ref: #<issue-number>
 ```
 
 #### Commitizen

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.23.1",
+  "version": "1.23.2",
   "private": true,
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -148,6 +148,7 @@
     "zod-to-json-schema": "3.22.5"
   },
   "devDependencies": {
+    "@medplum/core": "^3.2.33",
     "@medplum/fhirtypes": "^2.2.10",
     "@tsconfig/recommended": "^1.0.2",
     "@types/formidable": "^3.4.5",

@@ -11,6 +11,8 @@ interface BucketsStackProps extends StackProps {
 
 export class BucketsStack extends Stack {
   public readonly hl7NotificationBucket?: s3.Bucket;
+  public readonly incomingHl7NotificationBucket?: s3.Bucket;
+  public readonly outgoingHl7NotificationBucket?: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: BucketsStackProps) {
     super(scope, id, props);
@@ -19,7 +21,13 @@ export class BucketsStack extends Stack {
 
     if (!isSandbox(props.config)) {
       this.hl7NotificationBucket = createBucket(this, {
-        bucketName: props.config.hl7Notification.bucketName,
+        bucketName: props.config.hl7Notification.deprecatedIncomingMessageBucketName,
+      });
+      this.incomingHl7NotificationBucket = createBucket(this, {
+        bucketName: props.config.hl7Notification.incomingMessageBucketName,
+      });
+      this.outgoingHl7NotificationBucket = createBucket(this, {
+        bucketName: props.config.hl7Notification.outgoingMessageBucketName,
       });
     }
   }
