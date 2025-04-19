@@ -3,6 +3,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
 import { getPatientMappings } from "../../command/mapping/patient";
 import { startCanvasResourceDiff } from "./canvas/command/resource-diff/start-resource-diff";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export type StartResourceDiffParams = {
   cxId: string;
@@ -22,12 +23,12 @@ export async function startResourceDiff({
         externalId: patientMapping.externalId,
         source: patientMapping.source,
       });
-      await startCanvasResourceDiff({
+      startCanvasResourceDiff({
         cxId,
         canvasPracticeId: cxMapping.externalId,
         canvasPatientId: patientMapping.externalId,
         requestId,
-      });
+      }).catch(processAsyncError(`startCanvasResourceDiff`));
     }
   }
 }

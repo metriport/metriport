@@ -10,6 +10,13 @@ export type GetCanvasResourceDiffParams = {
   canvasPatientId: string;
 };
 
+/**
+ * Get the latest canvas resource diff workflow for a Canvas patient
+ *
+ * @param cxId
+ * @param canvasPatientId
+ * @returns workflow or undefined if no workflow is found
+ */
 export async function getLatestCanvasResourceDiff({
   cxId,
   canvasPatientId,

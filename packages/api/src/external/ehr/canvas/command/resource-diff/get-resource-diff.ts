@@ -11,6 +11,15 @@ export type GetCanvasResourceDiffParams = {
   requestId: string;
 };
 
+/**
+ * Get the canvas resource diff workflow for a Canvas patient by requestId
+ *
+ * @param cxId
+ * @param canvasPatientId
+ * @param requestId
+ * @returns workflow
+ * @throws 404 if no workflow is found
+ */
 export async function getCanvasResourceDiff({
   cxId,
   canvasPatientId,
