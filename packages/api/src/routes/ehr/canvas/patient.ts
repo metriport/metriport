@@ -1,6 +1,9 @@
+import { emptyFunction } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { fetchCanvasMetriportOnlyBundle } from "../../../external/ehr/canvas/command/bundle/fetch-metriport-only-bundle";
+import { startCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/start-resource-diff";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
@@ -13,6 +16,7 @@ const router = Router();
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Metriport Patient if found.
  */
 router.get(
@@ -37,6 +41,7 @@ router.get(
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Metriport Patient if found.
  */
 router.post(
@@ -53,6 +58,52 @@ router.post(
       canvasPatientId,
     });
     return res.status(httpStatus.OK).json(patientId);
+  })
+);
+
+/**
+ * POST /ehr/canvas/patient/:id/resource-diff
+ *
+ * Starts the resource diff workflow
+ * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @returns 200 OK
+ */
+router.post(
+  "/:id/resource-diff",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    startCanvasResourceDiff({ cxId, canvasPatientId, canvasPracticeId }).catch(emptyFunction);
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * GET /ehr/canvas/patient/:id/metriport-only-bundle
+ *
+ * Retrieves the Metriport only bundle for all supported resource types
+ * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @returns Metriport only bundle
+ */
+router.get(
+  "/:id/metriport-only-bundle",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const bundle = await fetchCanvasMetriportOnlyBundle({
+      cxId,
+      canvasPatientId,
+      canvasPracticeId,
+    });
+    return res.status(httpStatus.OK).json(bundle);
   })
 );
 

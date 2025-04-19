@@ -1,7 +1,7 @@
 import {
   AllergyIntolerance,
   Appointment as AppointmentFhir,
-  Bundle,
+  Bundle as BundleFhir,
   Condition,
   Encounter,
   Location,
@@ -10,7 +10,7 @@ import {
   Patient as PatientFhir,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -20,11 +20,25 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
+import {
+  Bundle,
+  createBundleFromResourceList,
+  FhirResource,
+  FhirResourceBundle,
+  fhirResourceBundleSchema,
+  SupportedResourceType,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
+import { BundleType } from "../bundle/bundle-shared";
+import {
+  createOrReplaceBundle,
+  CreateOrReplaceBundleParams,
+} from "../bundle/commands/create-or-replace-bundle";
+import { FetchBundleParams, fetchBundleYoungerThanMaxAge } from "../bundle/commands/fetch-bundle";
 import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
 
 interface CanvasApiConfig extends ApiConfig {
@@ -34,6 +48,23 @@ interface CanvasApiConfig extends ApiConfig {
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
+
+export const supportedCanvasDiffResources = [
+  "AllergyIntolerance",
+  "Condition",
+  "DiagnosticReport",
+  "Encounter",
+  "MedicationStatement",
+  "MedicationRequest",
+  "Observation",
+  "Procedure",
+] as SupportedResourceType[];
+export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
+export const isSupportedCanvasDiffResource = (
+  resourceType: string
+): resourceType is SupportedCanvasDiffResource => {
+  return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
+};
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -289,7 +320,7 @@ class CanvasApi {
   }: {
     rxNormCode?: string;
     medicationName?: string;
-  }): Promise<Bundle> {
+  }): Promise<BundleFhir> {
     if (!rxNormCode && !medicationName) {
       throw new Error("At least one of rxNormCode or medicationName must be provided");
     }
@@ -339,6 +370,102 @@ class CanvasApi {
       useFhir: true,
     });
     return patient;
+  }
+
+  async getBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    resourceType,
+    useExistingBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    canvasPatientId: string;
+    resourceType: SupportedCanvasDiffResource;
+    useExistingBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+    );
+    const params = { patient: `Patient/${canvasPatientId}` };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: canvasPatientId,
+      resourceType,
+    };
+    if (useExistingBundle) {
+      const bundle = await this.getBundleFromS3({
+        cxId,
+        metriportPatientId,
+        canvasPatientId,
+        bundleType: BundleType.TOTAL,
+        resourceType,
+      });
+      if (bundle) return bundle;
+    }
+    async function paginateFhirResources(
+      api: CanvasApi,
+      url: string | undefined,
+      acc: FhirResource[] | undefined = []
+    ): Promise<FhirResource[]> {
+      if (!url) return acc;
+      const fhirResourceBundle = await api.makeRequest<FhirResourceBundle>({
+        cxId,
+        patientId: canvasPatientId,
+        s3Path: `fhir-resources-${resourceType}`,
+        method: "GET",
+        url,
+        schema: fhirResourceBundleSchema,
+        additionalInfo,
+        debug,
+        useFhir: true,
+      });
+      acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
+      const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
+      return paginateFhirResources(api, nextUrl, acc);
+    }
+    const fhirResources = await paginateFhirResources(this, resourceTypeUrl);
+    const invalidEntry = fhirResources.find(r => r.resourceType !== resourceType);
+    if (invalidEntry) {
+      throw new BadRequestError("Invalid bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: invalidEntry.resourceType,
+      });
+    }
+    const bundle = createBundleFromResourceList(fhirResources);
+    await this.writeBundleToS3({
+      cxId,
+      metriportPatientId,
+      canvasPatientId,
+      bundleType: BundleType.TOTAL,
+      bundle,
+      resourceType,
+    });
+    return bundle;
+  }
+
+  async getMetriportOnlyBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    resourceType,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    canvasPatientId: string;
+    resourceType: SupportedCanvasDiffResource;
+  }): Promise<Bundle | undefined> {
+    return this.getBundleFromS3({
+      cxId,
+      metriportPatientId,
+      canvasPatientId,
+      bundleType: BundleType.METRIPORT_ONLY,
+      resourceType,
+    });
   }
 
   async getAppointments({
@@ -426,6 +553,48 @@ class CanvasApi {
       schema,
       additionalInfo,
       debug,
+    });
+  }
+
+  private async getBundleFromS3({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    bundleType,
+    resourceType,
+  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
+    canvasPatientId: string;
+  }): Promise<Bundle | undefined> {
+    const bundleWithLastModified = await fetchBundleYoungerThanMaxAge({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      bundleType,
+      resourceType,
+    });
+    if (!bundleWithLastModified) return undefined;
+    return bundleWithLastModified.bundle;
+  }
+
+  private async writeBundleToS3({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    bundleType,
+    bundle,
+    resourceType,
+  }: Omit<CreateOrReplaceBundleParams, "ehr" | "ehrPatientId"> & {
+    canvasPatientId: string;
+  }): Promise<void> {
+    return await createOrReplaceBundle({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      bundleType,
+      bundle,
+      resourceType,
     });
   }
 

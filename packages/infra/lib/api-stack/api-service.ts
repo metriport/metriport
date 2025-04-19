@@ -107,6 +107,9 @@ export function createAPIService({
   patientImportBucket,
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
+  ehrStartResourceDiffQueue,
+  ehrRefreshBundleQueue,
+  ehrBundleBucket,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
@@ -143,6 +146,9 @@ export function createAPIService({
   patientImportBucket: s3.IBucket;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
+  ehrStartResourceDiffQueue: IQueue;
+  ehrRefreshBundleQueue: IQueue;
+  ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -272,6 +278,9 @@ export function createAPIService({
           PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
+          EHR_START_RESOURCE_DIFF_QUEUE_URL: ehrStartResourceDiffQueue.queueUrl,
+          EHR_REFRESH_BUNDLE_QUEUE_URL: ehrRefreshBundleQueue.queueUrl,
+          EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda2 && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME: fhirToMedicalRecordLambda2.functionName,
@@ -404,6 +413,7 @@ export function createAPIService({
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
@@ -425,6 +435,16 @@ export function createAPIService({
   provideAccessToQueue({
     accessType: "send",
     queue: elationLinkPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrStartResourceDiffQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrRefreshBundleQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
 

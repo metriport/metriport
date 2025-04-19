@@ -36,8 +36,12 @@ export interface ApiConfig {
 
 export type RequestData = { [key: string]: string | boolean | object | undefined };
 
+function buildS3Prefix(ehr: string, path: string, key: string): string {
+  return `${ehr}/${path}/${key}`;
+}
+
 function buildS3Path(ehr: string, path: string, key: string): string {
-  return `${ehr}/${path}/${key}/${uuidv7()}.json`;
+  return `${buildS3Prefix(ehr, path, key)}/${uuidv7()}.json`;
 }
 
 export function formatDate(date: string | undefined, format: string): string | undefined {
@@ -66,7 +70,7 @@ export type MakeRequestParams<T> = {
 
 export type MakeRequestParamsInEhr<T> = Omit<
   MakeRequestParams<T>,
-  "ehr" | "practiceId" | "axiosInstance" | "responsesBucket" | "s3Utils"
+  "ehr" | "practiceId" | "axiosInstance"
 >;
 
 export async function makeRequest<T>({
@@ -118,7 +122,7 @@ export async function makeRequest<T>({
           patientId: patientId ?? "global",
           date: new Date(),
         });
-        const key = buildS3Path(ehr, s3Path, `${filePath}-error`);
+        const key = buildS3Path(ehr, s3Path, `${filePath}/error`);
         const s3Utils = getS3UtilsInstance();
         s3Utils
           .uploadFile({
@@ -163,7 +167,7 @@ export async function makeRequest<T>({
       patientId: patientId ?? "global",
       date: new Date(),
     });
-    const key = buildS3Path(ehr, s3Path, filePath);
+    const key = buildS3Path(ehr, s3Path, `${filePath}/response`);
     const s3Utils = getS3UtilsInstance();
     s3Utils
       .uploadFile({

@@ -1,0 +1,70 @@
+import CanvasApi, {
+  isSupportedCanvasDiffResource,
+  SupportedCanvasDiffResource,
+  supportedCanvasDiffResources,
+} from "@metriport/core/external/ehr/canvas/index";
+import { BadRequestError } from "@metriport/shared";
+import { Bundle, getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
+import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
+import { createCanvasClient } from "../../shared";
+
+export type FetchCanvasMetriportOnlyBundleParams = {
+  cxId: string;
+  canvasPracticeId: string;
+  canvasPatientId: string;
+  api?: CanvasApi;
+  resourceType?: SupportedCanvasDiffResource;
+};
+
+/**
+ * Fetches the precomputed bundle of resources for the patient that are in Metriport and not in Canvas.
+ * The bundle is derived from the resource diff workflow.
+ *
+ * @param cxId - The cxId of the patient.
+ * @param canvasPracticeId - The canvas practice id of the patient.
+ * @param canvasPatientId - The canvas patient id of the patient.
+ * @param api - The api to use to fetch the bundle. (optional)
+ * @param resourceType - The resource type to fetch. (optional, if missing, all supported resources will be fetched)
+ * @returns The bundle of resources.
+ */
+export async function fetchCanvasMetriportOnlyBundle({
+  cxId,
+  canvasPracticeId,
+  canvasPatientId,
+  api,
+  resourceType: resourceTypeParam,
+}: FetchCanvasMetriportOnlyBundleParams): Promise<Bundle> {
+  const existingPatient = await getPatientMappingOrFail({
+    cxId,
+    externalId: canvasPatientId,
+    source: EhrSources.canvas,
+  });
+  const metriportPatient = await getPatientOrFail({
+    cxId,
+    id: existingPatient.patientId,
+  });
+  const metriportPatientId = metriportPatient.id;
+  if (resourceTypeParam && !isSupportedCanvasDiffResource(resourceTypeParam)) {
+    throw new BadRequestError("Resource type is not supported for bundle", undefined, {
+      resourceType: resourceTypeParam,
+    });
+  }
+
+  const bundle = getDefaultBundle();
+  const resourceTypes = resourceTypeParam ? [resourceTypeParam] : supportedCanvasDiffResources;
+
+  const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
+  for (const resourceType of resourceTypes) {
+    const resourceBundle = await canvasApi.getMetriportOnlyBundleByResourceType({
+      cxId,
+      metriportPatientId,
+      canvasPatientId,
+      resourceType,
+    });
+    if (!resourceBundle) continue;
+    bundle.entry.push(...resourceBundle.entry);
+  }
+  return bundle;
+}

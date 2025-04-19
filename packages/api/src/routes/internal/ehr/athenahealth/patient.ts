@@ -14,23 +14,6 @@ const router = Router();
 const athenaAsyncMsg = "AthenaHealth processPatientsFromAppointments";
 
 /**
- * POST /internal/ehr/athenahealth/patient/from-appointments-subscription
- *
- * Fetches appointments since last call creates all patients not already existing
- */
-router.post(
-  "/from-appointments-subscription",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
-    processPatientsFromAppointments({
-      lookupMode: catchUp ? LookupModes.FromSubscriptionBackfill : LookupModes.FromSubscription,
-    }).catch(processAsyncError(athenaAsyncMsg));
-    return res.sendStatus(httpStatus.OK);
-  })
-);
-
-/**
  * POST /internal/ehr/athenahealth/patient/appointments-from-subscription
  *
  * Fetches appointment change events since last call and creates all patients not already existing

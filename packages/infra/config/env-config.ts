@@ -123,6 +123,7 @@ type EnvConfigBase = {
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   ehrResponsesBucketName?: string;
+  ehrBundleBucketName: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
