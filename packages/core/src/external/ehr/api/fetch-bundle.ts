@@ -14,7 +14,7 @@ export type FetchBundleParams = {
   practiceId: string;
   patientId: string;
   resourceType: SupportedResourceType;
-  useExistingBundle: boolean;
+  useCachedBundle: boolean;
 };
 
 /**
@@ -25,7 +25,7 @@ export type FetchBundleParams = {
  * @param practiceId - The practice ID.
  * @param patientId - The patient ID.
  * @param resourceType - The resource type.
- * @param useExistingBundle - Whether to use the existing bundle.
+ * @param useCachedBundle - Whether to use the cached bundle.
  * @returns The EHR bundle.
  */
 export async function fetchBundle({
@@ -34,7 +34,7 @@ export async function fetchBundle({
   practiceId,
   patientId,
   resourceType,
-  useExistingBundle,
+  useCachedBundle,
 }: FetchBundleParams): Promise<Bundle> {
   const { log, debug } = out(`Ehr fetchBundle - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
@@ -43,7 +43,7 @@ export async function fetchBundle({
     practiceId,
     patientId,
     resourceType,
-    useExistingBundle: useExistingBundle.toString(),
+    useCachedBundle: useCachedBundle.toString(),
   });
   const fetchBundleUrl = `/internal/ehr/${ehr}/patient/bundle?${queryParams.toString()}`;
   try {
@@ -60,7 +60,7 @@ export async function fetchBundle({
       practiceId,
       patientId,
       resourceType,
-      useExistingBundle,
+      useCachedBundle,
       url: fetchBundleUrl,
       context: "ehr.fetchBundle",
     });

@@ -71,7 +71,7 @@ async function getExistingResourcesFromApi({
     practiceId,
     patientId,
     resourceType,
-    useExistingBundle: true,
+    useCachedBundle: true,
   });
   return existingResourcesBundle.entry.map(entry => entry.resource);
 }

@@ -16,19 +16,19 @@ export type FetchCanvasBundleParams = {
   canvasPatientId: string;
   api?: CanvasApi;
   resourceType?: SupportedCanvasDiffResource;
-  useExistingBundle?: boolean;
+  useCachedBundle?: boolean;
 };
 
 /**
  * Fetches the resources for the patient that are in Canvas and returns a bundle of them.
- * If useExistingBundle is true, a previously fetched cached bundle used if available and valid.
+ * If useCachedBundle is true, a previously fetched cached bundle used if available and valid.
  *
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.
  * @param canvasPatientId - The canvas patient id of the patient.
  * @param api - The api to use to fetch the bundle. (optional)
  * @param resourceType - The resource type to fetch. (optional, if missing, all supported resources will be fetched)
- * @param useExistingBundle - Whether to use the existing bundle. (optional, defaults to true)
+ * @param useCachedBundle - Whether to use the cached bundle. (optional, defaults to true)
  * @returns The bundle of resources.
  */
 export async function fetchCanvasBundle({
@@ -37,7 +37,7 @@ export async function fetchCanvasBundle({
   canvasPatientId,
   api,
   resourceType: resourceTypeParam,
-  useExistingBundle = true,
+  useCachedBundle = true,
 }: FetchCanvasBundleParams): Promise<Bundle> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
@@ -65,7 +65,7 @@ export async function fetchCanvasBundle({
       metriportPatientId,
       canvasPatientId,
       resourceType,
-      useExistingBundle,
+      useCachedBundle,
     });
     bundle.entry.push(...resourceBundle.entry);
   }

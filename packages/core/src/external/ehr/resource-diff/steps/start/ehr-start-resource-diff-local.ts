@@ -64,7 +64,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
           practiceId,
           patientId: ehrPatientId,
           resourceType,
-          useExistingBundle: false,
+          useCachedBundle: false,
         }),
         createOrReplaceBundleOnS3({
           ehr,

@@ -91,7 +91,7 @@ router.post(
  * @param req.query.patientId The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @param req.query.resourceType The resource type to fetch
- * @param req.query.useExistingBundle Whether to use the existing bundle (optional)
+ * @param req.query.useCachedBundle Whether to use the cached bundle (optional)
  * @returns Canvas bundle
  */
 router.get(
@@ -102,7 +102,7 @@ router.get(
     const canvasPatientId = getFromQueryOrFail("patientId", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const resourceType = getFromQueryOrFail("resourceType", req);
-    const useExistingBundle = getFromQueryAsBoolean("useExistingBundle", req);
+    const useCachedBundle = getFromQueryAsBoolean("useCachedBundle", req);
     if (!isSupportedCanvasDiffResource(resourceType)) {
       throw new BadRequestError("Resource type is not supported for bundle", undefined, {
         resourceType,
@@ -113,7 +113,7 @@ router.get(
       canvasPracticeId,
       canvasPatientId,
       resourceType,
-      useExistingBundle,
+      useCachedBundle,
     });
     return res.status(httpStatus.OK).json(bundle);
   })
