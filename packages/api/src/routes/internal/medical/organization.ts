@@ -22,6 +22,10 @@ const router = Router();
  *
  * Creates or updates a organization and registers it within HIEs if new.
  *
+ * @param cxId - The ID of the customer.
+ * @param skipProviderCheck - Whether to skip the provider check. If true, the organization will be registered within HIEs even if it is not a provider.
+ * @param body - The organization details.
+ *
  * @return The updated organization.
  */
 router.put(
@@ -30,7 +34,7 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const overrideProviderCheck = getFromQueryAsBoolean("overrideProviderCheck", req);
+    const skipProviderCheck = getFromQueryAsBoolean("skipProviderCheck", req);
 
     const orgDetails = organiationInternalDetailsSchema.parse(req.body);
     const organizationCreate: OrganizationCreate = {
@@ -57,7 +61,7 @@ router.put(
       ? await updateOrganization({ id: orgDetails.id, ...organizationCreate })
       : await createOrganization(organizationCreate);
 
-    const syncInHie = overrideProviderCheck || isProvider(org);
+    const syncInHie = skipProviderCheck || isProvider(org);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
     if (syncInHie && org.cqApproved) {
