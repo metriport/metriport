@@ -1,7 +1,7 @@
 import { DocumentQueryProgress, Progress } from "@metriport/core/domain/document-query";
 import { getStatusFromProgress } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { PatientExternalData } from "@metriport/core/domain//patient";
+import { PatientData, PatientExternalData } from "@metriport/core/domain//patient";
 import { ProgressType } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
@@ -22,6 +22,14 @@ export type TallyDocQueryProgress = {
   log?: typeof console.log;
 };
 
+type PatientWithDocQueryProgress = Omit<Patient, "data"> & {
+  data: Omit<PatientData, "documentQueryProgress"> & {
+    requestId: string;
+    externalData: PatientExternalData;
+    documentQueryProgress: DocumentQueryProgress;
+  };
+};
+
 /**
  * Updates the successful and error count for the given HIE which is then aggregated
  * to the patient's document query progress. Use setDocQueryProgress to update
@@ -36,7 +44,7 @@ export async function tallyDocQueryProgress({
   type,
   source,
   log = out(`tallyDocQueryProgress - patient ${id}, cxId ${cxId}`).log,
-}: TallyDocQueryProgress): Promise<Patient> {
+}: TallyDocQueryProgress): Promise<PatientWithDocQueryProgress> {
   const patientFilter = { id, cxId };
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
@@ -89,14 +97,12 @@ export async function tallyDocQueryProgressAndProcessWebhook({
     type,
     source,
   });
-  if (updatedPatient.data.documentQueryProgress) {
-    await processDocQueryProgressWebhook({
-      patient: updatedPatient,
-      documentQueryProgress: updatedPatient.data.documentQueryProgress,
-      requestId,
-      progressType: type,
-    });
-  }
+  await processDocQueryProgressWebhook({
+    patient: updatedPatient,
+    documentQueryProgress: updatedPatient.data.documentQueryProgress,
+    requestId,
+    progressType: type,
+  });
 }
 
 export function setHIETallyCount(
