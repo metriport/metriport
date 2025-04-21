@@ -8,13 +8,12 @@ export type QueueAndLambdaSettings = {
   lambda: {
     memory: 512 | 1024 | 2048 | 4096;
     /** Number of messages the lambda pull from SQS at once  */
-    batchSize: number;
-    maxBatchingWindow?: Duration;
-    maxConcurrency?: number;
+    batchSize?: number;
     /** How long can the lambda run for, max is 900 seconds (15 minutes)  */
     timeout: Duration;
     /** Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html */
-    reportBatchItemFailures: boolean;
+    reportBatchItemFailures?: boolean;
+    reservedConcurrentExecutions?: number;
   };
   queue: {
     alarmMaxAgeOfOldestMessage: Duration;
@@ -25,6 +24,12 @@ export type QueueAndLambdaSettings = {
     /** We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ */
     visibilityTimeout: Duration;
     createRetryLambda: boolean;
+  };
+  eventSource: {
+    batchSize: number;
+    reportBatchItemFailures: boolean;
+    maxConcurrency?: number;
+    maxBatchingWindow?: Duration;
   };
   waitTime: Duration;
 };
