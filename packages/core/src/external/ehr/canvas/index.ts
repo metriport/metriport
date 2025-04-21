@@ -402,7 +402,7 @@ class CanvasApi {
         cxId,
         metriportPatientId,
         canvasPatientId,
-        bundleType: BundleType.TOTAL,
+        bundleType: BundleType.EHR_COMPLETE,
         resourceType,
       });
       if (bundle) return bundle;
@@ -441,7 +441,7 @@ class CanvasApi {
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType: BundleType.TOTAL,
+      bundleType: BundleType.EHR_COMPLETE,
       bundle,
       resourceType,
     });

@@ -1,4 +1,4 @@
-import { ComputeResourceDiffRequests } from "@metriport/core/external/ehr/resource-diff/steps/compute/ehr-compute-resource-diff";
+import { ComputeResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/steps/compute/ehr-compute-resource-diff";
 import { EhrComputeResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/steps/compute/ehr-compute-resource-diff-local";
 import { MetriportError } from "@metriport/shared";
 import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
@@ -52,7 +52,7 @@ const ehrComputeResourceDiffSchema = z.object({
   newResource: fhirResourceSchema,
 });
 
-function parseBody(body?: unknown): ComputeResourceDiffRequests[number] {
+function parseBody(body?: unknown): ComputeResourceDiffRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;

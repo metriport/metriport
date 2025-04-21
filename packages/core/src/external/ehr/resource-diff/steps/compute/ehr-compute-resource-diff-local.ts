@@ -4,14 +4,14 @@ import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
 import { resourceIsDerivedFromExistingResources } from "../../utils";
 import {
-  ComputeResourceDiffRequests,
+  ComputeResourceDiffRequest,
   EhrComputeResourceDiffHandler,
 } from "./ehr-compute-resource-diff";
 
 export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async computeResourceDiff(params: ComputeResourceDiffRequests): Promise<void> {
+  async computeResourceDiff(params: ComputeResourceDiffRequest[]): Promise<void> {
     for (const param of params) {
       const {
         ehr,

@@ -3,7 +3,7 @@ import { chunk, partition } from "lodash";
 import { Config } from "../../../../../util/config";
 import { SQSClient } from "../../../../aws/sqs";
 import {
-  ComputeResourceDiffRequests,
+  ComputeResourceDiffRequest,
   EhrComputeResourceDiffHandler,
 } from "./ehr-compute-resource-diff";
 
@@ -22,7 +22,7 @@ export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandle
     this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
-  async computeResourceDiff(params: ComputeResourceDiffRequests): Promise<void> {
+  async computeResourceDiff(params: ComputeResourceDiffRequest[]): Promise<void> {
     const [payloadsTooBig, payloadsOkay] = partition(
       params,
       p => Buffer.from(JSON.stringify(p)).length > MAX_SQS_MESSAGE_SIZE
