@@ -5,10 +5,13 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
 import { MLLP_DEFAULT_PORT, MLLP_SERVER_NLB_INTERNAL_IP } from "./constants";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -16,13 +19,15 @@ interface MllpStackProps extends cdk.StackProps {
   vpc: ec2.Vpc;
   ecrRepo: Repository;
   hl7NotificationBucket: s3.Bucket;
+  incomingHl7NotificationBucket: s3.Bucket;
 }
 
 export class MllpStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
-    const { vpc, ecrRepo, hl7NotificationBucket } = props;
+    const { vpc, ecrRepo, incomingHl7NotificationBucket, hl7NotificationBucket, config } = props;
+    const { notificationWebhookSenderQueue } = config.hl7Notification;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
 
@@ -85,29 +90,24 @@ export class MllpStack extends cdk.NestedStack {
       },
     });
 
-    const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
-      cpu: fargateCpu,
-      memoryLimitMiB: fargateMemoryLimitMiB,
+    const taskRole = new iam.Role(this, "MllpServerTaskRole", {
+      assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
     });
 
-    hl7NotificationBucket.grantWrite(taskDefinition.taskRole);
-
-    taskDefinition.addContainer("MllpServer", {
-      image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
-      secrets: secretsToECS(buildSecrets(this, props.config.hl7Notification.secrets)),
-      environment: {
-        NODE_ENV: "production",
-        ENV_TYPE: props.config.environmentType,
-        MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-        HL7_NOTIFICATION_BUCKET_NAME: props.config.hl7Notification.bucketName,
-        ...(props.version ? { RELEASE_SHA: props.version } : undefined),
-      },
-      portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
-    });
+    taskRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["sqs:SendMessage"],
+        resources: [notificationWebhookSenderQueue.arn],
+      })
+    );
 
     const fargateService = new ecs.FargateService(this, "MllpServerService", {
       cluster,
-      taskDefinition,
+      taskDefinition: new ecs.FargateTaskDefinition(this, "MllpServerTask", {
+        cpu: fargateCpu,
+        memoryLimitMiB: fargateMemoryLimitMiB,
+        taskRole,
+      }),
       desiredCount: fargateTaskCountMin,
       vpcSubnets: {
         subnets: vpc.privateSubnets,
@@ -115,7 +115,33 @@ export class MllpStack extends cdk.NestedStack {
       securityGroups: [mllpSecurityGroup],
     });
 
+    const logGroup = new LogGroup(this, "MllpServerLogGroup", {
+      logGroupName: "/aws/ecs/mllp-server",
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    fargateService.taskDefinition.addContainer("MllpServer", {
+      image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
+      secrets: secretsToECS(buildSecrets(this, props.config.hl7Notification.secrets)),
+      environment: {
+        NODE_ENV: "production",
+        ENV_TYPE: props.config.environmentType,
+        MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
+        HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
+        HL7_NOTIFICATION_QUEUE_URL: notificationWebhookSenderQueue.url,
+        ...(props.version ? { RELEASE_SHA: props.version } : undefined),
+      },
+      portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
+      logging: ecs.LogDriver.awsLogs({
+        logGroup,
+        streamPrefix: "mllp-server",
+      }),
+    });
+
     targetGroup.addTarget(fargateService);
+    hl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
+    incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
       minCapacity: fargateTaskCountMin,
