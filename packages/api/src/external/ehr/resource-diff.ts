@@ -1,9 +1,10 @@
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getCxMappingOrFail } from "../../command/mapping/cx";
+import { getCxMappingsByCustomer } from "../../command/mapping/cx";
 import { getPatientMappings } from "../../command/mapping/patient";
 import { startCanvasResourceDiff } from "./canvas/command/resource-diff/start-resource-diff";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export type StartResourceDiffParams = {
   cxId: string;
@@ -19,10 +20,14 @@ export async function startResourceDiff({
   const requestId = uuidv7();
   for (const patientMapping of patientMappings) {
     if (patientMapping.source === EhrSources.canvas) {
-      const cxMapping = await getCxMappingOrFail({
-        externalId: patientMapping.externalId,
-        source: patientMapping.source,
-      });
+      const cxMappings = await getCxMappingsByCustomer({ cxId, source: EhrSources.canvas });
+      const cxMapping = cxMappings[0];
+      if (!cxMapping) {
+        throw new NotFoundError(`Canvas CX mapping not found`, undefined, {
+          cxId,
+          patientId,
+        });
+      }
       startCanvasResourceDiff({
         cxId,
         canvasPracticeId: cxMapping.externalId,

@@ -7,6 +7,7 @@ import { getPatientOrFail } from "../../../../../command/medical/patient/get-pat
 import { createWorkflow } from "../../../../../command/workflow/create";
 import { getLatestWorkflow } from "../../../../../command/workflow/get";
 import { getCanvasResourceDiffWorkflowId } from "../../shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export type StartCanvasResourceDiffParams = {
   cxId: string;
@@ -22,7 +23,7 @@ export type StartCanvasResourceDiffParams = {
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.
  * @param canvasPatientId - The canvas patient id of the patient.
- * @param requestId - The request id of the workflow.
+ * @param requestId - The request id of the workflow. (optional)
  * @returns the request id of the workflow.
  * @throws 400 if the workflow is currently processing.
  */
@@ -54,7 +55,7 @@ export async function startCanvasResourceDiff({
       cxId,
       metriportPatientId,
       workflowId,
-      runningWorkflowId: latestWorkflow.id,
+      processingWorkflowId: latestWorkflow.id,
     });
   }
   await createWorkflow({
@@ -64,14 +65,16 @@ export async function startCanvasResourceDiff({
     requestId,
   });
   const ehrResourceDiffHandler = buildEhrStartResourceDiffHandler();
-  await ehrResourceDiffHandler.startResourceDiff({
-    ehr: EhrSources.canvas,
-    cxId,
-    practiceId: canvasPracticeId,
-    metriportPatientId,
-    ehrPatientId: canvasPatientId,
-    workflowId,
-    requestId,
-  });
+  ehrResourceDiffHandler
+    .startResourceDiff({
+      ehr: EhrSources.canvas,
+      cxId,
+      practiceId: canvasPracticeId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      workflowId,
+      requestId,
+    })
+    .catch(processAsyncError(`startCanvasResourceDiff`));
   return requestId;
 }
