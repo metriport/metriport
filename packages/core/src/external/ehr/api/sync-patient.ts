@@ -4,6 +4,15 @@ import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 
+export type SyncPatientParams = {
+  ehr: EhrSource;
+  cxId: string;
+  practiceId: string;
+  departmentId?: string;
+  patientId: string;
+  triggerDq: boolean;
+};
+
 /**
  * Sends a request to the API to sync a patient with Metriport.
  *
@@ -20,14 +29,7 @@ export async function syncPatient({
   departmentId,
   patientId,
   triggerDq,
-}: {
-  ehr: EhrSource;
-  cxId: string;
-  practiceId: string;
-  departmentId?: string;
-  patientId: string;
-  triggerDq: boolean;
-}): Promise<void> {
+}: SyncPatientParams): Promise<void> {
   const { log, debug } = out(`Ehr syncPatient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({

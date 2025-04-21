@@ -1,5 +1,5 @@
-import { EhrSource, FhirResource, sleep, SupportedResourceType } from "@metriport/shared";
-import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
+import { FhirResource, sleep } from "@metriport/shared";
+import { fetchBundle as fetchBundleFromApi, FetchBundleParams } from "../../../api/fetch-bundle";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
 import { resourceIsDerivedFromExistingResources } from "../../utils";
@@ -52,26 +52,9 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
   }
 }
 
-async function getExistingResourcesFromApi({
-  ehr,
-  cxId,
-  practiceId,
-  patientId,
-  resourceType,
-}: {
-  ehr: EhrSource;
-  cxId: string;
-  patientId: string;
-  practiceId: string;
-  resourceType: SupportedResourceType;
-}): Promise<FhirResource[]> {
-  const existingResourcesBundle = await fetchBundleFromApi({
-    ehr,
-    cxId,
-    practiceId,
-    patientId,
-    resourceType,
-    useCachedBundle: true,
-  });
+async function getExistingResourcesFromApi(
+  params: Omit<FetchBundleParams, "useCachedBundle">
+): Promise<FhirResource[]> {
+  const existingResourcesBundle = await fetchBundleFromApi({ ...params, useCachedBundle: true });
   return existingResourcesBundle.entry.map(entry => entry.resource);
 }
