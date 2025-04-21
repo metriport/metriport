@@ -10,7 +10,7 @@ import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../.
 import { createOrUpdateCWOrganization } from "../../../external/commonwell/command/create-or-update-cw-organization";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler } from "../../util";
+import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 import { internalDtoFromModel } from "../../medical/dtos/organizationDTO";
 import { organiationInternalDetailsSchema } from "../../medical/schemas/organization";
 
@@ -30,6 +30,7 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const overrideProviderCheck = getFromQueryAsBoolean("overrideProviderCheck", req);
 
     const orgDetails = organiationInternalDetailsSchema.parse(req.body);
     const organizationCreate: OrganizationCreate = {
@@ -56,7 +57,7 @@ router.put(
       ? await updateOrganization({ id: orgDetails.id, ...organizationCreate })
       : await createOrganization(organizationCreate);
 
-    const syncInHie = isProvider(org);
+    const syncInHie = overrideProviderCheck || isProvider(org);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
     if (syncInHie && org.cqApproved) {
