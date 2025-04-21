@@ -3,7 +3,7 @@
 version: '3'
 services:
   opensearch-node1:
-    image: opensearchproject/opensearch:2.19.1
+    image: opensearchproject/opensearch:2.5.0
     container_name: opensearch-node1
     environment:
       - cluster.name=opensearch-cluster
@@ -11,7 +11,6 @@ services:
       - discovery.seed_hosts=opensearch-node1,opensearch-node2
       - cluster.initial_cluster_manager_nodes=opensearch-node1,opensearch-node2
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
-      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}"
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
     ulimits:
       memlock:
@@ -28,7 +27,7 @@ services:
     networks:
       - opensearch-net
   opensearch-node2:
-    image: opensearchproject/opensearch:2.19.1
+    image: opensearchproject/opensearch:2.5.0
     container_name: opensearch-node2
     environment:
       - cluster.name=opensearch-cluster
@@ -36,7 +35,6 @@ services:
       - discovery.seed_hosts=opensearch-node1,opensearch-node2
       - cluster.initial_cluster_manager_nodes=opensearch-node1,opensearch-node2
       - bootstrap.memory_lock=true
-      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}"
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
@@ -50,7 +48,7 @@ services:
     networks:
       - opensearch-net
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.19.1
+    image: opensearchproject/opensearch-dashboards:2.5.0
     container_name: opensearch-dashboards
     ports:
       - 5601:5601
