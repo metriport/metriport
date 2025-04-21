@@ -11,8 +11,8 @@ import {
 export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async computeResourceDiff(params: ComputeResourceDiffRequest[]): Promise<void> {
-    for (const param of params) {
+  async computeResourceDiff(payloads: ComputeResourceDiffRequest[]): Promise<void> {
+    for (const payload of payloads) {
       const {
         ehr,
         cxId,
@@ -21,7 +21,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
         ehrPatientId,
         existingResources,
         newResource,
-      } = param;
+      } = payload;
       const resourceType = newResource.resourceType;
       const existingResourcesToUse: FhirResource[] =
         existingResources ??
