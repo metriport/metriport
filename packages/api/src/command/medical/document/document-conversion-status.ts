@@ -143,19 +143,15 @@ export async function calculateDocumentConversionStatus({
 
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
-      await recreateConsolidated({
-        patient: expectedPatient,
-        context: "calculate-no-source",
-        onDone: async () => {
-          processPatientDocumentRequest(
-            cxId,
-            patientId,
-            "medical.document-conversion",
-            MAPIWebhookStatus.completed,
-            ""
-          );
-        },
-      });
+      await recreateConsolidated({ patient: expectedPatient, context: "calculate-no-source" });
+
+      processPatientDocumentRequest(
+        cxId,
+        patientId,
+        "medical.document-conversion",
+        MAPIWebhookStatus.completed,
+        ""
+      );
     }
   }
 }
