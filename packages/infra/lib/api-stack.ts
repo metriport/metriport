@@ -56,11 +56,14 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { BucketsStack } from "./buckets-stack";
+import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
+  bucketsStack: BucketsStack;
 }
 
 export class APIStack extends Stack {
@@ -101,6 +104,15 @@ export class APIStack extends Stack {
       domainName: props.config.host,
     });
     const dnsZones = { privateZone, publicZone };
+
+    //-------------------------------------------
+    // Vpc Endpoints
+    //-------------------------------------------
+    new ec2.InterfaceVpcEndpoint(this, "ApiVpcSqsEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SQS,
+      privateDnsEnabled: true,
+    });
 
     //-------------------------------------------
     // Security Setup
@@ -346,6 +358,27 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // HL7 Notification Webhook Sender
+    //-------------------------------------------
+    let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
+    const outgoingHl7NotificationBucket = props.bucketsStack.outgoingHl7NotificationBucket;
+    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+      const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
+        this,
+        "Hl7NotificationWebhookSenderNestedStack",
+        {
+          config: props.config,
+          lambdaLayers,
+          vpc: this.vpc,
+          alarmAction: slackNotification?.alarmAction,
+          outgoingHl7NotificationBucket,
+        }
+      );
+
+      hl7NotificationWebhookSenderLambda = lambda;
+    }
+
+    //-------------------------------------------
     // Patient Import
     //-------------------------------------------
     const {
@@ -572,6 +605,7 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    hl7NotificationWebhookSenderLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
