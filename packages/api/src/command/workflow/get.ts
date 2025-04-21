@@ -1,5 +1,6 @@
 import { NotFoundError, Workflow, WorkflowStatus } from "@metriport/shared";
 import { WorkflowModel } from "../../models/workflow";
+import { Op } from "sequelize";
 
 export type WorkflowLookUpParams = Pick<Workflow, "cxId" | "workflowId" | "requestId"> &
   Partial<Pick<Workflow, "patientId" | "facilityId">>;
@@ -100,16 +101,17 @@ export async function getLatestWorkflow({
   facilityId,
   workflowId,
   status,
-}: Omit<WorkflowLookUpParams, "requestId"> & { status?: WorkflowStatus }): Promise<
-  Workflow | undefined
-> {
+}: Omit<WorkflowLookUpParams, "requestId"> & {
+  status?: WorkflowStatus | WorkflowStatus[];
+}): Promise<Workflow | undefined> {
+  const statuses = Array.isArray(status) ? status : status ? [status] : [];
   const workflows = await WorkflowModel.findAll({
     where: {
       cxId,
       ...(patientId ? { patientId } : {}),
       ...(facilityId ? { facilityId } : {}),
       workflowId,
-      ...(status ? { status } : {}),
+      ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}),
     },
     order: [["createdAt", "DESC"]],
   });

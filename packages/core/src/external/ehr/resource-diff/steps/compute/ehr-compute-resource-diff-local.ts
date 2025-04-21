@@ -83,5 +83,5 @@ async function getExistingResourcesFromApi(
   params: Omit<FetchBundleParams, "useCachedBundle">
 ): Promise<FhirResource[]> {
   const existingResourcesBundle = await fetchBundleFromApi({ ...params, useCachedBundle: true });
-  return existingResourcesBundle.entry.map(entry => entry.resource);
+  return existingResourcesBundle.bundle.entry.map(entry => entry.resource);
 }

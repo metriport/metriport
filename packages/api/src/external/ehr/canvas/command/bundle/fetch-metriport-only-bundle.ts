@@ -4,11 +4,12 @@ import CanvasApi, {
   supportedCanvasDiffResources,
 } from "@metriport/core/external/ehr/canvas/index";
 import { BadRequestError } from "@metriport/shared";
-import { Bundle, getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { createCanvasClient } from "../../shared";
+import { FetchCanvasBundleResult } from "./fetch-bundle";
 
 export type FetchCanvasMetriportOnlyBundleParams = {
   cxId: string;
@@ -29,7 +30,7 @@ export type FetchCanvasMetriportOnlyBundleParams = {
  * @param requestId - The request id of the workflow that generated the bundle.
  * @param api - The api to use to fetch the bundle. (optional)
  * @param resourceType - The resource type to fetch. (optional, if missing, all supported resources will be fetched)
- * @returns The bundle of resources.
+ * @returns The bundle of resources and the included resource types
  */
 export async function fetchCanvasMetriportOnlyBundle({
   cxId,
@@ -38,7 +39,7 @@ export async function fetchCanvasMetriportOnlyBundle({
   requestId,
   api,
   resourceType: resourceTypeParam,
-}: FetchCanvasMetriportOnlyBundleParams): Promise<Bundle> {
+}: FetchCanvasMetriportOnlyBundleParams): Promise<FetchCanvasBundleResult> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -70,5 +71,5 @@ export async function fetchCanvasMetriportOnlyBundle({
     if (!resourceBundle) continue;
     bundle.entry.push(...resourceBundle.entry);
   }
-  return bundle;
+  return { bundle, resourceTypes };
 }

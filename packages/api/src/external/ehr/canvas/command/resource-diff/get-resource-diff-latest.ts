@@ -42,13 +42,13 @@ export async function getLatestCanvasResourceDiff({
   });
   if (!workflow) return undefined;
   if (workflow.status === "completed") {
-    const metriportOnlyBundle = await fetchCanvasMetriportOnlyBundle({
+    const data = await fetchCanvasMetriportOnlyBundle({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       requestId: workflow.requestId,
     });
-    return { workflow, metriportOnlyBundle };
+    return { workflow, data };
   }
-  return { workflow, metriportOnlyBundle: undefined };
+  return { workflow, data: undefined };
 }

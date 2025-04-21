@@ -82,7 +82,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
           requestId,
         }),
       ]);
-      this.fetchedBundles.set(resourceType, existingResourcesBundle);
+      this.fetchedBundles.set(resourceType, existingResourcesBundle.bundle);
     }
     const computeResourceDiffParamsWithExistingResources = computeResourceDiffParams.flatMap(
       param => {

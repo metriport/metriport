@@ -19,6 +19,11 @@ export type FetchCanvasBundleParams = {
   useCachedBundle?: boolean;
 };
 
+export type FetchCanvasBundleResult = {
+  bundle: Bundle;
+  resourceTypes: SupportedCanvasDiffResource[];
+};
+
 /**
  * Fetches the resources for the patient that are in Canvas and returns a bundle of them.
  * If useCachedBundle is true, a previously fetched cached bundle used if available and valid.
@@ -29,7 +34,7 @@ export type FetchCanvasBundleParams = {
  * @param api - The api to use to fetch the bundle. (optional)
  * @param resourceType - The resource type to fetch. (optional, if missing, all supported resources will be fetched)
  * @param useCachedBundle - Whether to use the cached bundle. (optional, defaults to true)
- * @returns The bundle of resources.
+ * @returns The bundle of resources and the included resource types
  */
 export async function fetchCanvasBundle({
   cxId,
@@ -38,7 +43,7 @@ export async function fetchCanvasBundle({
   api,
   resourceType: resourceTypeParam,
   useCachedBundle = true,
-}: FetchCanvasBundleParams): Promise<Bundle> {
+}: FetchCanvasBundleParams): Promise<FetchCanvasBundleResult> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -69,5 +74,5 @@ export async function fetchCanvasBundle({
     });
     bundle.entry.push(...resourceBundle.entry);
   }
-  return bundle;
+  return { bundle, resourceTypes };
 }

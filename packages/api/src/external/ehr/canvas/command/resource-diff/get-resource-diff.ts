@@ -1,10 +1,10 @@
 import { Workflow } from "@metriport/shared";
-import { Bundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { getWorkflowOrFail } from "../../../../../command/workflow/get";
 import { getCanvasResourceDiffWorkflowId } from "../../shared";
+import { FetchCanvasBundleResult } from "../bundle/fetch-bundle";
 import { fetchCanvasMetriportOnlyBundle } from "../bundle/fetch-metriport-only-bundle";
 
 export type GetCanvasResourceDiffParams = {
@@ -16,7 +16,7 @@ export type GetCanvasResourceDiffParams = {
 
 export type GetCanvasResourceDiffResult = {
   workflow: Workflow;
-  metriportOnlyBundle: Bundle | undefined;
+  data: FetchCanvasBundleResult | undefined;
 };
 
 /**
@@ -52,13 +52,13 @@ export async function getCanvasResourceDiff({
     requestId,
   });
   if (workflow.status === "completed") {
-    const metriportOnlyBundle = await fetchCanvasMetriportOnlyBundle({
+    const data = await fetchCanvasMetriportOnlyBundle({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       requestId,
     });
-    return { workflow, metriportOnlyBundle };
+    return { workflow, data };
   }
-  return { workflow, metriportOnlyBundle: undefined };
+  return { workflow, data: undefined };
 }
