@@ -39,7 +39,7 @@ import { deduplicateProcedures } from "../../../fhir-deduplication/resources/pro
 import { deduplicateRelatedPersons } from "../../../fhir-deduplication/resources/related-person";
 import { artifactRelatedArtifactUrl } from "../../../fhir-deduplication/shared";
 
-export function resourceIsDerivedFromExistingResources({
+export function resourceIsDuplicateOfExistingResources({
   existingResources,
   newResource: newResourceRaw,
 }: {

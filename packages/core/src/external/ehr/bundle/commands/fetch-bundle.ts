@@ -1,12 +1,8 @@
 import { BadRequestError, errorToString, MetriportError, NotFoundError } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
 import { BundleWithLastModified } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import dayjs from "dayjs";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
-
-const MAX_AGE = dayjs.duration(24, "hours");
 
 export type FetchBundleParams = BundleKeyBaseParams;
 
@@ -107,42 +103,5 @@ export async function fetchBundleOrFail({
       context: "ehr-resource-diff.fetchBundleOrFail",
     });
   }
-  return bundle;
-}
-
-/**
- * Fetches a bundle from S3 for the given bundle type and resource type
- * Checks if the bundle is younger than the max age, if so, it returns the bundle, otherwise it returns undefined.
- *
- * @param ehr - The EHR source.
- * @param cxId - The CX ID.
- * @param metriportPatientId - The Metriport ID.
- * @param ehrPatientId - The EHR patient ID.
- * @param bundleType - The bundle type.
- * @param resourceType - The resource type of the bundle.
- * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
- * @returns The bundle with the last modified date if it is younger than the max age, otherwise undefined.
- */
-export async function fetchBundleYoungerThanMaxAge({
-  ehr,
-  cxId,
-  metriportPatientId,
-  ehrPatientId,
-  bundleType,
-  resourceType,
-  s3BucketName = Config.getEhrBundleBucketName(),
-}: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
-  const bundle = await fetchBundle({
-    ehr,
-    cxId,
-    metriportPatientId,
-    ehrPatientId,
-    bundleType,
-    resourceType,
-    s3BucketName,
-  });
-  if (!bundle) return undefined;
-  const age = dayjs.duration(buildDayjs().diff(bundle.lastModified));
-  if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) return undefined;
   return bundle;
 }

@@ -3,7 +3,7 @@ import { fetchBundle as fetchBundleFromApi, FetchBundleParams } from "../../../a
 import { updateWorkflowTotals } from "../../../api/update-workflow-totals";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
-import { resourceIsDerivedFromExistingResources } from "../../utils";
+import { resourceIsDuplicateOfExistingResources } from "../../utils";
 import {
   ComputeResourceDiffRequest,
   EhrComputeResourceDiffHandler,
@@ -36,11 +36,11 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
             patientId: ehrPatientId,
             resourceType,
           }));
-        const isDerived = resourceIsDerivedFromExistingResources({
+        const isDuplicate = resourceIsDuplicateOfExistingResources({
           existingResources: existingResourcesToUse,
           newResource,
         });
-        if (!isDerived) {
+        if (!isDuplicate) {
           await updateBundleOnS3({
             ehr,
             cxId,
