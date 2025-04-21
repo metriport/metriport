@@ -1,12 +1,7 @@
 import { FhirResource } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { ResourceDiffBaseRequest } from "../../resource-diff-shared";
 
-export type ComputeResourceDiffRequest = {
-  ehr: EhrSource;
-  cxId: string;
-  practiceId: string;
-  metriportPatientId: string;
-  ehrPatientId: string;
+export type ComputeResourceDiffRequest = ResourceDiffBaseRequest & {
   existingResources?: FhirResource[] | undefined;
   newResource: FhirResource;
 };

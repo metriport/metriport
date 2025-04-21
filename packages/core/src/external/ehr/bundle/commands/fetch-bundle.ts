@@ -1,31 +1,14 @@
-import {
-  BadRequestError,
-  EhrSource,
-  errorToString,
-  MetriportError,
-  NotFoundError,
-} from "@metriport/shared";
+import { BadRequestError, errorToString, MetriportError, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import {
-  BundleWithLastModified,
-  SupportedResourceType,
-} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { BundleWithLastModified } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import dayjs from "dayjs";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { BundleType, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
+import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
 
 const MAX_AGE = dayjs.duration(24, "hours");
 
-export type FetchBundleParams = {
-  ehr: EhrSource;
-  cxId: string;
-  metriportPatientId: string;
-  ehrPatientId: string;
-  bundleType: BundleType;
-  resourceType: SupportedResourceType;
-  s3BucketName?: string;
-};
+export type FetchBundleParams = BundleKeyBaseParams;
 
 /**
  * Fetches a bundle from S3 for the given bundle type and resource type.

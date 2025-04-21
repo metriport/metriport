@@ -1,15 +1,11 @@
 import { errorToString, MetriportError } from "@metriport/shared";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { ApiBaseParams } from "./api-shared";
 
-export type SyncPatientParams = {
-  ehr: EhrSource;
-  cxId: string;
-  practiceId: string;
+export type SyncPatientParams = ApiBaseParams & {
   departmentId?: string;
-  patientId: string;
   triggerDq: boolean;
 };
 

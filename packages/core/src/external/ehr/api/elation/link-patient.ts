@@ -2,12 +2,9 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
+import { ApiBaseParams } from "../api-shared";
 
-export type LinkPatientParams = {
-  cxId: string;
-  practiceId: string;
-  patientId: string;
-};
+export type LinkPatientParams = Omit<ApiBaseParams, "ehr">;
 
 /**
  * Sends a request to the API to link a patient with Elation.

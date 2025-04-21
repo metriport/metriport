@@ -3,16 +3,12 @@ import {
   Bundle,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { ApiBaseParams } from "./api-shared";
 
-export type FetchBundleParams = {
-  ehr: EhrSource;
-  cxId: string;
-  practiceId: string;
-  patientId: string;
+export type FetchBundleParams = ApiBaseParams & {
   resourceType: SupportedResourceType;
   useCachedBundle: boolean;
 };

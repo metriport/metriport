@@ -56,3 +56,13 @@ export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams)
   [BundleType.EHR_ONLY]: createFileKeyEhrOnly,
   [BundleType.METRIPORT_ONLY]: createFileKeyMetriportOnly,
 };
+
+export type BundleKeyBaseParams = {
+  ehr: EhrSource;
+  cxId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  bundleType: BundleType;
+  resourceType: SupportedResourceType;
+  s3BucketName?: string;
+};
