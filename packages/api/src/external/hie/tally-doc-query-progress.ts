@@ -23,7 +23,7 @@ export type TallyDocQueryProgress = {
 };
 
 type PatientWithDocQueryProgress = Omit<Patient, "data"> & {
-  data: Omit<PatientData, "documentQueryProgress"> & {
+  data: Omit<PatientData, "requestId" | "externalData" | "documentQueryProgress"> & {
     requestId: string;
     externalData: PatientExternalData;
     documentQueryProgress: DocumentQueryProgress;
