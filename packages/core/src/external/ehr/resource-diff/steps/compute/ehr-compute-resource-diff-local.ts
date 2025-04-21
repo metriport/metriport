@@ -54,7 +54,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
         await updateWorkflowTotals({
           ehr,
           cxId,
-          patientId: metriportPatientId,
+          metriportPatientId,
           workflowId,
           requestId,
           entryStatus: "successful",
@@ -63,7 +63,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
         await updateWorkflowTotals({
           ehr,
           cxId,
-          patientId: metriportPatientId,
+          metriportPatientId,
           workflowId,
           requestId,
           entryStatus: "failed",

@@ -1,14 +1,12 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import { WorkflowEntryStatus } from "@metriport/shared/domain/workflow/types";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { ApiBaseParams } from "./api-shared";
 
-export type UpdateWorkflowTotalParams = {
-  ehr: EhrSource;
-  cxId: string;
-  patientId: string;
+export type UpdateWorkflowTotalParams = Omit<ApiBaseParams, "practiceId" | "patientId"> & {
+  metriportPatientId: string;
   workflowId: string;
   requestId: string;
   entryStatus: WorkflowEntryStatus;
@@ -19,7 +17,7 @@ export type UpdateWorkflowTotalParams = {
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
- * @param patientId - The patient ID.
+ * @param metriportPatientId - The Metriport patient ID.
  * @param workflowId - The workflow ID.
  * @param requestId - The request ID.
  * @param entryStatus - The status of the workflow entry.
@@ -27,7 +25,7 @@ export type UpdateWorkflowTotalParams = {
 export async function updateWorkflowTotals({
   ehr,
   cxId,
-  patientId,
+  metriportPatientId,
   workflowId,
   requestId,
   entryStatus,
@@ -36,7 +34,7 @@ export async function updateWorkflowTotals({
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
-    patientId,
+    patientId: metriportPatientId,
     workflowId,
     requestId,
     entryStatus,
@@ -53,7 +51,7 @@ export async function updateWorkflowTotals({
     throw new MetriportError(msg, error, {
       ehr,
       cxId,
-      patientId,
+      metriportPatientId,
       workflowId,
       url: updateWorkflowUrl,
       context: "ehr.updateWorkflowTotal",

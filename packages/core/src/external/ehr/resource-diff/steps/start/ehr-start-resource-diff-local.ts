@@ -94,7 +94,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
     await updateWorkflowTracking({
       ehr,
       cxId,
-      patientId: metriportPatientId,
+      metriportPatientId,
       workflowId,
       requestId,
       status: "processing",

@@ -19,7 +19,7 @@ const router = Router();
  *
  * Updates the total number of resources to process.
  * @param req.query.cxId The CX ID.
- * @param req.query.patientId The patient ID.
+ * @param req.query.patientId The Metriport patient ID.
  * @param req.query.workflowId The workflow ID.
  * @param req.query.requestId The request ID.
  * @param req.query.status The status of the entry.
@@ -53,7 +53,7 @@ router.post(
  *
  * Updates the tracking of the workflow.
  * @param req.query.cxId The CX ID.
- * @param req.query.patientId The patient ID.
+ * @param req.query.patientId The Metriport patient ID.
  * @param req.query.workflowId The workflow ID.
  * @param req.query.requestId The request ID.
  * @param req.query.status The status of the workflow.
