@@ -5,7 +5,7 @@ import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
+import { EnvConfigNonSandbox } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -42,7 +42,7 @@ function settings() {
 }
 
 interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps {
-  config: EnvConfig;
+  config: EnvConfigNonSandbox;
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
@@ -70,9 +70,9 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
   }
 
   private setupHl7NotificationWebhookSenderLambda(ownProps: {
-    lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
+    lambdaLayers: LambdaLayers;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     outgoingHl7NotificationBucket: s3.Bucket;
@@ -109,6 +109,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
+        HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
