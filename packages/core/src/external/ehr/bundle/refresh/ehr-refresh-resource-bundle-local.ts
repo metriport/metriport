@@ -15,7 +15,7 @@ export class EhrRefreshBundleLocal implements EhrRefreshBundleHandler {
         practiceId,
         patientId,
         resourceType,
-        useExistingBundle: false,
+        useCachedBundle: false,
       });
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);

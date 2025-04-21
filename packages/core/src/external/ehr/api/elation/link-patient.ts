@@ -2,6 +2,9 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
+import { ApiBaseParams } from "../api-shared";
+
+export type LinkPatientParams = Omit<ApiBaseParams, "ehr">;
 
 /**
  * Sends a request to the API to link a patient with Elation.
@@ -14,11 +17,7 @@ export async function linkPatient({
   cxId,
   practiceId,
   patientId,
-}: {
-  cxId: string;
-  practiceId: string;
-  patientId: string;
-}): Promise<void> {
+}: LinkPatientParams): Promise<void> {
   const { log, debug } = out(`Ehr linkPatient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({

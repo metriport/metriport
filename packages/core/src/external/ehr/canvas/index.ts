@@ -377,13 +377,13 @@ class CanvasApi {
     metriportPatientId,
     canvasPatientId,
     resourceType,
-    useExistingBundle = true,
+    useCachedBundle = true,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
-    useExistingBundle?: boolean;
+    useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
       `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
@@ -397,12 +397,12 @@ class CanvasApi {
       patientId: canvasPatientId,
       resourceType,
     };
-    if (useExistingBundle) {
+    if (useCachedBundle) {
       const bundle = await this.getBundleFromS3({
         cxId,
         metriportPatientId,
         canvasPatientId,
-        bundleType: BundleType.TOTAL,
+        bundleType: BundleType.EHR_COMPLETE,
         resourceType,
       });
       if (bundle) return bundle;
@@ -441,7 +441,7 @@ class CanvasApi {
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType: BundleType.TOTAL,
+      bundleType: BundleType.EHR_COMPLETE,
       bundle,
       resourceType,
     });

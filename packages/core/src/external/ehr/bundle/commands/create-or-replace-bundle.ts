@@ -1,21 +1,11 @@
-import { BadRequestError, EhrSource, errorToString, MetriportError } from "@metriport/shared";
-import {
-  Bundle,
-  SupportedResourceType,
-} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
+import { Bundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { BundleType, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
+import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
 
-export type CreateOrReplaceBundleParams = {
-  ehr: EhrSource;
-  cxId: string;
-  metriportPatientId: string;
-  ehrPatientId: string;
-  bundleType: BundleType;
+export type CreateOrReplaceBundleParams = BundleKeyBaseParams & {
   bundle: Bundle;
-  resourceType: SupportedResourceType;
-  s3BucketName?: string;
 };
 
 /**

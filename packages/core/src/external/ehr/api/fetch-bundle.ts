@@ -3,18 +3,14 @@ import {
   Bundle,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { ApiBaseParams } from "./api-shared";
 
-export type FetchBundleParams = {
-  ehr: EhrSource;
-  cxId: string;
-  practiceId: string;
-  patientId: string;
+export type FetchBundleParams = ApiBaseParams & {
   resourceType: SupportedResourceType;
-  useExistingBundle: boolean;
+  useCachedBundle: boolean;
 };
 
 /**
@@ -25,7 +21,7 @@ export type FetchBundleParams = {
  * @param practiceId - The practice ID.
  * @param patientId - The patient ID.
  * @param resourceType - The resource type.
- * @param useExistingBundle - Whether to use the existing bundle.
+ * @param useCachedBundle - Whether to use the cached bundle.
  * @returns The EHR bundle.
  */
 export async function fetchBundle({
@@ -34,7 +30,7 @@ export async function fetchBundle({
   practiceId,
   patientId,
   resourceType,
-  useExistingBundle,
+  useCachedBundle,
 }: FetchBundleParams): Promise<Bundle> {
   const { log, debug } = out(`Ehr fetchBundle - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
@@ -43,7 +39,7 @@ export async function fetchBundle({
     practiceId,
     patientId,
     resourceType,
-    useExistingBundle: useExistingBundle.toString(),
+    useCachedBundle: useCachedBundle.toString(),
   });
   const fetchBundleUrl = `/internal/ehr/${ehr}/patient/bundle?${queryParams.toString()}`;
   try {
@@ -60,7 +56,7 @@ export async function fetchBundle({
       practiceId,
       patientId,
       resourceType,
-      useExistingBundle,
+      useCachedBundle,
       url: fetchBundleUrl,
       context: "ehr.fetchBundle",
     });

@@ -1,24 +1,16 @@
-import { BadRequestError, EhrSource, errorToString, MetriportError } from "@metriport/shared";
+import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
 import {
   createBundleFromResourceList,
   FhirResource,
-  SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { uniqBy } from "lodash";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { BundleType, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
+import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
 import { fetchBundle } from "./fetch-bundle";
 
-export type CreateOrReplaceBundleParams = {
-  ehr: EhrSource;
-  cxId: string;
-  metriportPatientId: string;
-  ehrPatientId: string;
-  bundleType: BundleType;
+export type UpdateBundleParams = BundleKeyBaseParams & {
   resource: FhirResource;
-  resourceType: SupportedResourceType;
-  s3BucketName?: string;
 };
 
 /**
@@ -42,7 +34,7 @@ export async function updateBundle({
   resource,
   resourceType,
   s3BucketName = Config.getEhrBundleBucketName(),
-}: CreateOrReplaceBundleParams): Promise<void> {
+}: UpdateBundleParams): Promise<void> {
   const { log } = out(
     `EhrResourceDiff createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
   );

@@ -1,19 +1,19 @@
-import { EhrSource, FhirResource, sleep, SupportedResourceType } from "@metriport/shared";
-import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
+import { FhirResource, sleep } from "@metriport/shared";
+import { fetchBundle as fetchBundleFromApi, FetchBundleParams } from "../../../api/fetch-bundle";
 import { updateWorkflowTotals } from "../../../api/update-workflow-totals";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
 import { resourceIsDerivedFromExistingResources } from "../../utils";
 import {
-  ComputeResourceDiffRequests,
+  ComputeResourceDiffRequest,
   EhrComputeResourceDiffHandler,
 } from "./ehr-compute-resource-diff";
 
 export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async computeResourceDiff(params: ComputeResourceDiffRequests): Promise<void> {
-    for (const param of params) {
+  async computeResourceDiff(payloads: ComputeResourceDiffRequest[]): Promise<void> {
+    for (const payload of payloads) {
       const {
         ehr,
         cxId,
@@ -24,7 +24,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
         newResource,
         workflowId,
         requestId,
-      } = param;
+      } = payload;
       try {
         const resourceType = newResource.resourceType;
         const existingResourcesToUse: FhirResource[] =
@@ -74,26 +74,9 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
   }
 }
 
-async function getExistingResourcesFromApi({
-  ehr,
-  cxId,
-  practiceId,
-  patientId,
-  resourceType,
-}: {
-  ehr: EhrSource;
-  cxId: string;
-  patientId: string;
-  practiceId: string;
-  resourceType: SupportedResourceType;
-}): Promise<FhirResource[]> {
-  const existingResourcesBundle = await fetchBundleFromApi({
-    ehr,
-    cxId,
-    practiceId,
-    patientId,
-    resourceType,
-    useExistingBundle: true,
-  });
+async function getExistingResourcesFromApi(
+  params: Omit<FetchBundleParams, "useCachedBundle">
+): Promise<FhirResource[]> {
+  const existingResourcesBundle = await fetchBundleFromApi({ ...params, useCachedBundle: true });
   return existingResourcesBundle.entry.map(entry => entry.resource);
 }
