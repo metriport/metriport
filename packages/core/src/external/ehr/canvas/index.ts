@@ -38,8 +38,14 @@ import {
   createOrReplaceBundle,
   CreateOrReplaceBundleParams,
 } from "../bundle/commands/create-or-replace-bundle";
-import { FetchBundleParams, fetchBundleYoungerThanMaxAge } from "../bundle/commands/fetch-bundle";
-import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
+import { fetchBundle, FetchBundleParams } from "../bundle/commands/fetch-bundle";
+import {
+  ApiConfig,
+  fetchBundleUsingTtl,
+  formatDate,
+  makeRequest,
+  MakeRequestParamsInEhr,
+} from "../shared";
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -398,14 +404,14 @@ class CanvasApi {
       resourceType,
     };
     if (useCachedBundle) {
-      const bundle = await this.getBundleFromS3({
+      const cachedBundle = await this.getCachedBundle({
         cxId,
         metriportPatientId,
         canvasPatientId,
         bundleType: BundleType.EHR_COMPLETE,
         resourceType,
       });
-      if (bundle) return bundle;
+      if (cachedBundle) return cachedBundle;
     }
     async function paginateFhirResources(
       api: CanvasApi,
@@ -437,7 +443,7 @@ class CanvasApi {
       });
     }
     const bundle = createBundleFromResourceList(fhirResources);
-    await this.writeBundleToS3({
+    await this.updateCachedBundle({
       cxId,
       metriportPatientId,
       canvasPatientId,
@@ -459,7 +465,7 @@ class CanvasApi {
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
   }): Promise<Bundle | undefined> {
-    return this.getBundleFromS3({
+    return this.getBundle({
       cxId,
       metriportPatientId,
       canvasPatientId,
@@ -556,7 +562,7 @@ class CanvasApi {
     });
   }
 
-  private async getBundleFromS3({
+  private async getBundle({
     cxId,
     metriportPatientId,
     canvasPatientId,
@@ -565,7 +571,7 @@ class CanvasApi {
   }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
     canvasPatientId: string;
   }): Promise<Bundle | undefined> {
-    const bundleWithLastModified = await fetchBundleYoungerThanMaxAge({
+    const bundleWithLastModified = await fetchBundle({
       ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
@@ -577,7 +583,28 @@ class CanvasApi {
     return bundleWithLastModified.bundle;
   }
 
-  private async writeBundleToS3({
+  private async getCachedBundle({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    bundleType,
+    resourceType,
+  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
+    canvasPatientId: string;
+  }): Promise<Bundle | undefined> {
+    const bundleWithLastModified = await fetchBundleUsingTtl({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      bundleType,
+      resourceType,
+    });
+    if (!bundleWithLastModified) return undefined;
+    return bundleWithLastModified.bundle;
+  }
+
+  private async updateCachedBundle({
     cxId,
     metriportPatientId,
     canvasPatientId,
