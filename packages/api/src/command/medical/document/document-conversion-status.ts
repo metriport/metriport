@@ -146,7 +146,7 @@ export async function calculateDocumentConversionStatus({
       await recreateConsolidated({
         patient: expectedPatient,
         context: "calculate-no-source",
-        onCompleteFinal: async () => {
+        onDone: async () => {
           processPatientDocumentRequest(
             cxId,
             patientId,
@@ -179,11 +179,10 @@ function recreateConsolidatedOnCompleteParams({
   patient: Patient;
   requestId: string;
 }): {
-  onCompleteSuccess?: () => Promise<void>;
-  onCompleteFinal?: () => Promise<void>;
+  onDone: () => Promise<void>;
 } {
   return {
-    onCompleteFinal: async () => {
+    onDone: async () => {
       if (patient.data.documentQueryProgress) {
         processDocQueryProgressWebhook({
           patient,
