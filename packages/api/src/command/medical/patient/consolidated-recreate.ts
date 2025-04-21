@@ -1,5 +1,7 @@
 import { ConsolidationConversionType } from "@metriport/api-sdk";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
+import { ConsolidatedSnapshotRequestSync } from "@metriport/core/command/consolidated/get-snapshot";
+import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -40,7 +42,16 @@ export async function recreateConsolidated({
     processAsyncError(`Failed to delete consolidated bundle`, log)(err);
   }
   try {
-    await getConsolidated({ patient, conversionType });
+    if (conversionType) {
+      await getConsolidated({ patient, conversionType });
+    } else {
+      const payload: ConsolidatedSnapshotRequestSync = {
+        patient,
+        isAsync: false,
+      };
+      const connector = buildConsolidatedSnapshotConnector();
+      await connector.execute(payload);
+    }
     if (isDq) {
       createResourceDiffBundles({
         cxId: patient.cxId,
