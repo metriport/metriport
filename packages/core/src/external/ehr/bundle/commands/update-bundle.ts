@@ -23,6 +23,7 @@ export type UpdateBundleParams = BundleKeyBaseParams & {
  * @param bundleType - The bundle type.
  * @param resource - The resource to add to the bundle.
  * @param resourceType - The resource type of the bundle.
+ * @param requestId - The request ID of the bundle. If not provided, the latest bundle will be used.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  */
 export async function updateBundle({
@@ -33,6 +34,7 @@ export async function updateBundle({
   bundleType,
   resource,
   resourceType,
+  requestId,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: UpdateBundleParams): Promise<void> {
   const { log } = out(
@@ -48,7 +50,7 @@ export async function updateBundle({
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
-  const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType });
+  const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, requestId });
   try {
     const newBundle = createBundleFromResourceList([resource]);
     const existingBundleWithLastModified = await fetchBundle({
@@ -58,24 +60,11 @@ export async function updateBundle({
       ehrPatientId,
       bundleType,
       resourceType,
+      requestId,
       s3BucketName,
     });
     if (existingBundleWithLastModified) {
       const existingBundle = existingBundleWithLastModified.bundle;
-      const invalidEntry = existingBundle.entry.find(
-        entry => entry.resource.resourceType !== resourceType
-      );
-      if (invalidEntry) {
-        throw new BadRequestError("Invalid bundle existing bundle", undefined, {
-          ehr,
-          cxId,
-          metriportPatientId,
-          ehrPatientId,
-          bundleType,
-          resourceType,
-          existingBundleResourceType: invalidEntry.resource.resourceType,
-        });
-      }
       newBundle.entry = uniqBy([...existingBundle.entry, ...newBundle.entry], "resource.id");
     }
     await s3Utils.uploadFile({

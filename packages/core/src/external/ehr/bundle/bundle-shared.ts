@@ -13,6 +13,7 @@ type CreateBundlePrefixParams = {
   metriportPatientId: string;
   ehrPatientId: string;
   resourceType: SupportedResourceType;
+  requestId?: string | undefined;
 };
 
 function createBundlePrefix({
@@ -21,8 +22,11 @@ function createBundlePrefix({
   metriportPatientId,
   ehrPatientId,
   resourceType,
+  requestId,
 }: CreateBundlePrefixParams): string {
-  return `${globalPrefix}/ehr=${ehr}/cx_id=${cxId}/metriport_patient_id=${metriportPatientId}/ehr_patient_id=${ehrPatientId}/resource_type=${resourceType}`;
+  return `${globalPrefix}/ehr=${ehr}/cx_id=${cxId}/metriport_patient_id=${metriportPatientId}/ehr_patient_id=${ehrPatientId}/resource_type=${resourceType}/request_id=${
+    requestId ?? "latest"
+  }`;
 }
 
 export function createFileKeyEhrComplete(params: CreateBundlePrefixParams): string {
@@ -64,5 +68,6 @@ export type BundleKeyBaseParams = {
   ehrPatientId: string;
   bundleType: BundleType;
   resourceType: SupportedResourceType;
+  requestId?: string | undefined;
   s3BucketName?: string;
 };

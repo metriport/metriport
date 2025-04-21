@@ -459,11 +459,13 @@ class CanvasApi {
     metriportPatientId,
     canvasPatientId,
     resourceType,
+    requestId,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
+    requestId: string;
   }): Promise<Bundle | undefined> {
     return this.getBundle({
       cxId,
@@ -471,6 +473,7 @@ class CanvasApi {
       canvasPatientId,
       bundleType: BundleType.METRIPORT_ONLY,
       resourceType,
+      requestId,
     });
   }
 
@@ -568,6 +571,7 @@ class CanvasApi {
     canvasPatientId,
     bundleType,
     resourceType,
+    requestId,
   }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
     canvasPatientId: string;
   }): Promise<Bundle | undefined> {
@@ -578,6 +582,7 @@ class CanvasApi {
       ehrPatientId: canvasPatientId,
       bundleType,
       resourceType,
+      requestId,
     });
     if (!bundleWithLastModified) return undefined;
     return bundleWithLastModified.bundle;

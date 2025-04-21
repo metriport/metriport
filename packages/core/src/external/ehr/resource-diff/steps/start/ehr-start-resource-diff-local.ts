@@ -79,6 +79,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
           bundleType: BundleType.METRIPORT_ONLY,
           bundle: getDefaultBundle(),
           resourceType,
+          requestId,
         }),
       ]);
       this.fetchedBundles.set(resourceType, existingResourcesBundle);

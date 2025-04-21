@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { fetchCanvasMetriportOnlyBundle } from "../../../external/ehr/canvas/command/bundle/fetch-metriport-only-bundle";
 import { getCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/get-resource-diff";
 import { getLatestCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/get-resource-diff-latest";
 import { startCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/start-resource-diff";
@@ -63,15 +62,15 @@ router.post(
 );
 
 /**
- * POST /ehr/canvas/patient/:id/resource-diff
+ * POST /ehr/canvas/patient/:id/metriport-only-bundle
  *
- * Starts the resource diff workflow
+ * Starts the resource diff workflow for producing a Metriport only bundle
  * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
- * @returns 200 OK
+ * @returns the requestId of the workflow
  */
 router.post(
-  "/:id/resource-diff",
+  "/:id/metriport-only-bundle",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
@@ -84,51 +83,38 @@ router.post(
 );
 
 /**
- * GET /ehr/canvas/patient/:id/resource-diff
+ * GET /ehr/canvas/patient/:id/metriport-only-bundle/:requestId
  *
- * Retrieves the resource diff workflow
+ * Retrieves the resource diff workflow status and Metriport only bundle if completed
  * @param req.params.id The ID of Canvas Patient.
- * @returns Resource diff workflow
+ * @param req.params.requestId The request ID of the workflow
+ * @returns Resource diff workflow and Metriport only bundle if completed
  */
 router.get(
-  "/:id/resource-diff",
+  "/:id/metriport-only-bundle/:requestId",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
-    const requestId = getFromQueryOrFail("requestId", req);
-    const workflow = await getCanvasResourceDiff({ cxId, canvasPatientId, requestId });
-    return res.status(httpStatus.OK).json(workflow);
-  })
-);
-
-/**
- * GET /ehr/canvas/patient/:id/latest-resource-diff
- *
- * Retrieves the latest resource diff workflow
- * @param req.params.id The ID of Canvas Patient.
- * @returns Resource diff workflow
- */
-router.get(
-  "/:id/latest-resource-diff",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const canvasPatientId = getFrom("params").orFail("id", req);
-    const workflow = await getLatestCanvasResourceDiff({ cxId, canvasPatientId });
-    return res.status(httpStatus.OK).json(workflow);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const requestId = getFrom("params").orFail("requestId", req);
+    const workflowAndBundle = await getCanvasResourceDiff({
+      cxId,
+      canvasPatientId,
+      canvasPracticeId,
+      requestId,
+    });
+    return res.status(httpStatus.OK).json(workflowAndBundle);
   })
 );
 
 /**
  * GET /ehr/canvas/patient/:id/metriport-only-bundle
  *
- * Retrieves the Metriport only bundle for all supported resource types
+ * Retrieves the latest resource diff workflow and Metriport only bundle if completed
  * @param req.params.id The ID of Canvas Patient.
- * @param req.query.practiceId The ID of Canvas Practice.
- * @returns Metriport only bundle
+ * @returns Resource diff workflow and Metriport only bundle if completed
  */
 router.get(
   "/:id/metriport-only-bundle",
@@ -138,12 +124,12 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const bundle = await fetchCanvasMetriportOnlyBundle({
+    const workflowAndBundle = await getLatestCanvasResourceDiff({
       cxId,
       canvasPatientId,
       canvasPracticeId,
     });
-    return res.status(httpStatus.OK).json(bundle);
+    return res.status(httpStatus.OK).json(workflowAndBundle);
   })
 );
 

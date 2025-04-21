@@ -14,6 +14,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
 
   async computeResourceDiff(payloads: ComputeResourceDiffRequest[]): Promise<void> {
     for (const payload of payloads) {
+      console.log("payload", payload);
       const {
         ehr,
         cxId,
@@ -40,6 +41,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           existingResources: existingResourcesToUse,
           newResource,
         });
+        console.log("isDuplicate", isDuplicate);
         if (!isDuplicate) {
           await updateBundleOnS3({
             ehr,
@@ -49,7 +51,9 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
             bundleType: BundleType.METRIPORT_ONLY,
             resource: newResource,
             resourceType,
+            requestId,
           });
+          console.log("updated bundle on s3");
         }
         await updateWorkflowTotals({
           ehr,
@@ -59,6 +63,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           requestId,
           entryStatus: "successful",
         });
+        console.log("updated workflow totals");
       } catch (error) {
         await updateWorkflowTotals({
           ehr,
@@ -69,8 +74,8 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           entryStatus: "failed",
         });
       }
+      if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
     }
-    if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
 }
 
