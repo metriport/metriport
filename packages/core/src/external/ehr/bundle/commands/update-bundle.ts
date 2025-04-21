@@ -38,6 +38,13 @@ export async function updateBundle({
   const { log } = out(
     `EhrResourceDiff createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
   );
+  if (resource.resourceType !== resourceType) {
+    throw new BadRequestError(`Invalid resource type`, undefined, {
+      bundleType,
+      resourceType,
+      invalidResourceResourceType: resource.resourceType,
+    });
+  }
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
