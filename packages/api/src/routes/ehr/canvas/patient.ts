@@ -1,7 +1,7 @@
-import { emptyFunction } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { processAsyncError } from "../../../errors";
 import { fetchCanvasMetriportOnlyBundle } from "../../../external/ehr/canvas/command/bundle/fetch-metriport-only-bundle";
 import { startCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/start-resource-diff";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
@@ -77,7 +77,9 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    startCanvasResourceDiff({ cxId, canvasPatientId, canvasPracticeId }).catch(emptyFunction);
+    startCanvasResourceDiff({ cxId, canvasPatientId, canvasPracticeId }).catch(
+      processAsyncError("Canvas startCanvasResourceDiff")
+    );
     return res.sendStatus(httpStatus.OK);
   })
 );
