@@ -1,4 +1,4 @@
-import { NotFoundError, Workflow } from "@metriport/shared";
+import { NotFoundError, Workflow, WorkflowStatus } from "@metriport/shared";
 import { WorkflowModel } from "../../models/workflow";
 
 export type WorkflowLookUpParams = Pick<Workflow, "cxId" | "workflowId" | "requestId"> &
@@ -99,13 +99,17 @@ export async function getLatestWorkflow({
   patientId,
   facilityId,
   workflowId,
-}: Omit<WorkflowLookUpParams, "requestId">): Promise<Workflow | undefined> {
+  status,
+}: Omit<WorkflowLookUpParams, "requestId"> & { status?: WorkflowStatus }): Promise<
+  Workflow | undefined
+> {
   const workflows = await WorkflowModel.findAll({
     where: {
       cxId,
       ...(patientId ? { patientId } : {}),
       ...(facilityId ? { facilityId } : {}),
       workflowId,
+      ...(status ? { status } : {}),
     },
     order: [["createdAt", "DESC"]],
   });

@@ -49,9 +49,10 @@ export async function startCanvasResourceDiff({
     cxId,
     patientId: metriportPatientId,
     workflowId,
+    status: "processing",
   });
-  if (latestWorkflow && latestWorkflow.status === "processing") {
-    throw new BadRequestError(`Workflow ${workflowId} is currently processing`, {
+  if (latestWorkflow) {
+    throw new BadRequestError("Workflow is currently processing", {
       cxId,
       metriportPatientId,
       workflowId,
