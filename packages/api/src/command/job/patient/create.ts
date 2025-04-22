@@ -30,9 +30,9 @@ export async function createPatientJob({
     id: uuidv7(),
     ...params,
     status: jobInitialStatus,
-    failed: 0,
-    successful: 0,
     total: 0,
+    successful: 0,
+    failed: 0,
   });
   return created.dataValues;
 }

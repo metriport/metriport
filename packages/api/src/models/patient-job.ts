@@ -4,7 +4,7 @@ import { BaseModel, ModelSetup } from "./_default";
 
 /**
  * Used by code that needs to access the raw data from the database.
- * @see finishSinglePatientImport()
+ * @see updatePatientJobTotals()
  */
 export const patientJobRawColumnNames = {
   id: "id",
@@ -67,12 +67,15 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         },
         statusReason: {
           type: DataTypes.STRING,
+          allowNull: true,
         },
         startedAt: {
           type: DataTypes.DATE,
+          allowNull: true,
         },
         finishedAt: {
           type: DataTypes.DATE,
+          allowNull: true,
         },
         total: {
           type: DataTypes.INTEGER,
@@ -88,12 +91,15 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         },
         paramsCx: {
           type: DataTypes.JSONB,
+          allowNull: true,
         },
         paramsOps: {
           type: DataTypes.JSONB,
+          allowNull: true,
         },
         data: {
           type: DataTypes.JSONB,
+          allowNull: true,
         },
       },
       {
