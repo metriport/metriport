@@ -30,7 +30,7 @@ export type FetchCanvasMetriportOnlyBundleParams = {
  * @param requestId - The request id of the workflow that generated the bundle.
  * @param api - The api to use to fetch the bundle. (optional)
  * @param resourceType - The resource type to fetch. (optional, if missing, all supported resources will be fetched)
- * @returns The bundle of resources and the included resource types. If a resource type is not found, it is not included in the bundle.
+ * @returns The bundle of resources and the included resource types. If a resource type bundle is not found, it is not included in the bundle.
  */
 export async function fetchCanvasMetriportOnlyBundle({
   cxId,

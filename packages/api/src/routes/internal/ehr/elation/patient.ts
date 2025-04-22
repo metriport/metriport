@@ -17,6 +17,7 @@ const router = Router();
  * POST /internal/ehr/elation/patient/appointments
  *
  * Fetches appointments in the future and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments",

@@ -84,6 +84,9 @@ export async function updateWorkflowTracking({
   if (justTurnedProcessing) {
     fieldsToUpdate.startedAt = buildDayjs().toDate();
   }
+  if (justTurnedCompleted) {
+    fieldsToUpdate.finishedAt = buildDayjs().toDate();
+  }
   const updatedWorkflow = await workflowModel.update(fieldsToUpdate);
 
   if (justTurnedCompleted && (onCompleted || onCompletedOverride)) {

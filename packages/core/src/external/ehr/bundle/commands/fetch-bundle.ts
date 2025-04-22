@@ -18,7 +18,7 @@ export type FetchBundleParams = BundleKeyBaseParams & {
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
  * @param requestId - The request ID of the bundle. If not provided, the latest bundle will be used.
- * @param fetchLastModified - Whether to fetch the last modified date.
+ * @param fetchLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date or undefined if the bundle is not found.
  */
@@ -61,6 +61,7 @@ export async function fetchBundle({
       ehrPatientId,
       bundleType,
       resourceType,
+      requestId,
       key,
       context: "ehr-resource-diff.fetchBundle",
     });
@@ -78,6 +79,7 @@ export async function fetchBundle({
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
  * @param requestId - The request ID of the bundle. If not provided, the latest bundle will be used.
+ * @param fetchLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date.
  * @throws NotFoundError if the bundle is not found.
@@ -90,6 +92,7 @@ export async function fetchBundleOrFail({
   bundleType,
   resourceType,
   requestId,
+  fetchLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified> {
   const bundle = await fetchBundle({
@@ -100,6 +103,7 @@ export async function fetchBundleOrFail({
     bundleType,
     resourceType,
     requestId,
+    fetchLastModified,
     s3BucketName,
   });
   if (!bundle) {
@@ -110,6 +114,7 @@ export async function fetchBundleOrFail({
       ehrPatientId,
       bundleType,
       resourceType,
+      requestId,
       s3BucketName,
       context: "ehr-resource-diff.fetchBundleOrFail",
     });

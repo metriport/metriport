@@ -35,9 +35,10 @@ export async function getLatestCanvasResourceDiff({
     cxId,
     id: existingPatient.patientId,
   });
+  const metriportPatientId = metriportPatient.id;
   const workflow = await getLatestWorkflow({
     cxId,
-    patientId: metriportPatient.id,
+    patientId: metriportPatientId,
     workflowId: getCanvasResourceDiffWorkflowId(canvasPatientId),
   });
   if (!workflow) return undefined;

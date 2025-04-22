@@ -23,7 +23,7 @@ export async function startResourceDiff({
       const cxMappings = await getCxMappingsByCustomer({ cxId, source: EhrSources.canvas });
       const cxMapping = cxMappings[0];
       if (!cxMapping) {
-        throw new MetriportError(`Canvas CX mapping not found`, undefined, {
+        throw new MetriportError("Canvas CX mapping not found", undefined, {
           cxId,
           patientId,
         });

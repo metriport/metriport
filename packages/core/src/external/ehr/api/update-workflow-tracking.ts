@@ -48,13 +48,14 @@ export async function updateWorkflowTracking({
     debug(`${updateWorkflowUrl} resp: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {
-    const msg = `Failure while updating workflow tracking @ Ehr`;
+    const msg = "Failure while updating workflow tracking @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
       cxId,
       metriportPatientId,
       workflowId,
+      requestId,
       url: updateWorkflowUrl,
       context: "ehr.updateWorkflowTracking",
     });

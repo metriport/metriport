@@ -83,8 +83,9 @@ export async function updateBundle({
       ehrPatientId,
       bundleType,
       resourceType,
-      resourceId: resource.id,
+      requestId,
       key,
+      resourceId: resource.id,
       context: "ehr-resource-diff.updateBundle",
     });
   }

@@ -15,7 +15,7 @@ export type StartCanvasResourceDiffParams = {
 };
 
 /**
- * Starts the resource diff workflow for the patient to produce
+ * Starts the resource diff workflow asynchronously for the patient to produce
  * the bundle of resources in Metriport that are not in Canvas.
  *
  * @param cxId - The cxId of the patient.

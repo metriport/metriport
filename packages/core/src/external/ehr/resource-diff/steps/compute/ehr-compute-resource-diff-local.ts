@@ -70,8 +70,8 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           entryStatus: "failed",
         });
       }
-      if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
     }
+    if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
 }
 

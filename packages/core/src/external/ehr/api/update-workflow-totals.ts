@@ -13,7 +13,7 @@ export type UpdateWorkflowTotalParams = Omit<ApiBaseParams, "practiceId" | "pati
 };
 
 /**
- * Sends a request to the API to save a resource diff.
+ * Sends a request to the API to update the workflow totals.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -46,13 +46,14 @@ export async function updateWorkflowTotals({
     debug(`${updateWorkflowUrl} resp: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {
-    const msg = `Failure while updating workflow totals @ Ehr`;
+    const msg = "Failure while updating workflow totals @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
       cxId,
       metriportPatientId,
       workflowId,
+      requestId,
       url: updateWorkflowUrl,
       context: "ehr.updateWorkflowTotal",
     });

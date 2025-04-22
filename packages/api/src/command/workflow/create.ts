@@ -1,6 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
-  MetriportError,
+  BadRequestError,
   Workflow,
   WorkflowData,
   workflowInitialStatus,
@@ -54,7 +54,7 @@ export async function createWorkflow({
       status: ["processing", "waiting"],
     });
     if (runningWorkflow) {
-      throw new MetriportError("Only one workflow can be running at a time", undefined, {
+      throw new BadRequestError("Only one workflow can be running at a time", undefined, {
         cxId,
         patientId,
         facilityId,

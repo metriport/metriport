@@ -22,7 +22,7 @@ export type UpdateWorkflowTotalsParams = {
  * We can have multiple requests being processed at the same time, in different Node processes,
  * so we need a way to update the totals without causing race conditions.
  *
- * Based on the status, this will increment the successful or failed counter.
+ * Based on the status, this will increment the successful or failed counter then call updateWorkflowTracking.
  *
  * @param cxId - The customer ID.
  * @param patientId - The patient ID.
@@ -30,6 +30,8 @@ export type UpdateWorkflowTotalsParams = {
  * @param workflowId - The workflow ID.
  * @param requestId - The request ID.
  * @param entryStatus - The status of the workflow entry.
+ * @param onCompleted - The callback to call when the workflow is completed via updateWorkflowTracking.
+ * @param onCompletedOverride - The callback to call when the workflow is completed via updateWorkflowTracking.
  * @returns the updated workflow entry.
  */
 export async function updateWorkflowTotals({
@@ -77,8 +79,8 @@ export async function updateWorkflowTotals({
     failed: updatedRaw[workflowRawColumnNames.failed],
     total: updatedRaw[workflowRawColumnNames.total],
   };
-  const { successful, failed, total, status: currentStatus } = updatedWorkflow;
-  if (currentStatus !== "completed" && successful + failed >= total) {
+  const { successful, failed, total, status } = updatedWorkflow;
+  if (status !== "completed" && successful + failed >= total) {
     await updateWorkflowTracking({
       cxId,
       patientId,
