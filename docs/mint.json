@@ -236,7 +236,9 @@
         {
           "group": "Extensions",
           "icon": "asterisk",
-          "pages": ["medical-api/fhir/extensions/doc-id"]
+          "pages": [
+            "medical-api/fhir/extensions/chronicity"
+          ]
         }
       ]
     },

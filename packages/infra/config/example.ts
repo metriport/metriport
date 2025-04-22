@@ -150,10 +150,6 @@ export const config: EnvConfigNonSandbox = {
     deprecatedIncomingMessageBucketName: "test-deprecated-incoming-message-bucket-name",
     incomingMessageBucketName: "test-incoming-message-bucket-name",
     outgoingMessageBucketName: "test-outgoing-message-bucket-name",
-    notificationWebhookSenderQueue: {
-      arn: "test-notification-router-queue-arn",
-      url: "test-notification-router-queue-url",
-    },
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
     },
