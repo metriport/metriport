@@ -24,7 +24,7 @@ function createBundlePrefix({
   resourceType,
   requestId,
 }: CreateBundlePrefixParams): string {
-  return `${globalPrefix}/ehr=${ehr}/cx_id=${cxId}/metriport_patient_id=${metriportPatientId}/ehr_patient_id=${ehrPatientId}/resource_type=${resourceType}/request_id=${
+  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}/requestid=${
     requestId ?? "latest"
   }`;
 }
