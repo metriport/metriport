@@ -44,7 +44,7 @@ export async function startMetriportOnlyBundleJob({
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: canvasMetriportOnlyBundleJobType,
+    jobTypeId: canvasMetriportOnlyBundleJobType,
     jobGroupId: canvasPatientId,
     requestId: requestIdParam ?? uuidv7(),
     limitedToOneRunningJob: true,

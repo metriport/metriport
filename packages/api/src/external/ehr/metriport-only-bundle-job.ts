@@ -4,7 +4,7 @@ import { MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingsByCustomer } from "../../command/mapping/cx";
 import { getPatientMappings } from "../../command/mapping/patient";
-import { startMetriportOnlyBundleJob } from "./canvas/command/metriport-only-bundle-job/start-job";
+import { startMetriportOnlyBundleJob } from "./canvas/job/metriport-only-bundle/start-job";
 
 export type StartMetriportOnlyBundleJobsParams = {
   cxId: string;

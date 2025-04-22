@@ -3,8 +3,8 @@ import {
   createJobDataPayload,
   getPatientJobByIdOrFail,
 } from "../../../../../command/job/patient/get";
-import { FetchCanvasBundleResult } from "../bundle/fetch-bundle";
-import { fetchCanvasMetriportOnlyBundle } from "../bundle/fetch-metriport-only-bundle";
+import { FetchCanvasBundleResult } from "../../command/bundle/fetch-bundle";
+import { fetchCanvasMetriportOnlyBundle } from "../../command/bundle/fetch-metriport-only-bundle";
 
 export type GetMetriportOnlyBundleParams = {
   cxId: string;

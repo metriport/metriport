@@ -14,7 +14,7 @@ export const patientJobRawColumnNames = {
   jobGroupId: "job_group_id",
   requestId: "request_id",
   status: "status",
-  reason: "reason",
+  statusReason: "status_reason",
   startedAt: "started_at",
   finishedAt: "finished_at",
   total: "total",
@@ -29,7 +29,7 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
   static NAME = "patient_job";
   declare cxId: string;
   declare patientId: string;
-  declare jobType: string;
+  declare jobTypeId: string;
   declare jobGroupId: string;
   declare requestId: string;
   declare status: JobStatus;
@@ -53,7 +53,7 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         patientId: {
           type: DataTypes.STRING,
         },
-        jobType: {
+        jobTypeId: {
           type: DataTypes.STRING,
         },
         jobGroupId: {

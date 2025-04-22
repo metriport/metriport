@@ -7,8 +7,8 @@ import {
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { canvasMetriportOnlyBundleJobType } from "../../shared";
-import { FetchCanvasBundleResult } from "../bundle/fetch-bundle";
-import { fetchCanvasMetriportOnlyBundle } from "../bundle/fetch-metriport-only-bundle";
+import { FetchCanvasBundleResult } from "../../command/bundle/fetch-bundle";
+import { fetchCanvasMetriportOnlyBundle } from "../../command/bundle/fetch-metriport-only-bundle";
 import { GetMetriportOnlyBundleParams } from "./get-job-payload";
 
 export type GetLatestMetriportOnlyBundleParams = Omit<GetMetriportOnlyBundleParams, "jobId">;
@@ -41,7 +41,7 @@ export async function getLatestMetriportOnlyBundleJobPayload({
   const job = await getLatestPatientJobByStatus({
     cxId,
     patientId: metriportPatientId,
-    jobType: canvasMetriportOnlyBundleJobType,
+    jobTypeId: canvasMetriportOnlyBundleJobType,
     jobGroupId: canvasPatientId,
   });
   if (!job) return undefined;

@@ -48,6 +48,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
         },
         statusReason: {
           type: DataTypes.STRING,
+          field: "status_reason",
           allowNull: true,
         },
         startedAt: {
@@ -87,7 +88,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
         },
         data: {
           type: DataTypes.JSONB,
-          field: "data",
           allowNull: true,
         },
       },

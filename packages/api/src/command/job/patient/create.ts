@@ -5,7 +5,7 @@ import { getLatestPatientJobByStatus } from "./get";
 
 export type CreatePatientJobParams = Pick<
   PatientJob,
-  "cxId" | "patientId" | "jobType" | "jobGroupId" | "requestId"
+  "cxId" | "patientId" | "jobTypeId" | "jobGroupId" | "requestId"
 > & {
   limitedToOneRunningJob?: boolean;
 };

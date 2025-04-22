@@ -38,7 +38,7 @@ export async function getPatientJobModelOrFail(
 
 export type ListPatientJobsParams = Pick<
   PatientJob,
-  "cxId" | "patientId" | "jobType" | "jobGroupId"
+  "cxId" | "patientId" | "jobTypeId" | "jobGroupId"
 >;
 
 export type ListPatientJobsParamsByStatus = ListPatientJobsParams & {

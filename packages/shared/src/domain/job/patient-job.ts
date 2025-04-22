@@ -5,7 +5,7 @@ export type PatientJob = {
   id: string;
   cxId: string;
   patientId: string;
-  jobType: string;
+  jobTypeId: string;
   jobGroupId: string;
   requestId: string;
   status: JobStatus;

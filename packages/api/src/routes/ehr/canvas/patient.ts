@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { getMetriportOnlyBundleJobPayload } from "../../../external/ehr/canvas/command/metriport-only-bundle-job/get-job-payload";
-import { getLatestMetriportOnlyBundleJobPayload } from "../../../external/ehr/canvas/command/metriport-only-bundle-job/get-latest-job-payload";
-import { startMetriportOnlyBundleJob } from "../../../external/ehr/canvas/command/metriport-only-bundle-job/start-job";
+import { getMetriportOnlyBundleJobPayload } from "../../../external/ehr/canvas/job/metriport-only-bundle/get-job-payload";
+import { getLatestMetriportOnlyBundleJobPayload } from "../../../external/ehr/canvas/job/metriport-only-bundle/get-latest-job-payload";
+import { startMetriportOnlyBundleJob } from "../../../external/ehr/canvas/job/metriport-only-bundle/start-job";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
@@ -84,6 +84,31 @@ router.post(
 );
 
 /**
+ * GET /ehr/canvas/patient/:id/metriport-only-bundle/latest
+ *
+ * Retrieves the latest resource diff workflow and Metriport only bundle if completed
+ * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @returns Resource diff workflow and Metriport only bundle if completed
+ */
+router.get(
+  "/:id/metriport-only-bundle/latest",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const jobPayload = await getLatestMetriportOnlyBundleJobPayload({
+      cxId,
+      canvasPatientId,
+      canvasPracticeId,
+    });
+    return res.status(httpStatus.OK).json(jobPayload);
+  })
+);
+
+/**
  * GET /ehr/canvas/patient/:id/metriport-only-bundle/:jobId
  *
  * Retrieves the resource diff workflow and Metriport only bundle if completed
@@ -106,31 +131,6 @@ router.get(
       canvasPatientId,
       canvasPracticeId,
       jobId,
-    });
-    return res.status(httpStatus.OK).json(jobPayload);
-  })
-);
-
-/**
- * GET /ehr/canvas/patient/:id/metriport-only-bundle
- *
- * Retrieves the latest resource diff workflow and Metriport only bundle if completed
- * @param req.params.id The ID of Canvas Patient.
- * @param req.query.practiceId The ID of Canvas Practice.
- * @returns Resource diff workflow and Metriport only bundle if completed
- */
-router.get(
-  "/:id/metriport-only-bundle/latest",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const canvasPatientId = getFrom("params").orFail("id", req);
-    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const jobPayload = await getLatestMetriportOnlyBundleJobPayload({
-      cxId,
-      canvasPatientId,
-      canvasPracticeId,
     });
     return res.status(httpStatus.OK).json(jobPayload);
   })
