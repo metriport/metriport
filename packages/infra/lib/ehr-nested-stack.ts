@@ -10,13 +10,13 @@ import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { createQueue } from "./shared/sqs";
 import { QueueAndLambdaSettings } from "./shared/settings";
+import { createQueue } from "./shared/sqs";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
-const waitTimeElationLinkPatient = Duration.seconds(1); // 60 patients/min
+const waitTimeElationLinkPatient = Duration.seconds(10); // 60 patients/min
 const waitTimeStartResourceDiff = Duration.seconds(10); // 6 patients/min
-const waitTimeComputeResourceDiff = Duration.seconds(1); // 60 patients/min
+const waitTimeComputeResourceDiff = Duration.millis(500); // 120 resources/min per patient
 const waitTimeRefreshBundle = Duration.seconds(10); // 6 patients/min
 
 function settings(): {
@@ -70,7 +70,9 @@ function settings(): {
     entry: "ehr-start-resource-diff",
     lambda: {
       memory: 1024,
+      batchSize: 1,
       timeout: startResourceDiffLambdaTimeout,
+      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -78,10 +80,6 @@ function settings(): {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(startResourceDiffLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
     },
     waitTime: waitTimeStartResourceDiff,
   };
@@ -91,7 +89,9 @@ function settings(): {
     entry: "ehr-compute-resource-diff",
     lambda: {
       memory: 1024,
+      batchSize: 1,
       timeout: ComputeResourceDiffLambdaTimeout,
+      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -99,10 +99,6 @@ function settings(): {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(ComputeResourceDiffLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
     },
     waitTime: waitTimeComputeResourceDiff,
   };
@@ -112,7 +108,9 @@ function settings(): {
     entry: "ehr-refresh-bundle",
     lambda: {
       memory: 1024,
+      batchSize: 1,
       timeout: RefreshBundleLambdaTimeout,
+      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -120,10 +118,6 @@ function settings(): {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(RefreshBundleLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
     },
     waitTime: waitTimeRefreshBundle,
   };
@@ -354,7 +348,6 @@ export class EhrNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
-      eventSource: eventSourceSettings,
       waitTime,
     } = settings().startResourceDiff;
 
@@ -386,7 +379,12 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    lambda.addEventSource(
+      new SqsEventSource(queue, {
+        batchSize: lambdaSettings.batchSize,
+        reportBatchItemFailures: lambdaSettings.reportBatchItemFailures,
+      })
+    );
 
     ownProps.computeResourceDiffQueue.grantSendMessages(lambda);
 
@@ -407,7 +405,6 @@ export class EhrNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
-      eventSource: eventSourceSettings,
       waitTime,
     } = settings().computeResourceDiff;
 
@@ -439,7 +436,12 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    lambda.addEventSource(
+      new SqsEventSource(queue, {
+        batchSize: lambdaSettings.batchSize,
+        reportBatchItemFailures: lambdaSettings.reportBatchItemFailures,
+      })
+    );
 
     ownProps.ehrBundleBucket.grantReadWrite(lambda);
 
@@ -459,7 +461,6 @@ export class EhrNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
-      eventSource: eventSourceSettings,
       waitTime,
     } = settings().refreshBundle;
 
@@ -490,7 +491,12 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    lambda.addEventSource(
+      new SqsEventSource(queue, {
+        batchSize: lambdaSettings.batchSize,
+        reportBatchItemFailures: lambdaSettings.reportBatchItemFailures,
+      })
+    );
 
     return { lambda, queue };
   }
