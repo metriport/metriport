@@ -64,7 +64,8 @@ router.post(
 /**
  * POST /ehr/canvas/patient/:id/resource-diff
  *
- * Starts the resource diff workflow
+ * Starts the resource diff workflow to generate the Metriport only bundle for the patient.
+ * The workflow is started asynchronously.
  * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @returns 200 OK

@@ -46,7 +46,7 @@ export async function fetchBundle({
       lastModified: fileInfo.createdAt,
     };
   } catch (error) {
-    const msg = "Failure while fetching bundle @ EhrResourceDiff";
+    const msg = "Failure while fetching bundle @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
@@ -54,6 +54,7 @@ export async function fetchBundle({
       metriportPatientId,
       ehrPatientId,
       bundleType,
+      resourceType,
       key,
       context: "ehr-resource-diff.fetchBundle",
     });
@@ -93,7 +94,7 @@ export async function fetchBundleOrFail({
     s3BucketName,
   });
   if (!bundle) {
-    throw new NotFoundError(`Bundle not found @ EhrResourceDiff`, {
+    throw new NotFoundError("Bundle not found @ Ehr", {
       ehr,
       cxId,
       metriportPatientId,

@@ -8,7 +8,7 @@ export type RefreshBundleParams = {
 };
 
 /**
- * Refreshes the Canvas bundle for the patient in s3 across all supported resource types.
+ * Refreshes the cached bundles of resources in Canvas for the patient in s3 across all supported resource types.
  *
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.

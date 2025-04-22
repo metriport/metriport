@@ -35,7 +35,7 @@ export async function createOrReplaceBundle({
   );
   const invalidResource = bundle.entry.find(entry => entry.resource.resourceType !== resourceType);
   if (invalidResource) {
-    throw new BadRequestError(`Invalid resource type in bundle`, undefined, {
+    throw new BadRequestError("Invalid resource type in bundle", undefined, {
       bundleType,
       resourceType,
       invalidResourceResourceType: invalidResource.resource.resourceType,
@@ -53,7 +53,7 @@ export async function createOrReplaceBundle({
       contentType: "application/json",
     });
   } catch (error) {
-    const msg = `Failure while creating or replacing bundle @ EhrResourceDiff`;
+    const msg = "Failure while creating or replacing bundle @ EhrResourceDiff";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
@@ -61,6 +61,7 @@ export async function createOrReplaceBundle({
       metriportPatientId,
       ehrPatientId,
       bundleType,
+      resourceType,
       key,
       context: "ehr-resource-diff.createOrReplaceBundle",
     });

@@ -8,7 +8,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { ApiBaseParams } from "./api-shared";
 
-export type FetchBundleParams = ApiBaseParams & {
+export type FetchBundleParams = Omit<ApiBaseParams, "departmentId"> & {
   resourceType: SupportedResourceType;
   useCachedBundle: boolean;
 };
@@ -48,7 +48,7 @@ export async function fetchBundle({
     debug(`${fetchBundleUrl} resp: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {
-    const msg = `Failure while fetching bundle @ Ehr`;
+    const msg = "Failure while fetching bundle @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,

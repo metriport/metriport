@@ -14,7 +14,7 @@ export type UpdateBundleParams = BundleKeyBaseParams & {
 };
 
 /**
- * Updates a resource bundle.
+ * Updates a resource bundle with a new resource.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -39,7 +39,7 @@ export async function updateBundle({
     `EhrResourceDiff createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
   );
   if (resource.resourceType !== resourceType) {
-    throw new BadRequestError(`Invalid resource type`, undefined, {
+    throw new BadRequestError("Invalid resource type", undefined, {
       bundleType,
       resourceType,
       invalidResourceResourceType: resource.resourceType,
@@ -62,20 +62,6 @@ export async function updateBundle({
     });
     if (existingBundleWithLastModified) {
       const existingBundle = existingBundleWithLastModified.bundle;
-      const invalidEntry = existingBundle.entry.find(
-        entry => entry.resource.resourceType !== resourceType
-      );
-      if (invalidEntry) {
-        throw new BadRequestError("Invalid bundle existing bundle", undefined, {
-          ehr,
-          cxId,
-          metriportPatientId,
-          ehrPatientId,
-          bundleType,
-          resourceType,
-          existingBundleResourceType: invalidEntry.resource.resourceType,
-        });
-      }
       newBundle.entry = uniqBy([...existingBundle.entry, ...newBundle.entry], "resource.id");
     }
     await s3Utils.uploadFile({
@@ -85,7 +71,7 @@ export async function updateBundle({
       contentType: "application/json",
     });
   } catch (error) {
-    const msg = `Failure while updating bundle @ EhrResourceDiff`;
+    const msg = "Failure while updating bundle @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
@@ -93,6 +79,8 @@ export async function updateBundle({
       metriportPatientId,
       ehrPatientId,
       bundleType,
+      resourceType,
+      resourceId: resource.id,
       key,
       context: "ehr-resource-diff.updateBundle",
     });

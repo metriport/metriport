@@ -61,7 +61,7 @@ router.post(
 /**
  * POST /internal/ehr/canvas/patient/refresh-bundle
  *
- * Refreshes the bundle for the canvas patient
+ * Refreshes the cached bundles of resources in Canvas for the canvas patient.
  * @param req.query.cxId The cxId of the patient.
  * @param req.query.patientId The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.

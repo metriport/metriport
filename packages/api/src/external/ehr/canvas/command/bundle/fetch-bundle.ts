@@ -21,7 +21,7 @@ export type FetchCanvasBundleParams = {
 
 /**
  * Fetches the resources for the patient that are in Canvas and returns a bundle of them.
- * If useCachedBundle is true, a previously fetched cached bundle used if available and valid.
+ * If useCachedBundle is true, a cached bundle is used if available and valid.
  *
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.

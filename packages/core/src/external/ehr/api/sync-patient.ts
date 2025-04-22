@@ -5,7 +5,6 @@ import { out } from "../../../util/log";
 import { ApiBaseParams } from "./api-shared";
 
 export type SyncPatientParams = ApiBaseParams & {
-  departmentId?: string;
   triggerDq: boolean;
 };
 
@@ -16,6 +15,7 @@ export type SyncPatientParams = ApiBaseParams & {
  * @param cxId - The CX ID.
  * @param practiceId - The practice ID.
  * @param patientId - The patient ID.
+ * @param departmentId - The department ID.
  * @param triggerDq - Whether to trigger DQ.
  */
 export async function syncPatient({
@@ -41,7 +41,7 @@ export async function syncPatient({
     if (!response.data) throw new Error(`No body returned from ${syncPatientUrl}`);
     debug(`${syncPatientUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {
-    const msg = `Failure while syncing patient @ Ehr`;
+    const msg = "Failure while syncing patient @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
