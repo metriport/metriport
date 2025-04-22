@@ -53,7 +53,7 @@ export async function createOrReplaceBundle({
       contentType: "application/json",
     });
   } catch (error) {
-    const msg = "Failure while creating or replacing bundle @ EhrResourceDiff";
+    const msg = "Failure while creating or replacing bundle @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
