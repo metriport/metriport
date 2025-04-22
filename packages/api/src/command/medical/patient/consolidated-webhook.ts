@@ -5,7 +5,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { emptyFunction, errorToString } from "@metriport/shared";
 import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
-import { startResourceDiff } from "../../../external/ehr/resource-diff";
+import { startMetriportOnlyBundleJobs } from "../../../external/ehr/metriport-only-bundle-job";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
@@ -107,7 +107,7 @@ export async function processConsolidatedDataWebhook({
 
     if (status === "completed") {
       // Intentionally async
-      startResourceDiff({
+      startMetriportOnlyBundleJobs({
         cxId,
         patientId: currentPatient.id,
       }).catch(emptyFunction);

@@ -6,15 +6,21 @@ import { getCxMappingsByCustomer } from "../../command/mapping/cx";
 import { getPatientMappings } from "../../command/mapping/patient";
 import { startMetriportOnlyBundleJob } from "./canvas/command/metriport-only-bundle-job/start-job";
 
-export type StartResourceDiffParams = {
+export type StartMetriportOnlyBundleJobsParams = {
   cxId: string;
   patientId: string;
 };
 
-export async function startResourceDiff({
+/**
+ * Starts the metriport only bundle job asynchronously for each EHR integration
+ *
+ * @param cxId - The cxId of the patient.
+ * @param patientId - The patientId of the patient.
+ */
+export async function startMetriportOnlyBundleJobs({
   cxId,
   patientId,
-}: StartResourceDiffParams): Promise<void> {
+}: StartMetriportOnlyBundleJobsParams): Promise<void> {
   const patientMappings = await getPatientMappings({ cxId, id: patientId });
   if (patientMappings.length < 0) return;
   const requestId = uuidv7();
