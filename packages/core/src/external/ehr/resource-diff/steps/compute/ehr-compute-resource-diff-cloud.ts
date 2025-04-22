@@ -23,14 +23,14 @@ export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandle
   }
 
   async computeResourceDiff(params: ComputeResourceDiffRequest[]): Promise<void> {
-    const paramsWithExistingResources: ComputeResourceDiffRequest[] = params.map(p => ({
+    const paramsWithoutExistingResources: ComputeResourceDiffRequest[] = params.map(p => ({
       ...p,
       existingResources:
         Buffer.from(JSON.stringify(p)).length > MAX_SQS_MESSAGE_SIZE
           ? undefined
           : p.existingResources,
     }));
-    const chunks = chunk(paramsWithExistingResources, MAX_SQS_MESSAGE_BATCH_SIZE);
+    const chunks = chunk(paramsWithoutExistingResources, MAX_SQS_MESSAGE_BATCH_SIZE);
     for (const chunk of chunks) {
       await Promise.all(
         chunk.map(p =>

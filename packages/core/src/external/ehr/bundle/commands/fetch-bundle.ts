@@ -100,6 +100,7 @@ export async function fetchBundleOrFail({
       metriportPatientId,
       ehrPatientId,
       bundleType,
+      resourceType,
       s3BucketName,
       context: "ehr-resource-diff.fetchBundleOrFail",
     });
