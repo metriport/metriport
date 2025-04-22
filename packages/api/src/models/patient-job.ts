@@ -49,21 +49,27 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
+          allowNull: false,
         },
         patientId: {
           type: DataTypes.STRING,
+          allowNull: false,
         },
         jobTypeId: {
           type: DataTypes.STRING,
+          allowNull: false,
         },
         jobGroupId: {
           type: DataTypes.STRING,
+          allowNull: false,
         },
         requestId: {
           type: DataTypes.STRING,
+          allowNull: false,
         },
         status: {
           type: DataTypes.STRING,
+          allowNull: false,
         },
         statusReason: {
           type: DataTypes.STRING,
@@ -79,14 +85,17 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         },
         total: {
           type: DataTypes.INTEGER,
+          allowNull: false,
           defaultValue: 0,
         },
         successful: {
           type: DataTypes.INTEGER,
+          allowNull: false,
           defaultValue: 0,
         },
         failed: {
           type: DataTypes.INTEGER,
+          allowNull: false,
           defaultValue: 0,
         },
         paramsCx: {
