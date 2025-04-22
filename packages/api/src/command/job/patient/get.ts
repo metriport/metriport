@@ -46,21 +46,12 @@ export type ListPatientJobsParamsByStatus = ListPatientJobsParams & {
 };
 
 export async function getLatestPatientJobByStatus({
-  cxId,
-  patientId,
-  jobType,
-  jobGroupId,
   status,
+  ...params
 }: ListPatientJobsParamsByStatus): Promise<PatientJob | undefined> {
   const statuses = getStatusFromParams(status);
   const jobs = await PatientJobModel.findAll({
-    where: {
-      cxId,
-      patientId,
-      jobType,
-      jobGroupId,
-      ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}),
-    },
+    where: { ...params, ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}) },
     order: [["createdAt", "DESC"]],
   });
   const job = jobs[0];
