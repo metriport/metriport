@@ -18,8 +18,8 @@ interface MllpStackProps extends cdk.StackProps {
   version: string | undefined;
   vpc: ec2.Vpc;
   ecrRepo: Repository;
-  hl7NotificationBucket: s3.Bucket;
-  incomingHl7NotificationBucket: s3.Bucket;
+  hl7NotificationBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket;
 }
 
 export class MllpStack extends cdk.NestedStack {

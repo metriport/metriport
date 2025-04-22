@@ -1,5 +1,6 @@
 import { SQSClient } from "../../external/aws/sqs";
 import { Config } from "../../util/config";
+import { log } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
@@ -23,6 +24,9 @@ export class Hl7NotificationWebhookSenderCloud implements Hl7NotificationWebhook
     });
 
     const payload = JSON.stringify(params);
+    log(
+      `Enqueueing message for processing: ${messageReceivedTimestamp} - cxId: ${cxId} - patientId: ${patientId}`
+    );
     await this.sqsClient.sendMessageToQueue(this.hl7NotificationWebhookSenderQueue, payload, {
       fifo: true,
       messageGroupId: patientId,

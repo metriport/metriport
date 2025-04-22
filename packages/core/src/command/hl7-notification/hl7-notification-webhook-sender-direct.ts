@@ -20,12 +20,14 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   async execute(params: Hl7Notification): Promise<void> {
     const { cxId, patientId, messageReceivedTimestamp } = params;
 
-    await this.s3Utils.uploadFile({
+    const result = await this.s3Utils.uploadFile({
       bucket: this.bucketName,
       key: "some/example/key",
       file: Buffer.from(params.message),
       contentType: "text/plain",
     });
+
+    this.log(`[${messageReceivedTimestamp}] S3 upload result: ${JSON.stringify(result)}`);
 
     const api = axios.create({ baseURL: Config.getApiUrl() });
     this.log(

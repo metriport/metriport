@@ -66,6 +66,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         connection.send(message.buildAck());
 
+        log("Init S3 upload");
         s3Utils
           .uploadFile({
             bucket: bucketName,
@@ -98,10 +99,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         }
       }, logger)
     );
-
-    connection.addEventListener("close", () => {
-      logger.log("Connection closed");
-    });
   });
 
   return server;
