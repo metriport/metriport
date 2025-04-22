@@ -21,7 +21,7 @@ export async function createPatientJob({
       status: ["waiting", "processing"],
     });
     if (runningJob) {
-      throw new BadRequestError("Only one workflow can be running at a time", undefined, {
+      throw new BadRequestError("Only one job can be running at a time", undefined, {
         ...params,
         runningJobId: runningJob.id,
       });
