@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, DocumentReference } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -62,10 +62,11 @@ export async function createConsolidatedFromConversions({
   log(`Got ${conversions.length} resources from conversions`);
 
   const withDups = buildConsolidatedBundle();
-  withDups.entry = [...conversions, ...docRefs.map(buildBundleEntry), patientEntry];
+  const docRefsWithUpdatedMeta = updateMetaDataForDocRefs(docRefs);
+  withDups.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
   withDups.total = withDups.entry.length;
   log(
-    `Added ${docRefs.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
+    `Added ${docRefsWithUpdatedMeta.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
   );
 
   log(`Deduplicating consolidated bundle...`);
@@ -197,4 +198,19 @@ export function merge(inputBundle: Bundle) {
       return destination;
     },
   };
+}
+
+function updateMetaDataForDocRefs(docRefs: DocumentReference[]): DocumentReference[] {
+  return docRefs.map(docRef => {
+    const sourceFile = docRef.content?.[0]?.attachment?.title;
+    if (!sourceFile) return docRef;
+
+    return {
+      ...docRef,
+      meta: {
+        ...docRef.meta,
+        source: sourceFile,
+      },
+    };
+  });
 }
