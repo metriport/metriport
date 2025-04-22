@@ -34,9 +34,8 @@ In JSON, an Observation Resource would look like this, for example:
   "resourceType": "Observation",
   "id": "D19DA918-0F16-11EE-B2A6-A2F55214B7C1",
   "meta": {
-    "versionId": "1",
-    "lastUpdated": "2023-06-19T15:37:06.127+00:00",
-    "source": "https://api.metriport.com/cda/to/fhir#flkjasdfoiueh"
+    "lastUpdated": "2025-04-17T18:09:29.947Z",
+    "source": "01964571-db3c-7953-9987-fe7b62cc278c/01964571-db3c-7953-9987-fe7cb3d109e4/01964571-db3c-7953-9987-fe7b62cc278c_01964571-db3c-7953-9987-fe7cb3d109e4_01964571-db3c-7953-9987-fe7d7dcb476d.xml"
   },
   "extension": [
     {
@@ -121,6 +120,10 @@ Patient using the [Add Patient Data endpoint](/medical-api/api-reference/fhir/ad
 
 FHIR Resources each have their own specification for properties that may be included in the Resource,
 and they may contain one or more of the [defined Data Types](/medical-api/fhir/data-types).
+
+## Meta
+
+The `meta.source` property in any FHIR resource points to the C-CDA source document from which the resource was derived. You can use this value with the [Get Document URL endpoint](/medical-api/api-reference/document/get-document) to download the original C-CDA document.
 
 ## Extensions
 
