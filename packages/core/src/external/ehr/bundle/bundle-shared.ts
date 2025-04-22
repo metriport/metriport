@@ -22,7 +22,7 @@ function createBundlePrefix({
   ehrPatientId,
   resourceType,
 }: CreateBundlePrefixParams): string {
-  return `${globalPrefix}/ehr=${ehr}/cx_id=${cxId}/metriport_patient_id=${metriportPatientId}/ehr_patient_id=${ehrPatientId}/resource_type=${resourceType}`;
+  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}`;
 }
 
 export function createFileKeyEhrComplete(params: CreateBundlePrefixParams): string {
