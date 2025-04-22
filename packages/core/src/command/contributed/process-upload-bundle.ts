@@ -21,6 +21,21 @@ export type UploadBundleTransactionResult = {
   mergedBundle?: Bundle<Resource>;
 };
 
+/**
+ * Processes an incoming FHIR bundle upload transaction, validating and merging it with existing resources.
+ *
+ * This function performs several key operations:
+ * 1. Validates referential integrity of all resources in the incoming bundle
+ * 2. Handles resource conflicts between incoming and existing bundles
+ * 3. Creates a transaction response bundle with operation outcomes
+ * 4. Merges valid resources into a single bundle
+ *
+ * @param incomingBundle - The FHIR bundle containing new resources to be processed
+ * @param existingBundle - Optional existing bundle to merge with. Defaults to an empty collection bundle
+ * @returns An object containing:
+ *   - outcomesBundle: A FHIR bundle containing operation outcomes for each processed resource
+ *   - mergedBundle: A FHIR bundle containing all valid resources (only present if no validation errors occurred)
+ */
 export function processBundleUploadTransaction(
   incomingBundle: Bundle<Resource>,
   existingBundle: Bundle<Resource> = { resourceType: "Bundle", type: "collection" }
@@ -84,6 +99,10 @@ export function processBundleUploadTransaction(
     }
   });
 
+  if (!patientResource) {
+    throw new MetriportError("Patient resource not found in upload bundle");
+  }
+
   const errorOutcomes = transactionResponseBundle.entry?.filter(e => e.response?.status === "400");
   if (errorOutcomes && errorOutcomes.length > 0) {
     return {
@@ -101,10 +120,6 @@ export function processBundleUploadTransaction(
       ? { total: transactionResponseBundle.entry.length }
       : undefined),
   };
-
-  if (!patientResource) {
-    throw new MetriportError("Patient resource not found in upload bundle");
-  }
 
   const mergedEntries = Array.from(resourcesMap.values()).map(r => buildBundleEntry(r));
   const mergedBundle: Bundle<Resource> = buildConsolidatedBundle([

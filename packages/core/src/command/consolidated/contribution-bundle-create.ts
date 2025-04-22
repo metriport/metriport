@@ -3,6 +3,7 @@ import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { CONTRIBUTION_BUNDLE_RAW } from "../../domain/consolidated/filename";
+import { processBundle } from "../../domain/conversion/bundle-modifications/process";
 import {
   FHIR_BUNDLE_SUFFIX,
   createFullContributionBundleFilePath,
@@ -10,12 +11,10 @@ import {
   createUploadFilePath,
 } from "../../domain/document/upload";
 import { Patient } from "../../domain/patient";
-import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
-import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
-import { hydrate } from "../../external/fhir/consolidated/hydrate";
-import { normalize } from "../../external/fhir/consolidated/normalize";
+import { S3Utils, executeWithRetriesS3, isNotFoundError } from "../../external/aws/s3";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { deduplicateBundleEntriesByTypeAndId } from "../../fhir-deduplication/deduplicate-by-type-and-id";
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_FILE_EXTENSION } from "../../util/mime";
@@ -59,12 +58,13 @@ async function getExistingFullContributionBundleSafe(
       `Found an existing Full Contribution Bundle with ${bundle.total} (vs ${bundle.entry?.length}) entries.`
     );
     return bundle;
-  } catch (err) {
-    // intentionally not rethrowing
+  } catch (error: unknown) {
+    if (isNotFoundError(error)) {
+      log("No existing bundle found.");
+      return undefined;
+    }
+    throw error;
   }
-
-  log("No existing bundle found.");
-  return undefined;
 }
 
 /**
@@ -86,17 +86,15 @@ async function createFullContributionBundleFromPreviousUploads(
   if (uploads.length === 0) {
     return undefined;
   }
-  const uniqueEntries = deduplicateBundleEntries(uploads, log);
+  const uniqueEntries = deduplicateBundleEntriesByTypeAndId(uploads);
 
   const rawBundle = buildConsolidatedBundle();
   rawBundle.entry = [...uniqueEntries, patientEntry];
   rawBundle.total = rawBundle.entry.length;
 
   log(`Processing uploaded bundle...`);
-  const deduped = await deduplicate({ cxId, patientId, bundle: rawBundle });
-  const normalized = await normalize({ cxId, patientId, bundle: deduped });
-  const hydrated = await hydrate({ cxId, patientId, bundle: normalized });
-  log(`...done, from ${rawBundle.entry?.length} to ${hydrated.entry?.length} resources`);
+  const processed = await processBundle({ bundle: rawBundle, cxId, patientId });
+  log(`...done, from ${rawBundle.entry?.length} to ${processed.entry?.length} resources`);
 
   const docName = `${CONTRIBUTION_BUNDLE_RAW}${JSON_FILE_EXTENSION}`;
   const rawContributionBundleName = createUploadFilePath(cxId, patientId, docName);
@@ -114,13 +112,13 @@ async function createFullContributionBundleFromPreviousUploads(
     s3Utils.uploadFile({
       bucket,
       key: fulContributionBundleName,
-      file: Buffer.from(JSON.stringify(hydrated)),
+      file: Buffer.from(JSON.stringify(processed)),
       contentType: "application/json",
     }),
   ]);
 
   log(`Done`);
-  return hydrated;
+  return processed;
 }
 
 async function getUploads(cxId: string, patientId: string): Promise<BundleEntry[]> {
@@ -177,31 +175,6 @@ async function listUploadedBundlesFromS3({
     o.Key ? { bucket, key: o.Key } : []
   );
   return uploadedBundleLocations;
-}
-
-/**
- * TODO: Existing limitation - the order in which resources are fetched from the uploads is random.
- * We cannot tell which version of duplicated resources is kept.
- */
-function deduplicateBundleEntries(
-  uploads: BundleEntry<Resource>[],
-  log: typeof console.log
-): BundleEntry<Resource>[] {
-  const uniqueEntries = new Map<string, BundleEntry<Resource>>();
-
-  uploads.forEach(entry => {
-    if (!entry.resource?.resourceType || !entry.resource?.id) {
-      // This should never be the case
-      const msg = `Resource missing resourceType or ID`;
-      log(msg);
-      return;
-    }
-
-    const dedupKey = `${entry.resource.resourceType}${entry.resource.id}`;
-    uniqueEntries.set(dedupKey, entry);
-  });
-
-  return Array.from(uniqueEntries.values());
 }
 
 export async function uploadFullContributionBundle({

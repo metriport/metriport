@@ -133,6 +133,8 @@ async function processCdaBundle(
       cdaBundles: converted,
       organization: fhirOrganization,
       docId: requestId,
-    }).then(() => log(`${Date.now() - cdaConversionStartedAt}ms to convert to CDA`));
+    })
+      .then(() => log(`${Date.now() - cdaConversionStartedAt}ms to convert to CDA`))
+      .catch(err => log(`Failed to upload CDA documents: ${err}`));
   }
 }
