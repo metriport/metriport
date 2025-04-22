@@ -9,7 +9,8 @@ import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchai
 import { EventTypes, analytics } from "../../external/analytics/posthog";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
-import { documentVariableName, mainSummaryPrompt, refinedSummaryPrompt } from "./prompts";
+// import { documentVariableName, mainSummaryPrompt, refinedSummaryPrompt } from "./prompts";
+import { documentVariableName, mainSummaryPrompt, refinedSummaryPrompt } from "./custom-prompt";
 
 const CHUNK_SIZE = 100_000;
 const CHUNK_OVERLAP = 1000;
