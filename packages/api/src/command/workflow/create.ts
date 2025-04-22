@@ -1,5 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
+  MetriportError,
   Workflow,
   WorkflowData,
   workflowInitialStatus,
@@ -7,6 +8,7 @@ import {
   WorkflowParamsOps,
 } from "@metriport/shared";
 import { WorkflowModel } from "../../models/workflow";
+import { getLatestWorkflow } from "./get";
 
 export type WorkflowParams = Omit<
   Workflow,
@@ -29,6 +31,7 @@ export type WorkflowParams = Omit<
   paramsCx?: WorkflowParamsCx;
   paramsOps?: WorkflowParamsOps;
   data?: WorkflowData;
+  limitedToOneRunningWorkflow?: boolean;
 };
 
 export async function createWorkflow({
@@ -40,7 +43,26 @@ export async function createWorkflow({
   paramsCx,
   paramsOps,
   data,
+  limitedToOneRunningWorkflow = false,
 }: WorkflowParams): Promise<Workflow> {
+  if (limitedToOneRunningWorkflow) {
+    const runningWorkflow = await getLatestWorkflow({
+      cxId,
+      patientId,
+      facilityId,
+      workflowId,
+      status: ["processing", "waiting"],
+    });
+    if (runningWorkflow) {
+      throw new MetriportError("Only one workflow can be running at a time", undefined, {
+        cxId,
+        patientId,
+        facilityId,
+        workflowId,
+        runningWorkflowId: runningWorkflow.id,
+      });
+    }
+  }
   const created = await WorkflowModel.create({
     id: uuidv7(),
     cxId,

@@ -58,6 +58,7 @@ export async function fetchCanvasMetriportOnlyBundle({
 
   const bundle = getDefaultBundle();
   const resourceTypes = resourceTypeParam ? [resourceTypeParam] : supportedCanvasDiffResources;
+  let resourceTypesFound = [...resourceTypes];
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
   for (const resourceType of resourceTypes) {
@@ -68,8 +69,11 @@ export async function fetchCanvasMetriportOnlyBundle({
       resourceType,
       requestId,
     });
-    if (!resourceBundle) continue;
+    if (!resourceBundle) {
+      resourceTypesFound = resourceTypesFound.filter(rt => rt !== resourceType);
+      continue;
+    }
     bundle.entry.push(...resourceBundle.entry);
   }
-  return { bundle, resourceTypes };
+  return { bundle, resourceTypes: resourceTypesFound };
 }

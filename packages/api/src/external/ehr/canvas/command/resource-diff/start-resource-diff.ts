@@ -1,13 +1,11 @@
 import { buildEhrStartResourceDiffHandler } from "@metriport/core/external/ehr/resource-diff/steps/start/ehr-start-resource-diff-factory";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { createWorkflow } from "../../../../../command/workflow/create";
-import { getLatestWorkflow } from "../../../../../command/workflow/get";
 import { getCanvasResourceDiffWorkflowId } from "../../shared";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export type StartCanvasResourceDiffParams = {
   cxId: string;
@@ -45,25 +43,12 @@ export async function startCanvasResourceDiff({
   const metriportPatientId = metriportPatient.id;
   const requestId = requestIdParam ?? uuidv7();
   const workflowId = getCanvasResourceDiffWorkflowId(canvasPatientId);
-  const latestWorkflow = await getLatestWorkflow({
-    cxId,
-    patientId: metriportPatientId,
-    workflowId,
-    status: "processing",
-  });
-  if (latestWorkflow) {
-    throw new BadRequestError("Workflow is currently processing", {
-      cxId,
-      metriportPatientId,
-      workflowId,
-      processingWorkflowId: latestWorkflow.id,
-    });
-  }
   await createWorkflow({
     cxId,
     patientId: metriportPatientId,
     workflowId,
     requestId,
+    limitedToOneRunningWorkflow: true,
   });
   const ehrResourceDiffHandler = buildEhrStartResourceDiffHandler();
   ehrResourceDiffHandler
