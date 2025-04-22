@@ -5,4 +5,5 @@ export type ApiBaseParams = {
   cxId: string;
   practiceId: string;
   patientId: string;
+  departmentId?: string;
 };

@@ -5,35 +5,34 @@ import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { EnvConfigNonSandbox } from "../config/env-config";
+import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-function settings() {
+const waitTimeHl7NotificationWebhookSender = Duration.millis(50); // 1200 messages/min
+
+function settings(): { hl7NotificationWebhookSender: QueueAndLambdaSettings } {
   const timeout = Duration.seconds(61);
-  const hl7NotificationWebhookSender: Omit<QueueAndLambdaSettings, "waitTime"> = {
+  const hl7NotificationWebhookSender: QueueAndLambdaSettings = {
     name: "Hl7NotificationWebhookSender",
     entry: "hl7-notification-webhook-sender",
     lambda: {
-      memory: 1024 as const,
+      memory: 1024,
+      batchSize: 1,
       timeout,
       reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.minutes(5),
       maxReceiveCount: 3,
-      maxMessageCountAlarmThreshold: 1_000,
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
+      maxMessageCountAlarmThreshold: 5_000,
     },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-      maxConcurrency: 20,
-    },
+    waitTime: waitTimeHl7NotificationWebhookSender,
   };
 
   return {
@@ -42,7 +41,7 @@ function settings() {
 }
 
 interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps {
-  config: EnvConfigNonSandbox;
+  config: EnvConfig;
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
@@ -70,9 +69,9 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
   }
 
   private setupHl7NotificationWebhookSenderLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
-    lambdaLayers: LambdaLayers;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     outgoingHl7NotificationBucket: s3.Bucket;
@@ -84,7 +83,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
-      eventSource: eventSourceSettings,
+      waitTime,
     } = settings().hl7NotificationWebhookSender;
 
     const queue = createQueue({
@@ -109,13 +108,13 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
 
     outgoingHl7NotificationBucket.grantWrite(lambda);
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    lambda.addEventSource(new SqsEventSource(queue));
 
     new CfnOutput(this, "Hl7NotificationWebhookSenderQueueArn", {
       description: "HL7 Message Router Queue ARN",

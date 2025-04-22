@@ -4,7 +4,7 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { ApiBaseParams } from "../api-shared";
 
-export type LinkPatientParams = Omit<ApiBaseParams, "ehr">;
+export type LinkPatientParams = Omit<ApiBaseParams, "ehr" | "departmentId">;
 
 /**
  * Sends a request to the API to link a patient with Elation.
@@ -31,7 +31,7 @@ export async function linkPatient({
     if (!response.data) throw new Error(`No body returned from ${linkPatientUrl}`);
     debug(`${linkPatientUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {
-    const msg = `Failure while linking patient @ Elation`;
+    const msg = "Failure while linking patient @ Elation";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,

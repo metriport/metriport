@@ -64,7 +64,8 @@ router.post(
 /**
  * POST /ehr/canvas/patient/:id/metriport-only-bundle
  *
- * Starts the resource diff workflow for producing a Metriport only bundle
+ * Starts the resource diff workflow to generate the Metriport only bundle.
+ * The workflow is started asynchronously and requestId is returned.
  * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @returns the requestId of the workflow
@@ -85,9 +86,10 @@ router.post(
 /**
  * GET /ehr/canvas/patient/:id/metriport-only-bundle/:requestId
  *
- * Retrieves the resource diff workflow status and Metriport only bundle if completed
+ * Retrieves the resource diff workflow workflow and Metriport only bundle if completed
  * @param req.params.id The ID of Canvas Patient.
  * @param req.params.requestId The request ID of the workflow
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Resource diff workflow and Metriport only bundle if completed
  */
 router.get(
@@ -114,6 +116,7 @@ router.get(
  *
  * Retrieves the latest resource diff workflow and Metriport only bundle if completed
  * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Resource diff workflow and Metriport only bundle if completed
  */
 router.get(

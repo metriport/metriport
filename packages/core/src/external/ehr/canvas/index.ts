@@ -58,12 +58,14 @@ export type CanvasEnv = string;
 export const supportedCanvasDiffResources = [
   "AllergyIntolerance",
   "Condition",
+  "Coverage",
   "DiagnosticReport",
   "Encounter",
   "MedicationStatement",
   "MedicationRequest",
   "Observation",
   "Procedure",
+  "Immunization",
 ] as SupportedResourceType[];
 export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
 export const isSupportedCanvasDiffResource = (

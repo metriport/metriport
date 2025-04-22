@@ -269,8 +269,7 @@ export async function fetchBundleUsingTtl({
     s3BucketName,
     fetchLastModified: true,
   });
-  if (!bundle) return undefined;
-  if (!bundle.lastModified) return undefined;
+  if (!bundle || !bundle.lastModified) return undefined;
   const age = dayjs.duration(buildDayjs().diff(bundle.lastModified));
   if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) return undefined;
   return bundle;
