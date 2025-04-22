@@ -1,15 +1,20 @@
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import dayjs from "dayjs";
 import { getCxMappingsByCustomer } from "../../command/mapping/cx";
 import { getPatientMappings } from "../../command/mapping/patient";
+import { getLatestMetriportOnlyBundleJobPayload } from "./canvas/job/metriport-only-bundle/get-latest-job-payload";
 import { startMetriportOnlyBundleJob } from "./canvas/job/metriport-only-bundle/start-job";
 
 export type StartMetriportOnlyBundleJobsParams = {
   cxId: string;
   patientId: string;
 };
+
+const MAX_AGE = dayjs.duration(24, "hours");
 
 /**
  * Starts the metriport only bundle job asynchronously for each EHR integration
@@ -39,6 +44,21 @@ export async function startMetriportOnlyBundleJobs({
           cxId,
           patientId,
         });
+      }
+      const getMetriportOnlyBundleJob = await getLatestMetriportOnlyBundleJobPayload({
+        cxId,
+        canvasPracticeId: cxMapping.externalId,
+        canvasPatientId: patientMapping.externalId,
+      });
+      const status = getMetriportOnlyBundleJob?.metadata?.status;
+      const createdAt = getMetriportOnlyBundleJob?.metadata?.createdAt;
+      if (
+        status &&
+        status === "completed" &&
+        createdAt &&
+        buildDayjs(createdAt).isAfter(buildDayjs().subtract(MAX_AGE))
+      ) {
+        continue;
       }
       startMetriportOnlyBundleJob({
         cxId,

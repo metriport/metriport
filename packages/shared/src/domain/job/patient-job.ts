@@ -18,6 +18,7 @@ export type PatientJob = {
   paramsCx: JobParamsCx | undefined;
   paramsOps: JobParamsOps | undefined;
   data: unknown;
+  createdAt: Date;
 };
 
 export type PatientJobWithData<T> = {

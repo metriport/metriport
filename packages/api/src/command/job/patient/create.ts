@@ -12,12 +12,13 @@ export type CreatePatientJobParams = Pick<
 
 export async function createPatientJob({
   limitedToOneRunningJob = false,
+  requestId,
   ...params
 }: CreatePatientJobParams): Promise<PatientJob> {
   if (limitedToOneRunningJob) {
     const runningJob = await getLatestPatientJobByStatus({
       ...params,
-      status: ["processing", "waiting"],
+      status: ["waiting", "processing"],
     });
     if (runningJob) {
       throw new BadRequestError("Only one workflow can be running at a time", undefined, {
@@ -29,6 +30,7 @@ export async function createPatientJob({
   const created = await PatientJobModel.create({
     id: uuidv7(),
     ...params,
+    requestId,
     status: jobInitialStatus,
     total: 0,
     successful: 0,
