@@ -11,6 +11,7 @@ import {
   ComputeResourceDiffRequest,
   EhrComputeResourceDiffHandler,
 } from "./ehr-compute-resource-diff";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 
 export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandler {
   private readonly sqsClient: SQSClient;
@@ -34,9 +35,14 @@ export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandle
     const chunks = chunk(paramsWithoutExistingResources, MAX_SQS_MESSAGE_BATCH_SIZE);
     for (const chunk of chunks) {
       await Promise.all(
-        chunk.map(p =>
-          this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, JSON.stringify(p))
-        )
+        chunk.map(params => {
+          const payload = JSON.stringify(params);
+          return this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
+            fifo: true,
+            messageDeduplicationId: createUuidFromText(payload),
+            messageGroupId: params.cxId,
+          });
+        })
       );
       await sleep(MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP);
     }
