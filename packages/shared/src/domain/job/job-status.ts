@@ -1,25 +1,22 @@
 import { BadRequestError } from "../../error/bad-request";
 
-export const workflowStatus = ["waiting", "processing", "completed", "failed"] as const;
-export type WorkflowStatus = (typeof workflowStatus)[number];
-export const workflowInitialStatus: WorkflowStatus = "waiting";
+export const jobStatus = ["waiting", "processing", "completed", "failed"] as const;
+export type JobStatus = (typeof jobStatus)[number];
+export const jobInitialStatus: JobStatus = "waiting";
 
-export function isWorkflowDone(status: WorkflowStatus): boolean {
+export function isJobDone(status: JobStatus): boolean {
   return status === "completed" || status === "failed";
 }
 
 /**
  * Validates that a new status is valid based on the current status.
  *
- * @param currentStatus - The current status of the patient import job.
+ * @param currentStatus - The current status of the job.
  * @param newStatus - The new status to validate.
  * @returns The validated new status.
  * @throws BadRequestError if the new status is not valid.
  */
-export function validateNewWorkflowStatus(
-  currentStatus: WorkflowStatus,
-  newStatus: WorkflowStatus
-): WorkflowStatus {
+export function validateNewJobStatus(currentStatus: JobStatus, newStatus: JobStatus): JobStatus {
   const additionalInfo = {
     currentStatus,
     newStatus,
@@ -34,7 +31,7 @@ export function validateNewWorkflowStatus(
     case "processing":
       if (currentStatus !== "waiting" && currentStatus !== "processing") {
         throw new BadRequestError(
-          `Workflow is not in a valid state to update to processing`,
+          `Job is not in a valid state to update to processing`,
           undefined,
           additionalInfo
         );
@@ -43,7 +40,7 @@ export function validateNewWorkflowStatus(
     case "completed":
       if (currentStatus !== "processing") {
         throw new BadRequestError(
-          `Workflow is not processing, cannot update to completed`,
+          `Job is not processing, cannot update to completed`,
           undefined,
           additionalInfo
         );
@@ -52,14 +49,14 @@ export function validateNewWorkflowStatus(
     case "failed":
       if (currentStatus === "completed") {
         throw new BadRequestError(
-          `Workflow is completed, cannot update to failed`,
+          `Job is completed, cannot update to failed`,
           undefined,
           additionalInfo
         );
       }
       break;
     default:
-      throw new BadRequestError(`Invalid workflow status`, undefined, additionalInfo);
+      throw new BadRequestError(`Invalid job status`, undefined, additionalInfo);
   }
   return newStatus;
 }

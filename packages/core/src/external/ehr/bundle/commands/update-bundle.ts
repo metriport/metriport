@@ -23,7 +23,7 @@ export type UpdateBundleParams = BundleKeyBaseParams & {
  * @param bundleType - The bundle type.
  * @param resource - The resource to add to the bundle.
  * @param resourceType - The resource type of the bundle.
- * @param requestId - The request ID of the bundle. If not provided, the latest bundle will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the latest tag will be used.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  */
 export async function updateBundle({
@@ -34,7 +34,7 @@ export async function updateBundle({
   bundleType,
   resource,
   resourceType,
-  requestId,
+  jobId,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: UpdateBundleParams): Promise<void> {
   const { log } = out(
@@ -50,7 +50,7 @@ export async function updateBundle({
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
-  const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, requestId });
+  const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, jobId });
   try {
     const newBundle = createBundleFromResourceList([resource]);
     const existingBundleWithLastModified = await fetchBundle({
@@ -60,7 +60,7 @@ export async function updateBundle({
       ehrPatientId,
       bundleType,
       resourceType,
-      requestId,
+      jobId,
       s3BucketName,
     });
     if (existingBundleWithLastModified) {
@@ -83,7 +83,7 @@ export async function updateBundle({
       ehrPatientId,
       bundleType,
       resourceType,
-      requestId,
+      jobId,
       key,
       resourceId: resource.id,
       context: "ehr-resource-diff.updateBundle",

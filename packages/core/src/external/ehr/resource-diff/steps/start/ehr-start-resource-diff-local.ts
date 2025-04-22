@@ -27,9 +27,9 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
     practiceId,
     metriportPatientId,
     ehrPatientId,
-    requestId,
-    workflowId,
+    jobId,
   }: StartResourceDiffRequest): Promise<void> {
+    await updateWorkflowTracking({ cxId, jobId, status: "processing" });
     const consolidated = await getConsolidated({ cxId, patientId: metriportPatientId });
     if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length < 1) {
       return;
@@ -56,8 +56,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
           metriportPatientId,
           ehrPatientId,
           newResource,
-          workflowId,
-          requestId,
+          jobId,
         },
       ];
     });
@@ -79,7 +78,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
           bundleType: BundleType.METRIPORT_ONLY,
           bundle: getDefaultBundle(),
           resourceType,
-          requestId,
+          jobId,
         }),
       ]);
       this.fetchedBundles.set(resourceType, existingResourcesBundle.bundle);
@@ -92,15 +91,8 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
         return [{ ...param, existingResources }];
       }
     );
-    await updateWorkflowTracking({
-      ehr,
-      cxId,
-      metriportPatientId,
-      workflowId,
-      requestId,
-      status: "processing",
-      total: computeResourceDiffParamsWithExistingResources.length,
-    });
+    const total = computeResourceDiffParamsWithExistingResources.length;
+    await updateWorkflowTracking({ cxId, jobId, total });
     await this.next.computeResourceDiff(computeResourceDiffParamsWithExistingResources);
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }

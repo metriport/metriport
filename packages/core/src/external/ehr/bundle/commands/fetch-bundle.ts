@@ -17,7 +17,7 @@ export type FetchBundleParams = BundleKeyBaseParams & {
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
- * @param requestId - The request ID of the bundle. If not provided, the latest bundle will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
  * @param fetchLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date or undefined if the bundle is not found.
@@ -29,7 +29,7 @@ export async function fetchBundle({
   ehrPatientId,
   bundleType,
   resourceType,
-  requestId,
+  jobId,
   fetchLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
@@ -39,7 +39,7 @@ export async function fetchBundle({
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
-  const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, requestId });
+  const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, jobId });
   try {
     const fileExists = await s3Utils.fileExists(s3BucketName, key);
     if (!fileExists) return undefined;
@@ -61,7 +61,7 @@ export async function fetchBundle({
       ehrPatientId,
       bundleType,
       resourceType,
-      requestId,
+      jobId,
       key,
       context: "ehr-resource-diff.fetchBundle",
     });
@@ -78,7 +78,7 @@ export async function fetchBundle({
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
- * @param requestId - The request ID of the bundle. If not provided, the latest bundle will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
  * @param fetchLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date.
@@ -91,7 +91,7 @@ export async function fetchBundleOrFail({
   ehrPatientId,
   bundleType,
   resourceType,
-  requestId,
+  jobId,
   fetchLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified> {
@@ -102,7 +102,7 @@ export async function fetchBundleOrFail({
     ehrPatientId,
     bundleType,
     resourceType,
-    requestId,
+    jobId,
     fetchLastModified,
     s3BucketName,
   });
@@ -114,7 +114,7 @@ export async function fetchBundleOrFail({
       ehrPatientId,
       bundleType,
       resourceType,
-      requestId,
+      jobId,
       s3BucketName,
       context: "ehr-resource-diff.fetchBundleOrFail",
     });

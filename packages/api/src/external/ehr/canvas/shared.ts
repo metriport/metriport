@@ -45,6 +45,4 @@ export async function createCanvasClient(
   });
 }
 
-export function getCanvasResourceDiffWorkflowId(canvasPatientId: string): string {
-  return `canvas-resource-diff-${canvasPatientId}`;
-}
+export const canvasResourceDiffJobType = "canvas-resource-diff";

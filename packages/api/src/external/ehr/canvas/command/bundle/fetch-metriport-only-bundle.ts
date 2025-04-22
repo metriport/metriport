@@ -15,7 +15,7 @@ export type FetchCanvasMetriportOnlyBundleParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
-  requestId: string;
+  jobId: string;
   api?: CanvasApi;
   resourceType?: SupportedCanvasDiffResource;
 };
@@ -27,7 +27,7 @@ export type FetchCanvasMetriportOnlyBundleParams = {
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.
  * @param canvasPatientId - The canvas patient id of the patient.
- * @param requestId - The request id of the workflow that generated the bundle.
+ * @param jobId - The id of the job that generated the bundle.
  * @param api - The api to use to fetch the bundle. (optional)
  * @param resourceType - The resource type to fetch. (optional, if missing, all supported resources will be fetched)
  * @returns The bundle of resources and the included resource types. If a resource type bundle is not found, it is not included in the output bundle.
@@ -36,7 +36,7 @@ export async function fetchCanvasMetriportOnlyBundle({
   cxId,
   canvasPracticeId,
   canvasPatientId,
-  requestId,
+  jobId,
   api,
   resourceType: resourceTypeParam,
 }: FetchCanvasMetriportOnlyBundleParams): Promise<FetchCanvasBundleResult> {
@@ -67,7 +67,7 @@ export async function fetchCanvasMetriportOnlyBundle({
       metriportPatientId,
       canvasPatientId,
       resourceType,
-      requestId,
+      jobId,
     });
     if (!resourceBundle) {
       resourceTypesFound = resourceTypesFound.filter(rt => rt !== resourceType);

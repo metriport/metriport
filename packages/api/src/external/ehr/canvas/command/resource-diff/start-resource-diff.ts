@@ -2,10 +2,10 @@ import { buildEhrStartResourceDiffHandler } from "@metriport/core/external/ehr/r
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { createPatientJob } from "../../../../../command/job/patient/create";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
-import { createWorkflow } from "../../../../../command/workflow/create";
-import { getCanvasResourceDiffWorkflowId } from "../../shared";
+import { canvasResourceDiffJobType } from "../../shared";
 
 export type StartCanvasResourceDiffParams = {
   cxId: string;
@@ -41,15 +41,15 @@ export async function startCanvasResourceDiff({
     id: existingPatient.patientId,
   });
   const metriportPatientId = metriportPatient.id;
-  const requestId = requestIdParam ?? uuidv7();
-  const workflowId = getCanvasResourceDiffWorkflowId(canvasPatientId);
-  await createWorkflow({
+  const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    workflowId,
-    requestId,
-    limitedToOneRunningWorkflow: true,
+    jobType: canvasResourceDiffJobType,
+    jobGroupId: canvasPatientId,
+    requestId: requestIdParam ?? uuidv7(),
+    limitedToOneRunningJob: true,
   });
+  const jobId = job.id;
   const ehrResourceDiffHandler = buildEhrStartResourceDiffHandler();
   ehrResourceDiffHandler
     .startResourceDiff({
@@ -58,9 +58,8 @@ export async function startCanvasResourceDiff({
       practiceId: canvasPracticeId,
       metriportPatientId,
       ehrPatientId: canvasPatientId,
-      workflowId,
-      requestId,
+      jobId,
     })
     .catch(processAsyncError(`startCanvasResourceDiff`));
-  return requestId;
+  return jobId;
 }

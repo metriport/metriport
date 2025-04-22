@@ -13,7 +13,7 @@ type CreateBundlePrefixParams = {
   metriportPatientId: string;
   ehrPatientId: string;
   resourceType: SupportedResourceType;
-  requestId?: string | undefined;
+  jobId?: string | undefined;
 };
 
 function createBundlePrefix({
@@ -22,10 +22,10 @@ function createBundlePrefix({
   metriportPatientId,
   ehrPatientId,
   resourceType,
-  requestId,
+  jobId,
 }: CreateBundlePrefixParams): string {
-  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}/requestid=${
-    requestId ?? "latest"
+  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}/jobId=${
+    jobId ?? "latest"
   }`;
 }
 
@@ -68,6 +68,6 @@ export type BundleKeyBaseParams = {
   ehrPatientId: string;
   bundleType: BundleType;
   resourceType: SupportedResourceType;
-  requestId?: string | undefined;
+  jobId?: string | undefined;
   s3BucketName?: string;
 };

@@ -22,8 +22,7 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
         ehrPatientId,
         existingResources,
         newResource,
-        workflowId,
-        requestId,
+        jobId,
       } = payload;
       try {
         const resourceType = newResource.resourceType;
@@ -49,26 +48,12 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
             bundleType: BundleType.METRIPORT_ONLY,
             resource: newResource,
             resourceType,
-            requestId,
+            jobId,
           });
         }
-        await updateWorkflowTotals({
-          ehr,
-          cxId,
-          metriportPatientId,
-          workflowId,
-          requestId,
-          entryStatus: "successful",
-        });
+        await updateWorkflowTotals({ jobId, cxId, entryStatus: "successful" });
       } catch (error) {
-        await updateWorkflowTotals({
-          ehr,
-          cxId,
-          metriportPatientId,
-          workflowId,
-          requestId,
-          entryStatus: "failed",
-        });
+        await updateWorkflowTotals({ jobId, cxId, entryStatus: "failed" });
       }
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);

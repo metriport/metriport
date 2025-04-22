@@ -18,7 +18,7 @@ export type CreateOrReplaceBundleParams = BundleKeyBaseParams & {
  * @param bundleType - The bundle type.
  * @param bundle - The bundle.
  * @param resourceType - The resource type of the bundle.
- * @param requestId - The request ID of the bundle. If not provided, the latest bundle will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  */
 export async function createOrReplaceBundle({
@@ -29,7 +29,7 @@ export async function createOrReplaceBundle({
   bundleType,
   bundle,
   resourceType,
-  requestId,
+  jobId,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: CreateOrReplaceBundleParams): Promise<void> {
   const { log } = out(
@@ -46,7 +46,7 @@ export async function createOrReplaceBundle({
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
-  const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, requestId });
+  const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, jobId });
   try {
     await s3Utils.uploadFile({
       bucket: s3BucketName,

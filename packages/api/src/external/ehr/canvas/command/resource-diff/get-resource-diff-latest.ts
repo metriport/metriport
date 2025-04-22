@@ -1,16 +1,17 @@
+import { PatientJobWithData } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import {
+  createJobDataPayload,
+  getLatestPatientJobByStatus,
+} from "../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
-import { getLatestWorkflow } from "../../../../../command/workflow/get";
-import { getCanvasResourceDiffWorkflowId } from "../../shared";
+import { canvasResourceDiffJobType } from "../../shared";
+import { FetchCanvasBundleResult } from "../bundle/fetch-bundle";
 import { fetchCanvasMetriportOnlyBundle } from "../bundle/fetch-metriport-only-bundle";
-import { GetCanvasResourceDiffResult } from "./get-resource-diff";
+import { GetCanvasResourceDiffParams } from "./get-resource-diff";
 
-export type GetCanvasResourceDiffParams = {
-  cxId: string;
-  canvasPracticeId: string;
-  canvasPatientId: string;
-};
+export type GetLatestCanvasResourceDiffParams = Omit<GetCanvasResourceDiffParams, "jobId">;
 
 /**
  * Get the latest canvas resource diff workflow for a Canvas patient
@@ -25,7 +26,9 @@ export async function getLatestCanvasResourceDiff({
   cxId,
   canvasPracticeId,
   canvasPatientId,
-}: GetCanvasResourceDiffParams): Promise<GetCanvasResourceDiffResult | undefined> {
+}: GetLatestCanvasResourceDiffParams): Promise<
+  PatientJobWithData<FetchCanvasBundleResult> | undefined
+> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -36,20 +39,21 @@ export async function getLatestCanvasResourceDiff({
     id: existingPatient.patientId,
   });
   const metriportPatientId = metriportPatient.id;
-  const workflow = await getLatestWorkflow({
+  const job = await getLatestPatientJobByStatus({
     cxId,
     patientId: metriportPatientId,
-    workflowId: getCanvasResourceDiffWorkflowId(canvasPatientId),
+    jobType: canvasResourceDiffJobType,
+    jobGroupId: canvasPatientId,
   });
-  if (!workflow) return undefined;
-  if (workflow.status === "completed") {
+  if (!job) return undefined;
+  if (job.status === "completed") {
     const data = await fetchCanvasMetriportOnlyBundle({
       cxId,
       canvasPatientId,
       canvasPracticeId,
-      requestId: workflow.requestId,
+      jobId: job.id,
     });
-    return { workflow, data };
+    return createJobDataPayload({ job, data });
   }
-  return { workflow, data: undefined };
+  return createJobDataPayload({ job });
 }

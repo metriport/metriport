@@ -1,10 +1,4 @@
-import {
-  Workflow,
-  WorkflowData,
-  WorkflowParamsCx,
-  WorkflowParamsOps,
-  WorkflowStatus,
-} from "@metriport/shared";
+import { JobParamsCx, JobParamsOps, JobStatus, PatientJob } from "@metriport/shared";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "./_default";
 
@@ -12,12 +6,12 @@ import { BaseModel, ModelSetup } from "./_default";
  * Used by code that needs to access the raw data from the database.
  * @see finishSinglePatientImport()
  */
-export const workflowRawColumnNames = {
+export const patientJobRawColumnNames = {
   id: "id",
   cxId: "cx_id",
-  facilityId: "facility_id",
   patientId: "patient_id",
-  workflowId: "workflow_id",
+  jobTypeId: "job_type_id",
+  jobGroupId: "job_group_id",
   requestId: "request_id",
   status: "status",
   reason: "reason",
@@ -31,38 +25,38 @@ export const workflowRawColumnNames = {
   data: "data",
 };
 
-export class WorkflowModel extends BaseModel<WorkflowModel> implements Workflow {
-  static NAME = "workflow";
+export class PatientJobModel extends BaseModel<PatientJobModel> implements PatientJob {
+  static NAME = "patient_job";
   declare cxId: string;
-  declare patientId: string | undefined;
-  declare facilityId: string | undefined;
-  declare workflowId: string;
+  declare patientId: string;
+  declare jobType: string;
+  declare jobGroupId: string;
   declare requestId: string;
-  declare status: WorkflowStatus;
-  declare reason: string | undefined;
+  declare status: JobStatus;
+  declare statusReason: string | undefined;
   declare startedAt: Date | undefined;
   declare finishedAt: Date | undefined;
   declare total: number;
   declare successful: number;
   declare failed: number;
-  declare paramsCx: WorkflowParamsCx | undefined;
-  declare paramsOps: WorkflowParamsOps | undefined;
-  declare data: WorkflowData | undefined;
+  declare paramsCx: JobParamsCx | undefined;
+  declare paramsOps: JobParamsOps | undefined;
+  declare data: unknown;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    WorkflowModel.init(
+    PatientJobModel.init(
       {
         ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
-        facilityId: {
-          type: DataTypes.STRING,
-        },
         patientId: {
           type: DataTypes.STRING,
         },
-        workflowId: {
+        jobType: {
+          type: DataTypes.STRING,
+        },
+        jobGroupId: {
           type: DataTypes.STRING,
         },
         requestId: {
@@ -71,7 +65,7 @@ export class WorkflowModel extends BaseModel<WorkflowModel> implements Workflow 
         status: {
           type: DataTypes.STRING,
         },
-        reason: {
+        statusReason: {
           type: DataTypes.STRING,
         },
         startedAt: {
@@ -82,12 +76,15 @@ export class WorkflowModel extends BaseModel<WorkflowModel> implements Workflow 
         },
         total: {
           type: DataTypes.INTEGER,
+          defaultValue: 0,
         },
         successful: {
           type: DataTypes.INTEGER,
+          defaultValue: 0,
         },
         failed: {
           type: DataTypes.INTEGER,
+          defaultValue: 0,
         },
         paramsCx: {
           type: DataTypes.JSONB,
@@ -101,7 +98,7 @@ export class WorkflowModel extends BaseModel<WorkflowModel> implements Workflow 
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: WorkflowModel.NAME,
+        tableName: PatientJobModel.NAME,
       }
     );
   };

@@ -65,10 +65,10 @@ router.post(
  * POST /ehr/canvas/patient/:id/metriport-only-bundle
  *
  * Starts the resource diff workflow to generate the Metriport only bundle.
- * The workflow is started asynchronously and requestId is returned.
+ * The workflow is started asynchronously and jobId is returned.
  * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
- * @returns the requestId of the workflow
+ * @returns the jobId of the workflow
  */
 router.post(
   "/:id/metriport-only-bundle",
@@ -78,36 +78,36 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const requestId = await startCanvasResourceDiff({ cxId, canvasPatientId, canvasPracticeId });
-    return res.status(httpStatus.OK).json(requestId);
+    const jobId = await startCanvasResourceDiff({ cxId, canvasPatientId, canvasPracticeId });
+    return res.status(httpStatus.OK).json(jobId);
   })
 );
 
 /**
- * GET /ehr/canvas/patient/:id/metriport-only-bundle/:requestId
+ * GET /ehr/canvas/patient/:id/metriport-only-bundle/:jobId
  *
- * Retrieves the resource diff workflow workflow and Metriport only bundle if completed
+ * Retrieves the resource diff workflow and Metriport only bundle if completed
  * @param req.params.id The ID of Canvas Patient.
- * @param req.params.requestId The request ID of the workflow
+ * @param req.params.jobId The job ID of the workflow
  * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Resource diff workflow and Metriport only bundle if completed
  */
 router.get(
-  "/:id/metriport-only-bundle/:requestId",
+  "/:id/metriport-only-bundle/:jobId",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const requestId = getFrom("params").orFail("requestId", req);
-    const workflowAndBundle = await getCanvasResourceDiff({
+    const jobId = getFrom("params").orFail("jobId", req);
+    const jobPayload = await getCanvasResourceDiff({
       cxId,
       canvasPatientId,
       canvasPracticeId,
-      requestId,
+      jobId,
     });
-    return res.status(httpStatus.OK).json(workflowAndBundle);
+    return res.status(httpStatus.OK).json(jobPayload);
   })
 );
 
@@ -120,19 +120,19 @@ router.get(
  * @returns Resource diff workflow and Metriport only bundle if completed
  */
 router.get(
-  "/:id/metriport-only-bundle",
+  "/:id/metriport-only-bundle/latest",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const workflowAndBundle = await getLatestCanvasResourceDiff({
+    const jobPayload = await getLatestCanvasResourceDiff({
       cxId,
       canvasPatientId,
       canvasPracticeId,
     });
-    return res.status(httpStatus.OK).json(workflowAndBundle);
+    return res.status(httpStatus.OK).json(jobPayload);
   })
 );
 

@@ -2,9 +2,9 @@ import { DataTypes } from "sequelize";
 import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
-const workflowTableName = "workflow";
-const workflowTableIdFields = ["cx_id", "patient_id", "facility_id", "workflow_id", "request_id"];
-const workflowTableConstraintName = "cxid_patientid_facilityid_workflowid_requestid_constraint";
+const workflowTableName = "patient_job";
+const workflowTableIdFields = ["cx_id", "patient_id", "job_type_id", "job_group_id", "request_id"];
+const workflowTableConstraintName = "cxid_patientid_jobtypeid_jobgroupid_requestid_constraint";
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -25,16 +25,16 @@ export const up: Migration = async ({ context: queryInterface }) => {
         patientId: {
           type: DataTypes.STRING,
           field: "patient_id",
-          allowNull: true,
+          allowNull: false,
         },
-        facilityId: {
+        jobTypeId: {
           type: DataTypes.STRING,
-          field: "facility_id",
-          allowNull: true,
+          field: "job_type_id",
+          allowNull: false,
         },
-        workflowId: {
+        jobGroupId: {
           type: DataTypes.STRING,
-          field: "workflow_id",
+          field: "job_group_id",
           allowNull: false,
         },
         requestId: {
@@ -46,7 +46,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
           type: DataTypes.STRING,
           allowNull: false,
         },
-        reason: {
+        statusReason: {
           type: DataTypes.STRING,
           allowNull: true,
         },

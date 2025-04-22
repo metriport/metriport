@@ -6,6 +6,5 @@ export type ResourceDiffBaseRequest = {
   practiceId: string;
   metriportPatientId: string;
   ehrPatientId: string;
-  requestId: string;
-  workflowId: string;
+  jobId: string;
 };

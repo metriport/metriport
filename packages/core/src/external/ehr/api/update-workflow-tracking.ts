@@ -1,47 +1,38 @@
-import { errorToString, MetriportError, WorkflowStatus } from "@metriport/shared";
+import { errorToString, JobStatus, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { ApiBaseParams } from "./api-shared";
 
-export type UpdateWorkflowTrackingParams = Omit<ApiBaseParams, "practiceId" | "patientId"> & {
-  metriportPatientId: string;
-  workflowId: string;
-  requestId: string;
-  status: WorkflowStatus;
-  total: number;
+export type UpdateWorkflowTrackingParams = Pick<ApiBaseParams, "cxId"> & {
+  jobId: string;
+  status?: JobStatus;
+  total?: number;
 };
 
 /**
  * Sends a request to the API to update the workflow tracking.
  *
- * @param ehr - The EHR source.
+ * @param jobId - The job ID.
  * @param cxId - The CX ID.
- * @param metriportPatientId - The Metriport patient ID.
- * @param workflowId - The workflow ID.
- * @param requestId - The request ID.
- * @param total - The total number of things to process.
+ * @param status - The status of the job. (optional)
+ * @param total - The total number of things to process. (optional)
  */
 export async function updateWorkflowTracking({
-  ehr,
+  jobId,
   cxId,
-  metriportPatientId,
-  workflowId,
   status,
-  requestId,
   total,
 }: UpdateWorkflowTrackingParams): Promise<void> {
-  const { log, debug } = out(`Ehr updateWorkflow - cxId ${cxId}`);
+  const { log, debug } = out(`Ehr updateWorkflowTracking - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
-    patientId: metriportPatientId,
-    workflowId,
-    requestId,
-    status,
-    total: total.toString(),
+    jobId,
+    ...(status && { status }),
+    ...(total && { total: total.toString() }),
   });
-  const updateWorkflowUrl = `/internal/ehr/${ehr}/workflow/update-tracking?${queryParams.toString()}`;
+  const updateWorkflowUrl = `/internal/job/patient/update-tracking?${queryParams.toString()}`;
   try {
     const response = await api.post(updateWorkflowUrl);
     if (!response.data) throw new Error(`No body returned from ${updateWorkflowUrl}`);
@@ -51,11 +42,10 @@ export async function updateWorkflowTracking({
     const msg = "Failure while updating workflow tracking @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
-      ehr,
       cxId,
-      metriportPatientId,
-      workflowId,
-      requestId,
+      jobId,
+      status,
+      total,
       url: updateWorkflowUrl,
       context: "ehr.updateWorkflowTracking",
     });
