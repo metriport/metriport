@@ -12,7 +12,7 @@ import {
 } from "../shared";
 
 const NUMBER_OF_DATA_POINTS_PER_CONDITION = 3;
-type ConditionOffset = 0 | 1;
+type CodingIndex = 0 | 1;
 
 type HumanNameDetails = {
   family: string;
@@ -73,8 +73,8 @@ export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails
   return { family, given, secondaryGivenNames, suffix, prefix };
 }
 
-export function getCoding(field: Hl7Field, offsetMultiplier: ConditionOffset): Coding | undefined {
-  const offset = offsetMultiplier * NUMBER_OF_DATA_POINTS_PER_CONDITION;
+export function getCoding(field: Hl7Field, codingPosition: CodingIndex): Coding | undefined {
+  const offset = codingPosition * NUMBER_OF_DATA_POINTS_PER_CONDITION;
 
   const code = getOptionalValueFromField(field, 1 + offset);
   const display = getOptionalValueFromField(field, 2 + offset);

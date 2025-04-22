@@ -1,4 +1,4 @@
-import { Hl7Message } from "@medplum/core";
+import { Hl7Message, Hl7Segment } from "@medplum/core";
 import { CodeableConcept, Condition, EncounterDiagnosis } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import _ from "lodash";
@@ -19,7 +19,7 @@ type ConditionsAndReferences = {
   refs: EncounterDiagnosis[];
 };
 
-type AdmitReason = {
+type EncounterReason = {
   reasonCode: CodeableConcept[];
   condition: Condition;
   diagnosis: EncounterDiagnosis[];
@@ -33,23 +33,26 @@ export function getConditionsAndReferences(
   adt: Hl7Message,
   patientId: string
 ): ConditionsAndReferences {
-  const admitReason = getAdmitReason(adt, patientId);
-  const diagnoses = getDiagnoses(adt, patientId);
+  const encReason = getEncounterReason(adt, patientId);
+  const diagnoses = getAllDiagnoses(adt, patientId);
 
-  const combinedDiagnoses = _.concat(admitReason?.condition ?? [], diagnoses ?? []);
+  const combinedDiagnoses = _.concat(encReason?.condition ?? [], diagnoses);
   const uniqueConditions = deduplicateConditions(combinedDiagnoses, false).combinedResources;
   const conditionReferences = uniqueConditions.map(condition =>
     buildConditionReference({ resource: condition })
   );
 
   return {
-    reasonCode: admitReason?.reasonCode,
+    reasonCode: encReason?.reasonCode,
     conditions: uniqueConditions,
     refs: conditionReferences,
   };
 }
 
-export function getAdmitReason(adt: Hl7Message, patientId: string): AdmitReason | undefined {
+export function getEncounterReason(
+  adt: Hl7Message,
+  patientId: string
+): EncounterReason | undefined {
   const pv2Segment = adt.getSegment("PV2");
   if (!pv2Segment || pv2Segment.fields.length < 1) return undefined;
 
@@ -71,25 +74,20 @@ export function getAdmitReason(adt: Hl7Message, patientId: string): AdmitReason 
   };
 }
 
-export function getDiagnoses(adt: Hl7Message, patientId: string): Condition[] | undefined {
+export function getAllDiagnoses(adt: Hl7Message, patientId: string): Condition[] {
   const dg1Segments = adt.getAllSegments("DG1");
-  if (!dg1Segments || dg1Segments.length < 1) return undefined;
+  return dg1Segments.flatMap(dg1 => getDiagnosisFromDg1Segment(dg1, patientId) ?? []);
+}
 
-  const conditions: ConditionWithId[] = [];
+function getDiagnosisFromDg1Segment(dg1: Hl7Segment, patientId: string): Condition | undefined {
+  const diagnosisCodingField = dg1.getField(3);
+  const mainCoding = getCoding(diagnosisCodingField, 0);
+  const secondaryCoding = getCoding(diagnosisCodingField, 1);
 
-  for (const dg1Segment of dg1Segments) {
-    const diagnosisCodingField = dg1Segment.getField(3);
-    const mainCoding = getCoding(diagnosisCodingField, 0);
-    const secondaryCoding = getCoding(diagnosisCodingField, 1);
+  const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
+  if (coding.length < 1) return;
 
-    const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
-    if (coding.length < 1) return undefined;
-
-    const condition = buildCondition({ code: { coding } }, patientId);
-    conditions.push(condition);
-  }
-
-  return conditions;
+  return buildCondition({ code: { coding } }, patientId);
 }
 
 export function buildCondition(params: ConditionWithCode, patientId: string): ConditionWithId {
