@@ -44,6 +44,7 @@ import { TerminologyServerNestedStack } from "./api-stack/terminology-server-ser
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
+import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
@@ -56,14 +57,11 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
-import { BucketsStack } from "./buckets-stack";
-import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
-  bucketsStack: BucketsStack;
 }
 
 export class APIStack extends Stack {
@@ -113,6 +111,18 @@ export class APIStack extends Stack {
       service: ec2.InterfaceVpcEndpointAwsService.SQS,
       privateDnsEnabled: true,
     });
+
+    //-------------------------------------------
+    // Buckets
+    //-------------------------------------------
+    let outgoingHl7MessageBucket: s3.IBucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+      outgoingHl7MessageBucket = s3.Bucket.fromBucketName(
+        this,
+        "OutgoingHl7MessageBucket",
+        props.config.hl7Notification.deprecatedIncomingMessageBucketName
+      );
+    }
 
     //-------------------------------------------
     // Security Setup
@@ -361,8 +371,7 @@ export class APIStack extends Stack {
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    const outgoingHl7NotificationBucket = props.bucketsStack.outgoingHl7NotificationBucket;
-    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+    if (!isSandbox(props.config) && outgoingHl7MessageBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
         "Hl7NotificationWebhookSenderNestedStack",
@@ -371,7 +380,7 @@ export class APIStack extends Stack {
           lambdaLayers,
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
-          outgoingHl7NotificationBucket,
+          outgoingHl7NotificationBucket: outgoingHl7MessageBucket,
         }
       );
 

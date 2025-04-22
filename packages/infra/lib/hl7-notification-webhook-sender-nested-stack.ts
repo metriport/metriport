@@ -45,7 +45,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
-  outgoingHl7NotificationBucket: s3.Bucket;
+  outgoingHl7NotificationBucket: s3.IBucket;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -74,7 +74,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    outgoingHl7NotificationBucket: s3.Bucket;
+    outgoingHl7NotificationBucket: s3.IBucket;
   }): { lambda: Lambda } {
     const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, outgoingHl7NotificationBucket } =
       ownProps;
