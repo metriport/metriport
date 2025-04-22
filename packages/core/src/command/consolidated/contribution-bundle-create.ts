@@ -2,7 +2,7 @@ import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { FULL_CONTRIBUTION_BUNDLE_KEY, RAW_KEY } from "../../domain/consolidated/filename";
+import { CONTRIBUTION_BUNDLE_RAW } from "../../domain/consolidated/filename";
 import {
   FHIR_BUNDLE_SUFFIX,
   createFullContributionBundleFilePath,
@@ -98,7 +98,7 @@ async function createFullContributionBundleFromPreviousUploads(
   const hydrated = await hydrate({ cxId, patientId, bundle: normalized });
   log(`...done, from ${rawBundle.entry?.length} to ${hydrated.entry?.length} resources`);
 
-  const docName = `${FULL_CONTRIBUTION_BUNDLE_KEY}_${RAW_KEY}${JSON_FILE_EXTENSION}`;
+  const docName = `${CONTRIBUTION_BUNDLE_RAW}${JSON_FILE_EXTENSION}`;
   const rawContributionBundleName = createUploadFilePath(cxId, patientId, docName);
   const fulContributionBundleName = createFullContributionBundleFilePath(cxId, patientId);
 
@@ -137,25 +137,25 @@ async function getUploads(cxId: string, patientId: string): Promise<BundleEntry[
   }
 
   const mergedBundle = buildConsolidatedBundle();
+  const retrievedBundles: Bundle[] = [];
   await executeAsynchronously(
     uploadedBundles,
     async inputBundle => {
-      const { bucket, key } = inputBundle;
-      log(`Getting uploaded bundle from bucket ${bucket}, key ${key}`);
       const contents = await executeWithRetriesS3(
-        () => s3Utils.getFileContentsAsString(bucket, key),
+        () => s3Utils.getFileContentsAsString(inputBundle.bucket, inputBundle.key),
         { ...defaultS3RetriesConfig, log }
       );
-      log(`Merging bundle ${key} into the consolidated one`);
       const singleUpload = parseFhirBundle(contents);
-      if (!singleUpload) {
-        log(`No valid bundle found in ${bucket}/${key}, skipping`);
-        return;
+      if (singleUpload) {
+        retrievedBundles.push(singleUpload);
       }
-      merge(singleUpload).into(mergedBundle);
     },
     { numberOfParallelExecutions }
   );
+
+  for (const singleUpload of retrievedBundles) {
+    merge(singleUpload).into(mergedBundle);
+  }
 
   return mergedBundle.entry ?? [];
 }
@@ -212,9 +212,9 @@ export async function uploadFullContributionBundle({
   cxId: string;
   patientId: string;
   contributionBundle: Bundle<Resource>;
-}) {
+}): Promise<void> {
   const fulContributionBundleName = createFullContributionBundleFilePath(cxId, patientId);
-  s3Utils.uploadFile({
+  await s3Utils.uploadFile({
     bucket,
     key: fulContributionBundleName,
     file: Buffer.from(JSON.stringify(contributionBundle)),

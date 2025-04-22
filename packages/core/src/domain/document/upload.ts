@@ -1,10 +1,10 @@
 import { JSON_FILE_EXTENSION, getFileExtension } from "../../util/mime";
+import { CONTRIBUTION_BUNDLE_FULL } from "../consolidated/filename";
 import { createFileName, createFolderName } from "../filename";
 
 export const UPLOADS_FOLDER = "uploads";
 export const CCD_SUFFIX = "ccd";
 export const FHIR_BUNDLE_SUFFIX = "FHIR_BUNDLE";
-export const FULL_CONTRIBUTION_BUNDLE = "FULL_CONTRIBUTION_BUNDLE";
 
 export function createUploadFilePath(cxId: string, patientId: string, docName: string): string {
   const folderName = createFolderName(cxId, patientId);
@@ -24,7 +24,7 @@ export function createContributionBundleFilePath(
 
 export function createFullContributionBundleFilePath(cxId: string, patientId: string): string {
   const folderName = createFolderName(cxId, patientId);
-  return `${folderName}/${UPLOADS_FOLDER}/${FULL_CONTRIBUTION_BUNDLE}${JSON_FILE_EXTENSION}`;
+  return `${folderName}/${UPLOADS_FOLDER}/${CONTRIBUTION_BUNDLE_FULL}${JSON_FILE_EXTENSION}`;
 }
 
 export function createUploadDirectoryPath(cxId: string, patientId: string): string {

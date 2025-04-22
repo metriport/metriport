@@ -1,24 +1,27 @@
 import { Extension, Reference, Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
+import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/conversion";
+import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
 import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { isValidUuid } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
-import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
-import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/conversion";
-import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
 import { cloneDeep } from "lodash";
+import { cleanupSpecialCharsFromBundle } from "../../../command/medical/patient/data-contribution/shared";
+import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
+import { validateFhirEntries } from "./json-validator";
 
 /**
  * Removes the Patient resource if provided, adds the Metriport and Document extensions to all the provided resources,
  * ensures that all resources have UUIDs for IDs. Finally, adds the correct patient resource.
  */
-export function processUploadBundle(
+export function preprocessAndValidateUploadBundle(
   bundle: ValidBundle,
   patient: Patient,
   fhirBundleDestinationKey: string
 ): ValidBundle {
-  const bundleWithoutPatient = removeProvidedPatientResource(bundle, patient.id);
+  const cleanBundle = cleanupSpecialCharsFromBundle(bundle);
+  const bundleWithoutPatient = removeProvidedPatientResource(cleanBundle, patient.id);
   const docExtension = buildDocIdFhirExtension(fhirBundleDestinationKey);
   const bundleWithExtensions = validateUuidsAndAddExtensions(
     bundleWithoutPatient,
@@ -26,7 +29,8 @@ export function processUploadBundle(
     patient.id
   );
   const bundleWithCorrectPatient = addPatientResource(bundleWithExtensions, patient);
-  return bundleWithCorrectPatient;
+  const validatedBundle = validateFhirEntries(bundleWithCorrectPatient);
+  return validatedBundle;
 }
 
 function validateUuidsAndAddExtensions(
