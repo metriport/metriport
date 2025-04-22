@@ -7,7 +7,7 @@ import {
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { updatePatientJobTotals } from "../../../command/job/patient/update-total";
+import { updatePatientJobTotals } from "../../../command/job/patient/update-totals";
 import { updatePatientJobTracking } from "../../../command/job/patient/update-tracking";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
