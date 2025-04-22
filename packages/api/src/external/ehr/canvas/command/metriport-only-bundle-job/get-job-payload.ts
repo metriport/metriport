@@ -6,7 +6,7 @@ import {
 import { FetchCanvasBundleResult } from "../bundle/fetch-bundle";
 import { fetchCanvasMetriportOnlyBundle } from "../bundle/fetch-metriport-only-bundle";
 
-export type GetCanvasResourceDiffParams = {
+export type GetMetriportOnlyBundleParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
@@ -14,22 +14,21 @@ export type GetCanvasResourceDiffParams = {
 };
 
 /**
- * Get the canvas resource diff workflow for a Canvas patient by requestId
- * with the metriport only bundle if completed
+ * Get the metriport only job payload for a Canvas patient by requestId
  *
  * @param cxId The CX ID of the patient
  * @param canvasPracticeId The Canvas practice ID
  * @param canvasPatientId The Canvas patient ID
- * @param jobId The job ID of the workflow
- * @returns workflow and metriport only bundle if completed
- * @throws 404 if no workflow is found
+ * @param jobId The job ID of the job
+ * @returns metriport only job data payload if completed
+ * @throws 404 if no job is found
  */
-export async function getCanvasResourceDiff({
+export async function getMetriportOnlyBundleJobPayload({
   cxId,
   canvasPracticeId,
   canvasPatientId,
   jobId,
-}: GetCanvasResourceDiffParams): Promise<PatientJobWithData<FetchCanvasBundleResult>> {
+}: GetMetriportOnlyBundleParams): Promise<PatientJobWithData<FetchCanvasBundleResult>> {
   const job = await getPatientJobByIdOrFail({ cxId, jobId });
   if (job.status === "completed") {
     const data = await fetchCanvasMetriportOnlyBundle({

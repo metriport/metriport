@@ -69,11 +69,11 @@ export async function fetchCanvasMetriportOnlyBundle({
       resourceType,
       jobId,
     });
-    if (!resourceBundle) {
+    if (resourceBundle) {
+      bundle.entry.push(...resourceBundle.entry);
+    } else {
       resourceTypesFound = resourceTypesFound.filter(rt => rt !== resourceType);
-      continue;
     }
-    bundle.entry.push(...resourceBundle.entry);
   }
   return { bundle, resourceTypes: resourceTypesFound };
 }

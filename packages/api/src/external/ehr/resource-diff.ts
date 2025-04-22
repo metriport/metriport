@@ -4,7 +4,7 @@ import { MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingsByCustomer } from "../../command/mapping/cx";
 import { getPatientMappings } from "../../command/mapping/patient";
-import { startCanvasResourceDiff } from "./canvas/command/resource-diff/start-resource-diff";
+import { startMetriportOnlyBundleJob } from "./canvas/command/metriport-only-bundle-job/start-job";
 
 export type StartResourceDiffParams = {
   cxId: string;
@@ -34,12 +34,12 @@ export async function startResourceDiff({
           patientId,
         });
       }
-      startCanvasResourceDiff({
+      startMetriportOnlyBundleJob({
         cxId,
         canvasPracticeId: cxMapping.externalId,
         canvasPatientId: patientMapping.externalId,
         requestId,
-      }).catch(processAsyncError(`startCanvasResourceDiff`));
+      }).catch(processAsyncError(`startMetriportOnlyBundleJob`));
     }
   }
 }

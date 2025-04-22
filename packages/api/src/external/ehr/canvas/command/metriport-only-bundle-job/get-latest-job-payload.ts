@@ -6,27 +6,26 @@ import {
 } from "../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
-import { canvasResourceDiffJobType } from "../../shared";
+import { canvasMetriportOnlyBundleJobType } from "../../shared";
 import { FetchCanvasBundleResult } from "../bundle/fetch-bundle";
 import { fetchCanvasMetriportOnlyBundle } from "../bundle/fetch-metriport-only-bundle";
-import { GetCanvasResourceDiffParams } from "./get-resource-diff";
+import { GetMetriportOnlyBundleParams } from "./get-job-payload";
 
-export type GetLatestCanvasResourceDiffParams = Omit<GetCanvasResourceDiffParams, "jobId">;
+export type GetLatestMetriportOnlyBundleParams = Omit<GetMetriportOnlyBundleParams, "jobId">;
 
 /**
- * Get the latest canvas resource diff workflow for a Canvas patient
- * with the metriport only bundle if completed
+ * Get the latest metriport only bundle job data payload for a Canvas patient
  *
  * @param cxId The CX ID of the patient
  * @param canvasPracticeId The Canvas practice ID
  * @param canvasPatientId The Canvas patient ID
- * @returns workflow and metriport only bundle if completed or undefined if no workflow is found
+ * @returns metriport only job data payload if completed or undefined if no job is found
  */
-export async function getLatestCanvasResourceDiff({
+export async function getLatestMetriportOnlyBundleJobPayload({
   cxId,
   canvasPracticeId,
   canvasPatientId,
-}: GetLatestCanvasResourceDiffParams): Promise<
+}: GetLatestMetriportOnlyBundleParams): Promise<
   PatientJobWithData<FetchCanvasBundleResult> | undefined
 > {
   const existingPatient = await getPatientMappingOrFail({
@@ -42,7 +41,7 @@ export async function getLatestCanvasResourceDiff({
   const job = await getLatestPatientJobByStatus({
     cxId,
     patientId: metriportPatientId,
-    jobType: canvasResourceDiffJobType,
+    jobType: canvasMetriportOnlyBundleJobType,
     jobGroupId: canvasPatientId,
   });
   if (!job) return undefined;

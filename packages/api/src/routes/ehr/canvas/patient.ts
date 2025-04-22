@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { getCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/get-resource-diff";
-import { getLatestCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/get-resource-diff-latest";
-import { startCanvasResourceDiff } from "../../../external/ehr/canvas/command/resource-diff/start-resource-diff";
+import { getMetriportOnlyBundleJobPayload } from "../../../external/ehr/canvas/command/metriport-only-bundle-job/get-job-payload";
+import { getLatestMetriportOnlyBundleJobPayload } from "../../../external/ehr/canvas/command/metriport-only-bundle-job/get-latest-job-payload";
+import { startMetriportOnlyBundleJob } from "../../../external/ehr/canvas/command/metriport-only-bundle-job/start-job";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
@@ -78,7 +78,7 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const jobId = await startCanvasResourceDiff({ cxId, canvasPatientId, canvasPracticeId });
+    const jobId = await startMetriportOnlyBundleJob({ cxId, canvasPatientId, canvasPracticeId });
     return res.status(httpStatus.OK).json(jobId);
   })
 );
@@ -101,7 +101,7 @@ router.get(
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const jobId = getFrom("params").orFail("jobId", req);
-    const jobPayload = await getCanvasResourceDiff({
+    const jobPayload = await getMetriportOnlyBundleJobPayload({
       cxId,
       canvasPatientId,
       canvasPracticeId,
@@ -127,7 +127,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const jobPayload = await getLatestCanvasResourceDiff({
+    const jobPayload = await getLatestMetriportOnlyBundleJobPayload({
       cxId,
       canvasPatientId,
       canvasPracticeId,

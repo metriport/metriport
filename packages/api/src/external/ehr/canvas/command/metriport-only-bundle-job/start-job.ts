@@ -5,9 +5,9 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { createPatientJob } from "../../../../../command/job/patient/create";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
-import { canvasResourceDiffJobType } from "../../shared";
+import { canvasMetriportOnlyBundleJobType } from "../../shared";
 
-export type StartCanvasResourceDiffParams = {
+export type StartMetriportOnlyBundleJobParams = {
   cxId: string;
   canvasPracticeId: string;
   canvasPatientId: string;
@@ -15,22 +15,22 @@ export type StartCanvasResourceDiffParams = {
 };
 
 /**
- * Starts the resource diff workflow asynchronously for the patient to produce
+ * Starts the metriport only bundle job asynchronously for the patient to produce
  * the bundle of resources in Metriport that are not in Canvas.
  *
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.
  * @param canvasPatientId - The canvas patient id of the patient.
- * @param requestId - The request id of the workflow. (optional)
- * @returns the request id of the workflow.
- * @throws 400 if the workflow is currently processing.
+ * @param requestId - The request id of the job. (optional)
+ * @returns the request id of the job.
+ * @throws 400 if the job is currently processing.
  */
-export async function startCanvasResourceDiff({
+export async function startMetriportOnlyBundleJob({
   cxId,
   canvasPracticeId,
   canvasPatientId,
   requestId: requestIdParam,
-}: StartCanvasResourceDiffParams): Promise<string> {
+}: StartMetriportOnlyBundleJobParams): Promise<string> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -44,7 +44,7 @@ export async function startCanvasResourceDiff({
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: canvasResourceDiffJobType,
+    jobType: canvasMetriportOnlyBundleJobType,
     jobGroupId: canvasPatientId,
     requestId: requestIdParam ?? uuidv7(),
     limitedToOneRunningJob: true,

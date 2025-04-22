@@ -45,4 +45,4 @@ export async function createCanvasClient(
   });
 }
 
-export const canvasResourceDiffJobType = "canvas-resource-diff";
+export const canvasMetriportOnlyBundleJobType = "canvas-metriport-only-bundle";
