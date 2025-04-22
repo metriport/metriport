@@ -5,10 +5,6 @@ export interface Hl7NotificationConfig {
   deprecatedIncomingMessageBucketName: string;
   incomingMessageBucketName: string;
   outgoingMessageBucketName: string;
-  notificationWebhookSenderQueue: {
-    arn: string;
-    url: string;
-  };
   vpnConfigs: Hl7NotificationVpnConfig[];
   mllpServer: {
     fargateCpu: number;

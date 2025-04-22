@@ -10,8 +10,8 @@ import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
+import { QueueAndLambdaSettings } from "./shared/settings";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(1); // 60 patients/min
@@ -32,7 +32,9 @@ function settings(): {
     entry: "ehr-sync-patient",
     lambda: {
       memory: 1024,
+      batchSize: 1,
       timeout: syncPatientLambdaTimeout,
+      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -40,10 +42,6 @@ function settings(): {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(syncPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
     },
     waitTime: waitTimePatientSync,
   };
@@ -53,7 +51,9 @@ function settings(): {
     entry: "elation-link-patient",
     lambda: {
       memory: 1024,
+      batchSize: 1,
       timeout: elationLinkPatientLambdaTimeout,
+      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -61,10 +61,6 @@ function settings(): {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(elationLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
     },
     waitTime: waitTimeElationLinkPatient,
   };
@@ -237,25 +233,33 @@ export class EhrNestedStack extends NestedStack {
     const {
       name,
       entry,
-      lambda: lambdaSettings,
-      queue: queueSettings,
-      eventSource: eventSourceSettings,
+      lambda: { memory, timeout, batchSize, reportBatchItemFailures },
+      queue: {
+        visibilityTimeout,
+        maxReceiveCount,
+        alarmMaxAgeOfOldestMessage,
+        maxMessageCountAlarmThreshold,
+        createRetryLambda,
+      },
       waitTime,
     } = settings().syncPatient;
 
     const queue = createQueue({
-      ...queueSettings,
       stack: this,
       name,
       fifo: true,
       createDLQ: true,
+      visibilityTimeout,
+      maxReceiveCount,
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
+      alarmMaxAgeOfOldestMessage,
+      maxMessageCountAlarmThreshold,
+      createRetryLambda,
     });
 
     const lambda = createLambda({
-      ...lambdaSettings,
       stack: this,
       name,
       entry,
@@ -266,11 +270,13 @@ export class EhrNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
+      memory: memory,
+      timeout: timeout,
       vpc,
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
 
     return { lambda, queue };
   }
@@ -286,25 +292,33 @@ export class EhrNestedStack extends NestedStack {
     const {
       name,
       entry,
-      lambda: lambdaSettings,
-      queue: queueSettings,
-      eventSource: eventSourceSettings,
+      lambda: { memory, timeout, batchSize, reportBatchItemFailures },
+      queue: {
+        visibilityTimeout,
+        maxReceiveCount,
+        alarmMaxAgeOfOldestMessage,
+        maxMessageCountAlarmThreshold,
+        createRetryLambda,
+      },
       waitTime,
     } = settings().elationLinkPatient;
 
     const queue = createQueue({
-      ...queueSettings,
       stack: this,
       name,
       fifo: true,
       createDLQ: true,
+      visibilityTimeout,
+      maxReceiveCount,
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
+      alarmMaxAgeOfOldestMessage,
+      maxMessageCountAlarmThreshold,
+      createRetryLambda,
     });
 
     const lambda = createLambda({
-      ...lambdaSettings,
       stack: this,
       name,
       entry,
@@ -315,11 +329,13 @@ export class EhrNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
+      memory: memory,
+      timeout: timeout,
       vpc,
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
 
     return { lambda, queue };
   }
