@@ -202,7 +202,8 @@ export function merge(inputBundle: Bundle) {
 
 function updateMetaDataForDocRefs(docRefs: DocumentReference[]): DocumentReference[] {
   return docRefs.map(docRef => {
-    const sourceFile = docRef.content?.[0]?.attachment?.title;
+    const contentWithTitle = docRef.content?.find(atch => atch.attachment?.title);
+    const sourceFile = contentWithTitle?.attachment?.title;
     if (!sourceFile) return docRef;
 
     return {
