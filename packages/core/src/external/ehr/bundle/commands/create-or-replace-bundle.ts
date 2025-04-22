@@ -18,7 +18,7 @@ export type CreateOrReplaceBundleParams = BundleKeyBaseParams & {
  * @param bundleType - The bundle type.
  * @param bundle - The bundle.
  * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the latest tag will be used.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  */
 export async function createOrReplaceBundle({
