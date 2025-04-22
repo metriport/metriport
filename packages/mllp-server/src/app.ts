@@ -3,7 +3,6 @@ dotenv.config();
 
 import { Hl7Message } from "@medplum/core";
 import { Hl7Server } from "@medplum/hl7";
-import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
@@ -24,7 +23,7 @@ import { withErrorHandling } from "./utils";
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
-const bucketName = Config.getHl7IncomingMessageBucketName();
+const bucketName = Config.getHl7NotificationBucketName();
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
 /**
@@ -57,12 +56,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           messageCode: msgType.triggerEvent,
         });
 
-        await buildHl7NotificationWebhookSender().execute({
-          cxId,
-          patientId,
-          message: asString(message),
-          messageReceivedTimestamp: timestamp,
-        });
+        log("TODO: Send message to queue - see next PR");
 
         connection.send(message.buildAck());
 
