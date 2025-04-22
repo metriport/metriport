@@ -1,6 +1,6 @@
 import { JobEntryStatus, JobStatus } from "@metriport/shared";
 
-export type GetPatientJobByIdParams = {
+export type GetJobByIdParams = {
   cxId: string;
   jobId: string;
 };

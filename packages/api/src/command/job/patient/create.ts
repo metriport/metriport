@@ -1,7 +1,7 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, jobInitialStatus, PatientJob } from "@metriport/shared";
 import { PatientJobModel } from "../../../models/patient-job";
-import { getLatestPatientJobByStatus } from "./get";
+import { getLatestPatientJob } from "./get";
 
 export type CreatePatientJobParams = Pick<
   PatientJob,
@@ -16,7 +16,7 @@ export async function createPatientJob({
   ...params
 }: CreatePatientJobParams): Promise<PatientJob> {
   if (limitedToOneRunningJob) {
-    const runningJob = await getLatestPatientJobByStatus({
+    const runningJob = await getLatestPatientJob({
       ...params,
       status: ["waiting", "processing"],
     });

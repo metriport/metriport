@@ -1,19 +1,15 @@
 import { JobStatus, NotFoundError, PatientJob, PatientJobWithData } from "@metriport/shared";
 import { Op } from "sequelize";
 import { PatientJobModel } from "../../../models/patient-job";
-import { GetPatientJobByIdParams } from "../shared";
+import { GetJobByIdParams } from "../shared";
 
-export async function getPatientJobById(
-  params: GetPatientJobByIdParams
-): Promise<PatientJob | undefined> {
+export async function getPatientJobById(params: GetJobByIdParams): Promise<PatientJob | undefined> {
   const job = await getPatientJobModel(params);
   if (!job) return undefined;
   return job.dataValues;
 }
 
-export async function getPatientJobByIdOrFail(
-  params: GetPatientJobByIdParams
-): Promise<PatientJob> {
+export async function getPatientJobByIdOrFail(params: GetJobByIdParams): Promise<PatientJob> {
   const job = await getPatientJobModel(params);
   if (!job) throw new NotFoundError("Patient Job not found", undefined, { ...params });
   return job.dataValues;
@@ -22,15 +18,13 @@ export async function getPatientJobByIdOrFail(
 export async function getPatientJobModel({
   jobId,
   cxId,
-}: GetPatientJobByIdParams): Promise<PatientJobModel | undefined> {
+}: GetJobByIdParams): Promise<PatientJobModel | undefined> {
   const job = await PatientJobModel.findOne({ where: { id: jobId, cxId } });
   if (!job) return undefined;
   return job;
 }
 
-export async function getPatientJobModelOrFail(
-  params: GetPatientJobByIdParams
-): Promise<PatientJobModel> {
+export async function getPatientJobModelOrFail(params: GetJobByIdParams): Promise<PatientJobModel> {
   const job = await getPatientJobModel(params);
   if (!job) throw new NotFoundError("Patient Job not found", undefined, { ...params });
   return job;
@@ -39,16 +33,14 @@ export async function getPatientJobModelOrFail(
 export type ListPatientJobsParams = Pick<
   PatientJob,
   "cxId" | "patientId" | "jobTypeId" | "jobGroupId"
->;
-
-export type ListPatientJobsParamsByStatus = ListPatientJobsParams & {
+> & {
   status?: JobStatus | JobStatus[];
 };
 
-export async function getLatestPatientJobByStatus({
+export async function getLatestPatientJob({
   status,
   ...params
-}: ListPatientJobsParamsByStatus): Promise<PatientJob | undefined> {
+}: ListPatientJobsParams): Promise<PatientJob | undefined> {
   const statuses = getStatusFromParams(status);
   const jobs = await PatientJobModel.findAll({
     where: { ...params, ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}) },
@@ -65,7 +57,7 @@ function getStatusFromParams(status: JobStatus | JobStatus[] | undefined): JobSt
   return [status];
 }
 
-export function createJobDataPayload<T>({
+export function createPatientJobDataPayload<T>({
   job,
   data,
 }: {

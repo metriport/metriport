@@ -4,12 +4,10 @@ import CanvasApi, {
   supportedCanvasDiffResources,
 } from "@metriport/core/external/ehr/canvas/index";
 import { BadRequestError } from "@metriport/shared";
-import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { createCanvasClient } from "../../shared";
-import { FetchCanvasBundleResult } from "./fetch-bundle";
 
 export type FetchCanvasMetriportOnlyBundleParams = {
   cxId: string;
@@ -18,6 +16,11 @@ export type FetchCanvasMetriportOnlyBundleParams = {
   jobId: string;
   api?: CanvasApi;
   resourceType?: SupportedCanvasDiffResource;
+};
+
+export type FetchCanvasBundlePreSignedUrlsResult = {
+  preSignedUrls: string[];
+  resourceTypes: SupportedCanvasDiffResource[];
 };
 
 /**
@@ -30,16 +33,16 @@ export type FetchCanvasMetriportOnlyBundleParams = {
  * @param jobId - The id of the job that generated the bundle.
  * @param api - The api to use to fetch the bundle. (optional)
  * @param resourceType - The resource type to fetch. (optional, if missing, all supported resources will be fetched)
- * @returns The bundle of resources and the included resource types. If a resource type bundle is not found, it is not included in the output bundle.
+ * @returns The pre-signed URLs of the bundles and the included resource types. If a resource type bundle is not found, no pre-signed URL is included in the output list.
  */
-export async function fetchCanvasMetriportOnlyBundle({
+export async function fetchCanvasMetriportOnlyBundlePreSignedUrls({
   cxId,
   canvasPracticeId,
   canvasPatientId,
   jobId,
   api,
   resourceType: resourceTypeParam,
-}: FetchCanvasMetriportOnlyBundleParams): Promise<FetchCanvasBundleResult> {
+}: FetchCanvasMetriportOnlyBundleParams): Promise<FetchCanvasBundlePreSignedUrlsResult> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -56,24 +59,24 @@ export async function fetchCanvasMetriportOnlyBundle({
     });
   }
 
-  const bundle = getDefaultBundle();
+  const preSignedUrls: string[] = [];
   const resourceTypes = resourceTypeParam ? [resourceTypeParam] : supportedCanvasDiffResources;
   let resourceTypesFound = [...resourceTypes];
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
   for (const resourceType of resourceTypes) {
-    const resourceBundle = await canvasApi.getMetriportOnlyBundleByResourceType({
+    const preSignedUrl = await canvasApi.getMetriportOnlyBundlePreSignedUrlByResourceType({
       cxId,
       metriportPatientId,
       canvasPatientId,
       resourceType,
       jobId,
     });
-    if (resourceBundle) {
-      bundle.entry.push(...resourceBundle.entry);
+    if (preSignedUrl) {
+      preSignedUrls.push(preSignedUrl);
     } else {
       resourceTypesFound = resourceTypesFound.filter(rt => rt !== resourceType);
     }
   }
-  return { bundle, resourceTypes: resourceTypesFound };
+  return { preSignedUrls, resourceTypes: resourceTypesFound };
 }

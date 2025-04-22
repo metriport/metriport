@@ -1,10 +1,10 @@
 import { PatientJobWithData } from "@metriport/shared";
 import {
-  createJobDataPayload,
+  createPatientJobDataPayload,
   getPatientJobByIdOrFail,
 } from "../../../../../command/job/patient/get";
-import { FetchCanvasBundleResult } from "../../command/bundle/fetch-bundle";
-import { fetchCanvasMetriportOnlyBundle } from "../../command/bundle/fetch-metriport-only-bundle";
+import { FetchCanvasBundlePreSignedUrlsResult } from "../../command/bundle/fetch-metriport-only-bundle";
+import { fetchCanvasMetriportOnlyBundlePreSignedUrls } from "../../command/bundle/fetch-metriport-only-bundle";
 
 export type GetMetriportOnlyBundleParams = {
   cxId: string;
@@ -28,16 +28,18 @@ export async function getMetriportOnlyBundleJobPayload({
   canvasPracticeId,
   canvasPatientId,
   jobId,
-}: GetMetriportOnlyBundleParams): Promise<PatientJobWithData<FetchCanvasBundleResult>> {
+}: GetMetriportOnlyBundleParams): Promise<
+  PatientJobWithData<FetchCanvasBundlePreSignedUrlsResult>
+> {
   const job = await getPatientJobByIdOrFail({ cxId, jobId });
   if (job.status === "completed") {
-    const data = await fetchCanvasMetriportOnlyBundle({
+    const data = await fetchCanvasMetriportOnlyBundlePreSignedUrls({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       jobId,
     });
-    return createJobDataPayload({ job, data });
+    return createPatientJobDataPayload({ job, data });
   }
-  return createJobDataPayload({ job });
+  return createPatientJobDataPayload({ job });
 }

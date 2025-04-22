@@ -38,7 +38,7 @@ import {
   createOrReplaceBundle,
   CreateOrReplaceBundleParams,
 } from "../bundle/commands/create-or-replace-bundle";
-import { fetchBundle, FetchBundleParams } from "../bundle/commands/fetch-bundle";
+import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/commands/fetch-bundle";
 import {
   ApiConfig,
   fetchBundleUsingTtl,
@@ -456,7 +456,7 @@ class CanvasApi {
     return bundle;
   }
 
-  async getMetriportOnlyBundleByResourceType({
+  async getMetriportOnlyBundlePreSignedUrlByResourceType({
     cxId,
     metriportPatientId,
     canvasPatientId,
@@ -468,8 +468,8 @@ class CanvasApi {
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
     jobId: string;
-  }): Promise<Bundle | undefined> {
-    return this.getBundle({
+  }): Promise<string | undefined> {
+    return this.getBundlePreSignedUrl({
       cxId,
       metriportPatientId,
       canvasPatientId,
@@ -567,7 +567,7 @@ class CanvasApi {
     });
   }
 
-  private async getBundle({
+  private async getBundlePreSignedUrl({
     cxId,
     metriportPatientId,
     canvasPatientId,
@@ -576,8 +576,8 @@ class CanvasApi {
     jobId,
   }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
     canvasPatientId: string;
-  }): Promise<Bundle | undefined> {
-    const bundleWithLastModified = await fetchBundle({
+  }): Promise<string | undefined> {
+    const bundlePreSignedUrl = await fetchBundlePreSignedUrl({
       ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
@@ -586,8 +586,7 @@ class CanvasApi {
       resourceType,
       jobId,
     });
-    if (!bundleWithLastModified) return undefined;
-    return bundleWithLastModified.bundle;
+    return bundlePreSignedUrl;
   }
 
   private async getCachedBundle({

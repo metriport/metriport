@@ -12,6 +12,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
@@ -22,6 +23,8 @@ import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 import { FetchBundleParams, fetchBundle } from "./bundle/commands/fetch-bundle";
+
+dayjs.extend(duration);
 
 const MAX_AGE = dayjs.duration(24, "hours");
 
