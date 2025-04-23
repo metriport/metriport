@@ -9,6 +9,7 @@ import {
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { buildHl7MessageFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
+import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {
   private readonly context = "hl7-notification-webhook-sender";
@@ -24,10 +25,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   }
 
   async execute(params: Hl7Notification): Promise<void> {
-    const { cxId, patientId, messageReceivedTimestamp } = params;
-
     const message = Hl7Message.parse(params.message);
-
+    const { cxId, patientId, messageReceivedTimestamp } = params;
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
     const fileKey = buildHl7MessageFileKey({
@@ -40,11 +39,18 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       extension: "json",
     });
 
+    const convertedMessage = convertHl7v2MessageToFhir({
+      cxId,
+      patientId,
+      message,
+      timestampString: messageReceivedTimestamp,
+    });
+
     const result = await this.s3Utils.uploadFile({
       bucket: this.bucketName,
       key: fileKey,
-      file: Buffer.from(params.message),
-      contentType: "text/plain",
+      file: Buffer.from(JSON.stringify(convertedMessage)),
+      contentType: "application/json",
     });
 
     this.log(`[${messageReceivedTimestamp}] S3 upload result: ${JSON.stringify(result)}`);

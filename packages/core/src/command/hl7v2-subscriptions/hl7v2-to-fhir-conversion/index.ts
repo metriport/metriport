@@ -12,7 +12,7 @@ import { buildHl7MessageFileKey } from "./shared";
 export type Hl7ToFhirParams = {
   cxId: string;
   patientId: string;
-  hl7Message: Hl7Message;
+  message: Hl7Message;
   timestampString: string;
 };
 
@@ -22,15 +22,15 @@ export type Hl7ToFhirParams = {
 export function convertHl7v2MessageToFhir({
   cxId,
   patientId,
-  hl7Message,
+  message,
   timestampString,
 }: Hl7ToFhirParams): Bundle<Resource> {
   const { log } = out(`hl7v2 to fhir - cx: ${cxId}, pt: ${patientId}`);
   log("Beginning conversion.");
 
   const startedAt = new Date();
-  const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(hl7Message);
-  const messageId = getMessageUniqueIdentifier(hl7Message);
+  const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
+  const messageId = getMessageUniqueIdentifier(message);
 
   const filePath = buildHl7MessageFileKey({
     cxId,
@@ -43,7 +43,7 @@ export function convertHl7v2MessageToFhir({
   });
 
   if (messageCode === "ADT") {
-    const resources = mapEncounterAndRelatedResources(hl7Message, patientId);
+    const resources = mapEncounterAndRelatedResources(message, patientId);
     const bundle = buildBundleFromResources({ type: "collection", resources });
     const duration = elapsedTimeFromNow(startedAt);
 
