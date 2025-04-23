@@ -31,7 +31,9 @@ export async function finishPatientJob({
     : validateNewJobStatus(currentStatus, "completed");
   const justTurnedCompleted = newStatus === "completed" && currentStatus !== "completed";
 
-  const fieldsToUpdate: Partial<PatientJob> = { status: newStatus };
+  const fieldsToUpdate: Partial<Pick<PatientJob, "status" | "finishedAt">> = {
+    status: newStatus,
+  };
   if (justTurnedCompleted) {
     fieldsToUpdate.finishedAt = buildDayjs().toDate();
   }

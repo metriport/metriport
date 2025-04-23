@@ -3,6 +3,8 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const patientJobTableName = "patient_job";
+const patientJobTableIndexFields = ["cx_id", "patient_id"];
+const patientJobTableIndexName = "cxid_patientid_index";
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -91,12 +93,21 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction, addVersion: true }
     );
+    await queryInterface.addIndex(patientJobTableName, {
+      name: patientJobTableIndexName,
+      fields: patientJobTableIndexFields,
+      transaction,
+    });
   });
 };
 
 // Note: this won't reintroduce the data, just recreate the table
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
+    await queryInterface.removeIndex(patientJobTableName, patientJobTableIndexFields, {
+      name: patientJobTableIndexName,
+      transaction,
+    });
     await queryInterface.dropTable(patientJobTableName, { transaction });
   });
 };

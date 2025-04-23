@@ -25,7 +25,9 @@ export async function failPatientJob({
   const currentStatus = job.status;
   const newStatus = forceStatusUpdate ? "failed" : validateNewJobStatus(currentStatus, "failed");
 
-  const fieldsToUpdate: Partial<PatientJob> = { status: newStatus };
+  const fieldsToUpdate: Partial<Pick<PatientJob, "status" | "statusReason">> = {
+    status: newStatus,
+  };
   if (reason) {
     fieldsToUpdate.statusReason = reason;
   }

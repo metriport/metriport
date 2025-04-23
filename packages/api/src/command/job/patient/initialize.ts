@@ -27,7 +27,9 @@ export async function initializePatientJob({
     ? "processing"
     : validateNewJobStatus(currentStatus, "processing");
   const justTurnedProcessing = newStatus === "processing" && currentStatus !== "processing";
-  const fieldsToUpdate: Partial<PatientJob> = { status: newStatus };
+  const fieldsToUpdate: Partial<Pick<PatientJob, "status" | "startedAt">> = {
+    status: newStatus,
+  };
   if (justTurnedProcessing) {
     fieldsToUpdate.startedAt = buildDayjs().toDate();
   }

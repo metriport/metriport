@@ -25,7 +25,11 @@ export async function updatePatientJobTotal({
   if (currentTotal > 0 && !isJobDone(currentStatus)) {
     throw new BadRequestError("Job total already set and the job is running");
   }
-  const fieldsToUpdate: Partial<PatientJob> = { total, successful: 0, failed: 0 };
+  const fieldsToUpdate: Partial<Pick<PatientJob, "total" | "successful" | "failed">> = {
+    total,
+    successful: 0,
+    failed: 0,
+  };
   const updatedJob = await jobModel.update(fieldsToUpdate);
   return updatedJob.dataValues;
 }
