@@ -64,6 +64,7 @@
     "pg-hstore": "^2.3.4",
     "posthog-node": "^3.3.0",
     "reflect-metadata": "^0.1.13",
+    "semver": ">=5.7.2",
     "sequelize": "^6.31.0",
     "simple-oauth2": "^5.0.0",
     "ts-essentials": "^9.3.0",
