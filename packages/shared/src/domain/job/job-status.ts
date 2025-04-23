@@ -5,10 +5,7 @@ export type JobStatus = (typeof jobStatus)[number];
 
 export function isValidJobStatus(status: string): status is JobStatus {
   return (
-    status === "waiting" ||
-    status === "processing" ||
-    status === "successful" ||
-    status === "failed"
+    status === "waiting" || status === "processing" || status === "completed" || status === "failed"
   );
 }
 
