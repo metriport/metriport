@@ -11,8 +11,8 @@ import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { createQueue } from "./shared/sqs";
 import { QueueAndLambdaSettings } from "./shared/settings";
+import { createQueue } from "./shared/sqs";
 
 const waitTimePatientCreate = Duration.seconds(12); // 5 patients/min
 const waitTimePatientQuery = Duration.seconds(0);
@@ -32,9 +32,7 @@ function settings() {
     entry: "patient-import-create",
     lambda: {
       memory: 1024,
-      batchSize: 1,
       timeout: patientCreateLambdaTimeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.days(2),
@@ -42,6 +40,10 @@ function settings() {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientCreateLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
     },
     waitTime: waitTimePatientCreate,
   };
@@ -52,15 +54,17 @@ function settings() {
     entry: "patient-import-query",
     lambda: {
       memory: 512,
-      batchSize: 1,
       timeout: patientQueryLambdaTimeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.minutes(5),
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientQueryLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
     },
     waitTime: waitTimePatientQuery,
   };
@@ -312,33 +316,25 @@ export class PatientImportNestedStack extends NestedStack {
     const {
       name,
       entry,
-      lambda: { memory, timeout, batchSize, reportBatchItemFailures },
-      queue: {
-        visibilityTimeout,
-        maxReceiveCount,
-        alarmMaxAgeOfOldestMessage,
-        maxMessageCountAlarmThreshold,
-        createRetryLambda,
-      },
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
       waitTime,
     } = settings().patientQuery;
 
     const queue = createQueue({
+      ...queueSettings,
       stack: this,
       name,
       fifo: true,
       createDLQ: true,
-      visibilityTimeout,
-      maxReceiveCount,
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold,
-      createRetryLambda,
     });
 
     const lambda = createLambda({
+      ...lambdaSettings,
       stack: this,
       name,
       entry,
@@ -350,13 +346,11 @@ export class PatientImportNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: memory,
-      timeout: timeout,
       vpc,
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     bucket.grantReadWrite(lambda);
 
