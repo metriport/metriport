@@ -42,10 +42,5 @@ const parseBody = (body: string): Hl7Notification => {
     messageReceivedTimestamp: z.string(),
   });
 
-  const parsed = schema.safeParse(JSON.parse(body));
-  if (!parsed.success) {
-    throw new Error(`Invalid HL7 notification payload: ${parsed.error.message}`);
-  }
-
-  return parsed.data;
+  return schema.parse(JSON.parse(body));
 };

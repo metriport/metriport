@@ -19,13 +19,13 @@ export class Hl7NotificationWebhookSenderCloud implements Hl7NotificationWebhook
     capture.setExtra({
       cxId,
       patientId,
-      messageReceivedTimestamp: messageReceivedTimestamp,
+      messageReceivedTimestamp,
       context: "hl7-notification-webhook-sender-cloud.execute",
     });
 
     const payload = JSON.stringify(params);
     log(
-      `Enqueueing message for processing: ${messageReceivedTimestamp} - cxId: ${cxId} - patientId: ${patientId}`
+      `Enqueueing message for processing: ${messageReceivedTimestamp} - cx: ${cxId} - pt: ${patientId}`
     );
     await this.sqsClient.sendMessageToQueue(this.hl7NotificationWebhookSenderQueue, payload, {
       fifo: true,
