@@ -4,6 +4,7 @@ import {
   DocumentQueryStatus,
   ProgressType,
 } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
@@ -14,6 +15,7 @@ import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-pro
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { updateConversionProgress } from "./document-query";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
+import { processDocQueryProgressWebhook } from "./process-doc-query-webhook";
 
 export async function calculateDocumentConversionStatus({
   patientId,
@@ -109,13 +111,21 @@ export async function calculateDocumentConversionStatus({
       recreateConsolidated({
         patient: updatedPatient,
         conversionType: "pdf",
-        context: `Post-DQ getConsolidated ${source}`,
+        context: `Post-DQ getConsolidated triggerConsolidated`,
+        ...recreateConsolidatedOnCompleteParams({
+          patient: updatedPatient,
+          requestId,
+        }),
       });
     } else if (isGlobalConversionCompleted) {
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
         context: "Post-DQ getConsolidated GLOBAL",
+        ...recreateConsolidatedOnCompleteParams({
+          patient: updatedPatient,
+          requestId,
+        }),
       });
     }
   } else {
@@ -156,4 +166,27 @@ function isProgressStatusValid({
   status: DocumentQueryStatus;
 }): boolean {
   return documentQueryProgress?.[progressType]?.status === status;
+}
+
+function recreateConsolidatedOnCompleteParams({
+  patient,
+  requestId,
+}: {
+  patient: Patient;
+  requestId: string;
+}): {
+  onDone: () => Promise<void>;
+} {
+  return {
+    onDone: async () => {
+      if (patient.data.documentQueryProgress) {
+        processDocQueryProgressWebhook({
+          patient,
+          documentQueryProgress: patient.data.documentQueryProgress,
+          requestId,
+          progressType: "convert",
+        });
+      }
+    },
+  };
 }

@@ -20,7 +20,11 @@ export function calculateConversionProgress({
 }): DocumentQueryProgress {
   const docQueryProgress = patient.data.documentQueryProgress ?? {};
 
-  const talliedDocQueryProgress = tallyDocQueryProgress(docQueryProgress, convertResult, count);
+  const talliedDocQueryProgress = tallyDocQueryProgressWithCount(
+    docQueryProgress,
+    convertResult,
+    count
+  );
 
   return talliedDocQueryProgress;
 }
@@ -34,7 +38,7 @@ export function calculateConversionProgress({
  *                     defaults to 1)
  * @returns the updated document query progress
  */
-export function tallyDocQueryProgress(
+function tallyDocQueryProgressWithCount(
   docQueryProgress: DocumentQueryProgress,
   convertResult: ConvertResult,
   countParam?: number

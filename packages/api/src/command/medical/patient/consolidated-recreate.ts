@@ -13,16 +13,19 @@ import { getConsolidated } from "../patient/consolidated-get";
  * @param patient - The patient to recreate the consolidated bundle for.
  * @param organization - The organization to recreate the consolidated bundle for.
  * @param conversionType - The conversion type to use when converting to consolidatd.
+ * @param onDone - Optional callback to run at the end of the process. Will be called even if the process fails.
  * @param context - Optional context to log.
  */
 export async function recreateConsolidated({
   patient,
   conversionType,
   context,
+  onDone,
 }: {
   patient: Patient;
   conversionType?: ConsolidationConversionType;
   context?: string;
+  onDone?: () => Promise<void>;
 }): Promise<void> {
   const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
   try {
@@ -38,4 +41,5 @@ export async function recreateConsolidated({
   } catch (err) {
     processAsyncError(`Post-DQ getConsolidated`, log)(err);
   }
+  if (onDone) await onDone();
 }

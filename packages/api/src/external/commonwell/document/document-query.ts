@@ -49,7 +49,7 @@ import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
-import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
+import { tallyDocQueryProgressAndProcessWebhook } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getCWData, update } from "../patient";
@@ -715,7 +715,7 @@ async function downloadDocsAndUpsertFHIR({
             processFhirResponse(patient, doc.id, fhir);
           }
 
-          await tallyDocQueryProgress({
+          await tallyDocQueryProgressAndProcessWebhook({
             patient: { id: patient.id, cxId: patient.cxId },
             progress: {
               successful: 1,
@@ -727,7 +727,7 @@ async function downloadDocsAndUpsertFHIR({
 
           return fhirDocRef;
         } catch (error) {
-          await tallyDocQueryProgress({
+          await tallyDocQueryProgressAndProcessWebhook({
             patient: { id: patient.id, cxId: patient.cxId },
             progress: {
               errors: 1,
