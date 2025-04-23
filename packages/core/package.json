@@ -142,7 +142,7 @@
     "sequelize": "^6.37.1",
     "ssh2-sftp-client": "^9.0.4",
     "whatwg-mimetype": "^4.0.0",
-    "xml-crypto": "^6.0.0",
+    "xml-crypto": "^6.0.1",
     "xml2js": "^0.6.2",
     "xmldom": "^0.6.0",
     "zod-to-json-schema": "3.22.5"
