@@ -68,7 +68,7 @@ function settings(): {
     },
     waitTime: waitTimeElationLinkPatient,
   };
-  const startResourceDiffBundlesLambdaTimeout = waitTimeStartResourceDiff.plus(Duration.minutes(2));
+  const startResourceDiffBundlesLambdaTimeout = waitTimeStartResourceDiff.plus(Duration.minutes(1));
   const startResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrStartResourceDiffBundles",
     entry: "ehr-start-resource-diff-bundles",
@@ -92,20 +92,20 @@ function settings(): {
     waitTime: waitTimeStartResourceDiff,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const ComputeResourceDiffBundlesLambdaTimeout = Duration.minutes(5);
+  const computeResourceDiffBundlesLambdaTimeout = Duration.seconds(25);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiffBundles",
     entry: "ehr-compute-resource-diff-bundles",
     lambda: {
       memory: 1024,
-      timeout: ComputeResourceDiffBundlesLambdaTimeout,
+      timeout: computeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
-        ComputeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
+        computeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
       ),
       createRetryLambda: false,
     },
@@ -116,19 +116,19 @@ function settings(): {
     },
     waitTime: waitTimeComputeResourceDiff,
   };
-  const RefreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(5));
+  const refreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(1));
   const refreshEhrBundles: QueueAndLambdaSettings = {
     name: "EhrRefreshEhrBundles",
     entry: "ehr-refresh-ehr-bundles",
     lambda: {
       memory: 1024,
-      timeout: RefreshEhrBundlesLambdaTimeout,
+      timeout: refreshEhrBundlesLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(RefreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
@@ -151,6 +151,7 @@ interface EhrNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
+  medicalDocumentsBucket: s3.Bucket;
 }
 
 export class EhrNestedStack extends NestedStack {
@@ -216,6 +217,7 @@ export class EhrNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      medicalDocumentsBucket: props.medicalDocumentsBucket,
       ehrBundleBucket: this.ehrBundleBucket,
       computeResourceDiffBundlesQueue: this.computeResourceDiffBundlesQueue,
     });
@@ -337,6 +339,7 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    medicalDocumentsBucket: s3.Bucket;
     ehrBundleBucket: s3.Bucket;
     computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
@@ -370,6 +373,7 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
           ownProps.computeResourceDiffBundlesQueue.queueUrl,

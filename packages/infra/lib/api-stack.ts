@@ -421,6 +421,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
+      medicalDocumentsBucket,
     });
 
     //-------------------------------------------
