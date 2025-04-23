@@ -92,20 +92,20 @@ function settings(): {
     waitTime: waitTimeStartResourceDiff,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const ComputeResourceDiffBundlesLambdaTimeout = Duration.seconds(25);
+  const computeResourceDiffBundlesLambdaTimeout = Duration.seconds(25);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiffBundles",
     entry: "ehr-compute-resource-diff-bundles",
     lambda: {
       memory: 1024,
-      timeout: ComputeResourceDiffBundlesLambdaTimeout,
+      timeout: computeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
-        ComputeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
+        computeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
       ),
       createRetryLambda: false,
     },
@@ -116,19 +116,19 @@ function settings(): {
     },
     waitTime: waitTimeComputeResourceDiff,
   };
-  const RefreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(1));
+  const refreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(1));
   const refreshEhrBundles: QueueAndLambdaSettings = {
     name: "EhrRefreshEhrBundles",
     entry: "ehr-refresh-ehr-bundles",
     lambda: {
       memory: 1024,
-      timeout: RefreshEhrBundlesLambdaTimeout,
+      timeout: refreshEhrBundlesLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(RefreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
