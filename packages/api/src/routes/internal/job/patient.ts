@@ -1,77 +1,87 @@
-import {
-  BadRequestError,
-  isValidJobEntryStatus,
-  isValidJobStatus,
-  JobStatus,
-} from "@metriport/shared";
+import { BadRequestError, isValidJobEntryStatus } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { updatePatientJobTotals } from "../../../command/job/patient/update-totals";
-import { updatePatientJobTracking } from "../../../command/job/patient/update-tracking";
+import { initializePatientJob } from "../../../command/job/patient/initialize";
+import { updatePatientJobCount } from "../../../command/job/patient/update-count";
+import { updatePatientJobTotal } from "../../../command/job/patient/update-total";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFromQuery, getFromQueryOrFail } from "../../util";
+import { asyncHandler, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
 /**
- * POST /internal/job/patient/update-totals
+ * POST /internal/job/patient/initialize
  *
- * Updates the total number of resources to process.
+ * Initializes the job.
  * @param req.query.cxId The CX ID.
  * @param req.query.jobId The job ID.
- * @param req.query.entryStatus The status of the entry.
+ * @param req.query.status The status of the job.
  * @returns 200 OK
  */
 router.post(
-  "/update-totals",
+  "/initialize",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromQueryOrFail("jobId", req);
-    const entryStatus = getFromQueryOrFail("entryStatus", req);
-    if (!isValidJobEntryStatus(entryStatus)) {
-      throw new BadRequestError("Status must be either successful or failed");
+    await initializePatientJob({ jobId, cxId });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/job/patient/update-total
+ *
+ * Updates the total of the job.
+ * @param req.query.cxId The CX ID.
+ * @param req.query.jobId The job ID.
+ * @param req.query.total The total number of entries to process.
+ * @returns 200 OK
+ */
+router.post(
+  "/update-total",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFromQueryOrFail("jobId", req);
+    const total = getFromQueryOrFail("total", req);
+    if (isNaN(+total)) {
+      throw new BadRequestError("Total must be a number");
     }
-    await updatePatientJobTotals({
+    await updatePatientJobTotal({
       jobId,
       cxId,
-      entryStatus,
+      total: +total,
     });
     return res.sendStatus(httpStatus.OK);
   })
 );
 
 /**
- * POST /internal/job/patient/update-tracking
+ * POST /internal/job/patient/update-count
  *
- * Updates the tracking of the job.
+ * Updates the count of the job.
  * @param req.query.cxId The CX ID.
  * @param req.query.jobId The job ID.
- * @param req.query.status The status of the job. (optional)
- * @param req.query.total The total number of entries to process. (optional)
+ * @param req.query.entryStatus The status of the entry.
  * @returns 200 OK
  */
 router.post(
-  "/update-tracking",
+  "/update-count",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFromQueryOrFail("jobId", req);
-    const status = getFromQuery("status", req);
-    const total = getFromQuery("total", req);
-    if (status && !isValidJobStatus(status)) {
-      throw new BadRequestError("Status must be either waiting, processing, or completed");
+    const entryStatus = getFromQueryOrFail("entryStatus", req);
+    if (!isValidJobEntryStatus(entryStatus)) {
+      throw new BadRequestError("Status must a valid job entry status");
     }
-    if (total && isNaN(+total)) {
-      throw new BadRequestError("Total must be a number");
-    }
-    await updatePatientJobTracking({
+    await updatePatientJobCount({
       jobId,
       cxId,
-      ...(status && { status: status as JobStatus }),
-      ...(total && { total: +total }),
+      entryStatus,
     });
     return res.sendStatus(httpStatus.OK);
   })

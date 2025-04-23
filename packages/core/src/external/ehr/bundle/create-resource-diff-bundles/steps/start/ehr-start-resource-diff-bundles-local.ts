@@ -7,7 +7,8 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
 import { fetchEhrBundle as fetchEhrBundleFromApi } from "../../../../api/fetch-bundle";
-import { updateWorkflowTracking } from "../../../../api/update-workflow-tracking";
+import { initializeJob } from "../../../../api/initialize-job";
+import { updateJobTotal } from "../../../../api/update-job-total";
 import { BundleType, getSupportedResourcesByEhr } from "../../../bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../commands/create-or-replace-bundle";
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
@@ -32,7 +33,7 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
     ehrPatientId,
     jobId,
   }: StartResourceDiffBundlesRequest): Promise<void> {
-    await updateWorkflowTracking({ cxId, jobId, status: "processing" });
+    await initializeJob({ cxId, jobId });
     const consolidated = await getConsolidated({ cxId, patientId: metriportPatientId });
     if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length < 1) {
       return;
@@ -95,7 +96,7 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
       }
     );
     const total = computeResourceDiffParamsWithExistingResources.length;
-    await updateWorkflowTracking({ cxId, jobId, total });
+    await updateJobTotal({ cxId, jobId, total });
     await this.next.computeResourceDiffBundlesMetriportOnly(
       computeResourceDiffParamsWithExistingResources
     );

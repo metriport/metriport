@@ -1,31 +1,31 @@
 import { MetriportError } from "@metriport/shared";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
 import { PatientJobModel, patientJobRawColumnNames } from "../../../models/patient-job";
-import { UpdateJobTotalsParams, UpdateJobTotalsResponse } from "../shared";
-import { updatePatientJobTracking } from "./update-tracking";
+import { UpdateJobCountParams, UpdateJobCountResponse } from "../shared";
+import { finishPatientJob } from "./finish";
 
 /**
- * Updates the totals on the job.
+ * Updates the counts on the job.
  *
  * It's critical that this updates the successful and failed counters in a concurrent-safe way.
  *
  * We can have multiple requests being processed at the same time, in different Node processes,
  * so we need a way to update the totals without causing race conditions.
  *
- * Based on the status, this will increment the successful or failed counter then call updatePatientJobTracking.
+ * Based on the status, this will increment the successful or failed counter then call finishPatientJob.
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
  * @param entryStatus - The status of the job entry.
- * @param onCompleted - The callback to call when the job is completed via updatePatientJobTracking.
+ * @param onCompleted - The callback to call when the job is completed via finishPatientJob.
  * @returns the updated job.
  */
-export async function updatePatientJobTotals({
+export async function updatePatientJobCount({
   jobId,
   cxId,
   entryStatus,
   onCompleted,
-}: UpdateJobTotalsParams): Promise<UpdateJobTotalsResponse> {
+}: UpdateJobCountParams): Promise<UpdateJobCountResponse> {
   const [[updatedRows]] = await PatientJobModel.increment(
     [
       ...(entryStatus === "successful" ? ["successful" as const] : []),
@@ -50,10 +50,9 @@ export async function updatePatientJobTotals({
   };
   const { successful, failed, total, status } = updatedPatientJob;
   if (status !== "completed" && successful + failed >= total) {
-    await updatePatientJobTracking({
+    await finishPatientJob({
       jobId,
       cxId,
-      status: "completed",
       onCompleted,
     });
   }

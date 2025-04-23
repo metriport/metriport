@@ -49,66 +49,48 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
-          allowNull: false,
         },
         patientId: {
           type: DataTypes.STRING,
-          allowNull: false,
         },
         jobType: {
           type: DataTypes.STRING,
-          allowNull: false,
         },
         jobGroupId: {
           type: DataTypes.STRING,
-          allowNull: false,
         },
         requestId: {
           type: DataTypes.STRING,
-          allowNull: false,
         },
         status: {
           type: DataTypes.STRING,
-          allowNull: false,
         },
         statusReason: {
           type: DataTypes.STRING,
-          allowNull: true,
         },
         startedAt: {
           type: DataTypes.DATE,
-          allowNull: true,
         },
         finishedAt: {
           type: DataTypes.DATE,
-          allowNull: true,
         },
         total: {
           type: DataTypes.INTEGER,
-          allowNull: false,
-          defaultValue: 0,
         },
         successful: {
           type: DataTypes.INTEGER,
-          allowNull: false,
-          defaultValue: 0,
         },
         failed: {
           type: DataTypes.INTEGER,
-          allowNull: false,
-          defaultValue: 0,
         },
         paramsCx: {
           type: DataTypes.JSONB,
-          allowNull: true,
         },
         paramsOps: {
           type: DataTypes.JSONB,
-          allowNull: true,
         },
         data: {
           type: DataTypes.JSONB,
-          allowNull: true,
         },
       },
       {

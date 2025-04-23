@@ -5,14 +5,14 @@ export type GetJobByIdParams = {
   jobId: string;
 };
 
-export type UpdateJobTotalsParams = {
+export type UpdateJobCountParams = {
   jobId: string;
   cxId: string;
   entryStatus: JobEntryStatus;
   onCompleted?: () => Promise<void>;
 };
 
-export type UpdateJobTotalsResponse = {
+export type UpdateJobCountResponse = {
   jobId: string;
   cxId: string;
   status: JobStatus;
@@ -21,11 +21,29 @@ export type UpdateJobTotalsResponse = {
   total: number;
 };
 
-export type UpdateJobTrackingParams = {
+export type InitializeJobParams = {
   jobId: string;
   cxId: string;
-  status?: JobStatus;
-  total?: number;
+  forceStatusUpdate?: boolean;
+};
+
+export type UpdateJobTotalParams = {
+  jobId: string;
+  cxId: string;
+  total: number;
+  forceTotalUpdate?: boolean;
+};
+
+export type FailJobParams = {
+  jobId: string;
+  cxId: string;
+  reason: string;
+  forceStatusUpdate?: boolean;
+};
+
+export type FinishJobParams = {
+  jobId: string;
+  cxId: string;
   forceStatusUpdate?: boolean;
   onCompleted?: () => Promise<void>;
 };
