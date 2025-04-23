@@ -11,7 +11,7 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 const MSH_9_MESSAGE_TYPE = 9;
 
 export type Hl7MessageType = {
-  messageType: string;
+  messageCode: string;
   triggerEvent: string;
 };
 
@@ -31,7 +31,7 @@ export function getHl7MessageTypeOrFail(hl7Message: Hl7Message): Hl7MessageType 
     throw new MetriportError("Trigger event not found in MSH segment");
   }
 
-  return { messageType, triggerEvent: derivedTriggerEvent };
+  return { messageCode: messageType, triggerEvent: derivedTriggerEvent };
 }
 
 export function getMessageDatetime(msg: Hl7Message): string | undefined {

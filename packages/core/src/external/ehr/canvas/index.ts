@@ -1,7 +1,7 @@
 import {
   AllergyIntolerance,
   Appointment as AppointmentFhir,
-  Bundle,
+  Bundle as BundleFhir,
   Condition,
   Encounter,
   Location,
@@ -10,7 +10,7 @@ import {
   Patient as PatientFhir,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -20,12 +20,33 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
+import {
+  Bundle,
+  createBundleFromResourceList,
+  FhirResource,
+  FhirResourceBundle,
+  fhirResourceBundleSchema,
+  SupportedResourceType,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
-import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
+import { BundleType } from "../bundle/bundle-shared";
+import {
+  createOrReplaceBundle,
+  CreateOrReplaceBundleParams,
+} from "../bundle/commands/create-or-replace-bundle";
+import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/commands/fetch-bundle";
+import {
+  ApiConfig,
+  fetchBundleUsingTtl,
+  formatDate,
+  makeRequest,
+  MakeRequestParamsInEhr,
+} from "../shared";
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -34,6 +55,25 @@ interface CanvasApiConfig extends ApiConfig {
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
+
+export const supportedCanvasDiffResources = [
+  "AllergyIntolerance",
+  "Condition",
+  "Coverage",
+  "DiagnosticReport",
+  "Encounter",
+  "MedicationStatement",
+  "MedicationRequest",
+  "Observation",
+  "Procedure",
+  "Immunization",
+] as SupportedResourceType[];
+export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
+export const isSupportedCanvasDiffResource = (
+  resourceType: string
+): resourceType is SupportedCanvasDiffResource => {
+  return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
+};
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -289,7 +329,7 @@ class CanvasApi {
   }: {
     rxNormCode?: string;
     medicationName?: string;
-  }): Promise<Bundle> {
+  }): Promise<BundleFhir> {
     if (!rxNormCode && !medicationName) {
       throw new Error("At least one of rxNormCode or medicationName must be provided");
     }
@@ -339,6 +379,110 @@ class CanvasApi {
       useFhir: true,
     });
     return patient;
+  }
+
+  async getBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    resourceType,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    canvasPatientId: string;
+    resourceType: SupportedCanvasDiffResource;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+    );
+    const params = { patient: `Patient/${canvasPatientId}` };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: canvasPatientId,
+      resourceType,
+    };
+    if (useCachedBundle) {
+      const cachedBundle = await this.getCachedBundle({
+        cxId,
+        metriportPatientId,
+        canvasPatientId,
+        bundleType: BundleType.EHR,
+        resourceType,
+      });
+      if (cachedBundle) return cachedBundle;
+    }
+    async function paginateFhirResources(
+      api: CanvasApi,
+      url: string | undefined,
+      acc: FhirResource[] | undefined = []
+    ): Promise<FhirResource[]> {
+      if (!url) return acc;
+      const fhirResourceBundle = await api.makeRequest<FhirResourceBundle>({
+        cxId,
+        patientId: canvasPatientId,
+        s3Path: `fhir-resources-${resourceType}`,
+        method: "GET",
+        url,
+        schema: fhirResourceBundleSchema,
+        additionalInfo,
+        debug,
+        useFhir: true,
+      });
+      acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
+      const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
+      return paginateFhirResources(api, nextUrl, acc);
+    }
+    const fhirResources = await paginateFhirResources(this, resourceTypeUrl);
+    const invalidEntry = fhirResources.find(r => r.resourceType !== resourceType);
+    if (invalidEntry) {
+      throw new BadRequestError("Invalid bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: invalidEntry.resourceType,
+      });
+    }
+    const bundle = createBundleFromResourceList(fhirResources);
+    await this.updateCachedBundle({
+      cxId,
+      metriportPatientId,
+      canvasPatientId,
+      bundleType: BundleType.EHR,
+      bundle,
+      resourceType,
+    });
+    return bundle;
+  }
+
+  async getResourceDiffBundlePreSignedUrlByResourceType({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    resourceType,
+    direction,
+    jobId,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    canvasPatientId: string;
+    resourceType: SupportedCanvasDiffResource;
+    direction: ResourceDiffDirection;
+    jobId: string;
+  }): Promise<string | undefined> {
+    return this.getBundlePreSignedUrl({
+      cxId,
+      metriportPatientId,
+      canvasPatientId,
+      bundleType:
+        direction === ResourceDiffDirection.METRIPORT_ONLY
+          ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+          : BundleType.RESOURCE_DIFF_EHR_ONLY,
+      resourceType,
+      jobId,
+    });
   }
 
   async getAppointments({
@@ -426,6 +570,70 @@ class CanvasApi {
       schema,
       additionalInfo,
       debug,
+    });
+  }
+
+  private async getBundlePreSignedUrl({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    bundleType,
+    resourceType,
+    jobId,
+  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
+    canvasPatientId: string;
+  }): Promise<string | undefined> {
+    const bundlePreSignedUrl = await fetchBundlePreSignedUrl({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      bundleType,
+      resourceType,
+      jobId,
+    });
+    return bundlePreSignedUrl;
+  }
+
+  private async getCachedBundle({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    bundleType,
+    resourceType,
+  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
+    canvasPatientId: string;
+  }): Promise<Bundle | undefined> {
+    const bundleWithLastModified = await fetchBundleUsingTtl({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      bundleType,
+      resourceType,
+    });
+    if (!bundleWithLastModified) return undefined;
+    return bundleWithLastModified.bundle;
+  }
+
+  private async updateCachedBundle({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    bundleType,
+    bundle,
+    resourceType,
+  }: Omit<CreateOrReplaceBundleParams, "ehr" | "ehrPatientId"> & {
+    canvasPatientId: string;
+  }): Promise<void> {
+    return await createOrReplaceBundle({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      bundleType,
+      bundle,
+      resourceType,
     });
   }
 

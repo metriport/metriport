@@ -111,6 +111,7 @@
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@faker-js/faker": "^8.0.2",
     "@langchain/core": "0.3.19",
+    "@medplum/core": "^3.2.33",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
@@ -148,7 +149,6 @@
     "zod-to-json-schema": "3.22.5"
   },
   "devDependencies": {
-    "@medplum/core": "^3.2.33",
     "@medplum/fhirtypes": "^2.2.10",
     "@tsconfig/recommended": "^1.0.2",
     "@types/formidable": "^3.4.5",

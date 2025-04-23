@@ -4,15 +4,12 @@ dotenv.config();
 // keep that ^ on top
 import { Hl7Message } from "@medplum/core";
 import { convertHl7v2MessageToFhir } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/index";
-import {
-  getMessageUniqueIdentifier,
-  getOrCreateMessageDatetime,
-} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import { getOrCreateMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { getFileNames } from "@metriport/core/util/fs";
 import { errorToString } from "@metriport/shared";
 import fs from "fs";
 import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
-import { getFileNames } from "@metriport/core/util/fs";
 
 /**
  * Converts HL7v2 ADT messages to FHIR Bundle and saves them to a file.
@@ -59,15 +56,13 @@ async function convertAdtToFhir() {
     chunks.forEach((msg, index) => {
       const hl7Message = Hl7Message.parse(msg);
       const timestamp = getOrCreateMessageDatetime(hl7Message);
-      const messageId = getMessageUniqueIdentifier(hl7Message);
 
       try {
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
         const bundle = convertHl7v2MessageToFhir({
-          hl7Message,
+          message: hl7Message,
           cxId,
           patientId,
-          messageId,
           timestampString: timestamp,
         });
 

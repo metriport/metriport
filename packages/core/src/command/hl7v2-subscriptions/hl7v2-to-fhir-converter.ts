@@ -69,10 +69,9 @@ export async function convertHl7MessageToFhirAndUpload({
   const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
 
   const convertedBundle = convertHl7v2MessageToFhir({
-    hl7Message,
+    message: hl7Message,
     cxId,
     patientId,
-    messageId,
     timestampString: messageReceivedTimestamp,
   });
 
@@ -103,8 +102,9 @@ export async function convertHl7MessageToFhirAndUpload({
     patientId,
     timestamp: messageReceivedTimestamp,
     messageId,
-    messageType: msgType.messageType,
-    messageCode: msgType.triggerEvent,
+    messageCode: msgType.messageCode,
+    triggerEvent: msgType.triggerEvent,
+    extension: "hl7",
   });
 
   await storeInS3WithRetries({

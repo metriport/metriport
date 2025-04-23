@@ -1,12 +1,12 @@
 import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
 import { EhrSyncPatientLocal } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-local";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { MetriportError } from "@metriport/shared";
+import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { parseSyncPatient } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
-import * as Sentry from "@sentry/serverless";
 import { getSingleMessageOrFail } from "./shared/sqs";
 
 // Keep this as early on the file as possible
@@ -19,35 +19,26 @@ const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
-  try {
-    const startedAt = new Date().getTime();
-    const message = getSingleMessageOrFail(event.Records, lambdaName);
-    if (!message) return;
+  capture.setExtra({ event, context: lambdaName });
 
-    console.log(`Running with unparsed body: ${message.body}`);
-    const parsedBody = parseBody(message.body);
-    const { ehr, cxId, practiceId, patientId } = parsedBody;
+  const startedAt = new Date().getTime();
+  const message = getSingleMessageOrFail(event.Records, lambdaName);
+  if (!message) return;
 
-    const log = prefixedLog(
-      `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`
-    );
-    log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
+  console.log(`Running with unparsed body: ${message.body}`);
+  const parsedBody = parseBody(message.body);
+  const { ehr, cxId, practiceId, patientId } = parsedBody;
 
-    const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
-    await ehrSyncPatientHandler.processSyncPatient(parsedBody);
+  const log = prefixedLog(
+    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`
+  );
+  log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-    const finishedAt = new Date().getTime();
-    log(`Done local duration: ${finishedAt - startedAt}ms`);
-  } catch (error) {
-    const msg = "Error processing event on " + lambdaName;
-    console.log(`${msg}: ${errorToString(error)}`);
-    capture.setExtra({
-      event,
-      context: lambdaName,
-      error,
-    });
-    throw new MetriportError(msg, error);
-  }
+  const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
+  await ehrSyncPatientHandler.processSyncPatient(parsedBody);
+
+  const finishedAt = new Date().getTime();
+  log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
 function parseBody(body?: unknown): ProcessSyncPatientRequest {
