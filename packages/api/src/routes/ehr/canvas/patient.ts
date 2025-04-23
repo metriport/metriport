@@ -66,7 +66,7 @@ router.post(
 );
 
 /**
- * POST /ehr/canvas/patient/:id/resource-diff-bundle
+ * POST /ehr/canvas/patient/:id/resource/diff
  *
  * Starts the resource diff job to generate the Metriport only bundle, or Canvas only bundle.
  * The job is started asynchronously.
@@ -76,7 +76,7 @@ router.post(
  * @returns The job ID of the resource diff job
  */
 router.post(
-  "/:id/resource-diff-bundle",
+  "/:id/resource/diff",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
@@ -100,7 +100,7 @@ router.post(
 );
 
 /**
- * GET /ehr/canvas/patient/:id/resource-diff-bundle/latest
+ * GET /ehr/canvas/patient/:id/resource/diff/latest
  *
  * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of Canvas Patient.
@@ -109,7 +109,7 @@ router.post(
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
-  "/:id/resource-diff-bundle/latest",
+  "/:id/resource/diff/latest",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
@@ -133,7 +133,7 @@ router.get(
 );
 
 /**
- * GET /ehr/canvas/patient/:id/resource-diff-bundle/:jobId
+ * GET /ehr/canvas/patient/:id/resource/diff/:jobId
  *
  * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of Canvas Patient.
@@ -143,7 +143,7 @@ router.get(
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
-  "/:id/resource-diff-bundle/:jobId",
+  "/:id/resource/diff/:jobId",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {

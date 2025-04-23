@@ -23,7 +23,7 @@ export async function setPatientJobEntryStatus({
   const { log, debug } = out(`Ehr setPatientJobEntryStatus - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId, entryStatus });
-  const updateJobUrl = `/internal/job/patient/set-entry-status/${jobId}?${queryParams.toString()}`;
+  const updateJobUrl = `/internal/patient/job/${jobId}/set-entry-status?${queryParams.toString()}`;
   try {
     const response = await api.post(updateJobUrl);
     if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);

@@ -44,7 +44,6 @@ import ehr from "./ehr";
 import hieRoutes from "./hie";
 import carequalityRoutes from "./hie/carequality";
 import commonwellRoutes from "./hie/commonwell";
-import jobRoutes from "./job";
 import jwtToken from "./jwt-token";
 import docsRoutes from "./medical/docs";
 import facilityRoutes from "./medical/facility";
@@ -53,6 +52,7 @@ import feedbackRoutes from "./medical/feedback";
 import mpiRoutes from "./medical/mpi";
 import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
+
 const router = Router();
 
 router.use("/feature-flags", ffsRoutes);
@@ -68,7 +68,6 @@ router.use("/hie", hieRoutes);
 router.use("/feedback", feedbackRoutes);
 router.use("/token", jwtToken);
 router.use("/ehr", ehr);
-router.use("/job", jobRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access

@@ -12,7 +12,7 @@ import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";
 const router = Router();
 
 /**
- * POST /internal/job/patient/initialize/:jobId
+ * POST /internal/patient/job/:jobId/initialize
  *
  * Initializes the job.
  * @param req.query.cxId The CX ID.
@@ -20,7 +20,7 @@ const router = Router();
  * @returns 200 OK
  */
 router.post(
-  "/initialize/:jobId",
+  "/:jobId/initialize",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -31,7 +31,7 @@ router.post(
 );
 
 /**
- * POST /internal/job/patient/update-total/:jobId
+ * POST /internal/patient/job/:jobId/update-total
  *
  * Updates the total of the job.
  * @param req.query.cxId The CX ID.
@@ -40,7 +40,7 @@ router.post(
  * @returns 200 OK
  */
 router.post(
-  "/update-total/:jobId",
+  "/:jobId/update-total",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -59,7 +59,7 @@ router.post(
 );
 
 /**
- * POST /internal/job/patient/set-entry-status/:jobId
+ * POST /internal/patient/job/:jobId/set-entry-status
  *
  * Sets the status of a patient job entry.
  * @param req.query.cxId The CX ID.
@@ -68,7 +68,7 @@ router.post(
  * @returns 200 OK
  */
 router.post(
-  "/set-entry-status/:jobId",
+  "/:jobId/set-entry-status",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

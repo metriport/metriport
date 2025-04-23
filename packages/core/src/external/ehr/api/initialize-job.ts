@@ -17,7 +17,7 @@ export async function initializeJob({ jobId, cxId }: InitializeJobParams): Promi
   const { log, debug } = out(`Ehr initializeJob - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
-  const initializeJobUrl = `/internal/job/patient/initialize/${jobId}?${queryParams.toString()}`;
+  const initializeJobUrl = `/internal/patient/job/${jobId}/initialize?${queryParams.toString()}`;
   try {
     const response = await api.post(initializeJobUrl);
     if (!response.data) throw new Error(`No body returned from ${initializeJobUrl}`);
