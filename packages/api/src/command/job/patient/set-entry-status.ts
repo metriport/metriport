@@ -2,10 +2,10 @@ import { MetriportError } from "@metriport/shared";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
 import { PatientJobModel, patientJobRawColumnNames } from "../../../models/patient-job";
 import { UpdateJobCountParams, UpdateJobCountResponse } from "../shared";
-import { finishPatientJob } from "./finish";
+import { completePatientJob } from "./complete";
 
 /**
- * Updates the counts on the job.
+ * Sets the status of a patient job entry.
  *
  * It's critical that this updates the successful and failed counters in a concurrent-safe way.
  *
@@ -13,15 +13,15 @@ import { finishPatientJob } from "./finish";
  * so we need a way to update the totals without causing race conditions.
  *
  * Based on the entry status, this will increment the successful or failed counter then call
- * finishPatientJob if the job is completed.
+ * completePatientJob if the job is completed.
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
  * @param entryStatus - The status of the job entry.
- * @param onCompleted - The callback to call when the job is completed via finishPatientJob.
+ * @param onCompleted - The callback to call when the job is completed via completePatientJob.
  * @returns the updated job.
  */
-export async function updatePatientJobCount({
+export async function setPatientJobEntryStatus({
   jobId,
   cxId,
   entryStatus,
@@ -51,7 +51,7 @@ export async function updatePatientJobCount({
   };
   const { successful, failed, total, status } = updatedPatientJob;
   if (status !== "completed" && successful + failed >= total) {
-    await finishPatientJob({
+    await completePatientJob({
       jobId,
       cxId,
       onCompleted,

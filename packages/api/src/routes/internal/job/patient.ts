@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { initializePatientJob } from "../../../command/job/patient/initialize";
-import { updatePatientJobCount } from "../../../command/job/patient/update-count";
+import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
 import { updatePatientJobTotal } from "../../../command/job/patient/update-total";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
@@ -59,16 +59,16 @@ router.post(
 );
 
 /**
- * POST /internal/job/patient/update-count/:jobId
+ * POST /internal/job/patient/set-entry-status/:jobId
  *
- * Updates the count of the job.
+ * Sets the status of a patient job entry.
  * @param req.query.cxId The CX ID.
  * @param req.params.jobId The job ID.
  * @param req.query.entryStatus The status of the entry.
  * @returns 200 OK
  */
 router.post(
-  "/update-count/:jobId",
+  "/set-entry-status/:jobId",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -77,7 +77,7 @@ router.post(
     if (!isValidJobEntryStatus(entryStatus)) {
       throw new BadRequestError("Status must a valid job entry status");
     }
-    await updatePatientJobCount({
+    await setPatientJobEntryStatus({
       jobId,
       cxId,
       entryStatus,

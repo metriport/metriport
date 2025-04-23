@@ -5,7 +5,7 @@ import { FinishJobParams } from "../shared";
 import { getPatientJobModelOrFail } from "./get";
 
 /**
- * Finishes a patient job.
+ * Completes a patient job.
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
@@ -16,7 +16,7 @@ import { getPatientJobModelOrFail } from "./get";
  * @throws BadRequestError if the completed status is not valid based on the current state.
  * @throws NotFoundError if the job doesn't exist.
  */
-export async function finishPatientJob({
+export async function completePatientJob({
   jobId,
   cxId,
   forceStatusUpdate = false,
@@ -30,7 +30,7 @@ export async function finishPatientJob({
     ? "completed"
     : validateNewJobStatus(currentStatus, "completed");
   const justTurnedCompleted = newStatus === "completed" && currentStatus !== "completed";
-
+  // WARNING: DO NOT UPDATE THE COUNTS HERE TO AVOID RACE CONDITIONS.
   const fieldsToUpdate: Partial<Pick<PatientJob, "status" | "finishedAt">> = {
     status: newStatus,
   };

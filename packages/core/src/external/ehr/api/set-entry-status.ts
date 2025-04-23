@@ -4,40 +4,40 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { ApiBaseParams } from "./api-shared";
 
-export type UpdateJobCountParams = Pick<ApiBaseParams, "cxId"> & {
+export type SetPatientJobEntryStatusParams = Pick<ApiBaseParams, "cxId"> & {
   jobId: string;
   entryStatus: JobEntryStatus;
 };
 
 /**
- * Sends a request to the API to update the job count.
+ * Sends a request to the API to set the status of a patient job entry.
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
  * @param entryStatus - The status of the job entry.
  */
-export async function updateJobCount({
+export async function setPatientJobEntryStatus({
   jobId,
   cxId,
   entryStatus,
-}: UpdateJobCountParams): Promise<void> {
-  const { log, debug } = out(`Ehr updateJobCount - jobId ${jobId} cxId ${cxId}`);
+}: SetPatientJobEntryStatusParams): Promise<void> {
+  const { log, debug } = out(`Ehr setPatientJobEntryStatus - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId, entryStatus });
-  const updateJobUrl = `/internal/job/patient/update-count/${jobId}?${queryParams.toString()}`;
+  const updateJobUrl = `/internal/job/patient/set-entry-status/${jobId}?${queryParams.toString()}`;
   try {
     const response = await api.post(updateJobUrl);
     if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);
     debug(`${updateJobUrl} resp: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {
-    const msg = "Failure while updating job count @ Api";
+    const msg = "Failure while setting patient job entry status @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
       jobId,
       entryStatus,
       url: updateJobUrl,
-      context: "ehr.updateJobCount",
+      context: "ehr.setPatientJobEntryStatus",
     });
   }
 }

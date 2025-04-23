@@ -1,4 +1,4 @@
-import { BadRequestError, PatientJob, isJobDone } from "@metriport/shared";
+import { BadRequestError, PatientJob } from "@metriport/shared";
 import { UpdateJobTotalParams } from "../shared";
 import { getPatientJobModelOrFail } from "./get";
 
@@ -19,12 +19,8 @@ export async function updatePatientJobTotal({
   total,
 }: UpdateJobTotalParams): Promise<PatientJob> {
   const jobModel = await getPatientJobModelOrFail({ jobId, cxId });
-  const job = jobModel.dataValues;
-  const currentTotal = job.total;
-  const currentStatus = job.status;
-  if (currentTotal > 0 && !isJobDone(currentStatus)) {
-    throw new BadRequestError("Job total already set and the job is running");
-  }
+  if (total < 1) throw new BadRequestError("Total must be greater than 0");
+  // WARNING: DO NOT UPDATE THE STATUS HERE TO AVOID RACE CONDITIONS.
   const fieldsToUpdate: Partial<Pick<PatientJob, "total" | "successful" | "failed">> = {
     total,
     successful: 0,

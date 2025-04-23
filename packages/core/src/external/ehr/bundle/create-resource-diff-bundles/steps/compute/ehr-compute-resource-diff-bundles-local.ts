@@ -3,7 +3,7 @@ import {
   fetchEhrBundle as fetchEhrBundleFromApi,
   FetchEhrBundleParams,
 } from "../../../../api/fetch-bundle";
-import { updateJobCount } from "../../../../api/update-job-count";
+import { setPatientJobEntryStatus } from "../../../../api/set-entry-status";
 import { BundleType } from "../../../bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
 import { resourceIsDuplicateOfExistingResources } from "../../utils";
@@ -56,9 +56,9 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
             jobId,
           });
         }
-        await updateJobCount({ cxId, jobId, entryStatus: "successful" });
+        await setPatientJobEntryStatus({ cxId, jobId, entryStatus: "successful" });
       } catch (error) {
-        await updateJobCount({ cxId, jobId, entryStatus: "failed" });
+        await setPatientJobEntryStatus({ cxId, jobId, entryStatus: "failed" });
         throw error;
       }
     }

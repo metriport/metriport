@@ -27,6 +27,7 @@ export async function initializePatientJob({
     ? "processing"
     : validateNewJobStatus(currentStatus, "processing");
   const justTurnedProcessing = newStatus === "processing" && currentStatus !== "processing";
+  // WARNING: DO NOT UPDATE THE COUNTS HERE TO AVOID RACE CONDITIONS.
   const fieldsToUpdate: Partial<Pick<PatientJob, "status" | "startedAt">> = {
     status: newStatus,
   };
