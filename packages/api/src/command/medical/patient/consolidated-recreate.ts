@@ -21,11 +21,13 @@ export async function recreateConsolidated({
   patient,
   conversionType,
   context,
+  requestId,
   isDq = false,
 }: {
   patient: Patient;
   conversionType?: ConsolidationConversionType;
   context?: string;
+  requestId?: string;
   isDq?: boolean;
 }): Promise<void> {
   const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
@@ -44,6 +46,7 @@ export async function recreateConsolidated({
         cxId: patient.cxId,
         patientId: patient.id,
         direction: ResourceDiffDirection.METRIPORT_ONLY,
+        requestId,
       }).catch(processAsyncError("Post-DQ createResourceDiffBundles"));
     }
   } catch (err) {
