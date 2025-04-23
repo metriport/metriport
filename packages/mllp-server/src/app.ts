@@ -48,13 +48,13 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         );
 
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
+        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
-        const msgType = getHl7MessageTypeOrFail(message);
         Sentry.setExtras({
           cxId,
           patientId,
-          messageType: msgType.messageType,
-          messageCode: msgType.triggerEvent,
+          messageCode,
+          triggerEvent,
         });
 
         await buildHl7NotificationWebhookSender().execute({
@@ -75,8 +75,9 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
               patientId,
               timestamp,
               messageId,
-              messageType: msgType.messageType,
-              messageCode: msgType.triggerEvent,
+              messageCode,
+              triggerEvent,
+              extension: "hl7",
             }),
             file: Buffer.from(asString(message)),
             contentType: "text/plain",

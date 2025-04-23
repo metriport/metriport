@@ -13,8 +13,9 @@ type Hl7FileKeyParams = {
   cxId: string;
   patientId: string;
   timestamp: string;
-  messageType: string;
   messageCode: string;
+  triggerEvent: string;
+  extension: "hl7" | "json";
 };
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
@@ -152,10 +153,11 @@ export function buildHl7MessageFileKey({
   patientId,
   messageId,
   timestamp,
-  messageType,
   messageCode,
+  triggerEvent,
+  extension,
 }: Hl7FileKeyParams) {
-  return `${cxId}/${patientId}/${timestamp}_${messageId}_${messageType}_${messageCode}.hl7`;
+  return `${cxId}/${patientId}/${timestamp}_${messageId}_${messageCode}_${triggerEvent}.${extension}`;
 }
 
 export function formatDateToHl7(date: Date): string {
