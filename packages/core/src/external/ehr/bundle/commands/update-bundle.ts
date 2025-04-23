@@ -23,7 +23,7 @@ export type UpdateBundleParams = Omit<BundleKeyBaseParams, "getLastModified"> & 
  * @param bundleType - The bundle type.
  * @param resource - The resource to add to the bundle.
  * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID of the bundle. If not provided, the latest tag will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  */
 export async function updateBundle({

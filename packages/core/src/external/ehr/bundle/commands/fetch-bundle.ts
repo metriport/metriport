@@ -23,7 +23,7 @@ const bundleUrlDuration = dayjs.duration(1, "hour");
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
  * @param getLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date or undefined if the bundle is not found.
@@ -84,7 +84,7 @@ export async function fetchBundle({
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
  * @param getLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date.
@@ -138,7 +138,7 @@ export async function fetchBundleOrFail({
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
+ * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The pre-signed URL of the bundle if found, otherwise undefined. Valid for 1 hour.
  */
