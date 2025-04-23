@@ -1151,8 +1151,8 @@ router.post(
  *
  * This is a webhook endpoint for sending HL7 FHIR bundles.
  *
+ * @param req.params.id The patient ID.
  * @param req.query.cxId - The customer ID.
- * @param req.query.patientId - The patient ID.
  * @param req.query.presignedUrl - S3 presigned URL to access the FHIR bundle.
  * @param req.query.triggerEvent - the type of HL7 notification.
  */
@@ -1160,10 +1160,10 @@ router.post(
   "/:id/notification",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    console.log("HIT THE ROUTE");
+    const patientId = getFromParamsOrFail("id", req);
     const queryParams = hl7NotificationSchema.parse(req.query);
 
-    await processHl7FhirBundleWebhook(queryParams);
+    await processHl7FhirBundleWebhook({ patientId, ...queryParams });
     return res.sendStatus(status.OK);
   })
 );

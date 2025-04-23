@@ -126,7 +126,6 @@ export async function convertHl7MessageToFhirAndUpload({
       await axios.post(internalHl7RouteUrl, undefined, {
         params: {
           cxId,
-          patientId,
           triggerEvent: msgType.triggerEvent,
           presignedUrl: bundlePresignedUrl,
         },

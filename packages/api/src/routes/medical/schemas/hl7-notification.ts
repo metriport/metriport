@@ -23,7 +23,6 @@ export const presignedUrlSchema = z
  * Schema for validating HL7 notification webhook request parameters.
  */
 export const hl7NotificationSchema = z.object({
-  patientId: z.string().uuid(),
   cxId: z.string().uuid(),
   presignedUrl: presignedUrlSchema,
   triggerEvent: z.string(),
