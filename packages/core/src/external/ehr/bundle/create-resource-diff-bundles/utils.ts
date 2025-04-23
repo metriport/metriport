@@ -163,7 +163,7 @@ function resourceIsDerived(resource: Resource): boolean {
 }
 
 function removeDerivedFromExtension(resource: Resource): FhirResource {
-  if (!("extension" in resource)) return resource as FhirResource;
+  if (!("extension" in resource) || !resource.extension) return resource as FhirResource;
   const newExtensions = resource.extension.filter(
     extension => extension.url !== artifactRelatedArtifactUrl
   );

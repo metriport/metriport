@@ -46,6 +46,7 @@ export async function createResourceDiffBundles({
       metriportPatientId,
       ehrPatientId: canvasPatientId,
     });
+    return;
   }
   throw new BadRequestError("Unsupported direction", undefined, {
     direction,
