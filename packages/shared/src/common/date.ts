@@ -2,6 +2,7 @@ import dayjs, { ConfigType } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { CustomErrorParams, z } from "zod";
 import { BadRequestError } from "../error/bad-request";
+import { DateTime } from "luxon";
 
 dayjs.extend(utc);
 
@@ -9,7 +10,8 @@ export const ISO_DATE = "YYYY-MM-DD";
 
 /** @see https://day.js.org/docs/en/parse/is-valid  */
 export function isValidISODate(date: string): boolean {
-  return buildDayjs(date, ISO_DATE, true).isValid();
+  const isoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return isoPattern.test(date) && DateTime.fromISO(date, { zone: "utc" }).isValid;
 }
 
 function isValidISODateOptional(date: string | undefined | null): boolean {

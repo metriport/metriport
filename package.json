@@ -82,6 +82,7 @@
     "typescript": "^4.9.5"
   },
   "dependencies": {
+    "@types/luxon": "^3.6.2",
     "sharp": "^0.33.5"
   }
 }
