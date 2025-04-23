@@ -25,7 +25,7 @@ export type CreateResourceDiffBundlesParams = {
  * @param canvasPracticeId - The canvas practice id of the patient.
  * @param canvasPatientId - The canvas patient id of the patient.
  * @param direction - The direction of the resource diff bundles to create.
- * @param requestIdParam - The request id of the job.
+ * @param requestId - The request id of the job. (optional, defaults to a new UUID)
  */
 export async function createResourceDiffBundlesJob({
   cxId,
