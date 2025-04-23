@@ -3,8 +3,6 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const patientJobTableName = "patient_job";
-const patientJobTableConstraintFields = ["cx_id", "patient_id", "job_type", "job_group_id"];
-const patientJobTableConstraintName = "cxid_patientid_jobtype_jobgroupid_constraint";
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -93,12 +91,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction, addVersion: true }
     );
-    await queryInterface.addConstraint(patientJobTableName, {
-      name: patientJobTableConstraintName,
-      fields: patientJobTableConstraintFields,
-      type: "unique",
-      transaction,
-    });
   });
 };
 
