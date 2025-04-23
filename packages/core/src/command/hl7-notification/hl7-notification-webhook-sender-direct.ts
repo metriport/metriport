@@ -8,7 +8,7 @@ import {
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { buildHl7MessageFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
-import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
+import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/index";
 import { out } from "../../util/log";
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {

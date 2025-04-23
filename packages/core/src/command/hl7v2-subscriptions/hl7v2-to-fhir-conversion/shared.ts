@@ -18,8 +18,6 @@ type Hl7FileKeyParams = {
   extension: "hl7" | "json";
 };
 
-const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
-
 // TODO: Ensure the HL7 coding system values are correct and up to date
 const hl7CodingSystemToUrlMap: Record<string, string> = {
   SCT: SNOMED_URL, // SNOMED CT
@@ -31,11 +29,11 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
 };
 
 function decompressUuid(shortId: string) {
-  return unpackUuid(crypto.unscramble(shortId));
+  return unpackUuid(new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).unscramble(shortId));
 }
 
 export function compressUuid(uuid: string) {
-  return crypto.scramble(packUuid(uuid));
+  return new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).scramble(packUuid(uuid));
 }
 
 export function unpackPidFieldOrFail(pid: string) {
