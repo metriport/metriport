@@ -36,7 +36,8 @@
     "uuidv7": "ts-node src/make-uuidv7",
     "cda-to-html": "ts-node --files src/customer-requests/cda-to-html.ts",
     "saml-server": "ts-node src/saml/saml-server",
-    "load-test": "artillery run ./src/terminology/load-test.yml"
+    "load-test": "artillery run ./src/terminology/load-test.yml",
+    "npi": "ts-node src/facility/make-npi"
   },
   "keywords": [],
   "author": "",

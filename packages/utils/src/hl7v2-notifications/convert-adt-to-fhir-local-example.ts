@@ -4,10 +4,7 @@ dotenv.config();
 // keep that ^ on top
 import { Hl7Message } from "@medplum/core";
 import { convertHl7v2MessageToFhir } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/index";
-import {
-  getMessageUniqueIdentifier,
-  getOrCreateMessageDatetime,
-} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import { getOrCreateMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { errorToString } from "@metriport/shared";
 import fs from "fs";
@@ -47,21 +44,19 @@ async function convertAdtToFhir() {
 
   const errors: unknown[] = [];
   chunks.forEach((msg, index) => {
-    const hl7Message = Hl7Message.parse(msg);
+    const message = Hl7Message.parse(msg);
 
     console.log(
       new Date().toISOString().split(".")[0].replace(/-/g, "").replace("T", "").replace(/:/g, "")
     );
-    const timestamp = getOrCreateMessageDatetime(hl7Message);
-    const messageId = getMessageUniqueIdentifier(hl7Message);
+    const timestamp = getOrCreateMessageDatetime(message);
 
     try {
-      const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
+      const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
       const bundle = convertHl7v2MessageToFhir({
-        hl7Message,
         cxId,
         patientId,
-        messageId,
+        message,
         timestampString: timestamp,
       });
 
