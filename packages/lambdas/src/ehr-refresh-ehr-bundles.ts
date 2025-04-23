@@ -1,10 +1,11 @@
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
-import { EhrSyncPatientLocal } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-local";
+import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles";
+import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles-local";
 import { MetriportError } from "@metriport/shared";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
+import { z } from "zod";
 import { capture } from "./shared/capture";
-import { parseSyncPatient } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -34,14 +35,21 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   );
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-  const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
-  await ehrSyncPatientHandler.processSyncPatient(parsedBody);
+  const ehrRefreshEhrBundlesHandler = new EhrRefreshEhrBundlesLocal(waitTimeInMillis);
+  await ehrRefreshEhrBundlesHandler.refreshEhrBundles(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
-function parseBody(body?: unknown): ProcessSyncPatientRequest {
+const ehrRefreshEhrBundlesSchema = z.object({
+  ehr: z.nativeEnum(EhrSources),
+  cxId: z.string(),
+  practiceId: z.string(),
+  patientId: z.string(),
+});
+
+function parseBody(body?: unknown): RefreshEhrBundlesRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -49,5 +57,5 @@ function parseBody(body?: unknown): ProcessSyncPatientRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return parseSyncPatient(bodyAsJson);
+  return ehrRefreshEhrBundlesSchema.parse(bodyAsJson);
 }
