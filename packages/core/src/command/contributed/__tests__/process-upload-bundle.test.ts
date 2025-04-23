@@ -154,12 +154,13 @@ describe("processBundleUploadTransaction", () => {
     it("should reject resources with invalid references", () => {
       const encId = faker.string.uuid();
       const nonExistentPtId = faker.string.uuid();
+      const patient = makePatient();
 
       const encounter = makeBareEncounter({
         id: encId,
         subject: { reference: `Patient/${nonExistentPtId}` },
       });
-      const incomingBundle = makeTestBundle([encounter]);
+      const incomingBundle = makeTestBundle([encounter, patient]);
 
       const { outcomesBundle } = processBundleUploadTransaction(incomingBundle);
 

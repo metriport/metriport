@@ -6,6 +6,7 @@ import {
   buildSuccessfulCreateResponse,
   buildSuccessfulUpdateResponse,
   buildTransactionResponseBundle,
+  isErrorOutcome,
 } from "../../external/fhir/bundle/transaction-response-bundle";
 import { buildEntryReference, getResourceReferences } from "../../external/fhir/shared";
 import { buildBundleEntry, parseReferenceString } from "../../external/fhir/shared/bundle";
@@ -103,7 +104,7 @@ export function processBundleUploadTransaction(
     throw new MetriportError("Patient resource not found in upload bundle");
   }
 
-  const errorOutcomes = transactionResponseBundle.entry?.filter(e => e.response?.status === "400");
+  const errorOutcomes = transactionResponseBundle.entry?.filter(isErrorOutcome);
   if (errorOutcomes && errorOutcomes.length > 0) {
     return {
       outcomesBundle: {

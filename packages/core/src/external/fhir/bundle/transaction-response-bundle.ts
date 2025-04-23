@@ -126,3 +126,11 @@ export function buildOperationOutcomeIssues(
     };
   });
 }
+
+export function isErrorOutcome(entry: BundleEntry<Resource>): boolean {
+  const status = entry.response?.status;
+  if (!status) return false;
+
+  const statusNumber = parseInt(status, 10);
+  return statusNumber >= 400 && statusNumber < 500;
+}

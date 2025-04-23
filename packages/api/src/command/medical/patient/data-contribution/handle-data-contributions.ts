@@ -7,12 +7,12 @@ import { processBundleUploadTransaction } from "@metriport/core/command/contribu
 import { processBundle } from "@metriport/core/domain/conversion/bundle-modifications/process";
 import { createContributionBundleFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
-import { buildTransactionResponseBundle } from "@metriport/core/external/fhir/bundle/transaction-response-bundle";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { BadRequestError, errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { processCcdRequest } from "../../../../external/cda/process-ccd-request";
@@ -41,7 +41,7 @@ export async function handleDataContribution({
   bundle: ValidBundle;
 }): Promise<UploadResponse> {
   if (!bundle.entry || bundle.entry.length === 0) {
-    return { status: 400, bundle: buildTransactionResponseBundle() };
+    throw new BadRequestError(`The bundle is missing entries`);
   }
 
   const { log } = out(`handleDataContribution - cx ${cxId}, pt ${patientId}`);
@@ -135,6 +135,6 @@ async function processCdaBundle(
       docId: requestId,
     })
       .then(() => log(`${Date.now() - cdaConversionStartedAt}ms to convert to CDA`))
-      .catch(err => log(`Failed to upload CDA documents: ${err}`));
+      .catch(err => log(`Failed to upload CDA documents: ${errorToString(err)}`));
   }
 }
