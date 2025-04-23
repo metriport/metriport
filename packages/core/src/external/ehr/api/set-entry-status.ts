@@ -28,7 +28,6 @@ export async function setPatientJobEntryStatus({
     const response = await api.post(updateJobUrl);
     if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);
     debug(`${updateJobUrl} resp: ${JSON.stringify(response.data)}`);
-    return response.data;
   } catch (error) {
     const msg = "Failure while setting patient job entry status @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

@@ -24,7 +24,6 @@ export async function updateJobTotal({ jobId, cxId, total }: UpdateJobTotalParam
     const response = await api.post(updateJobUrl);
     if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);
     debug(`${updateJobUrl} resp: ${JSON.stringify(response.data)}`);
-    return response.data;
   } catch (error) {
     const msg = "Failure while updating job total @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

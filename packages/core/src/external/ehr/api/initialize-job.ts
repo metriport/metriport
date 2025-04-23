@@ -22,7 +22,6 @@ export async function initializeJob({ jobId, cxId }: InitializeJobParams): Promi
     const response = await api.post(initializeJobUrl);
     if (!response.data) throw new Error(`No body returned from ${initializeJobUrl}`);
     debug(`${initializeJobUrl} resp: ${JSON.stringify(response.data)}`);
-    return response.data;
   } catch (error) {
     const msg = "Failure while initializing job @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
