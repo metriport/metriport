@@ -3,8 +3,8 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const workflowTableName = "patient_job";
-const workflowTableIdFields = ["cx_id", "patient_id", "job_type_id", "job_group_id", "request_id"];
-const workflowTableConstraintName = "cxid_patientid_jobtypeid_jobgroupid_requestid_constraint";
+const workflowTableIdFields = ["cx_id", "patient_id", "job_type", "job_group_id", "request_id"];
+const workflowTableConstraintName = "cxid_patientid_jobtype_jobgroupid_requestid_constraint";
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -27,9 +27,9 @@ export const up: Migration = async ({ context: queryInterface }) => {
           field: "patient_id",
           allowNull: false,
         },
-        jobTypeId: {
+        jobType: {
           type: DataTypes.STRING,
-          field: "job_type_id",
+          field: "job_type",
           allowNull: false,
         },
         jobGroupId: {

@@ -1,10 +1,11 @@
-import { PatientJobWithData } from "@metriport/shared";
+import {} from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
-  createPatientJobDataPayload,
+  createPatientJobPayload,
   getLatestPatientJob,
   getPatientJobByIdOrFail,
+  PatientJobPayload,
 } from "../../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
@@ -21,6 +22,8 @@ export type GetResourceDiffBundlesJobPayloadParams = {
   jobId: string;
   direction: ResourceDiffDirection;
 };
+
+type ResourceDiffBundlesJobPayload = PatientJobPayload<FetchResourceDiffBundlePreSignedUrlsResult>;
 
 /**
  * Get the resource diff bundles job data payload by jobId
@@ -39,9 +42,7 @@ export async function getResourceDiffBundlesJobPayload({
   canvasPatientId,
   jobId,
   direction,
-}: GetResourceDiffBundlesJobPayloadParams): Promise<
-  PatientJobWithData<FetchResourceDiffBundlePreSignedUrlsResult>
-> {
+}: GetResourceDiffBundlesJobPayloadParams): Promise<ResourceDiffBundlesJobPayload> {
   const job = await getPatientJobByIdOrFail({ cxId, jobId });
   if (job.status === "completed") {
     const data = await fetchCanvasResourceDiffBundlePreSignedUrls({
@@ -51,9 +52,9 @@ export async function getResourceDiffBundlesJobPayload({
       jobId,
       direction,
     });
-    return createPatientJobDataPayload({ job, data });
+    return createPatientJobPayload({ job, data });
   }
-  return createPatientJobDataPayload({ job });
+  return createPatientJobPayload({ job });
 }
 
 /**
@@ -71,7 +72,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
   canvasPatientId,
   direction,
 }: Omit<GetResourceDiffBundlesJobPayloadParams, "jobId">): Promise<
-  PatientJobWithData<FetchResourceDiffBundlePreSignedUrlsResult> | undefined
+  ResourceDiffBundlesJobPayload | undefined
 > {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
@@ -86,7 +87,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
   const job = await getLatestPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobTypeId: getCreateCanvasResourceDiffBundlesJobType(direction),
+    jobType: getCreateCanvasResourceDiffBundlesJobType(direction),
     jobGroupId: canvasPatientId,
   });
   if (!job) return undefined;
@@ -98,7 +99,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
       jobId: job.id,
       direction,
     });
-    return createPatientJobDataPayload({ job, data });
+    return createPatientJobPayload({ job, data });
   }
-  return createPatientJobDataPayload({ job });
+  return createPatientJobPayload({ job });
 }

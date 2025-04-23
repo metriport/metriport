@@ -1,4 +1,4 @@
-import { JobStatus, NotFoundError, PatientJob, PatientJobWithData } from "@metriport/shared";
+import { JobStatus, NotFoundError, PatientJob } from "@metriport/shared";
 import { Op } from "sequelize";
 import { PatientJobModel } from "../../../models/patient-job";
 import { GetJobByIdParams } from "../shared";
@@ -32,18 +32,27 @@ export async function getPatientJobModelOrFail(params: GetJobByIdParams): Promis
 
 export type ListPatientJobsParams = Pick<
   PatientJob,
-  "cxId" | "patientId" | "jobTypeId" | "jobGroupId"
+  "cxId" | "patientId" | "jobType" | "jobGroupId"
 > & {
   status?: JobStatus | JobStatus[];
 };
 
 export async function getLatestPatientJob({
+  cxId,
+  patientId,
+  jobType,
+  jobGroupId,
   status,
-  ...params
 }: ListPatientJobsParams): Promise<PatientJob | undefined> {
   const statuses = getStatusFromParams(status);
   const jobs = await PatientJobModel.findAll({
-    where: { ...params, ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}) },
+    where: {
+      cxId,
+      patientId,
+      jobType,
+      jobGroupId,
+      ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}),
+    },
     order: [["createdAt", "DESC"]],
   });
   const job = jobs[0];
@@ -57,12 +66,17 @@ function getStatusFromParams(status: JobStatus | JobStatus[] | undefined): JobSt
   return [status];
 }
 
-export function createPatientJobDataPayload<T>({
+export type PatientJobPayload<T> = {
+  metadata: PatientJob;
+  response: T | undefined;
+};
+
+export function createPatientJobPayload<T>({
   job,
   data,
 }: {
   job: PatientJob;
   data?: T;
-}): PatientJobWithData<T> {
+}): PatientJobPayload<T> {
   return { metadata: job, response: data };
 }

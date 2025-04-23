@@ -47,7 +47,7 @@ export async function createResourceDiffBundlesJob({
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobTypeId: getCreateCanvasResourceDiffBundlesJobType(direction),
+    jobType: getCreateCanvasResourceDiffBundlesJobType(direction),
     jobGroupId: canvasPatientId,
     requestId: requestId ?? uuidv7(),
     limitedToOneRunningJob: true,

@@ -5,31 +5,43 @@ import { getLatestPatientJob } from "./get";
 
 export type CreatePatientJobParams = Pick<
   PatientJob,
-  "cxId" | "patientId" | "jobTypeId" | "jobGroupId" | "requestId"
+  "cxId" | "patientId" | "jobType" | "jobGroupId" | "requestId"
 > & {
   limitedToOneRunningJob?: boolean;
 };
 
 export async function createPatientJob({
-  limitedToOneRunningJob = false,
+  cxId,
+  patientId,
+  jobType,
+  jobGroupId,
   requestId,
-  ...params
+  limitedToOneRunningJob = false,
 }: CreatePatientJobParams): Promise<PatientJob> {
   if (limitedToOneRunningJob) {
     const runningJob = await getLatestPatientJob({
-      ...params,
+      cxId,
+      patientId,
+      jobType,
+      jobGroupId,
       status: ["waiting", "processing"],
     });
     if (runningJob) {
       throw new BadRequestError("Only one job can be running at a time", undefined, {
-        ...params,
+        cxId,
+        patientId,
+        jobType,
+        jobGroupId,
         runningJobId: runningJob.id,
       });
     }
   }
   const created = await PatientJobModel.create({
     id: uuidv7(),
-    ...params,
+    cxId,
+    patientId,
+    jobType,
+    jobGroupId,
     requestId,
     status: jobInitialStatus,
     total: 0,
