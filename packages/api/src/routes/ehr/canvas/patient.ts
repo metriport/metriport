@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { isResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
