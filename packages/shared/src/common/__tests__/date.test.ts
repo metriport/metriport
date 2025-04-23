@@ -11,6 +11,23 @@ describe("shared date functions", () => {
       expect(isValidISODate("2024-12-18T03:50:00.006Z")).toEqual(true);
       expect(isValidISODate("2024-12-18T04:18:01.263Z")).toEqual(true);
     });
+
+    it("returns false for non-ISO format dates", () => {
+      expect(isValidISODate("12/25/2023")).toBe(false);
+      expect(isValidISODate("25-12-2023")).toBe(false);
+      expect(isValidISODate("2023.12.25")).toBe(false);
+      expect(isValidISODate("Dec 25, 2023")).toBe(false);
+    });
+
+    it("returns false for empty string", () => {
+      expect(isValidISODate("")).toBe(false);
+    });
+
+    it("returns false for invalid dates", () => {
+      expect(isValidISODate("2023-13-01")).toBe(false);
+      expect(isValidISODate("2023-12-32")).toBe(false);
+      expect(isValidISODate("not-a-date")).toBe(false);
+    });
   });
 
   describe("validateIsPastOrPresentSafe", () => {
@@ -46,11 +63,8 @@ describe("validateDateIsAfter1900", () => {
     expect(validateDateIsAfter1900("1900-01-01")).toBe(true);
   });
 
-  it("returns false for 0007-01-01", () => {
+  it("returns false for dates with years less than 1000", () => {
     expect(validateDateIsAfter1900("0007-01-01")).toBe(false);
-  });
-
-  it("returns false for 0014-01-01", () => {
     expect(validateDateIsAfter1900("0014-01-01")).toBe(false);
   });
 });

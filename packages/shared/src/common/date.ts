@@ -9,7 +9,8 @@ export const ISO_DATE = "YYYY-MM-DD";
 
 /** @see https://day.js.org/docs/en/parse/is-valid  */
 export function isValidISODate(date: string): boolean {
-  return buildDayjs(date, ISO_DATE, true).isValid();
+  const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/; // Matches dates like: 2023-12-18T03:50:00.123Z
+  return isoRegex.test(date) && dayjs.utc(date, ISO_DATE, true).isValid();
 }
 
 function isValidISODateOptional(date: string | undefined | null): boolean {
