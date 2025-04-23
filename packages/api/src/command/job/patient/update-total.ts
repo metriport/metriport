@@ -10,7 +10,7 @@ import { getPatientJobModelOrFail } from "./get";
  * @param total - The total number of patients in the job. The `successful` and `failed` counters
  *                are reset to 0.
  * @returns the updated job.
- * @throws BadRequestError if the job total is already set.
+ * @throws BadRequestError if the job total is already set and the job is running.
  * @throws NotFoundError if the job doesn't exist.
  */
 export async function updatePatientJobTotal({
@@ -27,6 +27,5 @@ export async function updatePatientJobTotal({
   }
   const fieldsToUpdate: Partial<PatientJob> = { total, successful: 0, failed: 0 };
   const updatedJob = await jobModel.update(fieldsToUpdate);
-
   return updatedJob.dataValues;
 }

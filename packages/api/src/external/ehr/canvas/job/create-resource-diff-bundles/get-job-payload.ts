@@ -7,7 +7,6 @@ import {
   PatientJobPayload,
 } from "../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import {
   fetchCanvasResourceDiffBundlePreSignedUrls,
   FetchResourceDiffBundlePreSignedUrlsResult,
@@ -25,15 +24,15 @@ export type GetResourceDiffBundlesJobPayloadParams = {
 type ResourceDiffBundlesJobPayload = PatientJobPayload<FetchResourceDiffBundlePreSignedUrlsResult>;
 
 /**
- * Get the resource diff bundles job data payload by jobId
+ * Get the resource diff bundles job payload by jobId
  *
  * @param cxId The CX ID of the patient
  * @param canvasPracticeId The Canvas practice ID
  * @param canvasPatientId The Canvas patient ID
  * @param jobId The job ID of the job
  * @param direction The direction of the resource diff bundle to fetch
- * @returns resource diff bundles job data payload if completed
- * @throws 404 if no job is found
+ * @returns resource diff bundles job payload if completed
+ * @throws NotFoundError if no job is found
  */
 export async function getResourceDiffBundlesJobPayload({
   cxId,
@@ -78,11 +77,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
     externalId: canvasPatientId,
     source: EhrSources.canvas,
   });
-  const metriportPatient = await getPatientOrFail({
-    cxId,
-    id: existingPatient.patientId,
-  });
-  const metriportPatientId = metriportPatient.id;
+  const metriportPatientId = existingPatient.patientId;
   const job = await getLatestPatientJob({
     cxId,
     patientId: metriportPatientId,

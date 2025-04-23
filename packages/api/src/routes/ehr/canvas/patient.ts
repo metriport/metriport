@@ -3,7 +3,6 @@ import { isResourceDiffDirection } from "@metriport/shared/interface/external/eh
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { processAsyncError } from "../../../errors";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import {
   getLatestResourceDiffBundlesJobPayload,
@@ -95,7 +94,7 @@ router.post(
       canvasPatientId,
       canvasPracticeId,
       direction,
-    }).catch(processAsyncError("Canvas createResourceDiffBundlesJob"));
+    });
     return res.status(httpStatus.OK).json(jobId);
   })
 );
@@ -103,11 +102,11 @@ router.post(
 /**
  * GET /ehr/canvas/patient/:id/resource-diff-bundle/latest
  *
- * Retrieves the latest resource diff job and Metriport only bundle if completed
+ * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @param req.query.direction The direction of the resource diff bundles to fetch.
- * @returns Resource diff job and Metriport only bundle if completed
+ * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
   "/:id/resource-diff-bundle/latest",
@@ -136,12 +135,12 @@ router.get(
 /**
  * GET /ehr/canvas/patient/:id/resource-diff-bundle/:jobId
  *
- * Retrieves the resource diff job and Metriport only bundle if completed
+ * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of Canvas Patient.
  * @param req.params.jobId The job ID of the job
  * @param req.query.practiceId The ID of Canvas Practice.
  * @param req.query.direction The direction of the resource diff bundles to fetch.
- * @returns Resource diff job and Metriport only bundle if completed
+ * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
   "/:id/resource-diff-bundle/:jobId",

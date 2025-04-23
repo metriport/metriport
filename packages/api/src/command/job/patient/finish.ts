@@ -11,7 +11,7 @@ import { getPatientJobModelOrFail } from "./get";
  * @param cxId - The customer ID.
  * @param forceStatusUpdate - Whether to force the status update (only to be used by internal
  *                            flows/endpoints).
- * @param onCompleted - The callback to call when the job is completed.
+ * @param onCompleted - The callback to call once the job is updated.
  * @returns the updated job.
  * @throws BadRequestError if the completed status is not valid based on the current state.
  * @throws NotFoundError if the job doesn't exist.
@@ -36,11 +36,9 @@ export async function finishPatientJob({
     fieldsToUpdate.finishedAt = buildDayjs().toDate();
   }
   const updatedJob = await jobModel.update(fieldsToUpdate);
-
   if (justTurnedCompleted && onCompleted) {
     log("onCompleted callback triggered");
     await onCompleted();
   }
-
   return updatedJob.dataValues;
 }

@@ -457,7 +457,7 @@ class CanvasApi {
     return bundle;
   }
 
-  async getMetriportOnlyBundlePreSignedUrlByResourceType({
+  async getResourceDiffBundlePreSignedUrlByResourceType({
     cxId,
     metriportPatientId,
     canvasPatientId,

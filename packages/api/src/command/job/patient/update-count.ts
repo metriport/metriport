@@ -12,7 +12,8 @@ import { finishPatientJob } from "./finish";
  * We can have multiple requests being processed at the same time, in different Node processes,
  * so we need a way to update the totals without causing race conditions.
  *
- * Based on the status, this will increment the successful or failed counter then call finishPatientJob.
+ * Based on the entry status, this will increment the successful or failed counter then call
+ * finishPatientJob if the job is completed.
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.

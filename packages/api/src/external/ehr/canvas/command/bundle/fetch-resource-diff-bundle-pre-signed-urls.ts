@@ -8,6 +8,7 @@ import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { createCanvasClient } from "../../shared";
+
 export type FetchResourceDiffBundleParams = {
   cxId: string;
   canvasPracticeId: string;
@@ -64,7 +65,7 @@ export async function fetchCanvasResourceDiffBundlePreSignedUrls({
 
   const canvasApi = api ?? (await createCanvasClient({ cxId, practiceId: canvasPracticeId }));
   for (const resourceType of resourceTypes) {
-    const preSignedUrl = await canvasApi.getMetriportOnlyBundlePreSignedUrlByResourceType({
+    const preSignedUrl = await canvasApi.getResourceDiffBundlePreSignedUrlByResourceType({
       cxId,
       metriportPatientId,
       canvasPatientId,

@@ -20,7 +20,7 @@ const router = Router();
  * @returns 200 OK
  */
 router.post(
-  "/initialize",
+  "/initialize/:jobId",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -40,7 +40,7 @@ router.post(
  * @returns 200 OK
  */
 router.post(
-  "/update-total",
+  "/update-total/:jobId",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -68,7 +68,7 @@ router.post(
  * @returns 200 OK
  */
 router.post(
-  "/update-count",
+  "/update-count/:jobId",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

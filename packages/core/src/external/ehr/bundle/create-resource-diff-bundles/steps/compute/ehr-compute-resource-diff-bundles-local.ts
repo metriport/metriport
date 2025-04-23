@@ -53,6 +53,7 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
             bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
             resource: newResource,
             resourceType,
+            jobId,
           });
         }
         await updateJobCount({ cxId, jobId, entryStatus: "successful" });
