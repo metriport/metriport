@@ -1,10 +1,6 @@
 import { BadRequestError, PatientJob, isJobDone } from "@metriport/shared";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import { UpdateJobTotalParams } from "../shared";
 import { getPatientJobModelOrFail } from "./get";
-
-dayjs.extend(duration);
 
 /**
  * Updates a patient job's total.

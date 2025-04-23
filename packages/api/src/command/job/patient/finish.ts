@@ -1,12 +1,8 @@
 import { out } from "@metriport/core/util/log";
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import { FinishJobParams } from "../shared";
 import { getPatientJobModelOrFail } from "./get";
-
-dayjs.extend(duration);
 
 /**
  * Finishes a patient job.

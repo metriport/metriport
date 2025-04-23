@@ -1,11 +1,7 @@
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import { InitializeJobParams } from "../shared";
 import { getPatientJobModelOrFail } from "./get";
-
-dayjs.extend(duration);
 
 /**
  * Updates a patient job's status and counters.
