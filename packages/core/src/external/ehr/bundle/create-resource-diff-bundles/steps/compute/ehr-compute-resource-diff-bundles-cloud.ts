@@ -1,16 +1,17 @@
 import { MetriportError, sleep } from "@metriport/shared";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { chunk } from "lodash";
 import { Config } from "../../../../../../util/config";
+import {
+  MAX_SQS_MESSAGE_SIZE,
+  SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
+  SQS_MESSAGE_BATCH_SIZE,
+} from "../../../../../../util/sqs";
 import { SQSClient } from "../../../../../aws/sqs";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
 } from "./ehr-compute-resource-diff-bundles";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
-
-export const MAX_SQS_MESSAGE_SIZE = 256000;
-const MAX_SQS_MESSAGE_BATCH_SIZE = 100;
-const MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP = 1000;
 
 export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDiffBundlesHandler {
   private readonly sqsClient: SQSClient;
@@ -33,7 +34,7 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
           ? undefined
           : p.existingResources,
     }));
-    const chunks = chunk(paramsWithoutExistingResources, MAX_SQS_MESSAGE_BATCH_SIZE);
+    const chunks = chunk(paramsWithoutExistingResources, SQS_MESSAGE_BATCH_SIZE);
     for (const chunk of chunks) {
       await Promise.all(
         chunk.map(params => {
@@ -45,7 +46,7 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
           });
         })
       );
-      await sleep(MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP);
+      await sleep(SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP);
     }
   }
 

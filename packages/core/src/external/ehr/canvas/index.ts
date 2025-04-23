@@ -28,8 +28,8 @@ import {
   fhirResourceBundleSchema,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
@@ -39,7 +39,7 @@ import {
   createOrReplaceBundle,
   CreateOrReplaceBundleParams,
 } from "../bundle/commands/create-or-replace-bundle";
-import { fetchBundle, FetchBundleParams } from "../bundle/commands/fetch-bundle";
+import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/commands/fetch-bundle";
 import {
   ApiConfig,
   fetchBundleUsingTtl,
@@ -457,20 +457,22 @@ class CanvasApi {
     return bundle;
   }
 
-  async getResourceDiffByResourceType({
+  async getResourceDiffBundlePreSignedUrlByResourceType({
     cxId,
     metriportPatientId,
     canvasPatientId,
     resourceType,
     direction,
+    jobId,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
     direction: ResourceDiffDirection;
-  }): Promise<Bundle | undefined> {
-    return this.getBundle({
+    jobId: string;
+  }): Promise<string | undefined> {
+    return this.getBundlePreSignedUrl({
       cxId,
       metriportPatientId,
       canvasPatientId,
@@ -479,6 +481,7 @@ class CanvasApi {
           ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
           : BundleType.RESOURCE_DIFF_EHR_ONLY,
       resourceType,
+      jobId,
     });
   }
 
@@ -570,25 +573,26 @@ class CanvasApi {
     });
   }
 
-  private async getBundle({
+  private async getBundlePreSignedUrl({
     cxId,
     metriportPatientId,
     canvasPatientId,
     bundleType,
     resourceType,
+    jobId,
   }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
     canvasPatientId: string;
-  }): Promise<Bundle | undefined> {
-    const bundleWithLastModified = await fetchBundle({
+  }): Promise<string | undefined> {
+    const bundlePreSignedUrl = await fetchBundlePreSignedUrl({
       ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
       ehrPatientId: canvasPatientId,
       bundleType,
       resourceType,
+      jobId,
     });
-    if (!bundleWithLastModified) return undefined;
-    return bundleWithLastModified.bundle;
+    return bundlePreSignedUrl;
   }
 
   private async getCachedBundle({

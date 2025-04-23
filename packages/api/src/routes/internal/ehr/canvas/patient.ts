@@ -18,6 +18,7 @@ const router = Router();
  * POST /internal/ehr/canvas/patient/appointments
  *
  * Fetches appointments in the time range and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments",
@@ -38,7 +39,7 @@ router.post(
  * @param req.query.patientId The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @param req.query.triggerDq Whether to trigger a DQ (optional).
- * @returns Metriport Patient if found.
+ * @returns 200 OK
  */
 router.post(
   "/",

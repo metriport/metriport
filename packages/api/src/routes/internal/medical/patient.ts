@@ -104,6 +104,7 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../../util";
+import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
 
 dayjs.extend(duration);
@@ -111,6 +112,7 @@ dayjs.extend(duration);
 const router = Router();
 
 router.use("/settings", patientSettingsRoutes);
+router.use("/job", patientJobRoutes);
 
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });

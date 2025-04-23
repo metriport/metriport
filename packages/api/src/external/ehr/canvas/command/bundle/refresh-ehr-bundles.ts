@@ -8,8 +8,8 @@ export type RefreshCanvasBundlesParams = {
 };
 
 /**
- * Refreshes the cached bundles of resources in Canvas
- * across all supported resource types.
+ * Refreshes the cached bundles of resources that are in Canvas by iterating over all supported
+ * resource types and fetching the Canvas data from Canvas for each resource type.
  *
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.

@@ -31,8 +31,11 @@ export async function fetchEhrBundle({
   patientId,
   resourceType,
   useCachedBundle,
-}: FetchEhrBundleParams): Promise<Bundle> {
-  const { log, debug } = out(`Ehr fetchEhrBundle - cxId ${cxId}`);
+}: FetchEhrBundleParams): Promise<{
+  bundle: Bundle;
+  resourceTypes: SupportedResourceType[];
+}> {
+  const { log, debug } = out(`Ehr fetchBundle - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
@@ -46,7 +49,10 @@ export async function fetchEhrBundle({
     const response = await api.get(fetchBundleUrl);
     if (!response.data) throw new Error(`No body returned from ${fetchBundleUrl}`);
     debug(`${fetchBundleUrl} resp: ${JSON.stringify(response.data)}`);
-    return response.data;
+    return {
+      bundle: response.data.bundle,
+      resourceTypes: response.data.resourceTypes,
+    };
   } catch (error) {
     const msg = "Failure while fetching EHR bundle @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

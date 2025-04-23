@@ -17,6 +17,7 @@ const athenaAsyncMsg = "AthenaHealth processPatientsFromAppointments";
  * POST /internal/ehr/athenahealth/patient/appointments-from-subscription
  *
  * Fetches appointment change events since last call and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments-from-subscription",
@@ -33,6 +34,7 @@ router.post(
  * POST /internal/ehr/athenahealth/patient/appointments-from-subscription-backfill
  *
  * Fetches appointment change events already processed and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments-from-subscription-backfill",
@@ -49,6 +51,7 @@ router.post(
  * POST /internal/ehr/athenahealth/patient/appointments
  *
  * Fetches appointments in the future and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments",
@@ -66,7 +69,7 @@ router.post(
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of AthenaHealth Patient.
- * @returns Metriport Patient if found.
+ * @returns 200 OK
  */
 router.post(
   "/",
