@@ -12,27 +12,28 @@ import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const waitTimeHl7NotificationWebhookSender = Duration.millis(50); // 1200 messages/min
-
-function settings(): { hl7NotificationWebhookSender: QueueAndLambdaSettings } {
+function settings() {
   const timeout = Duration.seconds(61);
-  const hl7NotificationWebhookSender: QueueAndLambdaSettings = {
+  const hl7NotificationWebhookSender: Omit<QueueAndLambdaSettings, "waitTime"> = {
     name: "Hl7NotificationWebhookSender",
     entry: "hl7-notification-webhook-sender",
     lambda: {
-      memory: 1024,
-      batchSize: 1,
+      memory: 1024 as const,
       timeout,
       reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.minutes(5),
       maxReceiveCount: 3,
+      maxMessageCountAlarmThreshold: 1_000,
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
-      maxMessageCountAlarmThreshold: 5_000,
     },
-    waitTime: waitTimeHl7NotificationWebhookSender,
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: 20,
+    },
   };
 
   return {
@@ -45,7 +46,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
-  outgoingHl7NotificationBucket: s3.Bucket;
+  outgoingHl7NotificationBucket: s3.IBucket;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -74,7 +75,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    outgoingHl7NotificationBucket: s3.Bucket;
+    outgoingHl7NotificationBucket: s3.IBucket;
   }): { lambda: Lambda } {
     const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, outgoingHl7NotificationBucket } =
       ownProps;
@@ -83,7 +84,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
-      waitTime,
+      eventSource: eventSourceSettings,
     } = settings().hl7NotificationWebhookSender;
 
     const queue = createQueue({
@@ -108,13 +109,13 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
 
     outgoingHl7NotificationBucket.grantWrite(lambda);
-    lambda.addEventSource(new SqsEventSource(queue));
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     new CfnOutput(this, "Hl7NotificationWebhookSenderQueueArn", {
       description: "HL7 Message Router Queue ARN",
