@@ -31,7 +31,7 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
   declare patientId: string;
   declare jobType: string;
   declare jobGroupId: string;
-  declare requestId: string;
+  declare requestId: string | undefined;
   declare status: JobStatus;
   declare statusReason: string | undefined;
   declare startedAt: Date | undefined;

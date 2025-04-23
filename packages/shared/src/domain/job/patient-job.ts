@@ -7,7 +7,7 @@ export type PatientJob = {
   patientId: string;
   jobType: string;
   jobGroupId: string;
-  requestId: string;
+  requestId?: string;
   status: JobStatus;
   statusReason: string | undefined;
   startedAt: Date | undefined;
