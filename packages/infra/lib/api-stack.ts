@@ -41,7 +41,6 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
-import { BucketsStack } from "./buckets-stack";
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
@@ -63,7 +62,6 @@ const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
-  bucketsStack: BucketsStack;
 }
 
 export class APIStack extends Stack {
@@ -113,6 +111,18 @@ export class APIStack extends Stack {
       service: ec2.InterfaceVpcEndpointAwsService.SQS,
       privateDnsEnabled: true,
     });
+
+    //-------------------------------------------
+    // Buckets
+    //-------------------------------------------
+    let outgoingHl7NotificationBucket: s3.IBucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+      outgoingHl7NotificationBucket = s3.Bucket.fromBucketName(
+        this,
+        "OutgoingHl7MessageBucket",
+        props.config.hl7Notification.outgoingMessageBucketName
+      );
+    }
 
     //-------------------------------------------
     // Security Setup
@@ -361,7 +371,6 @@ export class APIStack extends Stack {
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    const outgoingHl7NotificationBucket = props.bucketsStack.outgoingHl7NotificationBucket;
     if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,

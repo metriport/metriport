@@ -12,8 +12,6 @@ import { NetworkStack } from "./network";
 export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
-  hl7NotificationBucket: s3.Bucket;
-  incomingHl7NotificationBucket: s3.Bucket;
 }
 
 const NUM_AZS = 1;
@@ -21,6 +19,19 @@ const NUM_AZS = 1;
 export class Hl7NotificationStack extends MetriportCompositeStack {
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
     super(scope, id, props);
+
+    // Get references to existing buckets by name
+    const hl7NotificationBucket = s3.Bucket.fromBucketName(
+      this,
+      "Hl7NotificationBucket",
+      props.config.hl7Notification.deprecatedIncomingMessageBucketName
+    );
+
+    const incomingHl7NotificationBucket = s3.Bucket.fromBucketName(
+      this,
+      "IncomingHl7NotificationBucket",
+      props.config.hl7Notification.incomingMessageBucketName
+    );
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
@@ -56,8 +67,8 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       version: props.version,
       vpc,
       ecrRepo,
-      hl7NotificationBucket: props.hl7NotificationBucket,
-      incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
+      hl7NotificationBucket,
+      incomingHl7NotificationBucket,
       description: "HL7 Notification MLLP Server",
     });
 

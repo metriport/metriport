@@ -32,9 +32,7 @@ function settings(): {
     entry: "ehr-sync-patient",
     lambda: {
       memory: 1024,
-      batchSize: 1,
       timeout: syncPatientLambdaTimeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -42,6 +40,10 @@ function settings(): {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(syncPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
     },
     waitTime: waitTimePatientSync,
   };
@@ -51,9 +53,7 @@ function settings(): {
     entry: "elation-link-patient",
     lambda: {
       memory: 1024,
-      batchSize: 1,
       timeout: elationLinkPatientLambdaTimeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -61,6 +61,10 @@ function settings(): {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(elationLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
     },
     waitTime: waitTimeElationLinkPatient,
   };
@@ -70,9 +74,7 @@ function settings(): {
     entry: "ehr-start-resource-diff-bundles",
     lambda: {
       memory: 1024,
-      batchSize: 1,
       timeout: startResourceDiffBundlesLambdaTimeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -82,6 +84,10 @@ function settings(): {
         startResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
       ),
       createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
     },
     waitTime: waitTimeStartResourceDiff,
   };
@@ -93,10 +99,7 @@ function settings(): {
     entry: "ehr-compute-resource-diff-bundles",
     lambda: {
       memory: 1024,
-      batchSize: 1,
       timeout: ComputeResourceDiffBundlesLambdaTimeout,
-      reportBatchItemFailures: true,
-      maxConcurrency: 10,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -107,6 +110,11 @@ function settings(): {
       ),
       createRetryLambda: false,
     },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: 10,
+    },
     waitTime: waitTimeComputeResourceDiff,
   };
   const RefreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(5));
@@ -115,9 +123,7 @@ function settings(): {
     entry: "ehr-refresh-ehr-bundles",
     lambda: {
       memory: 1024,
-      batchSize: 1,
       timeout: RefreshEhrBundlesLambdaTimeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
@@ -125,6 +131,10 @@ function settings(): {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(RefreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
     },
     waitTime: waitTimeRefreshBundle,
   };
@@ -237,6 +247,7 @@ export class EhrNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
+      eventSource: eventSourceSettings,
       waitTime,
     } = settings().syncPatient;
 
@@ -267,12 +278,7 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(
-      new SqsEventSource(queue, {
-        batchSize: lambdaSettings.batchSize,
-        reportBatchItemFailures: lambdaSettings.reportBatchItemFailures,
-      })
-    );
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     return { lambda, queue };
   }
@@ -290,6 +296,7 @@ export class EhrNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
+      eventSource: eventSourceSettings,
       waitTime,
     } = settings().elationLinkPatient;
 
@@ -320,12 +327,7 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(
-      new SqsEventSource(queue, {
-        batchSize: lambdaSettings.batchSize,
-        reportBatchItemFailures: lambdaSettings.reportBatchItemFailures,
-      })
-    );
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     return { lambda, queue };
   }
@@ -345,6 +347,7 @@ export class EhrNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
+      eventSource: eventSourceSettings,
       waitTime,
     } = settings().startResourceDiffBundles;
 
@@ -368,6 +371,7 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
           ownProps.computeResourceDiffBundlesQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -377,12 +381,7 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(
-      new SqsEventSource(queue, {
-        batchSize: lambdaSettings.batchSize,
-        reportBatchItemFailures: lambdaSettings.reportBatchItemFailures,
-      })
-    );
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     ownProps.computeResourceDiffBundlesQueue.grantSendMessages(lambda);
     ownProps.ehrBundleBucket.grantWrite(lambda);
@@ -404,6 +403,7 @@ export class EhrNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
+      eventSource: eventSourceSettings,
       waitTime,
     } = settings().computeResourceDiffBundles;
 
@@ -435,12 +435,7 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(
-      new SqsEventSource(queue, {
-        batchSize: lambdaSettings.batchSize,
-        reportBatchItemFailures: lambdaSettings.reportBatchItemFailures,
-      })
-    );
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     ownProps.ehrBundleBucket.grantReadWrite(lambda);
 
@@ -460,6 +455,7 @@ export class EhrNestedStack extends NestedStack {
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
+      eventSource: eventSourceSettings,
       waitTime,
     } = settings().refreshEhrBundles;
 
@@ -490,12 +486,7 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(
-      new SqsEventSource(queue, {
-        batchSize: lambdaSettings.batchSize,
-        reportBatchItemFailures: lambdaSettings.reportBatchItemFailures,
-      })
-    );
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     return { lambda, queue };
   }
