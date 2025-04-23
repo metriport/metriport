@@ -6,7 +6,7 @@ import {
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
-import { fetchBundle as fetchBundleFromApi } from "../../../../api/fetch-bundle";
+import { fetchEhrBundle as fetchEhrBundleFromApi } from "../../../../api/fetch-bundle";
 import { BundleType, getSupportedResourcesByEhr } from "../../../bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../commands/create-or-replace-bundle";
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
@@ -61,7 +61,7 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
     });
     for (const resourceType of resourceTypes) {
       const [existingResourcesBundle] = await Promise.all([
-        fetchBundleFromApi({
+        fetchEhrBundleFromApi({
           ehr,
           cxId,
           practiceId,
@@ -89,7 +89,9 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
         return [{ ...param, existingResources }];
       }
     );
-    await this.next.computeResourceDiffBundles(computeResourceDiffParamsWithExistingResources);
+    await this.next.computeResourceDiffBundlesMetriportOnly(
+      computeResourceDiffParamsWithExistingResources
+    );
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
 

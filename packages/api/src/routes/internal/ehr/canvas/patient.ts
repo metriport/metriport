@@ -4,8 +4,8 @@ import { BadRequestError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/fetch-bundle";
-import { refreshCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/refresh-bundle";
+import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/bundle/fetch-ehr-bundle";
+import { refreshCanvasBundles } from "../../../../external/ehr/canvas/command/bundle/refresh-ehr-bundles";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
 import { requestLogger } from "../../../helpers/request-logger";
@@ -59,32 +59,32 @@ router.post(
 );
 
 /**
- * POST /internal/ehr/canvas/patient/refresh-bundle
+ * POST /internal/ehr/canvas/patient/refresh-ehr-bundles
  *
- * Refreshes the cached bundles of resources in Canvas for the canvas patient.
+ * Refreshes the cached bundles of resources in Canvas across all supported resource types.
  * @param req.query.cxId The cxId of the patient.
  * @param req.query.patientId The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @returns 200 OK
  */
 router.post(
-  "/refresh-bundle",
+  "/refresh-ehr-bundles",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const canvasPatientId = getFromQueryOrFail("patientId", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    refreshCanvasBundle({
+    refreshCanvasBundles({
       cxId,
       canvasPracticeId,
       canvasPatientId,
-    }).catch(processAsyncError("Canvas refreshCanvasBundle"));
+    }).catch(processAsyncError("Canvas refreshCanvasBundles"));
     return res.sendStatus(httpStatus.OK);
   })
 );
 
 /**
- * GET /internal/ehr/canvas/patient/bundle
+ * GET /internal/ehr/canvas/patient/ehr-bundle
  *
  * Fetches the Canvas bundle for the canvas patient by resource type
  * @param req.query.cxId The cxId of the patient.
@@ -95,7 +95,7 @@ router.post(
  * @returns Canvas bundle
  */
 router.get(
-  "/bundle",
+  "/ehr-bundle",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

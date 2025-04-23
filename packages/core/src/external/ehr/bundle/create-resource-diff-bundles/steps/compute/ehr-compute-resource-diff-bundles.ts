@@ -7,5 +7,8 @@ export type ComputeResourceDiffBundlesRequest = CreateResourceDiffBundlesBaseReq
 };
 
 export interface EhrComputeResourceDiffBundlesHandler {
-  computeResourceDiffBundles(request: ComputeResourceDiffBundlesRequest[]): Promise<void>;
+  computeResourceDiffBundlesMetriportOnly(
+    request: ComputeResourceDiffBundlesRequest[]
+  ): Promise<void>;
+  computeResourceDiffBundlesEhrOnly(request: ComputeResourceDiffBundlesRequest[]): Promise<void>;
 }

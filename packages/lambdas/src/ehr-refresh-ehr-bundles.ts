@@ -1,5 +1,5 @@
-import { RefreshBundleRequest } from "@metriport/core/external/ehr/bundle/refresh/ehr-refresh-resource-bundle";
-import { EhrRefreshBundleLocal } from "@metriport/core/external/ehr/bundle/refresh/ehr-refresh-resource-bundle-local";
+import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles";
+import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles-local";
 import { MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
@@ -35,21 +35,21 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   );
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-  const ehrRefreshBundleHandler = new EhrRefreshBundleLocal(waitTimeInMillis);
-  await ehrRefreshBundleHandler.refreshBundle(parsedBody);
+  const ehrRefreshEhrBundlesHandler = new EhrRefreshEhrBundlesLocal(waitTimeInMillis);
+  await ehrRefreshEhrBundlesHandler.refreshEhrBundles(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
-const ehrRefreshBundleSchema = z.object({
+const ehrRefreshEhrBundlesSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   cxId: z.string(),
   practiceId: z.string(),
   patientId: z.string(),
 });
 
-function parseBody(body?: unknown): RefreshBundleRequest {
+function parseBody(body?: unknown): RefreshEhrBundlesRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -57,5 +57,5 @@ function parseBody(body?: unknown): RefreshBundleRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return ehrRefreshBundleSchema.parse(bodyAsJson);
+  return ehrRefreshEhrBundlesSchema.parse(bodyAsJson);
 }

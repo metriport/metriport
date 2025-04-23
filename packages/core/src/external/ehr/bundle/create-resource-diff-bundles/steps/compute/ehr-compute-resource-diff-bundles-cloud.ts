@@ -22,7 +22,9 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
     this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
-  async computeResourceDiffBundles(params: ComputeResourceDiffBundlesRequest[]): Promise<void> {
+  async computeResourceDiffBundlesMetriportOnly(
+    params: ComputeResourceDiffBundlesRequest[]
+  ): Promise<void> {
     const paramsWithoutExistingResources = params.map(p => ({
       ...p,
       existingResources:

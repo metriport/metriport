@@ -15,6 +15,7 @@ export type FetchBundleParams = BundleKeyBaseParams;
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
+ * @param getLastModified - Whether to get the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date or undefined if the bundle is not found.
  */
@@ -25,6 +26,7 @@ export async function fetchBundle({
   ehrPatientId,
   bundleType,
   resourceType,
+  getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
   const { log } = out(
@@ -39,14 +41,14 @@ export async function fetchBundle({
     if (!fileExists) return undefined;
     const [file, fileInfo] = await Promise.all([
       s3Utils.getFileContentsAsString(s3BucketName, key),
-      s3Utils.getFileInfoFromS3(s3BucketName, key),
+      getLastModified ? s3Utils.getFileInfoFromS3(s3BucketName, key) : undefined,
     ]);
     return {
       bundle: JSON.parse(file),
-      lastModified: fileInfo.createdAt,
+      lastModified: fileInfo?.createdAt,
     };
   } catch (error) {
-    const msg = "Failure while fetching bundle @ Ehr";
+    const msg = "Failure while fetching bundle @ S3";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
@@ -55,6 +57,7 @@ export async function fetchBundle({
       ehrPatientId,
       bundleType,
       resourceType,
+      getLastModified,
       key,
       context: "ehr-resource-diff.fetchBundle",
     });
@@ -71,6 +74,7 @@ export async function fetchBundle({
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
+ * @param getLastModified - Whether to get the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date.
  * @throws NotFoundError if the bundle is not found.
@@ -82,6 +86,7 @@ export async function fetchBundleOrFail({
   ehrPatientId,
   bundleType,
   resourceType,
+  getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified> {
   const bundle = await fetchBundle({
@@ -91,6 +96,7 @@ export async function fetchBundleOrFail({
     ehrPatientId,
     bundleType,
     resourceType,
+    getLastModified,
     s3BucketName,
   });
   if (!bundle) {

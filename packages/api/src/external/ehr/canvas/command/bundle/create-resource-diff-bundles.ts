@@ -13,8 +13,8 @@ export type CreateResourceDiffBundlesParams = {
 };
 
 /**
- * Starts the resource diff workflow for the patient to produce
- * the bundle of resources in Metriport that are not in Canvas.
+ * Starts the resource diff workflow to produce the resource type bundles containing
+ * the resources in Metriport that are not in Canvas, or vice versa.
  *
  * @param cxId - The cxId of the patient.
  * @param canvasPracticeId - The canvas practice id of the patient.

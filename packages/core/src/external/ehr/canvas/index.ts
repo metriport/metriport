@@ -28,6 +28,7 @@ import {
   fhirResourceBundleSchema,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
@@ -467,14 +468,14 @@ class CanvasApi {
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
-    direction: "metriport-only" | "canvas-only";
+    direction: ResourceDiffDirection;
   }): Promise<Bundle | undefined> {
     return this.getBundle({
       cxId,
       metriportPatientId,
       canvasPatientId,
       bundleType:
-        direction === "metriport-only"
+        direction === ResourceDiffDirection.METRIPORT_ONLY
           ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
           : BundleType.RESOURCE_DIFF_EHR_ONLY,
       resourceType,

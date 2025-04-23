@@ -41,9 +41,11 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
+import { BucketsStack } from "./buckets-stack";
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
+import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
@@ -56,8 +58,6 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
-import { BucketsStack } from "./buckets-stack";
-import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
@@ -401,11 +401,11 @@ export class APIStack extends Stack {
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
       elationLinkPatientLambda,
-      startResourceDiffLambda: ehrStartResourceDiffLambda,
-      startResourceDiffQueue: ehrStartResourceDiffQueue,
-      computeResourceDiffLambda: ehrComputeResourceDiffLambda,
-      refreshBundleLambda: ehrRefreshBundleLambda,
-      refreshBundleQueue: ehrRefreshBundleQueue,
+      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
+      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
+      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
+      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
+      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
       ehrBundleBucket,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
@@ -526,8 +526,8 @@ export class APIStack extends Stack {
       patientImportBucket,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
-      ehrStartResourceDiffQueue,
-      ehrRefreshBundleQueue,
+      ehrStartResourceDiffBundlesQueue,
+      ehrRefreshEhrBundlesQueue,
       ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -615,9 +615,9 @@ export class APIStack extends Stack {
     patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrStartResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrComputeResourceDiffLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrRefreshBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrStartResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrComputeResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrRefreshEhrBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
@@ -628,7 +628,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    medicalDocumentsBucket.grantRead(ehrStartResourceDiffLambda);
+    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,

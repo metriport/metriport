@@ -1,5 +1,5 @@
 import { sleep } from "@metriport/shared";
-import { fetchBundle as fetchBundleFromApi } from "../../api/fetch-bundle";
+import { fetchEhrBundle as fetchEhrBundleFromApi } from "../../api/fetch-bundle";
 import { getSupportedResourcesByEhr } from "../bundle-shared";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
@@ -14,7 +14,7 @@ export class EhrRefreshEhrBundlesLocal implements EhrRefreshEhrBundlesHandler {
   }: RefreshEhrBundlesRequest): Promise<void> {
     const supportedResources = getSupportedResourcesByEhr(ehr);
     for (const resourceType of supportedResources) {
-      await fetchBundleFromApi({
+      await fetchEhrBundleFromApi({
         ehr,
         cxId,
         practiceId,

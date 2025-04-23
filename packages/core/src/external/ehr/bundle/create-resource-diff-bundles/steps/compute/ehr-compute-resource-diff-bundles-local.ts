@@ -1,5 +1,8 @@
 import { FhirResource, MetriportError, sleep } from "@metriport/shared";
-import { fetchBundle as fetchBundleFromApi, FetchBundleParams } from "../../../../api/fetch-bundle";
+import {
+  fetchEhrBundle as fetchEhrBundleFromApi,
+  FetchEhrBundleParams,
+} from "../../../../api/fetch-bundle";
 import { BundleType } from "../../../bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
 import { resourceIsDuplicateOfExistingResources } from "../../utils";
@@ -11,7 +14,9 @@ import {
 export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async computeResourceDiffBundles(payloads: ComputeResourceDiffBundlesRequest[]): Promise<void> {
+  async computeResourceDiffBundlesMetriportOnly(
+    payloads: ComputeResourceDiffBundlesRequest[]
+  ): Promise<void> {
     for (const payload of payloads) {
       const {
         ehr,
@@ -56,9 +61,20 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
   }
 }
 
-async function getExistingResourcesFromApi(
-  params: Omit<FetchBundleParams, "useCachedBundle">
-): Promise<FhirResource[]> {
-  const existingResourcesBundle = await fetchBundleFromApi({ ...params, useCachedBundle: true });
+async function getExistingResourcesFromApi({
+  ehr,
+  cxId,
+  practiceId,
+  patientId,
+  resourceType,
+}: Omit<FetchEhrBundleParams, "useCachedBundle">): Promise<FhirResource[]> {
+  const existingResourcesBundle = await fetchEhrBundleFromApi({
+    ehr,
+    cxId,
+    practiceId,
+    patientId,
+    resourceType,
+    useCachedBundle: true,
+  });
   return existingResourcesBundle.entry.map(entry => entry.resource);
 }

@@ -1,7 +1,6 @@
-import { ComputeResourceDiffRequest } from "@metriport/core/external/ehr/resource-diff/steps/compute/ehr-compute-resource-diff";
-import { EhrComputeResourceDiffLocal } from "@metriport/core/external/ehr/resource-diff/steps/compute/ehr-compute-resource-diff-local";
+import { StartResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles";
+import { EhrStartResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-local";
 import { MetriportError } from "@metriport/shared";
-import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -27,32 +26,31 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
 
+  console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, newResource } = parsedBody;
+  const { ehr, cxId, metriportPatientId, ehrPatientId } = parsedBody;
 
   const log = prefixedLog(
-    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceId ${newResource.id}`
+    `ehr ${ehr}, cxId ${cxId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}`
   );
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-  const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffLocal(waitTimeInMillis);
-  await ehrComputeResourceDiffHandler.computeResourceDiff([parsedBody]);
+  const ehrStartResourceDiffBundlesHandler = new EhrStartResourceDiffBundlesLocal(waitTimeInMillis);
+  await ehrStartResourceDiffBundlesHandler.startResourceDiffBundlesMetriportOnly(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
-const ehrComputeResourceDiffSchema = z.object({
+const ehrStartResourceDiffBundlesSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   cxId: z.string(),
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
-  existingResources: fhirResourceSchema.array().optional(),
-  newResource: fhirResourceSchema,
 });
 
-function parseBody(body?: unknown): ComputeResourceDiffRequest {
+function parseBody(body?: unknown): StartResourceDiffBundlesRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -60,5 +58,5 @@ function parseBody(body?: unknown): ComputeResourceDiffRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return ehrComputeResourceDiffSchema.parse(bodyAsJson);
+  return ehrStartResourceDiffBundlesSchema.parse(bodyAsJson);
 }

@@ -41,7 +41,7 @@ export async function syncPatient({
     if (!response.data) throw new Error(`No body returned from ${syncPatientUrl}`);
     debug(`${syncPatientUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {
-    const msg = "Failure while syncing patient @ Ehr";
+    const msg = "Failure while syncing patient @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,

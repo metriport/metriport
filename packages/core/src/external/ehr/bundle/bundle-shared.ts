@@ -64,5 +64,6 @@ export type BundleKeyBaseParams = {
   ehrPatientId: string;
   bundleType: BundleType;
   resourceType: SupportedResourceType;
+  getLastModified?: boolean;
   s3BucketName?: string;
 };
