@@ -30,7 +30,7 @@ export async function updateJobCount({
     debug(`${updateJobUrl} resp: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {
-    const msg = "Failure while updating job count @ Ehr";
+    const msg = "Failure while updating job count @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
