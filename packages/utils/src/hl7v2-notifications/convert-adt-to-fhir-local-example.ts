@@ -44,20 +44,19 @@ async function convertAdtToFhir() {
 
   const errors: unknown[] = [];
   chunks.forEach((msg, index) => {
-    const hl7Message = Hl7Message.parse(msg);
+    const message = Hl7Message.parse(msg);
 
     console.log(
       new Date().toISOString().split(".")[0].replace(/-/g, "").replace("T", "").replace(/:/g, "")
     );
-    const timestamp = getOrCreateMessageDatetime(hl7Message);
+    const timestamp = getOrCreateMessageDatetime(message);
 
     try {
-      const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
+      const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
       const bundle = convertHl7v2MessageToFhir({
-        hl7Message,
         cxId,
         patientId,
-        messageId,
+        message,
         timestampString: timestamp,
       });
 
