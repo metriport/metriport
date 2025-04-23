@@ -17,7 +17,6 @@ dayjs.extend(duration);
  * @param status - The new status of the job.
  * @param total - The total number of patients in the job. If provided, the `successful` and
  *                `failed` counters are reset.
- * @param failed - The number of failed patients in the job.
  * @param forceStatusUpdate - Whether to force the status update (only to be used by internal
  *                            flows/endpoints).
  * @param onCompleted - The callback to call when the job is completed.
@@ -30,7 +29,6 @@ export async function updatePatientJobTracking({
   cxId,
   status,
   total,
-  failed,
   forceStatusUpdate = false,
   onCompleted,
 }: UpdateJobTrackingParams): Promise<PatientJob> {
@@ -56,9 +54,6 @@ export async function updatePatientJobTracking({
     fieldsToUpdate.total = total;
     fieldsToUpdate.successful = 0;
     fieldsToUpdate.failed = 0;
-  }
-  if (failed != undefined) {
-    fieldsToUpdate.failed = failed;
   }
   if (justTurnedProcessing) {
     fieldsToUpdate.startedAt = buildDayjs().toDate();

@@ -26,7 +26,6 @@ export type UpdateJobTrackingParams = {
   cxId: string;
   status?: JobStatus;
   total?: number;
-  failed?: number;
   forceStatusUpdate?: boolean;
   onCompleted?: () => Promise<void>;
 };

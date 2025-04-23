@@ -4,11 +4,10 @@ import CanvasApi, {
   supportedCanvasDiffResources,
 } from "@metriport/core/external/ehr/canvas/index";
 import { BadRequestError } from "@metriport/shared";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { createCanvasClient } from "../../shared";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 export type FetchResourceDiffBundleParams = {
   cxId: string;
   canvasPracticeId: string;
@@ -52,11 +51,7 @@ export async function fetchCanvasResourceDiffBundlePreSignedUrls({
     externalId: canvasPatientId,
     source: EhrSources.canvas,
   });
-  const metriportPatient = await getPatientOrFail({
-    cxId,
-    id: existingPatient.patientId,
-  });
-  const metriportPatientId = metriportPatient.id;
+  const metriportPatientId = existingPatient.patientId;
   if (resourceTypeParam && !isSupportedCanvasDiffResource(resourceTypeParam)) {
     throw new BadRequestError("Resource type is not supported for bundle", undefined, {
       resourceType: resourceTypeParam,

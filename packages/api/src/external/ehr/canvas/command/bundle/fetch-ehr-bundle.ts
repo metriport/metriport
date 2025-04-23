@@ -7,7 +7,6 @@ import { BadRequestError } from "@metriport/shared";
 import { Bundle, getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { createCanvasClient } from "../../shared";
 
 export type FetchCanvasBundleParams = {
@@ -51,11 +50,7 @@ export async function fetchCanvasBundle({
     externalId: canvasPatientId,
     source: EhrSources.canvas,
   });
-  const metriportPatient = await getPatientOrFail({
-    cxId,
-    id: existingPatient.patientId,
-  });
-  const metriportPatientId = metriportPatient.id;
+  const metriportPatientId = existingPatient.patientId;
   if (resourceTypeParam && !isSupportedCanvasDiffResource(resourceTypeParam)) {
     throw new BadRequestError("Resource type is not supported for bundle", undefined, {
       resourceType: resourceTypeParam,

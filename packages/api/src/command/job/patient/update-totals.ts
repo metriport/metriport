@@ -21,9 +21,10 @@ import { updatePatientJobTracking } from "./update-tracking";
  * @returns the updated job.
  */
 export async function updatePatientJobTotals({
+  jobId,
+  cxId,
   entryStatus,
   onCompleted,
-  ...params
 }: UpdateJobTotalsParams): Promise<UpdateJobTotalsResponse> {
   const [[updatedRows]] = await PatientJobModel.increment(
     [
@@ -31,10 +32,7 @@ export async function updatePatientJobTotals({
       ...(entryStatus === "failed" ? ["failed" as const] : []),
     ],
     {
-      where: {
-        id: params.jobId,
-        cxId: params.cxId,
-      },
+      where: { id: jobId, cxId },
       // Sequelize types are a mismatch, had to force this
     } as IncrementDecrementOptionsWithBy<PatientJobModel>
   );
@@ -53,7 +51,8 @@ export async function updatePatientJobTotals({
   const { successful, failed, total, status } = updatedPatientJob;
   if (status !== "completed" && successful + failed >= total) {
     await updatePatientJobTracking({
-      ...params,
+      jobId,
+      cxId,
       status: "completed",
       onCompleted,
     });
