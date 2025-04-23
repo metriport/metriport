@@ -8,10 +8,6 @@ module.exports = {
     "footer-leading-blank": [2, "always"],
     "references-empty": [2, "never"],
   },
-  parserPreset: {
-    parserOpts: {
-      issuePrefixes: ["Part of ENG-", "Fixes ENG-"],
-    },
-  },
+  parserPreset: "./commitlint.parserPreset",
   ignores: [message => /^Bumps \[.+]\(.+\) from .+ to .+\.$/m.test(message)],
 };

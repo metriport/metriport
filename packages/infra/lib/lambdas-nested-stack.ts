@@ -19,8 +19,8 @@ import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
-import { isSandbox } from "./shared/util";
 import { createQueue } from "./shared/sqs";
+import { isSandbox } from "./shared/util";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -52,7 +52,6 @@ export class LambdasNestedStack extends NestedStack {
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambda: Lambda | undefined;
   readonly conversionResultNotifierLambda: lambda.Function;
-
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
 
