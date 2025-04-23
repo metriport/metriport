@@ -15,11 +15,7 @@ export class S3WriterCloud implements S3Writer {
   private readonly sqsClient: SQSClient;
 
   constructor(private readonly writeToS3QueueUrl: string, region?: string, sqsClient?: SQSClient) {
-    if (!sqsClient) {
-      this.sqsClient = new SQSClient({ region: region ?? Config.getAWSRegion() });
-    } else {
-      this.sqsClient = sqsClient;
-    }
+    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
   async writeToS3(params: WriteToS3Request): Promise<void> {
@@ -36,7 +32,10 @@ export class S3WriterCloud implements S3Writer {
     const chunks = chunk(params, MAX_SQS_MESSAGE_BATCH_SIZE);
     for (const chunk of chunks) {
       await Promise.all(
-        chunk.map(p => this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, JSON.stringify(p)))
+        chunk.map(params => {
+          const payload = JSON.stringify(params);
+          return this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, payload);
+        })
       );
       await sleep(MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP);
     }

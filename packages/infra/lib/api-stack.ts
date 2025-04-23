@@ -410,6 +410,12 @@ export class APIStack extends Stack {
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
       elationLinkPatientLambda,
+      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
+      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
+      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
+      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
+      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
+      ehrBundleBucket,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
       lambdaLayers,
@@ -529,6 +535,9 @@ export class APIStack extends Stack {
       patientImportBucket,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
+      ehrStartResourceDiffBundlesQueue,
+      ehrRefreshEhrBundlesQueue,
+      ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
@@ -615,6 +624,9 @@ export class APIStack extends Stack {
     patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrStartResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrComputeResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrRefreshEhrBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
@@ -625,6 +637,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,

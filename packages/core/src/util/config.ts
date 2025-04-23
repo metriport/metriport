@@ -169,11 +169,21 @@ export class Config {
   static getEhrSyncPatientQueueUrl(): string {
     return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
   }
-
   static getElationLinkPatientQueueUrl(): string {
     return getEnvVarOrFail("ELATION_LINK_PATIENT_QUEUE_URL");
   }
-
+  static getEhrStartResourceDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
+  static getEhrComputeResourceDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
+  static getEhrRefreshEhrBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_REFRESH_EHR_BUNDLES_QUEUE_URL");
+  }
+  static getEhrBundleBucketName(): string {
+    return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
+  }
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }
