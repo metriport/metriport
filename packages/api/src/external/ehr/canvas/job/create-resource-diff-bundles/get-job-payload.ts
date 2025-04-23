@@ -1,4 +1,3 @@
-import {} from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
@@ -6,14 +5,14 @@ import {
   getLatestPatientJob,
   getPatientJobByIdOrFail,
   PatientJobPayload,
-} from "../../../../../../command/job/patient/get";
-import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
-import { getCreateCanvasResourceDiffBundlesJobType } from "../../../shared";
+} from "../../../../../command/job/patient/get";
+import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
+import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import {
   fetchCanvasResourceDiffBundlePreSignedUrls,
   FetchResourceDiffBundlePreSignedUrlsResult,
-} from "../fetch-resource-diff-bundle-pre-signed-urls";
+} from "../../command/bundle/fetch-resource-diff-bundle-pre-signed-urls";
+import { getCreateCanvasResourceDiffBundlesJobType } from "../../shared";
 
 export type GetResourceDiffBundlesJobPayloadParams = {
   cxId: string;

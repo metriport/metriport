@@ -4,12 +4,12 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processAsyncError } from "../../../errors";
+import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
-} from "../../../external/ehr/canvas/command/bundle/create-resource-diff-bundles-job/get-job-payload";
-import { createResourceDiffBundlesJob } from "../../../external/ehr/canvas/command/bundle/create-resource-diff-bundles-job/start-job";
-import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
+} from "../../../external/ehr/canvas/job/create-resource-diff-bundles/get-job-payload";
+import { createResourceDiffBundlesJob } from "../../../external/ehr/canvas/job/create-resource-diff-bundles/start-job";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";

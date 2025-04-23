@@ -1,13 +1,13 @@
 import { buildEhrStartResourceDiffBundlesHandler } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-factory";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { BadRequestError } from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { BadRequestError } from "../../../../../../../../shared/dist";
-import { createPatientJob } from "../../../../../../command/job/patient/create";
-import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
-import { processAsyncError } from "../../../../../../errors";
-import { getCreateCanvasResourceDiffBundlesJobType } from "../../../shared";
+import { createPatientJob } from "../../../../../command/job/patient/create";
+import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
+import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
+import { getCreateCanvasResourceDiffBundlesJobType } from "../../shared";
 
 export type CreateResourceDiffBundlesParams = {
   cxId: string;
@@ -67,7 +67,7 @@ export async function createResourceDiffBundlesJob({
       .catch(processAsyncError("Canvas startResourceDiffBundlesMetriportOnly"));
     return jobId;
   }
-  throw new BadRequestError("Unsupported direction", undefined, {
+  throw new BadRequestError("Unsupported resource diff direction", undefined, {
     direction,
   });
 }
