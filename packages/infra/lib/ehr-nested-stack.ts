@@ -16,7 +16,7 @@ import { createQueue } from "./shared/sqs";
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeStartResourceDiff = Duration.seconds(10); // 6 patients/min
-const waitTimeComputeResourceDiff = Duration.millis(500); // 120 resources/min per patient
+const waitTimeComputeResourceDiff = Duration.millis(0); // No limit
 const waitTimeRefreshBundle = Duration.seconds(10); // 6 patients/min
 
 function settings(): {
@@ -78,7 +78,7 @@ function settings(): {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 5_000,
+      maxMessageCountAlarmThreshold: 1_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
         startResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
@@ -126,7 +126,7 @@ function settings(): {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 15_000,
+      maxMessageCountAlarmThreshold: 1_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
