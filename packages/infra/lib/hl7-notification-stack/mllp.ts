@@ -117,7 +117,7 @@ export class MllpStack extends cdk.NestedStack {
 
     const logGroup = new LogGroup(this, "MllpServerLogGroup", {
       logGroupName: "/aws/ecs/mllp-server",
-      retention: logs.RetentionDays.ONE_WEEK,
+      retention: logs.RetentionDays.ONE_YEAR,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 

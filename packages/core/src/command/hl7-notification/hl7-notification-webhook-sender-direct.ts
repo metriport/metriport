@@ -2,7 +2,6 @@ import { Hl7Message } from "@medplum/core";
 import axios from "axios";
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
-import { out } from "../../util/log";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
@@ -10,6 +9,7 @@ import {
 import { buildHl7MessageFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
+import { out } from "../../util/log";
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {
   private readonly context = "hl7-notification-webhook-sender";
@@ -46,14 +46,14 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       timestampString: messageReceivedTimestamp,
     });
 
-    const result = await this.s3Utils.uploadFile({
+    this.log(`${messageReceivedTimestamp} - cx: ${cxId} - pt: ${patientId} - Uploading file to S3`);
+
+    await this.s3Utils.uploadFile({
       bucket: this.bucketName,
       key: fileKey,
       file: Buffer.from(JSON.stringify(convertedMessage)),
       contentType: "application/json",
     });
-
-    this.log(`[${messageReceivedTimestamp}] S3 upload result: ${JSON.stringify(result)}`);
 
     const api = axios.create({ baseURL: Config.getApiUrl() });
     this.log(

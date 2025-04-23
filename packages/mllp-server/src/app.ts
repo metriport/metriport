@@ -14,13 +14,12 @@ import {
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { capture } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
 import { withErrorHandling } from "./utils";
-
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
@@ -50,7 +49,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
         const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
-        Sentry.setExtras({
+        capture.setExtra({
           cxId,
           patientId,
           messageCode,
@@ -67,25 +66,20 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         connection.send(message.buildAck());
 
         log("Init S3 upload");
-        s3Utils
-          .uploadFile({
-            bucket: bucketName,
-            key: buildHl7MessageFileKey({
-              cxId,
-              patientId,
-              timestamp,
-              messageId,
-              messageCode,
-              triggerEvent,
-              extension: "hl7",
-            }),
-            file: Buffer.from(asString(message)),
-            contentType: "text/plain",
-          })
-          .catch(e => {
-            logger.log(`S3 upload failed: ${e}`);
-            Sentry.captureException(e);
-          });
+        s3Utils.uploadFile({
+          bucket: bucketName,
+          key: buildHl7MessageFileKey({
+            cxId,
+            patientId,
+            timestamp,
+            messageId,
+            messageCode,
+            triggerEvent,
+            extension: "hl7",
+          }),
+          file: Buffer.from(asString(message)),
+          contentType: "text/plain",
+        });
       }, logger)
     );
 
@@ -94,7 +88,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       withErrorHandling(error => {
         if (error instanceof Error) {
           logger.log("Connection error:", error);
-          Sentry.captureException(error);
+          capture.error(error);
         } else {
           logger.log("Connection terminated by client");
         }
