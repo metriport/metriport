@@ -1,6 +1,5 @@
 import { buildEhrStartResourceDiffBundlesHandler } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -49,7 +48,7 @@ export async function createResourceDiffBundlesJob({
     patientId: metriportPatientId,
     jobType: getCreateCanvasResourceDiffBundlesJobType(direction),
     jobGroupId: canvasPatientId,
-    requestId: requestId ?? uuidv7(),
+    requestId,
     limitedToOneRunningJob: true,
   });
   const jobId = job.id;
