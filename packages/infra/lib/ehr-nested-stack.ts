@@ -96,6 +96,7 @@ function settings(): {
       batchSize: 1,
       timeout: ComputeResourceDiffBundlesLambdaTimeout,
       reportBatchItemFailures: true,
+      maxConcurrency: 10,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),

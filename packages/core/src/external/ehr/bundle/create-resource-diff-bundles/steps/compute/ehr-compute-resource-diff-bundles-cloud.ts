@@ -42,7 +42,7 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
           return this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
             fifo: true,
             messageDeduplicationId: createUuidFromText(payload),
-            messageGroupId: params.cxId,
+            messageGroupId: params.ehrPatientId,
           });
         })
       );
