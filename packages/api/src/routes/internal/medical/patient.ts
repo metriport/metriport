@@ -57,6 +57,7 @@ import {
   getPatientStates,
   getPatients,
 } from "../../../command/medical/patient/get-patient";
+import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
@@ -85,6 +86,7 @@ import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { dtoFromModel } from "../../medical/dtos/patientDTO";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
+import { hl7NotificationSchema } from "../../medical/schemas/hl7-notification";
 import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
 import { paginated } from "../../pagination";
@@ -1141,6 +1143,28 @@ router.post(
     log(`response ${JSON.stringify(response)}`);
 
     return res.status(status.OK).json(response);
+  })
+);
+
+/**
+ * POST /internal/patient/:id/notification/
+ *
+ * This is a webhook endpoint for sending HL7 FHIR bundles.
+ *
+ * @param req.query.cxId - The customer ID.
+ * @param req.query.patientId - The patient ID.
+ * @param req.query.presignedUrl - S3 presigned URL to access the FHIR bundle.
+ * @param req.query.triggerEvent - the type of HL7 notification.
+ */
+router.post(
+  "/:id/notification",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    console.log("HIT THE ROUTE");
+    const queryParams = hl7NotificationSchema.parse(req.query);
+
+    await processHl7FhirBundleWebhook(queryParams);
+    return res.sendStatus(status.OK);
   })
 );
 

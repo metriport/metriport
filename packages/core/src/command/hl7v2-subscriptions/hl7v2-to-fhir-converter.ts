@@ -12,7 +12,7 @@ import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_APP_MIME_TYPE } from "../../util/mime";
 import { convertHl7v2MessageToFhir } from "./hl7v2-to-fhir-conversion";
-import { Hl7MessageType, getHl7MessageTypeOrFail } from "./hl7v2-to-fhir-conversion/msh";
+import { getHl7MessageTypeOrFail } from "./hl7v2-to-fhir-conversion/msh";
 import {
   buildHl7MessageCombinedBundleFileKey,
   buildHl7MessageFhirBundleFileKey,
@@ -26,8 +26,8 @@ const region = Config.getAWSRegion();
 const createMessageTypes = ["A01"];
 const updateMessageTypes = ["A03"];
 
-const INTERNAL_HL7_ENDPOINT = `internal/hl7`;
-const INTERNAL_GET_PATIENT_ENDPOINT = "internal/patient";
+const INTERNAL_HL7_ENDPOINT = `notification`;
+const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
 type Hl7ToFhirLambdaProps = {
@@ -54,11 +54,12 @@ export async function convertHl7MessageToFhirAndUpload({
   bucketName,
 }: Hl7ToFhirLambdaProps): Promise<void> {
   const { log } = out(`Hl7 to FHIR Lambda - cx: ${cxId}, pt: ${patientId}`);
-  log(`Running message from ${messageReceivedTimestamp}`);
+  log(`Converting message from ${messageReceivedTimestamp}`);
+
   const hl7Message = Hl7Message.parse(message);
   const s3Client = getS3UtilsInstance();
-  const internalHl7RouteUrl = `${apiUrl}/${INTERNAL_HL7_ENDPOINT}`;
-  const internalGetPatientUrl = `${apiUrl}/${INTERNAL_GET_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
+  const internalHl7RouteUrl = `${apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
+  const internalGetPatientUrl = `${apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
 
   const msgType = getHl7MessageTypeOrFail(hl7Message);
   const shouldNotifyApi =
@@ -73,14 +74,14 @@ export async function convertHl7MessageToFhirAndUpload({
     timestampString: messageReceivedTimestamp,
   });
 
-  const newBundle = await saturateConvertedBundle({
+  const patient = await executeWithNetworkRetries(
+    async () => await axios.get(internalGetPatientUrl)
+  );
+  const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
+
+  const newBundle = saturateConvertedBundle({
     bundle: convertedBundle,
-    patientId,
-    cxId,
-    messageId,
-    messageReceivedTimestamp,
-    internalGetPatientUrl,
-    log,
+    fhirPatient,
   });
 
   const sharedUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
@@ -151,16 +152,10 @@ export async function convertHl7MessageToFhirAndUpload({
   });
 
   const bundlePresignedUrlPromise = shouldNotifyApi
-    ? getPresignedUrl({
-        s3Client,
+    ? await s3Client.getSignedUrl({
         bucketName,
         fileName: newBundleFileName,
-        cxId,
-        messageId,
-        timestamp: messageReceivedTimestamp,
-        messageType: msgType,
-        patientId,
-        log,
+        durationSeconds: SIGNED_URL_DURATION_SECONDS,
       })
     : Promise.resolve("");
 
@@ -178,6 +173,7 @@ export async function convertHl7MessageToFhirAndUpload({
             params: {
               cxId,
               patientId,
+              triggerEvent: msgType.triggerEvent,
               presignedUrl: bundlePresignedUrl,
             },
           })
@@ -192,45 +188,16 @@ export async function convertHl7MessageToFhirAndUpload({
   }
 }
 
-async function saturateConvertedBundle({
+function saturateConvertedBundle({
   bundle,
-  patientId,
-  cxId,
-  messageId,
-  messageReceivedTimestamp,
-  internalGetPatientUrl,
-  log,
+  fhirPatient,
 }: {
   bundle: Bundle<Resource>;
-  patientId: string;
-  cxId: string;
-  messageId: string;
-  messageReceivedTimestamp: string;
-  internalGetPatientUrl: string;
-  log: typeof console.log;
-}) {
-  try {
-    const patient = await executeWithNetworkRetries(
-      async () => await axios.get(internalGetPatientUrl)
-    );
-    const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
-    const fhirPatientEntry = buildBundleEntry(fhirPatient);
-    const combinedEntries = bundle.entry ? [fhirPatientEntry, ...bundle.entry] : [];
-    return buildBundle({ type: "collection", entries: combinedEntries });
-  } catch (error) {
-    const msg = "Error retrieving patient data on HL7-to-FHIR conversion";
-    log(`${msg}: ${errorToString(error)}`);
-    capture.message(msg, {
-      extra: {
-        patientId,
-        cxId,
-        messageId,
-        timestamp: messageReceivedTimestamp,
-      },
-    });
-
-    throw error;
-  }
+  fhirPatient: Resource;
+}): Bundle<Resource> {
+  const fhirPatientEntry = buildBundleEntry(fhirPatient);
+  const combinedEntries = bundle.entry ? [fhirPatientEntry, ...bundle.entry] : [];
+  return buildBundle({ type: "collection", entries: combinedEntries });
 }
 
 async function mergeIncomingBundleIntoCombined({
@@ -276,49 +243,5 @@ async function mergeIncomingBundleIntoCombined({
     });
     // Return the incoming bundle as fallback
     return incomingBundle;
-  }
-}
-
-async function getPresignedUrl({
-  s3Client,
-  bucketName,
-  fileName,
-  cxId,
-  messageId,
-  timestamp,
-  messageType,
-  patientId,
-  log,
-}: {
-  s3Client: S3Utils;
-  bucketName: string;
-  fileName: string;
-  cxId: string;
-  messageId: string;
-  timestamp: string;
-  messageType: Hl7MessageType;
-  patientId: string;
-  log: typeof console.log;
-}): Promise<string> {
-  try {
-    const bundlePresignedUrl = await s3Client.getSignedUrl({
-      bucketName,
-      fileName,
-      durationSeconds: SIGNED_URL_DURATION_SECONDS,
-    });
-    return bundlePresignedUrl;
-  } catch (error) {
-    const msg = "Error generating presigned URL for HL7 FHIR bundle";
-    log(`${msg}: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        patientId,
-        cxId,
-        messageId,
-        timestamp,
-        messageType,
-      },
-    });
-    throw error;
   }
 }
