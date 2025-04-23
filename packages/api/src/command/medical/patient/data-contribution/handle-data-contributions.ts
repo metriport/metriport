@@ -62,7 +62,7 @@ export async function handleDataContribution({
     fhirBundleDestinationKey
   );
   const processedBundle = await processBundle({
-    bundle,
+    bundle: validatedBundle,
     cxId,
     patientId,
     options: { deduplicate: false },
