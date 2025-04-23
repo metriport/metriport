@@ -21,7 +21,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent): Pro
   }
 
   const log = prefixedLog(lambdaName);
-  log(`Parsing body: ${params.body}`);
+  log("Parsing body");
   const parsedBody = parseBody(params.body);
   const { cxId, patientId } = parsedBody;
 
