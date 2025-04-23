@@ -25,8 +25,8 @@ function createBundlePrefix({
   return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}`;
 }
 
-export function createFileKeyEhrComplete(params: CreateBundlePrefixParams): string {
-  return `${createBundlePrefix(params)}/ehr-complete.json`;
+export function createFileKeyEhr(params: CreateBundlePrefixParams): string {
+  return `${createBundlePrefix(params)}/ehr.json`;
 }
 
 export function createFileKeyEhrOnly(params: CreateBundlePrefixParams): string {
@@ -47,14 +47,14 @@ export function getS3UtilsInstance(): S3Utils {
 }
 
 export enum BundleType {
-  EHR_COMPLETE = "EhrComplete",
-  EHR_ONLY = "EhrOnly",
-  METRIPORT_ONLY = "MetriportOnly",
+  EHR = "Ehr",
+  RESOURCE_DIFF_EHR_ONLY = "ResourceDiffEhrOnly",
+  RESOURCE_DIFF_METRIPORT_ONLY = "ResourceDiffMetriportOnly",
 }
 export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams) => string> = {
-  [BundleType.EHR_COMPLETE]: createFileKeyEhrComplete,
-  [BundleType.EHR_ONLY]: createFileKeyEhrOnly,
-  [BundleType.METRIPORT_ONLY]: createFileKeyMetriportOnly,
+  [BundleType.EHR]: createFileKeyEhr,
+  [BundleType.RESOURCE_DIFF_EHR_ONLY]: createFileKeyEhrOnly,
+  [BundleType.RESOURCE_DIFF_METRIPORT_ONLY]: createFileKeyMetriportOnly,
 };
 
 export type BundleKeyBaseParams = {

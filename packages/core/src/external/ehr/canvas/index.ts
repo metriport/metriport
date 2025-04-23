@@ -410,7 +410,7 @@ class CanvasApi {
         cxId,
         metriportPatientId,
         canvasPatientId,
-        bundleType: BundleType.EHR_COMPLETE,
+        bundleType: BundleType.EHR,
         resourceType,
       });
       if (cachedBundle) return cachedBundle;
@@ -449,29 +449,34 @@ class CanvasApi {
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType: BundleType.EHR_COMPLETE,
+      bundleType: BundleType.EHR,
       bundle,
       resourceType,
     });
     return bundle;
   }
 
-  async getMetriportOnlyBundleByResourceType({
+  async getResourceDiffByResourceType({
     cxId,
     metriportPatientId,
     canvasPatientId,
     resourceType,
+    direction,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
+    direction: "metriport-only" | "canvas-only";
   }): Promise<Bundle | undefined> {
     return this.getBundle({
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType: BundleType.METRIPORT_ONLY,
+      bundleType:
+        direction === "metriport-only"
+          ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+          : BundleType.RESOURCE_DIFF_EHR_ONLY,
       resourceType,
     });
   }

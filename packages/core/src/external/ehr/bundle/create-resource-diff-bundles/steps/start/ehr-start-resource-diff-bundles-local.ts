@@ -5,28 +5,31 @@ import {
   getDefaultBundle,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { getConsolidated } from "../../../../../command/consolidated/consolidated-get";
-import { fetchBundle as fetchBundleFromApi } from "../../../api/fetch-bundle";
-import { BundleType, getSupportedResourcesByEhr } from "../../../bundle/bundle-shared";
-import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../bundle/commands/create-or-replace-bundle";
-import { buildEhrComputeResourceDiffHandler } from "../compute/ehr-compute-resource-diff-factory";
-import { EhrStartResourceDiffHandler, StartResourceDiffRequest } from "./ehr-start-resource-diff";
+import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
+import { fetchBundle as fetchBundleFromApi } from "../../../../api/fetch-bundle";
+import { BundleType, getSupportedResourcesByEhr } from "../../../bundle-shared";
+import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../commands/create-or-replace-bundle";
+import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
+import {
+  EhrStartResourceDiffBundlesHandler,
+  StartResourceDiffBundlesRequest,
+} from "./ehr-start-resource-diff-bundles";
 
-export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
+export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBundlesHandler {
   private readonly fetchedBundles: Map<string, Bundle>;
-  private readonly next = buildEhrComputeResourceDiffHandler();
+  private readonly next = buildEhrComputeResourceDiffBundlesHandler();
 
   constructor(private readonly waitTimeInMillis: number) {
     this.fetchedBundles = new Map();
   }
 
-  async startResourceDiff({
+  async startResourceDiffBundlesMetriportOnly({
     ehr,
     cxId,
     practiceId,
     metriportPatientId,
     ehrPatientId,
-  }: StartResourceDiffRequest): Promise<void> {
+  }: StartResourceDiffBundlesRequest): Promise<void> {
     const consolidated = await getConsolidated({ cxId, patientId: metriportPatientId });
     if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length < 1) {
       return;
@@ -71,7 +74,7 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
           cxId,
           metriportPatientId,
           ehrPatientId,
-          bundleType: BundleType.METRIPORT_ONLY,
+          bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
           bundle: getDefaultBundle(),
           resourceType,
         }),
@@ -86,7 +89,11 @@ export class EhrStartResourceDiffLocal implements EhrStartResourceDiffHandler {
         return [{ ...param, existingResources }];
       }
     );
-    await this.next.computeResourceDiff(computeResourceDiffParamsWithExistingResources);
+    await this.next.computeResourceDiffBundles(computeResourceDiffParamsWithExistingResources);
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
+  }
+
+  async startResourceDiffBundlesEhrOnly(): Promise<void> {
+    throw new MetriportError("Resource diff bundle EhrOnly is not supported");
   }
 }

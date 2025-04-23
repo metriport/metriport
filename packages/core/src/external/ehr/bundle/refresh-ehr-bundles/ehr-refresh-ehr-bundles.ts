@@ -1,12 +1,12 @@
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
-export type RefreshBundleRequest = {
+export type RefreshEhrBundlesRequest = {
   ehr: EhrSource;
   cxId: string;
   practiceId: string;
   patientId: string;
 };
 
-export interface EhrRefreshBundleHandler {
-  refreshBundle(request: RefreshBundleRequest): Promise<void>;
+export interface EhrRefreshEhrBundlesHandler {
+  refreshEhrBundles(request: RefreshEhrBundlesRequest): Promise<void>;
 }

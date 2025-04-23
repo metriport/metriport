@@ -1,17 +1,17 @@
-import { FhirResource, sleep } from "@metriport/shared";
-import { fetchBundle as fetchBundleFromApi, FetchBundleParams } from "../../../api/fetch-bundle";
-import { BundleType } from "../../../bundle/bundle-shared";
-import { updateBundle as updateBundleOnS3 } from "../../../bundle/commands/update-bundle";
+import { FhirResource, MetriportError, sleep } from "@metriport/shared";
+import { fetchBundle as fetchBundleFromApi, FetchBundleParams } from "../../../../api/fetch-bundle";
+import { BundleType } from "../../../bundle-shared";
+import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
 import { resourceIsDuplicateOfExistingResources } from "../../utils";
 import {
-  ComputeResourceDiffRequest,
-  EhrComputeResourceDiffHandler,
-} from "./ehr-compute-resource-diff";
+  ComputeResourceDiffBundlesRequest,
+  EhrComputeResourceDiffBundlesHandler,
+} from "./ehr-compute-resource-diff-bundles";
 
-export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandler {
+export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async computeResourceDiff(payloads: ComputeResourceDiffRequest[]): Promise<void> {
+  async computeResourceDiffBundles(payloads: ComputeResourceDiffBundlesRequest[]): Promise<void> {
     for (const payload of payloads) {
       const {
         ehr,
@@ -42,13 +42,17 @@ export class EhrComputeResourceDiffLocal implements EhrComputeResourceDiffHandle
           cxId,
           metriportPatientId,
           ehrPatientId,
-          bundleType: BundleType.METRIPORT_ONLY,
+          bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
           resource: newResource,
           resourceType,
         });
       }
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
+  }
+
+  async computeResourceDiffBundlesEhrOnly(): Promise<void> {
+    throw new MetriportError("Resource diff bundle EhrOnly is not supported");
   }
 }
 

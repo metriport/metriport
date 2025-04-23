@@ -1,4 +1,4 @@
-import { buildEhrRefreshBundleHandler } from "@metriport/core/external/ehr/bundle/refresh/ehr-refresh-resource-bundle-factory";
+import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles-factory";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 
 export type RefreshBundleParams = {
@@ -19,8 +19,8 @@ export async function refreshCanvasBundle({
   canvasPracticeId,
   canvasPatientId,
 }: RefreshBundleParams): Promise<void> {
-  const ehrResourceDiffHandler = buildEhrRefreshBundleHandler();
-  await ehrResourceDiffHandler.refreshBundle({
+  const ehrResourceDiffHandler = buildEhrRefreshEhrBundlesHandler();
+  await ehrResourceDiffHandler.refreshEhrBundles({
     ehr: EhrSources.canvas,
     cxId,
     practiceId: canvasPracticeId,

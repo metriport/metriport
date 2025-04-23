@@ -1,12 +1,17 @@
 import { sleep } from "@metriport/shared";
 import { fetchBundle as fetchBundleFromApi } from "../../api/fetch-bundle";
 import { getSupportedResourcesByEhr } from "../bundle-shared";
-import { EhrRefreshBundleHandler, RefreshBundleRequest } from "./ehr-refresh-resource-bundle";
+import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
-export class EhrRefreshBundleLocal implements EhrRefreshBundleHandler {
+export class EhrRefreshEhrBundlesLocal implements EhrRefreshEhrBundlesHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async refreshBundle({ ehr, cxId, practiceId, patientId }: RefreshBundleRequest): Promise<void> {
+  async refreshEhrBundles({
+    ehr,
+    cxId,
+    practiceId,
+    patientId,
+  }: RefreshEhrBundlesRequest): Promise<void> {
     const supportedResources = getSupportedResourcesByEhr(ehr);
     for (const resourceType of supportedResources) {
       await fetchBundleFromApi({

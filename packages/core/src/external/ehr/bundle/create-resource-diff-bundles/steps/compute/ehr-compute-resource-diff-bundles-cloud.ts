@@ -1,17 +1,17 @@
-import { sleep } from "@metriport/shared";
+import { MetriportError, sleep } from "@metriport/shared";
 import { chunk } from "lodash";
-import { Config } from "../../../../../util/config";
-import { SQSClient } from "../../../../aws/sqs";
+import { Config } from "../../../../../../util/config";
+import { SQSClient } from "../../../../../aws/sqs";
 import {
-  ComputeResourceDiffRequest,
-  EhrComputeResourceDiffHandler,
-} from "./ehr-compute-resource-diff";
+  ComputeResourceDiffBundlesRequest,
+  EhrComputeResourceDiffBundlesHandler,
+} from "./ehr-compute-resource-diff-bundles";
 
 export const MAX_SQS_MESSAGE_SIZE = 256000;
 const MAX_SQS_MESSAGE_BATCH_SIZE = 100;
 const MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP = 1000;
 
-export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandler {
+export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDiffBundlesHandler {
   private readonly sqsClient: SQSClient;
 
   constructor(
@@ -22,8 +22,8 @@ export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandle
     this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
-  async computeResourceDiff(params: ComputeResourceDiffRequest[]): Promise<void> {
-    const paramsWithoutExistingResources: ComputeResourceDiffRequest[] = params.map(p => ({
+  async computeResourceDiffBundles(params: ComputeResourceDiffBundlesRequest[]): Promise<void> {
+    const paramsWithoutExistingResources = params.map(p => ({
       ...p,
       existingResources:
         Buffer.from(JSON.stringify(p)).length > MAX_SQS_MESSAGE_SIZE
@@ -39,5 +39,9 @@ export class EhrComputeResourceDiffCloud implements EhrComputeResourceDiffHandle
       );
       await sleep(MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP);
     }
+  }
+
+  async computeResourceDiffBundlesEhrOnly(): Promise<void> {
+    throw new MetriportError("Resource diff bundle EhrOnly is not supported");
   }
 }
