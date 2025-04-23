@@ -28,7 +28,7 @@ export async function createResourceDiffBundles({
   requestId: requestIdParam,
 }: CreateResourceDiffBundlesParams): Promise<void> {
   const patientMappings = await getPatientMappings({ cxId, id: patientId });
-  if (patientMappings.length < 0) return;
+  if (patientMappings.length < 1) return;
   const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
     if (patientMapping.source === EhrSources.canvas) {
