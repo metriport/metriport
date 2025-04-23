@@ -3,6 +3,9 @@ import { deleteConsolidated } from "@metriport/core/command/consolidated/consoli
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import { emptyFunction } from "@metriport/shared/common/general";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
+import { createResourceDiffBundles } from "../../../external/ehr/create-resource-diff-bundles";
 import { getConsolidated } from "../patient/consolidated-get";
 
 /**
@@ -19,10 +22,12 @@ export async function recreateConsolidated({
   patient,
   conversionType,
   context,
+  isDq = false,
 }: {
   patient: Patient;
   conversionType?: ConsolidationConversionType;
   context?: string;
+  isDq?: boolean;
 }): Promise<void> {
   const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
   try {
@@ -35,6 +40,13 @@ export async function recreateConsolidated({
   }
   try {
     await getConsolidated({ patient, conversionType });
+    if (isDq) {
+      createResourceDiffBundles({
+        cxId: patient.cxId,
+        patientId: patient.id,
+        direction: ResourceDiffDirection.METRIPORT_ONLY,
+      }).catch(emptyFunction);
+    }
   } catch (err) {
     processAsyncError(`Post-DQ getConsolidated`, log)(err);
   }
