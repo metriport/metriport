@@ -9,7 +9,7 @@ import { out } from "../../../../util/log";
 import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
 import { fetchBundle } from "./fetch-bundle";
 
-export type UpdateBundleParams = BundleKeyBaseParams & {
+export type UpdateBundleParams = Omit<BundleKeyBaseParams, "getLastModified"> & {
   resource: FhirResource;
 };
 
@@ -74,7 +74,7 @@ export async function updateBundle({
       contentType: "application/json",
     });
   } catch (error) {
-    const msg = "Failure while updating bundle @ Ehr";
+    const msg = "Failure while updating bundle @ S3";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,

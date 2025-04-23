@@ -9,7 +9,7 @@ import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle
 dayjs.extend(duration);
 
 export type FetchBundleParams = BundleKeyBaseParams & {
-  fetchLastModified?: boolean;
+  getLastModified?: boolean;
 };
 
 const bundleUrlDuration = dayjs.duration(1, "hour");
@@ -24,7 +24,7 @@ const bundleUrlDuration = dayjs.duration(1, "hour");
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
  * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
- * @param fetchLastModified - Whether to fetch the last modified date. (optional, defaults to false)
+ * @param getLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date or undefined if the bundle is not found.
  */
@@ -36,7 +36,7 @@ export async function fetchBundle({
   bundleType,
   resourceType,
   jobId,
-  fetchLastModified = false,
+  getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
   const { log } = out(
@@ -51,14 +51,14 @@ export async function fetchBundle({
     if (!fileExists) return undefined;
     const [file, fileInfo] = await Promise.all([
       s3Utils.getFileContentsAsString(s3BucketName, key),
-      fetchLastModified ? s3Utils.getFileInfoFromS3(s3BucketName, key) : undefined,
+      getLastModified ? s3Utils.getFileInfoFromS3(s3BucketName, key) : undefined,
     ]);
     return {
       bundle: JSON.parse(file),
       lastModified: fileInfo?.createdAt,
     };
   } catch (error) {
-    const msg = "Failure while fetching bundle @ Ehr";
+    const msg = "Failure while fetching bundle @ S3";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
@@ -85,7 +85,7 @@ export async function fetchBundle({
  * @param bundleType - The bundle type.
  * @param resourceType - The resource type of the bundle.
  * @param jobId - The job ID of the bundle. If not provided, the latest bundle will be used.
- * @param fetchLastModified - Whether to fetch the last modified date. (optional, defaults to false)
+ * @param getLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
  * @returns The bundle with the last modified date.
  * @throws NotFoundError if the bundle is not found.
@@ -98,7 +98,7 @@ export async function fetchBundleOrFail({
   bundleType,
   resourceType,
   jobId,
-  fetchLastModified = false,
+  getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified> {
   const bundle = await fetchBundle({
@@ -109,7 +109,7 @@ export async function fetchBundleOrFail({
     bundleType,
     resourceType,
     jobId,
-    fetchLastModified,
+    getLastModified,
     s3BucketName,
   });
   if (!bundle) {
@@ -151,7 +151,7 @@ export async function fetchBundlePreSignedUrl({
   resourceType,
   jobId,
   s3BucketName = Config.getEhrBundleBucketName(),
-}: Omit<FetchBundleParams, "fetchLastModified">): Promise<string | undefined> {
+}: Omit<FetchBundleParams, "getLastModified">): Promise<string | undefined> {
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });

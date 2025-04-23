@@ -4,7 +4,7 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
 
-export type CreateOrReplaceBundleParams = BundleKeyBaseParams & {
+export type CreateOrReplaceBundleParams = Omit<BundleKeyBaseParams, "getLastModified"> & {
   bundle: Bundle;
 };
 
@@ -55,7 +55,7 @@ export async function createOrReplaceBundle({
       contentType: "application/json",
     });
   } catch (error) {
-    const msg = "Failure while creating or replacing bundle @ Ehr";
+    const msg = "Failure while creating or replacing bundle @ S3";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,

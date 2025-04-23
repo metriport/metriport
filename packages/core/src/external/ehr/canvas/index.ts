@@ -29,6 +29,7 @@ import {
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
@@ -410,7 +411,7 @@ class CanvasApi {
         cxId,
         metriportPatientId,
         canvasPatientId,
-        bundleType: BundleType.EHR_COMPLETE,
+        bundleType: BundleType.EHR,
         resourceType,
       });
       if (cachedBundle) return cachedBundle;
@@ -449,7 +450,7 @@ class CanvasApi {
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType: BundleType.EHR_COMPLETE,
+      bundleType: BundleType.EHR,
       bundle,
       resourceType,
     });
@@ -461,19 +462,24 @@ class CanvasApi {
     metriportPatientId,
     canvasPatientId,
     resourceType,
+    direction,
     jobId,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasDiffResource;
+    direction: ResourceDiffDirection;
     jobId: string;
   }): Promise<string | undefined> {
     return this.getBundlePreSignedUrl({
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType: BundleType.METRIPORT_ONLY,
+      bundleType:
+        direction === ResourceDiffDirection.METRIPORT_ONLY
+          ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+          : BundleType.RESOURCE_DIFF_EHR_ONLY,
       resourceType,
       jobId,
     });

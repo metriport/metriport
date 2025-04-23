@@ -8,7 +8,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { ApiBaseParams } from "./api-shared";
 
-export type FetchBundleParams = Omit<ApiBaseParams, "departmentId"> & {
+export type FetchEhrBundleParams = Omit<ApiBaseParams, "departmentId"> & {
   resourceType: SupportedResourceType;
   useCachedBundle: boolean;
 };
@@ -24,14 +24,14 @@ export type FetchBundleParams = Omit<ApiBaseParams, "departmentId"> & {
  * @param useCachedBundle - Whether to use the cached bundle.
  * @returns The EHR bundle.
  */
-export async function fetchBundle({
+export async function fetchEhrBundle({
   ehr,
   cxId,
   practiceId,
   patientId,
   resourceType,
   useCachedBundle,
-}: FetchBundleParams): Promise<{
+}: FetchEhrBundleParams): Promise<{
   bundle: Bundle;
   resourceTypes: SupportedResourceType[];
 }> {
@@ -44,7 +44,7 @@ export async function fetchBundle({
     resourceType,
     useCachedBundle: useCachedBundle.toString(),
   });
-  const fetchBundleUrl = `/internal/ehr/${ehr}/patient/bundle?${queryParams.toString()}`;
+  const fetchBundleUrl = `/internal/ehr/${ehr}/patient/ehr-bundle?${queryParams.toString()}`;
   try {
     const response = await api.get(fetchBundleUrl);
     if (!response.data) throw new Error(`No body returned from ${fetchBundleUrl}`);
@@ -54,7 +54,7 @@ export async function fetchBundle({
       resourceTypes: response.data.resourceTypes,
     };
   } catch (error) {
-    const msg = "Failure while fetching bundle @ Ehr";
+    const msg = "Failure while fetching EHR bundle @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
@@ -64,7 +64,7 @@ export async function fetchBundle({
       resourceType,
       useCachedBundle,
       url: fetchBundleUrl,
-      context: "ehr.fetchBundle",
+      context: "ehr.fetchEhrBundle",
     });
   }
 }

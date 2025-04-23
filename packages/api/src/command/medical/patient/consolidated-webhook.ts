@@ -3,9 +3,10 @@ import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { emptyFunction, errorToString } from "@metriport/shared";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
-import { startMetriportOnlyBundleJobs } from "../../../external/ehr/metriport-only-bundle-job";
+import { createResourceDiffBundles } from "../../../external/ehr/create-resource-diff-bundles";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
@@ -107,9 +108,10 @@ export async function processConsolidatedDataWebhook({
 
     if (status === "completed") {
       // Intentionally async
-      startMetriportOnlyBundleJobs({
+      createResourceDiffBundles({
         cxId,
         patientId: currentPatient.id,
+        direction: ResourceDiffDirection.METRIPORT_ONLY,
       }).catch(emptyFunction);
     }
   } catch (err) {
