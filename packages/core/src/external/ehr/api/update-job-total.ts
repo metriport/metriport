@@ -18,8 +18,8 @@ export type UpdateJobTotalParams = Pick<ApiBaseParams, "cxId"> & {
 export async function updateJobTotal({ jobId, cxId, total }: UpdateJobTotalParams): Promise<void> {
   const { log, debug } = out(`Ehr updateJobTotal - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const queryParams = new URLSearchParams({ jobId, cxId, total: total.toString() });
-  const updateJobUrl = `/internal/job/patient/update-total?${queryParams.toString()}`;
+  const queryParams = new URLSearchParams({ cxId, total: total.toString() });
+  const updateJobUrl = `/internal/job/patient/update-total/${jobId}?${queryParams.toString()}`;
   try {
     const response = await api.post(updateJobUrl);
     if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);

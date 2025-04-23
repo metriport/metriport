@@ -16,8 +16,8 @@ export type InitializeJobParams = Pick<ApiBaseParams, "cxId"> & {
 export async function initializeJob({ jobId, cxId }: InitializeJobParams): Promise<void> {
   const { log, debug } = out(`Ehr initializeJob - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const queryParams = new URLSearchParams({ jobId, cxId });
-  const initializeJobUrl = `/internal/job/patient/initialize?${queryParams.toString()}`;
+  const queryParams = new URLSearchParams({ cxId });
+  const initializeJobUrl = `/internal/job/patient/initialize/${jobId}?${queryParams.toString()}`;
   try {
     const response = await api.post(initializeJobUrl);
     if (!response.data) throw new Error(`No body returned from ${initializeJobUrl}`);
