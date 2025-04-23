@@ -45,7 +45,7 @@ import fs from "fs";
  * 3. Run the script using ts-node
  */
 const apiUrl = getEnvVarOrFail("API_URL");
-const bucketName = getEnvVarOrFail("HL7_CONVERSIONS_BUCKET_NAME");
+const bucketName = getEnvVarOrFail("OUTGOING_HL7_NOTIFICATION_BUCKET_NAME");
 
 const filePath = "";
 const fileName = "";
