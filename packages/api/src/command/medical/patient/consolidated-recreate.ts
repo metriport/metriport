@@ -3,7 +3,6 @@ import { deleteConsolidated } from "@metriport/core/command/consolidated/consoli
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { emptyFunction } from "@metriport/shared/common/general";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { createResourceDiffBundles } from "../../../external/ehr/create-resource-diff-bundles";
 import { getConsolidated } from "../patient/consolidated-get";
@@ -45,7 +44,7 @@ export async function recreateConsolidated({
         cxId: patient.cxId,
         patientId: patient.id,
         direction: ResourceDiffDirection.METRIPORT_ONLY,
-      }).catch(emptyFunction);
+      }).catch(processAsyncError("Post-DQ createResourceDiffBundles"));
     }
   } catch (err) {
     processAsyncError(`Post-DQ getConsolidated`, log)(err);

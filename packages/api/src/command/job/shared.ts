@@ -34,14 +34,7 @@ export type UpdateJobTotalParams = {
   forceTotalUpdate?: boolean;
 };
 
-export type FailJobParams = {
-  jobId: string;
-  cxId: string;
-  reason?: string;
-  forceStatusUpdate?: boolean;
-};
-
-export type FinishJobParams = {
+export type CompleteJobParams = {
   jobId: string;
   cxId: string;
   forceStatusUpdate?: boolean;

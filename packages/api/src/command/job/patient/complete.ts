@@ -1,7 +1,7 @@
 import { out } from "@metriport/core/util/log";
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { FinishJobParams } from "../shared";
+import { CompleteJobParams } from "../shared";
 import { getPatientJobModelOrFail } from "./get";
 
 /**
@@ -21,7 +21,7 @@ export async function completePatientJob({
   cxId,
   forceStatusUpdate = false,
   onCompleted,
-}: FinishJobParams): Promise<PatientJob> {
+}: CompleteJobParams): Promise<PatientJob> {
   const { log } = out(`updateJobTracking - jobId ${jobId} cxId ${cxId}`);
   const jobModel = await getPatientJobModelOrFail({ jobId, cxId });
   const job = jobModel.dataValues;
