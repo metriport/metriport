@@ -70,7 +70,7 @@ export async function createFullNote({
 
       if (resource.resourceType === "Condition") {
         log("Creating condition");
-        await canvas.createCondition({
+        await canvas.createConditionLegacy({
           condition: resource,
           patientId: canvasPatientId,
           practitionerId: canvasPractitionerId,

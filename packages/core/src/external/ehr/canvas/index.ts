@@ -32,6 +32,7 @@ import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import { z } from "zod";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
 import { BundleType } from "../bundle/bundle-shared";
@@ -44,6 +45,9 @@ import {
   ApiConfig,
   fetchBundleUsingTtl,
   formatDate,
+  getConditionSnomedCoding,
+  getConditionStartDate,
+  getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -73,6 +77,14 @@ export const isSupportedCanvasDiffResource = (
 ): resourceType is SupportedCanvasDiffResource => {
   return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
 };
+
+const problemStatusesMap = new Map<string, string>();
+problemStatusesMap.set("active", "active");
+problemStatusesMap.set("relapse", "active");
+problemStatusesMap.set("recurrence", "active");
+//problemStatusesMap.set("remission", "active");
+problemStatusesMap.set("resolved", "resolved");
+problemStatusesMap.set("inactive", "resolved");
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -231,7 +243,7 @@ class CanvasApi {
     );
   }
 
-  async createCondition({
+  async createConditionLegacy({
     condition,
     patientId,
     practitionerId,
@@ -378,6 +390,57 @@ class CanvasApi {
       useFhir: true,
     });
     return patient;
+  }
+
+  async createCondition({
+    cxId,
+    patientId,
+    practitionerId,
+    condition,
+    noteId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    condition: Condition;
+    noteId?: string;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createCondition - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} noteId ${noteId}`
+    );
+    const conditionUrl = `/Condition`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      conditionId: condition.id,
+      noteId,
+    };
+    condition.subject = { reference: `Patient/${patientId}` };
+    condition.recorder = { reference: `Practitioner/${practitionerId}` };
+    if (noteId) {
+      condition.extension = [
+        {
+          url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+          valueId: noteId,
+        },
+      ];
+    }
+    const formattedCondition = this.formatCondition(condition, additionalInfo);
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: `fhir/condition/${additionalInfo.conditionId}`,
+      method: "POST",
+      url: conditionUrl,
+      data: { ...formattedCondition },
+      schema: z.undefined(),
+      additionalInfo,
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
   }
 
   async getBundleByResourceType({
@@ -552,6 +615,7 @@ class CanvasApi {
     schema,
     additionalInfo,
     debug,
+    emptyResponse = false,
     useFhir = false,
   }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
@@ -569,6 +633,7 @@ class CanvasApi {
       schema,
       additionalInfo,
       debug,
+      emptyResponse,
     });
   }
 
@@ -638,6 +703,68 @@ class CanvasApi {
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, canvasDateFormat);
+  }
+
+  private formatCondition(
+    condition: Condition,
+    additionalInfo: Record<string, string | undefined>
+  ): Condition {
+    const formattedCondition: Condition = {
+      resourceType: "Condition",
+      ...(condition.id ? { id: condition.id } : {}),
+      ...(condition.subject ? { subject: condition.subject } : {}),
+      ...(condition.recorder ? { recorder: condition.recorder } : {}),
+      ...(condition.meta ? { meta: condition.meta } : {}),
+      ...(condition.extension ? { extension: condition.extension } : {}),
+    };
+    const snomedCoding = getConditionSnomedCoding(condition);
+    if (!snomedCoding) {
+      throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
+    }
+    if (!snomedCoding.code) {
+      throw new BadRequestError("No code found for SNOMED coding", undefined, additionalInfo);
+    }
+    if (!snomedCoding.display) {
+      throw new BadRequestError("No display found for SNOMED coding", undefined, additionalInfo);
+    }
+    formattedCondition.code = {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: snomedCoding.code,
+          display: snomedCoding.display,
+        },
+      ],
+    };
+    const startDate = getConditionStartDate(condition);
+    const formattedStartDate = formatDate(startDate, canvasDateFormat);
+    if (!formattedStartDate) {
+      throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
+    }
+    formattedCondition.onsetDateTime = formattedStartDate;
+    const conditionStatus = getConditionStatus(condition);
+    const problemStatus = conditionStatus
+      ? problemStatusesMap.get(conditionStatus.toLowerCase())
+      : undefined;
+    if (!problemStatus) {
+      throw new BadRequestError("No problem status found for condition", undefined, additionalInfo);
+    }
+    formattedCondition.clinicalStatus = {
+      coding: [
+        { system: "http://terminology.hl7.org/CodeSystem/condition-clinical", code: problemStatus },
+      ],
+    };
+    formattedCondition.category = [
+      {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/condition-category",
+            code: "encounter-diagnosis",
+          },
+        ],
+      },
+    ];
+    return formattedCondition;
   }
 }
 

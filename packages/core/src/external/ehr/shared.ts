@@ -1,4 +1,4 @@
-import { Condition } from "@medplum/fhirtypes";
+import { Coding, Condition } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
@@ -74,6 +74,7 @@ export type MakeRequestParams<T> = {
   schema: z.Schema<T>;
   additionalInfo: AdditionalInfo;
   debug: typeof console.log;
+  emptyResponse?: boolean;
 };
 
 export type MakeRequestParamsInEhr<T> = Omit<
@@ -95,6 +96,7 @@ export async function makeRequest<T>({
   schema,
   additionalInfo,
   debug,
+  emptyResponse = false,
 }: MakeRequestParams<T>): Promise<T> {
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
@@ -153,7 +155,8 @@ export async function makeRequest<T>({
     }
     throw error;
   }
-  if (!response.data && method === "DELETE") {
+  if (!response.data && emptyResponse) {
+    console.log("emptyResponse", emptyResponse);
     const outcome = schema.safeParse(undefined);
     if (!outcome.success) {
       const msg = `Response not parsed @ ${ehr}`;
@@ -217,12 +220,18 @@ function createAxiosErrorMessage(error: AxiosError): string {
   return error.message;
 }
 
-export function getConditionSnomedCode(condition: Condition): string | undefined {
+export function getConditionSnomedCoding(condition: Condition): Coding | undefined {
   const code = condition.code;
   const snomedCoding = code?.coding?.find(coding => {
     const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
     return system?.includes(SNOMED_CODE);
   });
+  if (!snomedCoding) return undefined;
+  return snomedCoding;
+}
+
+export function getConditionSnomedCode(condition: Condition): string | undefined {
+  const snomedCoding = getConditionSnomedCoding(condition);
   if (!snomedCoding) return undefined;
   return snomedCoding.code;
 }
