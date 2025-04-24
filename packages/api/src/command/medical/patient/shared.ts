@@ -22,7 +22,7 @@ export function validate<T extends PatientCreateCmd | PatientUpdateCmd | Patient
 ): boolean {
   if (!patient.address || patient.address.length < 1) return false;
   patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriod(pid.period));
-  return !patient.dob || (validateIsPastOrPresent(patient.dob) && validateDateOfBirth(patient.dob));
+  return validateIsPastOrPresent(patient.dob) && validateDateOfBirth(patient.dob);
 }
 
 function validatePeriod(period: Period): boolean {
