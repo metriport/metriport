@@ -6,7 +6,7 @@ import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import { ParsedPatient } from "../patient-import";
 import { createFileKeyRaw, getS3UtilsInstance } from "../patient-import-shared";
-import { createHeadersFile as _createHeadersFile } from "../record/create-headers-file";
+import { createHeadersFile } from "../record/create-headers-file";
 import { createPatientRecord } from "../record/create-or-update-patient-record";
 import { mapCsvPatientToMetriportPatient } from "./convert-patient";
 
@@ -46,8 +46,8 @@ export async function validateAndParsePatientImportCsvFromS3({
       contents: csvAsString,
     });
 
-    const createHeadersFile = async () => {
-      await _createHeadersFile({ cxId, jobId, headers, s3BucketName });
+    const createHeadersFilePromise = async () => {
+      await createHeadersFile({ cxId, jobId, headers, s3BucketName });
     };
 
     const result: {
@@ -55,46 +55,48 @@ export async function validateAndParsePatientImportCsvFromS3({
       status: PatientImportEntryStatus;
     }[] = [];
 
-    const createPatientRecords = () => {
+    const getCreatePatientRecordPromises = () => {
       return patients.map(p => {
-        const base = {
-          cxId,
-          jobId,
-          rowNumber: p.rowNumber,
-          rowCsv: p.raw,
-          bucketName: s3BucketName,
+        return async () => {
+          const base = {
+            cxId,
+            jobId,
+            rowNumber: p.rowNumber,
+            rowCsv: p.raw,
+            bucketName: s3BucketName,
+          };
+          if (p.parsed) {
+            const status = "waiting";
+            result.push({
+              rowNumber: p.rowNumber,
+              status,
+            });
+            return createPatientRecord({
+              ...base,
+              patientCreate: p.parsed,
+              status,
+            });
+          } else {
+            const status = "failed";
+            result.push({
+              rowNumber: p.rowNumber,
+              status,
+            });
+            return createPatientRecord({
+              ...base,
+              status,
+              reasonForCx: stripCommas(p.error, ";"),
+              reasonForDev: "400 - validation error",
+            });
+          }
         };
-        if (p.parsed) {
-          const status = "waiting";
-          result.push({
-            rowNumber: p.rowNumber,
-            status,
-          });
-          return createPatientRecord({
-            ...base,
-            patientCreate: p.parsed,
-            status,
-          });
-        } else {
-          const status = "failed";
-          result.push({
-            rowNumber: p.rowNumber,
-            status,
-          });
-          return createPatientRecord({
-            ...base,
-            status,
-            reasonForCx: stripCommas(p.error, ";"),
-            reasonForDev: "400 - validation error",
-          });
-        }
       });
     };
 
     await executeAsynchronously(
-      [createHeadersFile(), ...createPatientRecords()],
+      [createHeadersFilePromise, ...getCreatePatientRecordPromises()],
       async promise => {
-        await promise;
+        await promise();
       },
       {
         numberOfParallelExecutions,
