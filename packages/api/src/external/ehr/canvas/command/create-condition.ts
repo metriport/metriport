@@ -10,8 +10,8 @@ export async function createCondition({
 }: {
   cxId: string;
   canvasPatientId: string;
-  canvasPractitionerId: string;
   canvasPracticeId: string;
+  canvasPractitionerId: string;
   condition: Condition;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
