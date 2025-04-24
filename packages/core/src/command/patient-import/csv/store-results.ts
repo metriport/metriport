@@ -7,6 +7,7 @@ import {
   createFileKeyResults,
   getS3UtilsInstance,
 } from "../patient-import-shared";
+import { escapeCsvValueIfNeeded } from "./shared";
 
 export type StoreResultCmd = {
   cxId: string;
@@ -83,5 +84,8 @@ export async function storeResults({
 }
 
 function entryToCsv(e: ResultEntry): string {
-  return `${e.rowCsv},${e.patientId ?? ""},${e.status},${e.reason ?? ""}`;
+  const status = escapeCsvValueIfNeeded(e.status);
+  const patientId = e.patientId ? escapeCsvValueIfNeeded(e.patientId) : "";
+  const reason = e.reason ? escapeCsvValueIfNeeded(e.reason) : "";
+  return `${e.rowCsv},${patientId},${status},${reason}`;
 }
