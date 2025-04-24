@@ -11,6 +11,8 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
+import { Secrets } from "./shared/secrets";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 
 function settings() {
   const timeout = Duration.seconds(61);
@@ -47,6 +49,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
   outgoingHl7NotificationBucket: s3.IBucket;
+  secrets: Secrets;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -64,6 +67,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       outgoingHl7NotificationBucket: props.outgoingHl7NotificationBucket,
+      analyticsSecret: props.secrets[props.config.analyticsSecretNames.POST_HOG_API_KEY_SECRET],
     });
 
     this.lambda = setup.lambda;
@@ -76,9 +80,17 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     outgoingHl7NotificationBucket: s3.IBucket;
+    analyticsSecret: ISecret;
   }): { lambda: Lambda } {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, outgoingHl7NotificationBucket } =
-      ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      outgoingHl7NotificationBucket,
+      analyticsSecret,
+    } = ownProps;
     const {
       name,
       entry,
@@ -116,6 +128,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
 
     outgoingHl7NotificationBucket.grantWrite(lambda);
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    analyticsSecret.grantRead(lambda);
 
     new CfnOutput(this, "Hl7NotificationWebhookSenderQueueArn", {
       description: "HL7 Message Router Queue ARN",

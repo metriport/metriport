@@ -44,6 +44,9 @@ export const config: EnvConfigNonSandbox = {
   },
   dashUrl: "https://url-of-your-dashboard.com",
   ehrDashUrl: "https://url-of-your-ehr-dashboard.com",
+  analyticsSecretNames: {
+    POST_HOG_API_KEY_SECRET: "your-posthog-api-key-secret",
+  },
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
