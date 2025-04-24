@@ -23,7 +23,7 @@ const commaRegex = new RegExp(/,/g);
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
  * @param s3BucketName - The S3 bucket name.
- * @returns An array with the row nmbers from the original file, indicating the status of parsing each row.
+ * @returns An array with the row numbers from the original file, indicating the status of parsing each row.
  */
 export async function validateAndParsePatientImportCsvFromS3({
   cxId,
@@ -50,6 +50,11 @@ export async function validateAndParsePatientImportCsvFromS3({
       await _createHeadersFile({ cxId, jobId, headers, s3BucketName });
     };
 
+    const result: {
+      rowNumber: number;
+      status: PatientImportEntryStatus;
+    }[] = [];
+
     const createPatientRecords = () => {
       return patients.map(p => {
         const base = {
@@ -60,15 +65,25 @@ export async function validateAndParsePatientImportCsvFromS3({
           bucketName: s3BucketName,
         };
         if (p.parsed) {
+          const status = "waiting";
+          result.push({
+            rowNumber: p.rowNumber,
+            status,
+          });
           return createPatientRecord({
             ...base,
             patientCreate: p.parsed,
-            status: "waiting",
+            status,
           });
         } else {
+          const status = "failed";
+          result.push({
+            rowNumber: p.rowNumber,
+            status,
+          });
           return createPatientRecord({
             ...base,
-            status: "failed",
+            status,
             reasonForCx: stripCommas(p.error, ";"),
             reasonForDev: "400 - validation error",
           });
@@ -86,11 +101,7 @@ export async function validateAndParsePatientImportCsvFromS3({
       }
     );
 
-    // TODO 2330 split these in the `createPatientRecords` function
-    return patients.map(p => ({
-      rowNumber: p.rowNumber,
-      status: p.parsed ? "processing" : "failed",
-    }));
+    return result;
   } catch (error) {
     const msg = `Failure validating and parsing import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
