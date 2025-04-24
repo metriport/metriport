@@ -1,5 +1,4 @@
 import { errorToString, MetriportError } from "@metriport/shared";
-import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { FailedPatientRecord, ParsedPatientRecord, PatientRecord } from "../patient-import";
 import { createFileKeyPatientRecord, getS3UtilsInstance } from "../patient-import-shared";
@@ -9,7 +8,7 @@ type BucketParam = {
   bucketName: string;
 };
 
-export type CreatePatientRecord = PatientRecord & BucketParam;
+type CreatePatientRecord = PatientRecord & BucketParam;
 
 export type UpdatePatientRecord = Pick<
   PatientRecord,
@@ -26,7 +25,7 @@ export type UpdatePatientRecord = Pick<
  *                     from the env vars.
  */
 export async function createPatientRecord({
-  bucketName = Config.getPatientImportBucket(),
+  bucketName,
   ...patientRecord
 }: CreatePatientRecord): Promise<PatientRecord> {
   const { cxId, jobId, rowNumber } = patientRecord;
@@ -66,7 +65,7 @@ export async function createPatientRecord({
  *                     from the env vars.
  */
 export async function updatePatientRecord({
-  bucketName = Config.getPatientImportBucket(),
+  bucketName,
   ...patientRecord
 }: UpdatePatientRecord): Promise<PatientRecord> {
   const { cxId, jobId, rowNumber, patientId } = patientRecord;
