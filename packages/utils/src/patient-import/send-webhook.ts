@@ -4,7 +4,7 @@ dotenv.config();
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import { PatientImportJobStatus } from "@metriport/shared/domain/patient/patient-import/status";
-import { WebhookBulkPatientImportPayload, WebhookMetadata } from "@metriport/shared/medical";
+import { BulkPatientImportWebhookRequest, WebhookMetadata } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
 import { sendPayload } from "../../../api/src/command/webhook/webhook";
@@ -46,7 +46,7 @@ async function main() {
           durationSeconds: presignedResultUrlDuration.asSeconds(),
         })
       : undefined;
-  const payload: Omit<WebhookBulkPatientImportPayload, "meta"> = {
+  const payload: Omit<BulkPatientImportWebhookRequest, "meta"> = {
     bulkPatientCreate: {
       requestId: jobId,
       status: bulkPatientCreateStatus,

@@ -1,14 +1,6 @@
 import { BadRequestError } from "../../../error/bad-request";
 
-// TODO 2330 add expired
 export const patientImportJobStatus = ["waiting", "processing", "completed", "failed"] as const;
-// export const patientImportStatus = [
-//   "waiting",
-//   "processing",
-//   "completed",
-//   "failed",
-//   "expired",
-// ] as const;
 export type PatientImportJobStatus = (typeof patientImportJobStatus)[number];
 
 export function isPatientImportDone(status: PatientImportJobStatus): boolean {

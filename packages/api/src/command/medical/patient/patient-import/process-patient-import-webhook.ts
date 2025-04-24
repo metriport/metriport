@@ -4,7 +4,7 @@ import { capture, out } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
 import { errorToString } from "@metriport/shared";
 import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
-import { WebhookBulkPatientImportPayload } from "@metriport/shared/medical";
+import { BulkPatientImportWebhookRequest } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getSettingsOrFail } from "../../../settings/getSettings";
@@ -26,9 +26,7 @@ export async function processPatientImportJobWebhook(job: PatientImportJob): Pro
 
     const presignedUrl = await getBulkPatientImportPresignedDownloadUrl(job);
 
-    const whType = "medical.bulk-patient-create";
-    // `meta` is added by processRequest()
-    const payload: Omit<WebhookBulkPatientImportPayload, "meta"> = {
+    const payloadWithoutMeta: Omit<BulkPatientImportWebhookRequest, "meta"> = {
       bulkPatientCreate: {
         requestId: jobId,
         status,
@@ -39,8 +37,8 @@ export async function processPatientImportJobWebhook(job: PatientImportJob): Pro
     const createWebhookRequestCmd: CreateWebhookRequestCommand = {
       cxId,
       requestId: jobId,
-      type: whType,
-      payload,
+      type: "medical.bulk-patient-create",
+      payload: payloadWithoutMeta,
     };
     if (!isWhDisabled) {
       log(`Sending WH...`);
