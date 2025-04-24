@@ -19,7 +19,7 @@ export class PatientImportMappingModel extends Model<
   declare updatedAt: Date;
 
   static initialize(sequelize: Sequelize): void {
-    this.init(
+    PatientImportMappingModel.init(
       {
         ...BaseModel.attributesNoVersion(),
         cxId: {
