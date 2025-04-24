@@ -1,6 +1,7 @@
 import { isSupportedCanvasDiffResource } from "@metriport/core/external/ehr/canvas/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
+import { isResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -8,6 +9,8 @@ import { fetchCanvasBundle } from "../../../../external/ehr/canvas/command/bundl
 import { refreshCanvasBundles } from "../../../../external/ehr/canvas/command/bundle/refresh-ehr-bundles";
 import { processPatientsFromAppointments } from "../../../../external/ehr/canvas/command/process-patients-from-appointments";
 import { syncCanvasPatientIntoMetriport } from "../../../../external/ehr/canvas/command/sync-patient";
+import { getResourceDiffBundlesJobPayload } from "../../../../external/ehr/canvas/job/create-resource-diff-bundles/get-job-payload";
+import { createResourceDiffBundlesJob } from "../../../../external/ehr/canvas/job/create-resource-diff-bundles/start-job";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
@@ -81,6 +84,76 @@ router.post(
       canvasPatientId,
     }).catch(processAsyncError("Canvas refreshCanvasBundles"));
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/canvas/patient/resource-diff
+ *
+ * Starts the resource diff job to generate the Metriport only bundle, or Canvas only bundle.
+ * The job is started asynchronously.
+ * @param req.query.cxId The cxId of the patient.
+ * @param req.query.patientId The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @param req.query.direction The direction of the resource diff bundles to create.
+ * @returns The job ID of the resource diff job
+ */
+router.post(
+  "/resource-diff",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const canvasPatientId = getFromQueryOrFail("patientId", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const direction = getFromQueryOrFail("direction", req);
+    if (!isResourceDiffDirection(direction)) {
+      throw new BadRequestError("Invalid direction", undefined, {
+        direction,
+      });
+    }
+    const jobId = await createResourceDiffBundlesJob({
+      cxId,
+      canvasPatientId,
+      canvasPracticeId,
+      direction,
+    });
+    return res.status(httpStatus.OK).json(jobId);
+  })
+);
+
+/**
+ * GET /internal/ehr/canvas/patient/resource-diff
+ *
+ * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
+ * @param req.query.cxId The cxId of the patient.
+ * @param req.query.patientId The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @param req.query.direction The direction of the resource diff bundles to create.
+ * @param req.query.jobId The job ID of the resource diff job.
+ * @returns Resource diff job and pre-signed URLs for the bundles if completed
+ */
+router.get(
+  "/resource-diff",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const canvasPatientId = getFromQueryOrFail("patientId", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const direction = getFromQueryOrFail("direction", req);
+    const jobId = getFromQueryOrFail("jobId", req);
+    if (!isResourceDiffDirection(direction)) {
+      throw new BadRequestError("Invalid direction", undefined, {
+        direction,
+      });
+    }
+    const bundle = await getResourceDiffBundlesJobPayload({
+      cxId,
+      canvasPatientId,
+      canvasPracticeId,
+      jobId,
+      direction,
+    });
+    return res.status(httpStatus.OK).json(bundle);
   })
 );
 
