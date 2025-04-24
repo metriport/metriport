@@ -1,23 +1,21 @@
-import {
-  BadRequestError,
-  errorToString,
-  executeWithNetworkRetries,
-  MetriportError,
-  NotFoundError,
-} from "@metriport/shared";
 import { UpdateJobSchema } from "@metriport/shared/domain/patient/patient-import/schemas";
-import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
-import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportJobStatus } from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { withDefaultApiErrorHandling } from "./shared";
 
 /**
- * Updates the status of a bulk patient import job.
+ * Updates the bulk patient import job tracking, which includes the status, and total and failed
+ * counts.
  *
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
  * @param status - The new status of the job.
+ * @param total - The total number of patients in the job.
+ * @param failed - The number of patient entries that failed in the job.
+ * @param forceStatusUpdate - Whether to force the status update.
  * @returns the updated job.
  */
 export async function updateJobAtApi({
@@ -30,39 +28,31 @@ export async function updateJobAtApi({
 }: {
   cxId: string;
   jobId: string;
-  status: PatientImportStatus;
+  status: PatientImportJobStatus;
   total?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
-}): Promise<PatientImport> {
+}): Promise<PatientImportJob> {
   const { log } = out(`PatientImport updateJobAtApi - cxId ${cxId} jobId ${jobId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const url = buildUrl(cxId, jobId);
   const payload: UpdateJobSchema = { status, total, failed, forceStatusUpdate };
-  try {
-    log(`Updating API w/ status ${status}, payload ${JSON.stringify(payload)}`);
-    const response = await executeWithNetworkRetries(() => api.post(url, payload));
-    if (!response.data) {
-      throw new MetriportError(`No body returned from API - updateJobAtApi`, undefined, { url });
-    }
-    // intentionally casting to explicitly show that the response is of type any
-    return response.data as PatientImport;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    const msg = `Failure while updating job status @ PatientImport`;
-    log(`${msg}. Cause: ${errorToString(error)}`);
-    const additionalInfo = {
+
+  log(`Updating API w/ status ${status}, payload ${JSON.stringify(payload)}`);
+  const res = await withDefaultApiErrorHandling({
+    functionToRun: () => api.post(url, payload),
+    log,
+    messageWhenItFails: `Failure while updating the bulk import job @ PatientImport`,
+    additionalInfo: {
       url,
       cxId,
       jobId,
       status,
-      context: "patient-import.updateJobStatus",
-    };
-    const detailMsg = error.response.data.detail ?? msg;
-    if (error.response.status === 404) throw new NotFoundError(detailMsg, error, additionalInfo);
-    if (error.response.status === 400) throw new BadRequestError(detailMsg, error, additionalInfo);
-    throw new MetriportError(msg, error, additionalInfo);
-  }
+      context: "patient-import.updateJobAtApi",
+    },
+  });
+  // intentionally casting to explicitly show that the response is of type any
+  return res.data as PatientImportJob;
 }
 
 function buildUrl(cxId: string, jobId: string) {

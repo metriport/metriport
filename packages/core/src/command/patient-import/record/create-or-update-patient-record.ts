@@ -19,18 +19,11 @@ export type UpdatePatientRecord = Pick<
   BucketParam;
 
 /**
- * Creates a patient record in S3. If the record already exists, it updates it.
+ * Creates a patient record in S3.
  *
- * @param cxId - The ID of the customer.
- * @param jobId - The ID of the job.
- * @param rowNumber - The row number of the patient record in the CSV file.
- * @param data - The data to create or update the patient record with.
+ * @see {@link CreatePatientRecord} for the main properties.
  * @param bucketName - The name of the S3 bucket to use. If not provided, will try to retrieve
  *                     from the env vars.
- */
-
-/**
- * TODO 2330 once we decide the behavior on existing records, update this doc
  */
 export async function createPatientRecord({
   bucketName = Config.getPatientImportBucket(),
@@ -53,7 +46,7 @@ export async function createPatientRecord({
     });
     return patientRecord;
   } catch (error) {
-    const msg = `Failure while creating or updating patient record @ PatientImport`;
+    const msg = `Failure while creating patient record @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
@@ -65,6 +58,13 @@ export async function createPatientRecord({
   }
 }
 
+/**
+ * Updates a patient record in S3.
+ *
+ * @see {@link UpdatePatientRecord} for the main properties.
+ * @param bucketName - The name of the S3 bucket to use. If not provided, will try to retrieve
+ *                     from the env vars.
+ */
 export async function updatePatientRecord({
   bucketName = Config.getPatientImportBucket(),
   ...patientRecord

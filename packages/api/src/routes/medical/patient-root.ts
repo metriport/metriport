@@ -19,7 +19,7 @@ import {
   getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
-import { createPatientImport } from "../../command/medical/patient/patient-import/create";
+import { createPatientImportJob } from "../../command/medical/patient/patient-import/create";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
@@ -35,7 +35,7 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
-import { PatientImportDto, fromCreateResponseToDto } from "./dtos/patient-import";
+import { fromCreateResponseToDto, PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
 
@@ -232,7 +232,7 @@ router.post(
     const dryRunParam = getFromQueryAsBoolean("dryRun", req);
     // TODO 2330 add cx-metadata to the job and pass it to all webhooks related to this job
 
-    const patientImportResponse = await createPatientImport({
+    const patientImportResponse = await createPatientImportJob({
       cxId,
       facilityId: facilityIdParam,
       paramsCx: { dryRun: dryRunParam },

@@ -1,69 +1,62 @@
 import { out } from "@metriport/core/util/log";
-import { MetriportError, NotFoundError } from "@metriport/shared";
+import { NotFoundError } from "@metriport/shared";
 import { PatientImportMapping } from "@metriport/shared/domain/patient/patient-import/mapping";
-import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import { getPatientImportJobOrFail } from "./get";
-import { getPatientImportMappings } from "./mapping/get";
+import { getSinglePatientImportMapping } from "./mapping/get";
 
 /**
- * Gets the active patient import job and mapping for a patient's data pipeline request.
+ * Gets the patient import job and mapping for a patient's data pipeline request.
  *
  * @param cxId - The customer ID.
  * @param patientId - The patient ID.
- * @param requestId - The data pipelinerequest ID.
- * @returns the active/processing patient import job and mapping, undefined if can't find them.
+ * @param dataPipelineRequestId - The data pipeline request ID.
+ * @returns the patient import job and mapping, undefined if can't find them.
  */
 export async function getPatientImportByRequestId({
   cxId,
   patientId,
-  requestId,
+  dataPipelineRequestId,
 }: {
   cxId: string;
   patientId: string;
-  requestId: string;
-}): Promise<{ mapping: PatientImportMapping; import: PatientImport } | undefined> {
+  dataPipelineRequestId: string;
+}): Promise<{ job: PatientImportJob; mapping: PatientImportMapping } | undefined> {
   const { log } = out(
-    `getPatientImportByRequestId - cxId ${cxId} patientId ${patientId} requestId ${requestId}`
+    `getPatientImportByRequestId - cx ${cxId} patient ${patientId} dataPipelineReq ${dataPipelineRequestId}`
   );
 
-  const mappings = await getPatientImportMappings({ cxId, patientId, requestId });
+  const mapping = await getSinglePatientImportMapping({
+    cxId,
+    patientId,
+    dataPipelineRequestId: dataPipelineRequestId,
+  });
 
-  if (mappings.length < 1) {
+  if (!mapping) {
     log(`No mapping found for patient`);
     return undefined;
   }
 
-  if (mappings.length === 1) {
-    const mapping = mappings[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const id = mapping.id;
-    const importJob = await getPatientImportJobOrFail({ cxId, id });
-    return { mapping, import: importJob };
-  }
+  const importJob = await getPatientImportJobOrFail({ cxId, jobId: mapping.jobId });
 
-  const mappingIds = mappings.map(m => m.jobId);
-  throw new MetriportError(`Multiple patient import mappings found`, undefined, {
-    cxId,
-    patientId,
-    requestId,
-    mappingIds: mappingIds.join(", "),
-  });
+  return { mapping, job: importJob };
 }
 
 export async function getPatientImportByRequestIdOrFail({
   cxId,
   patientId,
-  requestId,
+  dataPipelineRequestId,
 }: {
   cxId: string;
   patientId: string;
-  requestId: string;
-}): Promise<{ mapping: PatientImportMapping; import: PatientImport }> {
-  const result = await getPatientImportByRequestId({ cxId, patientId, requestId });
+  dataPipelineRequestId: string;
+}): Promise<{ job: PatientImportJob; mapping: PatientImportMapping }> {
+  const result = await getPatientImportByRequestId({ cxId, patientId, dataPipelineRequestId });
   if (!result) {
     throw new NotFoundError(`Patient import not found @ PatientImport`, {
       cxId,
       patientId,
-      requestId,
+      dataPipelineRequestId,
       context: "patient-import.getPatientImportByRequestIdOrFail",
     });
   }

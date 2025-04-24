@@ -14,7 +14,7 @@ export class PatientImportMappingModel extends Model<
   declare jobId: string;
   declare rowNumber: number;
   declare patientId: string;
-  declare requestId: string;
+  declare dataPipelineRequestId: string;
   declare createdAt: Date;
   declare updatedAt: Date;
 
@@ -34,7 +34,7 @@ export class PatientImportMappingModel extends Model<
         patientId: {
           type: DataTypes.STRING,
         },
-        requestId: {
+        dataPipelineRequestId: {
           type: DataTypes.STRING,
         },
       },

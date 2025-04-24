@@ -3,14 +3,14 @@ import { out } from "@metriport/core/util";
 import { PatientImportEntryStatusFinal } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { updateTotals } from "./update-totals";
+import { storePatientEntryStatus } from "./store-entry-status";
 
 dayjs.extend(duration);
 
 export type FinishPatientImportParams = {
   cxId: string;
   jobId: string;
-  status: PatientImportEntryStatusFinal;
+  entryStatus: PatientImportEntryStatusFinal;
 };
 
 /**
@@ -24,16 +24,16 @@ export type FinishPatientImportParams = {
  *
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
- * @param status - The status of the bulk import job.
+ * @param patientEntryStatus - The status of a single patient/entry in the bulk import job.
  */
-export async function tryToFinishPatientImport({
+export async function tryToFinishPatientImportJob({
   cxId,
   jobId,
-  status: singlePatientStatus,
+  entryStatus,
 }: FinishPatientImportParams): Promise<void> {
   const { log } = out(`tryToFinishPatientImport - cxId ${cxId}, jobId ${jobId}`);
 
-  const updatedJob = await updateTotals({ cxId, jobId, status: singlePatientStatus });
+  const updatedJob = await storePatientEntryStatus({ cxId, jobId, entryStatus });
   const { successful, failed, total, status: currentImportJobStatus } = updatedJob;
 
   const sum = successful + failed;

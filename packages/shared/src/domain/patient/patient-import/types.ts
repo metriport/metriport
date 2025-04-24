@@ -1,4 +1,4 @@
-import { PatientImportStatus } from "./status";
+import { PatientImportJobStatus } from "./status";
 
 export type GetPatientImport = {
   id: string;
@@ -17,11 +17,11 @@ export type PatientImportParamsOps = {
 };
 
 // TODO 2330 move BaseDomain to packages/shared and extend from it here
-export type PatientImport = {
+export type PatientImportJob = {
   id: string;
   cxId: string;
   facilityId: string;
-  status: PatientImportStatus;
+  status: PatientImportJobStatus;
   reason: string | undefined;
   /** When the job was created, when the jobId was generated. */
   createdAt: Date;
@@ -46,6 +46,6 @@ export type PatientImportEntryStatus =
   | PatientImportEntryStatusParsed;
 export type PatientImportEntryStatusFinal = typeof failed | typeof successful;
 
-export function isDryRun(job: Pick<PatientImport, "paramsCx" | "paramsOps">): boolean {
+export function isDryRun(job: Pick<PatientImportJob, "paramsCx" | "paramsOps">): boolean {
   return job.paramsOps?.dryRun ?? job.paramsCx?.dryRun ?? false;
 }

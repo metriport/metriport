@@ -16,7 +16,7 @@ dayjs.extend(duration);
 
 // CURRENT: a chunk w/ 5 patients every 20ms is 250 patients per second -> 225,000 in 15min (the lambda timeout)
 const sleepBetweenPatientCreateChunks = dayjs.duration(20, "milliseconds");
-const patientCreateChunk = 5;
+const patientCreateChunkSize = 5;
 
 export class PatientImportParseLocal implements PatientImportParse {
   constructor(
@@ -53,7 +53,6 @@ export class PatientImportParseLocal implements PatientImportParse {
         status: "processing",
         total: successful.length + failed.length,
         failed: failed.length,
-        forceStatusUpdate,
       });
 
       if (dryRun) {
@@ -63,7 +62,7 @@ export class PatientImportParseLocal implements PatientImportParse {
       }
 
       const errors: unknown[] = [];
-      const patientChunks = chunk(successful, patientCreateChunk);
+      const patientChunks = chunk(successful, patientCreateChunkSize);
       for (const patientChunk of patientChunks) {
         await Promise.allSettled(
           patientChunk.map(async parsedPatient => {
@@ -108,6 +107,12 @@ export class PatientImportParseLocal implements PatientImportParse {
       const msg = `Failure while parsing the job of patient import @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
       await updateJobAtApi({ cxId, jobId, status: "failed" });
+      capture.setExtra({
+        cxId,
+        jobId,
+        context: "PatientImportParseLocal.processJobParse",
+        error,
+      });
       throw error;
     }
   }

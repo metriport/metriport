@@ -1,4 +1,4 @@
-import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import { getPatientImportJobModelOrFail } from "./get";
 
 export type PatientImportUpdateParamsCmd = {
@@ -18,6 +18,7 @@ export type PatientImportUpdateParamsCmd = {
  * @param rerunPdOnNewDemographics - Whether to rerun PD on new demographics.
  * @param triggerConsolidated - Whether to trigger consolidated.
  * @param disableWebhooks - Whether to disable webhooks.
+ * @param dryRun - Whether to dry run the job.
  * @returns the updated job.
  */
 export async function updatePatientImportParams({
@@ -27,8 +28,8 @@ export async function updatePatientImportParams({
   triggerConsolidated,
   disableWebhooks,
   dryRun,
-}: PatientImportUpdateParamsCmd): Promise<PatientImport> {
-  const job = await getPatientImportJobModelOrFail({ cxId, id: jobId });
+}: PatientImportUpdateParamsCmd): Promise<PatientImportJob> {
+  const job = await getPatientImportJobModelOrFail({ cxId, jobId });
 
   job.paramsOps = {
     ...job.paramsOps,

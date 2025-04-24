@@ -1,6 +1,6 @@
-import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImportJobStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import {
-  PatientImport,
+  PatientImportJob,
   PatientImportParamsCx,
   PatientImportParamsOps,
 } from "@metriport/shared/domain/patient/patient-import/types";
@@ -26,11 +26,14 @@ export const patientImportRawColumnNames = {
   paramsOps: "params_ops",
 };
 
-export class PatientImportModel extends BaseModel<PatientImportModel> implements PatientImport {
+export class PatientImportJobModel
+  extends BaseModel<PatientImportJobModel>
+  implements PatientImportJob
+{
   static NAME = "patient_import";
   declare cxId: string;
   declare facilityId: string;
-  declare status: PatientImportStatus;
+  declare status: PatientImportJobStatus;
   declare reason: string | undefined;
   declare startedAt: Date | undefined;
   declare finishedAt: Date | undefined;
@@ -41,7 +44,7 @@ export class PatientImportModel extends BaseModel<PatientImportModel> implements
   declare paramsOps: PatientImportParamsOps;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    PatientImportModel.init(
+    PatientImportJobModel.init(
       {
         ...BaseModel.attributes(),
         cxId: {
@@ -80,7 +83,7 @@ export class PatientImportModel extends BaseModel<PatientImportModel> implements
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: PatientImportModel.NAME,
+        tableName: PatientImportJobModel.NAME,
       }
     );
   };

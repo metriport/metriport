@@ -1,9 +1,11 @@
 import { MetriportError } from "@metriport/shared";
-import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
-import { PatientImportEntryStatus } from "@metriport/shared/domain/patient/patient-import/types";
+import {
+  PatientImportEntryStatus,
+  PatientImportJob,
+} from "@metriport/shared/domain/patient/patient-import/types";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
 import {
-  PatientImportModel,
+  PatientImportJobModel,
   patientImportRawColumnNames,
 } from "../../../../models/medical/patient-import";
 
@@ -19,29 +21,22 @@ import {
  *
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
- * @param status - The status of the patient import entry.
+ * @param entryStatus - The status of the patient entry.
  * @returns the updated patient import job.
  */
-export async function updateTotals({
+export async function storePatientEntryStatus({
   cxId,
   jobId,
-  status,
+  entryStatus,
 }: {
   cxId: string;
   jobId: string;
-  status: PatientImportEntryStatus;
-}): Promise<{
-  id: string;
-  cxId: string;
-  status: PatientImportStatus;
-  successful: number;
-  failed: number;
-  total: number;
-}> {
-  const [[updatedRows]] = await PatientImportModel.increment(
+  entryStatus: PatientImportEntryStatus;
+}): Promise<Pick<PatientImportJob, "id" | "cxId" | "status" | "successful" | "failed" | "total">> {
+  const [[updatedRows]] = await PatientImportJobModel.increment(
     [
-      ...(status === "successful" ? ["successful" as const] : []),
-      ...(status === "failed" ? ["failed" as const] : []),
+      ...(entryStatus === "successful" ? ["successful" as const] : []),
+      ...(entryStatus === "failed" ? ["failed" as const] : []),
     ],
     {
       where: {
@@ -49,7 +44,7 @@ export async function updateTotals({
         id: jobId,
       },
       // Sequelize types are a mismatch, had to force this
-    } as IncrementDecrementOptionsWithBy<PatientImportModel>
+    } as IncrementDecrementOptionsWithBy<PatientImportJobModel>
   );
   // Using any because Sequelize doesn't map the columns to the model, even using mapToModel/model
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,8 +54,8 @@ export async function updateTotals({
     id: updatedRaw[patientImportRawColumnNames.id],
     cxId: updatedRaw[patientImportRawColumnNames.cxId],
     status: updatedRaw[patientImportRawColumnNames.status],
-    successful: updatedRaw[patientImportRawColumnNames.successful],
-    failed: updatedRaw[patientImportRawColumnNames.failed],
-    total: updatedRaw[patientImportRawColumnNames.total],
+    successful: parseInt(updatedRaw[patientImportRawColumnNames.successful]),
+    failed: parseInt(updatedRaw[patientImportRawColumnNames.failed]),
+    total: parseInt(updatedRaw[patientImportRawColumnNames.total]),
   };
 }

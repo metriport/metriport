@@ -1,5 +1,5 @@
 import { errorToString, MetriportError } from "@metriport/shared";
-import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { JobRecord } from "../patient-import";
@@ -12,7 +12,7 @@ import { createFileKeyJob, getS3UtilsInstance } from "../patient-import-shared";
  * @returns the jobId andS3 info of the created file
  */
 export async function createJobRecord(
-  jobCreate: PatientImport
+  jobCreate: PatientImportJob
 ): Promise<{ jobId: string; key: string; bucketName: string }> {
   const { cxId, facilityId, id: jobId } = jobCreate;
   const { log } = out(`PatientImport createJobRecord - cxId ${cxId} facilityId ${facilityId}`);

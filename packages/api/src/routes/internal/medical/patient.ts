@@ -4,9 +4,6 @@ import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "@metriport/core/command/feature-flags/domain-ffs";
-import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
-import { buildPatientImportResult } from "@metriport/core/command/patient-import/steps/result/patient-import-result-factory";
-import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import {
   Hl7v2Subscriber,
@@ -14,8 +11,6 @@ import {
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { capture } from "@metriport/core/util";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -29,11 +24,6 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
-import {
-  addPatientMappingSchema,
-  updateJobSchema,
-} from "@metriport/shared/domain/patient/patient-import/schemas";
-import { validateNewStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -63,21 +53,12 @@ import {
   getPatientStates,
 } from "../../../command/medical/patient/get-patient";
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
-import { createPatientImport } from "../../../command/medical/patient/patient-import/create";
-import { getPatientImportJobOrFail } from "../../../command/medical/patient/patient-import/get";
-import {
-  createPatientImportMapping,
-  CreatePatientImportMappingCmd,
-} from "../../../command/medical/patient/patient-import/mapping/create";
-import { updatePatientImportParams } from "../../../command/medical/patient/patient-import/update-params";
-import { updatePatientImportTracking } from "../../../command/medical/patient/patient-import/update-tracking";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
 } from "../../../command/medical/patient/update-patient";
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import { getCQData } from "../../../external/carequality/patient";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../../external/commonwell";
 import { findDuplicatedPersons } from "../../../external/commonwell/admin/find-patient-duplicates";
@@ -87,7 +68,6 @@ import { checkStaleEnhancedCoverage } from "../../../external/commonwell/cq-brid
 import { initEnhancedCoverage } from "../../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { setCQLinkStatuses } from "../../../external/commonwell/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../../external/commonwell/cq-bridge/ec-updater-local";
-import { getCWData } from "../../../external/commonwell/patient";
 import { cqLinkStatus } from "../../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
@@ -119,9 +99,9 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
-  getFromQueryAsBooleanOrFail,
   getFromQueryOrFail,
 } from "../../util";
+import patientImportRoutes from "./patient-import";
 import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
 
@@ -131,6 +111,7 @@ const router = Router();
 
 router.use("/settings", patientSettingsRoutes);
 router.use("/job", patientJobRoutes);
+router.use("/bulk", patientImportRoutes);
 
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });
@@ -1013,271 +994,6 @@ router.post(
     });
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/bulk
- *
- * Creates a bulk patient import. This is an alternative entry point to the bulk import process,
- * which can be triggered by a cx through the public POST /medical/v1/patient/bulk or this endpoint
- * by our team.
- *
- * Typically used during onboarding, when we're doing a Coverage Assessment for a new customer.
- *
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the Facility the Patients should be associated with
- *        (optional if there's only one facility for the customer, fails if not provided and
- *        there's more than one facility for the customer).
- * @param req.query.dryRun Whether to simply validate the file or actually import it (optional,
- *        defaults to false).
- * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation
- *        on this PD run.
- * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on
- *        conversion finish.
- * @param req.query.disableWebhooks Optional: Indicates whether send webhooks, applies to both
- *        the data pipeline and the bulk import webhooks.
- * @param req.query.dryRun Whether to simply validate or run the assessment.
- *
- */
-router.post(
-  "/bulk",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getFromQuery("facilityId", req);
-    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
-    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
-    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    const dryRun = getFromQueryAsBooleanOrFail("dryRun", req);
-
-    const patientImportResponse = await createPatientImport({
-      cxId,
-      facilityId,
-      paramsOps: {
-        dryRun,
-        rerunPdOnNewDemographics,
-        triggerConsolidated,
-        disableWebhooks,
-      },
-    });
-
-    return res.status(status.OK).json(patientImportResponse);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/bulk/:id/continue
- *
- * Only to be used to fix/continue a stuck job.
- *
- * Continues the process of parsing a bulk patient import job, initiated either by a cx through
- * the public POST /medical/v1/patient/bulk or the internal POST /internal/patient/bulk.
- *
- * @param req.params.id The patient import job ID.
- * @param req.query.cxId The customer ID.
- * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
- * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
- * @param req.query.disableWebhooks Optional: Indicates whether send webhooks, applies to both
- *        the data pipeline and the bulk import webhooks.
- * @param req.query.forceStatusUpdate Optional: Indicates whether to bypass the job status validation (state machine).
- * @param req.query.dryRun Whether to simply validate or run the assessment, overrides the cx
- *                         provided one (optional, defaults to cx provided or false if none provides it).
- */
-router.post(
-  "/bulk/:id/continue",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const jobId = getFromParamsOrFail("id", req);
-    // job parms - to be stored in the repository
-    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
-    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
-    const dryRun = getFromQueryAsBooleanOrFail("dryRun", req);
-    // request param - just being passed as parameter to this particular request
-    const forceStatusUpdate = getFromQueryAsBoolean("forceStatusUpdate", req);
-    capture.setExtra({ cxId, jobId });
-
-    await updatePatientImportParams({
-      cxId,
-      jobId,
-      rerunPdOnNewDemographics,
-      triggerConsolidated,
-      disableWebhooks,
-      dryRun,
-    });
-
-    const patientImportParser = buildPatientImportParseHandler();
-    await patientImportParser.processJobParse({
-      cxId,
-      jobId,
-      forceStatusUpdate,
-    });
-
-    return res.sendStatus(status.OK);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/bulk/:id/done
- *
- * IMPORTANT: Only to be used to unstuck a bulk patient import job.
- *
- * Finishes a bulk patient import job. If the current status doesn't allow completing the job,
- * you can update the status to `processing` using the endpoint POST /internal/patient/bulk/:id
- *
- * @param req.params.id The patient import job ID.
- * @param req.query.cxId The customer ID.
- * @param req.query.disableWebhooks Optional: Indicates whether send webhooks, applies to both
- *        the data pipeline and the bulk import webhooks.
- */
-router.post(
-  "/bulk/:id/done",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const jobId = getFromParamsOrFail("id", req);
-    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
-    capture.setExtra({ cxId, jobId });
-
-    const job = await getPatientImportJobOrFail({ cxId, id: jobId });
-
-    validateNewStatus(job.status, "completed");
-
-    await updatePatientImportParams({ cxId, jobId, disableWebhooks });
-
-    const next = buildPatientImportResult();
-    await next.processJobResult({ cxId, jobId });
-
-    return res.sendStatus(status.OK);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/bulk/:id
- *
- * Updates the status of a bulk patient import job. To be called by the parse lambda to
- * indicate the CSV file has been parsed and the job has been started or failed.
- *
- * @param req.params.id The patient import job ID.
- * @param req.query.cxId The customer ID.
- * @param req.query.status The new status of the job.
- * @param req.query.forceStatusUpdate Optional: Indicates whether to bypass the job status validation (state machine).
- */
-router.post(
-  "/bulk/:id",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const jobId = getFromParamsOrFail("id", req);
-    const updateParams = updateJobSchema.parse(req.body);
-    capture.setExtra({ cxId, jobId });
-
-    const patientImport = await updatePatientImportTracking({
-      jobId,
-      cxId,
-      status: updateParams.status,
-      total: updateParams.total,
-      failed: updateParams.failed,
-      forceStatusUpdate: updateParams.forceStatusUpdate,
-    });
-
-    return res.status(status.OK).json(patientImport);
-  })
-);
-
-const detailSchema = z.enum(["info", "debug"]).optional().default("info");
-
-/** ---------------------------------------------------------------------------
- * GET /internal/patient/bulk/:id
- *
- * Returns the job record for a given bulk patient import job.
- *
- * @param req.params.id The patient import job ID.
- * @param req.query.cxId The customer ID.
- * @param req.query.level Whether to include status detail FOR EACH PATIENT if the job if the
- *        job is `processing`, can be either `info` or `debug`. Optional, defaults to 'info'.
- * @return The patient import job.
- */
-router.get(
-  "/bulk/:id",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const jobId = getFromParamsOrFail("id", req);
-    const detail = detailSchema.parse(req.query.level);
-
-    const patientImport = await getPatientImportJobOrFail({ cxId, id: jobId });
-
-    if (patientImport.status === "processing" && detail === "debug") {
-      const details: Record<string, string | number | null>[] = [];
-      const resultEntries = await getResultEntries({
-        cxId,
-        jobId,
-        patientImportBucket: Config.getPatientImportBucket(),
-      });
-      await executeAsynchronously(resultEntries, async entry => {
-        if (entry.patientId) {
-          const patient = await getPatientOrFail({ id: entry.patientId, cxId });
-          const cqData = getCQData(patient.data.externalData);
-          const cwData = getCWData(patient.data.externalData);
-          details.push({
-            patientId: patient.id,
-            rowNumber: entry.rowNumber,
-            status: entry.status,
-            globalDownloadStatus: patient.data.documentQueryProgress?.download?.status ?? null,
-            globalConvertStatus: patient.data.documentQueryProgress?.convert?.status ?? null,
-            cqPqStatus: cqData?.discoveryStatus ?? null,
-            cqDownloadStatus: cqData?.documentQueryProgress?.download?.status ?? null,
-            cqConvertStatus: cqData?.documentQueryProgress?.convert?.status ?? null,
-            cwPqStatus: cwData?.status ?? null,
-            cwDownloadStatus: cwData?.documentQueryProgress?.download?.status ?? null,
-            cwConvertStatus: cwData?.documentQueryProgress?.convert?.status ?? null,
-          });
-        } else {
-          details.push({
-            patientId: null,
-            rowNumber: entry.rowNumber,
-            status: entry.status,
-          });
-        }
-      });
-      const detailedResponse = {
-        ...patientImport,
-        details,
-      };
-      return res.status(status.OK).json(detailedResponse);
-    }
-
-    return res.status(status.OK).json(patientImport);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/bulk/:id/patient-mapping",
- *
- * Updates the status of a bulk patient import job. To be called by the parse lambda to
- * indicate the CSV file has been parsed and the job has been started or failed.
- *
- * @param req.params.id The patient import job ID.
- * @param req.query.cxId The customer ID.
- * @param req.query.status The new status of the job.
- * @param req.query.forceStatusUpdate Optional: Indicates whether to bypass the job status validation (state machine).
- */
-router.post(
-  "/bulk/:id/patient-mapping",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const jobId = getFromParamsOrFail("id", req);
-    const params = addPatientMappingSchema.parse(req.body);
-
-    const createPatientImportMappingCmd: CreatePatientImportMappingCmd = { ...params, jobId };
-    capture.setExtra(createPatientImportMappingCmd);
-
-    const patientImport = await createPatientImportMapping(createPatientImportMappingCmd);
-
-    return res.status(status.OK).json(patientImport);
   })
 );
 

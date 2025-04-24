@@ -15,7 +15,7 @@ export async function createPatientImportMapping({
   jobId,
   rowNumber,
   patientId,
-  requestId,
+  dataPipelineRequestId,
 }: CreatePatientImportMappingCmd): Promise<PatientImportMapping> {
   const mappingToCreate: PatientImportMappingCreate = {
     id: uuidv7(),
@@ -23,7 +23,7 @@ export async function createPatientImportMapping({
     jobId,
     rowNumber,
     patientId,
-    requestId,
+    dataPipelineRequestId,
   };
   const newMapping = await PatientImportMappingModel.create(mappingToCreate);
   return newMapping.dataValues;

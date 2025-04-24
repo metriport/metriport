@@ -9,27 +9,27 @@ import {
   toS3Metadata,
 } from "@metriport/shared/domain/patient/patient-import/metadata";
 import {
-  PatientImport,
+  PatientImportJob,
   PatientImportParamsCx,
   PatientImportParamsOps,
 } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PatientImportModel } from "../../../../models/medical/patient-import";
+import { PatientImportJobModel } from "../../../../models/medical/patient-import";
 import { getOptionalFacilityOrFail } from "../../facility/get-facility";
 
 dayjs.extend(duration);
 
 const presignedUploadUrlDuration = dayjs.duration(10, "minutes");
 
-export type PatientImportCreateCmd = {
+export type PatientImportJobCreateCmd = {
   cxId: string;
   facilityId?: string | undefined;
   paramsCx?: Partial<PatientImportParamsCx>;
   paramsOps?: Partial<PatientImportParamsOps>;
 };
 
-export type PatientImportCreateResponse = PatientImport & {
+export type PatientImportJobCreateResponse = PatientImportJob & {
   uploadUrl: string;
 };
 
@@ -38,16 +38,17 @@ export type PatientImportCreateResponse = PatientImport & {
  *
  * @param cxId - The customer ID.
  * @param facilityId - The facility ID (optional).
- * @param dryRun - Whether to simply validate the file or actually import it (optional, defaults to false).
- * @returns the bulk import job ID and the URL to upload the CSV file.
+ * @param paramsCx - The customer-specific parameters (optional).
+ * @param paramsOps - The operations-specific parameters (optional).
+ * @returns the bulk import job with the URL to upload the CSV file.
  * @throws BadRequestError if no facility ID is provided and there's more than one facility for the customer.
  */
-export async function createPatientImport({
+export async function createPatientImportJob({
   cxId,
   facilityId: facilityIdParam,
-  paramsCx = {},
-  paramsOps = {},
-}: PatientImportCreateCmd): Promise<PatientImportCreateResponse> {
+  paramsCx,
+  paramsOps,
+}: PatientImportJobCreateCmd): Promise<PatientImportJobCreateResponse> {
   const { log } = out(`createPatientImport - cxId ${cxId}, facilityId ${facilityIdParam}`);
 
   const facility = await getOptionalFacilityOrFail(cxId, facilityIdParam);
@@ -68,15 +69,15 @@ export async function createPatientImport({
 
   log(`Initialized job ${jobId} for facility ${facility.id}`);
 
-  const resp: PatientImportCreateResponse = {
+  const resp: PatientImportJobCreateResponse = {
     ...job,
     uploadUrl,
   };
   return resp;
 }
 
-async function storeAtDb(jobCreate: PatientImport): Promise<PatientImport> {
-  const newPatientImport = await PatientImportModel.create(jobCreate);
+async function storeAtDb(jobCreate: PatientImportJob): Promise<PatientImportJob> {
+  const newPatientImport = await PatientImportJobModel.create(jobCreate);
   return newPatientImport.dataValues;
 }
 
@@ -89,7 +90,7 @@ async function createUploadUrl({ cxId, jobId }: { cxId: string; jobId: string })
     bucket: bucketName,
     key,
     durationSeconds: presignedUploadUrlDuration.asSeconds(),
-    metadata: metadata,
+    metadata,
   });
   return s3Url;
 }

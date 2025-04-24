@@ -70,7 +70,7 @@ export async function storeResults({
       }),
     ]);
   } catch (error) {
-    const msg = `Failure validating and parsing import @ PatientImport`;
+    const msg = `Failure storing results of bulk patient import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
