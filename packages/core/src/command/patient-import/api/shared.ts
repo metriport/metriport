@@ -45,9 +45,9 @@ export async function withDefaultApiErrorHandling<T>({
           additionalInfo
         )}. Cause: ${errorToString(error)}`
       );
-    const detailMsg = error.response.data.detail ?? messageWhenItFails;
-    if (error.response.status === 404) throw new NotFoundError(detailMsg, error, additionalInfo);
-    if (error.response.status === 400) throw new BadRequestError(detailMsg, error, additionalInfo);
+    const detailMsg = error.response?.data?.detail ?? messageWhenItFails;
+    if (error.response?.status === 404) throw new NotFoundError(detailMsg, error, additionalInfo);
+    if (error.response?.status === 400) throw new BadRequestError(detailMsg, error, additionalInfo);
     throw new MetriportError(messageWhenItFails, error, additionalInfo);
   }
 }
