@@ -8,6 +8,8 @@ const folderFiles = "files";
 const folderPatients = "patients";
 const folderMappings = "mappings";
 
+export const reasonForCxInternalError = "Internal error";
+
 export type FileStages = "raw" | "headers" | "result" | "invalid";
 
 function createCxJobPrefix(cxId: string, jobId: string): string {
@@ -69,6 +71,7 @@ export function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+// needed?
 export type GenericObject = { [key: string]: string | undefined };
 
 // TODO 2330 Review this as part of POST /internal/patient/bulk/coverage-assessment

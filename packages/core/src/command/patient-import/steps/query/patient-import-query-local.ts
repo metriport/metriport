@@ -6,6 +6,7 @@ import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { startDocumentQuery } from "../../api/start-document-query";
 import { startPatientQuery } from "../../api/start-patient-query";
+import { reasonForCxInternalError } from "../../patient-import-shared";
 import { updatePatientRecord } from "../../record/create-or-update-patient-record";
 import { PatientImportQuery, ProcessPatientQueryRequest } from "./patient-import-query";
 
@@ -66,7 +67,7 @@ export class PatientImportQueryLocal implements PatientImportQuery {
         jobId,
         rowNumber,
         status: "failed",
-        reasonForCx: "Internal error",
+        reasonForCx: reasonForCxInternalError,
         reasonForDev: errorMsg,
         bucketName: this.patientImportBucket,
       });
