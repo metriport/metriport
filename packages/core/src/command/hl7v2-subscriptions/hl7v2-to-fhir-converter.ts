@@ -47,7 +47,7 @@ export async function convertHl7MessageToFhirAndUpload({
   bucketName,
 }: Hl7ToFhirLambdaProps): Promise<void> {
   const baseUrl = apiUrl || Config.getApiLoadBalancerAddress();
-  const s3BucketName = bucketName || Config.getOutgoingHl7NotificationBucketName();
+  const s3BucketName = bucketName || Config.getHl7OutgoingMessageBucketName();
 
   const { log } = out(`Hl7 to FHIR Lambda - cx: ${cxId}, pt: ${patientId}`);
   log(`Converting message from ${messageReceivedTimestamp}`);

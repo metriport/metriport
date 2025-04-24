@@ -84,9 +84,6 @@ export class Config {
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
-  static getOutgoingHl7NotificationBucketName(): string {
-    return getEnvVarOrFail("OUTGOING_HL7_NOTIFICATION_BUCKET_NAME");
-  }
 
   static getCdaToFhirConversionBucketName(): string | undefined {
     return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
