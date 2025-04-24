@@ -31,7 +31,6 @@ export async function createPatientMapping({
   const url = buildUrl(jobId);
   const payload: AddPatientMappingSchema = {
     cxId,
-    jobId,
     rowNumber,
     patientId,
     dataPipelineRequestId,

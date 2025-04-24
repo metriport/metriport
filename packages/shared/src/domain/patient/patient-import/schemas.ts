@@ -36,7 +36,6 @@ export type UpdateJobSchema = z.infer<typeof updateJobSchema>;
 
 export const addPatientMappingSchema = z.object({
   cxId: z.string(),
-  jobId: z.string(),
   rowNumber: z.number(),
   patientId: z.string(),
   dataPipelineRequestId: z.string(),
