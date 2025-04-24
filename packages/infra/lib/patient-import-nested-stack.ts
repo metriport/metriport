@@ -137,7 +137,6 @@ export class PatientImportNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       bucket: this.bucket,
-      notificationUrl: config.notificationUrl,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     });
@@ -410,7 +409,6 @@ export class PatientImportNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    notificationUrl: string;
   }): Lambda {
     const { lambdaLayers, vpc, bucket, envType, sentryDsn, alarmAction } = ownProps;
     const { name, entry, lambdaMemory, lambdaTimeout } = settings().jobResult;

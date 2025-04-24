@@ -134,6 +134,9 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response): Promise
     } else if (bulkPatientCreate.status === "completed") {
       // Download and process the result file
       console.log(`COMPLETED: ${JSON.stringify(payload, undefined, 2)}`);
+    } else if (bulkPatientCreate.status === "failed") {
+      // Download and process the result file
+      console.log(`FAILED: ${JSON.stringify(payload, undefined, 2)}`);
     } else {
       console.log("Failed to process the bulk patient create");
     }
