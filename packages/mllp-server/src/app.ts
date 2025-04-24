@@ -20,6 +20,8 @@ import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { initSentry } from "./sentry";
 import { withErrorHandling } from "./utils";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
@@ -79,6 +81,18 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           }),
           file: Buffer.from(asString(message)),
           contentType: "text/plain",
+        });
+
+        analytics({
+          distinctId: cxId,
+          event: EventTypes.hl7NotificationReceived,
+          properties: {
+            cxId,
+            patientId,
+            messageCode,
+            triggerEvent,
+            platform: "mllp-server",
+          },
         });
       }, logger)
     );
