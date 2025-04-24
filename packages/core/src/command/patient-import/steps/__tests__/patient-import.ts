@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { makePatient } from "../../../../domain/__tests__/patient";
-import { PatientPayload } from "../create/patient-import-create";
+import { PatientPayload } from "../../patient-import";
 
 export function makePatientPayload(params: Partial<PatientPayload> = {}): PatientPayload {
   const { externalId, ...rest } = params;
