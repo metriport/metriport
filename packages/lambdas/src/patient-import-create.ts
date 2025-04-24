@@ -91,7 +91,7 @@ function parseBody(body?: unknown): Omit<ProcessPatientCreateRequest, "rowCsv" |
   const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
 
   const rowNumberRaw = bodyAsJson.rowNumber;
-  if (!rowNumberRaw) throw new Error(`Missing rowNumber`);
+  if (rowNumberRaw == undefined) throw new Error(`Missing rowNumber`);
   if (typeof rowNumberRaw !== "number") throw new Error(`Invalid rowNumber`);
 
   const cxId = cxIdRaw;
