@@ -24,7 +24,7 @@ export class PatientImportQueryLocal implements PatientImportQuery {
     jobId,
     rowNumber,
     patientId,
-    requestId,
+    dataPipelineRequestId,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,
@@ -33,13 +33,13 @@ export class PatientImportQueryLocal implements PatientImportQuery {
       await startPatientQuery({
         cxId,
         patientId,
-        requestId,
+        dataPipelineRequestId,
         rerunPdOnNewDemographics,
       });
       await sleep(waitTimeBetweenPdAndDq().asMilliseconds());
       await startDocumentQuery({
         cxId,
-        requestId,
+        requestId: dataPipelineRequestId,
         patientId,
         triggerConsolidated,
         disableWebhooks,
@@ -49,17 +49,17 @@ export class PatientImportQueryLocal implements PatientImportQuery {
       const { log } = out(`PatientImport processPatientQuery.local - cx ${cxId}, job ${jobId}`);
       const msg =
         `Failure while processing patient query @ PatientImport - row ${rowNumber}, ` +
-        `patient ${patientId}, request ${requestId}`;
+        `patient ${patientId}, dataPipelineReq ${dataPipelineRequestId}`;
       const errorMsg = errorToString(error);
       log(`${msg}. Cause: ${errorMsg}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          patientId,
-          context: "patient-import-query-local.processPatientQuery",
-          error,
-        },
+      capture.setExtra({
+        cxId,
+        jobId,
+        rowNumber,
+        patientId,
+        dataPipelineRequestId,
+        context: "patient-import-query-local.processPatientQuery",
+        error,
       });
       await updatePatientRecord({
         cxId,
@@ -70,7 +70,6 @@ export class PatientImportQueryLocal implements PatientImportQuery {
         reasonForDev: errorMsg,
         bucketName: this.patientImportBucket,
       });
-
       throw error;
     }
   }

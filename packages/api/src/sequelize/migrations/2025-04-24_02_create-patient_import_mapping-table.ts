@@ -38,9 +38,9 @@ export const up: Migration = async ({ context: queryInterface }) => {
           field: "patient_id",
           allowNull: false,
         },
-        requestId: {
+        dataPipelineRequestId: {
           type: DataTypes.STRING,
-          field: "request_id",
+          field: "data_pipeline_request_id",
           allowNull: false,
         },
       },

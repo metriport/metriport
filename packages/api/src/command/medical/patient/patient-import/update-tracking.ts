@@ -2,22 +2,22 @@ import { out } from "@metriport/core/util/log";
 import { emptyFunction } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  PatientImportStatus,
+  PatientImportJobStatus,
   validateNewStatus,
 } from "@metriport/shared/domain/patient/patient-import/status";
-import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PatientImportModel } from "../../../../models/medical/patient-import";
+import { PatientImportJobModel } from "../../../../models/medical/patient-import";
 import { getPatientImportJobOrFail } from "./get";
-import { processPatientImportWebhook } from "./process-patient-import-webhook";
+import { processPatientImportJobWebhook } from "./process-patient-import-webhook";
 
 dayjs.extend(duration);
 
 export type PatientImportUpdateStatusCmd = {
   cxId: string;
   jobId: string;
-  status?: PatientImportStatus;
+  status?: PatientImportJobStatus;
   total?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
@@ -46,11 +46,11 @@ export async function updatePatientImportTracking({
   total,
   failed,
   forceStatusUpdate = false,
-}: PatientImportUpdateStatusCmd): Promise<PatientImport> {
+}: PatientImportUpdateStatusCmd): Promise<PatientImportJob> {
   const { log } = out(`updatePatientImportTracking - cxId ${cxId} jobId ${jobId}`);
-
+  const now = buildDayjs().toDate();
   // TODO 2330 move to the model version for consistency
-  const job = await getPatientImportJobOrFail({ cxId, id: jobId });
+  const job = await getPatientImportJobOrFail({ cxId, jobId });
   const { disableWebhooks } = job.paramsOps ?? {};
   const oldStatus = job.status;
   const newStatus = status
@@ -61,7 +61,7 @@ export async function updatePatientImportTracking({
   const justTurnedProcessing = newStatus === "processing" && oldStatus !== "processing";
   const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
 
-  const jobToUpdate: PatientImport = {
+  const jobToUpdate: PatientImportJob = {
     ...job,
     status: newStatus ?? oldStatus,
   };
@@ -74,9 +74,12 @@ export async function updatePatientImportTracking({
     jobToUpdate.failed = failed;
   }
   if (justTurnedProcessing) {
-    jobToUpdate.startedAt = buildDayjs().toDate();
+    jobToUpdate.startedAt = now;
   }
-  await PatientImportModel.update(jobToUpdate, {
+  if (justTurnedCompleted) {
+    jobToUpdate.finishedAt = now;
+  }
+  await PatientImportJobModel.update(jobToUpdate, {
     where: { cxId, id: jobId },
   });
 
@@ -86,7 +89,7 @@ export async function updatePatientImportTracking({
       `Sending WH to cx for patient import, newStatus ${newStatus}, ` +
         `oldStatus ${oldStatus}, disableWebhooks ${disableWebhooks}`
     );
-    processPatientImportWebhook(jobToUpdate).catch(emptyFunction);
+    processPatientImportJobWebhook(jobToUpdate).catch(emptyFunction);
   }
   return jobToUpdate;
 }

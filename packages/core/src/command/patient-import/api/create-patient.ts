@@ -1,8 +1,8 @@
-import { errorToString, MetriportError, patientCreateResponseSchema } from "@metriport/shared";
+import { MetriportError, patientCreateResponseSchema } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
 import { PatientPayload } from "../patient-import";
+import { withDefaultApiErrorHandling } from "./shared";
 
 /**
  * Creates a patient in the API.
@@ -21,28 +21,26 @@ export async function createPatient({
   facilityId: string;
   patientPayload: PatientPayload;
 }): Promise<string> {
-  const { log, debug } = out(`PatientImport createPatient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const patientUrl = buildUrl(cxId, facilityId);
-  try {
-    const response = await api.post(patientUrl, patientPayload);
-    if (!response.data) {
-      throw new MetriportError(`No body returned while creating patient`, undefined, {
-        patientUrl,
-      });
-    }
-    debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
-    return patientCreateResponseSchema.parse(response.data).id;
-  } catch (error) {
-    const msg = `Failure while creating patient @ PatientImport`;
-    log(`${msg}. Cause: ${errorToString(error)}`);
-    throw new MetriportError(msg, error, {
+
+  const response = await withDefaultApiErrorHandling({
+    functionToRun: () => api.post(patientUrl, patientPayload),
+    messageWhenItFails: `Failure while creating patient @ PatientImport`,
+    additionalInfo: {
       cxId,
       facilityId,
-      url: patientUrl,
+      patientUrl,
       context: "patient-import.createPatient",
+    },
+  });
+
+  if (!response.data) {
+    throw new MetriportError(`No body returned while creating patient`, undefined, {
+      patientUrl,
     });
   }
+  return patientCreateResponseSchema.parse(response.data).id;
 }
 
 function buildUrl(cxId: string, facilityId: string) {

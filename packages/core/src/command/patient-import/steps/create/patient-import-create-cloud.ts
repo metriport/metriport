@@ -11,12 +11,14 @@ export class PatientImportCreateCloud implements PatientImportCreate {
   constructor(private readonly patientCreateQueueUrl: string) {}
 
   async processPatientCreate(params: ProcessPatientCreateRequest): Promise<void> {
-    const { cxId, jobId } = params;
-    const { log } = out(`PatientImport processPatientCreate.cloud - cxId ${cxId} jobId ${jobId}`);
+    const { cxId, jobId, rowNumber } = params;
+    const { log } = out(
+      `PatientImport processPatientCreate.cloud - cxId ${cxId} jobId ${jobId} rowNumber ${rowNumber}`
+    );
+
+    log(`Putting message on queue ${this.patientCreateQueueUrl}`);
 
     const payload = JSON.stringify(params);
-    log(`Putting message on queue ${this.patientCreateQueueUrl}: ${payload}`);
-
     await sqsClient.sendMessageToQueue(this.patientCreateQueueUrl, payload, {
       fifo: true,
       messageDeduplicationId: createUuidFromText(payload),

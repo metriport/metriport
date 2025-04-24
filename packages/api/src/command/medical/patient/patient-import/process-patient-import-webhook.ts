@@ -3,7 +3,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture, out } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
 import { errorToString } from "@metriport/shared";
-import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import { WebhookBulkPatientImportPayload } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -18,9 +18,9 @@ dayjs.extend(duration);
 
 const presignedResultUrlDuration = dayjs.duration(3, "minutes");
 
-export async function processPatientImportWebhook(job: PatientImport): Promise<void> {
+export async function processPatientImportJobWebhook(job: PatientImportJob): Promise<void> {
   const { cxId, id: jobId, status, paramsOps } = job;
-  const { log } = out(`processPatientImportWebhook - cx ${cxId}, job ${jobId}`);
+  const { log } = out(`processPatientImportJobWebhook - cx ${cxId}, job ${jobId}`);
   try {
     const settings = await getSettingsOrFail({ id: cxId });
 
@@ -54,15 +54,15 @@ export async function processPatientImportWebhook(job: PatientImport): Promise<v
       });
     }
   } catch (error) {
-    log(`Error on processPatientImportWebhook: ${errorToString(error)}`);
+    log(`Error on processPatientImportJobWebhook: ${errorToString(error)}`);
     capture.error(error, {
-      extra: { cxId, jobId, context: `webhook.processPatientImportWebhook`, error },
+      extra: { cxId, jobId, context: `webhook.processPatientImportJobWebhook`, error },
     });
   }
 }
 
 async function getBulkPatientImportPresignedDownloadUrl(
-  job: PatientImport
+  job: PatientImportJob
 ): Promise<string | undefined> {
   const { cxId, id: jobId, status } = job;
 

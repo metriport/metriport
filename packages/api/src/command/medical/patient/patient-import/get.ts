@@ -1,12 +1,12 @@
 import { NotFoundError } from "@metriport/shared";
-import { PatientImportStatus } from "@metriport/shared/domain/patient/patient-import/status";
-import { PatientImport } from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportJobStatus } from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import { Op } from "sequelize";
-import { PatientImportModel } from "../../../../models/medical/patient-import";
+import { PatientImportJobModel } from "../../../../models/medical/patient-import";
 
 type GetPatientImportJobParams = {
   cxId: string;
-  id: string;
+  jobId: string;
 };
 
 /**
@@ -18,9 +18,9 @@ type GetPatientImportJobParams = {
  */
 export async function getPatientImportJob({
   cxId,
-  id,
-}: GetPatientImportJobParams): Promise<PatientImport | undefined> {
-  const job = await getPatientImportJobModel({ cxId, id });
+  jobId,
+}: GetPatientImportJobParams): Promise<PatientImportJob | undefined> {
+  const job = await getPatientImportJobModel({ cxId, jobId });
   return job?.dataValues;
 }
 
@@ -34,9 +34,9 @@ export async function getPatientImportJob({
  */
 export async function getPatientImportJobOrFail({
   cxId,
-  id,
-}: GetPatientImportJobParams): Promise<PatientImport> {
-  const job = await getPatientImportJobModelOrFail({ cxId, id });
+  jobId,
+}: GetPatientImportJobParams): Promise<PatientImportJob> {
+  const job = await getPatientImportJobModelOrFail({ cxId, jobId });
   return job.dataValues;
 }
 
@@ -49,9 +49,9 @@ export async function getPatientImportJobOrFail({
  */
 export async function getPatientImportJobModel({
   cxId,
-  id,
-}: GetPatientImportJobParams): Promise<PatientImportModel | null> {
-  return PatientImportModel.findOne({ where: { cxId, id } });
+  jobId,
+}: GetPatientImportJobParams): Promise<PatientImportJobModel | null> {
+  return PatientImportJobModel.findOne({ where: { cxId, id: jobId } });
 }
 
 /**
@@ -64,9 +64,9 @@ export async function getPatientImportJobModel({
  */
 export async function getPatientImportJobModelOrFail({
   cxId,
-  id,
-}: GetPatientImportJobParams): Promise<PatientImportModel> {
-  const job = await getPatientImportJobModel({ cxId, id });
+  jobId,
+}: GetPatientImportJobParams): Promise<PatientImportJobModel> {
+  const job = await getPatientImportJobModel({ cxId, jobId });
   if (!job) {
     throw new NotFoundError(`Patient import job not found`);
   }
@@ -75,22 +75,22 @@ export async function getPatientImportJobModelOrFail({
 
 export async function getPatientImportJobList({
   cxId,
-  ids,
+  jobIds,
   status: statusParam,
 }: {
   cxId: string;
-  ids?: string[];
-  status?: PatientImportStatus | PatientImportStatus[];
-}): Promise<PatientImport[]> {
+  jobIds?: string[];
+  status?: PatientImportJobStatus | PatientImportJobStatus[];
+}): Promise<PatientImportJob[]> {
   const status = statusParam
     ? Array.isArray(statusParam)
       ? statusParam
       : [statusParam]
     : undefined;
-  const jobs = await PatientImportModel.findAll({
+  const jobs = await PatientImportJobModel.findAll({
     where: {
       cxId,
-      ...(ids ? { id: { [Op.in]: ids } } : {}),
+      ...(jobIds ? { id: { [Op.in]: jobIds } } : {}),
       ...(status ? { status: { [Op.in]: status } } : {}),
     },
   });

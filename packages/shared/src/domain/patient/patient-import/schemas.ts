@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { patientImportStatus } from "./status";
+import { patientImportJobStatus } from "./status";
 
 // TODO 2330 Review this as part of POST /internal/patient/bulk/coverage-assessment
 // export const patientImportPatientSchema = z.object({
@@ -27,7 +27,7 @@ import { patientImportStatus } from "./status";
 // });
 
 export const updateJobSchema = z.object({
-  status: z.enum(patientImportStatus),
+  status: z.enum(patientImportJobStatus),
   total: z.number().optional(),
   failed: z.number().optional(),
   forceStatusUpdate: z.boolean().optional(),
@@ -39,6 +39,6 @@ export const addPatientMappingSchema = z.object({
   jobId: z.string(),
   rowNumber: z.number(),
   patientId: z.string(),
-  requestId: z.string(),
+  dataPipelineRequestId: z.string(),
 });
 export type AddPatientMappingSchema = z.infer<typeof addPatientMappingSchema>;

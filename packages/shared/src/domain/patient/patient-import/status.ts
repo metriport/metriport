@@ -1,7 +1,7 @@
 import { BadRequestError } from "../../../error/bad-request";
 
 // TODO 2330 add expired
-export const patientImportStatus = ["waiting", "processing", "completed", "failed"] as const;
+export const patientImportJobStatus = ["waiting", "processing", "completed", "failed"] as const;
 // export const patientImportStatus = [
 //   "waiting",
 //   "processing",
@@ -9,9 +9,9 @@ export const patientImportStatus = ["waiting", "processing", "completed", "faile
 //   "failed",
 //   "expired",
 // ] as const;
-export type PatientImportStatus = (typeof patientImportStatus)[number];
+export type PatientImportJobStatus = (typeof patientImportJobStatus)[number];
 
-export function isPatientImportDone(status: PatientImportStatus): boolean {
+export function isPatientImportDone(status: PatientImportJobStatus): boolean {
   return status === "completed" || status === "failed";
 }
 
@@ -24,9 +24,9 @@ export function isPatientImportDone(status: PatientImportStatus): boolean {
  * @throws BadRequestError if the new status is not valid.
  */
 export function validateNewStatus(
-  currentStatus: PatientImportStatus,
-  newStatus: PatientImportStatus
-): PatientImportStatus {
+  currentStatus: PatientImportJobStatus,
+  newStatus: PatientImportJobStatus
+): PatientImportJobStatus {
   const additionalInfo = {
     currentStatus,
     newStatus,

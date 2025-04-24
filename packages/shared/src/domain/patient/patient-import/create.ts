@@ -1,9 +1,9 @@
 import { buildDayjs } from "../../../common/date";
 import { uuidv7 } from "../../../util/uuid-v7";
-import { PatientImportStatus } from "./status";
-import { PatientImport, PatientImportParamsCx, PatientImportParamsOps } from "./types";
+import { PatientImportJobStatus } from "./status";
+import { PatientImportJob, PatientImportParamsCx, PatientImportParamsOps } from "./types";
 
-export const initialStatus: PatientImportStatus = "waiting";
+export const initialStatus: PatientImportJobStatus = "waiting";
 /**
  * Creates a new patient import.
  *
@@ -23,7 +23,7 @@ export function createPatientImport({
   facilityId: string;
   paramsCx?: Partial<PatientImportParamsCx>;
   paramsOps?: Partial<PatientImportParamsOps>;
-}): PatientImport {
+}): PatientImportJob {
   const { dryRun: dryRunCx = false } = paramsCx;
   const initializedParamsCx: PatientImportParamsCx = {
     dryRun: dryRunCx,
@@ -45,7 +45,7 @@ export function createPatientImport({
   const status = initialStatus;
   const createdAt = buildDayjs().toDate();
 
-  const patientImportJob: PatientImport = {
+  const patientImportJob: PatientImportJob = {
     id: jobId,
     cxId,
     facilityId,

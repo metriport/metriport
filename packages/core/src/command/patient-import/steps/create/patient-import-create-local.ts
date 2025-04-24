@@ -1,6 +1,5 @@
 import { errorToString, MetriportError, sleep } from "@metriport/shared";
 import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
 import { uuidv7 } from "../../../../util/uuid-v7";
 import { createPatient } from "../../api/create-patient";
 import { createPatientMapping } from "../../api/create-patient-mapping";
@@ -43,7 +42,7 @@ export class PatientImportCreateLocal implements PatientImportCreate {
         });
       }
 
-      const requestId = uuidv7();
+      const dataPipelineRequestId = uuidv7();
 
       const patientId = await createPatient({
         cxId,
@@ -62,7 +61,7 @@ export class PatientImportCreateLocal implements PatientImportCreate {
           jobId,
           rowNumber,
           patientId,
-          requestId,
+          dataPipelineRequestId,
         }),
       ]);
 
@@ -71,7 +70,7 @@ export class PatientImportCreateLocal implements PatientImportCreate {
         jobId,
         rowNumber,
         patientId,
-        requestId,
+        dataPipelineRequestId,
         rerunPdOnNewDemographics,
         triggerConsolidated,
         disableWebhooks,
@@ -100,16 +99,15 @@ export class PatientImportCreateLocal implements PatientImportCreate {
         log(`Failure while setting patient record to failed @ PatientImport. Cause: ${errorMsg}`);
         errorToUpdateRecordToFailed = errorMsg;
       }
-      capture.setExtra({
+      throw new MetriportError(msg, error, {
         cxId,
         jobId,
+        rowNumber,
         context: "PatientImportCreateLocal.processPatientCreate",
         ...(errorToUpdateRecordToFailed
           ? { alsoFailedToUpdateRecordToFailed: true, errorToUpdateRecordToFailed }
           : {}),
-        error,
       });
-      throw error;
     }
   }
 }

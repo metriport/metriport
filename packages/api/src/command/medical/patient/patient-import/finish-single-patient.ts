@@ -11,7 +11,7 @@ import {
 } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { tryToFinishPatientImport } from "./finish-job";
+import { tryToFinishPatientImportJob } from "./finish-job";
 import { getPatientImportByRequestIdOrFail } from "./get-mapping-and-import";
 
 dayjs.extend(duration);
@@ -20,18 +20,18 @@ const defaultReasonForCx = "Failed to obtain patient data";
 const defaultReasonForDev = "failed";
 
 /**
- * Finishes a single patient import and checks if the whole job is complete.
+ * Finishes a single patient import and tries to finish the whole job.
  *
  * @param cxId - The customer ID.
- * @param jobId - The bulk import job ID.
  * @param patientId - The patient ID.
+ * @param requestId - The data pipeline request ID.
  * @param status - The status of the patient import entry.
- * @param reasonForDev - The reason for the patient import failure.
+ * @param reasonForDev - The reason for the patient import failure (optional).
  */
 export async function finishSinglePatientImport({
   cxId,
   patientId,
-  requestId,
+  requestId: dataPipelineRequestId,
   status,
   reasonForDev,
 }: {
@@ -42,7 +42,7 @@ export async function finishSinglePatientImport({
   reasonForDev?: string | undefined;
 }): Promise<void> {
   const { log } = out(
-    `finishSinglePatientImport - cx ${cxId}, patient ${patientId}, req ${requestId}`
+    `finishSinglePatientImport - cx ${cxId}, patient ${patientId}, dataPipelineReq ${dataPipelineRequestId}`
   );
   log(`Finishing import for patient, status ${status}`);
 
@@ -50,13 +50,10 @@ export async function finishSinglePatientImport({
     const patientImportAndMapping = await getPatientImportByRequestIdOrFail({
       cxId,
       patientId,
-      requestId,
+      dataPipelineRequestId,
     });
-    const { import: patientImport, mapping } = patientImportAndMapping;
+    const { job: patientImport, mapping } = patientImportAndMapping;
     const jobId = patientImport.id;
-
-    // Keep the order of operations, we want to make sure S3 is updated before we try to finish the job,
-    // so there's no chance the result is incomplete
 
     const patientRecord = await fetchPatientRecordOrFail({
       cxId,
@@ -65,16 +62,18 @@ export async function finishSinglePatientImport({
     });
     await updatePatientRecordOnS3({ patientRecord, status, reasonForDev });
 
-    await tryToFinishPatientImport({ cxId, jobId, status });
+    await tryToFinishPatientImportJob({ cxId, jobId, entryStatus: status });
   } catch (error) {
     const msg = `Error finishing single patient import`;
     log(`${msg}: ${errorToString(error)}`);
     const additionalInfo = {
       cxId,
       patientId,
-      requestId,
+      dataPipelineRequestId,
       status,
       context: "patient-import.finishSinglePatientImport",
+      action:
+        "Might need to call POST /internal/patient/bulk/:id/done once all patients have been processed",
     };
     capture.error(msg, { extra: { ...additionalInfo, error } });
     throw new MetriportError(msg, error, additionalInfo);
@@ -94,7 +93,7 @@ async function updatePatientRecordOnS3({
   const statusAndReason =
     status === "failed"
       ? {
-          status: "failed" as const,
+          status,
           reasonForCx: defaultReasonForCx,
           reasonForDev: reasonForDev ?? defaultReasonForDev,
         }

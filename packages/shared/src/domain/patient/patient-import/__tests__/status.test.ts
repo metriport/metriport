@@ -1,5 +1,5 @@
 import { BadRequestError } from "../../../../error/bad-request";
-import { PatientImportStatus, validateNewStatus } from "../status";
+import { PatientImportJobStatus, validateNewStatus } from "../status";
 
 describe("validateNewStatus", () => {
   describe("new status is waiting", () => {
@@ -92,10 +92,10 @@ describe("validateNewStatus", () => {
 
   describe("new status is invalid", () => {
     it("throws error", () => {
-      expect(() => validateNewStatus("processing", "invalid" as PatientImportStatus)).toThrow(
+      expect(() => validateNewStatus("processing", "invalid" as PatientImportJobStatus)).toThrow(
         BadRequestError
       );
-      expect(() => validateNewStatus("processing", "invalid" as PatientImportStatus)).toThrow(
+      expect(() => validateNewStatus("processing", "invalid" as PatientImportJobStatus)).toThrow(
         "Invalid import job status"
       );
     });

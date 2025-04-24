@@ -12,7 +12,7 @@ export type PatientImportMapping = {
   /**
    * The request ID of the data pipeline execution that created the patient and got its data
    */
-  requestId: string;
+  dataPipelineRequestId: string;
   jobId: string;
   createdAt: Date;
   updatedAt: Date;

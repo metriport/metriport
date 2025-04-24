@@ -1,6 +1,6 @@
 import { z, ZodError, ZodFormattedError } from "zod";
 import { dateSchema } from "../../common/date";
-import { PatientImportStatus } from "../../domain/patient/patient-import/status";
+import { PatientImportJobStatus } from "../../domain/patient/patient-import/status";
 import { SearchSetBundle } from "../fhir/bundle";
 
 export const pingWebhookTypeSchema = z.literal(`ping`);
@@ -167,7 +167,7 @@ export type WebhookBulkPatientImportPayload = {
 
 export type WebhookBulkPatientImportEntry = {
   requestId: string;
-  status: PatientImportStatus;
+  status: PatientImportJobStatus;
   result?: string | undefined;
 };
 
