@@ -420,6 +420,7 @@ class CanvasApi {
     condition.recorder = { reference: `Practitioner/${practitionerId}` };
     if (noteId) {
       condition.extension = [
+        ...(condition.extension ?? []),
         {
           url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
           valueId: noteId,
