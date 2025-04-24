@@ -80,7 +80,6 @@
   },
   "dependencies": {
     "@medplum/core": "^2.2.10",
-    "@types/luxon": "^3.6.2",
     "axios": "^1.4.0",
     "dayjs": "^1.11.9",
     "fast-xml-parser": "^4.4.1",
@@ -101,6 +100,7 @@
     "prettier": "^2.8.3",
     "ts-essentials": "^9.3.1",
     "ts-jest": "29.1.1",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "@types/luxon": "^3.6.2"
   }
 }
