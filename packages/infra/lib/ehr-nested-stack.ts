@@ -177,6 +177,12 @@ export class EhrNestedStack extends NestedStack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedMethods: [s3.HttpMethods.GET],
+        },
+      ],
     });
     this.ehrBundleBucket = ehrBundleBucket;
 
