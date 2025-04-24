@@ -33,6 +33,11 @@ export async function createResourceDiffBundlesJob({
   direction,
   requestId,
 }: CreateResourceDiffBundlesParams): Promise<string> {
+  if (direction !== ResourceDiffDirection.METRIPORT_ONLY) {
+    throw new BadRequestError("Unsupported resource diff direction", undefined, {
+      direction,
+    });
+  }
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: canvasPatientId,
@@ -52,21 +57,16 @@ export async function createResourceDiffBundlesJob({
     limitedToOneRunningJob: true,
   });
   const jobId = job.id;
-  if (direction === ResourceDiffDirection.METRIPORT_ONLY) {
-    const ehrResourceDiffHandler = buildEhrStartResourceDiffBundlesHandler();
-    ehrResourceDiffHandler
-      .startResourceDiffBundlesMetriportOnly({
-        ehr: EhrSources.canvas,
-        cxId,
-        practiceId: canvasPracticeId,
-        metriportPatientId,
-        ehrPatientId: canvasPatientId,
-        jobId,
-      })
-      .catch(processAsyncError("Canvas startResourceDiffBundlesMetriportOnly"));
-    return jobId;
-  }
-  throw new BadRequestError("Unsupported resource diff direction", undefined, {
-    direction,
-  });
+  const ehrResourceDiffHandler = buildEhrStartResourceDiffBundlesHandler();
+  ehrResourceDiffHandler
+    .startResourceDiffBundlesMetriportOnly({
+      ehr: EhrSources.canvas,
+      cxId,
+      practiceId: canvasPracticeId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      jobId,
+    })
+    .catch(processAsyncError("Canvas startResourceDiffBundlesMetriportOnly"));
+  return jobId;
 }

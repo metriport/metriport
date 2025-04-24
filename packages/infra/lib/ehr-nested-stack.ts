@@ -68,7 +68,7 @@ function settings(): {
     },
     waitTime: waitTimeElationLinkPatient,
   };
-  const startResourceDiffBundlesLambdaTimeout = waitTimeStartResourceDiff.plus(Duration.minutes(1));
+  const startResourceDiffBundlesLambdaTimeout = waitTimeStartResourceDiff.plus(Duration.minutes(5));
   const startResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrStartResourceDiffBundles",
     entry: "ehr-start-resource-diff-bundles",
@@ -116,7 +116,7 @@ function settings(): {
     },
     waitTime: waitTimeComputeResourceDiff,
   };
-  const refreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(1));
+  const refreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(5));
   const refreshEhrBundles: QueueAndLambdaSettings = {
     name: "EhrRefreshEhrBundles",
     entry: "ehr-refresh-ehr-bundles",
