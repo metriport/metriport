@@ -6,16 +6,18 @@ import { PatientImportQuery, ProcessPatientQueryRequest } from "./patient-import
 const region = Config.getAWSRegion();
 const sqsClient = new SQSClient({ region });
 
-export class PatientImportQueryHandlerCloud implements PatientImportQuery {
+export class PatientImportQueryCloud implements PatientImportQuery {
   constructor(private readonly patientQueryQueueUrl: string) {}
 
   async processPatientQuery(params: ProcessPatientQueryRequest): Promise<void> {
     const { cxId, jobId, patientId } = params;
-    const { log } = out(`PatientImport processPatientQuery.cloud - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(
+      `PatientImport processPatientQuery.cloud - cx ${cxId}, job ${jobId}, patient ${patientId}`
+    );
+
+    log(`Putting message on queue ${this.patientQueryQueueUrl}`);
 
     const payload = JSON.stringify(params);
-    log(`Putting message on queue ${this.patientQueryQueueUrl}: ${payload}`);
-
     await sqsClient.sendMessageToQueue(this.patientQueryQueueUrl, payload, {
       fifo: true,
       messageDeduplicationId: patientId,
