@@ -13,7 +13,7 @@ import { getResourceDiffBundlesJobPayload } from "../../../../external/ehr/canva
 import { createResourceDiffBundlesJob } from "../../../../external/ehr/canvas/job/create-resource-diff-bundles/start-job";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
-import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
 
 const router = Router();
 
@@ -63,20 +63,20 @@ router.post(
 );
 
 /**
- * POST /internal/ehr/canvas/patient/refresh-ehr-bundles
+ * POST /internal/ehr/canvas/patient/:id/resource/refresh
  *
  * Refreshes the cached bundles of resources in Canvas across all supported resource types.
  * @param req.query.cxId The cxId of the patient.
- * @param req.query.patientId The ID of Canvas Patient.
+ * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @returns 200 OK
  */
 router.post(
-  "/refresh-ehr-bundles",
+  "/:id/resource/refresh",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const canvasPatientId = getFromQueryOrFail("patientId", req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     refreshCanvasBundles({
       cxId,
@@ -88,22 +88,22 @@ router.post(
 );
 
 /**
- * POST /internal/ehr/canvas/patient/resource-diff
+ * POST /internal/ehr/canvas/patient/:id/resource/diff
  *
  * Starts the resource diff job to generate the Metriport only bundle, or Canvas only bundle.
  * The job is started asynchronously.
  * @param req.query.cxId The cxId of the patient.
- * @param req.query.patientId The ID of Canvas Patient.
+ * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @param req.query.direction The direction of the resource diff bundles to create.
  * @returns The job ID of the resource diff job
  */
 router.post(
-  "/resource-diff",
+  "/:id/resource/diff",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const canvasPatientId = getFromQueryOrFail("patientId", req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const direction = getFromQueryOrFail("direction", req);
     if (!isResourceDiffDirection(direction)) {
@@ -122,25 +122,25 @@ router.post(
 );
 
 /**
- * GET /internal/ehr/canvas/patient/resource-diff
+ * GET /internal/ehr/canvas/patient/resource/diff/:jobId
  *
  * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
  * @param req.query.cxId The cxId of the patient.
- * @param req.query.patientId The ID of Canvas Patient.
+ * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
  * @param req.query.direction The direction of the resource diff bundles to create.
- * @param req.query.jobId The job ID of the resource diff job.
+ * @param req.params.jobId The job ID of the resource diff job.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
-  "/resource-diff",
+  "/:id/resource/diff/:jobId",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const canvasPatientId = getFromQueryOrFail("patientId", req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const direction = getFromQueryOrFail("direction", req);
-    const jobId = getFromQueryOrFail("jobId", req);
+    const jobId = getFrom("params").orFail("jobId", req);
     if (!isResourceDiffDirection(direction)) {
       throw new BadRequestError("Invalid direction", undefined, {
         direction,
