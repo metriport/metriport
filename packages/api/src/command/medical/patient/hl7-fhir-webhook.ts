@@ -1,17 +1,10 @@
 import { capture, out } from "@metriport/core/util";
-import { MetriportError, errorToString } from "@metriport/shared";
-import { ConsolidatedWebhookRequest as Hl7NotificationWebhookRequest } from "@metriport/shared/medical";
-import { getSettingsOrFail } from "../../settings/getSettings";
-import { createWebhookRequest } from "../../webhook/webhook-request";
-import { processRequest } from "../../webhook/webhook";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
+import { MetriportError, errorToString } from "@metriport/shared";
+import { getSettingsOrFail } from "../../settings/getSettings";
+import { processRequest } from "../../webhook/webhook";
+import { createWebhookRequest } from "../../webhook/webhook-request";
 import { getPatientOrFail } from "./get-patient";
-import { buildDocRefBundleWithAttachment } from "./convert-fhir-bundle";
-
-type PayloadWithoutMeta = Omit<Hl7NotificationWebhookRequest, "meta"> & {
-  additionalIds?: PatientSourceIdentifierMap;
-};
 
 export async function processHl7FhirBundleWebhook({
   cxId,
@@ -27,7 +20,6 @@ export async function processHl7FhirBundleWebhook({
   const { log } = out(`processHl7FhirBundleWebhook, cx: ${cxId}, pt: ${patientId}`);
   const requestId = uuidv7();
   log(`req - ${requestId}, event - ${triggerEvent}`);
-
   try {
     const [settings, currentPatient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
@@ -35,18 +27,13 @@ export async function processHl7FhirBundleWebhook({
     ]);
     const webhookType = mapTriggerEventToWebhookType(triggerEvent);
 
-    const bundle = buildDocRefBundleWithAttachment(patientId, presignedUrl, "json");
-
-    const payload: PayloadWithoutMeta = {
-      patients: [
-        {
-          patientId,
-          ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
-          ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
-          status: "completed",
-          bundle,
-        },
-      ],
+    const payload = {
+      payload: {
+        patientId,
+        ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
+        ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
+        url: presignedUrl,
+      },
     };
 
     const webhookRequest = await createWebhookRequest({
