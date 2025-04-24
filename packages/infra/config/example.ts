@@ -147,10 +147,16 @@ export const config: EnvConfigNonSandbox = {
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
+    deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
+    incomingMessageBucketName: "test-incoming-message-bucket-name",
+    outgoingMessageBucketName: "test-outgoing-message-bucket-name",
+    notificationWebhookSenderQueue: {
+      arn: "arn:aws:sqs:us-west-1:000000000000:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      url: "https://sqs.us-west-1.amazonaws.com/000000000000/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    },
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
     },
-    bucketName: "test-hl7-notification-bucket",
     vpnConfigs: [
       {
         partnerName: "SampleHIE",
@@ -174,6 +180,7 @@ export const config: EnvConfigNonSandbox = {
   },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  ehrBundleBucketName: "test-ehr-bundle-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",

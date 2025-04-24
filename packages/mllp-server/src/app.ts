@@ -3,6 +3,7 @@ dotenv.config();
 
 import { Hl7Message } from "@medplum/core";
 import { Hl7Server } from "@medplum/hl7";
+import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
@@ -13,17 +14,16 @@ import {
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { capture } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import * as Sentry from "@sentry/node";
 import { initSentry } from "./sentry";
 import { withErrorHandling } from "./utils";
-
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
-const bucketName = Config.getHl7NotificationBucketName();
+const bucketName = Config.getHl7IncomingMessageBucketName();
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
 /**
@@ -47,37 +47,39 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         );
 
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
+        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
-        const msgType = getHl7MessageTypeOrFail(message);
-        Sentry.setExtras({
+        capture.setExtra({
           cxId,
           patientId,
-          messageType: msgType.messageType,
-          messageCode: msgType.triggerEvent,
+          messageCode,
+          triggerEvent,
         });
 
-        // TODO(lucas|2758|2025-03-05): Enqueue message for pickup
+        await buildHl7NotificationWebhookSender().execute({
+          cxId,
+          patientId,
+          message: asString(message),
+          messageReceivedTimestamp: timestamp,
+        });
 
         connection.send(message.buildAck());
 
-        s3Utils
-          .uploadFile({
-            bucket: bucketName,
-            key: buildHl7MessageFileKey({
-              cxId,
-              patientId,
-              timestamp,
-              messageId,
-              messageType: msgType.messageType,
-              messageCode: msgType.triggerEvent,
-            }),
-            file: Buffer.from(asString(message)),
-            contentType: "text/plain",
-          })
-          .catch(e => {
-            logger.log(`S3 upload failed: ${e}`);
-            Sentry.captureException(e);
-          });
+        log("Init S3 upload");
+        s3Utils.uploadFile({
+          bucket: bucketName,
+          key: buildHl7MessageFileKey({
+            cxId,
+            patientId,
+            timestamp,
+            messageId,
+            messageCode,
+            triggerEvent,
+            extension: "hl7",
+          }),
+          file: Buffer.from(asString(message)),
+          contentType: "text/plain",
+        });
       }, logger)
     );
 
@@ -86,16 +88,12 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       withErrorHandling(error => {
         if (error instanceof Error) {
           logger.log("Connection error:", error);
-          Sentry.captureException(error);
+          capture.error(error);
         } else {
           logger.log("Connection terminated by client");
         }
       }, logger)
     );
-
-    connection.addEventListener("close", () => {
-      logger.log("Connection closed");
-    });
   });
 
   return server;

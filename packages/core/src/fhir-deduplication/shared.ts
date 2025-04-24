@@ -39,9 +39,12 @@ export function getDateFromString(dateString: string, dateFormat?: "date" | "dat
   }
 }
 
+export const artifactRelatedArtifactUrl =
+  "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact";
+
 function createExtensionRelatedArtifact(resourceType: string, id: string | undefined) {
   return {
-    url: "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+    url: artifactRelatedArtifactUrl,
     valueRelatedArtifact: { type: "derived-from", display: `${resourceType}/${id}` },
   };
 }

@@ -44,6 +44,7 @@ import { TerminologyServerNestedStack } from "./api-stack/terminology-server-ser
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
+import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
@@ -101,6 +102,27 @@ export class APIStack extends Stack {
       domainName: props.config.host,
     });
     const dnsZones = { privateZone, publicZone };
+
+    //-------------------------------------------
+    // Vpc Endpoints
+    //-------------------------------------------
+    new ec2.InterfaceVpcEndpoint(this, "ApiVpcSqsEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SQS,
+      privateDnsEnabled: true,
+    });
+
+    //-------------------------------------------
+    // Buckets
+    //-------------------------------------------
+    let outgoingHl7NotificationBucket: s3.IBucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+      outgoingHl7NotificationBucket = s3.Bucket.fromBucketName(
+        this,
+        "OutgoingHl7MessageBucket",
+        props.config.hl7Notification.outgoingMessageBucketName
+      );
+    }
 
     //-------------------------------------------
     // Security Setup
@@ -346,6 +368,26 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // HL7 Notification Webhook Sender
+    //-------------------------------------------
+    let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
+    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+      const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
+        this,
+        "Hl7NotificationWebhookSenderNestedStack",
+        {
+          config: props.config,
+          lambdaLayers,
+          vpc: this.vpc,
+          alarmAction: slackNotification?.alarmAction,
+          outgoingHl7NotificationBucket,
+        }
+      );
+
+      hl7NotificationWebhookSenderLambda = lambda;
+    }
+
+    //-------------------------------------------
     // Patient Import
     //-------------------------------------------
     const {
@@ -368,11 +410,18 @@ export class APIStack extends Stack {
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
       elationLinkPatientLambda,
+      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
+      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
+      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
+      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
+      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
+      ehrBundleBucket,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
       lambdaLayers,
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
+      medicalDocumentsBucket,
     });
 
     //-------------------------------------------
@@ -487,6 +536,9 @@ export class APIStack extends Stack {
       patientImportBucket,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
+      ehrStartResourceDiffBundlesQueue,
+      ehrRefreshEhrBundlesQueue,
+      ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
@@ -563,6 +615,7 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    hl7NotificationWebhookSenderLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
@@ -572,6 +625,9 @@ export class APIStack extends Stack {
     patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrStartResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrComputeResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    ehrRefreshEhrBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
@@ -582,6 +638,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,
