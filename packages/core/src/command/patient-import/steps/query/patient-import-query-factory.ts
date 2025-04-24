@@ -1,6 +1,6 @@
 import { Config } from "../../../../util/config";
 import { PatientImportQuery } from "./patient-import-query";
-import { PatientImportQueryHandlerCloud } from "./patient-import-query-cloud";
+import { PatientImportQueryCloud } from "./patient-import-query-cloud";
 import { PatientImportQueryLocal } from "./patient-import-query-local";
 
 export function buildPatientImportQueryHandler(): PatientImportQuery {
@@ -10,5 +10,5 @@ export function buildPatientImportQueryHandler(): PatientImportQuery {
     return new PatientImportQueryLocal(patientImportBucket, waitTimeInMillis);
   }
   const patientQueryQueueUrl = Config.getPatientImportQueryQueueUrl();
-  return new PatientImportQueryHandlerCloud(patientQueryQueueUrl);
+  return new PatientImportQueryCloud(patientQueryQueueUrl);
 }

@@ -11,11 +11,10 @@ export class PatientImportParseCloud implements PatientImportParse {
 
   async processJobParse(params: PatientImportParseRequest): Promise<void> {
     const { cxId, jobId } = params;
-    const { log } = out(`PatientImport processJobParse.cloud - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`PatientImport processJobParse.cloud - cx ${cxId}, job ${jobId}`);
 
+    log(`Invoking lambda ${this.jobParseLambda}`);
     const payload = JSON.stringify(params);
-    log(`Invoking lambda ${this.jobParseLambda} w/ payload: ${payload}`);
-
     // Intentionally only erroring if we fail to invoke the lambda, not if the lambda
     // execution fails (would use defaultLambdaInvocationResponseHandler for that)
     await lambdaClient

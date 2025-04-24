@@ -13,11 +13,10 @@ export class PatientImportCreateCloud implements PatientImportCreate {
   async processPatientCreate(params: ProcessPatientCreateRequest): Promise<void> {
     const { cxId, jobId, rowNumber } = params;
     const { log } = out(
-      `PatientImport processPatientCreate.cloud - cxId ${cxId} jobId ${jobId} rowNumber ${rowNumber}`
+      `PatientImport processPatientCreate.cloud - cx, ${cxId}, job ${jobId}, row ${rowNumber}`
     );
 
     log(`Putting message on queue ${this.patientCreateQueueUrl}`);
-
     const payload = JSON.stringify(params);
     await sqsClient.sendMessageToQueue(this.patientCreateQueueUrl, payload, {
       fifo: true,
