@@ -9,16 +9,13 @@ import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_APP_MIME_TYPE } from "../../util/mime";
+import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import {
-  Hl7NotificationProps,
-  Hl7NotificationWebhookSender,
-} from "./hl7-notification-webhook-sender";
-import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
 import { buildHl7MessageFhirBundleFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
 
 const supportedTypes = ["A01", "A03"];
 const INTERNAL_HL7_ENDPOINT = `notification`;
@@ -33,7 +30,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     this.s3Utils = new S3Utils(Config.getAWSRegion());
   }
 
-  async execute(params: Hl7NotificationProps): Promise<void> {
+  async execute(params: Hl7Notification): Promise<void> {
     const hl7Message = Hl7Message.parse(params.message);
     const { cxId, patientId, messageReceivedTimestamp, apiUrl, bucketName } = params;
     const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}`);
@@ -43,8 +40,11 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
       return;
     }
-    const internalHl7RouteUrl = `${apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
-    const internalGetPatientUrl = `${apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
+
+    const baseUrl = apiUrl || Config.getApiLoadBalancerAddress();
+    const s3BucketName = bucketName || Config.getHl7OutgoingMessageBucketName();
+    const internalHl7RouteUrl = `${baseUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
+    const internalGetPatientUrl = `${baseUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
 
     const patient = await executeWithNetworkRetries(
       async () => await axios.get(internalGetPatientUrl)
@@ -66,7 +66,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const nonSpecificUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
       s3Utils: this.s3Utils,
-      bucketName,
+      bucketName: s3BucketName,
       contentType: JSON_APP_MIME_TYPE,
       log,
       errorConfig: {
@@ -98,7 +98,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     log(`Uploaded to S3. Filepath: ${newBundleFileName}`);
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
-      bucketName,
+      bucketName: s3BucketName,
       fileName: newBundleFileName,
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
