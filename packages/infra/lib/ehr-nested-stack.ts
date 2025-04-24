@@ -92,7 +92,7 @@ function settings(): {
     waitTime: waitTimeStartResourceDiff,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const computeResourceDiffBundlesLambdaTimeout = Duration.seconds(25);
+  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(5);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiffBundles",
     entry: "ehr-compute-resource-diff-bundles",
