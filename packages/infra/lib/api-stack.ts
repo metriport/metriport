@@ -381,6 +381,7 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
           outgoingHl7NotificationBucket,
+          secrets,
         }
       );
 
