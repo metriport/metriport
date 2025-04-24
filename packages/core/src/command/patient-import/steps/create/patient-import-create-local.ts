@@ -1,6 +1,6 @@
 import { errorToString, MetriportError, sleep } from "@metriport/shared";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { out } from "../../../../util/log";
-import { uuidv7 } from "../../../../util/uuid-v7";
 import { createPatient } from "../../api/create-patient";
 import { createPatientMapping } from "../../api/create-patient-mapping";
 import { updatePatientRecord } from "../../record/create-or-update-patient-record";
