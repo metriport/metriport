@@ -60,8 +60,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
-    const analyticsSecret =
-      props.secrets[props.config.analyticsSecretNames.POST_HOG_API_KEY_SECRET];
+    const analyticsSecret = props.secrets["POST_HOG_API_KEY_SECRET"];
     if (!analyticsSecret) {
       throw new Error("Analytics secret is required");
     }
