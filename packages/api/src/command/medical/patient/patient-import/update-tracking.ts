@@ -8,8 +8,7 @@ import {
 import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PatientImportJobModel } from "../../../../models/medical/patient-import";
-import { getPatientImportJobOrFail } from "./get";
+import { getPatientImportJobModelOrFail } from "./get";
 import { processPatientImportJobWebhook } from "./process-patient-import-webhook";
 
 dayjs.extend(duration);
@@ -24,6 +23,10 @@ export type PatientImportUpdateStatusCmd = {
 };
 
 /**
+ * TODO 2330 Refactor this to match PatientJob's updateTracking(). THe current version allows a
+ * caller to update the counters midway through the job, which would override successful/failed
+ * counters as well, breaking the job's integrity.
+ *
  * Updates a bulk patient import job's status and counters.
  * If `total` is provided, the `successful` and `failed` counters are reset.
  *
@@ -49,8 +52,7 @@ export async function updatePatientImportTracking({
 }: PatientImportUpdateStatusCmd): Promise<PatientImportJob> {
   const { log } = out(`updatePatientImportTracking - cxId ${cxId} jobId ${jobId}`);
   const now = buildDayjs().toDate();
-  // TODO 2330 move to the model version for consistency
-  const job = await getPatientImportJobOrFail({ cxId, jobId });
+  const job = await getPatientImportJobModelOrFail({ cxId, jobId });
   const { disableWebhooks } = job.paramsOps ?? {};
   const oldStatus = job.status;
   const newStatus = status
@@ -79,9 +81,8 @@ export async function updatePatientImportTracking({
   if (justTurnedCompleted) {
     jobToUpdate.finishedAt = now;
   }
-  await PatientImportJobModel.update(jobToUpdate, {
-    where: { cxId, id: jobId },
-  });
+  const updatedJobModel = await job.update(jobToUpdate, { where: { cxId, id: jobId } });
+  const updatedJob = updatedJobModel.dataValues;
 
   const shouldSendWebhook = !disableWebhooks && (justTurnedProcessing || justTurnedCompleted);
   if (shouldSendWebhook) {
@@ -89,7 +90,7 @@ export async function updatePatientImportTracking({
       `Sending WH to cx for patient import, newStatus ${newStatus}, ` +
         `oldStatus ${oldStatus}, disableWebhooks ${disableWebhooks}`
     );
-    processPatientImportJobWebhook(jobToUpdate).catch(emptyFunction);
+    processPatientImportJobWebhook(updatedJob).catch(emptyFunction);
   }
-  return jobToUpdate;
+  return updatedJob;
 }
