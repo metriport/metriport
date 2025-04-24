@@ -242,32 +242,36 @@ router.get(
         jobId,
         patientImportBucket: Config.getPatientImportBucket(),
       });
-      await executeAsynchronously(resultEntries, async entry => {
-        if (entry.patientId) {
-          const patient = await getPatientOrFail({ id: entry.patientId, cxId });
-          const cqData = getCQData(patient.data.externalData);
-          const cwData = getCWData(patient.data.externalData);
-          details.push({
-            patientId: patient.id,
-            rowNumber: entry.rowNumber,
-            status: entry.status,
-            globalDownloadStatus: patient.data.documentQueryProgress?.download?.status ?? null,
-            globalConvertStatus: patient.data.documentQueryProgress?.convert?.status ?? null,
-            cqPqStatus: cqData?.discoveryStatus ?? null,
-            cqDownloadStatus: cqData?.documentQueryProgress?.download?.status ?? null,
-            cqConvertStatus: cqData?.documentQueryProgress?.convert?.status ?? null,
-            cwPqStatus: cwData?.status ?? null,
-            cwDownloadStatus: cwData?.documentQueryProgress?.download?.status ?? null,
-            cwConvertStatus: cwData?.documentQueryProgress?.convert?.status ?? null,
-          });
-        } else {
-          details.push({
-            patientId: null,
-            rowNumber: entry.rowNumber,
-            status: entry.status,
-          });
-        }
-      });
+      await executeAsynchronously(
+        resultEntries,
+        async entry => {
+          if (entry.patientId) {
+            const patient = await getPatientOrFail({ id: entry.patientId, cxId });
+            const cqData = getCQData(patient.data.externalData);
+            const cwData = getCWData(patient.data.externalData);
+            details.push({
+              patientId: patient.id,
+              rowNumber: entry.rowNumber,
+              status: entry.status,
+              globalDownloadStatus: patient.data.documentQueryProgress?.download?.status ?? null,
+              globalConvertStatus: patient.data.documentQueryProgress?.convert?.status ?? null,
+              cqPqStatus: cqData?.discoveryStatus ?? null,
+              cqDownloadStatus: cqData?.documentQueryProgress?.download?.status ?? null,
+              cqConvertStatus: cqData?.documentQueryProgress?.convert?.status ?? null,
+              cwPqStatus: cwData?.status ?? null,
+              cwDownloadStatus: cwData?.documentQueryProgress?.download?.status ?? null,
+              cwConvertStatus: cwData?.documentQueryProgress?.convert?.status ?? null,
+            });
+          } else {
+            details.push({
+              patientId: null,
+              rowNumber: entry.rowNumber,
+              status: entry.status,
+            });
+          }
+        },
+        { numberOfParallelExecutions: 5 }
+      );
       const detailedResponse = {
         ...patientImport,
         details,
