@@ -1,10 +1,14 @@
-import { Resource } from "@medplum/fhirtypes";
 import { z } from "zod";
+import { resourceTypeForConsolidation } from "../../../medical/fhir/resources";
+
+const supportedResourceTypes = [...resourceTypeForConsolidation, "Medication"] as const;
+
+export type SupportedResourceType = (typeof supportedResourceTypes)[number];
 
 export const fhirResourceSchema = z.intersection(
   z.object({
     id: z.string(),
-    resourceType: z.string() as z.ZodType<SupportedResourceType>,
+    resourceType: z.enum(supportedResourceTypes),
   }),
   z.record(z.string(), z.any())
 );
@@ -24,8 +28,6 @@ export const fhirResourceBundleSchema = z.object({
   link: z.object({ relation: z.string(), url: z.string() }).array().optional(),
 });
 export type FhirResourceBundle = z.infer<typeof fhirResourceBundleSchema>;
-
-export type SupportedResourceType = Resource["resourceType"];
 
 export type BundleWithLastModified = {
   bundle: {

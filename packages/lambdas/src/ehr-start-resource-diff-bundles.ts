@@ -48,6 +48,7 @@ const ehrStartResourceDiffBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
+  jobId: z.string(),
 });
 
 function parseBody(body?: unknown): StartResourceDiffBundlesRequest {

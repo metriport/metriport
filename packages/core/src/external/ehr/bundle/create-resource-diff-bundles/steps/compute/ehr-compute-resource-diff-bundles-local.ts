@@ -3,6 +3,7 @@ import {
   fetchEhrBundle as fetchEhrBundleFromApi,
   FetchEhrBundleParams,
 } from "../../../../api/fetch-bundle";
+import { setPatientJobEntryStatus } from "../../../../api/set-entry-status";
 import { BundleType } from "../../../bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
 import { resourceIsDuplicateOfExistingResources } from "../../utils";
@@ -26,31 +27,39 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         ehrPatientId,
         existingResources,
         newResource,
+        jobId,
       } = payload;
       const resourceType = newResource.resourceType;
-      const existingResourcesToUse: FhirResource[] =
-        existingResources ??
-        (await getExistingResourcesFromApi({
-          ehr,
-          cxId,
-          practiceId,
-          patientId: ehrPatientId,
-          resourceType,
-        }));
-      const isDuplicate = resourceIsDuplicateOfExistingResources({
-        existingResources: existingResourcesToUse,
-        newResource,
-      });
-      if (!isDuplicate) {
-        await updateBundleOnS3({
-          ehr,
-          cxId,
-          metriportPatientId,
-          ehrPatientId,
-          bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
-          resource: newResource,
-          resourceType,
+      try {
+        const existingResourcesToUse: FhirResource[] =
+          existingResources ??
+          (await getExistingResourcesFromApi({
+            ehr,
+            cxId,
+            practiceId,
+            patientId: ehrPatientId,
+            resourceType,
+          }));
+        const isDuplicate = resourceIsDuplicateOfExistingResources({
+          existingResources: existingResourcesToUse,
+          newResource,
         });
+        if (!isDuplicate) {
+          await updateBundleOnS3({
+            ehr,
+            cxId,
+            metriportPatientId,
+            ehrPatientId,
+            bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+            resource: newResource,
+            resourceType,
+            jobId,
+          });
+        }
+        await setPatientJobEntryStatus({ cxId, jobId, entryStatus: "successful" });
+      } catch (error) {
+        await setPatientJobEntryStatus({ cxId, jobId, entryStatus: "failed" });
+        throw error;
       }
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
@@ -76,5 +85,5 @@ async function getExistingResourcesFromApi({
     resourceType,
     useCachedBundle: true,
   });
-  return existingResourcesBundle.entry.map(entry => entry.resource);
+  return existingResourcesBundle.bundle.entry.map(entry => entry.resource);
 }
