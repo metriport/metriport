@@ -156,7 +156,6 @@ export async function makeRequest<T>({
     throw error;
   }
   if (!response.data && emptyResponse) {
-    console.log("emptyResponse", emptyResponse);
     const outcome = schema.safeParse(undefined);
     if (!outcome.success) {
       const msg = `Response not parsed @ ${ehr}`;
