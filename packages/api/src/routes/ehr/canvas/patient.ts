@@ -106,6 +106,7 @@ router.post(
  * Creates a condition
  * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
+ * @param req.query.practitionerId The ID of Canvas Practitioner.
  * @param req.body The FHIR Resource payload
  * @returns Canvas API response
  */
