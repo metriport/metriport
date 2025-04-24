@@ -6,6 +6,8 @@ import { chunk, partition } from "lodash";
 import { capture, out } from "../../../../util";
 import { updateJobAtApi } from "../../api/update-job-status";
 import { validateAndParsePatientImportCsvFromS3 } from "../../csv/validate-and-parse-import";
+import { reasonForCxInternalError } from "../../patient-import-shared";
+import { updatePatientRecord } from "../../record/create-or-update-patient-record";
 import { PatientImportCreate, ProcessPatientCreateRequest } from "../create/patient-import-create";
 import { buildPatientImportCreateHandler } from "../create/patient-import-create-factory";
 import { PatientImportResult } from "../result/patient-import-result";
@@ -82,6 +84,21 @@ export class PatientImportParseLocal implements PatientImportParse {
               const msg = `Failure while sending payload to patient create queue @ PatientImport`;
               log(`${msg} (rowNumber: ${rowNumber}). Cause: ${errorToString(error)}`);
               errors.push(error);
+              try {
+                await updatePatientRecord({
+                  cxId,
+                  jobId,
+                  rowNumber,
+                  status: "failed",
+                  reasonForCx: reasonForCxInternalError,
+                  reasonForDev: errorToString(error),
+                  bucketName: this.patientImportBucket,
+                });
+              } catch (error) {
+                const msg = `Double failure while updating patient record @ PatientImport`;
+                log(`${msg} (rowNumber: ${rowNumber}). Cause: ${errorToString(error)}`);
+                errors.push(error);
+              }
             }
           })
         );

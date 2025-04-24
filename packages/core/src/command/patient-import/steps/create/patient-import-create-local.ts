@@ -3,6 +3,7 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { out } from "../../../../util/log";
 import { createPatient } from "../../api/create-patient";
 import { createPatientMapping } from "../../api/create-patient-mapping";
+import { reasonForCxInternalError } from "../../patient-import-shared";
 import { updatePatientRecord } from "../../record/create-or-update-patient-record";
 import { ProcessPatientQueryRequest } from "../query/patient-import-query";
 import { buildPatientImportQueryHandler } from "../query/patient-import-query-factory";
@@ -89,7 +90,7 @@ export class PatientImportCreateLocal implements PatientImportCreate {
           jobId,
           rowNumber,
           status: "failed",
-          reasonForCx: "Internal error",
+          reasonForCx: reasonForCxInternalError,
           reasonForDev: errorMsg,
           bucketName: this.patientImportBucket,
         });
