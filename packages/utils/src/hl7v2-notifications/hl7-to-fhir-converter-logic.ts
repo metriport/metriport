@@ -2,12 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Hl7Message } from "@medplum/core";
-import {
-  getMessageUniqueIdentifier,
-  getOrCreateMessageDatetime,
-} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
+import { getOrCreateMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { convertHl7MessageToFhirAndUpload } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-converter";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import fs from "fs";
 
@@ -51,6 +48,8 @@ const filePath = "";
 const fileName = "";
 
 function invokeLambdaLogic() {
+  const hl7WebhookLambda = buildHl7NotificationWebhookSender();
+
   const hl7Text = fs.readFileSync(`${filePath}/${fileName}`, "utf-8");
   const chunks = hl7Text.split(/(?=^MSH\|)/m);
 
@@ -58,15 +57,13 @@ function invokeLambdaLogic() {
   chunks.forEach(message => {
     const hl7Message = Hl7Message.parse(message);
     const timestamp = getOrCreateMessageDatetime(hl7Message);
-    const messageId = getMessageUniqueIdentifier(hl7Message);
 
     try {
       const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
-      convertHl7MessageToFhirAndUpload({
+      hl7WebhookLambda.execute({
         cxId,
         patientId,
         message,
-        messageId,
         messageReceivedTimestamp: timestamp,
         apiUrl,
         bucketName,

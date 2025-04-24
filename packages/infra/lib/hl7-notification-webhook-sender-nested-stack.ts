@@ -6,7 +6,6 @@ import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
-import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
@@ -60,8 +59,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     const setup = this.setupHl7NotificationWebhookSenderLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
+      config: props.config,
       alarmAction: props.alarmAction,
       outgoingHl7NotificationBucket: props.outgoingHl7NotificationBucket,
     });
@@ -72,13 +70,12 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
   private setupHl7NotificationWebhookSenderLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
-    envType: EnvType;
-    sentryDsn: string | undefined;
+    config: EnvConfig;
     alarmAction: SnsAction | undefined;
     outgoingHl7NotificationBucket: s3.IBucket;
   }): { lambda: Lambda } {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, outgoingHl7NotificationBucket } =
-      ownProps;
+    const { lambdaLayers, vpc, config, alarmAction, outgoingHl7NotificationBucket } = ownProps;
+    const { lambdasSentryDSN: sentryDsn, environmentType: envType, loadBalancerDnsName } = config;
     const {
       name,
       entry,
@@ -110,6 +107,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
+        API_URL: loadBalancerDnsName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
