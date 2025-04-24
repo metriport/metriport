@@ -16,7 +16,7 @@ import {
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import {
-  normalizeEmailNewSafe,
+  normalizeEmailSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
@@ -188,7 +188,7 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    const email = normalizeEmailNewSafe(c.email);
+    const email = normalizeEmailSafe(c.email);
     if (!email) return [];
     return [email];
   });
