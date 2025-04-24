@@ -37,7 +37,7 @@ export function validateDateIsAfter1900(date: string): boolean {
   if (!isValidISODate(date)) return false;
   const yearStr = date.substring(0, 4);
   const year = Number(yearStr);
-  return yearStr.length === 4 && year >= 1900;
+  return year >= 1900;
 }
 
 export function validateDateRange(start: string, end: string): boolean {
