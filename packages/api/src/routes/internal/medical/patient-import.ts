@@ -105,8 +105,7 @@ router.post(
  *        the data pipeline and the bulk import webhooks.
  * @param req.query.forceStatusUpdate Optional: Indicates whether to bypass the job status validation (state machine).
  * @param req.query.dryRun Whether to simply validate or run the assessment, overrides the cx
- *                         provided one (optional, defaults to cx provided or false if none
- *                         is provided).
+ *                         provided one.
  */
 router.post(
   "/:id/continue",

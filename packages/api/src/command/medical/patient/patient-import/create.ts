@@ -89,7 +89,7 @@ async function createUploadUrl({ cxId, jobId }: { cxId: string; jobId: string })
   const s3Url = await s3Utils.getPresignedUploadUrl({
     bucket: bucketName,
     key,
-    durationSeconds: presignedUploadUrlDuration.asSeconds(),
+    durationSeconds: Math.round(presignedUploadUrlDuration.asSeconds()),
     metadata,
   });
   return s3Url;
