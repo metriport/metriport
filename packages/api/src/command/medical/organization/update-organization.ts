@@ -6,13 +6,13 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getOrganizationOrFail } from "./get-organization";
 
-export type OrganizationUpdateCmd = BaseUpdateCmdWithCustomer &
-  Partial<Omit<OrganizationCreate, "type">>;
+export type OrganizationUpdateCmd = BaseUpdateCmdWithCustomer & Partial<OrganizationCreate>;
 
 export async function updateOrganization({
   id,
   eTag,
   cxId,
+  type,
   data,
   cqApproved,
   cqActive,
@@ -23,6 +23,7 @@ export async function updateOrganization({
   validateVersionForUpdate(org, eTag);
   const updatedOrg = await org.update({
     data,
+    type,
     cqActive,
     cwActive,
     cqApproved,
