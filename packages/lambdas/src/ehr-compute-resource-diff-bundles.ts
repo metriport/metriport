@@ -33,7 +33,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const log = prefixedLog(
     `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceId ${newResource.id}`
   );
-  log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
   const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffBundlesLocal(waitTimeInMillis);
   await ehrComputeResourceDiffHandler.computeResourceDiffBundlesMetriportOnly([parsedBody]);
@@ -48,6 +47,7 @@ const ehrComputeResourceDiffBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
+  jobId: z.string(),
   existingResources: fhirResourceSchema.array().optional(),
   newResource: fhirResourceSchema,
 });

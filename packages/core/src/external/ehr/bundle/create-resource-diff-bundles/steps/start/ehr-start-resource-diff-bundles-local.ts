@@ -7,6 +7,8 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
 import { fetchEhrBundle as fetchEhrBundleFromApi } from "../../../../api/fetch-bundle";
+import { initializeJob } from "../../../../api/initialize-job";
+import { updateJobTotal } from "../../../../api/update-job-total";
 import { BundleType, getSupportedResourcesByEhr } from "../../../bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../commands/create-or-replace-bundle";
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
@@ -29,7 +31,9 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
     practiceId,
     metriportPatientId,
     ehrPatientId,
+    jobId,
   }: StartResourceDiffBundlesRequest): Promise<void> {
+    await initializeJob({ cxId, jobId });
     const consolidated = await getConsolidated({ cxId, patientId: metriportPatientId });
     if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length < 1) {
       return;
@@ -56,6 +60,7 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
           metriportPatientId,
           ehrPatientId,
           newResource,
+          jobId,
         },
       ];
     });
@@ -77,9 +82,10 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
           bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
           bundle: getDefaultBundle(),
           resourceType,
+          jobId,
         }),
       ]);
-      this.fetchedBundles.set(resourceType, existingResourcesBundle);
+      this.fetchedBundles.set(resourceType, existingResourcesBundle.bundle);
     }
     const computeResourceDiffParamsWithExistingResources = computeResourceDiffParams.flatMap(
       param => {
@@ -89,6 +95,8 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
         return [{ ...param, existingResources }];
       }
     );
+    const total = computeResourceDiffParamsWithExistingResources.length;
+    await updateJobTotal({ cxId, jobId, total });
     await this.next.computeResourceDiffBundlesMetriportOnly(
       computeResourceDiffParamsWithExistingResources
     );
