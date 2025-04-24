@@ -2,6 +2,13 @@ import { BadRequestError } from "../../error/bad-request";
 
 export const jobStatus = ["waiting", "processing", "completed", "failed"] as const;
 export type JobStatus = (typeof jobStatus)[number];
+
+export function isValidJobStatus(status: string): status is JobStatus {
+  return (
+    status === "waiting" || status === "processing" || status === "completed" || status === "failed"
+  );
+}
+
 export const jobInitialStatus: JobStatus = "waiting";
 
 export function isJobDone(status: JobStatus): boolean {

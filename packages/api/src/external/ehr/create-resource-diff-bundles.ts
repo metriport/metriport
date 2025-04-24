@@ -11,6 +11,7 @@ export type CreateResourceDiffBundlesParams = {
   cxId: string;
   patientId: string;
   direction: ResourceDiffDirection;
+  requestId?: string;
 };
 
 /**
@@ -24,10 +25,11 @@ export async function createResourceDiffBundles({
   cxId,
   patientId,
   direction,
+  requestId: requestIdParam,
 }: CreateResourceDiffBundlesParams): Promise<void> {
   const patientMappings = await getPatientMappings({ cxId, id: patientId });
-  if (patientMappings.length < 0) return;
-  const requestId = uuidv7();
+  if (patientMappings.length < 1) return;
+  const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
     if (patientMapping.source === EhrSources.canvas) {
       const canvasPatientId = patientMapping.externalId;
@@ -50,8 +52,9 @@ async function createCanvasResourceDiffBundlesJob({
   const cxMappings = await getCxMappingsByCustomer({ cxId, source: EhrSources.canvas });
   const cxMapping = cxMappings[0];
   if (!cxMapping) throw new MetriportError("Canvas CX mapping not found", undefined, { cxId });
-  if (cxMappings.length > 1)
+  if (cxMappings.length > 1) {
     throw new MetriportError("Multiple Canvas CX mappings found", undefined, { cxId });
+  }
   createResourceDiffBundlesJob({
     cxId,
     canvasPracticeId: cxMapping.externalId,
