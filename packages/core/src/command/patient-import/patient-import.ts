@@ -41,17 +41,17 @@ export type ParsedPatientBase = { rowNumber: number; raw: string };
 
 export type ParsedPatientSuccess = ParsedPatientBase & {
   parsed: PatientPayload;
-  error?: undefined;
+  error?: never;
 };
 
-export type ParsedPatientError = ParsedPatientBase & { parsed?: undefined; error: string };
+export type ParsedPatientError = ParsedPatientBase & { parsed?: never; error: string };
 
 export type ParsedPatient = ParsedPatientSuccess | ParsedPatientError;
 
-export function isParsedPatientSuccess(parsed: ParsedPatient): parsed is ParsedPatientSuccess {
-  return parsed.parsed !== undefined;
+export function isParsedPatientSuccess(patient: ParsedPatient): patient is ParsedPatientSuccess {
+  return Boolean(patient.parsed);
 }
 
-export function isParsedPatientError(parsed: ParsedPatient): parsed is ParsedPatientError {
-  return parsed.parsed === undefined;
+export function isParsedPatientError(patient: ParsedPatient): patient is ParsedPatientError {
+  return Boolean(patient.error);
 }
