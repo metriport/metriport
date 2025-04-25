@@ -123,7 +123,10 @@ export class MllpStack extends cdk.NestedStack {
 
     fargateService.taskDefinition.addContainer("MllpServer", {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
-      secrets: secretsToECS(buildSecrets(this, props.config.hl7Notification.secrets)),
+      secrets: secretsToECS({
+        ...buildSecrets(this, props.config.hl7Notification.secrets),
+        ...buildSecrets(this, props.config.analyticsSecretNames),
+      }),
       environment: {
         NODE_ENV: "production",
         ENV_TYPE: props.config.environmentType,

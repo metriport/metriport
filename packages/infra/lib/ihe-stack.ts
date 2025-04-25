@@ -160,7 +160,7 @@ export class IHEStack extends Stack {
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
-    const posthogSecretName = props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
+    const posthogSecretName = props.config.analyticsSecretNames.POST_HOG_API_KEY_SECRET;
 
     const iheRequestsBucket = s3.Bucket.fromBucketName(
       this,

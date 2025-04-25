@@ -20,7 +20,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.carequality?.secretNames
       ? buildSecrets(scope, config.carequality.secretNames)
       : undefined),
-    ...(config.analyticsSecretNames ? buildSecrets(scope, config.analyticsSecretNames) : undefined),
+    ...buildSecrets(scope, config.analyticsSecretNames),
     ...(config.canvas?.secretNames ? buildSecrets(scope, config.canvas.secretNames) : undefined),
     ...(config.ehrIntegration?.athenaHealth.secrets
       ? buildSecrets(scope, config.ehrIntegration.athenaHealth.secrets)
