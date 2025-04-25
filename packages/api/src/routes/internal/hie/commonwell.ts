@@ -2,6 +2,8 @@ import { NotFoundError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { stringToBoolean } from "@metriport/shared";
 import { getFacilityByOidOrFail } from "../../../command/medical/facility/get-facility";
 import {
   verifyCxAccessToSendFacilityToHies,
@@ -18,6 +20,8 @@ import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom } from "../../util";
+import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const router = Router();
 
@@ -104,6 +108,45 @@ router.put(
       facility,
     });
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/commonwell/patient-discovery/:patientId
+ *
+ * Triggers patient discovery for a specific patient in CommonWell.
+ * @param req.params.patientId The ID of the patient to run discovery for
+ * @param req.query.facilityId The facility ID to use for discovery
+ * @param req.query.rerunPdOnNewDemographics Optional flag to rerun discovery if new demographics are found
+ * @param req.query.forceCommonwell Optional flag to force CommonWell discovery
+ * @returns 200 OK if discovery was triggered successfully
+ */
+router.post(
+  "/patient-discovery/:patientId",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("params").orFail("patientId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("forceCommonwell", req));
+
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const facilityId = patient.facilityIds[0];
+    const requestId = uuidv7();
+
+    await runOrScheduleCwPatientDiscovery({
+      patient,
+      facilityId,
+      requestId,
+      getOrgIdExcludeList: () => Promise.resolve([]),
+      rerunPdOnNewDemographics,
+      forceCommonwell,
+    });
+
+    return res.status(httpStatus.OK).json({ requestId });
   })
 );
 

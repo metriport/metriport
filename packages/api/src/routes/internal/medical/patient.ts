@@ -108,6 +108,7 @@ import {
 } from "../../util";
 import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
+import { resetExternalData } from "../../../command/medical/patient/reset-external-data";
 
 dayjs.extend(duration);
 
@@ -1166,6 +1167,35 @@ router.post(
     const queryParams = hl7NotificationSchema.parse(req.query);
 
     await processHl7FhirBundleWebhook({ patientId, ...queryParams });
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /internal/patient/:id/external-data
+ *
+ * Resets the external data for a specific patient and HIE source by removing it completely.
+ *
+ * @param req.params.id The patient ID.
+ * @param req.query.source The HIE source (COMMONWELL or CAREQUALITY).
+ * @param req.query.cxId The customer ID.
+ * @return 204 No Content upon successful reset.
+ */
+router.put(
+  "/:id/external-data",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const source = getFrom("query").orFail("source", req);
+
+    await resetExternalData({
+      cxId,
+      patientId: id,
+      source,
+    });
+
     return res.sendStatus(status.OK);
   })
 );
