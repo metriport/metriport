@@ -33,7 +33,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent): Pro
     context: "hl7-notification-webhook-sender-cloud.execute",
   });
 
-  await new Hl7NotificationWebhookSenderDirect().execute({ ...parsedBody, apiUrl, bucketName });
+  await new Hl7NotificationWebhookSenderDirect(apiUrl, bucketName).execute(parsedBody);
 });
 
 const parseBody = (body: string): Hl7Notification => {

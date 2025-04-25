@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Hl7Message } from "@medplum/core";
-import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
+import { Hl7NotificationWebhookSenderDirect } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-direct";
 import { getOrCreateMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
@@ -48,8 +48,6 @@ const filePath = "";
 const fileName = "";
 
 function invokeLambdaLogic() {
-  const hl7WebhookLambda = buildHl7NotificationWebhookSender();
-
   const hl7Text = fs.readFileSync(`${filePath}/${fileName}`, "utf-8");
   const chunks = hl7Text.split(/(?=^MSH\|)/m);
 
@@ -60,13 +58,11 @@ function invokeLambdaLogic() {
 
     try {
       const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
-      hl7WebhookLambda.execute({
+      new Hl7NotificationWebhookSenderDirect(apiUrl, bucketName).execute({
         cxId,
         patientId,
         message,
         messageReceivedTimestamp: timestamp,
-        apiUrl,
-        bucketName,
       });
     } catch (err) {
       errors.push({

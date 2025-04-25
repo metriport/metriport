@@ -24,27 +24,26 @@ const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {
   private readonly context = "hl7-notification-wh-sender";
-  private readonly s3Utils: S3Utils;
 
-  constructor() {
-    this.s3Utils = new S3Utils(Config.getAWSRegion());
-  }
+  constructor(
+    private readonly apiUrl: string,
+    private readonly bucketName: string,
+    private readonly s3Utils = new S3Utils(Config.getAWSRegion())
+  ) {}
 
   async execute(params: Hl7Notification): Promise<void> {
-    const hl7Message = Hl7Message.parse(params.message);
-    const { cxId, patientId, messageReceivedTimestamp, apiUrl, bucketName } = params;
+    const message = Hl7Message.parse(params.message);
+    const { cxId, patientId, messageReceivedTimestamp } = params;
     const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}`);
 
-    const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(hl7Message);
+    const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
     if (!supportedTypes.includes(triggerEvent)) {
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
       return;
     }
 
-    const baseUrl = apiUrl || Config.getApiLoadBalancerAddress();
-    const s3BucketName = bucketName || Config.getHl7OutgoingMessageBucketName();
-    const internalHl7RouteUrl = `${baseUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
-    const internalGetPatientUrl = `${baseUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
+    const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
+    const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
 
     const patient = await executeWithNetworkRetries(
       async () => await axios.get(internalGetPatientUrl)
@@ -52,13 +51,13 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
 
     const conversionResult = convertHl7v2MessageToFhir({
-      message: hl7Message,
+      message,
       cxId,
       patientId,
       timestampString: messageReceivedTimestamp,
     });
 
-    const bundle = saturateConvertedBundle({
+    const bundle = prependPatientToBundle({
       bundle: conversionResult,
       fhirPatient,
     });
@@ -66,7 +65,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const nonSpecificUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
       s3Utils: this.s3Utils,
-      bucketName: s3BucketName,
+      bucketName: this.bucketName,
       contentType: JSON_APP_MIME_TYPE,
       log,
       errorConfig: {
@@ -85,9 +84,9 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       cxId,
       patientId,
       timestamp: messageReceivedTimestamp,
-      messageId: getMessageUniqueIdentifier(hl7Message),
-      messageCode: messageCode,
-      triggerEvent: triggerEvent,
+      messageId: getMessageUniqueIdentifier(message),
+      messageCode,
+      triggerEvent,
     });
 
     await storeInS3WithRetries({
@@ -98,7 +97,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     log(`Uploaded to S3. Filepath: ${newBundleFileName}`);
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
-      bucketName: s3BucketName,
+      bucketName: this.bucketName,
       fileName: newBundleFileName,
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
@@ -117,7 +116,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   }
 }
 
-function saturateConvertedBundle({
+function prependPatientToBundle({
   bundle,
   fhirPatient,
 }: {
