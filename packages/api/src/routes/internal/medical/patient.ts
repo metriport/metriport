@@ -1179,7 +1179,7 @@ router.post(
  * @param req.params.id The patient ID.
  * @param req.query.source The HIE source (COMMONWELL or CAREQUALITY).
  * @param req.query.cxId The customer ID.
- * @return 204 No Content upon successful reset.
+ * @return 200 OK upon successful reset.
  */
 router.put(
   "/:id/external-data",

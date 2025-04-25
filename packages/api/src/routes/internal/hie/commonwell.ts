@@ -115,8 +115,8 @@ router.put(
  * POST /internal/commonwell/patient-discovery/:patientId
  *
  * Triggers patient discovery for a specific patient in CommonWell.
+ * @param req.query.cxId The customer ID.
  * @param req.params.patientId The ID of the patient to run discovery for
- * @param req.query.facilityId The facility ID to use for discovery
  * @param req.query.rerunPdOnNewDemographics Optional flag to rerun discovery if new demographics are found
  * @param req.query.forceCommonwell Optional flag to force CommonWell discovery
  * @returns 200 OK if discovery was triggered successfully

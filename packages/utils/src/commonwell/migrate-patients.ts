@@ -67,42 +67,52 @@ async function main() {
     const patientChunks = chunk(patientIds, PATIENT_CHUNK_SIZE);
     const commonWell = new CommonWell(cwCert, cwKey, cwOrgName, oldCwOid, apiMode);
 
+    let successCount = 0;
+    let failureCount = 0;
+    const failures: Record<string, string> = {};
+
     for (const [i, patients] of patientChunks.entries()) {
       console.log(`Chunk ${i + 1} of ${patientChunks.length}`);
       console.log(`# of patients ${patients.length}`);
 
       for (const patientId of patients) {
         const log = out(`Patient migration: cxId - ${cxId}, patientId - ${patientId}`).log;
+        try {
+          log("Resetting external data...");
+          const resetUrl = `${apiUrl}/internal/patient/${patientId}/external-data`;
+          await axios.put(resetUrl, null, {
+            params: {
+              cxId,
+              source: MedicalDataSource.COMMONWELL,
+            },
+          });
 
-        log("Resetting external data...");
-        const resetUrl = `${apiUrl}/internal/patient/${patientId}/external-data`;
-        await axios.put(resetUrl, null, {
-          params: {
+          log("Running patient discovery...");
+          const pdUrl = `${apiUrl}/internal/commonwell/patient-discovery/${patientId}`;
+          const pdParams = new URLSearchParams({
             cxId,
-            source: MedicalDataSource.COMMONWELL,
-          },
-        });
+            rerunPdOnNewDemographics: rerunPdOnNewDemographics.toString(),
+          });
+          const resp = (await axios.post(`${pdUrl}?${pdParams}`)) as PdResponse;
+          log(`Request ID - ${JSON.stringify(resp.data.requestId)}`);
 
-        log("Running patient discovery...");
-        const pdUrl = `${apiUrl}/internal/commonwell/patient-discovery/${patientId}`;
-        const pdParams = new URLSearchParams({
-          cxId,
-          rerunPdOnNewDemographics: rerunPdOnNewDemographics.toString(),
-        });
-        const resp = (await axios.post(`${pdUrl}?${pdParams}`)) as PdResponse;
-        log(`Request ID - ${JSON.stringify(resp.data.requestId)}`);
+          // 3. Delete patient in CommonWell
+          log("Deleting patient in CommonWell...");
+          const queryMeta = organizationQueryMeta(cwOrgName, {
+            npi: addOidPrefix(oldCwOid),
+          });
 
-        // 3. Delete patient in CommonWell
-        log("Deleting patient in CommonWell...");
-        const queryMeta = organizationQueryMeta(cwOrgName, {
-          npi: addOidPrefix(oldCwOid),
-        });
+          const cwPatientId = buildCWPatientId(oldCwOid, patientId);
 
-        const cwPatientId = buildCWPatientId(oldCwOid, patientId);
+          await commonWell.deletePatient(queryMeta, cwPatientId);
 
-        await commonWell.deletePatient(queryMeta, cwPatientId);
-
-        log("Patient migration completed successfully");
+          log("Patient migration completed successfully");
+          successCount++;
+        } catch (err) {
+          log(`Failed to migrate patient: ${err}`);
+          failures[patientId] = String(err);
+          failureCount++;
+        }
       }
 
       if (i < patientChunks.length - 1) {
@@ -110,6 +120,17 @@ async function main() {
         console.log(`Chunk ${i + 1} finished. Sleeping for ${sleepTime} ms...`);
         await sleep(sleepTime);
       }
+    }
+
+    console.log(`\nMigration summary:`);
+    console.log(`Successfully migrated: ${successCount} patients`);
+    console.log(`Failed to migrate: ${failureCount} patients`);
+
+    if (failureCount > 0) {
+      console.log("Failed patients:");
+      Object.entries(failures).forEach(([patientId, error]) => {
+        console.log(`- Patient ${patientId}: ${error}`);
+      });
     }
   } catch (err) {
     const msg = "Patient migration failed.";
