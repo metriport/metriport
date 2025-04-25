@@ -7,15 +7,9 @@ import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { EventTypes, analytics } from "../../external/analytics/posthog";
-import { isPcpVisitAiSummaryFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
 import { documentVariableName, mainSummaryPrompt, refinedSummaryPrompt } from "./prompts";
-import {
-  documentVariableName as pcpVisitDocumentVariableName,
-  mainSummaryPrompt as pcpVisitMainSummaryPrompt,
-  refinedSummaryPrompt as pcpVisitRefinedSummaryPrompt,
-} from "./pcp-visit-prompt";
 
 const CHUNK_SIZE = 100_000;
 const CHUNK_OVERLAP = 1000;
@@ -35,10 +29,6 @@ export async function summarizeFilteredBundleWithAI(
   const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
   // filter out historical data
   try {
-    const { documentVariable, mainPrompt, refinedPrompt } = await getInputsForAiBriefGeneration(
-      cxId
-    );
-
     // TODO: #2510 - experiment with different splitters
     const textSplitter = new RecursiveCharacterTextSplitter({
       chunkSize: CHUNK_SIZE,
@@ -67,25 +57,25 @@ export async function summarizeFilteredBundleWithAI(
       ],
     });
 
-    const SUMMARY_PROMPT = PromptTemplate.fromTemplate(mainPrompt);
+    const SUMMARY_PROMPT = PromptTemplate.fromTemplate(mainSummaryPrompt);
     const summaryChain = new LLMChain({
       llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     });
 
-    const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(refinedPrompt);
+    const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(refinedSummaryPrompt);
     const summaryChainRefined = new StuffDocumentsChain({
       llmChain: new LLMChain({
         llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       }),
-      documentVariableName: documentVariable,
+      documentVariableName,
     });
 
     const mapReduce = new MapReduceDocumentsChain({
       llmChain: summaryChain,
       combineDocumentChain: summaryChainRefined,
-      documentVariableName: documentVariable,
+      documentVariableName,
       verbose: false,
     });
 
@@ -120,28 +110,6 @@ export async function summarizeFilteredBundleWithAI(
     // Intentionally not throwing the error to avoid breaking the MR Summary generation flow
     throw err;
   }
-}
-
-async function getInputsForAiBriefGeneration(cxId: string): Promise<{
-  mainPrompt: string;
-  refinedPrompt: string;
-  documentVariable: string;
-}> {
-  const isPcpVisit = await isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId);
-
-  if (isPcpVisit) {
-    return {
-      mainPrompt: pcpVisitMainSummaryPrompt,
-      refinedPrompt: pcpVisitRefinedSummaryPrompt,
-      documentVariable: pcpVisitDocumentVariableName,
-    };
-  }
-
-  return {
-    mainPrompt: mainSummaryPrompt,
-    refinedPrompt: refinedSummaryPrompt,
-    documentVariable: documentVariableName,
-  };
 }
 
 function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {

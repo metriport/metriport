@@ -232,11 +232,3 @@ export async function isDermFeatureFlagEnabledForCx(cxId: string): Promise<boole
   const cxIdsWithDermEnabled = await getCxsWithDermFeatureFlag();
   return cxIdsWithDermEnabled.some(i => i === cxId);
 }
-
-export async function getCxsWithPcpVisitAiSummaryFeatureFlag(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithPcpVisitAiSummaryFeatureFlag");
-}
-export async function isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithPcpVisitAiSummaryEnabled = await getCxsWithPcpVisitAiSummaryFeatureFlag();
-  return cxIdsWithPcpVisitAiSummaryEnabled.some(i => i === cxId);
-}
