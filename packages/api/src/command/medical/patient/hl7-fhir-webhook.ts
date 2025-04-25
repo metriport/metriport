@@ -17,9 +17,11 @@ export async function processHl7FhirBundleWebhook({
   presignedUrl: string;
   triggerEvent: string;
 }): Promise<void> {
+  capture.setExtra({ patientId, context: `webhook.processHl7FhirBundleWebhook` });
   const { log } = out(`processHl7FhirBundleWebhook, cx: ${cxId}, pt: ${patientId}`);
   const requestId = uuidv7();
   log(`req - ${requestId}, event - ${triggerEvent}`);
+
   try {
     const [settings, currentPatient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
@@ -28,12 +30,10 @@ export async function processHl7FhirBundleWebhook({
     const webhookType = mapTriggerEventToWebhookType(triggerEvent);
 
     const payload = {
-      payload: {
-        patientId,
-        ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
-        ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
-        url: presignedUrl,
-      },
+      patientId,
+      ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
+      ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
+      url: presignedUrl,
     };
 
     const webhookRequest = await createWebhookRequest({
@@ -43,15 +43,10 @@ export async function processHl7FhirBundleWebhook({
       requestId,
     });
 
-    const additionalWHRequestMeta: Record<string, string> = { requestId };
-
-    await processRequest(webhookRequest, settings, additionalWHRequestMeta);
+    await processRequest(webhookRequest, settings, { requestId });
   } catch (err) {
     const msg = `Failed to send hl7 notification webhook`;
     log(`${msg}, error - ${errorToString(err)}`);
-    capture.error(msg, {
-      extra: { patientId, context: `webhook.processHl7FhirBundleWebhook`, err },
-    });
     throw err;
   }
 }
