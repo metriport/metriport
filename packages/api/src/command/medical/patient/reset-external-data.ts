@@ -23,14 +23,13 @@ export const resetExternalData = async ({
 
   await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({ cxId, id: patientId, transaction, lock: true });
-    const data = { ...patient.data };
 
     const updatedPatient = await patient.update(
       {
         data: {
-          ...data,
+          ...patient.data,
           externalData: {
-            ...data.externalData,
+            ...patient.data.externalData,
             [source]: undefined,
           },
         },
