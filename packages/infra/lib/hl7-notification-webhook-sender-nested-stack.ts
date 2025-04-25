@@ -20,7 +20,6 @@ function settings() {
     lambda: {
       memory: 1024 as const,
       timeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.minutes(5),
