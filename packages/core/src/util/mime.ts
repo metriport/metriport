@@ -43,7 +43,7 @@ export const OCTET_FILE_EXTENSION = ".bin";
 export const HTML_MIME_TYPE = "text/html";
 export const HTML_FILE_EXTENSION = ".html";
 export const TXT_RTF_MIME_TYPE = "text/rtf";
-export const HL7_FILE_EXTENSION = ".hl7";
+export const HL7_FILE_EXTENSION = "hl7";
 
 export const BINARY_MIME_TYPES = [
   PDF_MIME_TYPE,

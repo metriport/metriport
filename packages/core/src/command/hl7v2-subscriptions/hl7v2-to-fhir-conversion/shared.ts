@@ -154,7 +154,7 @@ export function buildHl7MessageFileKey({
   messageCode,
   triggerEvent,
 }: Hl7FileKeyParams) {
-  return `${cxId}/${patientId}/${timestamp}_${messageId}_${messageCode}_${triggerEvent}${HL7_FILE_EXTENSION}`;
+  return `${cxId}/${patientId}/${timestamp}_${messageId}_${messageCode}_${triggerEvent}.${HL7_FILE_EXTENSION}`;
 }
 
 export function formatDateToHl7(date: Date): string {
