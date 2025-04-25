@@ -10,6 +10,7 @@ import { out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_APP_MIME_TYPE } from "../../util/mime";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
+import { getEncounterPeriod } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/utils";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
@@ -33,7 +34,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
   async execute(params: Hl7Notification): Promise<void> {
     const message = Hl7Message.parse(params.message);
-    const { cxId, patientId, messageReceivedTimestamp } = params;
+    const { cxId, patientId, sourceTimestamp, messageReceivedTimestamp } = params;
     const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}`);
 
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
@@ -54,7 +55,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       message,
       cxId,
       patientId,
-      timestampString: messageReceivedTimestamp,
+      timestampString: sourceTimestamp,
     });
 
     const bundle = prependPatientToBundle({
@@ -74,7 +75,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         captureParams: {
           patientId,
           cxId,
-          messageReceivedTimestamp,
+          sourceTimestamp,
         },
         shouldCapture: true,
       },
@@ -83,7 +84,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const newBundleFileName = buildHl7MessageFhirBundleFileKey({
       cxId,
       patientId,
-      timestamp: messageReceivedTimestamp,
+      timestamp: sourceTimestamp,
       messageId: getMessageUniqueIdentifier(message),
       messageCode,
       triggerEvent,
@@ -102,6 +103,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
 
+    const encounterPeriod = getEncounterPeriod(message);
     await executeWithNetworkRetries(
       async () =>
         await axios.post(internalHl7RouteUrl, undefined, {
@@ -109,6 +111,9 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             cxId,
             triggerEvent,
             presignedUrl: bundlePresignedUrl,
+            ...(encounterPeriod?.start ? { admitTimestamp: encounterPeriod.start } : undefined),
+            ...(encounterPeriod?.end ? { dischargeTimestamp: encounterPeriod.end } : undefined),
+            whenSourceSent: messageReceivedTimestamp,
           },
         })
     );

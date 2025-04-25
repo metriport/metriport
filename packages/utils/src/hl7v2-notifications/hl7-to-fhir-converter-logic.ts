@@ -62,7 +62,8 @@ function invokeLambdaLogic() {
         cxId,
         patientId,
         message,
-        messageReceivedTimestamp: timestamp,
+        sourceTimestamp: timestamp,
+        messageReceivedTimestamp: new Date().toISOString(),
       });
     } catch (err) {
       errors.push({

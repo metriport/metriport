@@ -26,4 +26,13 @@ export const hl7NotificationSchema = z.object({
   cxId: z.string().uuid(),
   presignedUrl: presignedUrlSchema,
   triggerEvent: z.string(),
+  whenSourceSent: z.string(),
+  admitTimestamp: z.string().optional(),
+  dischargeTimestamp: z.string().optional(),
 });
+
+const hl7NotificationWebhookSchema = hl7NotificationSchema.extend({
+  patientId: z.string(),
+});
+
+export type Hl7NotificationWebhookRequest = z.infer<typeof hl7NotificationWebhookSchema>;

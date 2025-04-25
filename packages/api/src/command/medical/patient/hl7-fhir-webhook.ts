@@ -6,18 +6,22 @@ import { getSettingsOrFail } from "../../settings/getSettings";
 import { processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { getPatientOrFail } from "./get-patient";
+import { Hl7NotificationWebhookRequest } from "../../../routes/medical/schemas/hl7-notification";
+import { Hl7WebhookTypeSchemaType } from "@metriport/shared/medical";
+
+const EVENT_TARGET_PATIENT = "patient";
+const EVENT_ADMIT = "admit";
+const EVENT_DISCHARGE = "discharge";
 
 export async function processHl7FhirBundleWebhook({
   cxId,
   patientId,
   presignedUrl,
   triggerEvent,
-}: {
-  cxId: string;
-  patientId: string;
-  presignedUrl: string;
-  triggerEvent: string;
-}): Promise<void> {
+  whenSourceSent,
+  admitTimestamp,
+  dischargeTimestamp,
+}: Hl7NotificationWebhookRequest): Promise<void> {
   capture.setExtra({ patientId, context: `webhook.processHl7FhirBundleWebhook` });
   const { log } = out(`processHl7FhirBundleWebhook, cx: ${cxId}, pt: ${patientId}`);
 
@@ -32,17 +36,22 @@ export async function processHl7FhirBundleWebhook({
     const webhookType = mapTriggerEventToWebhookType(triggerEvent);
 
     const payload = {
-      patientId,
-      ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
-      ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
-      url: presignedUrl,
+      payload: {
+        patientId,
+        ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
+        ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
+        url: presignedUrl,
+        admitTimestamp,
+        dischargeTimestamp,
+        whenSourceSent,
+      },
     };
 
-    if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
+    if (await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId)) {
       log(`WH FF disabled. Not sending it...`);
       await createWebhookRequest({
         cxId,
-        type: `medical.hl7.${webhookType}`,
+        type: webhookType,
         payload,
         requestId,
         status: "success",
@@ -52,7 +61,7 @@ export async function processHl7FhirBundleWebhook({
 
     const webhookRequest = await createWebhookRequest({
       cxId,
-      type: `medical.hl7.${webhookType}`,
+      type: webhookType,
       payload,
       requestId,
     });
@@ -65,13 +74,13 @@ export async function processHl7FhirBundleWebhook({
   }
 }
 
-function mapTriggerEventToWebhookType(triggerEvent: string) {
+function mapTriggerEventToWebhookType(triggerEvent: string): Hl7WebhookTypeSchemaType {
   switch (triggerEvent) {
     case "A01": {
-      return "admit";
+      return `${EVENT_TARGET_PATIENT}.${EVENT_ADMIT}`;
     }
     case "A03": {
-      return "discharge";
+      return `${EVENT_TARGET_PATIENT}.${EVENT_DISCHARGE}`;
     }
     default: {
       throw new MetriportError("Unsupported HL7 triggerEvent for the webhook", undefined, {

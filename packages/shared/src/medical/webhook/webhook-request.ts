@@ -18,8 +18,8 @@ export const docBulkDownloadWebhookTypeSchema = z.literal(`medical.document-bulk
 export type DocumentBulkDownloadWebhookType = z.infer<typeof docBulkDownloadWebhookTypeSchema>;
 
 export const hl7NotificationWebhookTypeSchema = z
-  .literal(`medical.hl7.admit`)
-  .or(z.literal(`medical.hl7.discharge`));
+  .literal(`patient.admit`)
+  .or(z.literal(`patient.discharge`));
 export type Hl7WebhookTypeSchemaType = z.infer<typeof hl7NotificationWebhookTypeSchema>;
 
 export const mapiWebhookTypeSchema = consolidatedWebhookTypeSchema
