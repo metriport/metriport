@@ -35,15 +35,15 @@ export async function processHl7FhirBundleWebhook({
     ]);
     const webhookType = mapTriggerEventToWebhookType(triggerEvent);
 
-    const payload = {
+    const whData = {
       payload: {
         patientId,
         ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
         ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
         url: presignedUrl,
+        whenSourceSent,
         admitTimestamp,
         dischargeTimestamp,
-        whenSourceSent,
       },
     };
 
@@ -52,7 +52,7 @@ export async function processHl7FhirBundleWebhook({
       await createWebhookRequest({
         cxId,
         type: webhookType,
-        payload,
+        payload: whData,
         requestId,
         status: "success",
       });
@@ -62,7 +62,7 @@ export async function processHl7FhirBundleWebhook({
     const webhookRequest = await createWebhookRequest({
       cxId,
       type: webhookType,
-      payload,
+      payload: whData,
       requestId,
     });
 

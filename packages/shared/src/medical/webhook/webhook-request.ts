@@ -17,9 +17,7 @@ export type DocumentConversionWebhookType = z.infer<typeof docConversionWebhookT
 export const docBulkDownloadWebhookTypeSchema = z.literal(`medical.document-bulk-download-urls`);
 export type DocumentBulkDownloadWebhookType = z.infer<typeof docBulkDownloadWebhookTypeSchema>;
 
-export const hl7NotificationWebhookTypeSchema = z
-  .literal(`patient.admit`)
-  .or(z.literal(`patient.discharge`));
+const hl7NotificationWebhookTypeSchema = z.enum(["patient.admit", "patient.discharge"]);
 export type Hl7WebhookTypeSchemaType = z.infer<typeof hl7NotificationWebhookTypeSchema>;
 
 export const mapiWebhookTypeSchema = consolidatedWebhookTypeSchema
