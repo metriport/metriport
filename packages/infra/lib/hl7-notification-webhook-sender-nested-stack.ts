@@ -114,7 +114,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       },
     });
 
-    outgoingHl7NotificationBucket.grantWrite(lambda);
+    outgoingHl7NotificationBucket.grantReadWrite(lambda);
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     new CfnOutput(this, "Hl7NotificationWebhookSenderQueueArn", {
