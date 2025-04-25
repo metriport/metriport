@@ -39,7 +39,6 @@ export function convertHl7v2MessageToFhir({
     messageId,
     messageCode,
     triggerEvent,
-    extension: "hl7",
   });
 
   if (messageCode === "ADT") {
