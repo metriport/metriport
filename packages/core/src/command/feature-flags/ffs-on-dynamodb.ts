@@ -58,6 +58,7 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   commonwellFeatureFlag: { enabled: false },
   carequalityFeatureFlag: { enabled: false },
   cxsWithPcpVisitAiSummaryFeatureFlag: { enabled: false, values: [] },
+  cxsWithHl7NotificationWebhookFeatureFlag: { enabled: false, values: [] },
 };
 
 /**

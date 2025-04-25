@@ -1,3 +1,4 @@
+import { isHl7NotificationWebhookFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { capture, out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError, errorToString } from "@metriport/shared";
@@ -19,6 +20,7 @@ export async function processHl7FhirBundleWebhook({
 }): Promise<void> {
   capture.setExtra({ patientId, context: `webhook.processHl7FhirBundleWebhook` });
   const { log } = out(`processHl7FhirBundleWebhook, cx: ${cxId}, pt: ${patientId}`);
+
   const requestId = uuidv7();
   log(`req - ${requestId}, event - ${triggerEvent}`);
 
@@ -35,6 +37,18 @@ export async function processHl7FhirBundleWebhook({
       ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
       url: presignedUrl,
     };
+
+    if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
+      log(`WH FF disabled. Not sending it...`);
+      await createWebhookRequest({
+        cxId,
+        type: `medical.hl7.${webhookType}`,
+        payload,
+        requestId,
+        status: "success",
+      });
+      return;
+    }
 
     const webhookRequest = await createWebhookRequest({
       cxId,
