@@ -7,12 +7,8 @@ export type QueueAndLambdaSettings = {
   entry: string;
   lambda: {
     memory: 512 | 1024 | 2048 | 4096;
-    /** Number of messages the lambda pull from SQS at once  */
-    batchSize?: number;
     /** How long can the lambda run for, max is 900 seconds (15 minutes)  */
     timeout: Duration;
-    /** Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html */
-    reportBatchItemFailures?: boolean;
     reservedConcurrentExecutions?: number;
   };
   queue: {
@@ -26,7 +22,9 @@ export type QueueAndLambdaSettings = {
     createRetryLambda: boolean;
   };
   eventSource: {
+    /** Number of messages the lambda pull from SQS at once  */
     batchSize: number;
+    /** Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html */
     reportBatchItemFailures: boolean;
     maxConcurrency?: number;
     maxBatchingWindow?: Duration;

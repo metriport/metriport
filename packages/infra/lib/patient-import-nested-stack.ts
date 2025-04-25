@@ -206,33 +206,25 @@ export class PatientImportNestedStack extends NestedStack {
     const {
       name,
       entry,
-      lambda: { memory, timeout, batchSize, reportBatchItemFailures },
-      queue: {
-        visibilityTimeout,
-        maxReceiveCount,
-        alarmMaxAgeOfOldestMessage,
-        maxMessageCountAlarmThreshold,
-        createRetryLambda,
-      },
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
       waitTime,
     } = settings().patientCreate;
 
     const queue = createQueue({
+      ...queueSettings,
       stack: this,
       name,
       fifo: true,
       createDLQ: true,
-      visibilityTimeout,
-      maxReceiveCount,
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold,
-      createRetryLambda,
     });
 
     const lambda = createLambda({
+      ...lambdaSettings,
       stack: this,
       name,
       entry,
@@ -245,13 +237,11 @@ export class PatientImportNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: memory,
-      timeout: timeout,
       vpc,
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, { batchSize, reportBatchItemFailures }));
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     bucket.grantReadWrite(lambda);
     patientQueryQueue.grantSendMessages(lambda);
