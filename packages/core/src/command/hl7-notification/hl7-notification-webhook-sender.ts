@@ -3,6 +3,7 @@ export type Hl7Notification = {
   patientId: string;
   message: string;
   messageReceivedTimestamp: string;
+  sourceTimestamp: string;
 };
 
 export interface Hl7NotificationWebhookSender {

@@ -62,7 +62,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           cxId,
           patientId,
           message: asString(message),
-          messageReceivedTimestamp: timestamp,
+          sourceTimestamp: timestamp,
+          messageReceivedTimestamp: new Date().toISOString(),
         });
 
         connection.send(message.buildAck());
@@ -77,7 +78,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
             messageId,
             messageCode,
             triggerEvent,
-            extension: "hl7",
           }),
           file: Buffer.from(asString(message)),
           contentType: "text/plain",

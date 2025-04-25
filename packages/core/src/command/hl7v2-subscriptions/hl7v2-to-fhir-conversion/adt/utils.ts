@@ -1,4 +1,4 @@
-import { Hl7Message, Hl7Segment } from "@medplum/core";
+import { Hl7Field, Hl7Message } from "@medplum/core";
 import { Coding, Encounter } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { buildPeriod } from "../../../../external/fhir/shared/datetime";
@@ -10,14 +10,13 @@ import {
   getSegmentByNameOrFail,
   mapHl7SystemNameToSystemUrl,
 } from "../shared";
-import { buildConditionCoding } from "./condition";
 
 const NUMBER_OF_DATA_POINTS_PER_CONDITION = 3;
-type ConditionOffset = 0 | 1;
+type CodingIndex = 0 | 1;
 
 type HumanNameDetails = {
   family: string;
-  given: string;
+  given: string | undefined;
   secondaryGivenNames: string | undefined;
   suffix: string | undefined;
   prefix: string | undefined;
@@ -65,8 +64,10 @@ export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails
   const attendingDoctorField = pv1Segment.getField(7);
   if (attendingDoctorField.components.length < 1) return undefined;
 
-  const family = attendingDoctorField.getComponent(2);
-  const given = attendingDoctorField.getComponent(3);
+  const family = getOptionalValueFromField(attendingDoctorField, 2);
+  if (!family) return undefined;
+
+  const given = getOptionalValueFromField(attendingDoctorField, 3);
   const secondaryGivenNames = getOptionalValueFromField(attendingDoctorField, 4);
   const suffix = getOptionalValueFromField(attendingDoctorField, 5);
   const prefix = getOptionalValueFromField(attendingDoctorField, 6);
@@ -74,22 +75,19 @@ export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails
   return { family, given, secondaryGivenNames, suffix, prefix };
 }
 
-export function getConditionCoding(
-  pv2Segment: Hl7Segment,
-  offsetMultiplier: ConditionOffset
-): Coding | undefined {
-  const offset = offsetMultiplier * NUMBER_OF_DATA_POINTS_PER_CONDITION;
+export function getCoding(field: Hl7Field, codingPosition: CodingIndex): Coding | undefined {
+  const offset = codingPosition * NUMBER_OF_DATA_POINTS_PER_CONDITION;
 
-  const conditionCode = getOptionalValueFromSegment(pv2Segment, 3, 1 + offset);
-  const conditionDisplay = getOptionalValueFromSegment(pv2Segment, 3, 2 + offset);
-  const conditionSystem = getOptionalValueFromSegment(pv2Segment, 3, 3 + offset);
+  const code = getOptionalValueFromField(field, 1 + offset);
+  const display = getOptionalValueFromField(field, 2 + offset);
+  const system = getOptionalValueFromField(field, 3 + offset);
 
-  const system = mapHl7SystemNameToSystemUrl(conditionSystem);
+  const normalizedSystem = mapHl7SystemNameToSystemUrl(system);
 
-  return buildConditionCoding({
-    code: conditionCode,
-    display: conditionDisplay,
-    system,
+  return buildCoding({
+    code,
+    display,
+    system: normalizedSystem,
   });
 }
 
@@ -117,4 +115,30 @@ export function createEncounterId(adt: Hl7Message, patientId: string) {
   }
 
   return uuidv7();
+}
+
+export function buildCoding({
+  code,
+  display,
+  system,
+}: {
+  code?: string | undefined;
+  display?: string | undefined;
+  system?: string | undefined;
+}): Coding | undefined {
+  if (!code && !display) return undefined;
+
+  const systemUrl = system ?? inferConditionSystem(code);
+  return {
+    ...(code ? { code } : undefined),
+    ...(display ? { display } : undefined),
+    ...(systemUrl ? { system: systemUrl } : undefined),
+  };
+}
+
+function inferConditionSystem(code: string | undefined): string | undefined {
+  if (!code) return undefined;
+
+  // TODO 2883: See if we can infer the system being ICD-10 / LOINC / SNOMED
+  return code;
 }

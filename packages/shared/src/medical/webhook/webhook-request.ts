@@ -17,11 +17,15 @@ export type DocumentConversionWebhookType = z.infer<typeof docConversionWebhookT
 export const docBulkDownloadWebhookTypeSchema = z.literal(`medical.document-bulk-download-urls`);
 export type DocumentBulkDownloadWebhookType = z.infer<typeof docBulkDownloadWebhookTypeSchema>;
 
+const hl7NotificationWebhookTypeSchema = z.enum(["patient.admit", "patient.discharge"]);
+export type Hl7WebhookTypeSchemaType = z.infer<typeof hl7NotificationWebhookTypeSchema>;
+
 export const mapiWebhookTypeSchema = consolidatedWebhookTypeSchema
   .or(consolidatedWebhookTypeSchema)
   .or(docDownloadWebhookTypeSchema)
   .or(docConversionWebhookTypeSchema)
-  .or(docBulkDownloadWebhookTypeSchema);
+  .or(docBulkDownloadWebhookTypeSchema)
+  .or(hl7NotificationWebhookTypeSchema);
 export type MAPIWebhookType = z.infer<typeof mapiWebhookTypeSchema>;
 
 export const webhookTypeSchema = pingWebhookTypeSchema.or(mapiWebhookTypeSchema);

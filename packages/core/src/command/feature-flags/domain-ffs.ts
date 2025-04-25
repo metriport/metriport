@@ -240,3 +240,14 @@ export async function isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId: string): 
   const cxIdsWithPcpVisitAiSummaryEnabled = await getCxsWithPcpVisitAiSummaryFeatureFlag();
   return cxIdsWithPcpVisitAiSummaryEnabled.some(i => i === cxId);
 }
+
+export async function getCxsWithHl7NotificationWebhookFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithHl7NotificationWebhookFeatureFlag");
+}
+export async function isHl7NotificationWebhookFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxIdsWithHl7NotificationWebhookEnabled =
+    await getCxsWithHl7NotificationWebhookFeatureFlag();
+  return cxIdsWithHl7NotificationWebhookEnabled.some(i => i === cxId);
+}

@@ -4,6 +4,11 @@ import { Hl7NotificationWebhookSenderCloud } from "./hl7-notification-webhook-se
 import { Hl7NotificationWebhookSenderDirect } from "./hl7-notification-webhook-sender-direct";
 
 export function buildHl7NotificationWebhookSender(): Hl7NotificationWebhookSender {
-  if (Config.isDev()) return new Hl7NotificationWebhookSenderDirect();
+  if (Config.isDev()) {
+    return new Hl7NotificationWebhookSenderDirect(
+      Config.getApiLoadBalancerAddress(),
+      Config.getHl7OutgoingMessageBucketName()
+    );
+  }
   return new Hl7NotificationWebhookSenderCloud(Config.getHl7NotificationQueueUrl());
 }
