@@ -14,7 +14,6 @@ type ConditionWithId = Condition & {
 };
 
 type ConditionsAndReferences = {
-  reasonCode: CodeableConcept[] | undefined;
   conditions: Condition[];
   refs: EncounterDiagnosis[];
 };
@@ -43,7 +42,6 @@ export function getConditionsAndReferences(
   );
 
   return {
-    reasonCode: encReason?.reasonCode,
     conditions: uniqueConditions,
     refs: conditionReferences,
   };
