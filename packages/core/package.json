@@ -111,6 +111,7 @@
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@faker-js/faker": "^8.0.2",
     "@langchain/core": "0.3.19",
+    "@medplum/core": "^3.2.33",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
@@ -138,6 +139,7 @@
     "pg": "^8.11.3",
     "pkijs": "^3.0.16",
     "playwright": "1.39.0",
+    "posthog-node": "^4.0.1",
     "pvutils": "^1.1.3",
     "sequelize": "^6.37.1",
     "ssh2-sftp-client": "^9.0.4",
@@ -148,7 +150,6 @@
     "zod-to-json-schema": "3.22.5"
   },
   "devDependencies": {
-    "@medplum/core": "^3.2.33",
     "@medplum/fhirtypes": "^2.2.10",
     "@tsconfig/recommended": "^1.0.2",
     "@types/formidable": "^3.4.5",

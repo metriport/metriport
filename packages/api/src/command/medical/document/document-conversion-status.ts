@@ -110,12 +110,16 @@ export async function calculateDocumentConversionStatus({
         patient: updatedPatient,
         conversionType: "pdf",
         context: `Post-DQ getConsolidated ${source}`,
+        requestId,
+        isDq: true,
       });
     } else if (isGlobalConversionCompleted) {
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
         context: "Post-DQ getConsolidated GLOBAL",
+        requestId,
+        isDq: true,
       });
     }
   } else {

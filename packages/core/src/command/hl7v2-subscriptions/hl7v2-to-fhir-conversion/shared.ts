@@ -5,7 +5,7 @@ import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
-import { JSON_FILE_EXTENSION } from "../../../util/mime";
+import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../../util/mime";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
 import { getMessageDatetime, getMessageUniqueIdentifier } from "./msh";
 
@@ -14,11 +14,9 @@ type Hl7FileKeyParams = {
   cxId: string;
   patientId: string;
   timestamp: string;
-  messageType: string;
   messageCode: string;
+  triggerEvent: string;
 };
-
-const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
 // TODO: Ensure the HL7 coding system values are correct and up to date
 const hl7CodingSystemToUrlMap: Record<string, string> = {
@@ -31,11 +29,11 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
 };
 
 function decompressUuid(shortId: string) {
-  return unpackUuid(crypto.unscramble(shortId));
+  return unpackUuid(new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).unscramble(shortId));
 }
 
 export function compressUuid(uuid: string) {
-  return crypto.scramble(packUuid(uuid));
+  return new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).scramble(packUuid(uuid));
 }
 
 export function unpackPidFieldOrFail(pid: string) {
@@ -153,10 +151,10 @@ export function buildHl7MessageFileKey({
   patientId,
   messageId,
   timestamp,
-  messageType,
   messageCode,
+  triggerEvent,
 }: Hl7FileKeyParams) {
-  return `${cxId}/${patientId}/${timestamp}_${messageId}_${messageType}_${messageCode}.hl7`;
+  return `${cxId}/${patientId}/${timestamp}_${messageId}_${messageCode}_${triggerEvent}.${HL7_FILE_EXTENSION}`;
 }
 
 export function formatDateToHl7(date: Date): string {

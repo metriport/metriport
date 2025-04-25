@@ -12,7 +12,7 @@ import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../ext
 import { createOrUpdateFacilityInCw } from "../../../external/commonwell/command/create-or-update-cw-facility";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler } from "../../util";
+import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 import { internalDtoFromModel } from "../../medical/dtos/facilityDTO";
 import { facilityInternalDetailsSchema } from "../../medical/schemas/facility";
 
@@ -34,6 +34,7 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const skipItVendorCheck = getFromQueryAsBoolean("skipItVendorCheck", req);
 
     const facilityDetails = facilityInternalDetailsSchema.parse(req.body);
     const facilityCreate: FacilityCreate = {
@@ -64,7 +65,7 @@ router.put(
       : await createFacility(facilityCreate);
 
     const org = await getOrganizationOrFail({ cxId });
-    const syncInHie = isHealthcareItVendor(org);
+    const syncInHie = skipItVendorCheck || isHealthcareItVendor(org);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
     if (syncInHie && facility.cqApproved) {

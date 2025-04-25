@@ -19,6 +19,16 @@ if [[ -z "${ECS_SERVICE}" ]]; then
   exit 1
 fi
 
-source ./packages/scripts/generate-tarball.sh mllp-server
+MLLP_SERVER_EXTRA_DEPS="packages/api-sdk/package.json \
+  packages/api-sdk/dist \
+  packages/commonwell-sdk/package.json \
+  packages/commonwell-sdk/dist \
+  packages/carequality-sdk/package.json \
+  packages/carequality-sdk/dist \
+  packages/ihe-gateway-sdk/package.json \
+  packages/ihe-gateway-sdk/dist"
+
+
+source ./packages/scripts/generate-tarball.sh mllp-server "$MLLP_SERVER_EXTRA_DEPS"
 source ./packages/scripts/push-image.sh mllp-server
 source ./packages/scripts/restart-ecs.sh

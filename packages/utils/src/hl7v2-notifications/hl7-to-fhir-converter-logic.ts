@@ -2,12 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Hl7Message } from "@medplum/core";
-import {
-  getMessageUniqueIdentifier,
-  getOrCreateMessageDatetime,
-} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import { Hl7NotificationWebhookSenderDirect } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-direct";
+import { getOrCreateMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { convertHl7MessageToFhirAndUpload } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-converter";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import fs from "fs";
 
@@ -45,7 +42,7 @@ import fs from "fs";
  * 3. Run the script using ts-node
  */
 const apiUrl = getEnvVarOrFail("API_URL");
-const bucketName = getEnvVarOrFail("OUTGOING_HL7_NOTIFICATION_BUCKET_NAME");
+const bucketName = getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
 
 const filePath = "";
 const fileName = "";
@@ -58,18 +55,14 @@ function invokeLambdaLogic() {
   chunks.forEach(message => {
     const hl7Message = Hl7Message.parse(message);
     const timestamp = getOrCreateMessageDatetime(hl7Message);
-    const messageId = getMessageUniqueIdentifier(hl7Message);
 
     try {
       const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
-      convertHl7MessageToFhirAndUpload({
+      new Hl7NotificationWebhookSenderDirect(apiUrl, bucketName).execute({
         cxId,
         patientId,
         message,
-        messageId,
         messageReceivedTimestamp: timestamp,
-        apiUrl,
-        bucketName,
       });
     } catch (err) {
       errors.push({
