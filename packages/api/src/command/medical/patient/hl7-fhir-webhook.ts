@@ -47,7 +47,7 @@ export async function processHl7FhirBundleWebhook({
       },
     };
 
-    if (await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId)) {
+    if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
       log(`WH FF disabled. Not sending it...`);
       await createWebhookRequest({
         cxId,
