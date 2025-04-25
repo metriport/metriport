@@ -11,6 +11,8 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
+import { Secrets } from "./shared/secrets";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 
 function settings() {
   const timeout = Duration.seconds(61);
@@ -20,7 +22,6 @@ function settings() {
     lambda: {
       memory: 1024 as const,
       timeout,
-      reportBatchItemFailures: true,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.minutes(5),
@@ -47,6 +48,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
   outgoingHl7NotificationBucket: s3.IBucket;
+  secrets: Secrets;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -57,6 +59,11 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
+    const analyticsSecret = props.secrets["POST_HOG_API_KEY_SECRET"];
+    if (!analyticsSecret) {
+      throw new Error("Analytics secret is required");
+    }
+
     const setup = this.setupHl7NotificationWebhookSenderLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -64,6 +71,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       outgoingHl7NotificationBucket: props.outgoingHl7NotificationBucket,
+      analyticsSecret,
     });
 
     this.lambda = setup.lambda;
@@ -76,9 +84,17 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     outgoingHl7NotificationBucket: s3.IBucket;
+    analyticsSecret: ISecret;
   }): { lambda: Lambda } {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, outgoingHl7NotificationBucket } =
-      ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      outgoingHl7NotificationBucket,
+      analyticsSecret,
+    } = ownProps;
     const {
       name,
       entry,
@@ -116,6 +132,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
 
     outgoingHl7NotificationBucket.grantReadWrite(lambda);
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    analyticsSecret.grantRead(lambda);
 
     new CfnOutput(this, "Hl7NotificationWebhookSenderQueueArn", {
       description: "HL7 Message Router Queue ARN",

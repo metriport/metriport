@@ -128,7 +128,7 @@ type EnvConfigBase = {
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
   fhirConverterBucketName?: string;
-  analyticsSecretNames?: {
+  analyticsSecretNames: {
     POST_HOG_API_KEY_SECRET: string;
   };
   locationService?: {
