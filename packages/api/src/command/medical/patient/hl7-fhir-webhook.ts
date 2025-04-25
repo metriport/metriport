@@ -72,6 +72,8 @@ export async function processHl7FhirBundleWebhook({
     log(`${msg}, error - ${errorToString(err)}`);
     throw err;
   }
+
+  log(`Done. Webhook sent.`);
 }
 
 function mapTriggerEventToWebhookType(triggerEvent: string): Hl7WebhookTypeSchemaType {
