@@ -96,9 +96,11 @@ export function parseAddress(
     );
     if (dedicatedAddressLine2) {
       if (addressLine2) {
+        const addressLine2NameForLog = `${addressLine2Name}/${addressLine2AlternativeName}`;
         log(
-          `Found ${addressLine2Name} on both its own field and as part of ${addressLine1Name} ` +
-            `(from ${addressLine1Name}: ${addressLine2}), using the one from ${addressLine2Name}: ${dedicatedAddressLine2}`
+          `Found ${addressLine2NameForLog} on both its own field ` +
+            `and as part of ${addressLine1Name} (from ${addressLine1Name}: ${addressLine2}), ` +
+            `using the one from ${addressLine2NameForLog}: ${dedicatedAddressLine2}`
         );
         addressLine1 = addressLine1 + ", " + addressLine2;
       }
