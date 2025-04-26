@@ -33,6 +33,7 @@ import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
 import { PatientImportJobModel } from "./medical/patient-import";
+import { PatientImportMappingModel } from "./medical/patient-import-mapping";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
@@ -53,6 +54,7 @@ const models: ModelSetup[] = [
   FacilityModel.setup,
   PatientModel.setup,
   PatientImportJobModel.setup,
+  PatientImportMappingModel.setup,
   HIEDirectoryEntryViewModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,

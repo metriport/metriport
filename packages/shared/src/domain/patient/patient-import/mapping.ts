@@ -1,8 +1,6 @@
-/**
- * A mapping between a patient and a patient import job.
- */
-export type PatientImportMapping = {
-  id: string;
+import { BaseDomain, BaseDomainCreate } from "../../base-domain";
+
+export interface PatientImportMappingCreate extends BaseDomainCreate {
   cxId: string;
   patientId: string;
   /**
@@ -14,8 +12,9 @@ export type PatientImportMapping = {
    */
   dataPipelineRequestId: string;
   jobId: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
+}
 
-export type PatientImportMappingCreate = Omit<PatientImportMapping, "createdAt" | "updatedAt">;
+/**
+ * A mapping between a patient and a patient import job.
+ */
+export interface PatientImportMapping extends BaseDomain, PatientImportMappingCreate {}

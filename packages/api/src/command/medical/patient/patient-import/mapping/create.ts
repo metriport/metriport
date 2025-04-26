@@ -6,7 +6,7 @@ import {
 import { PatientImportMappingModel } from "../../../../../models/medical/patient-import-mapping";
 
 export type CreatePatientImportMappingCmd = Omit<
-  PatientImportMapping,
+  PatientImportMappingCreate,
   "id" | "createdAt" | "updatedAt"
 >;
 

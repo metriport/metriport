@@ -1,27 +1,22 @@
-import {
-  PatientImportMapping,
-  PatientImportMappingCreate,
-} from "@metriport/shared/domain/patient/patient-import/mapping";
-import { DataTypes, Model, Sequelize } from "sequelize";
-import { BaseModel } from "../_default";
+import { PatientImportMapping } from "@metriport/shared/domain/patient/patient-import/mapping";
+import { DataTypes, Sequelize } from "sequelize";
+import { BaseModel, ModelSetup } from "../_default";
 
-export class PatientImportMappingModel extends Model<
-  PatientImportMapping,
-  PatientImportMappingCreate
-> {
+export class PatientImportMappingModel
+  extends BaseModel<PatientImportMappingModel>
+  implements PatientImportMapping
+{
   static NAME = "patient_import_mapping";
   declare cxId: string;
   declare jobId: string;
   declare rowNumber: number;
   declare patientId: string;
   declare dataPipelineRequestId: string;
-  declare createdAt: Date;
-  declare updatedAt: Date;
 
-  static initialize(sequelize: Sequelize): void {
+  static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientImportMappingModel.init(
       {
-        ...BaseModel.attributesNoVersion(),
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.STRING,
         },
@@ -41,8 +36,7 @@ export class PatientImportMappingModel extends Model<
       {
         ...BaseModel.modelOptions(sequelize),
         tableName: PatientImportMappingModel.NAME,
-        version: false,
       }
     );
-  }
+  };
 }
