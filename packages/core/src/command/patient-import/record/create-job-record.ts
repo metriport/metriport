@@ -4,6 +4,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { JobRecord } from "../patient-import";
 import { createFileKeyJob, getS3UtilsInstance } from "../patient-import-shared";
+import { recordToFileContents } from "./shared";
 
 /**
  * Creates the Job record on S3, the file that represents the bulk patient import parameters
@@ -31,7 +32,7 @@ export async function createJobRecord(
     await s3Utils.uploadFile({
       bucket: bucketName,
       key,
-      file: Buffer.from(JSON.stringify(payload), "utf8"),
+      file: Buffer.from(recordToFileContents(payload), "utf8"),
       contentType: "application/json",
     });
     return { jobId, key, bucketName };

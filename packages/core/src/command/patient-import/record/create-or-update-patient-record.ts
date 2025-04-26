@@ -3,6 +3,7 @@ import { out } from "../../../util/log";
 import { FailedPatientRecord, ParsedPatientRecord, PatientRecord } from "../patient-import";
 import { createFileKeyPatientRecord, getS3UtilsInstance } from "../patient-import-shared";
 import { fetchPatientRecordOrFail } from "./fetch-patient-record";
+import { recordToFileContents } from "./shared";
 
 type BucketParam = {
   bucketName: string;
@@ -40,7 +41,7 @@ export async function createPatientRecord({
     await s3Utils.uploadFile({
       bucket: bucketName,
       key,
-      file: Buffer.from(JSON.stringify(patientRecord), "utf8"),
+      file: Buffer.from(recordToFileContents(patientRecord), "utf8"),
       contentType: "application/json",
     });
     return patientRecord;
@@ -99,7 +100,7 @@ export async function updatePatientRecord({
     await s3Utils.uploadFile({
       bucket: bucketName,
       key,
-      file: Buffer.from(JSON.stringify(updatedRecord), "utf8"),
+      file: Buffer.from(recordToFileContents(updatedRecord), "utf8"),
       contentType: "application/json",
     });
     return updatedRecord;
