@@ -122,9 +122,15 @@ export async function queryDocumentsAcrossHIEs({
 
   let triggeredDocumentQuery = false;
 
-  const commonwellEnabled = await isCommonwellEnabled();
-  // Why? Please add a comment explaining why we're not running CW if there's no CQ managing org name.
+  /**
+   * This is likely safe to remove based on the usage of this function with the `cqManagingOrgName` param.
+   * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
+   * The expected behavior is that we never pass `cqManagingOrgName`, so it should be null/undefined every
+   * time this function is called - otherwise we can miss the opportunity to query CW for docs.
+   * @see https://metriport.slack.com/archives/C04DMKE9DME/p1745685924702559
+   */
   if (!cqManagingOrgName) {
+    const commonwellEnabled = await isCommonwellEnabled();
     if (commonwellEnabled || forceCommonwell) {
       getDocumentsFromCW({
         patient: updatedPatient,
