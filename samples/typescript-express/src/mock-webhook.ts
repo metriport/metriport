@@ -76,12 +76,16 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response): Promise
       const documents = payload.patients[0]?.documents;
       const firstDoc = documents ? documents[0] : undefined;
       if (firstDoc) {
-        // DOWNLOAD THE DOCUMENT
-        // Expected response https://docs.metriport.com/medical-api/api-reference/document/get-document#response
-        const resp = firstDoc.fileName.endsWith("xml")
-          ? await metriportApi.getDocumentUrl(firstDoc.fileName, "pdf")
-          : await metriportApi.getDocumentUrl(firstDoc.fileName);
-        await downloadFile(resp.url, firstDoc.fileName, "pdf");
+        try {
+          // DOWNLOAD THE DOCUMENT
+          // Expected response https://docs.metriport.com/medical-api/api-reference/document/get-document#response
+          const resp = firstDoc.fileName.endsWith("xml")
+            ? await metriportApi.getDocumentUrl(firstDoc.fileName, "pdf")
+            : await metriportApi.getDocumentUrl(firstDoc.fileName);
+          await downloadFile(resp.url, firstDoc.fileName, "pdf");
+        } catch (error) {
+          console.log("Error downloading document");
+        }
       }
     } else {
       console.log("Error querying documents");
@@ -134,6 +138,11 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response): Promise
     } else if (bulkPatientCreate.status === "completed") {
       // Download and process the result file
       console.log(`COMPLETED: ${JSON.stringify(payload, undefined, 2)}`);
+      try {
+        await downloadFile(bulkPatientCreate.result!, "bulk-patient-create", "csv"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      } catch (error) {
+        console.log("Error downloading document");
+      }
     } else if (bulkPatientCreate.status === "failed") {
       // Download and process the result file
       console.log(`FAILED: ${JSON.stringify(payload, undefined, 2)}`);
