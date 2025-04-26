@@ -108,7 +108,7 @@ import {
 } from "../../util";
 import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
-import { resetExternalData } from "../../../command/medical/patient/reset-external-data";
+import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 
 dayjs.extend(duration);
 
@@ -1172,7 +1172,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * PUT /internal/patient/:id/external-data
+ * DELETE /internal/patient/:id/external-data
  *
  * Resets the external data for a specific patient and HIE source by removing it completely.
  *
@@ -1181,7 +1181,7 @@ router.post(
  * @param req.query.cxId The customer ID.
  * @return 200 OK upon successful reset.
  */
-router.put(
+router.delete(
   "/:id/external-data",
   handleParams,
   requestLogger,
@@ -1190,7 +1190,7 @@ router.put(
     const id = getFromParamsOrFail("id", req);
     const source = getFrom("query").orFail("source", req);
 
-    await resetExternalData({
+    await resetExternalDataSource({
       cxId,
       patientId: id,
       source,

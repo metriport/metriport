@@ -3,7 +3,6 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { stringToBoolean } from "@metriport/shared";
 import { getFacilityByOidOrFail } from "../../../command/medical/facility/get-facility";
 import {
   verifyCxAccessToSendFacilityToHies,
@@ -19,7 +18,7 @@ import { cwOrgActiveSchema } from "../../../external/commonwell/shared";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFrom } from "../../util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../../util";
 import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
@@ -128,10 +127,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("patientId", req);
-    const rerunPdOnNewDemographics = stringToBoolean(
-      getFrom("query").optional("rerunPdOnNewDemographics", req)
-    );
-    const forceCommonwell = stringToBoolean(getFrom("query").optional("forceCommonwell", req));
+    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
+    const forceCommonwell = getFromQueryAsBoolean("forceCommonwell", req);
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const facilityId = patient.facilityIds[0];

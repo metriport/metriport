@@ -11,6 +11,8 @@ import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { addOidPrefix } from "@metriport/core/domain/oid";
+import { getDelayTime } from "../shared/duration";
+import { executeWithNetworkRetries } from "@metriport/shared";
 
 /**
  * This script performs a full patient migration in CommonWell:
@@ -32,6 +34,10 @@ import { addOidPrefix } from "@metriport/core/domain/oid";
 
 dayjs.extend(duration);
 
+const NETWORK_RETRY_MAX_ATTEMPTS = 3;
+const NETWORK_RETRY_INITIAL_DELAY_MS = 500;
+const NETWORK_RETRY_ON_TIMEOUT = true;
+
 const patientIds: string[] = [];
 const rerunPdOnNewDemographics = false;
 const cxId = getEnvVarOrFail("CX_ID");
@@ -49,6 +55,7 @@ const cwOrgName = "";
 
 const confirmationTime = dayjs.duration(10, "seconds");
 const delayTime = dayjs.duration(10, "seconds");
+const minimumDelayTime = dayjs.duration(1, "seconds");
 
 type PdResponse = {
   data: {
@@ -61,6 +68,7 @@ function buildCWPatientId(orgOID: string, patientId: string): string {
 }
 
 async function main() {
+  const { log } = out("migrate-patients");
   try {
     await displayInitialWarningAndConfirmation(patientIds.length);
 
@@ -80,12 +88,20 @@ async function main() {
         try {
           log("Resetting external data...");
           const resetUrl = `${apiUrl}/internal/patient/${patientId}/external-data`;
-          await axios.put(resetUrl, null, {
-            params: {
-              cxId,
-              source: MedicalDataSource.COMMONWELL,
-            },
-          });
+          await executeWithNetworkRetries(
+            () =>
+              axios.delete(resetUrl, {
+                params: {
+                  cxId,
+                  source: MedicalDataSource.COMMONWELL,
+                },
+              }),
+            {
+              maxAttempts: NETWORK_RETRY_MAX_ATTEMPTS,
+              initialDelay: NETWORK_RETRY_INITIAL_DELAY_MS,
+              retryOnTimeout: NETWORK_RETRY_ON_TIMEOUT,
+            }
+          );
 
           log("Running patient discovery...");
           const pdUrl = `${apiUrl}/internal/commonwell/patient-discovery/${patientId}`;
@@ -93,7 +109,11 @@ async function main() {
             cxId,
             rerunPdOnNewDemographics: rerunPdOnNewDemographics.toString(),
           });
-          const resp = (await axios.post(`${pdUrl}?${pdParams}`)) as PdResponse;
+          const resp = (await executeWithNetworkRetries(() => axios.post(`${pdUrl}?${pdParams}`), {
+            maxAttempts: NETWORK_RETRY_MAX_ATTEMPTS,
+            initialDelay: NETWORK_RETRY_INITIAL_DELAY_MS,
+            retryOnTimeout: NETWORK_RETRY_ON_TIMEOUT,
+          })) as PdResponse;
           log(`Request ID - ${JSON.stringify(resp.data.requestId)}`);
 
           // 3. Delete patient in CommonWell
@@ -104,7 +124,11 @@ async function main() {
 
           const cwPatientId = buildCWPatientId(oldCwOid, patientId);
 
-          await commonWell.deletePatient(queryMeta, cwPatientId);
+          await executeWithNetworkRetries(() => commonWell.deletePatient(queryMeta, cwPatientId), {
+            maxAttempts: NETWORK_RETRY_MAX_ATTEMPTS,
+            initialDelay: NETWORK_RETRY_INITIAL_DELAY_MS,
+            retryOnTimeout: NETWORK_RETRY_ON_TIMEOUT,
+          });
 
           log("Patient migration completed successfully");
           successCount++;
@@ -116,7 +140,11 @@ async function main() {
       }
 
       if (i < patientChunks.length - 1) {
-        const sleepTime = delayTime.asMilliseconds();
+        const sleepTime = getDelayTime({
+          log,
+          minimumDelayTime,
+          defaultDelayTime: delayTime,
+        });
         console.log(`Chunk ${i + 1} finished. Sleeping for ${sleepTime} ms...`);
         await sleep(sleepTime);
       }

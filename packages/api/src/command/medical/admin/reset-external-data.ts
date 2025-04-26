@@ -1,20 +1,24 @@
 import { MedicalDataSource, isMedicalDataSource } from "@metriport/core/external/index";
 import { BadRequestError } from "@metriport/shared";
 import { PatientModel } from "../../../models/medical/patient";
-import { getPatientModelOrFail } from "./get-patient";
+import { getPatientModelOrFail } from "../patient/get-patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 
-export type ResetExternalData = {
+export type ResetExternalDataSource = {
   cxId: string;
   patientId: string;
   source: string;
 };
 
-export const resetExternalData = async ({
+/**
+ * ADMIN ONLY: Resets external data for a specific source for a patient.
+ * This function should only be used by administrators for maintenance purposes.
+ */
+export async function resetExternalDataSource({
   cxId,
   patientId,
   source,
-}: ResetExternalData): Promise<void> => {
+}: ResetExternalDataSource): Promise<void> {
   if (!isMedicalDataSource(source)) {
     throw new BadRequestError(
       `Invalid source. Must be one of: ${Object.values(MedicalDataSource).join(", ")}`
@@ -39,4 +43,4 @@ export const resetExternalData = async ({
 
     return updatedPatient;
   });
-};
+}
