@@ -14,19 +14,11 @@ Getting started with our Medical API is pretty easy, you'll just need take the f
 1. [Generate an API key](#2-generate-an-api-key).
 1. [Integrate your app with Metriport](#3-integrate-your-app-with-metriport).
 1. [Create Facilities and Patients](#4-create-facilities-and-patients).
-1. [Get Patient Medical Documents](#5-get-patient-medical-documents).
-1. [Get Patient FHIR Resources](#6-get-patient-fhir-resources). 🔥
-1. [Generate Patient Medical Record Summary](#7-generate-patient-medical-record-summary). 📄
-1. [Share Medical Data with the Networks](#8-share-medical-data-with-the-networks). 🏥
-1. [Request API access](#9-request-api-access).
+1. [Query for Patient Documents](#5-query-for-patient-documents).
+1. [Get Patient Medical Data](#6-get-patient-medical-data). 🔥
+1. [Contribute Medical Data](#7-contribute-medical-data). 🏥
+1. [Request API access](#8-request-api-access).
 
-Feel free to check this demo video out before getting started to get a high level overview of the platform:
-
-<iframe
-  src="https://www.loom.com/embed/c5c049d2f0444e1ea8e075640077a77f?sid=3127991f-f492-4b1c-9a18-39bf6f63a8b6"
-  width="100%"
-  height="450px"
-></iframe>
 
 Let's get into it! 🤘
 
@@ -43,14 +35,14 @@ After we approve your access request, take the following steps to get your API k
 - Toggle the `Sandbox` switch in the Dashboard navbar to enter `Sandbox` mode (learn more about this
   [here](/medical-api/getting-started/sandbox)).
 - In the left hand menu, click `Developers`.
-- On the Developers page, you'll be able to click the "Generate Secret Key" button.
+- On the Developers page, you'll be able to click the `Generate API Key` button.
 
 <Warning>
   The API key will only be displayed once. Please make sure to save it to a secure location before
   leaving the page.
 </Warning>
 
-This Secret Key will allow you to start making requests to the entire Metriport API on your
+This API Key will allow you to start making requests to the entire Metriport API on your
 behalf. Treat this like a password, and keep it somewhere safe! You can read the [API
 Keys](/medical-api/getting-started/api-keys) page to learn more about API key security best practices.
 
@@ -111,11 +103,18 @@ See the [Create Facility endpoint](/medical-api/api-reference/facility/create-fa
 
 ### Creating Facilities using the Dashboard
 
-- On the `Medical API` page, in the Facilities section, click `Add`.
+- On the `Facilities` page, click `Create Facility`.
 - Fill in the details and submit the form to add your Facility.
 
-Once you've created all of your `Facilities`, you can create the `Patients` that you treat
-each facility. You can create `Patients` by either:
+Once you've created all of your `Facilities`, you can create the `Patients` that you treat in each facility.
+
+<Tip>
+  In Sandbox mode, you can create Patients with pre-defined patient demographics to simulate a match
+  and pull example clinical data - see our [Sandbox
+  guide](/medical-api/getting-started/sandbox#example-clinical-data) for more details.
+</Tip>
+
+You can create `Patients` by either:
 
 ### Creating Patients using the API
 
@@ -123,8 +122,7 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
 
 ### Creating Patients using the Dashboard
 
-- On the `Medical API` page, in the Facilities section, click `Patients` for the Facility under which to add Patients.
-- In the Patients section, click `Add`.
+- On the `Patients` page, click `Create Patient`.
 - Fill in the details and submit the form to add your Patient.
 
 <Info>
@@ -133,79 +131,68 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
   creating the Patient.
 </Info>
 
-<Tip>
-  In Sandbox mode, you can create Patients with pre-defined patient demographics to simulate a match
-  and pull example clinical data - see our [Sandbox
-  guide](/medical-api/getting-started/sandbox#example-clinical-data) for more details.
-</Tip>
-
 ---
 
-## 5. Get Patient Medical Documents
+## 5. Query for Patient Documents
 
-Now, you're able to access your Patients' medical `Documents`. This involves 2 main steps:
+Now, you're able to query for your Patients' medical `Documents` (outside medical records).
 
-1. Querying for available `Documents` to get a list of metadata describing the available records.
-1. Downloading the `Document` data from the URL returned in the metadata.
+As we query for Documents, we automatically convert outside records (like XML C-CDA docs) into `FHIR` resources 🔥,
+deduplicate the data, standardize it, enrich it with medical code lookups and crosswalks, and store the resulting data
+on our servers for you to access at any time through a single endpoint.
 
 To query for a Patient's available `Documents`, you can either:
 
 ### Query for Documents using the API
 
-1. Start an asynchronous [Document Query](/medical-api/api-reference/document/start-document-query) across HIEs;
-1. Then, either process the inbound [Webhook message](/medical-api/handling-data/webhooks) which will be sent if you
-   have Webhooks configured, or poll the API to [List Documents](/medical-api/api-reference/document/list-documents) to get
-   the available document references returned from HIEs.
+Start an asynchronous [Document Query](/medical-api/api-reference/document/start-document-query) to initiate a query for the Patient's medical documents from all external sources.
+
+<Info>
+  When this process completes, we'll send you a `medical.document-conversion` webhook - see [the respective section on the webhooks page](/medical-api/handling-data/webhooks#patient-document-data)
+  for more details.
+</Info>
+
+<Info>
+  If you don't have webhooks integrated, you can use the [Get Document Query Status](/medical-api/api-reference/document/get-document-query) endpoint to check the status of the query.
+</Info>
 
 ### Query for Documents using the Dashboard
 
-- On the `Medical API` page, in the Facilities section, click `Patients` for the Facility where the Patient is located.
-- In the desired Patient's row, click `Documents`.
-- You'll see all available Documents in the side panel.
-- To update the list of documents from HIEs, click on `Query Documents`.
+- On the `Patients` page, click on the desired Patient row to be taken to their interactive medical record chart summary page.
+- If this is the first time viewing this Patient's chart, Metriport will automatically retrieve the Patient's medical documents from all external sources;
+- Otherwise, you can click `Refresh Patient Data` anytime to get the latest medical documents from external sources.
 
 <Info>Not all Patients will have available Documents, but they should ~95% of the time.</Info>
 
-Once you've identified the `Document` you want to retrieve, you can download them by either:
+## 6. Get Patient Medical Data 🔥
 
-### Downloading a Document using the API
-
-See the [Get Document endpoint](/medical-api/api-reference/document/get-document) in our API reference.
-
-### Downloading a Document using the Dashboard
-
-- In the side panel that comes up after clicking `Documents`, simply click `Download` on the desired Document.
-
-## 6. Get Patient FHIR Resources 🔥
-
-As we query for Documents we will automatically convert XML C-CDA docs into FHIR resources.
+The aforementioned deduplicated, standardized, and enriched `FHIR` data will allow you to get the source of truth for a Patient's medical data to better understand and treat your Patients.
+We refer to this as `Consolidated Data` in Metriport.
 
 <Tip>
-  Other Documents, like PDFs and images, will be left in their original format and not processed.
+  Read our [FHIR guide](/medical-api/fhir/overview) to learn more about how Metriport leverages FHIR.
 </Tip>
 
-After the conversion from CDA to FHIR, we will store the resulting FHIR resources and make them available to be queried.
-This will allow you to get the necessary data you might need to better understand and treat your Patients.
+To learn more on how to obtain a Patient's Consolidated data via API, please see the [Start Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoint - 
+note that this same data is also available via the Dashboard.
 
-To learn more on how to obtain a Patient's resources, please see the [Start Consolidated
-Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoint.
+<Tip>
+  To render this data in a single summary document, refer to the [Medical Record Summary](/medical-api/handling-data/medical-record-summary) guide.
+</Tip>
 
-We also provide the ability to add any FHIR resources to a Patient with our [Create Patient's Consolidated
-Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
+<Tip>
+  If you need to access the raw unprocessed Documents, see the [Start Bulk Get Document URL](/medical-api/api-reference/document/download-url-bulk) endpoint.
+</Tip>
 
-## 7. Generate Patient Medical Record Summary 📄
+## 7. Contribute Medical Data 🏥
 
-The aforementioned FHIR resources are generated from all available C-CDAs for a patient, resulting in a set of unique medical records. To condense all of these records into a single document, refer to the [Medical Record Summary](/medical-api/handling-data/medical-record-summary) guide.
-
-## 8. Contribute Medical Data with the Networks 🏥
-
-To uphold data quality in the networks, and improve patient health outcomes, it's required that your organization reciprocates medical data exchange by making net-new patient clinical data available to the networks. Some examples of this include:
+To uphold data quality with Metriport's data sources, and improve patient health outcomes, it's required that your organization reciprocates medical data exchange by making net-new patient clinical data available to the networks. Some examples of this include:
 
 - Remote patient monitoring observations such as weight and blood pressure;
 - Clinical progress notes from patient encounters;
 - Lab results
 
-Metriport makes it easy to contribute this data back with the networks - you can:
+Metriport makes it easy to contribute this data - you can:
 
 - Upload FHIR data using our [Create Patient's Consolidated Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 - Upload binary documents using the [Upload Document](/medical-api/api-reference/document/post-upload-url) endpoint.
@@ -214,7 +201,7 @@ For more details on how to contribute data back, see the [Data Contribution](/me
 
 ---
 
-## 9. Request API access
+## 8. Request API access
 
 <Warning>
   Access to our Medical API will require you to make requests on behalf of a covered entity with an
@@ -240,4 +227,4 @@ That's it! 🤘
 You're now well equiped to use the Metriport API to access, manage, and exchange your Patients' medical data.
 
 As next steps, we'd recommend scoping out our [Medical API Reference](/medical-api/api-reference/organization/create-organization)
-in further detail to see the other things you can do with the API.
+in further detail to see the other things you can do with Metriport.
