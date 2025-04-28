@@ -14,6 +14,7 @@ import {
 } from "./elation/auth/middleware";
 import elationDash from "./elation/routes/dash";
 import elationWebhooks from "./elation/routes/webhook";
+import oauth2 from "./oauth2";
 
 const routes = Router();
 
@@ -23,5 +24,7 @@ routes.use("/elation", processCxIdElationDash, checkMAPIAccess, elationDash);
 
 routes.use("/webhook/canvas", processCxIdCanvasWebhooks, checkMAPIAccess, canvasWebhooks);
 routes.use("/webhook/elation", processCxIdElationWebhooks, checkMAPIAccess, elationWebhooks);
+
+routes.use("/oauth2", oauth2);
 
 export default routes;
