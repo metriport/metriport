@@ -23,12 +23,14 @@ import { executeWithNetworkRetries } from "@metriport/shared";
  * 1. Set the env vars:
  *  - CX_ID
  *  - API_URL
- *  - CW_OID (the old OID to use for deletion)
  *  - CW_CERT (the CommonWell certificate)
  *  - CW_KEY (the CommonWell private key)
  *  - CW_ORG_NAME (the name of the organization)
  * 2. Set the patientIds
- * 3. Run the script with `ts-node src/commonwell/migrate-patients.ts`
+ * 3. Set the oldCwOid
+ * 4. Set the cwOrgName
+ * 5. Set the orgNpi
+ * 6. Run the script with `ts-node src/commonwell/migrate-patients.ts`
  */
 
 dayjs.extend(duration);
@@ -48,7 +50,7 @@ const apiMode = APIMode.integration;
 
 const PATIENT_CHUNK_SIZE = 2;
 
-const oldCwOid = "";
+const oldCwOid = ""; // Not including the urn:oid: prefix. Ex: 1.2.3.4.5.6.7.8.9
 const cwOrgName = "";
 const orgNpi = "";
 
