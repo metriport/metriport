@@ -12,7 +12,7 @@ import {
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { tryToFinishPatientImportJob } from "./finish-job";
-import { getPatientImportByRequestIdOrFail } from "./get-mapping-and-import";
+import { getPatientImportByRequestId } from "./get-mapping-and-import";
 
 dayjs.extend(duration);
 
@@ -47,11 +47,16 @@ export async function finishSinglePatientImport({
   log(`Finishing import for patient, status ${status}`);
 
   try {
-    const patientImportAndMapping = await getPatientImportByRequestIdOrFail({
+    const patientImportAndMapping = await getPatientImportByRequestId({
       cxId,
       patientId,
       dataPipelineRequestId,
     });
+    if (!patientImportAndMapping) {
+      // TODO 2330 Remove this on v2
+      log(`Patient import and mapping not found, skipping`);
+      return;
+    }
     const { job: patientImport, mapping } = patientImportAndMapping;
     const jobId = patientImport.id;
 
