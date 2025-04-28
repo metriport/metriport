@@ -31,6 +31,7 @@ export type ResultEntry = {
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
  * @param s3BucketName - The S3 bucket name.
+ * @param resultEntries - The result entries to store.
  * @returns An array with the row nmbers from the original file that were successfully parsed.
  */
 export async function storeResults({
