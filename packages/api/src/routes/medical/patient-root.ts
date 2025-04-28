@@ -19,7 +19,7 @@ import {
   getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
-import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
+import { createPatientImportJob } from "../../command/medical/patient/patient-import/create";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
@@ -35,7 +35,7 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
-import { PatientImportDto } from "./dtos/patient-import";
+import { fromCreateResponseToDto, PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
 
@@ -213,39 +213,32 @@ router.get(
  * @param req.query.facilityId The ID of the Facility the Patients should be associated with
  *        (optional if there's only one facility for the customer, fails if not provided and
  *        there's more than one facility for the customer).
- * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
+ * @param req.query.dryRun Whether to simply validate the file or actually import it (optional,
  *        defaults to false).
- * @returns an object containing the information about the bulk import job:s
+ * @returns an object containing the information about the bulk import job:
  * - `requestId` - the bulk import request ID
  * - `facilityId` - the facility ID used to create the patients
  * - `status` - the status of the bulk import job
  * - `uploadUrl` - the URL to upload the CSV file
  * - `params` - the parameters used to initiate the bulk patient create
+ * - `createdAt` - the date and time the bulk import job was created, ISO format
  */
 router.post(
   "/bulk",
-  // TODO add this if/when we need to rate limit this endpoint
-  // checkRateLimit("..."),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityIdParam = getFromQuery("facilityId", req);
-    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    const dryRunParam = getFromQueryAsBoolean("dryRun", req);
+    // TODO 2330 add cx-metadata to the job and pass it to all webhooks related to this job
 
     const patientImportResponse = await createPatientImportJob({
       cxId,
       facilityId: facilityIdParam,
-      dryRun,
+      paramsCx: { dryRun: dryRunParam },
     });
 
-    const { jobId, facilityId, status, uploadUrl, params } = patientImportResponse;
-    const respPayload: PatientImportDto = {
-      requestId: jobId,
-      facilityId,
-      status,
-      uploadUrl,
-      params,
-    };
+    const respPayload: PatientImportDto = fromCreateResponseToDto(patientImportResponse);
     return res.status(httpStatus.OK).json(respPayload);
   })
 );

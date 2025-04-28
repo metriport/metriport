@@ -90,6 +90,11 @@ export async function getDocumentsFromCQ({
       (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
+      log(
+        `Scheduling document query for patient ${patientId}, hasNoCQStatus ${hasNoCQStatus}, ` +
+          `isProcessing ${isProcessing}, forcePatientDiscovery ${forcePatientDiscovery}, ` +
+          `isStale ${isStale}`
+      );
       await scheduleDocQuery({
         requestId,
         patient,

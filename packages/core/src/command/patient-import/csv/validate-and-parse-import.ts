@@ -1,19 +1,30 @@
 import { errorToString, MetriportError } from "@metriport/shared";
+import { PatientImportEntryStatus } from "@metriport/shared/domain/patient/patient-import/types";
 import csv from "csv-parser";
 import * as stream from "stream";
+import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
-import { NDJSON_FILE_EXTENSION } from "../../../util/mime";
-import { PatientPayload } from "../patient-import";
+import { ParsedPatient } from "../patient-import";
 import { createFileKeyRaw, getS3UtilsInstance } from "../patient-import-shared";
-import { createValidationFile, ValidationFileContentType } from "../record/create-validation-file";
+import { createHeadersFile } from "../record/create-headers-file";
+import { createPatientRecord } from "../record/create-or-update-patient-record";
 import { mapCsvPatientToMetriportPatient } from "./convert-patient";
 
-export type RowError = { rowColumns: string[]; error: string };
-
 const MAX_NUMBER_ROWS = 100_000;
+const numberOfParallelExecutions = 20;
+
+const columnSeparator = ",";
 const commaRegex = new RegExp(/,/g);
 
-// TODO 2330 add TSDoc
+/**
+ * Validates and parses a CSV file from S3 for bulk patient import.
+ * Stores each row in S3, on a dedicated file for further processing..
+ *
+ * @param cxId - The customer ID.
+ * @param jobId - The bulk import job ID.
+ * @param s3BucketName - The S3 bucket name.
+ * @returns An array with the row numbers from the original file, indicating the status of parsing each row.
+ */
 export async function validateAndParsePatientImportCsvFromS3({
   cxId,
   jobId,
@@ -22,7 +33,7 @@ export async function validateAndParsePatientImportCsvFromS3({
   cxId: string;
   jobId: string;
   s3BucketName: string;
-}): Promise<PatientPayload[]> {
+}): Promise<{ rowNumber: number; status: PatientImportEntryStatus }[]> {
   const { log } = out(
     `PatientImport validateAndParsePatientImportCsvFromS3 - cxId ${cxId} jobId ${jobId}`
   );
@@ -31,47 +42,68 @@ export async function validateAndParsePatientImportCsvFromS3({
   try {
     const csvAsString = await s3Utils.getFileContentsAsString(s3BucketName, key);
 
-    const { patients, invalidRows, validRows, headers } = await validateAndParsePatientImportCsv({
+    const { patients, headers } = await validateAndParsePatientImportCsv({
       contents: csvAsString,
     });
-    const patientCreates = patients ? getPatientCreatesContents(patients) : undefined;
-    const validRowsContents = validRows
-      ? Buffer.from(getValidRowsContents(validRows, headers), "utf8")
-      : undefined;
-    const invalidRowsContents = invalidRows
-      ? Buffer.from(getInvalidRowsContents(invalidRows, headers), "utf8")
-      : undefined;
-    await Promise.all([
-      patientCreates
-        ? createValidationFile({
+
+    const createHeadersFilePromise = async () => {
+      await createHeadersFile({ cxId, jobId, headers, s3BucketName });
+    };
+
+    const result: {
+      rowNumber: number;
+      status: PatientImportEntryStatus;
+    }[] = [];
+
+    const getCreatePatientRecordPromises = () => {
+      return patients.map(p => {
+        return async () => {
+          const base = {
             cxId,
             jobId,
-            stage: "create",
-            contents: Buffer.from(patientCreates.contents, "utf8"),
-            s3BucketName,
-            contentType: patientCreates.type,
-          })
-        : async () => Promise<void>,
-      validRowsContents
-        ? createValidationFile({
-            cxId,
-            jobId,
-            stage: "valid",
-            contents: validRowsContents,
-            s3BucketName,
-          })
-        : async () => Promise<void>,
-      invalidRowsContents
-        ? createValidationFile({
-            cxId,
-            jobId,
-            stage: "invalid",
-            contents: invalidRowsContents,
-            s3BucketName,
-          })
-        : async () => Promise<void>,
-    ]);
-    return patients;
+            rowNumber: p.rowNumber,
+            rowCsv: p.raw,
+            bucketName: s3BucketName,
+          };
+          if (p.parsed) {
+            const status = "waiting";
+            result.push({
+              rowNumber: p.rowNumber,
+              status,
+            });
+            return createPatientRecord({
+              ...base,
+              patientCreate: p.parsed,
+              status,
+            });
+          } else {
+            const status = "failed";
+            result.push({
+              rowNumber: p.rowNumber,
+              status,
+            });
+            return createPatientRecord({
+              ...base,
+              status,
+              reasonForCx: stripCommas(p.error, ";"),
+              reasonForDev: "400 - validation error",
+            });
+          }
+        };
+      });
+    };
+
+    await executeAsynchronously(
+      [createHeadersFilePromise, ...getCreatePatientRecordPromises()],
+      async promise => {
+        await promise();
+      },
+      {
+        numberOfParallelExecutions,
+      }
+    );
+
+    return result;
   } catch (error) {
     const msg = `Failure validating and parsing import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -82,28 +114,6 @@ export async function validateAndParsePatientImportCsvFromS3({
       context: "patient-import.validateAndParsePatientImportCsvFromS3",
     });
   }
-}
-
-function getPatientCreatesContents(patients: PatientPayload[]): {
-  contents: string;
-  type: ValidationFileContentType;
-} {
-  const rows: string[] = patients.map(p => JSON.stringify(p));
-  const contents = rows.join("\n");
-  return { contents, type: NDJSON_FILE_EXTENSION };
-}
-
-function getValidRowsContents(validRows: string[][], headers: string[]): string {
-  const rows: string[] = [headers.join(","), ...validRows.map(rowColumn => rowColumn.join(","))];
-  return rows.join("\n");
-}
-
-function getInvalidRowsContents(invalidRows: RowError[], headers: string[]): string {
-  const rows: string[] = [
-    [...headers, "error"].join(","),
-    ...invalidRows.map(row => [...row.rowColumns, stripCommas(row.error, ";")].join(",")),
-  ];
-  return rows.join("\n");
 }
 
 /**
@@ -119,23 +129,16 @@ export async function validateAndParsePatientImportCsv({
 }: {
   contents: string;
 }): Promise<{
-  validRows: string[][];
-  invalidRows: RowError[];
   headers: string[];
-  patients: PatientPayload[];
+  patients: ParsedPatient[];
 }> {
   let numberOfRows = 0;
   const promise = new Promise<{
-    validRows: string[][];
-    invalidRows: RowError[];
     headers: string[];
-    patients: PatientPayload[];
+    patients: ParsedPatient[];
   }>(function (resolve, reject) {
-    const validRows: string[][] = [];
-    const invalidRows: RowError[] = [];
-    const patients: PatientPayload[] = [];
+    const patients: ParsedPatient[] = [];
     const headers: string[] = [];
-    const mappingErrors: Array<{ row: string; errors: string }> = [];
     const s = new stream.Readable();
     s.push(csvAsString);
     // indicates end-of-file basically - the end of the stream
@@ -143,8 +146,7 @@ export async function validateAndParsePatientImportCsv({
     s.pipe(
       csv({
         mapHeaders: ({ header }: { header: string }) => {
-          //eslint-disable-next-line
-          return header.replace(/[!@#$%^&*()+=\[\]\\';,./{}|":<>?~_\s]/gi, "").toLowerCase();
+          return header.replace(/[!@#$%^&*()+=\[\]\\';,./{}|":<>?~_\s]/gi, ""); //eslint-disable-line
         },
       })
     )
@@ -152,31 +154,37 @@ export async function validateAndParsePatientImportCsv({
         headers.push(...parsedHeaders);
       })
       .on("data", async data => {
-        if (++numberOfRows > MAX_NUMBER_ROWS) {
-          throw new MetriportError(`CSV has more rows than max (${MAX_NUMBER_ROWS})`);
-        }
-        const raw = Object.values(data) as string[];
-        const result = mapCsvPatientToMetriportPatient(data);
-        if (Array.isArray(result)) {
-          invalidRows.push({
-            rowColumns: raw,
-            error: result.map(e => e.error).join("; "),
-          });
-          mappingErrors.push({
-            row: JSON.stringify(data),
-            errors: result.map(e => e.error).join("; "),
-          });
-        } else {
-          validRows.push(raw);
-          patients.push(result);
+        try {
+          if (++numberOfRows > MAX_NUMBER_ROWS) {
+            throw new MetriportError(`CSV has more rows than max (${MAX_NUMBER_ROWS})`);
+          }
+          const parsedPatient = csvRecordToParsedPatient(data, numberOfRows);
+          patients.push(parsedPatient);
+        } catch (error) {
+          reject(error);
         }
       })
       .on("end", async () => {
-        return resolve({ patients: patients, validRows, headers, invalidRows });
+        return resolve({ patients, headers });
       })
       .on("error", reject);
   });
   return await promise;
+}
+
+export function csvRecordToParsedPatient(
+  data: Record<string, string>,
+  rowNumber: number
+): ParsedPatient {
+  const raw = Object.values(data) as string[];
+  const rawNormalized = raw.map(r => (r.includes(columnSeparator) ? `"${r}"` : r));
+  const result = mapCsvPatientToMetriportPatient(data);
+  const baseParsedPatient = { rowNumber, raw: rawNormalized.join(",") };
+  if (Array.isArray(result)) {
+    return { ...baseParsedPatient, error: result.map(e => e.error).join("; ") };
+  } else {
+    return { ...baseParsedPatient, parsed: result };
+  }
 }
 
 function stripCommas(input: string, replacement = "") {

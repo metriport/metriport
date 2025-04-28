@@ -1,14 +1,15 @@
-import { errorToString, sleep } from "@metriport/shared";
+import { errorToString, MetriportError, sleep } from "@metriport/shared";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
 import { createPatient } from "../../api/create-patient";
-import { checkPatientRecordExists } from "../../record/check-patient-record-exists";
-import { creatOrUpdatePatientRecord } from "../../record/create-or-update-patient-record";
+import { createPatientMapping } from "../../api/create-patient-mapping";
+import { reasonForCxInternalError } from "../../patient-import-shared";
+import { updatePatientRecord } from "../../record/create-or-update-patient-record";
 import { ProcessPatientQueryRequest } from "../query/patient-import-query";
 import { buildPatientImportQueryHandler } from "../query/patient-import-query-factory";
-import { PatientImportCreateHandler, ProcessPatientCreateRequest } from "./patient-import-create";
+import { PatientImportCreate, ProcessPatientCreateRequest } from "./patient-import-create";
 
-export class PatientImportCreateHandlerLocal implements PatientImportCreateHandler {
+export class PatientImportCreateLocal implements PatientImportCreate {
   constructor(
     private readonly patientImportBucket: string,
     private readonly waitTimeInMillis: number,
@@ -19,58 +20,95 @@ export class PatientImportCreateHandlerLocal implements PatientImportCreateHandl
     cxId,
     facilityId,
     jobId,
-    patientPayload,
+    rowNumber,
+    rerunPdOnNewDemographics,
     triggerConsolidated,
     disableWebhooks,
-    rerunPdOnNewDemographics,
   }: ProcessPatientCreateRequest): Promise<void> {
-    const { log } = out(`processPatientCreate.local - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`PatientImport processPatientCreate.local - cxId ${cxId} jobId ${jobId}`);
     try {
+      const patientRecord = await updatePatientRecord({
+        cxId,
+        jobId,
+        rowNumber,
+        status: "processing",
+        bucketName: this.patientImportBucket,
+      });
+      if (!patientRecord.patientCreate) {
+        throw new MetriportError("Programming error, patientCreate is undefined", undefined, {
+          cxId,
+          jobId,
+          rowNumber,
+          status: patientRecord.status,
+        });
+      }
+
+      const dataPipelineRequestId = uuidv7();
+
       const patientId = await createPatient({
         cxId,
         facilityId,
-        patientPayload,
+        patientPayload: patientRecord.patientCreate,
       });
-      const recordExists = await checkPatientRecordExists({
-        cxId,
-        jobId,
-        patientId,
-        s3BucketName: this.patientImportBucket,
-      });
-      if (recordExists) {
-        log(`Record exists for patientId ${patientId}, returning...`);
-        return;
-      }
-      await creatOrUpdatePatientRecord({
-        cxId,
-        jobId,
-        patientId,
-        data: { status: "processing" },
-        s3BucketName: this.patientImportBucket,
-      });
+
+      await Promise.all([
+        updatePatientRecord({
+          ...patientRecord,
+          patientId,
+          bucketName: this.patientImportBucket,
+        }),
+        createPatientMapping({
+          cxId,
+          jobId,
+          rowNumber,
+          patientId,
+          dataPipelineRequestId,
+        }),
+      ]);
+
       const processPatientQueryRequest: ProcessPatientQueryRequest = {
         cxId,
         jobId,
+        rowNumber,
         patientId,
+        dataPipelineRequestId,
+        rerunPdOnNewDemographics,
         triggerConsolidated,
         disableWebhooks,
-        rerunPdOnNewDemographics,
       };
       await this.next.processPatientQuery(processPatientQueryRequest);
 
       if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
     } catch (error) {
       const msg = `Failure while processing patient create @ PatientImport`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
+      const errorMsg = errorToString(error);
+      log(`${msg}. Cause: ${errorMsg}`);
+      let errorToUpdateRecordToFailed: string | undefined = undefined;
+      try {
+        await updatePatientRecord({
           cxId,
           jobId,
-          context: "patient-import-create-local.processPatientCreate",
-          error,
-        },
+          rowNumber,
+          status: "failed",
+          reasonForCx: reasonForCxInternalError,
+          reasonForDev: errorMsg,
+          bucketName: this.patientImportBucket,
+        });
+      } catch (error) {
+        // don't capture or throw since this can be the same reason for failure on createPatientRecord
+        const errorMsg = errorToString(error);
+        log(`Failure while setting patient record to failed @ PatientImport. Cause: ${errorMsg}`);
+        errorToUpdateRecordToFailed = errorMsg;
+      }
+      throw new MetriportError(msg, error, {
+        cxId,
+        jobId,
+        rowNumber,
+        context: "PatientImportCreateLocal.processPatientCreate",
+        ...(errorToUpdateRecordToFailed
+          ? { alsoFailedToUpdateRecordToFailed: true, errorToUpdateRecordToFailed }
+          : {}),
       });
-      throw error;
     }
   }
 }
