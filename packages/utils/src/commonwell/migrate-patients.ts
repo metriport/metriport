@@ -167,7 +167,7 @@ async function main() {
 }
 
 async function displayInitialWarningAndConfirmation(numberPatients: number) {
-  console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
+  console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----");
   console.log(
     `Migrating ${numberPatients} patients. CX: ${cxId}. CW OID: ${cwOid}. Sleeping ${confirmationTime.asMilliseconds()} ms before starting.`
   );

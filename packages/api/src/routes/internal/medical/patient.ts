@@ -1174,7 +1174,7 @@ router.post(
 /** ---------------------------------------------------------------------------
  * DELETE /internal/patient/:id/external-data
  *
- * Resets the external data for a specific patient and HIE source by removing it completely.
+ * Resets the external data corresponding to a specific source for a specific patient by removing it completely.
  *
  * @param req.params.id The patient ID.
  * @param req.query.source The HIE source (COMMONWELL or CAREQUALITY).
