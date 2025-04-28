@@ -10,7 +10,6 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { addOidPrefix } from "@metriport/core/domain/oid";
 import { getDelayTime } from "../shared/duration";
 import { executeWithNetworkRetries } from "@metriport/shared";
 
@@ -24,12 +23,14 @@ import { executeWithNetworkRetries } from "@metriport/shared";
  * 1. Set the env vars:
  *  - CX_ID
  *  - API_URL
- *  - CW_OID (the old OID to use for deletion)
  *  - CW_CERT (the CommonWell certificate)
  *  - CW_KEY (the CommonWell private key)
  *  - CW_ORG_NAME (the name of the organization)
  * 2. Set the patientIds
- * 3. Run the script with `ts-node src/commonwell/migrate-patients.ts`
+ * 3. Set the oldCwOid
+ * 4. Set the cwOrgName
+ * 5. Set the orgNpi
+ * 6. Run the script with `ts-node src/commonwell/migrate-patients.ts`
  */
 
 dayjs.extend(duration);
@@ -43,15 +44,15 @@ const rerunPdOnNewDemographics = false;
 const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 
-const cwOid = getEnvVarOrFail("CW_OID");
 const cwCert = getEnvVarOrFail("CW_CERT");
 const cwKey = getEnvVarOrFail("CW_KEY");
 const apiMode = APIMode.integration;
 
 const PATIENT_CHUNK_SIZE = 2;
 
-const oldCwOid = "";
+const oldCwOid = ""; // Not including the urn:oid: prefix. Ex: 1.2.3.4.5.6.7.8.9
 const cwOrgName = "";
+const orgNpi = "";
 
 const confirmationTime = dayjs.duration(10, "seconds");
 const delayTime = dayjs.duration(10, "seconds");
@@ -116,10 +117,9 @@ async function main() {
           })) as PdResponse;
           log(`Request ID - ${JSON.stringify(resp.data.requestId)}`);
 
-          // 3. Delete patient in CommonWell
           log("Deleting patient in CommonWell...");
           const queryMeta = organizationQueryMeta(cwOrgName, {
-            npi: addOidPrefix(oldCwOid),
+            npi: orgNpi,
           });
 
           const cwPatientId = buildCWPatientId(oldCwOid, patientId);
@@ -167,9 +167,9 @@ async function main() {
 }
 
 async function displayInitialWarningAndConfirmation(numberPatients: number) {
-  console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
+  console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----");
   console.log(
-    `Migrating ${numberPatients} patients. CX: ${cxId}. CW OID: ${cwOid}. Sleeping ${confirmationTime.asMilliseconds()} ms before starting.`
+    `Migrating ${numberPatients} patients. CX: ${cxId}. CW OID: ${oldCwOid}. Sleeping ${confirmationTime.asMilliseconds()} ms before starting.`
   );
   await sleep(confirmationTime.asMilliseconds());
 }
