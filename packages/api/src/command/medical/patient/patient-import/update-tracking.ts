@@ -64,7 +64,7 @@ export async function updatePatientImportTracking({
   const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
 
   const jobToUpdate: PatientImportJob = {
-    ...job,
+    ...job.dataValues,
     status: newStatus ?? oldStatus,
   };
   if (total != undefined) {

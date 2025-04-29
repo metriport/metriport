@@ -5,10 +5,7 @@ import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, MetriportError } from "@metriport/shared";
-import {
-  PatientImportEntryStatus,
-  PatientImportEntryStatusFinal,
-} from "@metriport/shared/domain/patient/patient-import/types";
+import { PatientImportEntryStatusFinal } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { tryToFinishPatientImportJob } from "./finish-job";
@@ -91,7 +88,7 @@ async function updatePatientRecordOnS3({
   reasonForDev,
 }: {
   patientRecord: PatientRecord;
-  status: PatientImportEntryStatus;
+  status: PatientImportEntryStatusFinal;
   reasonForDev?: string | undefined;
 }): Promise<PatientRecord> {
   const bucketName = Config.getPatientImportBucket();

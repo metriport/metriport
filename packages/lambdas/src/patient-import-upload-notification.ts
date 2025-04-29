@@ -71,7 +71,7 @@ export async function handler(event: S3Event) {
         console.log(
           `Running in dev mode, not calling the parse lambda, call the internal endpoint!`
         );
-        return;
+        continue;
       }
 
       const parseCloud = new PatientImportParseCloud(patientImportParseLambdaName);
