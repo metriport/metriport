@@ -14,8 +14,12 @@ import {
 } from "./elation/auth/middleware";
 import elationDash from "./elation/routes/dash";
 import elationWebhooks from "./elation/routes/webhook";
-import { processCxIdDash as processCxIdHealthieDash } from "./healthie/auth/middleware";
+import {
+  processCxIdDash as processCxIdHealthieDash,
+  processCxIdWebhooks as processCxIdHealthieWebhooks,
+} from "./healthie/auth/middleware";
 import healthieDash from "./healthie/routes/dash";
+import healthieWebhooks from "./healthie/routes/webhook";
 
 const routes = Router();
 
@@ -26,5 +30,6 @@ routes.use("/healthie", processCxIdHealthieDash, checkMAPIAccess, healthieDash);
 
 routes.use("/webhook/canvas", processCxIdCanvasWebhooks, checkMAPIAccess, canvasWebhooks);
 routes.use("/webhook/elation", processCxIdElationWebhooks, checkMAPIAccess, elationWebhooks);
+routes.use("/webhook/healthie", processCxIdHealthieWebhooks, checkMAPIAccess, healthieWebhooks);
 
 export default routes;

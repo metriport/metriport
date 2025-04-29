@@ -10,23 +10,23 @@ import { getCxMappingOrFail } from "../../../command/mapping/cx";
 import { updateHealthiePatientQuickNotes } from "../../../external/ehr/healthie/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../../util";
+import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
 /**
- * POST /ehr/webhook/healthie/appointments/created/:practiceId
+ * POST /ehr/webhook/healthie/appointment/created
  *
  * Tries to retrieve the matching Metriport patient on appointment created
  * @returns HTTP 200 OK on successful processing.
  */
 router.post(
-  "/created/:practiceId",
+  "/created",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const healthiePracticeId = getFromParamsOrFail("practiceId", req);
+    const healthiePracticeId = getFromQueryOrFail("practiceId", req);
     const event = healthieAppointmentCreatedEventSchema.parse(req.body);
     const cxMapping = await getCxMappingOrFail({
       externalId: healthiePracticeId,
