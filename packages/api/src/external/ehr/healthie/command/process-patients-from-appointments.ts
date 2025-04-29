@@ -1,3 +1,4 @@
+import HealthieApi from "@metriport/core/external/ehr/healthie";
 import { buildHealthieLinkPatientHandler } from "@metriport/core/external/ehr/healthie/link-patient/healthie-link-patient-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -5,9 +6,9 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, MetriportError } from "@metriport/shared";
 import {
+  AppointmentWithAttendee,
   HealthieSecondaryMappings,
   healthieSecondaryMappingsSchema,
-  AppointmentWithAttendee,
 } from "@metriport/shared/interface/external/ehr/healthie/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
@@ -22,12 +23,11 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared";
-import { createHealthieClient, LookupModes, LookupMode } from "../shared";
+import { createHealthieClient, LookupMode, LookupModes } from "../shared";
 import {
-  UpdateHealthiePatientQuickNotesParams,
   SyncHealthiePatientIntoMetriportParams,
+  UpdateHealthiePatientQuickNotesParams,
 } from "./sync-patient";
-import HealthieApi from "@metriport/core/external/ehr/healthie";
 
 dayjs.extend(duration);
 
@@ -55,7 +55,7 @@ export async function processPatientsFromAppointments({
     if (!cxMapping.secondaryMappings) {
       throw new MetriportError("Healthie secondary mappings not found", undefined, {
         externalId: cxMapping.externalId,
-        source: EhrSources.elation,
+        source: EhrSources.healthie,
       });
     }
     const secondaryMappings = healthieSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
@@ -69,7 +69,7 @@ export async function processPatientsFromAppointments({
     if (!secondaryMappings) {
       throw new MetriportError("Healthie secondary mappings not found", undefined, {
         externalId: mapping.externalId,
-        source: EhrSources.elation,
+        source: EhrSources.healthie,
       });
     }
     if (
@@ -236,7 +236,7 @@ async function syncPatient({
 }: Omit<SyncHealthiePatientIntoMetriportParams, "api" | "triggerDq">): Promise<void> {
   const handler = buildEhrSyncPatientHandler();
   await handler.processSyncPatient({
-    ehr: EhrSources.elation,
+    ehr: EhrSources.healthie,
     cxId,
     practiceId: healthiePracticeId,
     patientId: healthiePatientId,

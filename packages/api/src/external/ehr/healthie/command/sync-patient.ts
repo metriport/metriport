@@ -8,6 +8,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { healthieDashSource } from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { MetriportError } from "../../../../../../shared/dist";
 import {
   deleteTokenBasedOnExpBySourceAndData,
@@ -23,6 +24,8 @@ import {
 import { Config } from "../../../../shared/config";
 import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
 import { createHealthieClient } from "../shared";
+
+dayjs.extend(duration);
 
 export const longDurationTokenDuration = dayjs.duration(1, "year");
 export const shortDurationTokenDuration = dayjs.duration(10, "hours");
@@ -47,9 +50,7 @@ export async function syncHealthiePatientIntoMetriport({
     externalId: healthiePatientId,
     source: EhrSources.healthie,
   });
-  let healthieApi: HealthieApi | undefined;
   if (existingPatient) {
-    healthieApi = await createHealthieClient({ cxId, practiceId: healthiePracticeId });
     const metriportPatient = await getPatientOrFail({
       cxId,
       id: existingPatient.patientId,
@@ -62,9 +63,8 @@ export async function syncHealthiePatientIntoMetriport({
     });
     return metriportPatientId;
   }
-  if (!healthieApi) {
-    healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
-  }
+
+  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
   const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
   const demographics = createMetriportPatientDemographics(
     healthiePatient as unknown as PatientDemoData
@@ -80,7 +80,7 @@ export async function syncHealthiePatientIntoMetriport({
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatientId,
-    }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
+    }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
   }
   await Promise.all([
     findOrCreatePatientMapping({
@@ -100,6 +100,7 @@ export async function syncHealthiePatientIntoMetriport({
 }
 
 function createMetriportPatientDemographics(patient: PatientDemoData): PatientDemoData {
+  // TODO: Implement
   return patient;
 }
 
