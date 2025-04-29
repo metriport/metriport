@@ -1,8 +1,8 @@
 import { MetriportError, NotFoundError } from "@metriport/shared";
 import {
-  AppointmentWithAttendee,
   AppointmentListGraphqlResponse,
   appointmentListGraphqlResponseSchema,
+  AppointmentWithAttendee,
   PatientGraphql,
   patientGraphqlSchema,
   PatientQuickNotesGraphql,
@@ -227,8 +227,8 @@ class HealthieApi {
       }
     }`;
     const variables = {
-      startDate: this.formatDate(startAppointmentDate.toISOString()),
-      endDate: this.formatDate(endAppointmentDate.toISOString()),
+      startDate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
+      endDate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
       order_by: "CREATED_AT_ASC",
       should_paginate: true,
       offset: 0,
@@ -247,8 +247,9 @@ class HealthieApi {
     const appointments = appointmentListGraphqlResponse.data.appointments;
     return appointments.map(appointment => {
       const attendee = appointment.attendees[0];
-      if (!attendee)
+      if (!attendee) {
         throw new MetriportError("Appointment has no attendees", undefined, additionalInfo);
+      }
       return { ...appointment, attendees: [attendee] };
     });
   }
@@ -304,8 +305,9 @@ class HealthieApi {
     const appointment = appointmentGraphqlResponse.data.appointments[0];
     if (!appointment) throw new NotFoundError("Appointment not found", undefined, additionalInfo);
     const attendee = appointment.attendees[0];
-    if (!attendee)
+    if (!attendee) {
       throw new MetriportError("Appointment has no attendees", undefined, additionalInfo);
+    }
     return { ...appointment, attendees: [attendee] };
   }
 
