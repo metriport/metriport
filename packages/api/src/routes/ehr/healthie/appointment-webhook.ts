@@ -7,6 +7,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
+import { getHealthiePatientFromAppointment } from "../../../external/ehr/healthie/command/get-patient-from-appointment";
 import { updateHealthiePatientQuickNotes } from "../../../external/ehr/healthie/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
@@ -15,7 +16,7 @@ import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
 const router = Router();
 
 /**
- * POST /ehr/webhook/healthie/appointment/created
+ * POST /ehr/webhook/healthie/:practiceId/appointment/created
  *
  * Tries to retrieve the matching Metriport patient on appointment created
  * @returns HTTP 200 OK on successful processing.
@@ -42,10 +43,15 @@ router.post(
     if (secondaryMappings.webhookAppointmentPatientLinkingDisabled) {
       return res.sendStatus(httpStatus.OK);
     }
+    const healthiePatientId = await getHealthiePatientFromAppointment({
+      cxId,
+      healthiePracticeId,
+      healthieAppointmentId: event.resource_id,
+    });
     await updateHealthiePatientQuickNotes({
       cxId,
       healthiePracticeId,
-      healthiePatientId: event.resource_id,
+      healthiePatientId,
     });
     if (secondaryMappings.webhookAppointmentPatientProcessingDisabled) {
       return res.sendStatus(httpStatus.OK);
@@ -55,7 +61,7 @@ router.post(
       ehr: EhrSources.healthie,
       cxId,
       practiceId: healthiePracticeId,
-      patientId: event.resource_id,
+      patientId: healthiePatientId,
       triggerDq: true,
     });
     return res.sendStatus(httpStatus.OK);

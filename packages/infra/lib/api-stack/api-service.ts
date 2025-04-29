@@ -329,6 +329,7 @@ export function createAPIService({
           ...(props.config.ehrIntegration && {
             EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
+            EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,

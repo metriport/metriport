@@ -15,7 +15,7 @@ import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
 const router = Router();
 
 /**
- * POST /ehr/webhook/healthie/patient/created
+ * POST /ehr/webhook/healthie/:practiceId/patient/created
  *
  * Tries to update the Healthie patient quick notes
  * @returns HTTP 200 OK on successful processing.

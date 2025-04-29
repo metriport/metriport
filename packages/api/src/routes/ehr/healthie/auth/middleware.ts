@@ -22,15 +22,15 @@ async function processCxIdWebhook(req: Request): Promise<void> {
   const eventType = req.body.event_type;
   if (!eventType) throw new ForbiddenError();
   if (!isSubscriptionResource(eventType)) throw new ForbiddenError();
-  const practiceId = req.query.practiceId;
+  const practiceId = req.url.split("/")[1];
   if (!practiceId) throw new ForbiddenError();
   if (typeof practiceId !== "string") throw new ForbiddenError();
   try {
     const secretKeyInfo = await getHealthieSecretKeyInfo(practiceId, eventType);
     const verified = await verifySignature({
       method: req.method,
-      path: req.path,
-      query: req.query.toString(),
+      path: `${req.baseUrl}${req.path}`,
+      query: "",
       headers: req.headers as Record<string, string>,
       body: req.body,
       secretKey: secretKeyInfo.secretKey,

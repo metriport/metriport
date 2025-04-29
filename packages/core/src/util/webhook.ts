@@ -31,8 +31,6 @@ function createJsonDumpsBody(body: object) {
   return JSON.stringify(body).replace(/":/g, '": ').replace(/,"/g, ', "');
 }
 
-export const whsectPrefix = "whsec_";
-
 // From Healthie docs https://docs.gethealthie.com/guides/webhooks/
 async function getSigningKey(secretKey: string): Promise<crypto.webcrypto.CryptoKey> {
   const encoder = new TextEncoder();
@@ -59,11 +57,12 @@ function constructDataToSign({
   headers: Record<string, string>;
   body: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }) {
-  if (!headers["content-digest"]) throw new MetriportError("Content digest is required");
-  const contentDigest = headers["content-digest"].split("=")[1];
+  const contentDigestHeader = headers["content-digest"];
+  if (!contentDigestHeader) throw new MetriportError("Content digest is required");
+  const actualContentDigest = contentDigestHeader.split("=")[1];
   const contentType = "application/json";
   const contentLength = new Blob([JSON.stringify(body)]).size;
-  return `${method.toLowerCase()} ${path} ${query} ${contentDigest} ${contentType} ${contentLength}`;
+  return `${method.toLowerCase()} ${path} ${query} ${actualContentDigest} ${contentType} ${contentLength}`;
 }
 
 async function generateSignature(key: crypto.webcrypto.CryptoKey, data: string) {
