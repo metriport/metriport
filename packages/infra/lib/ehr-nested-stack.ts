@@ -15,6 +15,7 @@ import { createQueue } from "./shared/sqs";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(10); // 6 patients/min
+const waitTimeHealthieLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeStartResourceDiff = Duration.seconds(10); // 6 patients/min
 const waitTimeComputeResourceDiff = Duration.millis(0); // No limit
 const waitTimeRefreshBundle = Duration.seconds(10); // 6 patients/min
@@ -22,6 +23,7 @@ const waitTimeRefreshBundle = Duration.seconds(10); // 6 patients/min
 function settings(): {
   syncPatient: QueueAndLambdaSettings;
   elationLinkPatient: QueueAndLambdaSettings;
+  healthieLinkPatient: QueueAndLambdaSettings;
   startResourceDiffBundles: QueueAndLambdaSettings;
   computeResourceDiffBundles: QueueAndLambdaSettings;
   refreshEhrBundles: QueueAndLambdaSettings;
@@ -67,6 +69,27 @@ function settings(): {
       reportBatchItemFailures: true,
     },
     waitTime: waitTimeElationLinkPatient,
+  };
+  const healthieLinkPatientLambdaTimeout = waitTimeHealthieLinkPatient.plus(Duration.seconds(25));
+  const healthieLinkPatient: QueueAndLambdaSettings = {
+    name: "EhrHealthieLinkPatient",
+    entry: "healthie-link-patient",
+    lambda: {
+      memory: 1024,
+      timeout: healthieLinkPatientLambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      maxMessageCountAlarmThreshold: 5_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(healthieLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+    },
+    waitTime: waitTimeHealthieLinkPatient,
   };
   const startResourceDiffBundlesLambdaTimeout = waitTimeStartResourceDiff.plus(Duration.minutes(5));
   const startResourceDiffBundles: QueueAndLambdaSettings = {
@@ -140,6 +163,7 @@ function settings(): {
   return {
     syncPatient,
     elationLinkPatient,
+    healthieLinkPatient,
     startResourceDiffBundles,
     computeResourceDiffBundles,
     refreshEhrBundles,
@@ -159,6 +183,8 @@ export class EhrNestedStack extends NestedStack {
   readonly syncPatientQueue: Queue;
   readonly elationLinkPatientLambda: Lambda;
   readonly elationLinkPatientQueue: Queue;
+  readonly healthieLinkPatientLambda: Lambda;
+  readonly healthieLinkPatientQueue: Queue;
   readonly startResourceDiffBundlesLambda: Lambda;
   readonly startResourceDiffBundlesQueue: Queue;
   readonly computeResourceDiffBundlesLambda: Lambda;
@@ -205,6 +231,16 @@ export class EhrNestedStack extends NestedStack {
     });
     this.elationLinkPatientLambda = elationLinkPatient.lambda;
     this.elationLinkPatientQueue = elationLinkPatient.queue;
+
+    const healthieLinkPatient = this.setupHealthieLinkPatient({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+    this.healthieLinkPatientLambda = healthieLinkPatient.lambda;
+    this.healthieLinkPatientQueue = healthieLinkPatient.queue;
 
     const computeResourceDiffBundles = this.setupComputeResourceDiffBundles({
       lambdaLayers: props.lambdaLayers,
@@ -306,6 +342,55 @@ export class EhrNestedStack extends NestedStack {
       eventSource: eventSourceSettings,
       waitTime,
     } = settings().elationLinkPatient;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
+    return { lambda, queue };
+  }
+
+  private setupHealthieLinkPatient(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+      waitTime,
+    } = settings().healthieLinkPatient;
 
     const queue = createQueue({
       ...queueSettings,

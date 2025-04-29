@@ -411,6 +411,8 @@ export class APIStack extends Stack {
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
       elationLinkPatientLambda,
+      healthieLinkPatientQueue,
+      healthieLinkPatientLambda,
       startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
       startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
       computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
@@ -537,6 +539,7 @@ export class APIStack extends Stack {
       patientImportBucket,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
+      healthieLinkPatientQueue,
       ehrStartResourceDiffBundlesQueue,
       ehrRefreshEhrBundlesQueue,
       ehrBundleBucket,
@@ -626,6 +629,7 @@ export class APIStack extends Stack {
     patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    healthieLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrStartResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrComputeResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     ehrRefreshEhrBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
