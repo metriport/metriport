@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@metriport/commonwell-sdk": "^5.8.1",
-    "axios": "^1.4.0",
+    "axios": "^1.8.2",
     "commander": "^9.5.0",
     "dayjs": "^1.11.7",
     "dotenv": "^16.0.3",
