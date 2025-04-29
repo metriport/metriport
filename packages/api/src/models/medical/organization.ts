@@ -4,7 +4,7 @@ import {
   OrganizationBizType,
 } from "@metriport/core/domain/organization";
 import { DataTypes, Sequelize } from "sequelize";
-import { BaseModel, ModelSetup } from "../../models/_default";
+import { BaseModel, ModelSetup } from "../_default";
 
 export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";

@@ -155,16 +155,17 @@ export class Config {
   static getPatientImportBucket(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_BUCKET_NAME");
   }
-  // TODO 2330 We should prob remove this as the cloud implementation of the parse step
-  // should only be triggered by S3, not the API.
-  static getPatientImportLambdaName(): string {
-    return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
+  static getPatientImportParseLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_PARSE_LAMBDA_NAME");
   }
   static getPatientImportCreateQueueUrl(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_CREATE_QUEUE_URL");
   }
   static getPatientImportQueryQueueUrl(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_QUERY_QUEUE_URL");
+  }
+  static getPatientImportResultLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_RESULT_LAMBDA_NAME");
   }
 
   static getEhrSyncPatientQueueUrl(): string {
