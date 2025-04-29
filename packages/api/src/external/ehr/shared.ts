@@ -32,6 +32,10 @@ import {
   elationDashSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import {
+  HealthieSecondaryMappings,
+  healthieSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
+import {
   HealthieDashJwtTokenData,
   healthieDashSource,
 } from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
@@ -107,14 +111,17 @@ export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhook
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
 
-export type EhrCxMappingSecondaryMappings = AthenaSecondaryMappings | ElationSecondaryMappings;
+export type EhrCxMappingSecondaryMappings =
+  | AthenaSecondaryMappings
+  | ElationSecondaryMappings
+  | HealthieSecondaryMappings;
 export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [key in EhrSource]: z.Schema | undefined;
 } = {
   [EhrSources.athena]: athenaSecondaryMappingsSchema,
   [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: undefined,
-  [EhrSources.healthie]: undefined,
+  [EhrSources.healthie]: healthieSecondaryMappingsSchema,
 };
 
 export type Appointment = {
