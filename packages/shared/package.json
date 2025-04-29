@@ -93,6 +93,7 @@
     "fast-xml-parser": "^4.4.1",
     "http-status": "~1.7.0",
     "lodash": "^4.17.21",
+    "semver": ">=5.7.2",
     "zod": "^3.22.1"
   },
   "devDependencies": {

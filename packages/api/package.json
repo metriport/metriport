@@ -63,6 +63,7 @@
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
     "reflect-metadata": "^0.1.13",
+    "semver": ">=5.7.2",
     "sequelize": "^6.31.0",
     "simple-oauth2": "^5.0.0",
     "ts-essentials": "^9.3.0",
