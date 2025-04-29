@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { MetriportError } from "@metriport/shared";
 
 const ed25519Prefix = "MCowBQYDK2VwAyEA";
 
@@ -28,4 +29,68 @@ ${ed25519Prefix}${key}
 
 function createJsonDumpsBody(body: object) {
   return JSON.stringify(body).replace(/":/g, '": ').replace(/,"/g, ', "');
+}
+
+export const whsectPrefix = "whsec_";
+
+// From Healthie docs https://docs.gethealthie.com/guides/webhooks/
+async function getSigningKey(secretKey: string): Promise<crypto.webcrypto.CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secretKey);
+  return await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: { name: "SHA-256" } },
+    false,
+    ["sign"]
+  );
+}
+
+function constructDataToSign({
+  method,
+  path,
+  query,
+  headers,
+  body,
+}: {
+  method: string;
+  path: string;
+  query: string;
+  headers: Record<string, string>;
+  body: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}) {
+  if (!headers["content-digest"]) throw new MetriportError("Content digest is required");
+  const contentDigest = headers["content-digest"].split("=")[1];
+  const contentType = "application/json";
+  const contentLength = new Blob([JSON.stringify(body)]).size;
+  return `${method.toLowerCase()} ${path} ${query} ${contentDigest} ${contentType} ${contentLength}`;
+}
+
+async function generateSignature(key: crypto.webcrypto.CryptoKey, data: string) {
+  const encoder = new TextEncoder();
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+  return Array.from(new Uint8Array(signature))
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export async function verifySignature({
+  secretKey,
+  ...requestParams
+}: {
+  method: string;
+  path: string;
+  query: string;
+  headers: Record<string, string>;
+  body: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  secretKey: string;
+}) {
+  const key = await getSigningKey(secretKey);
+  const dataToSign = constructDataToSign(requestParams);
+  const computedSignature = await generateSignature(key, dataToSign);
+  const signatureHeader = requestParams.headers["signature"];
+  if (!signatureHeader) throw new MetriportError("Signature is required");
+  const actualSignature = signatureHeader.split("=")[1];
+  if (!actualSignature) throw new MetriportError("Signature is required");
+  return computedSignature === actualSignature;
 }

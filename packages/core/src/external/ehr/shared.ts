@@ -99,7 +99,9 @@ export async function makeRequest<T>({
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
   );
-  const isJsonContentType = headers?.["content-type"] === "application/json";
+  const isJsonContentType =
+    headers?.["content-type"] === "application/json" ||
+    headers?.["Content-Type"] === "application/json";
   const fullAdditionalInfo = {
     ...additionalInfo,
     cxId,
@@ -113,7 +115,7 @@ export async function makeRequest<T>({
   try {
     response = await axiosInstance.request({
       method,
-      url,
+      ...(url !== "" ? { url } : {}),
       data: method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {}),
       headers: {
         ...axiosInstance.defaults.headers.common,

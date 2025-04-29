@@ -14,12 +14,15 @@ import {
 } from "./elation/auth/middleware";
 import elationDash from "./elation/routes/dash";
 import elationWebhooks from "./elation/routes/webhook";
+import { processCxIdDash as processCxIdHealthieDash } from "./healthie/auth/middleware";
+import healthieDash from "./healthie/routes/dash";
 
 const routes = Router();
 
 routes.use("/athenahealth", processCxIdDashAthena, checkMAPIAccess, athenaDash);
 routes.use("/canvas", processCxIdCanvasDash, checkMAPIAccess, canvasDash);
 routes.use("/elation", processCxIdElationDash, checkMAPIAccess, elationDash);
+routes.use("/healthie", processCxIdHealthieDash, checkMAPIAccess, healthieDash);
 
 routes.use("/webhook/canvas", processCxIdCanvasWebhooks, checkMAPIAccess, canvasWebhooks);
 routes.use("/webhook/elation", processCxIdElationWebhooks, checkMAPIAccess, elationWebhooks);

@@ -175,7 +175,7 @@ class AthenaHealthApi {
 
     try {
       const response = await axios.post(url, createDataParams(data), {
-        headers: { "content-type": "application/x-www-form-urlencoded" },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         auth: {
           username: this.config.clientKey,
           password: this.config.clientSecret,
@@ -208,7 +208,7 @@ class AthenaHealthApi {
 
     const headers = {
       Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
-      "content-type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/x-www-form-urlencoded",
     };
 
     this.axiosInstanceFhir = axios.create({

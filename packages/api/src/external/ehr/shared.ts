@@ -31,6 +31,10 @@ import {
   ElationDashJwtTokenData,
   elationDashSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
+import {
+  HealthieDashJwtTokenData,
+  healthieDashSource,
+} from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
@@ -52,6 +56,11 @@ export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   clientSecret: string;
 };
 
+export type EhrEnvAndApiKey<Env extends EhrEnv> = {
+  environment: Env;
+  apiKey: string;
+};
+
 type EhrClient = AthenaHealthApi | ElationApi | CanvasApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
@@ -62,6 +71,7 @@ export const ehrDashJwtTokenSources = [
   athenaDashSource,
   canvasDashSource,
   elationDashSource,
+  healthieDashSource,
 ] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
@@ -71,7 +81,8 @@ export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTok
 export type EhrDashJwtTokenData =
   | AthenaDashJwtTokenData
   | CanvasDashJwtTokenData
-  | ElationDashJwtTokenData;
+  | ElationDashJwtTokenData
+  | HealthieDashJwtTokenData;
 
 export const ehrClientJwtTokenSources = [
   athenaClientSource,
@@ -103,6 +114,7 @@ export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [EhrSources.athena]: athenaSecondaryMappingsSchema,
   [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: undefined,
+  [EhrSources.healthie]: undefined,
 };
 
 export type Appointment = {
