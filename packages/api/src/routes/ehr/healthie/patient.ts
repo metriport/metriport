@@ -5,6 +5,8 @@ import { syncHealthiePatientIntoMetriport } from "../../../external/ehr/healthie
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
+import { processEhrPatientId } from "../shared";
+import { tokenEhrPatientIdQueryParam } from "./auth/middleware";
 
 const router = Router();
 
@@ -19,6 +21,7 @@ const router = Router();
 router.get(
   "/:id",
   handleParams,
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "params"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
@@ -44,6 +47,7 @@ router.get(
 router.post(
   "/:id",
   handleParams,
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "params"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);

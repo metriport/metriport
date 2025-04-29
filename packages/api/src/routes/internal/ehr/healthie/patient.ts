@@ -50,7 +50,10 @@ router.post(
  * POST /internal/ehr/healthie/patient
  *
  * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of Healthie Patient.
+ * @param req.query.cxId The ID of Metriport Customer.
+ * @param req.query.patientId The ID of Healthie Patient.
+ * @param req.query.practiceId The ID of Healthie Practice.
+ * @param req.query.triggerDq Whether to trigger a data quality check.
  * @returns 200 OK
  */
 router.post(
@@ -75,7 +78,9 @@ router.post(
  * POST /internal/ehr/healthie/patient/link
  *
  * Creates or updates the Healthie patient metadata
- * @param req.params.id The ID of Healthie Patient.
+ * @param req.query.cxId The ID of Metriport Customer.
+ * @param req.query.patientId The ID of Healthie Patient.
+ * @param req.query.practiceId The ID of Healthie Practice.
  * @returns 200 OK
  */
 router.post(

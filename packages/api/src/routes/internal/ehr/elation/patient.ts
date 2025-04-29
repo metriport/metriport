@@ -34,7 +34,10 @@ router.post(
  * POST /internal/ehr/elation/patient
  *
  * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of Elation Patient.
+ * @param req.query.cxId The ID of Metriport Customer.
+ * @param req.query.patientId The ID of Elation Patient.
+ * @param req.query.practiceId The ID of Elation Practice.
+ * @param req.query.triggerDq Whether to trigger a data quality check.
  * @returns 200 OK
  */
 router.post(
@@ -59,7 +62,9 @@ router.post(
  * POST /internal/ehr/elation/patient/link
  *
  * Creates or updates the Elation patient metadata
- * @param req.params.id The ID of Elation Patient.
+ * @param req.query.cxId The ID of Metriport Customer.
+ * @param req.query.patientId The ID of Elation Patient.
+ * @param req.query.practiceId The ID of Elation Practice.
  * @returns 200 OK
  */
 router.post(

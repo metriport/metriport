@@ -17,7 +17,7 @@ const router = Router();
 /**
  * POST /ehr/webhook/healthie/patients/created/:practiceId
  *
- * Tries to update or create the Healthie patient quick notes on patient created
+ * Tries to update the Healthie patient quick notes
  * @returns HTTP 200 OK on successful processing.
  */
 router.post(
