@@ -49,6 +49,9 @@ export async function handler(
       dateTo,
     };
     log(`${msg}: ${JSON.stringify(filters)}`);
+    if (params.isAsync) {
+      capture.error(msg, { extra: { filters, error } });
+    }
     throw error;
   }
 }
