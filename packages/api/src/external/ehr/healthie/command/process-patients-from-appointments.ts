@@ -34,6 +34,7 @@ dayjs.extend(duration);
 
 const appointmentsLookForward = dayjs.duration(1, "day");
 const appointmentsLookForward48hr = dayjs.duration(2, "day");
+const appointmentsLookForward48hrOffset = dayjs.duration(1, "day");
 
 type GetAppointmentsParams = {
   cxId: string;
@@ -41,11 +42,7 @@ type GetAppointmentsParams = {
   lookupMode: LookupMode;
 };
 
-export async function processPatientsFromAppointments({
-  lookupMode,
-}: {
-  lookupMode: LookupMode;
-}): Promise<void> {
+export async function processPatientsFromAppointments({ lookupMode }: { lookupMode: LookupMode }) {
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.healthie });
   if (cxMappings.length === 0) {
     out("processPatientsFromAppointments @ Healthie").log("No cx mappings found");
@@ -80,7 +77,7 @@ export async function processPatientsFromAppointments({
       return [];
     }
     if (
-      !!secondaryMappings.backgroundAppointments48hrEnabled &&
+      !secondaryMappings.backgroundAppointments48hrEnabled &&
       lookupMode === LookupModes.Appointments48hr
     ) {
       return [];
@@ -150,14 +147,14 @@ export async function processPatientsFromAppointments({
         });
       }
       if (
-        lookupMode === LookupModes.Appointments &&
-        secondaryMappings.backgroundAppointmentsDisabled
+        secondaryMappings.backgroundAppointmentPatientProcessingDisabled &&
+        lookupMode === LookupModes.Appointments
       ) {
         return [];
       }
       if (
-        lookupMode === LookupModes.Appointments48hr &&
-        secondaryMappings.backgroundAppointments48hrPatientProcessingDisabled
+        secondaryMappings.backgroundAppointment48hrPatientProcessingDisabled &&
+        lookupMode === LookupModes.Appointments48hr
       ) {
         return [];
       }
@@ -223,7 +220,7 @@ async function getAppointmentsFromApi({
   if (lookupMode === LookupModes.Appointments48hr) {
     const { startRange, endRange } = getLookForwardTimeRangeWithOffset({
       lookForward: appointmentsLookForward48hr,
-      offset: dayjs.duration(1, "day"),
+      offset: appointmentsLookForward48hrOffset,
     });
     log(`Getting appointments from ${startRange} to ${endRange}`);
     return await api.getAppointments({

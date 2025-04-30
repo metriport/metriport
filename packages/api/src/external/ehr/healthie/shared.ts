@@ -29,10 +29,12 @@ import { EhrEnvAndApiKey, EhrPerPracticeParams } from "../shared";
 export const healthieWebhookCreatedDateDiffSeconds = dayjs.duration(5, "seconds");
 
 export function createContacts(patient: HealthiePatient): Contact[] {
+  const email = patient.email ? normalizeEmailNewSafe(patient.email) : undefined;
+  const phone = patient.phone_number ? normalizePhoneNumberSafe(patient.phone_number) : undefined;
   return [
     {
-      ...(patient.email ? { email: normalizeEmailNewSafe(patient.email) } : {}),
-      ...(patient.phone_number ? { phone: normalizePhoneNumberSafe(patient.phone_number) } : {}),
+      ...(email ? { email } : {}),
+      ...(phone ? { phone } : {}),
     },
   ];
 }

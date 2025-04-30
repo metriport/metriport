@@ -33,8 +33,9 @@ export async function subscribeToWebhook({
   const subscription = await api.subscribeToResource({ cxId, resource });
   const eventType = subscription.webhook_events?.[0]?.event_type;
   const secretKey = subscription.signature_secret;
-  if (!eventType || !secretKey) {
-    throw new MetriportError("Healthie event type or secret key not found", undefined, {
+  const url = subscription.url;
+  if (!eventType || !secretKey || !url) {
+    throw new MetriportError("Healthie event type or secret key or url not found", undefined, {
       externalId: healthiePracticeId,
       source: EhrSources.healthie,
     });
@@ -47,7 +48,7 @@ export async function subscribeToWebhook({
       webhooks: {
         ...secondaryMappings.webhooks,
         [eventType]: {
-          url: subscription.url,
+          url,
           secretKey,
         },
       },
