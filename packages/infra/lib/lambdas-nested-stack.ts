@@ -15,7 +15,8 @@ import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
-import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
+import { addBedrockPolicyToLambda } from "./shared/bedrock";
+import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
@@ -39,6 +40,27 @@ interface LambdasNestedStackProps extends NestedStackProps {
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
 }
 
+type GenericConsolidatedLambdaProps = {
+  name: string;
+  entry: string;
+  memory: number;
+  lambdaLayers: LambdaLayers;
+  vpc: ec2.IVpc;
+  bundleBucket: s3.IBucket;
+  conversionsBucket: s3.IBucket;
+  envType: EnvType;
+  sentryDsn: string | undefined;
+  alarmAction: SnsAction | undefined;
+  featureFlagsTable: dynamodb.Table;
+  bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
+};
+
+type ConsolidatedLambdaProps = Omit<GenericConsolidatedLambdaProps, "name" | "entry" | "memory">;
+
+type ConsolidatedLambdaParams = {
+  fhirServerUrl: string;
+};
+
 export class LambdasNestedStack extends NestedStack {
   readonly lambdaLayers: LambdaLayers;
   readonly cdaToVisualizationLambda: Lambda;
@@ -48,6 +70,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly outboundDocumentQueryLambda: lambda.Function;
   readonly outboundDocumentRetrievalLambda: lambda.Function;
   readonly fhirToBundleLambda: lambda.Function;
+  readonly fhirToBundleCountLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambda: Lambda | undefined;
@@ -149,6 +172,17 @@ export class LambdasNestedStack extends NestedStack {
       lambdaLayers: this.lambdaLayers,
       vpc: props.vpc,
       fhirServerUrl: props.config.fhirServerUrl,
+      bundleBucket: props.medicalDocumentsBucket,
+      conversionsBucket: this.fhirConverterConnector.bucket,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+      featureFlagsTable: props.featureFlagsTable,
+      bedrock: props.config.bedrock,
+    });
+    this.fhirToBundleCountLambda = this.setupFhirBundleCountLambda({
+      lambdaLayers: this.lambdaLayers,
+      vpc: props.vpc,
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       envType: props.config.environmentType,
@@ -540,7 +574,29 @@ export class LambdasNestedStack extends NestedStack {
   }
 
   /** AKA, get consolidated lambda */
-  private setupFhirBundleLambda({
+  private setupFhirBundleLambda(
+    params: ConsolidatedLambdaProps & ConsolidatedLambdaParams
+  ): Lambda {
+    return this.setupGenericConsolidatedLambda({
+      ...params,
+      name: "FhirToBundle",
+      entry: "fhir-to-bundle",
+      memory: 2048,
+    });
+  }
+  private setupFhirBundleCountLambda(params: ConsolidatedLambdaProps): Lambda {
+    return this.setupGenericConsolidatedLambda({
+      ...params,
+      name: "FhirToBundleCount",
+      entry: "fhir-to-bundle-count",
+      memory: 2048,
+    });
+  }
+
+  private setupGenericConsolidatedLambda({
+    name,
+    entry,
+    memory,
     lambdaLayers,
     vpc,
     fhirServerUrl,
@@ -551,29 +607,18 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction,
     featureFlagsTable,
     bedrock,
-  }: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    fhirServerUrl: string;
-    bundleBucket: s3.IBucket;
-    conversionsBucket: s3.IBucket;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    featureFlagsTable: dynamodb.Table;
-    bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
-  }): Lambda {
+  }: GenericConsolidatedLambdaProps & Partial<ConsolidatedLambdaParams>): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
     const fhirToBundleLambda = createLambda({
       stack: this,
-      name: "FhirToBundle",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "fhir-to-bundle",
+      name,
+      runtime: lambda.Runtime.NODEJS_20_X,
+      entry,
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        FHIR_SERVER_URL: fhirServerUrl,
+        ...(fhirServerUrl && { FHIR_SERVER_URL: fhirServerUrl }),
         BUCKET_NAME: bundleBucket.bucketName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         CONVERSION_RESULT_BUCKET_NAME: conversionsBucket.bucketName,
@@ -587,7 +632,7 @@ export class LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
-      memory: 4096,
+      memory,
       timeout: lambdaTimeout,
       isEnableInsights: true,
       vpc,
@@ -599,16 +644,7 @@ export class LambdasNestedStack extends NestedStack {
 
     featureFlagsTable.grantReadData(fhirToBundleLambda);
 
-    const bedrockPolicyStatement = new iam.PolicyStatement({
-      actions: ["bedrock:InvokeModel"],
-      resources: [
-        `arn:aws:bedrock:*:*:foundation-model/*`,
-        `arn:aws:bedrock:*:*:inference-profile/*`,
-        `arn:aws:bedrock:*:*:application-inference-profile/*`,
-      ],
-    });
-
-    fhirToBundleLambda.addToRolePolicy(bedrockPolicyStatement);
+    addBedrockPolicyToLambda(fhirToBundleLambda);
 
     return fhirToBundleLambda;
   }
