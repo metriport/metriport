@@ -4,6 +4,7 @@ export const appointmentSchema = z.object({
   id: z.string(),
   attendees: z.object({ id: z.string() }).array(),
   appointment_type: z.object({ id: z.string() }).nullable(),
+  cursor: z.string(),
 });
 export type Appointment = z.infer<typeof appointmentSchema>;
 export type AppointmentAttendee = Appointment["attendees"][number];

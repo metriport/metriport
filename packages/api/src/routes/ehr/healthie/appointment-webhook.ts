@@ -48,6 +48,7 @@ router.post(
       healthiePracticeId,
       healthieAppointmentId: event.resource_id,
     });
+    if (!healthiePatientId) return res.sendStatus(httpStatus.OK);
     await updateHealthiePatientQuickNotes({
       cxId,
       healthiePracticeId,

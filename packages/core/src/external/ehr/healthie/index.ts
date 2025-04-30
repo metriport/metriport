@@ -228,57 +228,71 @@ class HealthieApi {
       startAppointmentDate: startAppointmentDate.toISOString(),
       endAppointmentDate: endAppointmentDate.toISOString(),
     };
-    const operationName = "appointments";
-    const query = `query appointments(
-      $startDate: String
-      $endDate: String
-      $offset: Int
-      $page_size: Int
-    ) {
-      appointments(
-        startDate: $startDate
-        endDate: $endDate
-        order_by: CREATED_AT_ASC
-        should_paginate: true
-        offset: $offset
-        page_size: $page_size
-        is_active: true
-        is_org: true
+    async function paginateAppointments(
+      api: HealthieApi,
+      cursor: string | null,
+      acc: AppointmentWithAttendee[] | undefined = []
+    ): Promise<AppointmentWithAttendee[]> {
+      const operationName = "appointments";
+      const query = `query appointments(
+        $startDate: String
+        $endDate: String
+        ${cursor ? `$after: Cursor` : ""}
       ) {
-        id
-        attendees {
+        appointments(
+          startDate: $startDate
+          endDate: $endDate
+          order_by: CREATED_AT_ASC
+          should_paginate: true
+          page_size: 1
+          is_active: true
+          is_org: true
+          ${cursor ? `after: $after` : ""}
+        ) {
           id
+          attendees {
+            id
+          }
+          appointment_type {
+            id
+          }
+          cursor
         }
-        appointment_type {
-          id
+      }`;
+      const variables = {
+        startDate: api.formatDate(startAppointmentDate.toISOString()) ?? "",
+        endDate: api.formatDate(endAppointmentDate.toISOString()) ?? "",
+        ...(cursor ? { after: cursor } : {}),
+      };
+      const appointmentListResponseGraphql = await api.makeRequest<AppointmentListResponseGraphql>({
+        cxId,
+        s3Path: "patient",
+        operationName,
+        query,
+        variables,
+        schema: appointmentListResponseGraphqlSchema,
+        additionalInfo,
+        debug,
+      });
+      const appointments = appointmentListResponseGraphql.data.appointments;
+      if (!appointments) {
+        throw new NotFoundError("Appointments not found", undefined, additionalInfo);
+      }
+      const appointmentsWithAttendees: AppointmentWithAttendee[] = appointments.flatMap(
+        appointment => {
+          const attendee = appointment.attendees[0];
+          if (!attendee) return [];
+          return [{ ...appointment, attendees: [attendee], cursor: appointment.cursor }];
         }
-      }
-    }`;
-    const variables = {
-      startDate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
-      endDate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
-      offset: 0,
-      page_size: 1000,
-    };
-    const appointmentListResponseGraphql = await this.makeRequest<AppointmentListResponseGraphql>({
-      cxId,
-      s3Path: "patient",
-      operationName,
-      query,
-      variables,
-      schema: appointmentListResponseGraphqlSchema,
-      additionalInfo,
-      debug,
-    });
-    const appointments = appointmentListResponseGraphql.data.appointments;
-    if (!appointments) throw new NotFoundError("Appointments not found", undefined, additionalInfo);
-    return appointments.map(appointment => {
-      const attendee = appointment.attendees[0];
-      if (!attendee) {
-        throw new MetriportError("Appointment has no attendees", undefined, additionalInfo);
-      }
-      return { ...appointment, attendees: [attendee] };
-    });
+      );
+      acc.push(...appointmentsWithAttendees);
+      const lastAppointment = appointmentsWithAttendees[appointmentsWithAttendees.length - 1];
+      if (!lastAppointment) return acc;
+      const nextCursor = lastAppointment.cursor;
+      return paginateAppointments(api, nextCursor, acc);
+    }
+    const appointments = await paginateAppointments(this, null);
+    return appointments;
   }
 
   async getAppointment({
@@ -287,7 +301,7 @@ class HealthieApi {
   }: {
     cxId: string;
     appointmentId: string;
-  }): Promise<AppointmentWithAttendee> {
+  }): Promise<AppointmentWithAttendee | undefined> {
     const { debug } = out(
       `Healthie getAppointment - cxId ${cxId} practiceId ${this.practiceId} appointmentId ${appointmentId}`
     );
@@ -306,6 +320,7 @@ class HealthieApi {
         appointment_type {
           id
         }
+        cursor
       }
     }`;
     const variables = { id: appointmentId };
@@ -322,9 +337,7 @@ class HealthieApi {
     const appointment = appointmentGetResponseGraphql.data.appointment;
     if (!appointment) throw new NotFoundError("Appointment not found", undefined, additionalInfo);
     const attendee = appointment.attendees[0];
-    if (!attendee) {
-      throw new MetriportError("Appointment has no attendees", undefined, additionalInfo);
-    }
+    if (!attendee) return undefined;
     return { ...appointment, attendees: [attendee] };
   }
 
