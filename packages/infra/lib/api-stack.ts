@@ -347,6 +347,7 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
+      fhirToBundleCountLambda,
       fhirConverterConnector: {
         queue: fhirConverterQueue,
         lambda: fhirConverterLambda,
@@ -549,6 +550,7 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
+      fhirToBundleCountLambda,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
@@ -623,6 +625,7 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
+      fhirToBundleCountLambda,
       hl7v2RosterUploadLambda,
       hl7NotificationWebhookSenderLambda,
       patientImportCreateLambda,

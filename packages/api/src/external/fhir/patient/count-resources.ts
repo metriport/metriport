@@ -1,7 +1,7 @@
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { ConsolidatedCounterResponse } from "@metriport/core/command/consolidated/consolidated-counter";
 import { Patient } from "@metriport/core/domain/patient";
 import { countResourcesOnS3 } from "./count-resources-on-s3";
-import { ResourceCount } from "./count-resources-shared";
 
 export type CountResourcesParams = {
   patient: Pick<Patient, "cxId" | "id">;
@@ -16,6 +16,6 @@ export async function countResources({
   resources = [],
   dateFrom,
   dateTo,
-}: CountResourcesParams): Promise<ResourceCount> {
+}: CountResourcesParams): Promise<ConsolidatedCounterResponse> {
   return countResourcesOnS3({ patient, resources, dateFrom, dateTo });
 }

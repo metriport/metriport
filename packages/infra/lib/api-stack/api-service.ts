@@ -26,6 +26,7 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
@@ -116,6 +117,7 @@ export function createAPIService({
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
   fhirToBundleLambda,
+  fhirToBundleCountLambda,
   fhirToMedicalRecordLambda2,
   fhirToCdaConverterLambda,
   rateLimitTable,
@@ -156,6 +158,7 @@ export function createAPIService({
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
+  fhirToBundleCountLambda: ILambda;
   fhirToMedicalRecordLambda2: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
@@ -285,6 +288,7 @@ export function createAPIService({
           EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
           EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
+          FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME: fhirToBundleCountLambda.functionName,
           ...(fhirToMedicalRecordLambda2 && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME: fhirToMedicalRecordLambda2.functionName,
           }),
@@ -412,7 +416,7 @@ export function createAPIService({
   patientImportResultLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-
+  fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -473,15 +477,7 @@ export function createAPIService({
           effect: iam.Effect.ALLOW,
         }),
         // TODO: 2711 - Remove when data pipeline webhook is migrated
-        new iam.PolicyStatement({
-          actions: ["bedrock:InvokeModel"],
-          resources: [
-            `arn:aws:bedrock:*:*:foundation-model/*`,
-            `arn:aws:bedrock:*:*:inference-profile/*`,
-            `arn:aws:bedrock:*:*:application-inference-profile/*`,
-          ],
-          effect: iam.Effect.ALLOW,
-        }),
+        defaultBedrockPolicyStatement,
       ],
     })
   );
