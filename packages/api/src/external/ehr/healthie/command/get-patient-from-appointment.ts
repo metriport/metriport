@@ -1,12 +1,5 @@
 import HealthieApi from "@metriport/core/external/ehr/healthie";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import { createHealthieClient } from "../shared";
-
-dayjs.extend(duration);
-
-export const longDurationTokenDuration = dayjs.duration(1, "year");
-export const shortDurationTokenDuration = dayjs.duration(10, "hours");
 
 export type GetHealthiePatientFromAppointmentParams = {
   cxId: string;
