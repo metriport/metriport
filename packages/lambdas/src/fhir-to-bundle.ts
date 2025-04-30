@@ -18,9 +18,14 @@ const region = getEnvOrFail("AWS_REGION");
 const apiUrl = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("BUCKET_NAME");
 const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+
 // Call this before reading FFs
 FeatureFlags.init(region, featureFlagsTableName);
 
+/**
+ * Lambdas that get invoked directly by the API have the error handling code in the API, so we don't
+ * wrap them in the Sentry's wrapHandler().
+ */
 export async function handler(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<ConsolidatedSnapshotResponse | void> {

@@ -20,6 +20,10 @@ const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
 // Call this before reading FFs
 FeatureFlags.init(region, featureFlagsTableName);
 
+/**
+ * Lambdas that get invoked directly by the API have the error handling code in the API, so we don't
+ * wrap them in the Sentry's wrapHandler().
+ */
 export async function handler(
   params: ConsolidatedCounterRequest
 ): Promise<ConsolidatedCounterResponse> {
@@ -35,7 +39,7 @@ export async function handler(
   capture.setExtra(normalizedParams);
   const { log } = out(`cx ${patient.cxId}, patient ${patient.id}, req ${requestId}`);
   try {
-    log(`Running with dateFrom: ${dateFrom}, dateTo: ${dateTo}, resources: ${resources}}`);
+    log(`Running with dateFrom: ${dateFrom}, dateTo: ${dateTo}, resources: ${resources}`);
     const conn = new ConsolidatedCounterImpl();
     const result = await conn.execute(params);
     return result;
