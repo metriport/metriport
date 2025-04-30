@@ -7,7 +7,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { createResourceDiffBundles } from "../../../external/ehr/create-resource-diff-bundles";
-import { getConsolidated } from "../patient/consolidated-get";
+import { getConsolidated } from "./consolidated-get";
 
 /**
  * Recreates the consolidated bundle for a patient.

@@ -8,6 +8,7 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
+import { getConsolidatedQueryByRequestId } from "../../domain/patient";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
@@ -34,12 +35,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
   async execute(
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
-    const { cxId, id: patientId } = params.patient;
+    const { patient, requestId } = params;
+    const { cxId, id: patientId } = patient;
     const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);
 
-    const fhirPatient = patientToFhir(params.patient);
+    const fhirPatient = patientToFhir(patient);
     const patientEntry = buildBundleEntry(fhirPatient);
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
     originalBundle.total = originalBundle.entry.length;
@@ -123,12 +125,14 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       });
     }
 
+    const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
     analytics({
-      distinctId: params.patient.cxId,
+      distinctId: cxId,
       event: EventTypes.consolidatedQuery,
       properties: {
-        patientId: params.patient.id,
+        patientId: patientId,
         conversionType: "bundle",
+        duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
         resourceCount: resultBundle.entry?.length,
       },
     });

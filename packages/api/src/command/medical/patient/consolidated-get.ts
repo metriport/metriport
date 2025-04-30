@@ -41,6 +41,8 @@ dayjs.extend(duration);
 
 export type GetConsolidatedParams = {
   patient: Patient;
+  bundle?: SearchSetBundle;
+  requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
 
@@ -49,6 +51,7 @@ type GetConsolidatedPatientData = {
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+  requestId?: string;
   fromDashboard?: boolean;
   // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
   forceDataFromFhir?: boolean;
@@ -243,7 +246,9 @@ export async function getConsolidated({
   resources,
   dateFrom,
   dateTo,
+  requestId,
   conversionType,
+  bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
   const { log } = out(`API getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
@@ -253,12 +258,15 @@ export async function getConsolidated({
     conversionType,
   };
   try {
-    let bundle = await getConsolidatedPatientData({
-      patient,
-      resources,
-      dateFrom,
-      dateTo,
-    });
+    if (!bundle) {
+      bundle = await getConsolidatedPatientData({
+        patient,
+        requestId,
+        resources,
+        dateFrom,
+        dateTo,
+      });
+    }
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
@@ -270,6 +278,7 @@ export async function getConsolidated({
       bundle = await handleBundleToMedicalRecord({
         bundle,
         patient,
+        requestId,
         resources,
         dateFrom,
         dateTo,
@@ -378,6 +387,7 @@ async function uploadConsolidatedJsonAndReturnUrl({
  */
 export async function getConsolidatedPatientData({
   patient,
+  requestId,
   resources,
   dateFrom,
   dateTo,
@@ -387,6 +397,7 @@ export async function getConsolidatedPatientData({
   const payload: ConsolidatedSnapshotRequestSync = {
     patient,
     resources,
+    requestId,
     dateFrom,
     dateTo,
     isAsync: false,
