@@ -2,7 +2,7 @@ import { MetriportError } from "@metriport/shared";
 import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
 import {
   SubscriptionResource,
-  Subscription,
+  SubscriptionWithSignatureSecret,
 } from "@metriport/shared/interface/external/ehr/healthie/subscription";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
@@ -19,7 +19,7 @@ export async function subscribeToWebhook({
   cxId: string;
   healthiePracticeId: string;
   resource: SubscriptionResource;
-}): Promise<Subscription> {
+}): Promise<SubscriptionWithSignatureSecret> {
   const cxMappingLookupParams = { externalId: healthiePracticeId, source: EhrSources.healthie };
   const cxMapping = await getCxMappingOrFail(cxMappingLookupParams);
   if (!cxMapping.secondaryMappings) {

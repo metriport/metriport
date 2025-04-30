@@ -20,15 +20,22 @@ export const subscriptionSchema = z.object({
       })
     )
     .nullable(),
-  signature_secret: z.string().nullable(),
 });
 export type Subscription = z.infer<typeof subscriptionSchema>;
-export const subscriptionGraphqlSchema = z.object({
+export const subscriptionWithSignatureSecretSchema = subscriptionSchema.extend({
+  signature_secret: z.string().nullable(),
+});
+export type SubscriptionWithSignatureSecret = z.infer<typeof subscriptionWithSignatureSecretSchema>;
+export const subscriptionWithSignatureSecretGraphqlSchema = z.object({
   data: z.object({
-    webhook: subscriptionSchema.nullable(),
+    createWebhook: z.object({
+      webhook: subscriptionWithSignatureSecretSchema.nullable(),
+    }),
   }),
 });
-export type SubscriptionGraphql = z.infer<typeof subscriptionGraphqlSchema>;
+export type SubscriptionWithSignatureSecretGraphql = z.infer<
+  typeof subscriptionWithSignatureSecretGraphqlSchema
+>;
 export const subscriptionsGraphqlSchema = z.object({
   data: z.object({
     webhooks: subscriptionSchema.array(),

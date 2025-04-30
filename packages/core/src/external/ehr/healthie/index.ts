@@ -13,11 +13,12 @@ import {
   PatientUpdateQuickNotesGraphql,
   patientUpdateQuickNotesGraphqlSchema,
   Subscription,
-  SubscriptionGraphql,
-  subscriptionGraphqlSchema,
   SubscriptionResource,
   SubscriptionsGraphql,
   subscriptionsGraphqlSchema,
+  SubscriptionWithSignatureSecret,
+  SubscriptionWithSignatureSecretGraphql,
+  subscriptionWithSignatureSecretGraphqlSchema,
 } from "@metriport/shared/interface/external/ehr/healthie/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
@@ -171,7 +172,7 @@ class HealthieApi {
     const existingQuickNotes = await this.getPatientQuickNotes({ cxId, patientId });
     const linkElement = `<p><a href="${link}" target="_blank">Metriport Integration</a></p>`;
     const scrubbedExistingQuickNotes = existingQuickNotes?.replace(
-      /<p><a href="[^"]+" target="_blank" rel="noopener">Metriport Integration<\/a><\/p>/g,
+      /<p><a .*>Metriport Integration<\/a><\/p>/g,
       ""
     );
     const operationName = "updateClient";
@@ -192,7 +193,7 @@ class HealthieApi {
     // TODO Remove existingQuickNotes and link from the mutation
     const variables = {
       id: patientId,
-      quick_notes: `${scrubbedExistingQuickNotes ?? ""}<br>${linkElement}`,
+      quick_notes: `${scrubbedExistingQuickNotes ?? ""}${linkElement}`,
     };
     await this.makeRequest<PatientUpdateQuickNotesGraphql>({
       cxId,
@@ -365,15 +366,16 @@ class HealthieApi {
   }: {
     cxId: string;
     resource: SubscriptionResource;
-  }): Promise<Subscription> {
+  }): Promise<SubscriptionWithSignatureSecret> {
     const { debug } = out(
       `Healthie subscribeToResource - cxId ${cxId} practiceId ${this.practiceId} resource ${resource}`
     );
     const additionalInfo = { cxId, practiceId: this.practiceId, resource };
+    const url = `${apiUrl}/ehr/webhook/healthie`;
     const existingSubscriptions = await this.getSubscriptions({ cxId });
     if (
       existingSubscriptions.some(subscription => {
-        const isUrlMatch = subscription.url === `${apiUrl}/ehr/webhook/healthie`;
+        const isUrlMatch = subscription.url === url;
         const isResourceMatch =
           subscription.event_type === resource ||
           subscription.webhook_events?.some(event => event.event_type === resource);
@@ -410,24 +412,28 @@ class HealthieApi {
     const data = {
       is_enabled: true,
       should_retry: true,
-      url: `${apiUrl}/ehr/webhook/healthie`,
-      webhook_events: [resource],
+      url,
+      webhook_events: [
+        {
+          event_type: resource,
+        },
+      ],
     };
     const variables = { input: data };
-    const subscription = await this.makeRequest<SubscriptionGraphql>({
+    const subscription = await this.makeRequest<SubscriptionWithSignatureSecretGraphql>({
       cxId,
       s3Path: `${resource}-subscribe`,
       operationName,
       query,
       variables,
-      schema: subscriptionGraphqlSchema,
+      schema: subscriptionWithSignatureSecretGraphqlSchema,
       additionalInfo,
       debug,
     });
-    if (!subscription.data.webhook) {
+    if (!subscription.data.createWebhook.webhook) {
       throw new MetriportError("Subscription not created", undefined, additionalInfo);
     }
-    return subscription.data.webhook;
+    return subscription.data.createWebhook.webhook;
   }
 
   private async makeRequest<T>({

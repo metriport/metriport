@@ -2,16 +2,8 @@ import { z } from "zod";
 
 export const appointmentSchema = z.object({
   id: z.string(),
-  attendees: z
-    .array(
-      z.object({
-        id: z.string(),
-      })
-    )
-    .min(1),
-  appointment_type: z.object({
-    id: z.string(),
-  }),
+  attendees: z.array(z.object({ id: z.string() })),
+  appointment_type: z.object({ id: z.string() }).nullable(),
 });
 export type Appointment = z.infer<typeof appointmentSchema>;
 export type AppointmentAttendee = Appointment["attendees"][number];
