@@ -260,7 +260,7 @@ type EnvConfigBase = {
     healthie: {
       env: string;
       secrets: {
-        EHR_HEALTHIE_API_KE_MAP: string;
+        EHR_HEALTHIE_API_KEY_MAP: string;
       };
     };
   };

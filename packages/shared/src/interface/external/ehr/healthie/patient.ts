@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+const locationSchema = z.object({
+  line1: z.string(),
+  line2: z.string(),
+  city: z.string(),
+  state: z.string(),
+  zip: z.string(),
+  country: z.string(),
+});
+
 export const patientSchema = z.object({
   id: z.string(),
   first_name: z.string().nullable(),
@@ -8,19 +17,10 @@ export const patientSchema = z.object({
   gender: z.string().nullable(),
   email: z.string().nullable(),
   phone_number: z.string().nullable(),
-  locations: z
-    .object({
-      line1: z.string(),
-      line2: z.string(),
-      city: z.string(),
-      state: z.string(),
-      zip: z.string(),
-      country: z.string(),
-    })
-    .array()
-    .nullable(),
+  locations: locationSchema.array(),
 });
 export type Patient = z.infer<typeof patientSchema>;
+
 export const patientGraphqlSchema = z.object({
   data: z.object({
     user: patientSchema.nullable(),
@@ -33,6 +33,7 @@ export const patientQuickNotesSchema = z.object({
   quick_notes: z.string().nullable(),
 });
 export type PatientQuickNotes = z.infer<typeof patientQuickNotesSchema>;
+
 export const patientQuickNotesGraphqlSchema = z.object({
   data: z.object({
     user: patientQuickNotesSchema.nullable(),

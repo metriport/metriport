@@ -13,9 +13,9 @@ import {
   PatientUpdateQuickNotesGraphql,
   patientUpdateQuickNotesGraphqlSchema,
   Subscription,
+  SubscriptionListResponseGraphql,
+  subscriptionListResponseGraphqlSchema,
   SubscriptionResource,
-  SubscriptionsGraphql,
-  subscriptionsGraphqlSchema,
   SubscriptionWithSignatureSecret,
   SubscriptionWithSignatureSecretGraphql,
   subscriptionWithSignatureSecretGraphqlSchema,
@@ -105,7 +105,7 @@ class HealthieApi {
       }
     }`;
     const variables = { id: patientId };
-    const patient = await this.makeRequest<PatientGraphql>({
+    const patientGraphql = await this.makeRequest<PatientGraphql>({
       cxId,
       patientId: patientId.toString(),
       s3Path: "patient",
@@ -116,8 +116,10 @@ class HealthieApi {
       additionalInfo,
       debug,
     });
-    if (!patient.data.user) throw new NotFoundError("Patient not found", undefined, additionalInfo);
-    return patient.data.user;
+    if (!patientGraphql.data.user) {
+      throw new NotFoundError("Patient not found", undefined, additionalInfo);
+    }
+    return patientGraphql.data.user;
   }
 
   async getPatientQuickNotes({
@@ -139,7 +141,7 @@ class HealthieApi {
       }
     }`;
     const variables = { id: patientId };
-    const patient = await this.makeRequest<PatientQuickNotesGraphql>({
+    const patientQuickNotesGraphql = await this.makeRequest<PatientQuickNotesGraphql>({
       cxId,
       patientId: patientId.toString(),
       s3Path: "patient",
@@ -150,10 +152,10 @@ class HealthieApi {
       additionalInfo,
       debug,
     });
-    if (!patient.data.user) {
+    if (!patientQuickNotesGraphql.data.user) {
       throw new NotFoundError("Patient quick notes not found", undefined, additionalInfo);
     }
-    return patient.data.user.quick_notes ?? undefined;
+    return patientQuickNotesGraphql.data.user.quick_notes ?? undefined;
   }
 
   async updatePatientQuickNotesWithLink({
@@ -195,7 +197,7 @@ class HealthieApi {
       id: patientId,
       quick_notes: `${scrubbedExistingQuickNotes ?? ""}${linkElement}`,
     };
-    await this.makeRequest<PatientUpdateQuickNotesGraphql>({
+    const patientUpdateQuickNotesGraphql = await this.makeRequest<PatientUpdateQuickNotesGraphql>({
       cxId,
       patientId: patientId.toString(),
       s3Path: "patient",
@@ -206,6 +208,9 @@ class HealthieApi {
       additionalInfo,
       debug,
     });
+    if (!patientUpdateQuickNotesGraphql.data.updateClient.user) {
+      throw new MetriportError("Patient quick notes not updated", undefined, additionalInfo);
+    }
   }
 
   async getAppointments({
@@ -254,7 +259,7 @@ class HealthieApi {
       startDate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       endDate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
       offset: 0,
-      page_size: 100,
+      page_size: 1000,
     };
     const appointmentListResponseGraphql = await this.makeRequest<AppointmentListResponseGraphql>({
       cxId,
@@ -344,20 +349,22 @@ class HealthieApi {
       }
     }`;
     const variables = { page_size: 100 };
-    const subscriptionGraphql = await this.makeRequest<SubscriptionsGraphql>({
-      cxId,
-      s3Path: "subscriptions",
-      operationName,
-      query,
-      variables,
-      schema: subscriptionsGraphqlSchema,
-      additionalInfo,
-      debug,
-    });
-    if (!subscriptionGraphql.data.webhooks) {
+    const subscriptionListResponseGraphql = await this.makeRequest<SubscriptionListResponseGraphql>(
+      {
+        cxId,
+        s3Path: "subscriptions",
+        operationName,
+        query,
+        variables,
+        schema: subscriptionListResponseGraphqlSchema,
+        additionalInfo,
+        debug,
+      }
+    );
+    if (!subscriptionListResponseGraphql.data.webhooks) {
       throw new MetriportError("Subscriptions not found", undefined, additionalInfo);
     }
-    return subscriptionGraphql.data.webhooks;
+    return subscriptionListResponseGraphql.data.webhooks;
   }
 
   async subscribeToResource({
@@ -371,7 +378,7 @@ class HealthieApi {
       `Healthie subscribeToResource - cxId ${cxId} practiceId ${this.practiceId} resource ${resource}`
     );
     const additionalInfo = { cxId, practiceId: this.practiceId, resource };
-    const url = `${apiUrl}/ehr/webhook/healthie`;
+    const url = `${apiUrl}/ehr/webhook/healthie/${this.practiceId}`;
     const existingSubscriptions = await this.getSubscriptions({ cxId });
     if (
       existingSubscriptions.some(subscription => {

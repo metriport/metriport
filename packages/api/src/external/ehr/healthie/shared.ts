@@ -40,7 +40,6 @@ export function createContacts(patient: HealthiePatient): Contact[] {
 }
 
 export function createAddresses(patient: HealthiePatient): Address[] {
-  if (!patient.locations) throw new BadRequestError("Patient has no address");
   const addresses = patient.locations.flatMap(address => {
     const addressLine1 = address.line1.trim();
     if (addressLine1 === "") return [];
