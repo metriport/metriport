@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import * as uuidv7_file from "@metriport/core/util/uuid-v7";
+import * as uuidv7_file from "@metriport/shared/util/uuid-v7";
 import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-query";
 import { PatientModel } from "../../../../models/medical/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";

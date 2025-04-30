@@ -1,9 +1,8 @@
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { getConsolidatedFromS3 } from "@metriport/core/command/consolidated/consolidated-filter";
+import { ConsolidatedCounterResponse } from "@metriport/core/command/consolidated/consolidated-counter";
+import { buildConsolidatedCountConnector } from "@metriport/core/command/consolidated/consolidated-counter-factory";
 import { Patient } from "@metriport/core/domain/patient";
-import { countBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { ResourceCount } from "./count-resources-shared";
 
 export type CountResourcesParams = {
   patient: Pick<Patient, "cxId" | "id">;
@@ -17,21 +16,15 @@ export async function countResourcesOnS3({
   resources = [],
   dateFrom,
   dateTo,
-}: CountResourcesParams): Promise<ResourceCount> {
+}: CountResourcesParams): Promise<ConsolidatedCounterResponse> {
   const patient = await getPatientOrFail({ id: partialPatient.id, cxId: partialPatient.cxId });
-  const res = await getConsolidatedFromS3({
-    cxId: patient.cxId,
+
+  const consolidatedCounter = buildConsolidatedCountConnector();
+  const res = await consolidatedCounter.execute({
     patient,
     resources,
     dateFrom,
     dateTo,
   });
-  const resultingResources = (res.entry ?? []).flatMap(e => (e && e.resource ? e.resource : []));
-
-  const counted = countBy(resultingResources, r => r.resourceType);
-
-  return {
-    total: resultingResources.length,
-    resources: counted,
-  };
+  return res;
 }

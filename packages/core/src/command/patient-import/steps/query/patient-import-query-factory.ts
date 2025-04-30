@@ -1,14 +1,14 @@
 import { Config } from "../../../../util/config";
-import { PatientImportQueryHandler } from "./patient-import-query";
-import { PatientImportQueryHandlerCloud } from "./patient-import-query-cloud";
-import { PatientImportQueryHandlerLocal } from "./patient-import-query-local";
+import { PatientImportQuery } from "./patient-import-query";
+import { PatientImportQueryCloud } from "./patient-import-query-cloud";
+import { PatientImportQueryLocal } from "./patient-import-query-local";
 
-export function buildPatientImportQueryHandler(): PatientImportQueryHandler {
+export function buildPatientImportQueryHandler(): PatientImportQuery {
   if (Config.isDev()) {
     const patientImportBucket = Config.getPatientImportBucket();
     const waitTimeInMillis = 0;
-    return new PatientImportQueryHandlerLocal(patientImportBucket, waitTimeInMillis);
+    return new PatientImportQueryLocal(patientImportBucket, waitTimeInMillis);
   }
   const patientQueryQueueUrl = Config.getPatientImportQueryQueueUrl();
-  return new PatientImportQueryHandlerCloud(patientQueryQueueUrl);
+  return new PatientImportQueryCloud(patientQueryQueueUrl);
 }

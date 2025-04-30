@@ -180,8 +180,16 @@ export class S3Utils {
         contentType: string;
         eTag?: string;
         createdAt: Date | undefined;
+        metadata: Record<string, string> | undefined;
       }
-    | { exists: false; size?: never; contentType?: never; eTag?: never; createdAt?: never }
+    | {
+        exists: false;
+        size?: never;
+        contentType?: never;
+        eTag?: never;
+        createdAt?: never;
+        metadata?: never;
+      }
   > {
     try {
       const head = await executeWithRetriesS3(
@@ -202,6 +210,7 @@ export class S3Utils {
         contentType: head.ContentType ?? "",
         eTag: head.ETag ?? "",
         createdAt: head.LastModified,
+        metadata: head.Metadata,
       };
     } catch (err) {
       return { exists: false };
@@ -286,18 +295,32 @@ export class S3Utils {
     );
   }
 
+  /**
+   * Returns a presigned URL for uploading a file to an S3 bucket.
+   *
+   * @param bucket - The name of the S3 bucket where the file will located.
+   * @param key - The key or path of the file to be created in the S3 bucket.
+   * @param durationSeconds - The duration in seconds for which the presigned URL will be valid.
+   * @param metadata - The metadata to be added to the file in the S3 bucket (it will be sent as
+   *                   part of the upload request URL's parameters). It can be retrieved after
+   *                   the file is uplaoded by issuing a HEAD request to S3 (getFileInfoFromS3()).
+   * @returns The presigned URL for the file.
+   */
   async getPresignedUploadUrl({
     bucket,
     key,
     durationSeconds,
+    metadata = {},
   }: {
     bucket: string;
     key: string;
     durationSeconds?: number;
+    metadata?: Record<string, string>;
   }): Promise<string> {
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
+      Metadata: metadata,
     });
     const presignedUrl = await executeWithRetriesS3(() =>
       getPresignedUrl(this.s3Client, command, {

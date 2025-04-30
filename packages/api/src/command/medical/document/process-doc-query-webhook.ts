@@ -3,10 +3,11 @@ import { Patient } from "@metriport/core/domain/patient";
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
+import { emptyFunction, errorToString } from "@metriport/shared";
 import { DocumentReferenceDTO, toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
+import { finishSinglePatientImport } from "../patient/patient-import/finish-single-patient";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 const { log } = out(`Doc Query Webhook`);
@@ -17,7 +18,7 @@ export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 /**
  * Processes the document query progress to determine if when to send the document download and conversion webhooks
  */
-export const processDocQueryProgressWebhook = async ({
+export async function processDocQueryProgressWebhook({
   patient,
   documentQueryProgress,
   requestId,
@@ -27,7 +28,7 @@ export const processDocQueryProgressWebhook = async ({
   documentQueryProgress: DocumentQueryProgress;
   requestId: string;
   progressType?: ProgressType;
-}): Promise<void> => {
+}): Promise<void> {
   const { id: patientId } = patient;
 
   try {
@@ -47,14 +48,14 @@ export const processDocQueryProgressWebhook = async ({
     log(`${msg}: ${errorToString(error)} - ${JSON.stringify(extra)}`);
     capture.error(error, { extra });
   }
-};
+}
 
-const handleDownloadWebhook = async (
+async function handleDownloadWebhook(
   patient: Pick<Patient, "id" | "cxId" | "externalId">,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
-): Promise<void> => {
+): Promise<void> {
   const webhookSent = documentQueryProgress?.download?.webhookSent ?? false;
 
   const downloadStatus = documentQueryProgress.download?.status;
@@ -78,14 +79,14 @@ const handleDownloadWebhook = async (
       downloadIsCompleted ? payload : undefined
     );
   }
-};
+}
 
-const handleConversionWebhook = async (
+async function handleConversionWebhook(
   patient: Pick<Patient, "id" | "cxId" | "externalId">,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress,
   progressType?: ProgressType
-): Promise<void> => {
+): Promise<void> {
   const webhookSent = documentQueryProgress?.convert?.webhookSent ?? false;
 
   const convertStatus = documentQueryProgress.convert?.status;
@@ -99,15 +100,26 @@ const handleConversionWebhook = async (
 
     const whStatus = convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
 
+    // Intentionally async
     processPatientDocumentRequest(
       patient.cxId,
       patient.id,
       CONVERSION_WEBHOOK_TYPE,
       whStatus,
       requestId
-    );
+    ).catch(emptyFunction);
+
+    // TODO 2330 The way we call this might need to be reviewed when we finish updating the data
+    // pipeline to finish at the end of CONSOLIDATED (not conversion)
+    // Intentionally async
+    finishSinglePatientImport({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      requestId,
+      status: convertIsCompleted ? "successful" : "failed",
+    }).catch(emptyFunction);
   }
-};
+}
 
 export const composeDocRefPayload = async (
   patientId: string,

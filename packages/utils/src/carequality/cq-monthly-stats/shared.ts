@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { Organization as FhirOrganization } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import {
   dbCredsSchema,
@@ -21,6 +21,8 @@ const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
 
 export const readOnlyDBPool = initReadonlyDbPool(sqlDBCreds, sqlReadReplicaEndpoint);
 
+// TODO: Build something that errors in compile time if it mismatches the original type
+// in @metriport/api/src/external/carequality/cq-directory.ts
 export type CQDirectoryEntryData = {
   id: string;
   name?: string;
@@ -30,11 +32,10 @@ export type CQDirectoryEntryData = {
   lat?: number;
   lon?: number;
   state?: string;
-  data?: Organization;
+  data?: FhirOrganization;
   point?: string;
   root_organization?: string;
   managing_organization_id?: string;
-  gateway: boolean;
   active: boolean;
   last_updated_at_cq: string;
 };

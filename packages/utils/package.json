@@ -1,8 +1,7 @@
 {
   "name": "utils",
-  "version": "1.24.2",
+  "version": "1.25.1",
   "description": "",
-  "main": "mock-webhook.js",
   "private": true,
   "scripts": {
     "clean": "rimraf dist",
@@ -14,7 +13,6 @@
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
-    "mock-webhook": "ts-node src/mock-webhook.ts",
     "cq-stats": "npx --node-options='--max-old-space-size=8192' ts-node src/carequality/cq-monthly-stats/index.ts",
     "fhir-uploader": "ts-node src/fhir-uploader.ts",
     "doc-query": "ts-node src/document/document-query.ts",
@@ -59,7 +57,7 @@
     "@playwright/browser-firefox": "^1.39.0",
     "@streamparser/json": "^0.0.22",
     "aws-sdk": "2.1243",
-    "axios": "^1.4.0",
+    "axios": "^1.8.2",
     "commander": "^10.0.0",
     "csv-parser": "^3.0.0",
     "dayjs": "^1.11.9",

@@ -162,5 +162,5 @@ export function formatDateToHl7(date: Date): string {
 }
 
 export function buildHl7MessageFhirBundleFileKey(params: Hl7FileKeyParams) {
-  return `${buildHl7MessageFileKey(params)}${JSON_FILE_EXTENSION}`;
+  return `${buildHl7MessageFileKey(params)}.${JSON_FILE_EXTENSION}`;
 }
