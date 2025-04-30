@@ -1612,7 +1612,6 @@ function createObservationLaboratorySection(
   const latestThyroidPanels = thyroidPanels.slice(0, 2);
   const latestCbcPanels = cbcPanels.slice(0, 2);
 
-  // Get all panels that were already included
   const includedPanels = new Set([
     ...latestBasicPanels,
     ...latestComprehensivePanels,
@@ -1621,7 +1620,6 @@ function createObservationLaboratorySection(
     ...latestCbcPanels,
   ]);
 
-  // Find panels containing HbA1c results
   const hba1cPanels = findPanelsWithHba1c(diagnosticReports, observations, includedPanels);
 
   const allPanels = [
