@@ -348,7 +348,7 @@ class HealthieApi {
         }
       }
     }`;
-    const variables = { page_size: 100 };
+    const variables = {};
     const subscriptionListResponseGraphql = await this.makeRequest<SubscriptionListResponseGraphql>(
       {
         cxId,
