@@ -1604,17 +1604,33 @@ function createObservationLaboratorySection(
   );
   const lipidPanels = findMetabolicPanels(diagnosticReports, "Lipid Panel");
   const thyroidPanels = findMetabolicPanels(diagnosticReports, "Thyroid");
+  const cbcPanels = findMetabolicPanels(diagnosticReports, "Complete Blood Count");
 
   const latestBasicPanels = basicMetabolicPanels.slice(0, 2);
   const latestComprehensivePanels = comprehensiveMetabolicPanels.slice(0, 2);
   const latestLipidPanels = lipidPanels.slice(0, 2);
   const latestThyroidPanels = thyroidPanels.slice(0, 2);
+  const latestCbcPanels = cbcPanels.slice(0, 2);
+
+  // Get all panels that were already included
+  const includedPanels = new Set([
+    ...latestBasicPanels,
+    ...latestComprehensivePanels,
+    ...latestLipidPanels,
+    ...latestThyroidPanels,
+    ...latestCbcPanels,
+  ]);
+
+  // Find panels containing HbA1c results
+  const hba1cPanels = findPanelsWithHba1c(diagnosticReports, observations, includedPanels);
 
   const allPanels = [
     ...latestBasicPanels.map(p => ({ type: "Basic Metabolic Panel", panel: p })),
     ...latestComprehensivePanels.map(p => ({ type: "Comprehensive Metabolic Panel", panel: p })),
     ...latestLipidPanels.map(p => ({ type: "Lipid Panel", panel: p })),
     ...latestThyroidPanels.map(p => ({ type: "Thyroid", panel: p })),
+    ...latestCbcPanels.map(p => ({ type: "Complete Blood Count", panel: p })),
+    ...hba1cPanels.map(p => ({ type: "HbA1c Panel", panel: p })),
   ]
     .sort((a, b) => {
       const dateA = a.panel.effectiveDateTime || a.panel.effectivePeriod?.start || "";
@@ -1630,6 +1646,36 @@ function createObservationLaboratorySection(
     : allPanels.map(({ type, panel }) => createPanelSection(type, [panel], observations)).join("");
 
   return createSection("Laboratory", `${panelContent}`);
+}
+
+function findPanelsWithHba1c(
+  diagnosticReports: DiagnosticReport[],
+  allObservations: Observation[],
+  excludedPanels: Set<DiagnosticReport>
+): DiagnosticReport[] {
+  const a1cLoincCode = "4548-4";
+
+  return diagnosticReports
+    .filter(report => !excludedPanels.has(report))
+    .filter(report => {
+      if (!report.result) return false;
+
+      return report.result.some(reference => {
+        const observationId = reference.reference?.split("/")[1];
+        const observation = allObservations.find(obs => obs.id === observationId);
+
+        return observation?.code?.coding?.some(coding => {
+          const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+          return code === a1cLoincCode;
+        });
+      });
+    })
+    .sort((a, b) => {
+      const dateA = a.effectiveDateTime || a.effectivePeriod?.start || "";
+      const dateB = b.effectiveDateTime || b.effectivePeriod?.start || "";
+      return dayjs(dateB).diff(dayjs(dateA));
+    })
+    .slice(0, 2);
 }
 
 function findMetabolicPanels(
