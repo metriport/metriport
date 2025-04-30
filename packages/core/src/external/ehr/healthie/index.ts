@@ -1,17 +1,31 @@
 import { MetriportError, NotFoundError } from "@metriport/shared";
 import {
-  AppointmentListGraphqlResponse,
-  appointmentListGraphqlResponseSchema,
+  AppointmentGetResponseGraphql,
+  appointmentGetResponseGraphqlSchema,
+  AppointmentListResponseGraphql,
+  appointmentListResponseGraphqlSchema,
   AppointmentWithAttendee,
+  Patient,
   PatientGraphql,
   patientGraphqlSchema,
   PatientQuickNotesGraphql,
   patientQuickNotesGraphqlSchema,
+  PatientUpdateQuickNotesGraphql,
+  patientUpdateQuickNotesGraphqlSchema,
+  Subscription,
+  SubscriptionGraphql,
+  subscriptionGraphqlSchema,
+  SubscriptionResource,
+  SubscriptionsGraphql,
+  subscriptionsGraphqlSchema,
 } from "@metriport/shared/interface/external/ehr/healthie/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
+import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
+
+const apiUrl = Config.getApiUrl();
 
 interface HealthieApiConfig
   extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret"> {
@@ -55,19 +69,14 @@ class HealthieApi {
 
     const headers = {
       Authorization: `Basic ${this.apiKey}`,
+      AuthorizationSource: "API",
       "Content-Type": "application/json",
     };
 
     this.axiosInstance = axios.create({ baseURL: `${this.baseUrl}`, headers });
   }
 
-  async getPatient({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<PatientGraphql> {
+  async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `Healthie getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -82,7 +91,16 @@ class HealthieApi {
         gender
         email
         phone_number
-        next_appt_date
+        locations {
+          id
+          name
+          line1
+          line2
+          city
+          state
+          zip
+          country
+        }
       }
     }`;
     const variables = { id: patientId };
@@ -98,7 +116,7 @@ class HealthieApi {
       debug,
     });
     if (!patient.data.user) throw new NotFoundError("Patient not found", undefined, additionalInfo);
-    return patient;
+    return patient.data.user;
   }
 
   async getPatientQuickNotes({
@@ -131,8 +149,9 @@ class HealthieApi {
       additionalInfo,
       debug,
     });
-    if (!patient.data.user)
+    if (!patient.data.user) {
       throw new NotFoundError("Patient quick notes not found", undefined, additionalInfo);
+    }
     return patient.data.user.quick_notes ?? undefined;
   }
 
@@ -150,8 +169,13 @@ class HealthieApi {
     );
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
     const existingQuickNotes = await this.getPatientQuickNotes({ cxId, patientId });
+    const linkElement = `<p><a href="${link}" target="_blank">Metriport Integration</a></p>`;
+    const scrubbedExistingQuickNotes = existingQuickNotes?.replace(
+      /<p><a href="[^"]+" target="_blank" rel="noopener">Metriport Integration<\/a><\/p>/g,
+      ""
+    );
     const operationName = "updateClient";
-    const query = `mmutation updateClient($id: ID, $quick_notes: String) {
+    const query = `mutation updateClient($id: ID, $quick_notes: String) {
       updateClient(
         input: { id: $id, quick_notes: $quick_notes }
       ) {
@@ -168,16 +192,16 @@ class HealthieApi {
     // TODO Remove existingQuickNotes and link from the mutation
     const variables = {
       id: patientId,
-      quick_notes: `${existingQuickNotes ?? ""}<br><br>${link}`,
+      quick_notes: `${scrubbedExistingQuickNotes ?? ""}<br>${linkElement}`,
     };
-    await this.makeRequest<PatientGraphql>({
+    await this.makeRequest<PatientUpdateQuickNotesGraphql>({
       cxId,
       patientId: patientId.toString(),
       s3Path: "patient",
       operationName,
       query,
       variables,
-      schema: patientGraphqlSchema,
+      schema: patientUpdateQuickNotesGraphqlSchema,
       additionalInfo,
       debug,
     });
@@ -203,18 +227,17 @@ class HealthieApi {
     const query = `query appointments(
       $startDate: String
       $endDate: String
-      $order_by: AppointmentOrderKeys
-      $should_paginate: Boolean
       $offset: Int
-      $is_active: Boolean
+      $page_size: Int
     ) {
       appointments(
         startDate: $startDate
         endDate: $endDate
-        order_by: $order_by
-        should_paginate: $should_paginate
+        order_by: CREATED_AT_ASC
+        should_paginate: true
         offset: $offset
-        is_active: $is_active
+        page_size: $page_size
+        is_active: true
         is_org: true
       ) {
         id
@@ -229,22 +252,21 @@ class HealthieApi {
     const variables = {
       startDate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       endDate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
-      order_by: "CREATED_AT_ASC",
-      should_paginate: true,
       offset: 0,
-      is_active: true,
+      page_size: 100,
     };
-    const appointmentListGraphqlResponse = await this.makeRequest<AppointmentListGraphqlResponse>({
+    const appointmentListResponseGraphql = await this.makeRequest<AppointmentListResponseGraphql>({
       cxId,
       s3Path: "patient",
       operationName,
       query,
       variables,
-      schema: appointmentListGraphqlResponseSchema,
+      schema: appointmentListResponseGraphqlSchema,
       additionalInfo,
       debug,
     });
-    const appointments = appointmentListGraphqlResponse.data.appointments;
+    const appointments = appointmentListResponseGraphql.data.appointments;
+    if (!appointments) throw new NotFoundError("Appointments not found", undefined, additionalInfo);
     return appointments.map(appointment => {
       const attendee = appointment.attendees[0];
       if (!attendee) {
@@ -269,16 +291,9 @@ class HealthieApi {
       practiceId: this.practiceId,
       appointmentId,
     };
-    const operationName = "appointments";
-    const query = `query appointments(
-      $id: String
-      $is_active: Boolean
-    ) {
-      appointments(
-        id: $id
-        is_active: $is_active
-        is_org: true
-      ) {
+    const operationName = "getAppointment";
+    const query = `query getAppointment($id: ID) {
+      appointment(id: $id) {
         id
         attendees {
           id
@@ -288,27 +303,131 @@ class HealthieApi {
         }
       }
     }`;
-    const variables = {
-      id: appointmentId,
-      is_active: true,
-    };
-    const appointmentGraphqlResponse = await this.makeRequest<AppointmentListGraphqlResponse>({
+    const variables = { id: appointmentId };
+    const appointmentGetResponseGraphql = await this.makeRequest<AppointmentGetResponseGraphql>({
       cxId,
       s3Path: "patient",
       operationName,
       query,
       variables,
-      schema: appointmentListGraphqlResponseSchema,
+      schema: appointmentGetResponseGraphqlSchema,
       additionalInfo,
       debug,
     });
-    const appointment = appointmentGraphqlResponse.data.appointments[0];
+    const appointment = appointmentGetResponseGraphql.data.appointment;
     if (!appointment) throw new NotFoundError("Appointment not found", undefined, additionalInfo);
     const attendee = appointment.attendees[0];
     if (!attendee) {
       throw new MetriportError("Appointment has no attendees", undefined, additionalInfo);
     }
     return { ...appointment, attendees: [attendee] };
+  }
+
+  async getSubscriptions({ cxId }: { cxId: string }): Promise<Subscription[]> {
+    const { debug } = out(`Healthie getSubscriptions - cxId ${cxId} practiceId ${this.practiceId}`);
+    const additionalInfo = { cxId, practiceId: this.practiceId };
+    const operationName = "webhooks";
+    const query = `query webhooks() {
+      webhooks(
+        order_by: CREATED_AT_ASC
+      ) {
+        id
+        event_type
+        is_enabled
+        should_retry
+        url
+        webhook_events {
+          id
+          event_type
+        }
+      }
+    }`;
+    const variables = { page_size: 100 };
+    const subscriptionGraphql = await this.makeRequest<SubscriptionsGraphql>({
+      cxId,
+      s3Path: "subscriptions",
+      operationName,
+      query,
+      variables,
+      schema: subscriptionsGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!subscriptionGraphql.data.webhooks) {
+      throw new MetriportError("Subscriptions not found", undefined, additionalInfo);
+    }
+    return subscriptionGraphql.data.webhooks;
+  }
+
+  async subscribeToResource({
+    cxId,
+    resource,
+  }: {
+    cxId: string;
+    resource: SubscriptionResource;
+  }): Promise<Subscription> {
+    const { debug } = out(
+      `Healthie subscribeToResource - cxId ${cxId} practiceId ${this.practiceId} resource ${resource}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, resource };
+    const existingSubscriptions = await this.getSubscriptions({ cxId });
+    if (
+      existingSubscriptions.some(subscription => {
+        const isUrlMatch = subscription.url === `${apiUrl}/ehr/webhook/healthie`;
+        const isResourceMatch =
+          subscription.event_type === resource ||
+          subscription.webhook_events?.some(event => event.event_type === resource);
+        return isUrlMatch && isResourceMatch;
+      })
+    ) {
+      throw new MetriportError(
+        "Subscription already exists for resource",
+        undefined,
+        additionalInfo
+      );
+    }
+    const operationName = "createWebhook";
+    const query = `mutation createWebhook($input: createWebhookInput) {
+      createWebhook(input: $input) {
+        webhook {
+          id
+          event_type
+          is_enabled
+          should_retry
+          url
+          webhook_events {
+            id
+            event_type
+          }
+          signature_secret
+        }
+        messages {
+          field
+          message
+        }
+      }
+    }`;
+    const data = {
+      is_enabled: true,
+      should_retry: true,
+      url: `${apiUrl}/ehr/webhook/healthie`,
+      webhook_events: [resource],
+    };
+    const variables = { input: data };
+    const subscription = await this.makeRequest<SubscriptionGraphql>({
+      cxId,
+      s3Path: `${resource}-subscribe`,
+      operationName,
+      query,
+      variables,
+      schema: subscriptionGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!subscription.data.webhook) {
+      throw new MetriportError("Subscription not created", undefined, additionalInfo);
+    }
+    return subscription.data.webhook;
   }
 
   private async makeRequest<T>({
@@ -324,7 +443,7 @@ class HealthieApi {
   }: Omit<MakeRequestParamsInEhr<T>, "method" | "url" | "data" | "headers"> & {
     operationName: string;
     query: string;
-    variables: Record<string, string | number | boolean>;
+    variables: Record<string, string | number | boolean | object>;
   }): Promise<T> {
     return await makeRequest<T>({
       ehr: EhrSources.healthie,

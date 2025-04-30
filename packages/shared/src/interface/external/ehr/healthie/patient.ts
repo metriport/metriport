@@ -8,6 +8,17 @@ export const patientSchema = z.object({
   gender: z.string().nullable(),
   email: z.string().nullable(),
   phone_number: z.string().nullable(),
+  locations: z
+    .object({
+      line1: z.string(),
+      line2: z.string(),
+      city: z.string(),
+      state: z.string(),
+      zip: z.string(),
+      country: z.string(),
+    })
+    .array()
+    .nullable(),
 });
 export type Patient = z.infer<typeof patientSchema>;
 export const patientGraphqlSchema = z.object({
@@ -28,3 +39,12 @@ export const patientQuickNotesGraphqlSchema = z.object({
   }),
 });
 export type PatientQuickNotesGraphql = z.infer<typeof patientQuickNotesGraphqlSchema>;
+
+export const patientUpdateQuickNotesGraphqlSchema = z.object({
+  data: z.object({
+    updateClient: z.object({
+      user: patientQuickNotesSchema.nullable(),
+    }),
+  }),
+});
+export type PatientUpdateQuickNotesGraphql = z.infer<typeof patientUpdateQuickNotesGraphqlSchema>;

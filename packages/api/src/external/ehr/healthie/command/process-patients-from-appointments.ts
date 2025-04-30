@@ -20,6 +20,7 @@ import {
   delayBetweenPatientBatches,
   delayBetweenPracticeBatches,
   getLookForwardTimeRange,
+  getLookForwardTimeRangeWithOffset,
   parallelPatients,
   parallelPractices,
 } from "../../shared";
@@ -203,8 +204,9 @@ async function getAppointmentsFromApi({
     });
   }
   if (lookupMode === LookupModes.Appointments48hr) {
-    const { startRange, endRange } = getLookForwardTimeRange({
+    const { startRange, endRange } = getLookForwardTimeRangeWithOffset({
       lookForward: appointmentsLookForward48hr,
+      offset: dayjs.duration(1, "day"),
     });
     log(`Getting appointments from ${startRange} to ${endRange}`);
     return await api.getAppointments({

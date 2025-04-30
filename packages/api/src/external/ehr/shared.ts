@@ -1,7 +1,7 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
-import { JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { JwtTokenInfo, MetriportError, BadRequestError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   AthenaSecondaryMappings,
@@ -48,7 +48,7 @@ import {
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
 
-export const delayBetweenPracticeBatches = dayjs.duration(15, "seconds");
+export const delayBetweenPracticeBatches = dayjs.duration(0, "seconds");
 export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
 export const parallelPatients = 200;
@@ -150,6 +150,26 @@ export function getLookForwardTimeRange({ lookForward }: { lookForward: Duration
   const currentDatetime = buildDayjs();
   const startRange = buildDayjs(currentDatetime).toDate();
   const endRange = buildDayjs(currentDatetime).add(lookForward).toDate();
+  return {
+    startRange,
+    endRange,
+  };
+}
+
+export function getLookForwardTimeRangeWithOffset({
+  lookForward,
+  offset,
+}: {
+  lookForward: Duration;
+  offset: Duration;
+}): {
+  startRange: Date;
+  endRange: Date;
+} {
+  const currentDatetime = buildDayjs();
+  const startRange = buildDayjs(currentDatetime).add(offset).toDate();
+  const endRange = buildDayjs(currentDatetime).add(lookForward).toDate();
+  if (startRange > endRange) throw new BadRequestError("Start range is greater than end range");
   return {
     startRange,
     endRange,

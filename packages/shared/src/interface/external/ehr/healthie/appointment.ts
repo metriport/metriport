@@ -18,12 +18,21 @@ export type AppointmentAttendee = Appointment["attendees"][number];
 export type AppointmentWithAttendee = Appointment & {
   attendees: [AppointmentAttendee, ...AppointmentAttendee[]];
 };
+
+export const appointmentGetResponseSchema = z.object({
+  appointment: appointmentSchema.nullable(),
+});
+export type AppointmentGetResponse = z.infer<typeof appointmentGetResponseSchema>;
+export const appointmentGetResponseGraphqlSchema = z.object({
+  data: appointmentGetResponseSchema,
+});
+export type AppointmentGetResponseGraphql = z.infer<typeof appointmentGetResponseGraphqlSchema>;
+
 export const appointmentListResponseSchema = z.object({
-  appointments: appointmentSchema.array(),
+  appointments: appointmentSchema.array().nullable(),
 });
 export type AppointmentListResponse = z.infer<typeof appointmentListResponseSchema>;
-
-export const appointmentListGraphqlResponseSchema = z.object({
+export const appointmentListResponseGraphqlSchema = z.object({
   data: appointmentListResponseSchema,
 });
-export type AppointmentListGraphqlResponse = z.infer<typeof appointmentListGraphqlResponseSchema>;
+export type AppointmentListResponseGraphql = z.infer<typeof appointmentListResponseGraphqlSchema>;

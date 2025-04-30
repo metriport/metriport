@@ -1,9 +1,24 @@
+import { Address } from "@metriport/core/domain/address";
+import { Contact } from "@metriport/core/domain/contact";
 import HealthieApi, {
   HealthieEnv,
   isHealthieEnv,
 } from "@metriport/core/external/ehr/healthie/index";
-import { cxApiKeyMapSecretSchema, MetriportError, NotFoundError } from "@metriport/shared";
+import {
+  BadRequestError,
+  cxApiKeyMapSecretSchema,
+  MetriportError,
+  normalizeCountrySafe,
+  normalizedCountryUsa,
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
+  normalizeUSStateForAddressSafe,
+  normalizeZipCodeNewSafe,
+  NotFoundError,
+  toTitleCase,
+} from "@metriport/shared";
 import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
+import { Patient as HealthiePatient } from "@metriport/shared/interface/external/ehr/healthie/patient";
 import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/healthie/subscription";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
@@ -12,6 +27,58 @@ import { Config } from "../../../shared/config";
 import { EhrEnvAndApiKey, EhrPerPracticeParams } from "../shared";
 
 export const healthieWebhookCreatedDateDiffSeconds = dayjs.duration(5, "seconds");
+
+export function createContacts(patient: HealthiePatient): Contact[] {
+  return [
+    {
+      ...(patient.email ? { email: normalizeEmailNewSafe(patient.email) } : {}),
+      ...(patient.phone_number ? { phone: normalizePhoneNumberSafe(patient.phone_number) } : {}),
+    },
+  ];
+}
+
+export function createAddresses(patient: HealthiePatient): Address[] {
+  if (!patient.locations) throw new BadRequestError("Patient has no address");
+  const addresses = patient.locations.flatMap(address => {
+    const addressLine1 = address.line1.trim();
+    if (addressLine1 === "") return [];
+    const addressLine2 = address.line2.trim() !== "" ? address.line2.trim() : undefined;
+    const city = address.city.trim();
+    if (city === "") return [];
+    const country = normalizeCountrySafe(address.country) ?? normalizedCountryUsa;
+    const state = normalizeUSStateForAddressSafe(address.state);
+    if (!state) return [];
+    const zip = normalizeZipCodeNewSafe(address.zip);
+    if (!zip) return [];
+    return {
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      zip,
+      country,
+    };
+  });
+  if (addresses.length === 0) {
+    throw new BadRequestError("Patient has no valid addresses", undefined, {
+      addresses: patient.locations?.map(a => JSON.stringify(a)).join(","),
+    });
+  }
+  return addresses;
+}
+
+export function createNames(patient: HealthiePatient): { firstName: string; lastName: string } {
+  if (!patient.first_name) throw new BadRequestError("Patient has no first_name");
+  const firstName = toTitleCase(patient.first_name.trim());
+  if (firstName === "") throw new BadRequestError("Patient first_name is empty");
+  if (!patient.last_name) throw new BadRequestError("Patient has no last_name");
+  const lastName = toTitleCase(patient.last_name.trim());
+  if (lastName === "") throw new BadRequestError("Patient last_name is empty");
+  return {
+    firstName,
+    lastName,
+  };
+}
 
 function getHealthieEnv({ cxId, practiceId }: EhrPerPracticeParams): EhrEnvAndApiKey<HealthieEnv> {
   const environment = Config.getHealthieEnv();

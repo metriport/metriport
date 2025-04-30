@@ -3,13 +3,19 @@ import HealthieApi from "@metriport/core/external/ehr/healthie";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { errorToString } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  MetriportError,
+  normalizeDob,
+  normalizeGender,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { healthieDashSource } from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
+import { Patient as HealthiePatient } from "@metriport/shared/interface/external/ehr/healthie/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { MetriportError } from "../../../../../../shared/dist";
 import {
   deleteTokenBasedOnExpBySourceAndData,
   findOrCreateJwtToken,
@@ -23,7 +29,7 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
-import { createHealthieClient } from "../shared";
+import { createAddresses, createContacts, createHealthieClient, createNames } from "../shared";
 
 dayjs.extend(duration);
 
@@ -66,9 +72,7 @@ export async function syncHealthiePatientIntoMetriport({
 
   const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
   const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
-  const demographics = createMetriportPatientDemographics(
-    healthiePatient as unknown as PatientDemoData
-  );
+  const demographics = createMetriportPatientDemographics(healthiePatient);
   const metriportPatient = await getOrCreateMetriportPatient({
     cxId,
     practiceId: healthiePracticeId,
@@ -99,9 +103,21 @@ export async function syncHealthiePatientIntoMetriport({
   return metriportPatientId;
 }
 
-function createMetriportPatientDemographics(patient: PatientDemoData): PatientDemoData {
-  // TODO: Implement
-  return patient;
+function createMetriportPatientDemographics(patient: HealthiePatient): PatientDemoData {
+  if (!patient.dob) throw new BadRequestError("Patient has no dob");
+  if (!patient.gender) throw new BadRequestError("Patient has no gender");
+  const dob = normalizeDob(patient.dob);
+  const genderAtBirth = normalizeGender(patient.gender);
+  const addressArray = createAddresses(patient);
+  const contactArray = createContacts(patient);
+  const names = createNames(patient);
+  return {
+    ...names,
+    dob,
+    genderAtBirth,
+    address: addressArray,
+    contact: contactArray,
+  };
 }
 
 async function getOrCreateMetriportPatient({
