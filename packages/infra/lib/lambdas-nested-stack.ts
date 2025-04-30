@@ -43,7 +43,6 @@ interface LambdasNestedStackProps extends NestedStackProps {
 type GenericConsolidatedLambdaProps = {
   name: string;
   entry: string;
-  memory: number;
   lambdaLayers: LambdaLayers;
   vpc: ec2.IVpc;
   bundleBucket: s3.IBucket;
@@ -577,7 +576,6 @@ export class LambdasNestedStack extends NestedStack {
       ...params,
       name: "FhirToBundle",
       entry: "fhir-to-bundle",
-      memory: 4096,
     });
   }
   private setupFhirBundleCountLambda(params: ConsolidatedLambdaProps): Lambda {
@@ -585,14 +583,12 @@ export class LambdasNestedStack extends NestedStack {
       ...params,
       name: "FhirToBundleCount",
       entry: "fhir-to-bundle-count",
-      memory: 2048,
     });
   }
 
   private setupGenericConsolidatedLambda({
     name,
     entry,
-    memory,
     lambdaLayers,
     vpc,
     fhirServerUrl,
@@ -628,7 +624,7 @@ export class LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
-      memory,
+      memory: 6144,
       timeout: lambdaTimeout,
       isEnableInsights: true,
       vpc,
