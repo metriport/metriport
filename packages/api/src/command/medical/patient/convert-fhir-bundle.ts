@@ -11,6 +11,7 @@ import {
   createSandboxMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util";
@@ -80,6 +81,16 @@ export async function handleBundleToMedicalRecord({
     newBundle.entry = [];
     newBundle.total = 0;
   }
+
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.consolidatedQuery,
+    properties: {
+      patientId: patient.id,
+      conversionType,
+      resourceCount: newBundle.entry?.length,
+    },
+  });
   return newBundle;
 }
 

@@ -18,7 +18,6 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -42,8 +41,6 @@ dayjs.extend(duration);
 
 export type GetConsolidatedParams = {
   patient: Patient;
-  bundle?: SearchSetBundle;
-  requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
 
@@ -246,9 +243,7 @@ export async function getConsolidated({
   resources,
   dateFrom,
   dateTo,
-  requestId,
   conversionType,
-  bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
   const { log } = out(`API getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
@@ -258,34 +253,16 @@ export async function getConsolidated({
     conversionType,
   };
   try {
-    if (!bundle) {
-      bundle = await getConsolidatedPatientData({
-        patient,
-        resources,
-        dateFrom,
-        dateTo,
-      });
-    }
+    let bundle = await getConsolidatedPatientData({
+      patient,
+      resources,
+      dateFrom,
+      dateTo,
+    });
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
-    const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
-      q => q.requestId === requestId
-    );
-
-    const defaultAnalyticsProps = {
-      distinctId: patient.cxId,
-      event: EventTypes.consolidatedQuery,
-      properties: {
-        patientId: patient.id,
-        conversionType: "bundle",
-        duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-        resourceCount: bundle.entry?.length,
-      },
-    };
-
-    analytics(defaultAnalyticsProps);
 
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
@@ -297,15 +274,6 @@ export async function getConsolidated({
         dateFrom,
         dateTo,
         conversionType,
-      });
-
-      analytics({
-        ...defaultAnalyticsProps,
-        properties: {
-          ...defaultAnalyticsProps.properties,
-          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-          conversionType,
-        },
       });
     }
 
