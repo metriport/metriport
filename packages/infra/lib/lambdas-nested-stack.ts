@@ -636,7 +636,7 @@ export class LambdasNestedStack extends NestedStack {
 
     featureFlagsTable.grantReadData(theLambda);
 
-    addBedrockPolicyToLambda(theLambda);
+    if (bedrock) addBedrockPolicyToLambda(theLambda);
 
     return theLambda;
   }
