@@ -49,6 +49,7 @@ type GenericConsolidatedLambdaProps = {
   bundleBucket: s3.IBucket;
   conversionsBucket: s3.IBucket;
   envType: EnvType;
+  fhirServerUrl: string;
   sentryDsn: string | undefined;
   alarmAction: SnsAction | undefined;
   featureFlagsTable: dynamodb.Table;
@@ -56,10 +57,6 @@ type GenericConsolidatedLambdaProps = {
 };
 
 type ConsolidatedLambdaProps = Omit<GenericConsolidatedLambdaProps, "name" | "entry" | "memory">;
-
-type ConsolidatedLambdaParams = {
-  fhirServerUrl: string;
-};
 
 export class LambdasNestedStack extends NestedStack {
   readonly lambdaLayers: LambdaLayers;
@@ -183,6 +180,7 @@ export class LambdasNestedStack extends NestedStack {
     this.fhirToBundleCountLambda = this.setupFhirBundleCountLambda({
       lambdaLayers: this.lambdaLayers,
       vpc: props.vpc,
+      fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       envType: props.config.environmentType,
@@ -574,14 +572,12 @@ export class LambdasNestedStack extends NestedStack {
   }
 
   /** AKA, get consolidated lambda */
-  private setupFhirBundleLambda(
-    params: ConsolidatedLambdaProps & ConsolidatedLambdaParams
-  ): Lambda {
+  private setupFhirBundleLambda(params: ConsolidatedLambdaProps): Lambda {
     return this.setupGenericConsolidatedLambda({
       ...params,
       name: "FhirToBundle",
       entry: "fhir-to-bundle",
-      memory: 2048,
+      memory: 4096,
     });
   }
   private setupFhirBundleCountLambda(params: ConsolidatedLambdaProps): Lambda {
@@ -607,10 +603,10 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction,
     featureFlagsTable,
     bedrock,
-  }: GenericConsolidatedLambdaProps & Partial<ConsolidatedLambdaParams>): Lambda {
+  }: GenericConsolidatedLambdaProps): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
-    const fhirToBundleLambda = createLambda({
+    const theLambda = createLambda({
       stack: this,
       name,
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -618,7 +614,7 @@ export class LambdasNestedStack extends NestedStack {
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        ...(fhirServerUrl && { FHIR_SERVER_URL: fhirServerUrl }),
+        FHIR_SERVER_URL: fhirServerUrl,
         BUCKET_NAME: bundleBucket.bucketName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         CONVERSION_RESULT_BUCKET_NAME: conversionsBucket.bucketName,
@@ -639,14 +635,14 @@ export class LambdasNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    bundleBucket.grantReadWrite(fhirToBundleLambda);
-    conversionsBucket.grantRead(fhirToBundleLambda);
+    bundleBucket.grantReadWrite(theLambda);
+    conversionsBucket.grantRead(theLambda);
 
-    featureFlagsTable.grantReadData(fhirToBundleLambda);
+    featureFlagsTable.grantReadData(theLambda);
 
-    addBedrockPolicyToLambda(fhirToBundleLambda);
+    addBedrockPolicyToLambda(theLambda);
 
-    return fhirToBundleLambda;
+    return theLambda;
   }
 
   /**
