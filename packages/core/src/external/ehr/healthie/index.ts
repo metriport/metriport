@@ -244,7 +244,7 @@ class HealthieApi {
           endDate: $endDate
           order_by: CREATED_AT_ASC
           should_paginate: true
-          page_size: 1
+          page_size: 1000
           is_active: true
           is_org: true
           ${cursor ? `after: $after` : ""}

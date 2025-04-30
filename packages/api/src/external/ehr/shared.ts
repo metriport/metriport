@@ -48,7 +48,7 @@ import {
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../command/jwt-token";
 
-export const delayBetweenPracticeBatches = dayjs.duration(0, "seconds");
+export const delayBetweenPracticeBatches = dayjs.duration(15, "seconds");
 export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
 export const parallelPatients = 200;
