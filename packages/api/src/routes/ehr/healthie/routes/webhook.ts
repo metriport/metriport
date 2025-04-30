@@ -4,7 +4,7 @@ import patientWebhook from "../patient-webhook";
 
 const routes = Router();
 
-routes.use("/:practiceId/appointment", appointmentWebhook);
-routes.use("/:practiceId/patient", patientWebhook);
+routes.use("/appointment", appointmentWebhook);
+routes.use("/patient", patientWebhook);
 
 export default routes;

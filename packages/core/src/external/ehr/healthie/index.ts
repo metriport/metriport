@@ -378,7 +378,7 @@ class HealthieApi {
       `Healthie subscribeToResource - cxId ${cxId} practiceId ${this.practiceId} resource ${resource}`
     );
     const additionalInfo = { cxId, practiceId: this.practiceId, resource };
-    const url = `${apiUrl}/ehr/webhook/healthie/${this.practiceId}`;
+    const url = `${apiUrl}/ehr/webhook/healthie?practiceId=${this.practiceId}`;
     const existingSubscriptions = await this.getSubscriptions({ cxId });
     if (
       existingSubscriptions.some(subscription => {

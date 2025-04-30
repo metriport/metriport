@@ -22,7 +22,7 @@ async function processCxIdWebhook(req: Request): Promise<void> {
   const eventType = req.body.event_type;
   if (!eventType) throw new ForbiddenError();
   if (!isSubscriptionResource(eventType)) throw new ForbiddenError();
-  const practiceId = req.url.split("/")[1];
+  const practiceId = req.query.practiceId;
   if (!practiceId) throw new ForbiddenError();
   if (typeof practiceId !== "string") throw new ForbiddenError();
   try {
@@ -30,7 +30,7 @@ async function processCxIdWebhook(req: Request): Promise<void> {
     const verified = await verifySignature({
       method: req.method,
       path: `${req.baseUrl}${req.path}`,
-      query: "",
+      query: `practiceId=${practiceId}`,
       headers: req.headers as Record<string, string>,
       body: req.body,
       secretKey: secretKeyInfo.secretKey,
