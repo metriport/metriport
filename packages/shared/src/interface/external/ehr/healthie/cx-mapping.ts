@@ -12,7 +12,9 @@ export const healthieSecondaryMappingsSchema = z.object({
   webhookPatientPatientProcessingEnabled: z.boolean().optional(),
   webhookAppointmentPatientLinkingDisabled: z.boolean().optional(),
   webhookAppointmentPatientProcessingDisabled: z.boolean().optional(),
-  backgroundAppointments48hrDisabled: z.boolean().optional(),
-  backgroundAppointment48hrPatientProcessingDisabled: z.boolean().optional(),
+  backgroundAppointmentsDisabled: z.boolean().optional(),
+  backgroundAppointmentPatientProcessingDisabled: z.boolean().optional(),
+  backgroundAppointments48hrEnabled: z.boolean().optional(),
+  backgroundAppointments48hrPatientProcessingDisabled: z.boolean().optional(),
 });
 export type HealthieSecondaryMappings = z.infer<typeof healthieSecondaryMappingsSchema>;

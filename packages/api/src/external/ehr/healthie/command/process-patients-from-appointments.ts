@@ -74,7 +74,13 @@ export async function processPatientsFromAppointments({
       });
     }
     if (
-      secondaryMappings.backgroundAppointments48hrDisabled &&
+      secondaryMappings.backgroundAppointmentsDisabled &&
+      lookupMode === LookupModes.Appointments
+    ) {
+      return [];
+    }
+    if (
+      !!secondaryMappings.backgroundAppointments48hrEnabled &&
       lookupMode === LookupModes.Appointments48hr
     ) {
       return [];
@@ -143,7 +149,18 @@ export async function processPatientsFromAppointments({
           source: EhrSources.healthie,
         });
       }
-      if (secondaryMappings.backgroundAppointment48hrPatientProcessingDisabled) return [];
+      if (
+        lookupMode === LookupModes.Appointments &&
+        secondaryMappings.backgroundAppointmentsDisabled
+      ) {
+        return [];
+      }
+      if (
+        lookupMode === LookupModes.Appointments48hr &&
+        secondaryMappings.backgroundAppointments48hrPatientProcessingDisabled
+      ) {
+        return [];
+      }
       return [appointment];
     }
   );
