@@ -27,8 +27,8 @@ routes.use(
 );
 routes.use(
   "/medical/v1/document",
-  processEhrPatientId(tokenEhrPatientIdQueryParam, "query", documentSkipPathsForHealthieIdCheck),
   processDocumentRoute,
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "query", documentSkipPathsForHealthieIdCheck),
   medicalDocument
 );
 routes.use("/settings", settings);

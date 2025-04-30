@@ -192,7 +192,6 @@ class HealthieApi {
         }
       }
     }`;
-    // TODO Remove existingQuickNotes and link from the mutation
     const variables = {
       id: patientId,
       quick_notes: `${scrubbedExistingQuickNotes ?? ""}${linkElement}`,
