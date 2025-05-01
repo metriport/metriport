@@ -67,7 +67,7 @@ function constructDataToSign({
 
 async function generateSignature(key: crypto.webcrypto.CryptoKey, data: string) {
   const encoder = new TextEncoder();
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+  const signature = await crypto.webcrypto.subtle.sign("HMAC", key, encoder.encode(data));
   return Array.from(new Uint8Array(signature))
     .map(byte => byte.toString(16).padStart(2, "0"))
     .join("");
