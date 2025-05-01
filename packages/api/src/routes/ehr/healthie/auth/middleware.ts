@@ -8,6 +8,7 @@ import { JwtTokenData } from "../../../../domain/jwt-token";
 import ForbiddenError from "../../../../errors/forbidden";
 import { shortDurationTokenDuration } from "../../../../external/ehr/healthie/command/sync-patient";
 import { getHealthieSecretKeyInfo } from "../../../../external/ehr/healthie/shared";
+import { Config } from "../../../../shared/config";
 import { getAuthorizationToken } from "../../../util";
 import {
   ParseResponse,
@@ -29,7 +30,7 @@ async function processCxIdWebhook(req: Request): Promise<void> {
     const secretKeyInfo = await getHealthieSecretKeyInfo(practiceId, eventType);
     const verified = await verifySignature({
       method: req.method,
-      path: `${req.baseUrl}${req.path}`,
+      path: `${req.baseUrl}${Config.isDev() ? req.path : ""}`,
       query: `practiceId=${practiceId}`,
       headers: req.headers as Record<string, string>,
       body: req.body,
