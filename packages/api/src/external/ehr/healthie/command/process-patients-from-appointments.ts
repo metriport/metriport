@@ -185,8 +185,10 @@ async function getAppointments({
       log,
     });
     return {
-      appointments: appointments.map(appointment => {
-        return { cxId, practiceId, patientId: appointment.attendees[0].id };
+      appointments: appointments.flatMap(appointment => {
+        return appointment.attendees.map(attendee => {
+          return { cxId, practiceId, patientId: attendee.id };
+        });
       }),
     };
   } catch (error) {
