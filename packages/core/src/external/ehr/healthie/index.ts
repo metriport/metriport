@@ -286,7 +286,6 @@ class HealthieApi {
             {
               ...appointment,
               attendees: [attendee, ...appointment.attendees],
-              cursor: appointment.cursor,
             },
           ];
         }
