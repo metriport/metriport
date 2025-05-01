@@ -22,10 +22,10 @@ export async function getHieDirectoryEntriesByFilter({
       ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filter) OR id = :filter)`
       : "");
 
-  const { query, replacements } = paginationSqlExpressions(pagination);
+  const { query, replacements } = paginationSqlExpressions({ pagination });
   const queryFinal = queryFTS + query;
 
-  const cqDirectoryEntries = await sequelize.query(queryFinal, {
+  const networkEntries = await sequelize.query(queryFinal, {
     model: HIEDirectoryEntryViewModel,
     mapToModel: true,
     replacements: {
@@ -35,8 +35,8 @@ export async function getHieDirectoryEntriesByFilter({
     type: QueryTypes.SELECT,
   });
 
-  const sortedCqDirectoryEntries = sortForPagination(cqDirectoryEntries, pagination);
-  return sortedCqDirectoryEntries.map(entry => entry.dataValues);
+  const sortedNetworkEntries = sortForPagination(networkEntries, pagination);
+  return sortedNetworkEntries.map(entry => entry.dataValues);
 }
 
 export async function getHieDirectoryEntriesByFilterCount({

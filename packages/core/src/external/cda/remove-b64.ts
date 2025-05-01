@@ -2,8 +2,14 @@ import { toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { XMLBuilder } from "fast-xml-parser";
 import { cloneDeep } from "lodash";
-import { ConcernActEntryAct, ObservationOrganizer } from "../../fhir-to-cda/cda-types/shared-types";
-import { BINARY_MIME_TYPES } from "../../util/mime";
+import {
+  CdaOriginalText,
+  CdaValueEd,
+  ConcernActEntryAct,
+  ObservationOrganizer,
+} from "../../fhir-to-cda/cda-types/shared-types";
+import { detectFileType } from "../../util/file-type";
+import { BINARY_MIME_TYPES, OCTET_MIME_TYPE, TXT_MIME_TYPE } from "../../util/mime";
 import { groupObservations, isConcernActEntry, isObservationOrganizer } from "./shared";
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
@@ -50,7 +56,8 @@ export function removeBase64PdfEntries(payloadRaw: string): {
               const act = entry.act;
               if (
                 isBinaryMimeTypeOrUndefined(act.text?._mediaType) &&
-                isB64Representation(act.text?._representation)
+                isB64Representation(act.text?._representation) &&
+                !isTextAttachment(act.text)
               ) {
                 b64Attachments.total++;
                 b64Attachments.acts.push(act);
@@ -68,7 +75,8 @@ export function removeBase64PdfEntries(payloadRaw: string): {
 
                 if (
                   isBinaryMimeTypeOrUndefined(val?._mediaType) &&
-                  isB64Representation(val?._representation)
+                  isB64Representation(val?._representation) &&
+                  !isTextAttachment(val)
                 ) {
                   b64Attachments.organizers.push(cloneDeep(entry.organizer));
                   b64Attachments.total++;
@@ -118,4 +126,17 @@ function isBinaryMimeTypeOrUndefined(mediaType: string | undefined): boolean {
 
 function isB64Representation(rep: string | undefined): boolean {
   return rep?.trim().toLowerCase() === b64Representation.toLowerCase();
+}
+
+function isTextAttachment(attachment: CdaOriginalText | CdaValueEd | undefined): boolean {
+  const attachmentContents = attachment?.["#text"];
+  if (!attachmentContents) return false;
+
+  const fileBuffer = Buffer.from(attachmentContents, "base64");
+  const mimeType = detectFileType(fileBuffer).mimeType;
+  if (mimeType === OCTET_MIME_TYPE && attachment._mediaType?.includes("text")) {
+    return true;
+  }
+
+  return mimeType === TXT_MIME_TYPE;
 }

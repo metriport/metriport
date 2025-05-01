@@ -1,10 +1,18 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { buildConversionResultHandler } from "@metriport/core/command/conversion-result/conversion-result-factory";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import {
   FhirConverterParams,
   FhirExtension,
 } from "@metriport/core/domain/conversion/bundle-modifications/modifications";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
+import {
+  buildDocumentNameForCleanConversion,
+  buildDocumentNameForConversionResult,
+  buildDocumentNameForFromConverter,
+  buildDocumentNameForPreConversion,
+} from "@metriport/core/domain/conversion/filename";
 import {
   defaultS3RetriesConfig,
   storeHydratedConversionResult,
@@ -13,13 +21,6 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
-import {
-  buildDocumentNameForConversionResult,
-  buildDocumentNameForFromConverter,
-  buildDocumentNameForPreConversion,
-  buildDocumentNameForCleanConversion,
-} from "@metriport/core/domain/conversion/filename";
-import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
@@ -34,7 +35,6 @@ import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
-import { apiClient } from "./shared/oss-api";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -44,11 +44,16 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
-const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
+
+const conversionResultHandler = buildConversionResultHandler();
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
@@ -60,7 +65,6 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
-const ossApi = apiClient(apiUrl);
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 const HYDRATION_TIMEOUT_MS = 5_000;
@@ -139,7 +143,7 @@ export async function handler(event: SQSEvent) {
           log(
             `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
           );
-          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+          await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
         const { documentContents: payloadNoB64, b64Attachments } =
@@ -170,7 +174,7 @@ export async function handler(event: SQSEvent) {
 
         if (!payloadClean.trim().length) {
           log(`XML document is empty, skipping... Filename: ${s3FileName}`);
-          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+          await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
 
@@ -238,45 +242,43 @@ export async function handler(event: SQSEvent) {
         });
 
         let hydratedBundle = conversionResult;
-        // TODO: 2563 - Remove this after prod testing is done
-        if (await isHydrationEnabledForCx(cxId)) {
-          try {
-            const hydratedResult = await Promise.race<Bundle<Resource>>([
-              hydrate({
-                cxId,
-                patientId,
-                bundle: conversionResult,
-              }),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
-              ),
-            ]);
+        try {
+          const hydratedResult = await Promise.race<Bundle<Resource>>([
+            hydrate({
+              cxId,
+              patientId,
+              bundle: conversionResult,
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
+            ),
+          ]);
 
-            hydratedBundle = hydratedResult;
+          hydratedBundle = hydratedResult;
 
-            await storeHydratedConversionResult({
-              s3Utils,
-              bundle: hydratedBundle,
-              bucketName: conversionResultBucketName,
-              fileName: s3FileName,
+          await storeHydratedConversionResult({
+            s3Utils,
+            bundle: hydratedBundle,
+            bucketName: conversionResultBucketName,
+            fileName: s3FileName,
+            context: lambdaName,
+            lambdaParams,
+            log,
+          });
+        } catch (error) {
+          const msg = "Failed to hydrate the converted bundle. Continuing w/o hydration.";
+          log(`${msg}: ${errorToString(error)}`);
+          capture.message(msg, {
+            extra: {
+              error,
+              cxId,
+              patientId,
               context: lambdaName,
-              lambdaParams,
-              log,
-            });
-          } catch (error) {
-            const msg = "Failed to hydrate the converted bundle";
-            log(`${msg}: ${errorToString(error)}`);
-            capture.message(msg, {
-              extra: {
-                error,
-                cxId,
-                patientId,
-                context: lambdaName,
-                s3FileName,
-              },
-              level: "warning",
-            });
-          }
+              s3FileName,
+            },
+            level: "warning",
+          });
+          // Inentionally not rethrowing here, we don't want to break conversion b/c of a hydration failure
         }
 
         const normalizedBundle = await normalize({
@@ -319,7 +321,7 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMetrics(metrics);
       } catch (error) {
-        await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
         throw error;
       }
     }
@@ -464,8 +466,11 @@ async function sendConversionResult({
   );
 
   log(`Sending result info to the API`);
-  await ossApi.internal.notifyApi(
-    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
-    log
-  );
+  await conversionResultHandler.notifyApi({
+    cxId,
+    patientId,
+    jobId,
+    source: medicalDataSource,
+    status: "success",
+  });
 }

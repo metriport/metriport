@@ -1,7 +1,7 @@
 import { out } from "@metriport/core/util/log";
-import { errorToString, stringToBoolean } from "@metriport/shared";
+import { BadRequestError, errorToString, stringToBoolean } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
-import BadRequestError from "../errors/bad-request";
+import ForbiddenError from "../errors/forbidden";
 import { Config } from "../shared/config";
 import { capture } from "../shared/notifications";
 
@@ -180,8 +180,8 @@ export const getDateOrFail = (req: Request): string => {
 
 export function getAuthorizationToken(req: Request): string {
   const header = req.header("Authorization");
-  if (!header) throw new Error("Missing Authorization Header");
+  if (!header) throw new ForbiddenError();
   const token = header.replace("Bearer ", "");
-  if (token === "") throw new Error("Empty Authorization Header");
+  if (token === "") throw new ForbiddenError();
   return token;
 }

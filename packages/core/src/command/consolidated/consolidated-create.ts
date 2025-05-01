@@ -1,20 +1,27 @@
-import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, DocumentReference } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
+import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { executeAsynchronously, out } from "../../util";
+import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
+import { controlDuration } from "../../util/race-control";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 
+dayjs.extend(duration);
+
+const AI_BRIEF_TIMEOUT = dayjs.duration(2, "minutes");
 const s3Utils = new S3Utils(Config.getAWSRegion());
+const TIMED_OUT = Symbol("TIMED_OUT");
 
 export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
@@ -55,10 +62,11 @@ export async function createConsolidatedFromConversions({
   log(`Got ${conversions.length} resources from conversions`);
 
   const withDups = buildConsolidatedBundle();
-  withDups.entry = [...conversions, ...docRefs.map(buildBundleEntry), patientEntry];
+  const docRefsWithUpdatedMeta = updateMetaDataForDocRefs(docRefs);
+  withDups.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
   withDups.total = withDups.entry.length;
   log(
-    `Added ${docRefs.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
+    `Added ${docRefsWithUpdatedMeta.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
   );
 
   log(`Deduplicating consolidated bundle...`);
@@ -67,9 +75,19 @@ export async function createConsolidatedFromConversions({
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
-  if (isAiBriefFeatureFlagEnabled) {
-    const binaryBundleEntry = await generateAiBriefBundleEntry(deduped, cxId, patientId, log);
-    if (binaryBundleEntry) {
+  if (isAiBriefFeatureFlagEnabled && deduped.entry && deduped.entry.length > 0) {
+    const binaryBundleEntry = await Promise.race([
+      generateAiBriefBundleEntry(deduped, cxId, patientId, log),
+      controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
+    ]);
+
+    if (binaryBundleEntry === TIMED_OUT) {
+      log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
+      capture.message("AI Brief generation timed out", {
+        extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },
+        level: "warning",
+      });
+    } else if (binaryBundleEntry) {
       deduped.entry?.push(binaryBundleEntry);
     }
   }
@@ -180,4 +198,20 @@ export function merge(inputBundle: Bundle) {
       return destination;
     },
   };
+}
+
+function updateMetaDataForDocRefs(docRefs: DocumentReference[]): DocumentReference[] {
+  return docRefs.map(docRef => {
+    const contentWithTitle = docRef.content?.find(atch => atch.attachment?.title);
+    const sourceFile = contentWithTitle?.attachment?.title;
+    if (!sourceFile) return docRef;
+
+    return {
+      ...docRef,
+      meta: {
+        ...docRef.meta,
+        source: sourceFile,
+      },
+    };
+  });
 }

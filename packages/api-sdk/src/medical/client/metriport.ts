@@ -3,8 +3,8 @@ import { PaginatedResponse } from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
-  webhookRequestSchema,
   WebhookStatusResponse,
+  webhookRequestSchema,
 } from "@metriport/shared/medical";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import crypto from "crypto";
@@ -21,14 +21,14 @@ import { getETagHeader } from "../models/common/base-update";
 import { Demographics } from "../models/demographics";
 import {
   BulkGetDocumentUrlQuery,
-  bulkGetDocumentUrlQuerySchema,
-  documentListSchema,
   DocumentQuery,
-  documentQuerySchema,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
+  bulkGetDocumentUrlQuerySchema,
+  documentListSchema,
+  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -363,6 +363,24 @@ export class MetriportMedicalApi {
    */
   async getPatient(id: string): Promise<PatientDTO> {
     const resp = await this.api.get(`${PATIENT_URL}/${id}`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data as PatientDTO;
+  }
+
+  /**
+   * Returns a patient based on external ID.
+   *
+   * @param externalId The external ID of the patient to be returned.
+   * @param source The source of the external ID, if required.
+   * @return The patient.
+   */
+  async getPatientByExternalId(
+    externalId: string,
+    source?: string
+  ): Promise<PatientDTO | undefined> {
+    const resp = await this.api.get(`${PATIENT_URL}/external-id`, {
+      params: { externalId, source },
+    });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
   }
@@ -855,7 +873,7 @@ export class MetriportMedicalApi {
    * @param throwOnError Whether to throw an Error if the request body is not a valid webhook request.
    *        Optional, defaults to true.
    * @returns The webhook request - instance of WebhookRequest, or an instance of
-   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'true'.
+   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'false'.
    * @throws Error if the request body is not a valid webhook request and throwOnError is 'true'.
    *         Details can be obtained from the error object under the 'cause' property (instance
    *         of ZodError).

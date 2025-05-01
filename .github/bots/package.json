@@ -9,6 +9,6 @@
   "author": "metriport",
   "dependencies": {
     "@actions/github": "^6.0.0",
-    "axios": "^1.7.7"
+    "axios": "^1.8.2"
   }
 }

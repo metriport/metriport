@@ -46,7 +46,7 @@ export function makeSearchServiceQuery(): OpenSearchFileSearcher {
 
 export function makeSearchServiceRemover(): OpenSearchFileRemover {
   const region = Config.getAWSRegion();
-  const endpoint = Config.getSearchEndpoint();
+  const endpoint = "https://" + Config.getSearchEndpoint();
   const indexName = Config.getSearchIndexName();
   const username = Config.getSearchUsername();
   const password = Config.getSearchPassword();

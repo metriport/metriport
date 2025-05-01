@@ -1,5 +1,5 @@
-import { JwtTokenSource, JwtTokenData } from "../../domain/jwt-token";
-import { getJwtToken, findOrCreateJwtToken } from "../../command/jwt-token";
+import { findOrCreateJwtToken, getJwtToken } from "../../command/jwt-token";
+import { JwtTokenData, JwtTokenSource } from "../../domain/jwt-token";
 
 export async function checkJwtToken({
   token,

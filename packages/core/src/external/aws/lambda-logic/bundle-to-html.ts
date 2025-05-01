@@ -33,6 +33,7 @@ import {
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
+  getDeceasedStatus,
 } from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
@@ -851,7 +852,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
         ${
           notes.length > 0
             ? `<p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
-                "<br />"
+                "<br /><hr/>"
               )}</p>`
             : ""
         }
@@ -1930,16 +1931,14 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
             SNOMED_CODE,
           ]);
 
-          const deceasedFamilyMember = familyMemberHistory.condition?.find(condition => {
-            return condition.contributedToDeath === true;
-          });
+          const deceasedStatus = getDeceasedStatus(familyMemberHistory);
 
           return `
             <tr>
               <td>${getValidCode(familyMemberHistory.relationship?.coding)[0]?.display ?? ""}</td>
               <td>${renderAdministrativeGender(familyMemberHistory) ?? ""}</td>
               <td>${renderFamilyHistoryConditions(familyMemberHistory)?.join(", ") ?? ""}</td>
-              <td>${deceasedFamilyMember ? "yes" : "no"}</td>
+              <td>${deceasedStatus}</td>
               <td>${code ?? ""}</td>
             </tr>
           `;

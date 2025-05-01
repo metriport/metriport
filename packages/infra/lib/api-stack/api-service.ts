@@ -26,6 +26,7 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
@@ -42,6 +43,8 @@ type EnvSpecificSettings = {
   desiredTaskCount: number;
   maxTaskCount: number;
   memoryLimitMiB: number;
+  maxHealthyPercent: number;
+  minHealthyPercent: number;
 };
 type Settings = EnvSpecificSettings & {
   loadBalancerIdleTimeout: Duration;
@@ -51,9 +54,11 @@ type Settings = EnvSpecificSettings & {
 function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
-      desiredTaskCount: 6,
-      maxTaskCount: 40,
+      desiredTaskCount: 12,
+      maxTaskCount: 20,
       memoryLimitMiB: 4096,
+      maxHealthyPercent: 160,
+      minHealthyPercent: 70,
     };
   }
   if (isSandbox(config)) {
@@ -61,12 +66,16 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
       desiredTaskCount: 2,
       maxTaskCount: 10,
       memoryLimitMiB: 2048,
+      maxHealthyPercent: 200,
+      minHealthyPercent: 50,
     };
   }
   return {
     desiredTaskCount: 1,
     maxTaskCount: 5,
     memoryLimitMiB: 2048,
+    maxHealthyPercent: 200,
+    minHealthyPercent: 50,
   };
 }
 function getSettings(config: EnvConfig): Settings {
@@ -95,14 +104,20 @@ export function createAPIService({
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
-  patientImportLambda,
+  patientImportParseLambda,
+  patientImportResultLambda,
   patientImportBucket,
+  ehrSyncPatientQueue,
+  elationLinkPatientQueue,
+  ehrStartResourceDiffBundlesQueue,
+  ehrRefreshEhrBundlesQueue,
+  ehrBundleBucket,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
   fhirToBundleLambda,
-  fhirToMedicalRecordLambda,
+  fhirToBundleCountLambda,
   fhirToMedicalRecordLambda2,
   fhirToCdaConverterLambda,
   rateLimitTable,
@@ -110,7 +125,7 @@ export function createAPIService({
   searchEndpoint,
   searchAuth,
   searchIndexName,
-  appConfigEnvVars,
+  featureFlagsTable,
   cookieStore,
 }: {
   stack: Construct;
@@ -130,14 +145,20 @@ export function createAPIService({
   outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
-  patientImportLambda: ILambda;
+  patientImportParseLambda: ILambda;
+  patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
+  ehrSyncPatientQueue: IQueue;
+  elationLinkPatientQueue: IQueue;
+  ehrStartResourceDiffBundlesQueue: IQueue;
+  ehrRefreshEhrBundlesQueue: IQueue;
+  ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
-  fhirToMedicalRecordLambda: ILambda | undefined;
+  fhirToBundleCountLambda: ILambda;
   fhirToMedicalRecordLambda2: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
@@ -145,12 +166,7 @@ export function createAPIService({
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
-  appConfigEnvVars: {
-    appId: string;
-    configId: string;
-    envId: string;
-    deploymentStrategyId: string;
-  };
+  featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
 }): {
   cluster: ecs.Cluster;
@@ -186,8 +202,15 @@ export function createAPIService({
   const listenerPort = 80;
   const containerPort = 8080;
   const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
-  const { cpu, memoryLimitMiB, desiredTaskCount, maxTaskCount, loadBalancerIdleTimeout } =
-    getSettings(props.config);
+  const {
+    cpu,
+    memoryLimitMiB,
+    desiredTaskCount,
+    maxTaskCount,
+    loadBalancerIdleTimeout,
+    maxHealthyPercent,
+    minHealthyPercent,
+  } = getSettings(props.config);
   const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
     "APIFargateServiceAlb",
@@ -257,11 +280,15 @@ export function createAPIService({
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
-          PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
+          PATIENT_IMPORT_PARSE_LAMBDA_NAME: patientImportParseLambda.functionName,
+          PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
+          EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
+          ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
+          EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL: ehrStartResourceDiffBundlesQueue.queueUrl,
+          EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
+          EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
-          ...(fhirToMedicalRecordLambda && {
-            FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
-          }),
+          FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME: fhirToBundleCountLambda.functionName,
           ...(fhirToMedicalRecordLambda2 && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME: fhirToMedicalRecordLambda2.functionName,
           }),
@@ -293,11 +320,7 @@ export function createAPIService({
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
-          // app config
-          APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-          APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-          APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
-          APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
+          FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -313,6 +336,7 @@ export function createAPIService({
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
+            EHR_DASH_URL: props.config.ehrDashUrl,
           }),
         },
       },
@@ -321,6 +345,8 @@ export function createAPIService({
       listenerPort,
       publicLoadBalancer: false,
       idleTimeout: loadBalancerIdleTimeout,
+      maxHealthyPercent,
+      minHealthyPercent,
     }
   );
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
@@ -379,27 +405,27 @@ export function createAPIService({
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  patientImportLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  patientImportParseLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  patientImportResultLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-
+  fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
 
-  if (fhirToMedicalRecordLambda) {
-    fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  }
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
   }
@@ -409,6 +435,27 @@ export function createAPIService({
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
   }
 
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrSyncPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: elationLinkPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrStartResourceDiffBundlesQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrRefreshEhrBundlesQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+
   // Allow access to search services/infra
   provideAccessToQueue({
     accessType: "send",
@@ -417,19 +464,11 @@ export function createAPIService({
   });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
 
-  // Setting permissions for AppConfig
   fargateService.taskDefinition.taskRole.attachInlinePolicy(
-    new iam.Policy(stack, "OSSAPIPermissionsForAppConfig", {
+    new iam.Policy(stack, "OssApiSpecialPermissions", {
       statements: [
         new iam.PolicyStatement({
-          actions: [
-            "appconfig:StartConfigurationSession",
-            "appconfig:GetLatestConfiguration",
-            "appconfig:GetConfiguration",
-            "appconfig:CreateHostedConfigurationVersion",
-            "appconfig:StartDeployment",
-            "apigateway:GET",
-          ],
+          actions: ["apigateway:GET"],
           resources: ["*"],
         }),
         new iam.PolicyStatement({
@@ -437,6 +476,8 @@ export function createAPIService({
           resources: [`arn:aws:geo:*`],
           effect: iam.Effect.ALLOW,
         }),
+        // TODO: 2711 - Remove when data pipeline webhook is migrated
+        defaultBedrockPolicyStatement,
       ],
     })
   );
@@ -484,12 +525,12 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 80,
+    targetUtilizationPercent: 10,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
-    targetUtilizationPercent: 80,
+    targetUtilizationPercent: 20,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });

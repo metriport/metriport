@@ -138,7 +138,7 @@ async function getDrUrl(id: string): Promise<string> {
   const sequelize = initDbPool(sqlDBCreds);
   const query = `
     SELECT cde.url_dr
-    FROM cq_directory_entry cde
+    FROM cq_directory_entry_view cde
     WHERE cde.id = :id;
   `;
   try {

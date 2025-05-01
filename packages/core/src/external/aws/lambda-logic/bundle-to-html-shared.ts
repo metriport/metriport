@@ -1,4 +1,4 @@
-import { DiagnosticReport } from "@medplum/fhirtypes";
+import { DiagnosticReport, FamilyMemberHistory } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { Brief } from "../../../command/ai-brief/brief";
 
@@ -66,8 +66,11 @@ export function buildEncounterSections(diagnosticReports: DiagnosticReport[]): E
           const reportInsideDate = formatDateForDisplay(reportInsideTime);
           const isDuplicateDate = reportInsideDate === reportDate;
 
-          const hasSamePresentedForm = report.presentedForm?.some(pf =>
-            reportInside.presentedForm?.some(ripf => pf.data === ripf.data)
+          const hasSamePresentedForm = report.presentedForm?.some(reportForm =>
+            reportInside.presentedForm?.some(
+              insideForm =>
+                reportForm.data && insideForm.data && reportForm.data === insideForm.data
+            )
           );
 
           return isDuplicateDate && hasSamePresentedForm;
@@ -97,7 +100,6 @@ export function createBrief(brief?: Brief): string {
   const { link, content } = brief;
   const briefContents = `
   <div class="brief-section-content">
-    <div class="beta-flag">BETA</div>
     <table><tbody><tr><td>${content.replace(/\n/g, "<br/>")}</td></tr></tbody></table>
     <div class="brief-warning">
       <div class="brief-warning-contents">
@@ -136,3 +138,24 @@ export function createSection(title: string, tableContents: string, id?: string)
     </div>
   `;
 }
+
+function asYesNo(value: boolean): "yes" | "no" {
+  return value ? ("yes" as const) : ("no" as const);
+}
+
+export const getDeceasedStatus = (familyMemberHistory: FamilyMemberHistory): "yes" | "no" | "" => {
+  const deceasedBoolean = familyMemberHistory.deceasedBoolean;
+  if (deceasedBoolean !== undefined) {
+    return asYesNo(deceasedBoolean);
+  }
+
+  const conditionContributedToDeath = familyMemberHistory.condition?.find(
+    condition => condition.contributedToDeath
+  );
+
+  if (conditionContributedToDeath?.contributedToDeath !== undefined) {
+    return asYesNo(conditionContributedToDeath.contributedToDeath);
+  }
+
+  return "";
+};

@@ -14,6 +14,7 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   groups?: Record<string, string | number>; // Mapping of group type to group id
   sendFeatureFlags?: boolean;
   timestamp?: Date;
+  platform?: string;
 }
 
 const defaultPostHogApiKey = Config.getPostHogApiKey();
@@ -29,7 +30,7 @@ export function analytics(params: EventMessageV1, postApiKey?: string): PostHog 
   params.properties = {
     ...(params.properties ? { ...params.properties } : undefined),
     environment: Config.getEnvType(),
-    platform: "oss-api",
+    platform: params.platform ?? "oss-api",
   };
   params.groups = { [groupType]: params.distinctId };
   posthog.capture(params);
@@ -63,6 +64,7 @@ export enum EventTypes {
   fhirDeduplication = "fhirDeduplication",
   fhirNormalization = "fhirNormalization",
   fhirHydration = "fhirHydration",
+  hl7NotificationReceived = "hl7NotificationReceived",
   consolidatedQuery = "consolidatedQuery",
   inboundPatientDiscovery = "inbound.patientDiscovery",
   inboundDocumentQuery = "inbound.documentQuery",

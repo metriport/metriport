@@ -2,6 +2,7 @@ import { Duration } from "aws-cdk-lib";
 import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
 import { EnvConfigNonSandbox } from "./env-config";
+import { vCPU } from "../lib/shared/fargate";
 
 export const config: EnvConfigNonSandbox = {
   stackName: "MetriportInfraStack",
@@ -42,6 +43,10 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   dashUrl: "https://url-of-your-dashboard.com",
+  ehrDashUrl: "https://url-of-your-ehr-dashboard.com",
+  analyticsSecretNames: {
+    POST_HOG_API_KEY_SECRET: "your-posthog-api-key-secret",
+  },
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
@@ -144,12 +149,51 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   generalBucketName: "test-bucket",
+  hl7Notification: {
+    deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
+    incomingMessageBucketName: "test-incoming-message-bucket-name",
+    outgoingMessageBucketName: "test-outgoing-message-bucket-name",
+    notificationWebhookSenderQueue: {
+      arn: "arn:aws:sqs:us-west-1:000000000000:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      url: "https://sqs.us-west-1.amazonaws.com/000000000000/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    },
+    secrets: {
+      HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
+    },
+    vpnConfigs: [
+      {
+        partnerName: "SampleHIE",
+        partnerGatewayPublicIp: "200.54.1.1",
+        partnerInternalCidrBlock: "10.10.0.0/16",
+      },
+    ],
+    mllpServer: {
+      fargateCpu: 1 * vCPU,
+      fargateMemoryLimitMiB: 2048,
+      fargateTaskCountMin: 2,
+      fargateTaskCountMax: 4,
+    },
+    hl7v2RosterUploadLambda: {
+      bucketName: "your-roster-bucket",
+    },
+  },
+  acmCertMonitor: {
+    scheduleExpressions: ["cw-schedule-expression"],
+    heartbeatUrl: "url-to-heartbeat-service",
+  },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  ehrBundleBucketName: "test-ehr-bundle-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
+  slack: {
+    SLACK_ALERT_URL: "url-to-slack-alert",
+    SLACK_NOTIFICATION_URL: "url-to-slack-notification",
+    workspaceId: "workspace-id",
+    alertsChannelId: "alerts-channel-id",
+  },
 };
 export default config;

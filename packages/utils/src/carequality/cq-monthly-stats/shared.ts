@@ -1,22 +1,28 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { Organization as FhirOrganization } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import {
+  dbCredsSchema,
+  dbReadReplicaEndpointSchema,
+  initDbPool,
+} from "@metriport/core/util/sequelize";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
-import { TableResults } from "./athena-shared";
-import { QueryTypes } from "sequelize";
 import { mean } from "lodash";
+import { PoolOptions, QueryTypes } from "sequelize";
+import { TableResults } from "./athena-shared";
 
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
 
 export const readOnlyDBPool = initReadonlyDbPool(sqlDBCreds, sqlReadReplicaEndpoint);
 
+// TODO: Build something that errors in compile time if it mismatches the original type
+// in @metriport/api/src/external/carequality/cq-directory.ts
 export type CQDirectoryEntryData = {
   id: string;
   name?: string;
@@ -26,11 +32,10 @@ export type CQDirectoryEntryData = {
   lat?: number;
   lon?: number;
   state?: string;
-  data?: Organization;
+  data?: FhirOrganization;
   point?: string;
   root_organization?: string;
   managing_organization_id?: string;
-  gateway: boolean;
   active: boolean;
   last_updated_at_cq: string;
 };
@@ -344,4 +349,22 @@ export function findExistingStatByImplementer(
   monthlyImplementerStats: MonthlyImplementerStats[]
 ): MonthlyImplementerStats | undefined {
   return monthlyImplementerStats.find(stat => stat.implementerId === implementerId);
+}
+
+function initReadonlyDbPool(
+  dbCreds: string,
+  dbReadReplicaEndpoint: string,
+  poolOptions?: PoolOptions,
+  logging?: boolean
+) {
+  const dbCredsRaw = JSON.parse(dbCreds);
+  const parsedDbCreds = dbCredsSchema.parse(dbCredsRaw);
+
+  const dbReadReplicaEndpointRaw = JSON.parse(dbReadReplicaEndpoint);
+  const parsedDbReadReplicaEndpoint = dbReadReplicaEndpointSchema.parse(dbReadReplicaEndpointRaw);
+
+  parsedDbCreds.host = parsedDbReadReplicaEndpoint.host;
+  parsedDbCreds.port = parsedDbReadReplicaEndpoint.port;
+
+  return initDbPool(JSON.stringify(parsedDbCreds), poolOptions, logging);
 }

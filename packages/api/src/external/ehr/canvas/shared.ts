@@ -1,9 +1,11 @@
-import CanvasApi, { CanvasEnv } from "@metriport/core/external/canvas/index";
+import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import { cxClientKeyAndSecretMapSecretSchema, MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrPerPracticeParams, EhrEnvAndClientCredentials } from "../shared";
+import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 
 export const canvasClientJwtTokenSource = "canvas-client";
+export const canvasWebhookJwtTokenSource = "canvas-webhook";
 
 export function getCanvasEnv({
   cxId,
@@ -42,4 +44,8 @@ export async function createCanvasClient(
     getEnv: { params: perPracticeParams, getEnv: getCanvasEnv },
     getClient: CanvasApi.create,
   });
+}
+
+export function getCreateCanvasResourceDiffBundlesJobType(direction: ResourceDiffDirection) {
+  return `canvas-${direction}-resource-diff-bundles`;
 }

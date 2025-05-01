@@ -1,6 +1,22 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { NotFoundError } from "@metriport/shared";
-import { CxMapping, CxMappingPerSource, CxMappingSource } from "../../domain/cx-mapping";
+import { MetriportError, NotFoundError } from "@metriport/shared";
+import {
+  removeClientSource,
+  removeWebhookSource,
+} from "@metriport/shared/interface/external/ehr/source";
+import {
+  CxMapping,
+  CxMappingPerSource,
+  CxMappingSecondaryMappings,
+  CxMappingSource,
+  isCxMappingSource,
+  secondaryMappingsSchemaMap,
+} from "../../domain/cx-mapping";
+import {
+  isEhrClientJwtTokenSource,
+  isEhrDashJwtTokenSource,
+  isEhrWebhookJwtTokenSource,
+} from "../../external/ehr/shared";
 import { CxMappingModel } from "../../models/cx-mapping";
 
 export type CxMappingParams = CxMappingPerSource;
@@ -30,9 +46,7 @@ export async function getCxMapping({
   externalId,
   source,
 }: CxMappingLookUpParams): Promise<CxMapping | undefined> {
-  const existing = await CxMappingModel.findOne({
-    where: { externalId, source },
-  });
+  const existing = await getCxMappingModel({ externalId, source });
   if (!existing) return undefined;
   return existing.dataValues;
 }
@@ -41,7 +55,29 @@ export async function getCxMappingOrFail({
   externalId,
   source,
 }: CxMappingLookUpParams): Promise<CxMapping> {
-  const mapping = await getCxMapping({
+  const mapping = await getCxMappingModelOrFail({
+    externalId,
+    source,
+  });
+  return mapping.dataValues;
+}
+
+export async function getCxMappingModel({
+  externalId,
+  source,
+}: CxMappingLookUpParams): Promise<CxMappingModel | undefined> {
+  const existing = await CxMappingModel.findOne({
+    where: { externalId, source },
+  });
+  if (!existing) return undefined;
+  return existing;
+}
+
+export async function getCxMappingModelOrFail({
+  externalId,
+  source,
+}: CxMappingLookUpParams): Promise<CxMappingModel> {
+  const mapping = await getCxMappingModel({
     externalId,
     source,
   });
@@ -98,7 +134,7 @@ async function getCxMappingModelByIdOrFail({
   return mapping;
 }
 
-export async function setExternalIdOnCxMapping({
+export async function setExternalIdOnCxMappingById({
   cxId,
   id,
   externalId,
@@ -108,7 +144,45 @@ export async function setExternalIdOnCxMapping({
   return updated.dataValues;
 }
 
+export async function setSecondaryMappingsOnCxMappingById({
+  cxId,
+  id,
+  secondaryMappings,
+}: CxMappingLookupByIdParams & {
+  secondaryMappings: CxMappingSecondaryMappings;
+}): Promise<CxMapping> {
+  const existing = await getCxMappingModelByIdOrFail({ cxId, id });
+  const schema = secondaryMappingsSchemaMap[existing.source];
+  if (!schema) {
+    throw new MetriportError("Schema to validate new secondary mappings not found", undefined, {
+      source: existing.source,
+    });
+  }
+  const validatedSecondaryMappings = schema.parse(secondaryMappings);
+  const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
+  return updated.dataValues;
+}
+
 export async function deleteCxMapping({ cxId, id }: CxMappingLookupByIdParams): Promise<void> {
   const existing = await getCxMappingModelByIdOrFail({ cxId, id });
   await existing.destroy();
+}
+
+export function getCxMappingSourceFromJwtTokenSource(source: string): CxMappingSource {
+  const additionalDetails = { source };
+  if (isEhrDashJwtTokenSource(source)) {
+    if (isCxMappingSource(source)) return source;
+    throw new MetriportError("Invalid dash source", undefined, additionalDetails);
+  }
+  if (isEhrClientJwtTokenSource(source)) {
+    const sourceWithoutClient = removeClientSource(source);
+    if (isCxMappingSource(sourceWithoutClient)) return sourceWithoutClient;
+    throw new MetriportError("Invalid client source", undefined, additionalDetails);
+  }
+  if (isEhrWebhookJwtTokenSource(source)) {
+    const sourceWithoutWebhook = removeWebhookSource(source);
+    if (isCxMappingSource(sourceWithoutWebhook)) return sourceWithoutWebhook;
+    throw new MetriportError("Invalid webhook source", undefined, additionalDetails);
+  }
+  throw new MetriportError("Invalid source", undefined, additionalDetails);
 }

@@ -3,7 +3,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/address";
 import { Config } from "../../../shared/config";
 
-const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.9;
+const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.85;
 
 type AddressBelowThreshold = {
   relevance: number;

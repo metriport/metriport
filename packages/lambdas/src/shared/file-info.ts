@@ -4,6 +4,7 @@ import { getEnvOrFail } from "./env";
 const region = getEnvOrFail("AWS_REGION");
 const s3client = makeS3Client(region);
 
+/** @deprecated Use { S3Utils } from "@metriport/core/external/aws/s3" */
 export async function getFileInfoFromS3(
   key: string,
   bucket: string
