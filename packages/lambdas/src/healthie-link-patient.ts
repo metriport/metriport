@@ -1,5 +1,5 @@
-import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient";
-import { ElationLinkPatientLocal } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient-local";
+import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/healthie/link-patient/healthie-link-patient";
+import { HealthieLinkPatientLocal } from "@metriport/core/external/ehr/healthie/link-patient/healthie-link-patient-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -32,8 +32,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const log = prefixedLog(`cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-  const elationLinkPatientHandler = new ElationLinkPatientLocal(waitTimeInMillis);
-  await elationLinkPatientHandler.processLinkPatient(parsedBody);
+  const healthieLinkPatientHandler = new HealthieLinkPatientLocal(waitTimeInMillis);
+  await healthieLinkPatientHandler.processLinkPatient(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
