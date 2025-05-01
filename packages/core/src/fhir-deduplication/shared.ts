@@ -142,9 +142,12 @@ export function deepMerge(target: any, source: any, isExtensionIncluded: boolean
  */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mutativeMergeArrays(targetArray: any[], sourceArray: any[]) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const preprocessedTargetArray = targetArray.map(v => JSON.stringify(v));
   for (const sourceItem of sourceArray) {
-    const duplicate = targetArray.find(
-      targetItem => JSON.stringify(targetItem) === JSON.stringify(sourceItem)
+    const preprocessedSourceItem = JSON.stringify(sourceItem);
+    const duplicate = preprocessedTargetArray.find(
+      targetItem => targetItem === preprocessedSourceItem
     );
 
     if (!duplicate) {
