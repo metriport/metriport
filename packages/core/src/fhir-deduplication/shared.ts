@@ -54,7 +54,7 @@ export function combineTwoResources<T extends Resource>(
   r2: T,
   isExtensionIncluded = true
 ): T {
-  const combined = deepMerge({ ...r1 }, r2, isExtensionIncluded);
+  const combined = deepMerge(r1, r2, isExtensionIncluded);
   const extensionRef = createExtensionRelatedArtifact(r2.resourceType, r2.id);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
@@ -73,19 +73,24 @@ export function combineTwoResources<T extends Resource>(
 // TODO: Might be a good idea to include a check to see if all resources refer to the same patient
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
 
+/**
+ * Mutatively merge the contents of source into target
+ * @param target the object that will be modified
+ * @param source the object that is the source of data entering target
+ * @param isExtensionIncluded whether to include the extension field when merging resources
+ */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
-  const combined = cloneDeep(target);
+export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded: boolean) {
   for (const key of Object.keys(source)) {
     if (key === "extension" && !isExtensionIncluded) continue;
     if (conditionKeysToIgnore.includes(key)) continue;
 
-    if (Array.isArray(source[key]) && Array.isArray(combined[key])) {
+    if (Array.isArray(source[key]) && Array.isArray(target[key])) {
       // Combine arrays and remove duplicates based on unique properties
-      combined[key] = mergeArrays(combined[key], source[key]);
-    } else if (source[key] instanceof Object && key in combined) {
+      mutativeMergeArrays(target[key], source[key]);
+    } else if (source[key] instanceof Object && key in target) {
       // Recursively merge objects
-      combined[key] = deepMerge(combined[key], source[key], isExtensionIncluded);
+      mutativeDeepMerge(target[key], source[key], isExtensionIncluded);
     } else {
       // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
@@ -94,27 +99,38 @@ export function deepMerge(target: any, source: any, isExtensionIncluded: boolean
         unknownValues.some(unk => source[key].toLowerCase().includes(unk))
       )
         continue;
-      combined[key] = source[key];
+      target[key] = source[key];
     }
   }
+  return target;
+}
+
+/**
+ * Merge the two objects, returning a new object
+ */
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
+  const combined = cloneDeep(target);
+  mutativeDeepMerge(combined, source, isExtensionIncluded);
   return combined;
 }
 
+/**
+ * Mutatively merge the contents of sourceArray into targetArray
+ * @param targetArray the array to that will be modified
+ * @param sourceArray the array that is the source of data entering targetArray
+ */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function mergeArrays(targetArray: any[], sourceArray: any[]): any[] {
-  const combinedArray = cloneDeep(targetArray);
-
+export function mutativeMergeArrays(targetArray: any[], sourceArray: any[]) {
   for (const sourceItem of sourceArray) {
-    const duplicate = combinedArray.find(
+    const duplicate = targetArray.find(
       targetItem => JSON.stringify(targetItem) === JSON.stringify(sourceItem)
     );
 
     if (!duplicate) {
-      combinedArray.push(sourceItem);
+      targetArray.push(sourceItem);
     }
   }
-
-  return combinedArray;
 }
 
 export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string, T>[] }): T[] {
