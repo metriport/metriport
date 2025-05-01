@@ -68,7 +68,11 @@ router.post(
  * POST /internal/ehr/athenahealth/patient
  *
  * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of AthenaHealth Patient.
+ * @param req.query.cxId The ID of Metriport Customer.
+ * @param req.query.patientId The ID of AthenaHealth Patient.
+ * @param req.query.practiceId The ID of AthenaHealth Practice.
+ * @param req.query.departmentId The ID of AthenaHealth Department.
+ * @param req.query.triggerDq Whether to trigger a data quality check.
  * @returns 200 OK
  */
 router.post(

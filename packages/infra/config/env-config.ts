@@ -257,6 +257,12 @@ type EnvConfigBase = {
         EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP: string;
       };
     };
+    healthie: {
+      env: string;
+      secrets: {
+        EHR_HEALTHIE_API_KEY_MAP: string;
+      };
+    };
   };
 };
 

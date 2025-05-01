@@ -31,6 +31,9 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.ehrIntegration?.canvas.secrets
       ? buildSecrets(scope, config.ehrIntegration.canvas.secrets)
       : undefined),
+    ...(config.ehrIntegration?.healthie.secrets
+      ? buildSecrets(scope, config.ehrIntegration.healthie.secrets)
+      : undefined),
   };
   return secrets;
 }

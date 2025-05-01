@@ -96,6 +96,7 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
       }
     );
     const total = computeResourceDiffParamsWithExistingResources.length;
+    if (total === 0) return;
     await updateJobTotal({ cxId, jobId, total });
     await this.next.computeResourceDiffBundlesMetriportOnly(
       computeResourceDiffParamsWithExistingResources
