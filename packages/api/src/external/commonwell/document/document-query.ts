@@ -234,7 +234,23 @@ export async function queryAndProcessDocuments({
       ignoreDocRefOnFHIRServer,
       ignoreFhirConversionAndUpsert,
       requestId,
-      startedAt,
+    });
+
+    const duration = elapsedTimeFromNow(startedAt);
+    const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentQuery,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.COMMONWELL,
+        duration,
+        documentCount: cwDocuments.length,
+        ...contentTypeCounts,
+      },
     });
 
     log(`Finished processing ${fhirDocRefs.length} documents.`);
@@ -475,7 +491,6 @@ async function downloadDocsAndUpsertFHIR({
   ignoreDocRefOnFHIRServer = false,
   ignoreFhirConversionAndUpsert = false,
   requestId,
-  startedAt,
 }: {
   patient: Patient;
   facilityId?: string;
@@ -484,7 +499,6 @@ async function downloadDocsAndUpsertFHIR({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-  startedAt: Date;
 }): Promise<DocumentReference[]> {
   const { log } = out(
     `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
@@ -545,24 +559,6 @@ async function downloadDocsAndUpsertFHIR({
     isConvertible(doc.content?.mimeType)
   ).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
-
-  const contentTypes = documents.map(getContentTypeOrUnknown);
-  const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
-
-  analytics({
-    distinctId: cxId,
-    event: EventTypes.documentQuery,
-    properties: {
-      requestId,
-      patientId: patient.id,
-      hie: MedicalDataSource.COMMONWELL,
-      docsToDownloadCount: docsToDownload.length,
-      convertibleCount: convertibleDocCount,
-      duration: elapsedTimeFromNow(startedAt),
-      documentCount: documents.length,
-      ...contentTypeCounts,
-    },
-  });
 
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
