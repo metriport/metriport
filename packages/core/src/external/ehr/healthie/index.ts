@@ -199,7 +199,7 @@ class HealthieApi {
     const patientUpdateQuickNotesGraphql = await this.makeRequest<PatientUpdateQuickNotesGraphql>({
       cxId,
       patientId: patientId.toString(),
-      s3Path: "update-patient-quick-notes",
+      s3Path: "patient-update-quick-notes",
       operationName,
       query,
       variables,
