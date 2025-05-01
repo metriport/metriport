@@ -70,6 +70,27 @@ export function combineTwoResources<T extends Resource>(
   return combined;
 }
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mergeIntoTargetResource<T extends Resource & { extension?: any[] }>(
+  target: T,
+  source: T,
+  isExtensionIncluded = true
+) {
+  mutativeDeepMerge(target, source, isExtensionIncluded);
+  const extensionRef = createExtensionRelatedArtifact(source.resourceType, source.id);
+
+  // This part combines resources together and adds the ID references of the duplicates into the master resource
+  // regardless of whether new information was found
+
+  if (!isExtensionIncluded) {
+    delete target.extension;
+  } else if ("extension" in target) {
+    target.extension = [...target.extension, extensionRef];
+  } else {
+    target.extension = [extensionRef];
+  }
+}
+
 // TODO: Might be a good idea to include a check to see if all resources refer to the same patient
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
 
@@ -92,7 +113,6 @@ export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded:
       // Recursively merge objects
       mutativeDeepMerge(target[key], source[key], isExtensionIncluded);
     } else {
-      // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
       if (
         typeof source[key] === "string" &&
@@ -149,27 +169,28 @@ export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string
 export function deduplicateWithinMap<T extends Resource>(
   dedupedResourcesMap: Map<string, T>,
   dedupKey: string,
-  targetResource: T,
+  sourceResource: T,
   refReplacementMap: Map<string, string>,
   isExtensionIncluded = true,
   customMergeLogic?: ApplySpecialModificationsCallback<T> | undefined
 ): void {
-  const existingResource = dedupedResourcesMap.get(dedupKey);
+  const targetResource = dedupedResourcesMap.get(dedupKey);
   // if its a duplicate, combine the resources
-  if (existingResource?.id) {
-    const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
-    let merged = combineTwoResources(existingResource, targetResource, isExtensionIncluded);
+  if (targetResource?.id) {
+    const masterRef = `${targetResource.resourceType}/${targetResource.id}`;
+    mergeIntoTargetResource(targetResource, sourceResource, isExtensionIncluded);
+    let merged = targetResource;
     if (customMergeLogic) {
-      merged = customMergeLogic(merged, existingResource, targetResource);
+      merged = customMergeLogic(merged, targetResource, sourceResource);
     }
     dedupedResourcesMap.set(dedupKey, merged);
 
-    if (targetResource.id) {
-      const consumedRef = `${targetResource.resourceType}/${targetResource.id}`;
+    if (sourceResource.id) {
+      const consumedRef = `${sourceResource.resourceType}/${sourceResource.id}`;
       refReplacementMap.set(consumedRef, masterRef);
     }
   } else {
-    dedupedResourcesMap.set(dedupKey, targetResource);
+    dedupedResourcesMap.set(dedupKey, sourceResource);
   }
 }
 
