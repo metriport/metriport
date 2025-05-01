@@ -57,8 +57,8 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
       desiredTaskCount: 12,
       maxTaskCount: 20,
       memoryLimitMiB: 4096,
-      maxHealthyPercent: 120,
-      minHealthyPercent: 80,
+      maxHealthyPercent: 160,
+      minHealthyPercent: 70,
     };
   }
   if (isSandbox(config)) {
@@ -525,12 +525,12 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 60,
+    targetUtilizationPercent: 10,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
-    targetUtilizationPercent: 80,
+    targetUtilizationPercent: 20,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
