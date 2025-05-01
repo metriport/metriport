@@ -33,11 +33,11 @@ function settings(): {
     name: "EhrSyncPatient",
     entry: "ehr-sync-patient",
     lambda: {
-      memory: 1024,
+      memory: 512,
       timeout: syncPatientLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      alarmMaxAgeOfOldestMessage: Duration.hours(6),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(syncPatientLambdaTimeout.toSeconds() * 2 + 1),
@@ -54,11 +54,11 @@ function settings(): {
     name: "EhrElationLinkPatient",
     entry: "elation-link-patient",
     lambda: {
-      memory: 1024,
+      memory: 512,
       timeout: elationLinkPatientLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      alarmMaxAgeOfOldestMessage: Duration.hours(6),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(elationLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
@@ -75,11 +75,11 @@ function settings(): {
     name: "EhrHealthieLinkPatient",
     entry: "healthie-link-patient",
     lambda: {
-      memory: 1024,
+      memory: 512,
       timeout: healthieLinkPatientLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      alarmMaxAgeOfOldestMessage: Duration.hours(6),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(healthieLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
@@ -91,7 +91,9 @@ function settings(): {
     },
     waitTime: waitTimeHealthieLinkPatient,
   };
-  const startResourceDiffBundlesLambdaTimeout = waitTimeStartResourceDiff.plus(Duration.minutes(5));
+  const startResourceDiffBundlesLambdaTimeout = waitTimeStartResourceDiff.plus(
+    Duration.minutes(10)
+  );
   const startResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrStartResourceDiffBundles",
     entry: "ehr-start-resource-diff-bundles",
@@ -115,7 +117,7 @@ function settings(): {
     waitTime: waitTimeStartResourceDiff,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(5);
+  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(10);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiffBundles",
     entry: "ehr-compute-resource-diff-bundles",
@@ -139,7 +141,7 @@ function settings(): {
     },
     waitTime: waitTimeComputeResourceDiff,
   };
-  const refreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(5));
+  const refreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(10));
   const refreshEhrBundles: QueueAndLambdaSettings = {
     name: "EhrRefreshEhrBundles",
     entry: "ehr-refresh-ehr-bundles",
