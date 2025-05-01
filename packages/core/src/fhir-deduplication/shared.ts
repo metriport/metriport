@@ -172,28 +172,28 @@ export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string
 export function deduplicateWithinMap<T extends Resource>(
   dedupedResourcesMap: Map<string, T>,
   dedupKey: string,
-  sourceResource: T,
+  targetResource: T,
   refReplacementMap: Map<string, string>,
   isExtensionIncluded = true,
   customMergeLogic?: ApplySpecialModificationsCallback<T> | undefined
 ): void {
-  const targetResource = dedupedResourcesMap.get(dedupKey);
+  const existingResource = dedupedResourcesMap.get(dedupKey);
   // if its a duplicate, combine the resources
-  if (targetResource?.id) {
-    const masterRef = `${targetResource.resourceType}/${targetResource.id}`;
-    mergeIntoTargetResource(targetResource, sourceResource, isExtensionIncluded);
-    let merged = targetResource;
+  if (existingResource?.id) {
+    const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
+    mergeIntoTargetResource(existingResource, targetResource, isExtensionIncluded);
+    let merged = existingResource;
     if (customMergeLogic) {
-      merged = customMergeLogic(merged, targetResource, sourceResource);
+      merged = customMergeLogic(merged, existingResource, targetResource);
     }
     dedupedResourcesMap.set(dedupKey, merged);
 
-    if (sourceResource.id) {
-      const consumedRef = `${sourceResource.resourceType}/${sourceResource.id}`;
+    if (targetResource.id) {
+      const consumedRef = `${targetResource.resourceType}/${targetResource.id}`;
       refReplacementMap.set(consumedRef, masterRef);
     }
   } else {
-    dedupedResourcesMap.set(dedupKey, sourceResource);
+    dedupedResourcesMap.set(dedupKey, targetResource);
   }
 }
 
