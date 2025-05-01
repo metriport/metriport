@@ -57,8 +57,8 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
       desiredTaskCount: 12,
       maxTaskCount: 20,
       memoryLimitMiB: 4096,
-      maxHealthyPercent: 120,
-      minHealthyPercent: 80,
+      maxHealthyPercent: 160,
+      minHealthyPercent: 70,
     };
   }
   if (isSandbox(config)) {
