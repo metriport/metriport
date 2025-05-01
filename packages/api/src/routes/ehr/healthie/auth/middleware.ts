@@ -1,4 +1,4 @@
-import { verifySignature } from "@metriport/core/util/webhook";
+import { verifyWebhookSignatureHealthie } from "@metriport/core/external/ehr/webhook";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { healthieDashSource } from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
 import { isSubscriptionResource } from "@metriport/shared/interface/external/ehr/healthie/subscription";
@@ -28,7 +28,7 @@ async function processCxIdWebhook(req: Request): Promise<void> {
   if (typeof practiceId !== "string") throw new ForbiddenError();
   try {
     const secretKeyInfo = await getHealthieSecretKeyInfo(practiceId, eventType);
-    const verified = await verifySignature({
+    const verified = await verifyWebhookSignatureHealthie({
       method: req.method,
       path: `${req.baseUrl}${Config.isDev() ? req.path : ""}`,
       query: `practiceId=${practiceId}`,

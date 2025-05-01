@@ -3,7 +3,8 @@ import { MetriportError } from "@metriport/shared";
 
 const ed25519Prefix = "MCowBQYDK2VwAyEA";
 
-export function verifyWebhookSignatureEd25519(
+// Interpreted from Elation dosc https://docs.elationhealth.com/reference/webhooks
+export function verifyWebhookSignatureEd25519Elation(
   key: string,
   body: object,
   signature: string
@@ -73,7 +74,7 @@ async function generateSignature(key: crypto.webcrypto.CryptoKey, data: string) 
     .join("");
 }
 
-export async function verifySignature({
+export async function verifyWebhookSignatureHealthie({
   secretKey,
   ...requestParams
 }: {
