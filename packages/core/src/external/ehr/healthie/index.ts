@@ -286,7 +286,7 @@ class HealthieApi {
         }
       );
       acc.push(...appointmentsWithAttendees);
-      const lastAppointment = appointmentsWithAttendees[appointmentsWithAttendees.length - 1];
+      const lastAppointment = appointments[appointments.length - 1];
       if (!lastAppointment) return acc;
       const nextCursor = lastAppointment.cursor;
       return paginateAppointments(api, nextCursor, acc);
