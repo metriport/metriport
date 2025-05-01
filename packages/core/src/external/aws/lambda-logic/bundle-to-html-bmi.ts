@@ -1621,6 +1621,7 @@ function createObservationLaboratorySection(
   ]);
 
   const hba1cPanels = findPanelsWithHba1c(diagnosticReports, observations, includedPanels);
+  const latestHba1cPanels = hba1cPanels.slice(0, 2);
 
   const allPanels = [
     ...latestBasicPanels.map(p => ({ type: "Basic Metabolic Panel", panel: p })),
@@ -1628,7 +1629,7 @@ function createObservationLaboratorySection(
     ...latestLipidPanels.map(p => ({ type: "Lipid Panel", panel: p })),
     ...latestThyroidPanels.map(p => ({ type: "Thyroid", panel: p })),
     ...latestCbcPanels.map(p => ({ type: "Complete Blood Count", panel: p })),
-    ...hba1cPanels.map(p => ({ type: "HbA1c Panel", panel: p })),
+    ...latestHba1cPanels.map(p => ({ type: "HbA1c Panel", panel: p })),
   ]
     .sort((a, b) => {
       const dateA = a.panel.effectiveDateTime || a.panel.effectivePeriod?.start || "";
@@ -1672,8 +1673,7 @@ function findPanelsWithHba1c(
       const dateA = a.effectiveDateTime || a.effectivePeriod?.start || "";
       const dateB = b.effectiveDateTime || b.effectivePeriod?.start || "";
       return dayjs(dateB).diff(dayjs(dateA));
-    })
-    .slice(0, 2);
+    });
 }
 
 function findMetabolicPanels(
