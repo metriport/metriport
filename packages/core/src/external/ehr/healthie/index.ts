@@ -144,7 +144,7 @@ class HealthieApi {
     const patientQuickNotesGraphql = await this.makeRequest<PatientQuickNotesGraphql>({
       cxId,
       patientId: patientId.toString(),
-      s3Path: "patient",
+      s3Path: "patient-quick-notes",
       operationName,
       query,
       variables,
@@ -199,7 +199,7 @@ class HealthieApi {
     const patientUpdateQuickNotesGraphql = await this.makeRequest<PatientUpdateQuickNotesGraphql>({
       cxId,
       patientId: patientId.toString(),
-      s3Path: "patient",
+      s3Path: "update-patient-quick-notes",
       operationName,
       query,
       variables,
@@ -266,7 +266,7 @@ class HealthieApi {
       };
       const appointmentListResponseGraphql = await api.makeRequest<AppointmentListResponseGraphql>({
         cxId,
-        s3Path: "patient",
+        s3Path: "appointments",
         operationName,
         query,
         variables,
@@ -326,7 +326,7 @@ class HealthieApi {
     const variables = { id: appointmentId };
     const appointmentGetResponseGraphql = await this.makeRequest<AppointmentGetResponseGraphql>({
       cxId,
-      s3Path: "patient",
+      s3Path: "appointment",
       operationName,
       query,
       variables,
