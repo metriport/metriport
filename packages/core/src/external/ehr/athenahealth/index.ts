@@ -565,6 +565,7 @@ class AthenaHealthApi {
           }
           allCreatedVitals.push(createdVitalsSuccessSchema.parse(createdVitals));
         } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
           const vitalsToString = JSON.stringify(params.vitals);
           log(`Failed to create vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
           createVitalsErrors.push({ error, ...params, vitals: vitalsToString });
@@ -647,6 +648,7 @@ class AthenaHealthApi {
           });
           allMedicationReferences.push(...medicationReferences);
         } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
           log(
             `Failed to search for medication with search value ${searchValue}. Cause: ${errorToString(
               error
