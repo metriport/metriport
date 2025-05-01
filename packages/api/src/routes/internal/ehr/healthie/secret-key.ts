@@ -5,12 +5,12 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getHealthieSecretKeyInfo } from "../../../../external/ehr/healthie/shared";
 import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler, getFrom, getFromQueryOrFail } from "../../../util";
+import { asyncHandler, getFromQueryOrFail } from "../../../util";
 
 const router = Router();
 
 /**
- * GET /internal/ehr/healthie/secret-key/:practiceId
+ * GET /internal/ehr/healthie/secret-key
  *
  * Tries to retrieve the secret key for the given practiceId and resource
  * @param req.query.practiceId The ID of the Healthie practice.
@@ -18,10 +18,10 @@ const router = Router();
  * @returns The secret key.
  */
 router.get(
-  "/:practiceId",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const practiceId = getFrom("params").orFail("practiceId", req);
+    const practiceId = getFromQueryOrFail("practiceId", req);
     const resource = getFromQueryOrFail("resource", req);
     if (!isSubscriptionResource(resource)) {
       throw new BadRequestError("Invalid resource", undefined, { resource });
