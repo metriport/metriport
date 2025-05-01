@@ -1,4 +1,4 @@
-import { verifyWebhookSignatureEd25519 } from "@metriport/core/util/webhook";
+import { verifyWebhookSignatureEd25519Elation } from "@metriport/core/external/ehr/webhook";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { elationDashSource } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { isSubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
@@ -30,7 +30,11 @@ async function processCxIdWebhook(req: Request): Promise<void> {
   if (!applicationId) throw new ForbiddenError();
   try {
     const signingKeyInfo = await getElationSigningKeyInfo(applicationId, webhookResource);
-    const verified = verifyWebhookSignatureEd25519(signingKeyInfo.signingKey, req.body, signature);
+    const verified = verifyWebhookSignatureEd25519Elation(
+      signingKeyInfo.signingKey,
+      req.body,
+      signature
+    );
     if (verified) {
       req.cxId = signingKeyInfo.cxId;
       req.query = {
