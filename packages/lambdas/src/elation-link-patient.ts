@@ -4,7 +4,7 @@ import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
-import { elationParseLinkPatient } from "./shared/ehr";
+import { parseLinkPatient } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -47,5 +47,5 @@ function parseBody(body?: unknown): ProcessLinkPatientRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return elationParseLinkPatient(bodyAsJson);
+  return parseLinkPatient(bodyAsJson);
 }

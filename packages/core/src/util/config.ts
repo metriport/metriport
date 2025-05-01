@@ -177,6 +177,9 @@ export class Config {
   static getElationLinkPatientQueueUrl(): string {
     return getEnvVarOrFail("ELATION_LINK_PATIENT_QUEUE_URL");
   }
+  static getHealthieLinkPatientQueueUrl(): string {
+    return getEnvVarOrFail("HEALTHIE_LINK_PATIENT_QUEUE_URL");
+  }
   static getEhrStartResourceDiffBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
   }

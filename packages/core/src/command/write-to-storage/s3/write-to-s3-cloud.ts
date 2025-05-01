@@ -5,7 +5,7 @@ import { Config } from "../../../util/config";
 import {
   MAX_SQS_MESSAGE_SIZE,
   SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
-  SQS_MESSAGE_BATCH_SIZE,
+  SQS_MESSAGE_BATCH_SIZE_STANDARD,
 } from "../../../util/sqs";
 import { S3Writer, WriteToS3Request } from "./write-to-s3";
 
@@ -31,7 +31,7 @@ export class S3WriterCloud implements S3Writer {
         fileName: paylodTooBig.fileName,
       });
     }
-    const chunks = chunk(params, SQS_MESSAGE_BATCH_SIZE);
+    const chunks = chunk(params, SQS_MESSAGE_BATCH_SIZE_STANDARD);
     for (const chunk of chunks) {
       await Promise.all(
         chunk.map(params => {

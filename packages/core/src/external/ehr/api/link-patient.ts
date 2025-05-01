@@ -1,19 +1,21 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
-import { Config } from "../../../../util/config";
-import { out } from "../../../../util/log";
-import { ApiBaseParams } from "../api-shared";
+import { Config } from "../../../util/config";
+import { out } from "../../../util/log";
+import { ApiBaseParams } from "./api-shared";
 
-export type LinkPatientParams = Omit<ApiBaseParams, "ehr" | "departmentId">;
+export type LinkPatientParams = Omit<ApiBaseParams, "departmentId">;
 
 /**
  * Sends a request to the API to link a patient with Elation.
  *
+ * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param practiceId - The practice ID.
  * @param patientId - The patient ID.
  */
 export async function linkPatient({
+  ehr,
   cxId,
   practiceId,
   patientId,
@@ -25,7 +27,7 @@ export async function linkPatient({
     practiceId,
     patientId,
   });
-  const linkPatientUrl = `/internal/ehr/elation/patient/link?${queryParams.toString()}`;
+  const linkPatientUrl = `/internal/ehr/${ehr}/patient/link?${queryParams.toString()}`;
   try {
     const response = await api.post(linkPatientUrl);
     if (!response.data) throw new Error(`No body returned from ${linkPatientUrl}`);
@@ -34,11 +36,12 @@ export async function linkPatient({
     const msg = "Failure while linking patient @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
+      ehr,
       cxId,
       practiceId,
       patientId,
       url: linkPatientUrl,
-      context: "ehr.elation.linkPatient",
+      context: `ehr.linkPatient`,
     });
   }
 }
