@@ -1,8 +1,10 @@
 import { Capture } from "@metriport/core/util/capture";
 import { getEnvType, getEnvVar } from "@metriport/core/util/env-var";
+import { errorToString, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { Extras } from "@sentry/types";
 import { ScopeContext } from "@sentry/types/types/scope";
+import * as AWSLambda from "aws-lambda";
 
 const sentryDsn = getEnvVar("SENTRY_DSN");
 
@@ -68,6 +70,20 @@ export const capture = {
     return Sentry.captureMessage(message, {
       ...captureContext,
       extra,
+    });
+  },
+
+  wrapHandler: (handler: AWSLambda.Handler): AWSLambda.Handler => {
+    return Sentry.AWSLambda.wrapHandler(async (event, context, callback) => {
+      try {
+        await handler(event, context, callback);
+      } catch (error) {
+        console.log(`Error: ${errorToString(error)}`);
+        if (error instanceof MetriportError && error.additionalInfo) {
+          capture.setExtra(error.additionalInfo);
+        }
+        throw error;
+      }
     });
   },
 };
