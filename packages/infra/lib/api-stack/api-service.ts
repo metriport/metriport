@@ -55,7 +55,7 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
       desiredTaskCount: 12,
-      maxTaskCount: 20,
+      maxTaskCount: 24,
       memoryLimitMiB: 4096,
       maxHealthyPercent: 160,
       minHealthyPercent: 70,
@@ -536,12 +536,12 @@ export function createAPIService({
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
     targetUtilizationPercent: 10,
     scaleInCooldown: Duration.minutes(2),
-    scaleOutCooldown: Duration.seconds(30),
+    scaleOutCooldown: Duration.minutes(1),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
     targetUtilizationPercent: 20,
     scaleInCooldown: Duration.minutes(2),
-    scaleOutCooldown: Duration.seconds(30),
+    scaleOutCooldown: Duration.minutes(1),
   });
 
   return {
