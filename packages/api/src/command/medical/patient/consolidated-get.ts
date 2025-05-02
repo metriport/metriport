@@ -97,7 +97,9 @@ export async function startConsolidatedQuery({
 
   if (currentConsolidatedProgress) {
     log(
-      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${currentConsolidatedProgress}, skipping...`
+      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${JSON.stringify(
+        currentConsolidatedProgress
+      )}, skipping...`
     );
     return currentConsolidatedProgress;
   }

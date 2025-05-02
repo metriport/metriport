@@ -76,7 +76,7 @@ export const capture = {
   wrapHandler: (handler: AWSLambda.Handler): AWSLambda.Handler => {
     return Sentry.AWSLambda.wrapHandler(async (event, context, callback) => {
       try {
-        await handler(event, context, callback);
+        return await handler(event, context, callback);
       } catch (error) {
         console.log(`Error: ${errorToString(error)}`);
         if (error instanceof MetriportError && error.additionalInfo) {
