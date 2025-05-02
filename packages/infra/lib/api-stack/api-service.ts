@@ -28,6 +28,7 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
+import { getMaxPostgresConnections } from "../shared/rds";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
@@ -199,7 +200,7 @@ export function createAPIService({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
   });
-  const dbPoolSettings = JSON.stringify(props.config.apiDatabase.poolSettings);
+  const dbPoolSettings = getDbPoolSettings(props.config);
   // Run some servers on fargate containers
   const listenerPort = 80;
   const containerPort = 8080;
@@ -244,7 +245,7 @@ export function createAPIService({
           AWS_REGION: props.config.region,
           LB_TIMEOUT_IN_MILLIS: loadBalancerIdleTimeout.toMilliseconds().toString(),
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
-          DB_POOL_SETTINGS: dbPoolSettings,
+          DB_POOL_SETTINGS: JSON.stringify(dbPoolSettings),
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
@@ -551,4 +552,19 @@ export function createAPIService({
     loadBalancer: nlb,
     loadBalancerAddress: serverAddress,
   };
+}
+
+function getDbPoolSettings(config: EnvConfig): EnvConfig["apiDatabase"]["poolSettings"] {
+  const dbPoolSettings = config.apiDatabase.poolSettings;
+  const settings = getSettings(config);
+  const ecsMaxTaskCount = settings.maxTaskCount;
+  const dbPoolMaxConnectionsPerTask = dbPoolSettings.max;
+  const dbPoolMaxConnectionsGlobal = dbPoolMaxConnectionsPerTask * ecsMaxTaskCount;
+  const dbMaxConnectionsHardLimit = getMaxPostgresConnections(config.apiDatabase.maxCapacity);
+  if (dbPoolMaxConnectionsGlobal > dbMaxConnectionsHardLimit) {
+    throw new Error(
+      `Max total connections for API is too high (current: ${dbPoolMaxConnectionsGlobal}, max: ${dbMaxConnectionsHardLimit})`
+    );
+  }
+  return dbPoolSettings;
 }
