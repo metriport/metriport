@@ -49,13 +49,10 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(
-    master: Immunization,
-    existing: Immunization,
-    target: Immunization
-  ): Immunization {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
+  function assignMostDescriptiveStatus(existing: Immunization, target: Immunization) {
+    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    existing.status = status;
+    target.status = status;
   }
 
   const hasDate = 1;
@@ -114,7 +111,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
         identifierKeys,
         incomingResource: immunization,
         refReplacementMap,
-        customMergeLogic: assignMostDescriptiveStatus,
+        onPremerge: assignMostDescriptiveStatus,
       });
     } else {
       danglingReferences.add(createRef(immunization));

@@ -59,12 +59,12 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   const danglingReferences = new Set<string>();
 
   function assignMostDescriptiveStatus(
-    master: MedicationAdministration,
     existing: MedicationAdministration,
     target: MedicationAdministration
-  ): MedicationAdministration {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
+  ) {
+    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    existing.status = status;
+    target.status = status;
   }
 
   for (const medAdmin of medAdmins) {

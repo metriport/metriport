@@ -103,7 +103,7 @@ export function groupSameEncounters(encounters: Encounter[]): {
         matchCandidateKeys,
         incomingResource: encounter,
         refReplacementMap,
-        customMergeLogic: assignMostDescriptiveStatus,
+        onPremerge: assignMostDescriptiveStatus,
       });
     } else {
       danglingReferences.add(createRef(encounter));
@@ -117,11 +117,8 @@ export function groupSameEncounters(encounters: Encounter[]): {
   };
 }
 
-function assignMostDescriptiveStatus(
-  master: Encounter,
-  existing: Encounter,
-  target: Encounter
-): Encounter {
-  master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-  return master;
+function assignMostDescriptiveStatus(existing: Encounter, target: Encounter) {
+  const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+  existing.status = status;
+  target.status = status;
 }

@@ -26,7 +26,7 @@ import { validateReferences } from "./report/validate-references";
  *
  * WARNING: this will overwrite the *_deduped.json files!!!
  */
-const samplesFolderPath = "";
+const samplesFolderPath = "/Users/lucasdellabella/Documents/PHI/consolidated-bundles/";
 const useDefaultPatient = true;
 const suffix = "_deduped";
 

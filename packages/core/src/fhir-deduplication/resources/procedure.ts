@@ -73,11 +73,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function removeCodesAndAssignStatus(
-    master: Procedure,
-    existing: Procedure,
-    target: Procedure
-  ): Procedure {
+  function postProcessCodes(master: Procedure): Procedure {
     const code = master.code;
     const codings = code?.coding;
 
@@ -107,8 +103,13 @@ export function groupSameProcedures(procedures: Procedure[]): {
       delete master.code.coding;
     }
 
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
+  }
+
+  function preProcessStatus(existing: Procedure, target: Procedure) {
+    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    existing.status = status;
+    target.status = status;
   }
 
   const hasDate = 1;
@@ -166,7 +167,8 @@ export function groupSameProcedures(procedures: Procedure[]): {
         matchCandidateKeys,
         incomingResource: procedure,
         refReplacementMap,
-        customMergeLogic: removeCodesAndAssignStatus,
+        onPremerge: preProcessStatus,
+        onPostmerge: postProcessCodes,
       });
     } else {
       danglingReferences.add(createRef(procedure));

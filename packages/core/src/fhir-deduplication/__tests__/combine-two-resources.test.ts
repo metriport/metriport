@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
-import { combineTwoResources } from "../shared";
+import { mergeIntoTargetResource } from "../shared";
 import { icd10CodeMd, dateTime2, snomedCodeMd } from "./examples/condition-examples";
 
 let conditionId: string;
@@ -9,26 +9,26 @@ let conditionId2: string;
 let condition: Condition;
 let condition2: Condition;
 
-beforeAll(() => {
+beforeEach(() => {
   conditionId = faker.string.uuid();
   conditionId2 = faker.string.uuid();
   condition = makeCondition({ id: conditionId });
   condition2 = makeCondition({ id: conditionId2, onsetPeriod: dateTime2 });
 });
 
-describe("combineTwoResources", () => {
+describe("mergeIntoTargetResource", () => {
   it("keeps the id of the first condition", () => {
-    const combinedCondition = combineTwoResources(condition, condition2);
-    expect(combinedCondition.id).toBe(conditionId);
+    mergeIntoTargetResource(condition, condition2);
+    expect(condition.id).toBe(conditionId);
   });
 
   it("keeps unique properties from both conditions", () => {
     condition.subject = { reference: "Patient/123" };
     condition2.recorder = { reference: "Some ref" };
 
-    const combinedCondition = combineTwoResources(condition, condition2);
-    expect(combinedCondition).toHaveProperty("recorder.reference", "Some ref");
-    expect(combinedCondition).toHaveProperty("subject.reference", "Patient/123");
+    mergeIntoTargetResource(condition, condition2);
+    expect(condition).toHaveProperty("recorder.reference", "Some ref");
+    expect(condition).toHaveProperty("subject.reference", "Patient/123");
   });
 
   it("combines array properties", () => {
@@ -39,8 +39,8 @@ describe("combineTwoResources", () => {
     condition.code = { coding: [snomedCodeMd] };
     condition2.code = { coding: [icd10CodeMd] };
 
-    const combinedCondition = combineTwoResources(condition, condition2);
-    expect(combinedCondition.code).toEqual(
+    mergeIntoTargetResource(condition, condition2);
+    expect(condition.code).toEqual(
       expect.objectContaining({
         coding: expect.arrayContaining([
           expect.objectContaining({
@@ -58,13 +58,13 @@ describe("combineTwoResources", () => {
     condition.code = { coding: [snomedCodeMd] };
     condition2.code = { coding: [snomedCodeMd] };
 
-    const combinedCondition = combineTwoResources(condition, condition2);
-    expect(combinedCondition.code?.coding?.length).toBe(1);
+    mergeIntoTargetResource(condition, condition2);
+    expect(condition.code?.coding?.length).toBe(1);
   });
 
   it("contains references to combined conditions inside the extension", () => {
-    const combinedCondition = combineTwoResources(condition, condition2);
-    expect(combinedCondition.extension).toEqual(
+    mergeIntoTargetResource(condition, condition2);
+    expect(condition.extension).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           valueRelatedArtifact: expect.objectContaining({
@@ -89,7 +89,7 @@ describe("combineTwoResources", () => {
         valueString: "some_other_cda_file.xml",
       },
     ];
-    const combinedCondition = combineTwoResources(condition, condition2, false);
-    expect(combinedCondition.extension).toBe(undefined);
+    mergeIntoTargetResource(condition, condition2, false);
+    expect(condition.extension).toBe(undefined);
   });
 });

@@ -50,11 +50,18 @@ export function groupSameObservationsSocial(observations: Observation[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function postProcess(
-    master: Observation,
-    existing: Observation,
-    target: Observation
-  ): Observation {
+  function preProcessStatus(existing: Observation, target: Observation) {
+    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    existing.status = status;
+    target.status = status;
+  }
+
+  function preProcessStatusAndDates(existing: Observation, target: Observation) {
+    preProcessStatus(existing, target);
+    preProcessDates(existing, target);
+  }
+
+  function postProcess(master: Observation): Observation {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => !isUnknownCoding(coding));
     if (filtered) {
@@ -63,18 +70,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
         coding: filtered,
       };
     }
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
 
-    master = handleDates(master, existing, target);
-    return master;
-  }
-
-  function postProcessOnlyStatus(
-    master: Observation,
-    existing: Observation,
-    target: Observation
-  ): Observation {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
   }
 
@@ -96,6 +92,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
         observation,
         refReplacementMap,
         undefined,
+        preProcessStatusAndDates,
         postProcess
       );
     } else {
@@ -108,7 +105,8 @@ export function groupSameObservationsSocial(observations: Observation[]): {
           observation,
           refReplacementMap,
           undefined,
-          postProcessOnlyStatus
+          preProcessStatus,
+          postProcess
         );
       } else {
         danglingReferences.add(createRef(observation));
@@ -124,14 +122,14 @@ export function groupSameObservationsSocial(observations: Observation[]): {
 }
 
 // TODO: do we need to handle	effectiveTiming	and effectiveInstant?
-function handleDates(master: Observation, obs1: Observation, obs2: Observation): Observation {
+function preProcessDates(base: Observation, newObs: Observation) {
   // Extract dates from the first observation
-  const date1Start = obs1.effectiveDateTime || obs1.effectivePeriod?.start;
-  const date1End = obs1.effectivePeriod?.end || obs1.effectiveDateTime;
+  const date1Start = base.effectiveDateTime || base.effectivePeriod?.start;
+  const date1End = base.effectivePeriod?.end || base.effectiveDateTime;
 
   // Extract dates from the second observation
-  const date2Start = obs2.effectiveDateTime || obs2.effectivePeriod?.start;
-  const date2End = obs2.effectivePeriod?.end || obs2.effectiveDateTime;
+  const date2Start = newObs.effectiveDateTime || newObs.effectivePeriod?.start;
+  const date2End = newObs.effectivePeriod?.end || newObs.effectiveDateTime;
 
   // Gather all possible dates, filtering out undefined and invalid dates
   const dates = [date1Start, date1End, date2Start, date2End]
@@ -139,22 +137,21 @@ function handleDates(master: Observation, obs1: Observation, obs2: Observation):
     .map(date => dayjs(date))
     .filter(date => date.isValid());
 
-  if (dates.length === 0) {
-    return master;
-  }
-
   const earliestDate = dates.reduce((min, curr) => (curr.isBefore(min) ? curr : min), dates[0]);
   const latestDate = dates.reduce((max, curr) => (curr.isAfter(max) ? curr : max), dates[0]);
 
-  deleteMasterTimestamp(master);
+  deleteMasterTimestamp(base);
+  deleteMasterTimestamp(newObs);
 
   const startDateString = earliestDate?.toISOString();
   const endDateString = latestDate?.toISOString();
 
   const period = buildPeriod(startDateString, endDateString);
-  if (period) master.effectivePeriod = period;
 
-  return master;
+  if (period) {
+    base.effectivePeriod = period;
+    newObs.effectivePeriod = period;
+  }
 }
 
 function buildPeriod(

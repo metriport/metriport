@@ -3,8 +3,8 @@ import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
-import { uuidv7 } from "../util/uuid-v7";
 import { capture, out } from "../util";
+import { uuidv7 } from "../util/uuid-v7";
 
 dayjs.extend(utc);
 
@@ -18,7 +18,8 @@ export const UNK_CODE = "UNK";
 export const UNKNOWN_DISPLAY = "unknown";
 export type DateFormats = (typeof dateFormats)[number];
 
-export type ApplySpecialModificationsCallback<T> = (merged: T, existing: T, target: T) => T;
+export type OnPremergeCallback<T> = (base: T, additional: T) => void;
+export type OnPostmergeCallback<T> = (base: T) => T;
 
 export type CompositeKey = {
   code: string;
@@ -76,7 +77,9 @@ export function mergeIntoTargetResource<T extends Resource & { extension?: any[]
   source: T,
   isExtensionIncluded = true
 ) {
+  console.log("before: ", target);
   mutativeDeepMerge(target, source, isExtensionIncluded);
+  console.log("after: ", target);
   const extensionRef = createExtensionRelatedArtifact(source.resourceType, source.id);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
@@ -106,6 +109,10 @@ export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded:
     if (key === "extension" && !isExtensionIncluded) continue;
     if (conditionKeysToIgnore.includes(key)) continue;
 
+    if (key === "status") {
+      console.log("status before ", target);
+    }
+
     if (Array.isArray(source[key]) && Array.isArray(target[key])) {
       // Combine arrays and remove duplicates based on unique properties
       mutativeMergeArrays(target[key], source[key]);
@@ -120,6 +127,9 @@ export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded:
       )
         continue;
       target[key] = source[key];
+    }
+    if (key === "status") {
+      console.log("status after ", target);
     }
   }
   return target;
@@ -175,16 +185,20 @@ export function deduplicateWithinMap<T extends Resource>(
   targetResource: T,
   refReplacementMap: Map<string, string>,
   isExtensionIncluded = true,
-  customMergeLogic?: ApplySpecialModificationsCallback<T> | undefined
+  onPremerge?: OnPremergeCallback<T> | undefined,
+  onPostmerge?: OnPostmergeCallback<T> | undefined
 ): void {
   const existingResource = dedupedResourcesMap.get(dedupKey);
   // if its a duplicate, combine the resources
   if (existingResource?.id) {
     const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
-    mergeIntoTargetResource(existingResource, targetResource, isExtensionIncluded);
     let merged = existingResource;
-    if (customMergeLogic) {
-      merged = customMergeLogic(merged, existingResource, targetResource);
+    if (onPremerge) {
+      onPremerge(merged, targetResource);
+    }
+    mergeIntoTargetResource(merged, targetResource, isExtensionIncluded);
+    if (onPostmerge) {
+      merged = onPostmerge(merged);
     }
     dedupedResourcesMap.set(dedupKey, merged);
 
@@ -230,7 +244,8 @@ export function fillL1L2Maps<T extends Resource>({
   targetResource,
   refReplacementMap,
   isExtensionIncluded = true,
-  applySpecialModifications,
+  onPremerge,
+  onPostmerge,
 }: {
   map1: Map<string, string>;
   map2: Map<string, T>;
@@ -239,7 +254,8 @@ export function fillL1L2Maps<T extends Resource>({
   targetResource: T;
   refReplacementMap: Map<string, string>;
   isExtensionIncluded?: boolean;
-  applySpecialModifications?: ApplySpecialModificationsCallback<T>;
+  onPremerge?: OnPremergeCallback<T>;
+  onPostmerge?: OnPostmergeCallback<T>;
 }): void {
   let map2Key = undefined;
   for (const key of getterKeys) {
@@ -251,7 +267,8 @@ export function fillL1L2Maps<T extends Resource>({
         targetResource,
         refReplacementMap,
         isExtensionIncluded,
-        applySpecialModifications
+        onPremerge,
+        onPostmerge
       );
       break;
     }
@@ -268,7 +285,8 @@ export function fillL1L2Maps<T extends Resource>({
       targetResource,
       refReplacementMap,
       isExtensionIncluded,
-      applySpecialModifications
+      onPremerge,
+      onPostmerge
     );
   }
 }
@@ -544,7 +562,8 @@ export function deduplicateAndTrackResource<T extends Resource>({
   incomingResource,
   refReplacementMap,
   keepExtensions = true,
-  customMergeLogic,
+  onPremerge,
+  onPostmerge,
 }: {
   resourceKeyMap: Map<string, string>;
   dedupedResourcesMap: Map<string, T>;
@@ -553,7 +572,8 @@ export function deduplicateAndTrackResource<T extends Resource>({
   incomingResource: T;
   refReplacementMap: Map<string, string>;
   keepExtensions?: boolean;
-  customMergeLogic?: ApplySpecialModificationsCallback<T>;
+  onPremerge?: OnPremergeCallback<T>;
+  onPostmerge?: OnPostmergeCallback<T>;
 }): void {
   let masterResourceId = undefined;
 
@@ -567,7 +587,8 @@ export function deduplicateAndTrackResource<T extends Resource>({
         incomingResource,
         refReplacementMap,
         keepExtensions,
-        customMergeLogic
+        onPremerge,
+        onPostmerge
       );
       break;
     }
@@ -585,7 +606,8 @@ export function deduplicateAndTrackResource<T extends Resource>({
       incomingResource,
       refReplacementMap,
       keepExtensions,
-      customMergeLogic
+      onPremerge,
+      onPostmerge
     );
   }
 }

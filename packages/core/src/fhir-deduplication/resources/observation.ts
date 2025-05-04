@@ -114,7 +114,8 @@ export function groupSameObservations(observations: Observation[]): {
         identifierKeys,
         incomingResource: observation,
         refReplacementMap,
-        customMergeLogic: postProcess,
+        onPremerge: preProcessStatus,
+        onPostmerge: postProcessCodes,
       });
     } else {
       danglingReferences.add(createRef(observation));
@@ -145,7 +146,13 @@ function filterOutUnknownCodings(observation: Observation): {
   return { observation: newObservation, code };
 }
 
-function postProcess(master: Observation, existing: Observation, target: Observation): Observation {
+function preProcessStatus(existing: Observation, target: Observation) {
+  const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+  existing.status = status;
+  target.status = status;
+}
+
+function postProcessCodes(master: Observation): Observation {
   const code = master.code;
   const filtered = code?.coding?.filter(coding => {
     const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
@@ -158,6 +165,5 @@ function postProcess(master: Observation, existing: Observation, target: Observa
       coding: filtered,
     };
   }
-  master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
   return master;
 }

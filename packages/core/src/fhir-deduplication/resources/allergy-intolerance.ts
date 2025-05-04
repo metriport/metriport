@@ -70,7 +70,8 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
           newAllergy,
           refReplacementMap,
           undefined,
-          postProcess
+          undefined,
+          postProcessAllergy
         );
       } else {
         danglingReferences.add(createRef(allergy));
@@ -126,7 +127,7 @@ function preProcess(allergy: AllergyIntolerance): {
   return { allergy: newAllergy, substance };
 }
 
-function postProcess(allergy: AllergyIntolerance): AllergyIntolerance {
+function postProcessAllergy(allergy: AllergyIntolerance): AllergyIntolerance {
   const { allergy: newAllergy } = preProcess(allergy);
   return newAllergy;
 }

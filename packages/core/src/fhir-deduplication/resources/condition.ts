@@ -109,7 +109,7 @@ export function groupSameConditions(
         setterKeys,
         targetResource: condition,
         refReplacementMap,
-        applySpecialModifications: removeOtherCodes,
+        onPostmerge: removeOtherCodes,
         isExtensionIncluded,
       });
     } else {

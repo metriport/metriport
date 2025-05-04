@@ -70,11 +70,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function removeCodesAndAssignStatus(
-    master: DiagnosticReport,
-    existing: DiagnosticReport,
-    target: DiagnosticReport
-  ): DiagnosticReport {
+  function postProcessCodes(master: DiagnosticReport) {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
       const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
@@ -87,8 +83,13 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       };
     }
 
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
+  }
+
+  function preProcessStatus(existing: DiagnosticReport, target: DiagnosticReport) {
+    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    existing.status = status;
+    target.status = status;
   }
 
   for (const diagReport of diagReports) {
@@ -157,7 +158,8 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
         setterKeys,
         targetResource: diagReport,
         refReplacementMap,
-        applySpecialModifications: removeCodesAndAssignStatus,
+        onPremerge: preProcessStatus,
+        onPostmerge: postProcessCodes,
       });
     } else {
       danglingReferences.add(createRef(diagReport));

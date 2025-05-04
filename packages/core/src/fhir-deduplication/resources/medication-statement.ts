@@ -61,13 +61,10 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(
-    master: MedicationStatement,
-    existing: MedicationStatement,
-    target: MedicationStatement
-  ): MedicationStatement {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
+  function assignMostDescriptiveStatus(existing: MedicationStatement, target: MedicationStatement) {
+    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    existing.status = status;
+    target.status = status;
   }
 
   for (const medStatement of medStatements) {

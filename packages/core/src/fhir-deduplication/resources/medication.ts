@@ -82,10 +82,19 @@ export function groupSameMedications(medications: Medication[]): {
         medication,
         refReplacementMap,
         false,
+        undefined,
         removeOtherCodes
       );
     } else if (ndcCode) {
-      deduplicateWithinMap(ndcMap, ndcCode, medication, refReplacementMap, false, removeOtherCodes);
+      deduplicateWithinMap(
+        ndcMap,
+        ndcCode,
+        medication,
+        refReplacementMap,
+        false,
+        undefined,
+        removeOtherCodes
+      );
     } else if (snomedCode) {
       deduplicateWithinMap(
         snomedMap,
@@ -93,6 +102,7 @@ export function groupSameMedications(medications: Medication[]): {
         medication,
         refReplacementMap,
         false,
+        undefined,
         removeOtherCodes
       );
     } else {
