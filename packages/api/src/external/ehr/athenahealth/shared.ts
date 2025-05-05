@@ -8,7 +8,7 @@ import {
   createEhrClient,
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
-} from "../shared/jwt-token";
+} from "../shared/utils/client";
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 

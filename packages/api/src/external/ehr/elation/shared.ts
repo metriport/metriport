@@ -23,7 +23,7 @@ import {
   createEhrClient,
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
-} from "../shared/jwt-token";
+} from "../shared/utils/client";
 
 export const elationClientJwtTokenSource = "elation-client";
 export const elationWebhookJwtTokenSource = "elation-webhook";
