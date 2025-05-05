@@ -1,17 +1,33 @@
-import { Observation } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Observation, Quantity } from "@medplum/fhirtypes";
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 import { groupSameObservations } from "../resources/observation";
 import { groupSameObservationsSocial } from "../resources/observation-social";
 import { unknownCode, unknownCoding } from "../shared";
 import { dateTime, makePeriod } from "./examples/condition-examples";
 import {
-  loincCodeTobacco,
-  snomedCodeTobacco,
-  valueConceptTobacco,
-  valueHeight,
+  loincCodeTobacco as loincCodeTobaccoImported,
+  snomedCodeTobacco as snomedCodeTobaccoImported,
+  valueConceptTobacco as valueConceptTobaccoImported,
+  valueHeight as valueHeightImported,
 } from "./examples/observation-examples";
+import { deepClone } from "@medplum/core";
+
+type CodeableConceptWithCoding = CodeableConcept & { coding: Coding[] };
 
 describe("groupSameObservationsSocial", () => {
+  let loincCodeTobacco: CodeableConceptWithCoding;
+  let snomedCodeTobacco: CodeableConceptWithCoding;
+  let valueConceptTobacco: CodeableConceptWithCoding;
+  let valueHeight: Quantity;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    loincCodeTobacco = deepClone(loincCodeTobaccoImported);
+    snomedCodeTobacco = deepClone(snomedCodeTobaccoImported);
+    valueConceptTobacco = deepClone(valueConceptTobaccoImported);
+    valueHeight = deepClone(valueHeightImported);
+  });
+
   it("correctly groups duplicate observations based on values and loinc codes", () => {
     const params = {
       code: loincCodeTobacco,
@@ -124,13 +140,14 @@ describe("groupSameObservationsSocial", () => {
 
   it("removes observations with unknown codes", () => {
     const params = {
-      valueCodeableConcept: valueConceptTobacco,
+      valueCodeableConcept: deepClone(valueConceptTobacco),
     };
 
-    const observation = makeObservation({ ...params, code: loincCodeTobacco });
-    const observation2 = makeObservation({ ...params, code: unknownCode });
+    const observation = makeObservation({ ...params, code: deepClone(loincCodeTobacco) });
+    const observation2 = makeObservation({ ...params, code: deepClone(unknownCode) });
 
     const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
+    console.log("observationsMap", observationsMap);
     expect(observationsMap.size).toBe(1);
     const masterObservation = observationsMap.values().next().value as Observation;
     expect(masterObservation.code?.coding?.length).toEqual(1);
@@ -139,8 +156,8 @@ describe("groupSameObservationsSocial", () => {
 
   it("removes unknown codes, but keeps all other codes", () => {
     const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
+      code: deepClone(loincCodeTobacco),
+      valueCodeableConcept: deepClone(valueConceptTobacco),
     };
 
     const madeUpCoding = {
@@ -154,10 +171,10 @@ describe("groupSameObservationsSocial", () => {
       ...params,
       code: {
         coding: [
-          unknownCoding,
-          ...loincCodeTobacco.coding,
-          ...snomedCodeTobacco.coding,
-          madeUpCoding,
+          deepClone(unknownCoding),
+          ...deepClone(loincCodeTobacco).coding,
+          ...deepClone(snomedCodeTobacco).coding,
+          deepClone(madeUpCoding),
         ],
       },
     });
@@ -177,6 +194,17 @@ describe("groupSameObservationsSocial", () => {
 });
 
 describe("groupSameObservations", () => {
+  let loincCodeTobacco: CodeableConceptWithCoding;
+  let snomedCodeTobacco: CodeableConceptWithCoding;
+  let valueHeight: Quantity;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    loincCodeTobacco = deepClone(loincCodeTobaccoImported);
+    snomedCodeTobacco = deepClone(snomedCodeTobaccoImported);
+    valueHeight = deepClone(valueHeightImported);
+  });
+
   it("correctly groups duplicate observations based on values, dates, and loinc codes", () => {
     const params = {
       effectiveDateTime: dateTime.start,

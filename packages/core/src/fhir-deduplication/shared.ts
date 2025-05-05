@@ -77,9 +77,7 @@ export function mergeIntoTargetResource<T extends Resource & { extension?: any[]
   source: T,
   isExtensionIncluded = true
 ) {
-  console.log("before: ", target);
   mutativeDeepMerge(target, source, isExtensionIncluded);
-  console.log("after: ", target);
   const extensionRef = createExtensionRelatedArtifact(source.resourceType, source.id);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
@@ -108,10 +106,6 @@ export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded:
   for (const key of Object.keys(source)) {
     if (key === "extension" && !isExtensionIncluded) continue;
     if (conditionKeysToIgnore.includes(key)) continue;
-
-    if (key === "status") {
-      console.log("status before ", target);
-    }
 
     if (Array.isArray(source[key]) && Array.isArray(target[key])) {
       // Combine arrays and remove duplicates based on unique properties
