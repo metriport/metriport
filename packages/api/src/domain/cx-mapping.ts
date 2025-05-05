@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   EhrCxMappingSecondaryMappings,
   ehrCxMappingSecondaryMappingsSchemaMap,
-} from "../external/ehr/shared/jwt-token";
+} from "../external/ehr/shared/utils/jwt-token";
 
 const cxMappingSource = [...ehrSources] as const;
 export type CxMappingSource = (typeof cxMappingSource)[number];
