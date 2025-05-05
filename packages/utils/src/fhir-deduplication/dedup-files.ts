@@ -63,6 +63,7 @@ async function main() {
 
     const stringBundle = getFileContents(filePath);
     const initialBundle: Bundle = JSON.parse(stringBundle);
+    const initialSize = initialBundle.entry?.length;
 
     const startedAt = new Date();
 
@@ -71,7 +72,7 @@ async function main() {
     const resultingBundle = deduplicateFhir(initialBundle, cxId, patientId);
 
     console.log(
-      `Went from ${initialBundle.entry?.length} to ${
+      `Went from ${initialSize} to ${
         resultingBundle.entry?.length
       } resources in ${elapsedTimeFromNow(startedAt)} ms.`
     );
