@@ -24,6 +24,10 @@ describe("groupSameObservationsSocial", () => {
   let valueHeight: Quantity;
   let unknownCoding: Coding;
   let unknownCode: CodeableConcept;
+  let params: {
+    code: CodeableConcept;
+    valueCodeableConcept: CodeableConcept;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -33,14 +37,13 @@ describe("groupSameObservationsSocial", () => {
     valueHeight = deepClone(valueHeightImported);
     unknownCoding = deepClone(unknownCodingImported);
     unknownCode = deepClone(unknownCodeImported);
+    params = deepClone({
+      code: loincCodeTobacco,
+      valueCodeableConcept: valueConceptTobacco,
+    });
   });
 
   it("correctly groups duplicate observations based on values and loinc codes", () => {
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
     const observation = makeObservation(params);
     const observation2 = makeObservation(params);
 
@@ -49,10 +52,10 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("correctly groups duplicate observations based on values and snomed codes", () => {
-    const params = {
+    const params = deepClone({
       code: loincCodeTobacco,
       valueQuantity: valueHeight,
-    };
+    });
 
     const observation = makeObservation(params);
     const observation2 = makeObservation(params);
@@ -62,11 +65,6 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("correctly groups duplicate observations based on values and loinc codes even when snomed is present", () => {
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
     const observation = makeObservation(params);
     const observation2 = makeObservation({
       ...params,
@@ -80,11 +78,6 @@ describe("groupSameObservationsSocial", () => {
   it("correctly builds effectivePeriod on the combined observation", () => {
     const period = makePeriod();
     const period2 = makePeriod("2010-01-01T12:00:00.000Z", "2013-12-01T12:00:00.000Z");
-
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
 
     const observation = makeObservation({
       ...params,
@@ -111,10 +104,6 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("does not group observations with different codes", () => {
-    const params = {
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
     const observation = makeObservation({ ...params, code: loincCodeTobacco });
     const observation2 = makeObservation({ ...params, code: snomedCodeTobacco });
 
@@ -123,11 +112,6 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("does not group observations with different values", () => {
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
     const observation = makeObservation(params);
     const observation2 = makeObservation({
       ...params,
@@ -146,15 +130,10 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("removes observations with unknown codes", () => {
-    const params = {
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
-    const observation = makeObservation({ ...params, code: loincCodeTobacco });
-    const observation2 = makeObservation({ ...params, code: unknownCode });
+    const observation = makeObservation(deepClone({ ...params, code: loincCodeTobacco }));
+    const observation2 = makeObservation(deepClone({ ...params, code: unknownCode }));
 
     const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
-    console.log("observationsMap", observationsMap);
     expect(observationsMap.size).toBe(1);
     const masterObservation = observationsMap.values().next().value as Observation;
     expect(masterObservation.code?.coding?.length).toEqual(1);
@@ -162,11 +141,6 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("removes unknown codes, but keeps all other codes", () => {
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
     const madeUpCoding = deepClone({
       system: "some-other-custom-coding-system",
       code: "no-one-knows-the-meaning",
