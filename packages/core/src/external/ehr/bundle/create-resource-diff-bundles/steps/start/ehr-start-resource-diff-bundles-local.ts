@@ -1,6 +1,5 @@
 import { sleep } from "@metriport/shared";
 import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { fetchEhrBundlePreSignedUrls as fetchEhrBundlePreSignedUrlsFromApi } from "../../../../api/fetch-bundle-presigned-url";
 import { completeJob } from "../../../../api/job/complete-job";
 import { initializeJob } from "../../../../api/job/initialize-job";
@@ -20,7 +19,7 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
   constructor(private readonly waitTimeInMillis: number) {}
 
   async startResourceDiffBundles(payload: StartResourceDiffBundlesRequest): Promise<void> {
-    const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, jobId, direction } = payload;
+    const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, jobId } = payload;
     await initializeJob({ cxId, jobId });
     const supportedResources = getSupportedResourcesByEhr(ehr);
     const totalResources = supportedResources.length;
@@ -40,19 +39,19 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
           resourceType,
           refresh: true,
         }),
-        createOrReplaceBundleOnS3({
-          ehr,
-          cxId,
-          metriportPatientId,
-          ehrPatientId,
-          bundleType:
-            direction === ResourceDiffDirection.METRIPORT_ONLY
-              ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
-              : BundleType.RESOURCE_DIFF_EHR_ONLY,
-          bundle: getDefaultBundle(),
-          resourceType,
-          jobId,
-        }),
+        ...[BundleType.RESOURCE_DIFF_METRIPORT_ONLY, BundleType.RESOURCE_DIFF_EHR_ONLY].map(
+          bundleType =>
+            createOrReplaceBundleOnS3({
+              ehr,
+              cxId,
+              metriportPatientId,
+              ehrPatientId,
+              bundleType,
+              bundle: getDefaultBundle(),
+              resourceType,
+              jobId,
+            })
+        ),
       ]);
       computeResourceDiffParams.push({ ...payload, resourceType });
     }

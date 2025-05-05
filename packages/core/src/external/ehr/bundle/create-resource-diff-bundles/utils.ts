@@ -40,45 +40,50 @@ import { deduplicateRelatedPersons } from "../../../../fhir-deduplication/resour
 import { artifactRelatedArtifactUrl } from "../../../../fhir-deduplication/shared";
 
 export function computeNewResources({
-  existingResources,
-  testResources,
+  ehrResources,
+  metriportResources,
 }: {
-  existingResources: FhirResource[];
-  testResources: FhirResource[];
-}): FhirResource[] {
-  if (testResources.length < 1) return [];
-  if (existingResources.length < 1) return testResources;
-  const testResourceTypes = new Set(testResources.map(resource => resource.resourceType));
-  if (testResourceTypes.size > 1) {
-    throw new BadRequestError("Invalid test resource types", undefined, {
-      testResourceTypes: Array.from(testResourceTypes).join(","),
+  ehrResources: FhirResource[];
+  metriportResources: FhirResource[];
+}): {
+  newEhrResources: FhirResource[];
+  newMetriportResources: FhirResource[];
+} {
+  if (ehrResources.length < 1)
+    return { newEhrResources: [], newMetriportResources: metriportResources };
+  if (metriportResources.length < 1)
+    return { newEhrResources: ehrResources, newMetriportResources: [] };
+  const ehrResourceTypes = new Set(ehrResources.map(resource => resource.resourceType));
+  if (ehrResourceTypes.size > 1) {
+    throw new BadRequestError("Invalid ehr resource types", undefined, {
+      ehrResourceTypes: Array.from(ehrResourceTypes).join(","),
     });
   }
-  const existingResourceTypes = new Set(existingResources.map(resource => resource.resourceType));
-  if (existingResourceTypes.size > 1) {
-    throw new BadRequestError("Invalid existing resource types", undefined, {
-      existingResourceTypes: Array.from(existingResourceTypes).join(","),
+  const metriportResourceTypes = new Set(metriportResources.map(resource => resource.resourceType));
+  if (metriportResourceTypes.size > 1) {
+    throw new BadRequestError("Invalid metriport resource types", undefined, {
+      metriportResourceTypes: Array.from(metriportResourceTypes).join(","),
     });
   }
-  const testResourceType = Array.from(testResourceTypes).pop();
-  const existingResourceType = Array.from(existingResourceTypes).pop();
-  if (testResourceType !== existingResourceType) {
-    throw new BadRequestError("Test and existing resource types must match", undefined, {
-      testResourceType,
-      existingResourceType,
+  const ehrResourceType = Array.from(ehrResourceTypes).pop();
+  const metriportResourceType = Array.from(metriportResourceTypes).pop();
+  if (ehrResourceType !== metriportResourceType) {
+    throw new BadRequestError("Ehr and metriport resource types must match", undefined, {
+      ehrResourceType,
+      metriportResourceType,
     });
   }
-  const testResourcesNoDerivedFromExtension = testResources.map(resource =>
+  const ehrResourcesNoDerivedFromExtension = ehrResources.map(resource =>
     removeDerivedFromExtension(resource as Resource)
   );
-  const existingResourcesNoDerivedFromExtension = existingResources.map(resource =>
+  const metriportResourcesNoDerivedFromExtension = metriportResources.map(resource =>
     removeDerivedFromExtension(resource as Resource)
   );
-  const resources = existingResourcesNoDerivedFromExtension.concat(
-    testResourcesNoDerivedFromExtension
+  const resources = ehrResourcesNoDerivedFromExtension.concat(
+    metriportResourcesNoDerivedFromExtension
   );
   let deduplicatedResources: Resource[];
-  switch (testResourceType) {
+  switch (ehrResourceType) {
     case "AllergyIntolerance":
       deduplicatedResources = deduplicateAllergyIntolerances(
         resources as AllergyIntolerance[]
@@ -151,16 +156,24 @@ export function computeNewResources({
       ).combinedResources;
       break;
     default:
-      throw new BadRequestError(`Unsupported resource type: ${testResourceType}`, undefined, {
-        resourceType: testResourceType,
+      throw new BadRequestError(`Unsupported resource type: ${ehrResourceType}`, undefined, {
+        resourceType: ehrResourceType,
       });
   }
-  const testResourceIds = testResources.map(resource => resource.id);
-  const newResources = deduplicatedResources.filter(resource => {
+  const ehrResourceIds = ehrResources.map(resource => resource.id);
+  const newEhrResources = deduplicatedResources.filter(resource => {
     if (!resource.id) return false;
-    return testResourceIds.includes(resource.id) && !resourceIsDerived(resource);
+    return ehrResourceIds.includes(resource.id) && !resourceIsDerived(resource);
   });
-  return newResources as FhirResource[];
+  const metriportResourceIds = metriportResources.map(resource => resource.id);
+  const newMetriportResources = deduplicatedResources.filter(resource => {
+    if (!resource.id) return false;
+    return !metriportResourceIds.includes(resource.id) && !resourceIsDerived(resource);
+  });
+  return {
+    newEhrResources: newEhrResources as FhirResource[],
+    newMetriportResources: newMetriportResources as FhirResource[],
+  };
 }
 
 function resourceIsDerived(resource: Resource): boolean {

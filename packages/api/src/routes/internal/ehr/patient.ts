@@ -1,6 +1,9 @@
 import { isSupportedCanvasResource } from "@metriport/core/external/ehr/canvas/index";
 import { BadRequestError, isValidJobEntryStatus } from "@metriport/shared";
-import { isResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
+import {
+  isResourceDiffDirection,
+  ResourceDiffDirection,
+} from "@metriport/shared/interface/external/ehr/resource-diff";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -162,19 +165,20 @@ router.get(
 );
 
 /**
- * POST /internal/ehr/:ehrId/patient/:id/resource/diff/ehr-only/set-entry-status
+ * POST /internal/ehr/:ehrId/patient/:id/resource/diff/set-entry-status
  *
- * Sets the status of a patient job entry.
+ * Sets the status of a resource diff job entry.
  * @param req.query.cxId The cxId of the patient.
  * @param req.params.ehrId The EHR to fetch the resource diff job for.
  * @param req.params.id The ID of EHR Patient.
  * @param req.query.practiceId The ID of EHR Practice.
  * @param req.query.jobId The job ID.
  * @param req.query.entryStatus The status of the entry.
+ * @param req.query.direction The direction of the resource diff bundles job.
  * @returns 200 OK
  */
 router.post(
-  "/:id/resource/diff/ehr-only/set-entry-status",
+  "/:id/resource/diff/set-entry-status",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const ehr = getFrom("params").orFail("ehrId", req);
@@ -187,18 +191,26 @@ router.post(
     if (!isValidJobEntryStatus(entryStatus)) {
       throw new BadRequestError("Status must a valid job entry status");
     }
+    const direction = getFromQueryOrFail("direction", req);
+    if (!isResourceDiffDirection(direction)) {
+      throw new BadRequestError("Invalid direction", undefined, {
+        direction,
+      });
+    }
     await setPatientJobEntryStatus({
       jobId,
       cxId,
       entryStatus,
       onCompleted: async () => {
-        await contributeEhrOnlyBundle({
-          ehr,
-          cxId,
-          practiceId,
-          patientId,
-          jobId,
-        });
+        if (direction === ResourceDiffDirection.EHR_ONLY) {
+          await contributeEhrOnlyBundle({
+            ehr,
+            cxId,
+            practiceId,
+            patientId,
+            jobId,
+          });
+        }
       },
     });
     return res.sendStatus(httpStatus.OK);

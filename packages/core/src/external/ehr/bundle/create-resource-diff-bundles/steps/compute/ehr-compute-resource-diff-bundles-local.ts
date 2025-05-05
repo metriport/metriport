@@ -5,18 +5,13 @@ import {
   sleep,
   SupportedResourceType,
 } from "@metriport/shared";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import axios from "axios";
 import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
 import {
   FetchEhrBundleParams,
   fetchEhrBundlePreSignedUrls as fetchEhrBundlePreSignedUrlsFromApi,
 } from "../../../../api/fetch-bundle-presigned-url";
-import {
-  setEhrOnlyResourceDiffJobEntryStatus,
-  SetEhrOnlyResourceDiffJobEntryStatusParams,
-} from "../../../../api/job/ehr-only-set-entry-status";
-import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
+import { setResourceDiffJobEntryStatus } from "../../../../api/job/resource-diff-set-entry-status";
 import { BundleType } from "../../../bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
 import { computeNewResources } from "../../utils";
@@ -63,80 +58,43 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
             resourceType,
           }),
         ]);
-        const newResources = await getNewResources({
-          direction,
-          metriportResources,
+        const { newEhrResources, newMetriportResources } = computeNewResources({
           ehrResources,
+          metriportResources,
         });
-        if (newResources.length > 0) {
-          await updateBundleOnS3({
-            ehr,
-            cxId,
-            metriportPatientId,
-            ehrPatientId,
-            bundleType:
-              direction === ResourceDiffDirection.METRIPORT_ONLY
-                ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
-                : BundleType.RESOURCE_DIFF_EHR_ONLY,
-            resources: newResources,
-            resourceType,
-            jobId,
-          });
-        }
-        await setJobEntryStatusFromDirection({ ...entryStatusParams, entryStatus: "successful" });
+        await Promise.all([
+          newEhrResources.length > 0
+            ? updateBundleOnS3({
+                ehr,
+                cxId,
+                metriportPatientId,
+                ehrPatientId,
+                bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
+                resources: newEhrResources,
+                resourceType,
+                jobId,
+              })
+            : undefined,
+          newMetriportResources.length > 0
+            ? updateBundleOnS3({
+                ehr,
+                cxId,
+                metriportPatientId,
+                ehrPatientId,
+                bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+                resources: newMetriportResources,
+                resourceType,
+                jobId,
+              })
+            : undefined,
+          setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "successful" }),
+        ]);
       } catch (error) {
-        await setJobEntryStatusFromDirection({ ...entryStatusParams, entryStatus: "failed" });
+        await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
         throw error;
       }
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
-  }
-}
-
-async function getNewResources({
-  direction,
-  metriportResources,
-  ehrResources,
-}: {
-  direction: ResourceDiffDirection;
-  metriportResources: FhirResource[];
-  ehrResources: FhirResource[];
-}): Promise<FhirResource[]> {
-  if (direction === ResourceDiffDirection.METRIPORT_ONLY) {
-    return computeNewResources({
-      existingResources: metriportResources,
-      testResources: ehrResources,
-    });
-  } else {
-    return computeNewResources({
-      existingResources: ehrResources,
-      testResources: metriportResources,
-    });
-  }
-}
-
-async function setJobEntryStatusFromDirection({
-  ehr,
-  cxId,
-  practiceId,
-  patientId,
-  jobId,
-  entryStatus,
-  direction,
-}: SetEhrOnlyResourceDiffJobEntryStatusParams & {
-  direction: ResourceDiffDirection;
-}): Promise<void> {
-  if (direction === ResourceDiffDirection.METRIPORT_ONLY) {
-    await setJobEntryStatus({ cxId, jobId, entryStatus });
-  } else {
-    await setEhrOnlyResourceDiffJobEntryStatus({
-      cxId,
-      jobId,
-      entryStatus,
-      ehr,
-      practiceId,
-      patientId,
-    });
   }
 }
 
