@@ -500,8 +500,8 @@ export function fetchCodeableConceptText(concept: CodeableConcept): string | und
   }
 }
 
-export function assignMostDescriptiveStatus<T extends Resource & { status: string }>(
-  statusRanking: Record<T["status"], number>,
+export function assignMostDescriptiveStatus<T extends Resource & { status?: string }>(
+  statusRanking: Record<string, number>,
   existing: T,
   target: T
 ) {

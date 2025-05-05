@@ -2,7 +2,6 @@ import { CodeableConcept, Observation } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import {
   DeduplicationResult,
-  assignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
@@ -15,11 +14,7 @@ import {
   isUnknownCoding,
   unknownCoding,
 } from "../shared";
-import { extractCodes, extractValueFromObservation, statusRanking } from "./observation-shared";
-
-function preprocessStatus(existing: Observation, target: Observation) {
-  return assignMostDescriptiveStatus(statusRanking, existing, target);
-}
+import { extractCodes, extractValueFromObservation, preprocessStatus } from "./observation-shared";
 
 export function deduplicateObservations(
   observations: Observation[]
