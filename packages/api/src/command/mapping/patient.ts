@@ -8,7 +8,7 @@ import {
   PatientMappingPerSource,
   PatientSourceIdentifierMap,
 } from "../../domain/patient-mapping";
-import { parseExternalId } from "../../external/ehr/shared/utils/jwt-token";
+import { parseExternalId } from "../../external/ehr/shared/utils/external-id";
 import { PatientMappingModel } from "../../models/patient-mapping";
 
 export type PatientMappingParams = PatientMappingPerSource;
