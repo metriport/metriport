@@ -1,8 +1,5 @@
 import { errorToString, MetriportError } from "@metriport/shared";
-import {
-  Bundle,
-  SupportedResourceType,
-} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
@@ -10,29 +7,29 @@ import { ApiBaseParams } from "./api-shared";
 
 export type FetchEhrBundleParams = Omit<ApiBaseParams, "departmentId"> & {
   resourceType: SupportedResourceType;
-  useCachedBundle: boolean;
+  refresh: boolean;
 };
 
 /**
- * Fetches the EHR bundle for the given resource type from the API.
+ * Fetches the EHR bundle pre-signed URLs for the given resource type from the API.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param practiceId - The practice ID.
  * @param patientId - The patient ID.
  * @param resourceType - The resource type.
- * @param useCachedBundle - Whether to use the cached bundle.
- * @returns The EHR bundle.
+ * @param refresh - Whether to refresh the bundle.
+ * @returns The EHR bundle pre-signed URLs.
  */
-export async function fetchEhrBundle({
+export async function fetchEhrBundlePreSignedUrls({
   ehr,
   cxId,
   practiceId,
   patientId,
   resourceType,
-  useCachedBundle,
+  refresh,
 }: FetchEhrBundleParams): Promise<{
-  bundle: Bundle;
+  preSignedUrls: string;
   resourceTypes: SupportedResourceType[];
 }> {
   const { log, debug } = out(`Ehr fetchBundle - cxId ${cxId}`);
@@ -40,17 +37,16 @@ export async function fetchEhrBundle({
   const queryParams = new URLSearchParams({
     cxId,
     practiceId,
-    patientId,
     resourceType,
-    useCachedBundle: useCachedBundle.toString(),
+    refresh: refresh.toString(),
   });
-  const fetchBundleUrl = `/internal/ehr/${ehr}/patient/ehr-bundle?${queryParams.toString()}`;
+  const fetchBundleUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/bundle/pre-signed-urls?${queryParams.toString()}`;
   try {
     const response = await api.get(fetchBundleUrl);
     if (!response.data) throw new Error(`No body returned from ${fetchBundleUrl}`);
     debug(`${fetchBundleUrl} resp: ${JSON.stringify(response.data)}`);
     return {
-      bundle: response.data.bundle,
+      preSignedUrls: response.data.preSignedUrls,
       resourceTypes: response.data.resourceTypes,
     };
   } catch (error) {
@@ -62,9 +58,9 @@ export async function fetchEhrBundle({
       practiceId,
       patientId,
       resourceType,
-      useCachedBundle,
+      refresh,
       url: fetchBundleUrl,
-      context: "ehr.fetchEhrBundle",
+      context: "ehr.fetchEhrBundlePreSignedUrls",
     });
   }
 }

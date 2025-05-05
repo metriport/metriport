@@ -1,52 +1,43 @@
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
   createPatientJobPayload,
   getLatestPatientJob,
   getPatientJobByIdOrFail,
-  PatientJobPayload,
 } from "../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
+import { fetchBundlePreSignedUrls } from "../../command/fetch-bundle-presignd-urls";
 import {
-  fetchCanvasResourceDiffBundlePreSignedUrls,
-  FetchResourceDiffBundlePreSignedUrlsResult,
-} from "../../command/bundle/fetch-resource-diff-bundle-pre-signed-urls";
-import { getCreateCanvasResourceDiffBundlesJobType } from "../../shared";
-
-export type GetResourceDiffBundlesJobPayloadParams = {
-  cxId: string;
-  canvasPracticeId: string;
-  canvasPatientId: string;
-  jobId: string;
-  direction: ResourceDiffDirection;
-};
-
-type ResourceDiffBundlesJobPayload = PatientJobPayload<FetchResourceDiffBundlePreSignedUrlsResult>;
+  GetResourceDiffBundlesJobPayloadParams,
+  ResourceDiffBundlesJobPayload,
+  getCreateResourceDiffBundlesJobType,
+} from "../../utils/job";
 
 /**
  * Get the resource diff bundles job payload by jobId
  *
+ * @param ehr - The EHR source.
  * @param cxId The CX ID of the patient
- * @param canvasPracticeId The Canvas practice ID
- * @param canvasPatientId The Canvas patient ID
+ * @param practiceId - The practice id of the EHR patient.
+ * @param ehrPatientId - The EHR patient id of the patient.
  * @param jobId The job ID of the job
  * @param direction The direction of the resource diff bundle to fetch
- * @returns resource diff bundles job payload if completed
+ * @returns resource diff bundles job payload with data if completed
  * @throws NotFoundError if no job is found
  */
 export async function getResourceDiffBundlesJobPayload({
+  ehr,
   cxId,
-  canvasPracticeId,
-  canvasPatientId,
+  practiceId,
+  ehrPatientId,
   jobId,
   direction,
 }: GetResourceDiffBundlesJobPayloadParams): Promise<ResourceDiffBundlesJobPayload> {
   const job = await getPatientJobByIdOrFail({ cxId, jobId });
   if (job.status === "completed") {
-    const data = await fetchCanvasResourceDiffBundlePreSignedUrls({
+    const data = await fetchBundlePreSignedUrls({
+      ehr,
       cxId,
-      canvasPatientId,
-      canvasPracticeId,
+      ehrPatientId,
+      practiceId,
       jobId,
       direction,
     });
@@ -58,38 +49,41 @@ export async function getResourceDiffBundlesJobPayload({
 /**
  * Get the latest resource diff bundles job data payload
  *
+ * @param ehr - The EHR source.
  * @param cxId The CX ID of the patient
- * @param canvasPracticeId The Canvas practice ID
- * @param canvasPatientId The Canvas patient ID
+ * @param practiceId - The practice id of the EHR patient.
+ * @param ehrPatientId - The EHR patient id of the patient.
  * @param direction The direction of the resource diff bundle to fetch
- * @returns resource diff bundles job data payload if completed or undefined if no job is found
+ * @returns resource diff bundles job data payload with data if completed or undefined if no job is found
  */
 export async function getLatestResourceDiffBundlesJobPayload({
+  ehr,
   cxId,
-  canvasPracticeId,
-  canvasPatientId,
+  practiceId,
+  ehrPatientId,
   direction,
 }: Omit<GetResourceDiffBundlesJobPayloadParams, "jobId">): Promise<
   ResourceDiffBundlesJobPayload | undefined
 > {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
-    externalId: canvasPatientId,
-    source: EhrSources.canvas,
+    externalId: ehrPatientId,
+    source: ehr,
   });
   const metriportPatientId = existingPatient.patientId;
   const job = await getLatestPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: getCreateCanvasResourceDiffBundlesJobType(direction),
-    jobGroupId: canvasPatientId,
+    jobType: getCreateResourceDiffBundlesJobType(ehr, direction),
+    jobGroupId: ehrPatientId,
   });
   if (!job) return undefined;
   if (job.status === "completed") {
-    const data = await fetchCanvasResourceDiffBundlePreSignedUrls({
+    const data = await fetchBundlePreSignedUrls({
+      ehr,
       cxId,
-      canvasPatientId,
-      canvasPracticeId,
+      practiceId,
+      ehrPatientId,
       jobId: job.id,
       direction,
     });

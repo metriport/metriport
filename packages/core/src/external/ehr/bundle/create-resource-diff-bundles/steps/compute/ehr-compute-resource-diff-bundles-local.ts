@@ -1,12 +1,21 @@
-import { FhirResource, MetriportError, sleep } from "@metriport/shared";
 import {
-  fetchEhrBundle as fetchEhrBundleFromApi,
+  Bundle,
+  FhirResource,
+  MetriportError,
+  sleep,
+  SupportedResourceType,
+} from "@metriport/shared";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
+import axios from "axios";
+import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
+import {
   FetchEhrBundleParams,
-} from "../../../../api/fetch-bundle";
+  fetchEhrBundlePreSignedUrls as fetchEhrBundlePreSignedUrlsFromApi,
+} from "../../../../api/fetch-bundle-presigned-url";
 import { setPatientJobEntryStatus } from "../../../../api/set-entry-status";
 import { BundleType } from "../../../bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
-import { resourceIsDuplicateOfExistingResources } from "../../utils";
+import { computeNewResources } from "../../utils";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
@@ -15,9 +24,7 @@ import {
 export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async computeResourceDiffBundlesMetriportOnly(
-    payloads: ComputeResourceDiffBundlesRequest[]
-  ): Promise<void> {
+  async computeResourceDiffBundles(payloads: ComputeResourceDiffBundlesRequest[]): Promise<void> {
     for (const payload of payloads) {
       const {
         ehr,
@@ -25,33 +32,41 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         practiceId,
         metriportPatientId,
         ehrPatientId,
-        existingResources,
-        newResource,
+        resourceType,
+        direction,
         jobId,
       } = payload;
-      const resourceType = newResource.resourceType;
       try {
-        const existingResourcesToUse: FhirResource[] =
-          existingResources ??
-          (await getExistingResourcesFromApi({
+        const [metriportResources, ehrResources] = await Promise.all([
+          getMetriportResourcesFromS3({
+            cxId,
+            patientId: metriportPatientId,
+            resourceType,
+          }),
+          getEhrResourcesFromApi({
             ehr,
             cxId,
             practiceId,
             patientId: ehrPatientId,
             resourceType,
-          }));
-        const isDuplicate = resourceIsDuplicateOfExistingResources({
-          existingResources: existingResourcesToUse,
-          newResource,
+          }),
+        ]);
+        const newResources = await getNewResources({
+          direction,
+          metriportResources,
+          ehrResources,
         });
-        if (!isDuplicate) {
+        if (newResources.length > 0) {
           await updateBundleOnS3({
             ehr,
             cxId,
             metriportPatientId,
             ehrPatientId,
-            bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
-            resource: newResource,
+            bundleType:
+              direction === ResourceDiffDirection.METRIPORT_ONLY
+                ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+                : BundleType.RESOURCE_DIFF_EHR_ONLY,
+            resources: newResources,
             resourceType,
             jobId,
           });
@@ -64,26 +79,74 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
+}
 
-  async computeResourceDiffBundlesEhrOnly(): Promise<void> {
-    throw new MetriportError("Resource diff bundle EhrOnly is not supported");
+async function getNewResources({
+  direction,
+  metriportResources,
+  ehrResources,
+}: {
+  direction: ResourceDiffDirection;
+  metriportResources: FhirResource[];
+  ehrResources: FhirResource[];
+}): Promise<FhirResource[]> {
+  if (direction === ResourceDiffDirection.METRIPORT_ONLY) {
+    return computeNewResources({
+      existingResources: metriportResources,
+      testResources: ehrResources,
+    });
+  } else {
+    return computeNewResources({
+      existingResources: ehrResources,
+      testResources: metriportResources,
+    });
   }
 }
 
-async function getExistingResourcesFromApi({
+async function getMetriportResourcesFromS3({
+  cxId,
+  patientId,
+  resourceType,
+}: {
+  cxId: string;
+  patientId: string;
+  resourceType: SupportedResourceType;
+}): Promise<FhirResource[]> {
+  const consolidated = await getConsolidated({ cxId, patientId });
+  const resources = consolidated?.bundle?.entry?.filter(
+    entry => entry.resource?.resourceType === resourceType
+  );
+  if (!resources || resources.length < 1) return [];
+  return resources.map(entry => entry.resource as FhirResource);
+}
+
+async function getEhrResourcesFromApi({
   ehr,
   cxId,
   practiceId,
   patientId,
   resourceType,
-}: Omit<FetchEhrBundleParams, "useCachedBundle">): Promise<FhirResource[]> {
-  const existingResourcesBundle = await fetchEhrBundleFromApi({
+}: Omit<FetchEhrBundleParams, "refresh">): Promise<FhirResource[]> {
+  const ehrResourcesBundle = await fetchEhrBundlePreSignedUrlsFromApi({
     ehr,
     cxId,
     practiceId,
     patientId,
     resourceType,
-    useCachedBundle: true,
+    refresh: false,
   });
-  return existingResourcesBundle.bundle.entry.map(entry => entry.resource);
+  const fetchedResourceType = ehrResourcesBundle.resourceTypes[0];
+  const fetchedPreSignedUrls = ehrResourcesBundle.preSignedUrls[0];
+  if (!fetchedResourceType || !fetchedPreSignedUrls) {
+    throw new MetriportError("More than one resource type found in the EHR bundle", undefined, {
+      ehr,
+      cxId,
+      practiceId,
+      patientId,
+      resourceType,
+    });
+  }
+  const ehrResource = await axios.get(fetchedPreSignedUrls);
+  const bundle: Bundle = ehrResource.data;
+  return bundle.entry.map(entry => entry.resource);
 }

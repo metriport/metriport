@@ -3,6 +3,5 @@ import { CreateResourceDiffBundlesBaseRequest } from "../../create-resource-diff
 export type StartResourceDiffBundlesRequest = CreateResourceDiffBundlesBaseRequest;
 
 export interface EhrStartResourceDiffBundlesHandler {
-  startResourceDiffBundlesMetriportOnly(request: StartResourceDiffBundlesRequest): Promise<void>;
-  startResourceDiffBundlesEhrOnly(request: StartResourceDiffBundlesRequest): Promise<void>;
+  startResourceDiffBundles(request: StartResourceDiffBundlesRequest): Promise<void>;
 }

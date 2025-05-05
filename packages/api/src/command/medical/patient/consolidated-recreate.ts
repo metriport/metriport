@@ -4,7 +4,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
-import { createResourceDiffBundles } from "../../../external/ehr/create-resource-diff-bundles";
+import { createResourceDiffBundles } from "../../../external/ehr/shared/create-resource-diff-bundles";
 import { getConsolidated } from "../patient/consolidated-get";
 
 /**

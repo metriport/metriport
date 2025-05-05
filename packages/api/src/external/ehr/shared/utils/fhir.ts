@@ -22,7 +22,7 @@ import { Patient } from "@metriport/shared/interface/external/ehr/patient";
 import {
   getPatientByDemo,
   PatientWithIdentifiers,
-} from "../../command/medical/patient/get-patient";
+} from "../../../../command/medical/patient/get-patient";
 import { handleMetriportSync, HandleMetriportSyncParams } from "./patient";
 
 const parallelPatientMatches = 5;

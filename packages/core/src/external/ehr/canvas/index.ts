@@ -56,7 +56,7 @@ const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
 
-export const supportedCanvasDiffResources = [
+export const supportedCanvasResources = [
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
@@ -67,12 +67,12 @@ export const supportedCanvasDiffResources = [
   "Procedure",
   "Immunization",
 ] as SupportedResourceType[];
-export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
-export const isSupportedCanvasDiffResource = (
+export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
+export function isSupportedCanvasResource(
   resourceType: string
-): resourceType is SupportedCanvasDiffResource => {
-  return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
-};
+): resourceType is SupportedCanvasResource {
+  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
+}
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -390,7 +390,7 @@ class CanvasApi {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasDiffResource;
+    resourceType: SupportedCanvasResource;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
@@ -456,27 +456,32 @@ class CanvasApi {
     return bundle;
   }
 
-  async getResourceDiffBundlePreSignedUrlByResourceType({
+  async getBundleByResourceTypePreSignedUrl({
     cxId,
     metriportPatientId,
     canvasPatientId,
     resourceType,
-    direction,
+    resourceDiffDirection,
     jobId,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasDiffResource;
-    direction: ResourceDiffDirection;
-    jobId: string;
+    resourceType: SupportedCanvasResource;
+    resourceDiffDirection?: ResourceDiffDirection;
+    jobId?: string;
   }): Promise<string | undefined> {
+    if (resourceDiffDirection !== undefined && jobId) {
+      throw new BadRequestError("Job ID must be provided when fetching resource diff bundles");
+    }
     return this.getBundlePreSignedUrl({
       cxId,
       metriportPatientId,
       canvasPatientId,
       bundleType:
-        direction === ResourceDiffDirection.METRIPORT_ONLY
+        resourceDiffDirection === undefined
+          ? BundleType.EHR
+          : resourceDiffDirection === ResourceDiffDirection.METRIPORT_ONLY
           ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
           : BundleType.RESOURCE_DIFF_EHR_ONLY,
       resourceType,

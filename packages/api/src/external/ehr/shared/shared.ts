@@ -46,7 +46,7 @@ import { z } from "zod";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
-} from "../../command/jwt-token";
+} from "../../../command/jwt-token";
 
 export const delayBetweenPracticeBatches = dayjs.duration(15, "seconds");
 export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");

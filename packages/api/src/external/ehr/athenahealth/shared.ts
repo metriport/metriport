@@ -4,7 +4,11 @@ import AthenaHealthApi, {
 } from "@metriport/core/external/ehr/athenahealth/index";
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
+import {
+  createEhrClient,
+  EhrEnvAndClientCredentials,
+  EhrPerPracticeParams,
+} from "../shared/shared";
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 

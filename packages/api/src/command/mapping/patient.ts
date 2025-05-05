@@ -8,7 +8,7 @@ import {
   PatientMappingPerSource,
   PatientSourceIdentifierMap,
 } from "../../domain/patient-mapping";
-import { parseExternalId } from "../../external/ehr/shared";
+import { parseExternalId } from "../../external/ehr/shared/shared";
 import { PatientMappingModel } from "../../models/patient-mapping";
 
 export type PatientMappingParams = PatientMappingPerSource;

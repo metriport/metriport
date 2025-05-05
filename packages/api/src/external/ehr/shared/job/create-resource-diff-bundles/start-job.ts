@@ -1,47 +1,36 @@
 import { buildEhrStartResourceDiffBundlesHandler } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { BadRequestError } from "@metriport/shared";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { createPatientJob } from "../../../../../command/job/patient/create";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
-import { getCreateCanvasResourceDiffBundlesJobType } from "../../shared";
-
-export type CreateResourceDiffBundlesParams = {
-  cxId: string;
-  canvasPracticeId: string;
-  canvasPatientId: string;
-  direction: ResourceDiffDirection;
-  requestId?: string;
-};
+import {
+  CreateResourceDiffBundlesJobParams,
+  getCreateResourceDiffBundlesJobType,
+} from "../../utils/job";
 
 /**
  * Starts the resource diff job to produce the resource type bundles containing
- * the resources in Metriport that are not in Canvas, or vice versa.
+ * the resources in Metriport that are not in the EHR, or vice versa.
  *
+ * @param ehr - The EHR source.
  * @param cxId - The cxId of the patient.
- * @param canvasPracticeId - The canvas practice id of the patient.
- * @param canvasPatientId - The canvas patient id of the patient.
+ * @param practiceId - The practice id of the patient.
+ * @param patientId - The patient id of the patient.
  * @param direction - The direction of the resource diff bundles to create.
  * @param requestId - The request id of the job. (optional, defaults to a new UUID)
  */
 export async function createResourceDiffBundlesJob({
+  ehr,
   cxId,
-  canvasPracticeId,
-  canvasPatientId,
+  practiceId,
+  patientId,
   direction,
   requestId,
-}: CreateResourceDiffBundlesParams): Promise<string> {
-  if (direction !== ResourceDiffDirection.METRIPORT_ONLY) {
-    throw new BadRequestError("Unsupported resource diff direction", undefined, {
-      direction,
-    });
-  }
+}: CreateResourceDiffBundlesJobParams): Promise<string> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
-    externalId: canvasPatientId,
-    source: EhrSources.canvas,
+    externalId: patientId,
+    source: ehr,
   });
   const metriportPatient = await getPatientOrFail({
     cxId,
@@ -51,22 +40,23 @@ export async function createResourceDiffBundlesJob({
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: getCreateCanvasResourceDiffBundlesJobType(direction),
-    jobGroupId: canvasPatientId,
+    jobType: getCreateResourceDiffBundlesJobType(ehr, direction),
+    jobGroupId: patientId,
     requestId,
     limitedToOneRunningJob: true,
   });
   const jobId = job.id;
   const ehrResourceDiffHandler = buildEhrStartResourceDiffBundlesHandler();
   ehrResourceDiffHandler
-    .startResourceDiffBundlesMetriportOnly({
-      ehr: EhrSources.canvas,
+    .startResourceDiffBundles({
+      ehr,
       cxId,
-      practiceId: canvasPracticeId,
+      practiceId,
       metriportPatientId,
-      ehrPatientId: canvasPatientId,
+      ehrPatientId: patientId,
       jobId,
+      direction,
     })
-    .catch(processAsyncError("Canvas startResourceDiffBundlesMetriportOnly"));
+    .catch(processAsyncError(`${ehr} startResourceDiffBundlesMetriportOnly`));
   return jobId;
 }

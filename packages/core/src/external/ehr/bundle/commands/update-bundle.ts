@@ -10,7 +10,7 @@ import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle
 import { fetchBundle } from "./fetch-bundle";
 
 export type UpdateBundleParams = Omit<BundleKeyBaseParams, "getLastModified"> & {
-  resource: FhirResource;
+  resources: FhirResource[];
 };
 
 /**
@@ -21,7 +21,7 @@ export type UpdateBundleParams = Omit<BundleKeyBaseParams, "getLastModified"> & 
  * @param metriportPatientId - The Metriport ID.
  * @param ehrPatientId - The EHR patient ID.
  * @param bundleType - The bundle type.
- * @param resource - The resource to add to the bundle.
+ * @param resources - The resources to add to the bundle.
  * @param resourceType - The resource type of the bundle.
  * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
@@ -32,7 +32,7 @@ export async function updateBundle({
   metriportPatientId,
   ehrPatientId,
   bundleType,
-  resource,
+  resources,
   resourceType,
   jobId,
   s3BucketName = Config.getEhrBundleBucketName(),
@@ -40,11 +40,12 @@ export async function updateBundle({
   const { log } = out(
     `EhrResourceDiff createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
   );
-  if (resource.resourceType !== resourceType) {
+  const inValidResource = resources.find(resource => resource.resourceType !== resourceType);
+  if (inValidResource) {
     throw new BadRequestError("Invalid resource type", undefined, {
       bundleType,
       resourceType,
-      invalidResourceResourceType: resource.resourceType,
+      invalidResourceResourceType: inValidResource.resourceType,
     });
   }
   const s3Utils = getS3UtilsInstance();
@@ -52,7 +53,7 @@ export async function updateBundle({
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
   const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, jobId });
   try {
-    const newBundle = createBundleFromResourceList([resource]);
+    const newBundle = createBundleFromResourceList(resources);
     const existingBundleWithLastModified = await fetchBundle({
       ehr,
       cxId,
@@ -85,7 +86,6 @@ export async function updateBundle({
       resourceType,
       jobId,
       key,
-      resourceId: resource.id,
       context: "ehr-resource-diff.updateBundle",
     });
   }

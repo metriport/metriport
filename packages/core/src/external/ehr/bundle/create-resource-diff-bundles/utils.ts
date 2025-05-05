@@ -39,35 +39,46 @@ import { deduplicateProcedures } from "../../../../fhir-deduplication/resources/
 import { deduplicateRelatedPersons } from "../../../../fhir-deduplication/resources/related-person";
 import { artifactRelatedArtifactUrl } from "../../../../fhir-deduplication/shared";
 
-export function resourceIsDuplicateOfExistingResources({
+export function computeNewResources({
   existingResources,
-  newResource: newResourceRaw,
+  testResources,
 }: {
   existingResources: FhirResource[];
-  newResource: FhirResource;
-}): boolean {
-  if (existingResources.length < 1) return false;
-  const newResourceType = newResourceRaw.resourceType;
-  const invalidExistingResources = existingResources.filter(
-    resource => resource.resourceType !== newResourceType
-  );
-  if (invalidExistingResources.length > 0) {
-    throw new BadRequestError("Invalid existing resource types", undefined, {
-      invalidExistingResourceIds: invalidExistingResources.map(resource => resource.id).join(","),
-      invalidExistingResourceTypes: invalidExistingResources
-        .map(resource => resource.resourceType)
-        .join(","),
+  testResources: FhirResource[];
+}): FhirResource[] {
+  if (testResources.length < 1) return [];
+  if (existingResources.length < 1) return testResources;
+  const testResourceTypes = new Set(testResources.map(resource => resource.resourceType));
+  if (testResourceTypes.size > 1) {
+    throw new BadRequestError("Invalid test resource types", undefined, {
+      testResourceTypes: Array.from(testResourceTypes).join(","),
     });
   }
-  const newResourceAlreadyExists = existingResources.find(
-    resource => resource.id === newResourceRaw.id
+  const existingResourceTypes = new Set(existingResources.map(resource => resource.resourceType));
+  if (existingResourceTypes.size > 1) {
+    throw new BadRequestError("Invalid existing resource types", undefined, {
+      existingResourceTypes: Array.from(existingResourceTypes).join(","),
+    });
+  }
+  const testResourceType = Array.from(testResourceTypes).pop();
+  const existingResourceType = Array.from(existingResourceTypes).pop();
+  if (testResourceType !== existingResourceType) {
+    throw new BadRequestError("Test and existing resource types must match", undefined, {
+      testResourceType,
+      existingResourceType,
+    });
+  }
+  const testResourcesNoDerivedFromExtension = testResources.map(resource =>
+    removeDerivedFromExtension(resource as Resource)
   );
-  if (newResourceAlreadyExists) return true;
-
-  const newResource = removeDerivedFromExtension(newResourceRaw as Resource);
-  const resources = existingResources.concat([newResource]);
+  const existingResourcesNoDerivedFromExtension = existingResources.map(resource =>
+    removeDerivedFromExtension(resource as Resource)
+  );
+  const resources = existingResourcesNoDerivedFromExtension.concat(
+    testResourcesNoDerivedFromExtension
+  );
   let deduplicatedResources: Resource[];
-  switch (newResourceType) {
+  switch (testResourceType) {
     case "AllergyIntolerance":
       deduplicatedResources = deduplicateAllergyIntolerances(
         resources as AllergyIntolerance[]
@@ -140,18 +151,16 @@ export function resourceIsDuplicateOfExistingResources({
       ).combinedResources;
       break;
     default:
-      throw new BadRequestError(`Unsupported resource type: ${newResourceType}`, undefined, {
-        resourceType: newResourceType,
+      throw new BadRequestError(`Unsupported resource type: ${testResourceType}`, undefined, {
+        resourceType: testResourceType,
       });
   }
-
-  const newResourceInDeduplicatedResources = deduplicatedResources.find(
-    resource => resource.id === newResource.id
-  );
-  if (!newResourceInDeduplicatedResources) return true;
-  const newResourceIsDerived = resourceIsDerived(newResourceInDeduplicatedResources);
-  if (newResourceIsDerived) return true;
-  return false;
+  const testResourceIds = testResources.map(resource => resource.id);
+  const newResources = deduplicatedResources.filter(resource => {
+    if (!resource.id) return false;
+    return testResourceIds.includes(resource.id) && !resourceIsDerived(resource);
+  });
+  return newResources as FhirResource[];
 }
 
 function resourceIsDerived(resource: Resource): boolean {

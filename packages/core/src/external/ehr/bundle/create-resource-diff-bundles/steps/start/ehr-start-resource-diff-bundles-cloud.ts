@@ -1,4 +1,3 @@
-import { MetriportError } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Config } from "../../../../../../util/config";
 import { SQSClient } from "../../../../../aws/sqs";
@@ -12,15 +11,13 @@ export class EhrStartResourceDiffBundlesCloud implements EhrStartResourceDiffBun
 
   constructor(
     private readonly ehrStartResourceDiffBundlesQueueUrl: string,
-    region?: string,
+    region: string = Config.getAWSRegion(),
     sqsClient?: SQSClient
   ) {
-    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
+    this.sqsClient = sqsClient ?? new SQSClient({ region });
   }
 
-  async startResourceDiffBundlesMetriportOnly(
-    params: StartResourceDiffBundlesRequest
-  ): Promise<void> {
+  async startResourceDiffBundles(params: StartResourceDiffBundlesRequest): Promise<void> {
     const { cxId } = params;
     const payload = JSON.stringify(params);
     await this.sqsClient.sendMessageToQueue(this.ehrStartResourceDiffBundlesQueueUrl, payload, {
@@ -28,9 +25,5 @@ export class EhrStartResourceDiffBundlesCloud implements EhrStartResourceDiffBun
       messageDeduplicationId: createUuidFromText(payload),
       messageGroupId: cxId,
     });
-  }
-
-  async startResourceDiffBundlesEhrOnly(): Promise<void> {
-    throw new MetriportError("Resource diff bundle EhrOnly is not supported");
   }
 }
