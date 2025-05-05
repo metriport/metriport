@@ -1,6 +1,7 @@
 import { StartResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles";
 import { EhrStartResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-local";
 import { MetriportError } from "@metriport/shared";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -28,15 +29,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
   console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const { ehr, cxId, metriportPatientId, ehrPatientId } = parsedBody;
+  const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, direction, jobId } = parsedBody;
 
   const log = prefixedLog(
-    `ehr ${ehr}, cxId ${cxId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}`
+    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, direction ${direction}, jobId ${jobId}`
   );
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
   const ehrStartResourceDiffBundlesHandler = new EhrStartResourceDiffBundlesLocal(waitTimeInMillis);
-  await ehrStartResourceDiffBundlesHandler.startResourceDiffBundlesMetriportOnly(parsedBody);
+  await ehrStartResourceDiffBundlesHandler.startResourceDiffBundles(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -48,6 +49,7 @@ const ehrStartResourceDiffBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
+  direction: z.nativeEnum(ResourceDiffDirection),
   jobId: z.string(),
 });
 

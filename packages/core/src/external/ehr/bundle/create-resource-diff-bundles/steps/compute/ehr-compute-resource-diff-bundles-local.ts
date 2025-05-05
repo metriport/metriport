@@ -12,7 +12,11 @@ import {
   FetchEhrBundleParams,
   fetchEhrBundlePreSignedUrls as fetchEhrBundlePreSignedUrlsFromApi,
 } from "../../../../api/fetch-bundle-presigned-url";
-import { setPatientJobEntryStatus } from "../../../../api/set-entry-status";
+import {
+  setEhrOnlyResourceDiffJobEntryStatus,
+  SetEhrOnlyResourceDiffJobEntryStatusParams,
+} from "../../../../api/job/ehr-only-set-entry-status";
+import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
 import { BundleType } from "../../../bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
 import { computeNewResources } from "../../utils";
@@ -36,6 +40,14 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         direction,
         jobId,
       } = payload;
+      const entryStatusParams = {
+        ehr,
+        cxId,
+        practiceId,
+        patientId: ehrPatientId,
+        direction,
+        jobId,
+      };
       try {
         const [metriportResources, ehrResources] = await Promise.all([
           getMetriportResourcesFromS3({
@@ -71,9 +83,9 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
             jobId,
           });
         }
-        await setPatientJobEntryStatus({ cxId, jobId, entryStatus: "successful" });
+        await setJobEntryStatusFromDirection({ ...entryStatusParams, entryStatus: "successful" });
       } catch (error) {
-        await setPatientJobEntryStatus({ cxId, jobId, entryStatus: "failed" });
+        await setJobEntryStatusFromDirection({ ...entryStatusParams, entryStatus: "failed" });
         throw error;
       }
     }
@@ -99,6 +111,31 @@ async function getNewResources({
     return computeNewResources({
       existingResources: ehrResources,
       testResources: metriportResources,
+    });
+  }
+}
+
+async function setJobEntryStatusFromDirection({
+  ehr,
+  cxId,
+  practiceId,
+  patientId,
+  jobId,
+  entryStatus,
+  direction,
+}: SetEhrOnlyResourceDiffJobEntryStatusParams & {
+  direction: ResourceDiffDirection;
+}): Promise<void> {
+  if (direction === ResourceDiffDirection.METRIPORT_ONLY) {
+    await setJobEntryStatus({ cxId, jobId, entryStatus });
+  } else {
+    await setEhrOnlyResourceDiffJobEntryStatus({
+      cxId,
+      jobId,
+      entryStatus,
+      ehr,
+      practiceId,
+      patientId,
     });
   }
 }

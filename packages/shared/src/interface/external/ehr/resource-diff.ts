@@ -1,6 +1,6 @@
 export const ResourceDiffDirection = {
   METRIPORT_ONLY: "metriport-only",
-  CANVAS_ONLY: "canvas-only",
+  EHR_ONLY: "ehr-only",
 } as const;
 export type ResourceDiffDirection =
   (typeof ResourceDiffDirection)[keyof typeof ResourceDiffDirection];

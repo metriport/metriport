@@ -1,10 +1,10 @@
 import { sleep } from "@metriport/shared";
 import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
-import { completeJob } from "../../../../api/complete-job";
 import { fetchEhrBundlePreSignedUrls as fetchEhrBundlePreSignedUrlsFromApi } from "../../../../api/fetch-bundle-presigned-url";
-import { initializeJob } from "../../../../api/initialize-job";
-import { updateJobTotal } from "../../../../api/update-job-total";
+import { completeJob } from "../../../../api/job/complete-job";
+import { initializeJob } from "../../../../api/job/initialize-job";
+import { updateJobTotal } from "../../../../api/job/update-job-total";
 import { BundleType, getSupportedResourcesByEhr } from "../../../bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../commands/create-or-replace-bundle";
 import { ComputeResourceDiffBundlesRequest } from "../compute/ehr-compute-resource-diff-bundles";

@@ -17,7 +17,7 @@ import {
  * @param ehr - The EHR source.
  * @param cxId The CX ID of the patient
  * @param practiceId - The practice id of the EHR patient.
- * @param ehrPatientId - The EHR patient id of the patient.
+ * @param patientId - The EHR patient id of the patient.
  * @param jobId The job ID of the job
  * @param direction The direction of the resource diff bundle to fetch
  * @returns resource diff bundles job payload with data if completed

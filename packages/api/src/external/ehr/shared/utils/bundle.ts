@@ -108,3 +108,11 @@ export function getBundleFunctions(ehr: EhrSources): BundleFunctions {
   }
   return bundleFunctions;
 }
+
+export type ContributeEhrOnlyBundleParams = {
+  ehr: EhrSources;
+  cxId: string;
+  practiceId: string;
+  patientId: string;
+  jobId: string;
+};

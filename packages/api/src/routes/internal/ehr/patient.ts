@@ -1,10 +1,12 @@
 import { isSupportedCanvasResource } from "@metriport/core/external/ehr/canvas/index";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, isValidJobEntryStatus } from "@metriport/shared";
 import { isResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
+import { contributeEhrOnlyBundle } from "../../../external/ehr/shared/command/contribute-ehr-only-bundle";
 import { fetchBundlePreSignedUrls } from "../../../external/ehr/shared/command/fetch-bundle-presignd-urls";
 import {
   getLatestResourceDiffBundlesJobPayload,
@@ -156,6 +158,50 @@ router.get(
       jobId,
     });
     return res.status(httpStatus.OK).json(bundle);
+  })
+);
+
+/**
+ * POST /internal/ehr/:ehrId/patient/:id/resource/diff/ehr-only/set-entry-status
+ *
+ * Sets the status of a patient job entry.
+ * @param req.query.cxId The cxId of the patient.
+ * @param req.params.ehrId The EHR to fetch the resource diff job for.
+ * @param req.params.id The ID of EHR Patient.
+ * @param req.query.practiceId The ID of EHR Practice.
+ * @param req.query.jobId The job ID.
+ * @param req.query.entryStatus The status of the entry.
+ * @returns 200 OK
+ */
+router.post(
+  "/:id/resource/diff/ehr-only/set-entry-status",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const ehr = getFrom("params").orFail("ehrId", req);
+    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("params").orFail("id", req);
+    const practiceId = getFromQueryOrFail("practiceId", req);
+    const jobId = getFromQueryOrFail("jobId", req);
+    const entryStatus = getFromQueryOrFail("entryStatus", req);
+    if (!isValidJobEntryStatus(entryStatus)) {
+      throw new BadRequestError("Status must a valid job entry status");
+    }
+    await setPatientJobEntryStatus({
+      jobId,
+      cxId,
+      entryStatus,
+      onCompleted: async () => {
+        await contributeEhrOnlyBundle({
+          ehr,
+          cxId,
+          practiceId,
+          patientId,
+          jobId,
+        });
+      },
+    });
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

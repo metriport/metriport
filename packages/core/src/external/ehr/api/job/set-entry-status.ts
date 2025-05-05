@@ -1,10 +1,10 @@
 import { errorToString, JobEntryStatus, MetriportError } from "@metriport/shared";
 import axios from "axios";
-import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
-import { ApiBaseParams } from "./api-shared";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+import { ApiBaseParams } from "../api-shared";
 
-export type SetPatientJobEntryStatusParams = Pick<ApiBaseParams, "cxId"> & {
+export type SetJobEntryStatusParams = Pick<ApiBaseParams, "cxId"> & {
   jobId: string;
   entryStatus: JobEntryStatus;
 };
@@ -15,12 +15,12 @@ export type SetPatientJobEntryStatusParams = Pick<ApiBaseParams, "cxId"> & {
  * @param cxId - The CX ID.
  * @param entryStatus - The status of the job entry.
  */
-export async function setPatientJobEntryStatus({
+export async function setJobEntryStatus({
   jobId,
   cxId,
   entryStatus,
-}: SetPatientJobEntryStatusParams): Promise<void> {
-  const { log, debug } = out(`Ehr setPatientJobEntryStatus - jobId ${jobId} cxId ${cxId}`);
+}: SetJobEntryStatusParams): Promise<void> {
+  const { log, debug } = out(`Ehr setJobEntryStatus - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId, entryStatus });
   const updateJobUrl = `/internal/patient/job/${jobId}/set-entry-status?${queryParams.toString()}`;
@@ -29,14 +29,14 @@ export async function setPatientJobEntryStatus({
     if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);
     debug(`${updateJobUrl} resp: ${JSON.stringify(response.data)}`);
   } catch (error) {
-    const msg = "Failure while setting patient job entry status @ Api";
+    const msg = "Failure while setting job entry status @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
       jobId,
       entryStatus,
       url: updateJobUrl,
-      context: "ehr.setPatientJobEntryStatus",
+      context: "ehr.setJobEntryStatus",
     });
   }
 }

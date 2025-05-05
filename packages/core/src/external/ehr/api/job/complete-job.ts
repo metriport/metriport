@@ -1,8 +1,8 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
-import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
-import { ApiBaseParams } from "./api-shared";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+import { ApiBaseParams } from "../api-shared";
 
 export type CompleteJobParams = Pick<ApiBaseParams, "cxId"> & {
   jobId: string;

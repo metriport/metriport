@@ -1,7 +1,8 @@
 import { ComputeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles";
 import { EhrComputeResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-local";
 import { MetriportError } from "@metriport/shared";
-import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { supportedResourceTypes } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -28,14 +29,23 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   if (!message) return;
 
   const parsedBody = parseBody(message.body);
-  const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, newResource } = parsedBody;
+  const {
+    ehr,
+    cxId,
+    practiceId,
+    metriportPatientId,
+    ehrPatientId,
+    direction,
+    jobId,
+    resourceType,
+  } = parsedBody;
 
   const log = prefixedLog(
-    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceId ${newResource.id}`
+    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceType ${resourceType}, direction ${direction}, jobId ${jobId}`
   );
 
   const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffBundlesLocal(waitTimeInMillis);
-  await ehrComputeResourceDiffHandler.computeResourceDiffBundlesMetriportOnly([parsedBody]);
+  await ehrComputeResourceDiffHandler.computeResourceDiffBundles([parsedBody]);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -47,9 +57,9 @@ const ehrComputeResourceDiffBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
+  direction: z.nativeEnum(ResourceDiffDirection),
   jobId: z.string(),
-  existingResources: fhirResourceSchema.array().optional(),
-  newResource: fhirResourceSchema,
+  resourceType: z.enum(supportedResourceTypes),
 });
 
 function parseBody(body?: unknown): ComputeResourceDiffBundlesRequest {
