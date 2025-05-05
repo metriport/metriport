@@ -2,7 +2,7 @@ import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
-import { supportedCanvasDiffResources } from "../canvas";
+import { supportedCanvasResources } from "../canvas";
 
 const globalPrefix = "bundle";
 const region = Config.getAWSRegion();
@@ -42,7 +42,7 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
 }
 
 export function getSupportedResourcesByEhr(ehr: EhrSource): SupportedResourceType[] {
-  if (ehr === EhrSources.canvas) return supportedCanvasDiffResources as SupportedResourceType[];
+  if (ehr === EhrSources.canvas) return supportedCanvasResources as SupportedResourceType[];
   return [];
 }
 
