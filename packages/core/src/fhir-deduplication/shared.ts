@@ -50,27 +50,6 @@ function createExtensionRelatedArtifact(resourceType: string, id: string | undef
   };
 }
 
-export function combineTwoResources<T extends Resource>(
-  r1: T,
-  r2: T,
-  isExtensionIncluded = true
-): T {
-  const combined = deepMerge(r1, r2, isExtensionIncluded);
-  const extensionRef = createExtensionRelatedArtifact(r2.resourceType, r2.id);
-
-  // This part combines resources together and adds the ID references of the duplicates into the master resource
-  // regardless of whether new information was found
-
-  if (!isExtensionIncluded) {
-    delete combined.extension;
-  } else if ("extension" in r1) {
-    combined.extension = [...r1.extension, extensionRef];
-  } else {
-    combined.extension = [extensionRef];
-  }
-  return combined;
-}
-
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mergeIntoTargetResource<T extends Resource & { extension?: any[] }>(
   target: T,
