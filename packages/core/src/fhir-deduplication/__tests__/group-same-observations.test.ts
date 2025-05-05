@@ -2,7 +2,10 @@ import { CodeableConcept, Coding, Observation, Quantity } from "@medplum/fhirtyp
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 import { groupSameObservations } from "../resources/observation";
 import { groupSameObservationsSocial } from "../resources/observation-social";
-import { unknownCode, unknownCoding } from "../shared";
+import {
+  unknownCode as unknownCodeImported,
+  unknownCoding as unknownCodingImported,
+} from "../shared";
 import { dateTime, makePeriod } from "./examples/condition-examples";
 import {
   loincCodeTobacco as loincCodeTobaccoImported,
@@ -19,6 +22,8 @@ describe("groupSameObservationsSocial", () => {
   let snomedCodeTobacco: CodeableConceptWithCoding;
   let valueConceptTobacco: CodeableConceptWithCoding;
   let valueHeight: Quantity;
+  let unknownCoding: Coding;
+  let unknownCode: CodeableConcept;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -26,6 +31,8 @@ describe("groupSameObservationsSocial", () => {
     snomedCodeTobacco = deepClone(snomedCodeTobaccoImported);
     valueConceptTobacco = deepClone(valueConceptTobaccoImported);
     valueHeight = deepClone(valueHeightImported);
+    unknownCoding = deepClone(unknownCodingImported);
+    unknownCode = deepClone(unknownCodeImported);
   });
 
   it("correctly groups duplicate observations based on values and loinc codes", () => {
@@ -140,11 +147,11 @@ describe("groupSameObservationsSocial", () => {
 
   it("removes observations with unknown codes", () => {
     const params = {
-      valueCodeableConcept: deepClone(valueConceptTobacco),
+      valueCodeableConcept: valueConceptTobacco,
     };
 
-    const observation = makeObservation({ ...params, code: deepClone(loincCodeTobacco) });
-    const observation2 = makeObservation({ ...params, code: deepClone(unknownCode) });
+    const observation = makeObservation({ ...params, code: loincCodeTobacco });
+    const observation2 = makeObservation({ ...params, code: unknownCode });
 
     const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
     console.log("observationsMap", observationsMap);
@@ -156,25 +163,25 @@ describe("groupSameObservationsSocial", () => {
 
   it("removes unknown codes, but keeps all other codes", () => {
     const params = {
-      code: deepClone(loincCodeTobacco),
-      valueCodeableConcept: deepClone(valueConceptTobacco),
+      code: loincCodeTobacco,
+      valueCodeableConcept: valueConceptTobacco,
     };
 
-    const madeUpCoding = {
+    const madeUpCoding = deepClone({
       system: "some-other-custom-coding-system",
       code: "no-one-knows-the-meaning",
       display: "ancient words",
-    };
+    });
 
     const observation = makeObservation(params);
     const observation2 = makeObservation({
       ...params,
       code: {
         coding: [
-          deepClone(unknownCoding),
-          ...deepClone(loincCodeTobacco).coding,
-          ...deepClone(snomedCodeTobacco).coding,
-          deepClone(madeUpCoding),
+          unknownCoding,
+          ...loincCodeTobacco.coding,
+          ...snomedCodeTobacco.coding,
+          madeUpCoding,
         ],
       },
     });
