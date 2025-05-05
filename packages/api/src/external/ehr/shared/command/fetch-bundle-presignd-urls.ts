@@ -65,7 +65,7 @@ export async function fetchBundlePreSignedUrls({
  * @param practiceId - The practice id of the EHR patient.
  * @param patientId - The patient id of the patient.
  * @param resourceType The resource type to fetch. Optional, all resource types will be fetched if not provided.
- * @param direction The direction of the resource diff bundle to fetch. Optional, defaults to both.
+ * @param bundleType The type of bundle to fetch. Optional, defaults to both.
  * @param jobId The job id of the job. Optional, defaults to a new UUID.
  * @returns resource diff bundles pre-signed URLs
  * @throws NotFoundError if no job is found
@@ -76,7 +76,7 @@ export async function fetchResourceDiffBundlesPreSignedUrls({
   practiceId,
   patientId,
   resourceType,
-  direction,
+  bundleType,
   jobId,
 }: FetchBundleParamsResourceDiff): Promise<FetchBundlePreSignedUrls> {
   const { fetchBundlePreSignedUrl, getSupportedResourceTypes } = getBundleFunctions(ehr);
@@ -96,7 +96,7 @@ export async function fetchResourceDiffBundlesPreSignedUrls({
       patientId,
       resourceType,
       metriportPatientId,
-      direction,
+      bundleType,
       jobId,
     };
     const preSignedUrl = await fetchBundlePreSignedUrl(bundleParamsWithResourceType);

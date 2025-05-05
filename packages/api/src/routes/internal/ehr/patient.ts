@@ -1,9 +1,6 @@
+import { isResourceDiffBundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { isSupportedCanvasResource } from "@metriport/core/external/ehr/canvas/index";
 import { BadRequestError, isValidJobEntryStatus } from "@metriport/shared";
-import {
-  isResourceDiffDirection,
-  ResourceDiffDirection,
-} from "@metriport/shared/interface/external/ehr/resource-diff";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -61,7 +58,7 @@ router.post(
  * @param req.params.ehrId The EHR to fetch the resource diff job for.
  * @param req.params.id The ID of EHR Patient.
  * @param req.query.practiceId The ID of EHR Practice.
- * @param req.query.direction The direction of the resource diff bundles to create.
+ * @param req.query.contribute Whether to contribute the bundle to the EHR.
  * @returns The job ID of the resource diff job
  */
 router.post(
@@ -73,18 +70,13 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
-    const direction = getFromQueryOrFail("direction", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, {
-        direction,
-      });
-    }
+    const contribute = getFromQueryAsBoolean("contribute", req);
     const jobId = await startCreateResourceDiffBundlesJob({
       ehr,
       cxId,
       patientId,
       practiceId,
-      direction,
+      contribute,
     });
     return res.status(httpStatus.OK).json(jobId);
   })
@@ -98,7 +90,7 @@ router.post(
  * @param req.params.ehrId The EHR to fetch the resource diff job for.
  * @param req.params.id The ID of EHR Patient.
  * @param req.query.practiceId The ID of EHR Practice.
- * @param req.query.direction The direction of the resource diff bundles to create.
+ * @param req.query.bundleType The type of bundle to fetch.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
@@ -110,10 +102,10 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
-    const direction = getFromQueryOrFail("direction", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, {
-        direction,
+    const bundleType = getFromQueryOrFail("bundleType", req);
+    if (!isResourceDiffBundleType(bundleType)) {
+      throw new BadRequestError("Invalid bundle type", undefined, {
+        bundleType,
       });
     }
     const bundle = await getLatestResourceDiffBundlesJobPayload({
@@ -121,7 +113,7 @@ router.get(
       cxId,
       patientId,
       practiceId,
-      direction,
+      bundleType,
     });
     return res.status(httpStatus.OK).json(bundle);
   })
@@ -135,7 +127,7 @@ router.get(
  * @param req.params.ehrId The EHR to fetch the resource diff job for.
  * @param req.params.id The ID of EHR Patient.
  * @param req.query.practiceId The ID of EHR Practice.
- * @param req.query.direction The direction of the resource diff bundles to create.
+ * @param req.query.bundleType The type of bundle to fetch.
  * @param req.params.jobId The job ID of the resource diff job.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
@@ -148,10 +140,10 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
-    const direction = getFromQueryOrFail("direction", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, {
-        direction,
+    const bundleType = getFromQueryOrFail("bundleType", req);
+    if (!isResourceDiffBundleType(bundleType)) {
+      throw new BadRequestError("Invalid bundle type", undefined, {
+        bundleType,
       });
     }
     const jobId = getFrom("params").orFail("jobId", req);
@@ -160,7 +152,7 @@ router.get(
       cxId,
       patientId,
       practiceId,
-      direction,
+      bundleType,
       jobId,
     });
     return res.status(httpStatus.OK).json(bundle);
@@ -177,7 +169,7 @@ router.get(
  * @param req.query.practiceId The ID of EHR Practice.
  * @param req.query.jobId The job ID.
  * @param req.query.entryStatus The status of the entry.
- * @param req.query.direction The direction of the resource diff bundles job.
+ * @param req.query.bundleType The type of bundle to fetch.
  * @returns 200 OK
  */
 router.post(
@@ -194,18 +186,13 @@ router.post(
     if (!isValidJobEntryStatus(entryStatus)) {
       throw new BadRequestError("Status must a valid job entry status");
     }
-    const direction = getFromQueryOrFail("direction", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, {
-        direction,
-      });
-    }
+    const contribute = getFromQueryAsBoolean("contribute", req);
     await setPatientJobEntryStatus({
       jobId,
       cxId,
       entryStatus,
       onCompleted: async () => {
-        if (direction === ResourceDiffDirection.EHR_ONLY) {
+        if (contribute) {
           await contributeEhrOnlyBundle({
             ehr,
             cxId,

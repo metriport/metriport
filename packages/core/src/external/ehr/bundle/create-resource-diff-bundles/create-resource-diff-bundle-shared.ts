@@ -1,4 +1,3 @@
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
 export type CreateResourceDiffBundlesBaseRequest = {
@@ -7,6 +6,6 @@ export type CreateResourceDiffBundlesBaseRequest = {
   practiceId: string;
   metriportPatientId: string;
   ehrPatientId: string;
-  direction: ResourceDiffDirection;
+  contribute: boolean;
   jobId: string;
 };

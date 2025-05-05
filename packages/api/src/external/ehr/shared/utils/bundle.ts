@@ -1,7 +1,7 @@
+import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { supportedCanvasResources } from "@metriport/core/external/ehr/canvas/index";
 import { BadRequestError } from "@metriport/shared";
 import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
 import { createCanvasClient } from "../../canvas/shared";
@@ -15,7 +15,7 @@ export type FetchBundleParams = {
 };
 
 export type FetchBundleParamsResourceDiff = FetchBundleParams & {
-  direction: ResourceDiffDirection;
+  bundleType: BundleType;
   jobId: string;
 };
 

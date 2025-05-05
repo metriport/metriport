@@ -32,7 +32,7 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         metriportPatientId,
         ehrPatientId,
         resourceType,
-        direction,
+        contribute,
         jobId,
       } = payload;
       const entryStatusParams = {
@@ -40,7 +40,7 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         cxId,
         practiceId,
         patientId: ehrPatientId,
-        direction,
+        contribute,
         jobId,
       };
       try {

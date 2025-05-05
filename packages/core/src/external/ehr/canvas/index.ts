@@ -29,7 +29,6 @@ import {
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
@@ -461,30 +460,29 @@ class CanvasApi {
     metriportPatientId,
     canvasPatientId,
     resourceType,
-    resourceDiffDirection,
+    bundleType,
     jobId,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasResource;
-    resourceDiffDirection?: ResourceDiffDirection;
+    bundleType?: BundleType;
     jobId?: string;
   }): Promise<string | undefined> {
-    if (resourceDiffDirection !== undefined && jobId) {
+    if (
+      (bundleType === BundleType.RESOURCE_DIFF_EHR_ONLY ||
+        bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY) &&
+      !jobId
+    ) {
       throw new BadRequestError("Job ID must be provided when fetching resource diff bundles");
     }
     return this.getBundlePreSignedUrl({
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType:
-        resourceDiffDirection === undefined
-          ? BundleType.EHR
-          : resourceDiffDirection === ResourceDiffDirection.METRIPORT_ONLY
-          ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
-          : BundleType.RESOURCE_DIFF_EHR_ONLY,
       resourceType,
+      bundleType: bundleType ?? BundleType.EHR,
       jobId,
     });
   }

@@ -1,5 +1,5 @@
-import { BadRequestError } from "@metriport/shared";
-import { isResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
+import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
+import { EhrSources } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -7,8 +7,8 @@ import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/com
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
-} from "../../../external/ehr/canvas/job/create-resource-diff-bundles/get-job-payload";
-import { createResourceDiffBundlesJob } from "../../../external/ehr/canvas/job/create-resource-diff-bundles/start-job";
+} from "../../../external/ehr/shared/job/create-resource-diff-bundles/get-job-payload";
+import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/create-resource-diff-bundles/start-job";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
@@ -83,17 +83,11 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const direction = getFromQueryOrFail("direction", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, {
-        direction,
-      });
-    }
-    const jobId = await createResourceDiffBundlesJob({
+    const jobId = await startCreateResourceDiffBundlesJob({
+      ehr: EhrSources.canvas,
       cxId,
-      canvasPatientId,
-      canvasPracticeId,
-      direction,
+      practiceId: canvasPracticeId,
+      patientId: canvasPatientId,
     });
     return res.status(httpStatus.OK).json(jobId);
   })
@@ -116,17 +110,12 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const direction = getFromQueryOrFail("direction", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, {
-        direction,
-      });
-    }
     const bundle = await getLatestResourceDiffBundlesJobPayload({
+      ehr: EhrSources.canvas,
       cxId,
-      canvasPatientId,
-      canvasPracticeId,
-      direction,
+      patientId: canvasPatientId,
+      practiceId: canvasPracticeId,
+      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
     });
     return res.status(httpStatus.OK).json(bundle);
   })
@@ -151,18 +140,13 @@ router.get(
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const jobId = getFrom("params").orFail("jobId", req);
-    const direction = getFromQueryOrFail("direction", req);
-    if (!isResourceDiffDirection(direction)) {
-      throw new BadRequestError("Invalid direction", undefined, {
-        direction,
-      });
-    }
     const bundle = await getResourceDiffBundlesJobPayload({
+      ehr: EhrSources.canvas,
       cxId,
-      canvasPatientId,
-      canvasPracticeId,
+      patientId: canvasPatientId,
+      practiceId: canvasPracticeId,
       jobId,
-      direction,
+      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
     });
     return res.status(httpStatus.OK).json(bundle);
   })

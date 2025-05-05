@@ -16,7 +16,7 @@ import {
  * @param cxId - The cxId of the patient.
  * @param practiceId - The practice id of the patient.
  * @param patientId - The patient id of the patient.
- * @param direction - The direction of the resource diff bundles to create.
+ * @param contribute - Whether to contribute the EHR-only resource diff bundles to the HIEs.
  * @param requestId - The request id of the job. (optional, defaults to a new UUID)
  */
 export async function startCreateResourceDiffBundlesJob({
@@ -24,7 +24,7 @@ export async function startCreateResourceDiffBundlesJob({
   cxId,
   practiceId,
   patientId,
-  direction,
+  contribute = false,
   requestId,
 }: StartCreateResourceDiffBundlesJobParams): Promise<string> {
   const existingPatient = await getPatientMappingOrFail({
@@ -40,7 +40,7 @@ export async function startCreateResourceDiffBundlesJob({
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: getCreateResourceDiffBundlesJobType(ehr, direction),
+    jobType: getCreateResourceDiffBundlesJobType(ehr),
     jobGroupId: patientId,
     requestId,
     limitedToOneRunningJob: true,
@@ -55,8 +55,8 @@ export async function startCreateResourceDiffBundlesJob({
       metriportPatientId,
       ehrPatientId: patientId,
       jobId,
-      direction,
+      contribute,
     })
-    .catch(processAsyncError(`${ehr} startResourceDiffBundles direction ${direction}`));
+    .catch(processAsyncError(`${ehr} startResourceDiffBundles`));
   return jobId;
 }

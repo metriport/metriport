@@ -1,5 +1,4 @@
 import { errorToString, JobEntryStatus, MetriportError } from "@metriport/shared";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
@@ -8,7 +7,7 @@ import { ApiBaseParams } from "../api-shared";
 export type SetResourceDiffJobEntryStatusParams = ApiBaseParams & {
   jobId: string;
   entryStatus: JobEntryStatus;
-  direction: ResourceDiffDirection;
+  contribute: boolean;
 };
 
 /**
@@ -27,7 +26,7 @@ export async function setResourceDiffJobEntryStatus({
   patientId,
   jobId,
   entryStatus,
-  direction,
+  contribute,
 }: SetResourceDiffJobEntryStatusParams): Promise<void> {
   const { log, debug } = out(`Ehr setResourceDiffJobEntryStatus - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
@@ -36,7 +35,7 @@ export async function setResourceDiffJobEntryStatus({
     practiceId,
     jobId,
     entryStatus,
-    direction,
+    contribute: contribute.toString(),
   });
   const updateJobUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/diff/set-entry-status?${queryParams.toString()}`;
   try {

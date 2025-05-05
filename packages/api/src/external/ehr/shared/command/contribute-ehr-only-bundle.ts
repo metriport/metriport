@@ -1,10 +1,11 @@
+import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import axios from "axios";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
 import { handleDataContribution } from "../../../../command/medical/patient/data-contribution/handle-data-contributions";
 import { getResourceDiffBundlesJobPayload } from "../job/create-resource-diff-bundles/get-job-payload";
 import { ContributeEhrOnlyBundleParams } from "../utils/bundle";
+
 /**
  * Fetch the pre-signed URLs for the resource diff bundles
  *
@@ -27,7 +28,7 @@ export async function contributeEhrOnlyBundle({
     cxId,
     practiceId,
     patientId,
-    direction: ResourceDiffDirection.EHR_ONLY,
+    bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
     jobId,
   });
   if (!jobPayload.response) return;

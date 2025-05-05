@@ -1,4 +1,4 @@
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
+import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { PatientJobPayload } from "../../../../command/job/patient/get";
 import { FetchBundlePreSignedUrls } from "./bundle";
@@ -8,7 +8,7 @@ export type StartCreateResourceDiffBundlesJobParams = {
   cxId: string;
   practiceId: string;
   patientId: string;
-  direction: ResourceDiffDirection;
+  contribute?: boolean;
   requestId?: string;
 };
 
@@ -18,16 +18,13 @@ export type GetResourceDiffBundlesJobPayloadParams = {
   practiceId: string;
   patientId: string;
   jobId: string;
-  direction: ResourceDiffDirection;
+  bundleType: BundleType;
 };
 
 export type ResourceDiffBundlesJobPayload = PatientJobPayload<FetchBundlePreSignedUrls>;
 
-export function getCreateResourceDiffBundlesJobType(
-  ehr: EhrSources,
-  direction: ResourceDiffDirection
-) {
-  return `${ehr}-${direction}-create-resource-diff-bundles`;
+export function getCreateResourceDiffBundlesJobType(ehr: EhrSources) {
+  return `${ehr}-create-resource-diff-bundles`;
 }
 
 export type StartRefreshEhrBundlesJobParams = {

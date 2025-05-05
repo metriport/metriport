@@ -19,7 +19,7 @@ import {
  * @param practiceId - The practice id of the EHR patient.
  * @param patientId - The EHR patient id of the patient.
  * @param jobId The job ID of the job
- * @param direction The direction of the resource diff bundle to fetch
+ * @param bundleType The type of bundle to fetch
  * @returns resource diff bundles job payload with data if completed
  * @throws NotFoundError if no job is found
  */
@@ -29,7 +29,7 @@ export async function getResourceDiffBundlesJobPayload({
   practiceId,
   patientId,
   jobId,
-  direction,
+  bundleType,
 }: GetResourceDiffBundlesJobPayloadParams): Promise<ResourceDiffBundlesJobPayload> {
   const job = await getPatientJobByIdOrFail({ cxId, jobId });
   if (job.status === "completed") {
@@ -38,7 +38,7 @@ export async function getResourceDiffBundlesJobPayload({
       cxId,
       patientId,
       practiceId,
-      direction,
+      bundleType,
       jobId,
     });
     return createPatientJobPayload({ job, data });
@@ -53,7 +53,7 @@ export async function getResourceDiffBundlesJobPayload({
  * @param cxId The CX ID of the patient
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The EHR patient id of the patient.
- * @param direction The direction of the resource diff bundle to fetch
+ * @param bundleType The type of bundle to fetch
  * @returns resource diff bundles job data payload with data if completed or undefined if no job is found
  */
 export async function getLatestResourceDiffBundlesJobPayload({
@@ -61,7 +61,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
   cxId,
   practiceId,
   patientId,
-  direction,
+  bundleType,
 }: Omit<GetResourceDiffBundlesJobPayloadParams, "jobId">): Promise<
   ResourceDiffBundlesJobPayload | undefined
 > {
@@ -74,7 +74,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
   const job = await getLatestPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: getCreateResourceDiffBundlesJobType(ehr, direction),
+    jobType: getCreateResourceDiffBundlesJobType(ehr),
     jobGroupId: patientId,
   });
   if (!job) return undefined;
@@ -84,7 +84,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
       cxId,
       practiceId,
       patientId,
-      direction,
+      bundleType,
       jobId: job.id,
     });
     return createPatientJobPayload({ job, data });
