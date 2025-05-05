@@ -7,13 +7,13 @@ import { getResourceDiffBundlesJobPayload } from "../job/create-resource-diff-bu
 import { ContributeEhrOnlyBundleParams } from "../utils/bundle";
 
 /**
- * Fetch the pre-signed URLs for the resource diff bundles
+ * Fetch the pre-signed URLs for the EHR only bundles, fetch the bundles and contribute them
  *
  * @param ehr - The EHR source.
- * @param cxId The CX ID of the patient
+ * @param cxId - The CX ID of the patient
  * @param practiceId - The practice id of the EHR patient.
  * @param patientId - The patient id of the patient.
- * @param jobId The job id of the job.
+ * @param jobId - The job id of the resource diff bundles job.
  * @throws NotFoundError if no job is found
  */
 export async function contributeEhrOnlyBundle({
@@ -28,8 +28,8 @@ export async function contributeEhrOnlyBundle({
     cxId,
     practiceId,
     patientId,
-    bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
     jobId,
+    bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
   });
   if (!jobPayload.response) return;
   const existingPatient = await getPatientMappingOrFail({
@@ -41,12 +41,12 @@ export async function contributeEhrOnlyBundle({
   const { preSignedUrls } = jobPayload.response;
   const requestId = uuidv7();
   for (const url of preSignedUrls) {
-    const bundle = await axios.get(url);
-    const bundleData = bundle.data;
+    const response = await axios.get(url);
+    const bundle = response.data;
     await handleDataContribution({
       cxId,
       patientId: metriportPatientId,
-      bundle: bundleData,
+      bundle,
       requestId,
     });
   }

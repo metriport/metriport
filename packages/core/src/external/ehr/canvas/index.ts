@@ -481,8 +481,8 @@ class CanvasApi {
       cxId,
       metriportPatientId,
       canvasPatientId,
-      resourceType,
       bundleType: bundleType ?? BundleType.EHR,
+      resourceType,
       jobId,
     });
   }

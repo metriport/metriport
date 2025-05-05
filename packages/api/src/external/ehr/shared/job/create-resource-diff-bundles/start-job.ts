@@ -10,14 +10,15 @@ import {
 
 /**
  * Starts the resource diff job to produce the resource type bundles containing
- * the resources in Metriport that are not in the EHR, or vice versa.
+ * the resources in Metriport that are not in the EHR and vice versa.
  *
  * @param ehr - The EHR source.
  * @param cxId - The cxId of the patient.
  * @param practiceId - The practice id of the patient.
  * @param patientId - The patient id of the patient.
- * @param contribute - Whether to contribute the EHR-only resource diff bundles to the HIEs.
- * @param requestId - The request id of the job. (optional, defaults to a new UUID)
+ * @param contribute - Whether to contribute the EHR-only resource diff bundles to the HIEs. Optional, defaults to false.
+ * @param requestId - The request id of the job. Optional, defaults to a new UUID.
+ * @returns The job id of the resource diff bundles job.
  */
 export async function startCreateResourceDiffBundlesJob({
   ehr,

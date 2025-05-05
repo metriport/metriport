@@ -1,5 +1,3 @@
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
@@ -86,17 +84,4 @@ export async function createEhrClient<
     data,
   });
   return client;
-}
-
-export function parseExternalId(source: string, externalId: string): string {
-  if (source === EhrSources.athena) {
-    const patientId = externalId.split("-")[2];
-    if (!patientId) {
-      throw new MetriportError("AthenaHealth patient mapping externalId is malformed", undefined, {
-        externalId,
-      });
-    }
-    return patientId;
-  }
-  return externalId;
 }

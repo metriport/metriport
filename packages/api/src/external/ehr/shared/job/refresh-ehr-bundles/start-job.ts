@@ -13,7 +13,8 @@ import { StartRefreshEhrBundlesJobParams, getRefreshEhrBundlesJobType } from "..
  * @param cxId - The cxId of the patient.
  * @param practiceId - The practice id of the patient.
  * @param patientId - The patient id of the patient.
- * @param requestId - The request id of the job. (optional, defaults to a new UUID)
+ * @param requestId - The request id of the job. Optional, defaults to a new UUID.
+ * @returns The job id of the refresh EHR bundles job.
  */
 export async function startRefreshEhrBundlesJob({
   ehr,

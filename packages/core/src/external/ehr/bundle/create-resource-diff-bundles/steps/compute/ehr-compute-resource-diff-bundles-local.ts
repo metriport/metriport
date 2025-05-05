@@ -1,10 +1,9 @@
+import { Bundle, MetriportError, sleep } from "@metriport/shared";
 import {
-  Bundle,
   FhirResource,
-  MetriportError,
-  sleep,
   SupportedResourceType,
-} from "@metriport/shared";
+  fhirResourceSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
 import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
 import {
@@ -112,7 +111,12 @@ async function getMetriportResourcesFromS3({
     entry => entry.resource?.resourceType === resourceType
   );
   if (!resources || resources.length < 1) return [];
-  return resources.map(entry => entry.resource as FhirResource);
+  return resources.flatMap(entry => {
+    if (!entry.resource) return [];
+    const parsedResourceSafe = fhirResourceSchema.safeParse(entry.resource);
+    if (!parsedResourceSafe.success) return [];
+    return [parsedResourceSafe.data];
+  });
 }
 
 async function getEhrResourcesFromApi({

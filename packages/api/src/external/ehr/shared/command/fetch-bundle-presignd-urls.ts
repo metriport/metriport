@@ -12,7 +12,7 @@ import {
  * Fetch the pre-signed URLs for the EHR bundle
  *
  * @param ehr - The EHR source.
- * @param cxId The CX ID of the patient
+ * @param cxId - The CX ID of the patient
  * @param practiceId - The practice id of the EHR patient.
  * @param patientId - The patient id of the patient.
  * @param resourceType The resource type to fetch. Optional, all resource types will be fetched if not provided.
@@ -66,7 +66,7 @@ export async function fetchBundlePreSignedUrls({
  * @param patientId - The patient id of the patient.
  * @param resourceType The resource type to fetch. Optional, all resource types will be fetched if not provided.
  * @param bundleType The type of bundle to fetch. Optional, defaults to both.
- * @param jobId The job id of the job. Optional, defaults to a new UUID.
+ * @param jobId The job id of the resource diff bundles job.
  * @returns resource diff bundles pre-signed URLs
  * @throws NotFoundError if no job is found
  */
