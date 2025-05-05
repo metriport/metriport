@@ -10,10 +10,12 @@ import {
   createMRSummaryFileName,
   createSandboxMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
-import { Patient } from "@metriport/core/domain/patient";
+import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -39,6 +41,7 @@ export const emptyMetaProp = "na";
 export async function handleBundleToMedicalRecord({
   bundle,
   patient,
+  requestId,
   resources,
   dateFrom,
   dateTo,
@@ -46,6 +49,7 @@ export async function handleBundleToMedicalRecord({
 }: {
   bundle: Bundle<Resource>;
   patient: Pick<Patient, "id" | "cxId" | "data">;
+  requestId?: string;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -80,6 +84,18 @@ export async function handleBundleToMedicalRecord({
     newBundle.entry = [];
     newBundle.total = 0;
   }
+
+  const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.consolidatedQuery,
+    properties: {
+      patientId: patient.id,
+      conversionType,
+      duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+      resourceCount: newBundle.entry?.length,
+    },
+  });
   return newBundle;
 }
 
