@@ -126,8 +126,12 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     const patientId = attrib.patientId?.stringValue;
     const jobId = attrib.jobId?.stringValue;
     const medicalDataSource = attrib.source?.stringValue;
+    const converterUrl = attrib.serverUrl?.stringValue;
+    const unusedSegments = attrib.unusedSegments?.stringValue;
+    const invalidAccess = attrib.invalidAccess?.stringValue;
     if (!cxId) throw new Error(`Missing cxId`);
     if (!patientId) throw new Error(`Missing patientId`);
+    if (!converterUrl) throw new Error(`Missing converterUrl`);
     capture.setExtra({ cxId, patientId, jobId, source: medicalDataSource });
     const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
     const lambdaParams = { cxId, patientId, jobId, source: medicalDataSource };
@@ -179,10 +183,6 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 
       const conversionStart = Date.now();
 
-      const converterUrl = attrib.serverUrl?.stringValue;
-      if (!converterUrl) throw new Error(`Missing converterUrl`);
-      const unusedSegments = attrib.unusedSegments?.stringValue;
-      const invalidAccess = attrib.invalidAccess?.stringValue;
       const converterParams: FhirConverterParams = {
         patientId,
         fileName: s3FileName,
