@@ -1,4 +1,9 @@
-import { PurposeOfUse } from "@metriport/shared";
+import {
+  defaultOptionsRequestNotAccepted,
+  executeWithNetworkRetries,
+  ExecuteWithRetriesOptions,
+  PurposeOfUse,
+} from "@metriport/shared";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
@@ -40,6 +45,12 @@ import * as document from "./document";
 
 const DEFAULT_AXIOS_TIMEOUT_SECONDS = 120;
 
+const defaultOnError500: OnError500Options = {
+  retry: false,
+  maxAttempts: 1,
+  initialDelay: 0,
+};
+
 export enum APIMode {
   integration = "integration",
   production = "production",
@@ -51,6 +62,15 @@ export interface RequestMetadata {
   purposeOfUse: PurposeOfUse;
   npi?: string;
   payloadHash?: string;
+}
+
+export type OnError500Options = Omit<ExecuteWithRetriesOptions<unknown>, "shouldRetry"> & {
+  retry: boolean;
+};
+
+export interface CommonWellOptions {
+  timeout?: number;
+  onError500?: OnError500Options;
 }
 
 export class CommonWell implements CommonWellAPI {
@@ -71,6 +91,7 @@ export class CommonWell implements CommonWellAPI {
   private _oid: string;
   private httpsAgent: Agent;
   private _lastReferenceHeader: string | undefined;
+  private onError500: OnError500Options;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
@@ -89,7 +110,7 @@ export class CommonWell implements CommonWellAPI {
     orgName: string,
     oid: string,
     apiMode: APIMode,
-    options: { timeout?: number } = {}
+    options: CommonWellOptions = {}
   ) {
     this.rsaPrivateKey = rsaPrivateKey;
     this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
@@ -105,6 +126,7 @@ export class CommonWell implements CommonWellAPI {
     );
     this.orgName = orgName;
     this._oid = oid;
+    this.onError500 = { ...defaultOnError500, ...options.onError500 };
   }
 
   get oid() {
@@ -611,9 +633,11 @@ export class CommonWell implements CommonWellAPI {
    */
   async registerPatient(meta: RequestMetadata, patient: Patient): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, patient, {
-      headers,
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, patient, {
+        headers,
+      })
+    );
     return patientSchema.parse(resp.data);
   }
 
@@ -976,5 +1000,18 @@ export class CommonWell implements CommonWellAPI {
       meta.payloadHash
     );
     return { Authorization: `Bearer ${jwt}` };
+  }
+
+  private async executeWithRetriesOn500<T>(fn: () => Promise<T>): Promise<T> {
+    return this.onError500.retry
+      ? executeWithNetworkRetries(fn, {
+          ...this.onError500,
+          httpCodesToRetry: [...defaultOptionsRequestNotAccepted.httpCodesToRetry],
+          httpStatusCodesToRetry: [
+            ...defaultOptionsRequestNotAccepted.httpStatusCodesToRetry,
+            httpStatus.INTERNAL_SERVER_ERROR,
+          ],
+        })
+      : fn();
   }
 }
