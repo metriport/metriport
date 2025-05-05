@@ -101,11 +101,7 @@ export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded:
         continue;
       target[key] = source[key];
     }
-    if (key === "status") {
-      console.log("status after ", target);
-    }
   }
-  return target;
 }
 
 /**

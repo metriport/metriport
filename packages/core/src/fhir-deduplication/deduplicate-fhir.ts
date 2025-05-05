@@ -1,5 +1,4 @@
 import { Bundle, EncounterDiagnosis, Resource } from "@medplum/fhirtypes";
-import { cloneDeep } from "lodash";
 import {
   ExtractedFhirTypes,
   buildCompleteBundleEntry,
@@ -40,8 +39,7 @@ export function deduplicateFhir(
   cxId: string,
   patientId: string
 ): Bundle<Resource> {
-  const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
-  let resourceArrays = extractFhirTypesFromBundle(deduplicatedBundle);
+  let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
 
   const compositionsResult = deduplicateCompositions(resourceArrays.compositions);
   resourceArrays.compositions = compositionsResult.combinedResources;
@@ -206,18 +204,18 @@ export function deduplicateFhir(
     });
   }
 
-  deduplicatedBundle.entry = Object.entries(resourceArrays)
+  fhirBundle.entry = Object.entries(resourceArrays)
     .filter(([resourceType]) => resourceType !== "devices")
     .flatMap(([, resources]) => {
       const entriesArray = Array.isArray(resources) ? resources : [resources];
       return entriesArray
         .flatMap(v => v || [])
         .map(removeDuplicateReferences)
-        .map(entry => buildCompleteBundleEntry(entry, deduplicatedBundle.type));
+        .map(entry => buildCompleteBundleEntry(entry, fhirBundle.type));
     });
-  deduplicatedBundle.total = deduplicatedBundle.entry.length;
+  fhirBundle.total = fhirBundle.entry.length;
 
-  return deduplicatedBundle;
+  return fhirBundle;
 }
 
 export function removeResourcesWithDanglingLinks(
