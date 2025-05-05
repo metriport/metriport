@@ -3,6 +3,7 @@ import {
   executeWithNetworkRetries,
   ExecuteWithRetriesOptions,
   PurposeOfUse,
+  MetriportError,
 } from "@metriport/shared";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
@@ -10,7 +11,6 @@ import { Agent } from "https";
 import * as stream from "stream";
 import { CommonWellAPI } from "..";
 import { makeJwt } from "../common/make-jwt";
-import MetriportError from "../common/metriport-error";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
 import { DocumentQueryFullResponse, DocumentQueryResponse } from "../models/document";
 import { Identifier, StrongId } from "../models/identifier";
