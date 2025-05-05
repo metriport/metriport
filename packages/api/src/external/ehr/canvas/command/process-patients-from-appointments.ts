@@ -15,7 +15,7 @@ import {
   getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
-} from "../../shared/shared";
+} from "../../shared/jwt-token";
 import { createCanvasClient } from "../shared";
 import { SyncCanvasPatientIntoMetriportParams } from "./sync-patient";
 

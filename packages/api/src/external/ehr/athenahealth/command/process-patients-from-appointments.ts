@@ -22,7 +22,7 @@ import {
   getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
-} from "../../shared/shared";
+} from "../../shared/jwt-token";
 import { LookupMode, LookupModes, createAthenaClient } from "../shared";
 import { SyncAthenaPatientIntoMetriportParams } from "./sync-patient";
 

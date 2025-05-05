@@ -57,6 +57,6 @@ export async function createResourceDiffBundlesJob({
       jobId,
       direction,
     })
-    .catch(processAsyncError(`${ehr} startResourceDiffBundlesMetriportOnly`));
+    .catch(processAsyncError(`${ehr} startResourceDiffBundles direction ${direction}`));
   return jobId;
 }

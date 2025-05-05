@@ -1,5 +1,96 @@
+import {
+  AthenaSecondaryMappings,
+  athenaSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
+import {
+  AthenaClientJwtTokenData,
+  athenaClientSource,
+  AthenaDashJwtTokenData,
+  athenaDashSource,
+} from "@metriport/shared/interface/external/ehr/athenahealth/jwt-token";
+import {
+  CanvasClientJwtTokenData,
+  canvasClientSource,
+  CanvasDashJwtTokenData,
+  canvasDashSource,
+  CanvasWebhookJwtTokenData,
+  canvasWebhookSource,
+} from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
+import {
+  ElationSecondaryMappings,
+  elationSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
+import {
+  ElationClientJwtTokenData,
+  elationClientSource,
+  ElationDashJwtTokenData,
+  elationDashSource,
+} from "@metriport/shared/interface/external/ehr/elation/jwt-token";
+import {
+  HealthieSecondaryMappings,
+  healthieSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
+import {
+  HealthieDashJwtTokenData,
+  healthieDashSource,
+} from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { z } from "zod";
 import { findOrCreateJwtToken, getJwtToken } from "../../../../command/jwt-token";
 import { JwtTokenData, JwtTokenSource } from "../../../../domain/jwt-token";
+
+export const ehrDashJwtTokenSources = [
+  athenaDashSource,
+  canvasDashSource,
+  elationDashSource,
+  healthieDashSource,
+] as const;
+export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
+export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
+  return ehrDashJwtTokenSources.includes(source as EhrDashJwtTokenSource);
+}
+
+export type EhrDashJwtTokenData =
+  | AthenaDashJwtTokenData
+  | CanvasDashJwtTokenData
+  | ElationDashJwtTokenData
+  | HealthieDashJwtTokenData;
+
+export const ehrClientJwtTokenSources = [
+  athenaClientSource,
+  elationClientSource,
+  canvasClientSource,
+] as const;
+export type EhrClientJwtTokenSource = (typeof ehrClientJwtTokenSources)[number];
+export function isEhrClientJwtTokenSource(source: string): source is EhrClientJwtTokenSource {
+  return ehrClientJwtTokenSources.includes(source as EhrClientJwtTokenSource);
+}
+
+export type EhrClientJwtTokenData =
+  | AthenaClientJwtTokenData
+  | ElationClientJwtTokenData
+  | CanvasClientJwtTokenData;
+
+export const ehrWebhookJwtTokenSources = [canvasWebhookSource] as const;
+export type EhrWebhookJwtTokenSource = (typeof ehrWebhookJwtTokenSources)[number];
+export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhookJwtTokenSource {
+  return ehrWebhookJwtTokenSources.includes(source as EhrWebhookJwtTokenSource);
+}
+
+export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
+
+export type EhrCxMappingSecondaryMappings =
+  | AthenaSecondaryMappings
+  | ElationSecondaryMappings
+  | HealthieSecondaryMappings;
+export const ehrCxMappingSecondaryMappingsSchemaMap: {
+  [key in EhrSource]: z.Schema | undefined;
+} = {
+  [EhrSources.athena]: athenaSecondaryMappingsSchema,
+  [EhrSources.elation]: elationSecondaryMappingsSchema,
+  [EhrSources.canvas]: undefined,
+  [EhrSources.healthie]: healthieSecondaryMappingsSchema,
+};
 
 export async function checkJwtToken({
   token,

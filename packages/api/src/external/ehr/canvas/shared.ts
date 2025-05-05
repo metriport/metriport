@@ -5,7 +5,7 @@ import {
   createEhrClient,
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
-} from "../shared/shared";
+} from "../shared/jwt-token";
 
 export const canvasClientJwtTokenSource = "canvas-client";
 export const canvasWebhookJwtTokenSource = "canvas-webhook";

@@ -14,7 +14,7 @@ import {
  * @param ehr - The EHR source.
  * @param cxId The CX ID of the patient
  * @param practiceId - The practice id of the EHR patient.
- * @param ehrPatientId - The EHR patient id of the patient.
+ * @param patientId - The patient id of the patient.
  * @param resourceType The resource type to fetch. Optional, all resource types will be fetched if not provided.
  * @param refresh Whether to refresh the bundle. Optional, defaults to false.
  * @returns EHR bundle pre-signed URLs

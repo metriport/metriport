@@ -5,6 +5,7 @@ export type RefreshEhrBundlesRequest = {
   cxId: string;
   practiceId: string;
   patientId: string;
+  jobId: string;
 };
 
 export interface EhrRefreshEhrBundlesHandler {

@@ -12,20 +12,19 @@ import { RefreshEhrBundlesJobParams, getRefreshEhrBundlesJobType } from "../../u
  * @param ehr - The EHR source.
  * @param cxId - The cxId of the patient.
  * @param practiceId - The practice id of the patient.
- * @param ehrPatientId - The EHR patient id of the patient.
- * @param direction - The direction of the resource diff bundles to create.
+ * @param patientId - The patient id of the patient.
  * @param requestId - The request id of the job. (optional, defaults to a new UUID)
  */
 export async function createResourceDiffBundlesJob({
   ehr,
   cxId,
   practiceId,
-  ehrPatientId,
+  patientId,
   requestId,
 }: RefreshEhrBundlesJobParams): Promise<string> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
-    externalId: ehrPatientId,
+    externalId: patientId,
     source: ehr,
   });
   const metriportPatient = await getPatientOrFail({
@@ -37,7 +36,7 @@ export async function createResourceDiffBundlesJob({
     cxId,
     patientId: metriportPatientId,
     jobType: getRefreshEhrBundlesJobType(ehr),
-    jobGroupId: ehrPatientId,
+    jobGroupId: patientId,
     requestId,
     limitedToOneRunningJob: true,
   });
@@ -48,7 +47,7 @@ export async function createResourceDiffBundlesJob({
       ehr,
       cxId,
       practiceId,
-      patientId: ehrPatientId,
+      patientId,
       jobId,
     })
     .catch(processAsyncError(`${ehr} refreshEhrBundles`));

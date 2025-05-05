@@ -16,7 +16,7 @@ import {
   isEhrClientJwtTokenSource,
   isEhrDashJwtTokenSource,
   isEhrWebhookJwtTokenSource,
-} from "../../external/ehr/shared/shared";
+} from "../../external/ehr/shared/jwt-token";
 import { CxMappingModel } from "../../models/cx-mapping";
 
 export type CxMappingParams = CxMappingPerSource;

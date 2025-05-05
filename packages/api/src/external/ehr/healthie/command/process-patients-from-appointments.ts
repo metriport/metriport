@@ -23,7 +23,7 @@ import {
   getLookForwardTimeRangeWithOffset,
   parallelPatients,
   parallelPractices,
-} from "../../shared/shared";
+} from "../../shared/jwt-token";
 import { createHealthieClient, LookupMode, LookupModes } from "../shared";
 import {
   SyncHealthiePatientIntoMetriportParams,
