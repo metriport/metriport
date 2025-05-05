@@ -32,16 +32,14 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
     const computeResourceDiffParams: ComputeResourceDiffBundlesRequest[] = [];
     for (const resourceType of supportedResources) {
       await Promise.all([
-        direction === ResourceDiffDirection.METRIPORT_ONLY
-          ? fetchEhrBundlePreSignedUrlsFromApi({
-              ehr,
-              cxId,
-              practiceId,
-              patientId: ehrPatientId,
-              resourceType,
-              refresh: true,
-            })
-          : undefined,
+        fetchEhrBundlePreSignedUrlsFromApi({
+          ehr,
+          cxId,
+          practiceId,
+          patientId: ehrPatientId,
+          resourceType,
+          refresh: true,
+        }),
         createOrReplaceBundleOnS3({
           ehr,
           cxId,
