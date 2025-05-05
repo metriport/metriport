@@ -4,7 +4,7 @@ import { createPatientJob } from "../../../../../command/job/patient/create";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import {
-  CreateResourceDiffBundlesJobParams,
+  StartCreateResourceDiffBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
 } from "../../utils/job";
 
@@ -19,14 +19,14 @@ import {
  * @param direction - The direction of the resource diff bundles to create.
  * @param requestId - The request id of the job. (optional, defaults to a new UUID)
  */
-export async function createResourceDiffBundlesJob({
+export async function startCreateResourceDiffBundlesJob({
   ehr,
   cxId,
   practiceId,
   patientId,
   direction,
   requestId,
-}: CreateResourceDiffBundlesJobParams): Promise<string> {
+}: StartCreateResourceDiffBundlesJobParams): Promise<string> {
   const existingPatient = await getPatientMappingOrFail({
     cxId,
     externalId: patientId,

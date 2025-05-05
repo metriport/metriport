@@ -15,7 +15,8 @@ import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
 } from "../../../external/ehr/shared/job/create-resource-diff-bundles/get-job-payload";
-import { createResourceDiffBundlesJob } from "../../../external/ehr/shared/job/create-resource-diff-bundles/start-job";
+import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/create-resource-diff-bundles/start-job";
+import { startRefreshEhrBundlesJob } from "../../../external/ehr/shared/job/refresh-ehr-bundles/start-job";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "../../util";
@@ -38,14 +39,16 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const ehr = getFrom("params").orFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
-    /* TODO: Implement refreshCanvasBundles
-    refreshCanvasBundles({
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("params").orFail("id", req);
+    const practiceId = getFromQueryOrFail("practiceId", req);
+    const jobId = await startRefreshEhrBundlesJob({
+      ehr,
       cxId,
-      canvasPracticeId,
-      canvasPatientId,
-    }).catch(processAsyncError("Canvas refreshCanvasBundles"));
-    */
-    return res.sendStatus(httpStatus.OK);
+      practiceId,
+      patientId,
+    });
+    return res.status(httpStatus.OK).json(jobId);
   })
 );
 
@@ -76,7 +79,7 @@ router.post(
         direction,
       });
     }
-    const jobId = await createResourceDiffBundlesJob({
+    const jobId = await startCreateResourceDiffBundlesJob({
       ehr,
       cxId,
       patientId,

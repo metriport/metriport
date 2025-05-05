@@ -3,7 +3,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { PatientJobPayload } from "../../../../command/job/patient/get";
 import { FetchBundlePreSignedUrls } from "./bundle";
 
-export type CreateResourceDiffBundlesJobParams = {
+export type StartCreateResourceDiffBundlesJobParams = {
   ehr: EhrSources;
   cxId: string;
   practiceId: string;
@@ -30,7 +30,7 @@ export function getCreateResourceDiffBundlesJobType(
   return `${ehr}-${direction}-create-resource-diff-bundles`;
 }
 
-export type RefreshEhrBundlesJobParams = {
+export type StartRefreshEhrBundlesJobParams = {
   ehr: EhrSources;
   cxId: string;
   practiceId: string;
