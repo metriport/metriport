@@ -320,7 +320,7 @@ export async function getConsolidated({
     }
     return { bundle, filters };
   } catch (error) {
-    const msg = "Failed to get FHIR resources";
+    const msg = "Failed to get consolidated data";
     log(`${msg}: ${JSON.stringify(filters)}`);
     capture.error(msg, {
       extra: {
