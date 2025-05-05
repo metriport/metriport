@@ -1,11 +1,11 @@
 import { MedicationStatement } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createRef,
   deduplicateWithinMap,
   getDateFromResource,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const medicationStatementStatus = [
@@ -31,6 +31,10 @@ export const statusRanking: Record<MedicationStatementStatus, number> = {
   stopped: 6,
   completed: 7,
 };
+
+function preprocessStatus(existing: MedicationStatement, target: MedicationStatement) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateMedStatements(
   medications: MedicationStatement[]
@@ -61,12 +65,6 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(existing: MedicationStatement, target: MedicationStatement) {
-    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    existing.status = status;
-    target.status = status;
-  }
-
   for (const medStatement of medStatements) {
     const datetime = getDateFromResource(medStatement, "datetime");
     const medRef = medStatement.medicationReference?.reference;
@@ -79,7 +77,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
         medStatement,
         refReplacementMap,
         undefined,
-        assignMostDescriptiveStatus
+        preprocessStatus
       );
     } else if (medRef && datetime) {
       const key = JSON.stringify({ medRef, datetime });
@@ -89,7 +87,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
         medStatement,
         refReplacementMap,
         undefined,
-        assignMostDescriptiveStatus
+        preprocessStatus
       );
     } else if (medRef) {
       const key = JSON.stringify({ medRef });
@@ -99,7 +97,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
         medStatement,
         refReplacementMap,
         undefined,
-        assignMostDescriptiveStatus
+        preprocessStatus
       );
     } else {
       danglingReferences.add(createRef(medStatement));

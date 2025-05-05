@@ -9,6 +9,7 @@ import {
 } from "../../util/constants";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
@@ -18,7 +19,6 @@ import {
   fetchCodingCodeOrDisplayOrSystem,
   getPerformedDateFromResource,
   hasBlacklistedText,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const procedureStatus = [
@@ -44,6 +44,10 @@ export const statusRanking: Record<ProcedureStatus, number> = {
   stopped: 6,
   completed: 7,
 };
+
+function preprocessStatus(existing: Procedure, target: Procedure) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateProcedures(procedures: Procedure[]): DeduplicationResult<Procedure> {
   const { proceduresMap, refReplacementMap, danglingReferences } = groupSameProcedures(procedures);
@@ -106,12 +110,6 @@ export function groupSameProcedures(procedures: Procedure[]): {
     return master;
   }
 
-  function preProcessStatus(existing: Procedure, target: Procedure) {
-    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    existing.status = status;
-    target.status = status;
-  }
-
   const hasDate = 1;
   const hasNoDate = 0;
 
@@ -167,7 +165,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
         matchCandidateKeys,
         incomingResource: procedure,
         refReplacementMap,
-        onPremerge: preProcessStatus,
+        onPremerge: preprocessStatus,
         onPostmerge: postProcessCodes,
       });
     } else {

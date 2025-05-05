@@ -1,11 +1,11 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createRef,
   deduplicateWithinMap,
   getDateFromString,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const medicationRequestStatus = [
@@ -30,6 +30,10 @@ const statusRanking: Record<MedicationRequestStatus, number> = {
   cancelled: 6,
   completed: 7,
 };
+
+function preprocessStatus(existing: MedicationRequest, target: MedicationRequest) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateMedRequests(
   medications: MedicationRequest[]
@@ -60,12 +64,6 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(existing: MedicationRequest, target: MedicationRequest) {
-    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    existing.status = status;
-    target.status = status;
-  }
-
   for (const medRequest of medRequests) {
     const medRef = medRequest.medicationReference?.reference;
     const date = medRequest.authoredOn;
@@ -80,7 +78,7 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
         medRequest,
         refReplacementMap,
         undefined,
-        assignMostDescriptiveStatus
+        preprocessStatus
       );
     } else {
       danglingReferences.add(createRef(medRequest));

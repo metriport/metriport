@@ -3,13 +3,13 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createRef,
   fetchCodingCodeOrDisplayOrSystem,
   fillL1L2Maps,
   getDateFromResource,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const diagnosticReportStatus = [
@@ -38,6 +38,10 @@ const statusRanking: Record<DiagnosticReportStatus, number> = {
   appended: 0,
   cancelled: 0,
 };
+
+function preprocessStatus(existing: DiagnosticReport, target: DiagnosticReport) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateDiagReports(
   medications: DiagnosticReport[]
@@ -84,12 +88,6 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
     }
 
     return master;
-  }
-
-  function preProcessStatus(existing: DiagnosticReport, target: DiagnosticReport) {
-    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    existing.status = status;
-    target.status = status;
   }
 
   for (const diagReport of diagReports) {
@@ -158,7 +156,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
         setterKeys,
         targetResource: diagReport,
         refReplacementMap,
-        onPremerge: preProcessStatus,
+        onPremerge: preprocessStatus,
         onPostmerge: postProcessCodes,
       });
     } else {

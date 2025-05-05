@@ -61,7 +61,7 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
 
   if (hasValidAllergies) {
     for (const allergy of validAllergies) {
-      const { allergy: newAllergy, substance } = preProcess(allergy);
+      const { allergy: newAllergy, substance } = preprocess(allergy);
       if (substance) {
         const key = JSON.stringify({ substance });
         deduplicateWithinMap(
@@ -106,7 +106,7 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   };
 }
 
-function preProcess(allergy: AllergyIntolerance): {
+function preprocess(allergy: AllergyIntolerance): {
   allergy: AllergyIntolerance;
   substance?: CodeableConcept;
 } {
@@ -128,7 +128,7 @@ function preProcess(allergy: AllergyIntolerance): {
 }
 
 function postProcessAllergy(allergy: AllergyIntolerance): AllergyIntolerance {
-  const { allergy: newAllergy } = preProcess(allergy);
+  const { allergy: newAllergy } = preprocess(allergy);
   return newAllergy;
 }
 

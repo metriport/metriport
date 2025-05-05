@@ -2,6 +2,7 @@ import { CodeableConcept, Immunization } from "@medplum/fhirtypes";
 import { CVX_CODE, CVX_OID, NDC_CODE, NDC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
@@ -11,7 +12,6 @@ import {
   fetchCodingCodeOrDisplayOrSystem,
   getDateFromResource,
   hasBlacklistedText,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const immunizationStatus = ["entered-in-error", "completed", "not-done"] as const;
@@ -23,6 +23,10 @@ export const statusRanking: Record<ImmunizationStatus, number> = {
   "not-done": 1,
   completed: 2,
 };
+
+function preprocessStatus(existing: Immunization, target: Immunization) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateImmunizations(
   immunizations: Immunization[]
@@ -48,12 +52,6 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
 
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
-
-  function assignMostDescriptiveStatus(existing: Immunization, target: Immunization) {
-    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    existing.status = status;
-    target.status = status;
-  }
 
   const hasDate = 1;
   const hasNoDate = 0;
@@ -111,7 +109,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
         identifierKeys,
         incomingResource: immunization,
         refReplacementMap,
-        onPremerge: assignMostDescriptiveStatus,
+        onPremerge: preprocessStatus,
       });
     } else {
       danglingReferences.add(createRef(immunization));

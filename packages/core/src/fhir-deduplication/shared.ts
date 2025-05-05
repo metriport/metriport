@@ -500,6 +500,16 @@ export function fetchCodeableConceptText(concept: CodeableConcept): string | und
   }
 }
 
+export function assignMostDescriptiveStatus<T extends Resource & { status: string }>(
+  statusRanking: Record<T["status"], number>,
+  existing: T,
+  target: T
+) {
+  const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+  existing.status = status;
+  target.status = status;
+}
+
 /**
  * Manages the deduplication of FHIR resources by maintaining a two-level mapping system:
  * - Level 1 (referenceMap): Maps identifying characteristics to a resource reference ID

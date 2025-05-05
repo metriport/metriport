@@ -5,16 +5,15 @@ import {
   DeduplicationResult,
   combineResources,
   createRef,
-  extractDisplayFromConcept,
   deduplicateWithinMap,
+  extractDisplayFromConcept,
   isUnknownCoding,
-  pickMostDescriptiveStatus,
 } from "../shared";
 import {
   extractCodes,
   extractValueFromObservation,
+  preprocessStatus,
   retrieveCode,
-  statusRanking,
 } from "./observation-shared";
 
 dayjs.extend(utc);
@@ -50,15 +49,9 @@ export function groupSameObservationsSocial(observations: Observation[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function preProcessStatus(existing: Observation, target: Observation) {
-    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    existing.status = status;
-    target.status = status;
-  }
-
-  function preProcessStatusAndDates(existing: Observation, target: Observation) {
-    preProcessStatus(existing, target);
-    preProcessDates(existing, target);
+  function preprocessStatusAndDates(existing: Observation, target: Observation) {
+    preprocessStatus(existing, target);
+    preprocessDates(existing, target);
   }
 
   function postProcess(master: Observation): Observation {
@@ -92,7 +85,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
         observation,
         refReplacementMap,
         undefined,
-        preProcessStatusAndDates,
+        preprocessStatusAndDates,
         postProcess
       );
     } else {
@@ -105,7 +98,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
           observation,
           refReplacementMap,
           undefined,
-          preProcessStatus,
+          preprocessStatus,
           postProcess
         );
       } else {
@@ -122,7 +115,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
 }
 
 // TODO: do we need to handle	effectiveTiming	and effectiveInstant?
-function preProcessDates(base: Observation, newObs: Observation) {
+function preprocessDates(base: Observation, newObs: Observation) {
   // Extract dates from the first observation
   const date1Start = base.effectiveDateTime || base.effectivePeriod?.start;
   const date1End = base.effectivePeriod?.end || base.effectiveDateTime;

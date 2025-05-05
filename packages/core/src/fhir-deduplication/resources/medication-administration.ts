@@ -1,11 +1,11 @@
 import { MedicationAdministration } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createRef,
   deduplicateWithinMap,
   getDateFromResource,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const medicationAdministrationStatus = [
@@ -28,6 +28,10 @@ const statusRanking: Record<MedicationAdministrationStatus, number> = {
   stopped: 5,
   completed: 6,
 };
+
+function preprocessStatus(existing: MedicationAdministration, target: MedicationAdministration) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateMedAdmins(
   medications: MedicationAdministration[]
@@ -58,15 +62,6 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(
-    existing: MedicationAdministration,
-    target: MedicationAdministration
-  ) {
-    const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    existing.status = status;
-    target.status = status;
-  }
-
   for (const medAdmin of medAdmins) {
     const medRef = medAdmin.medicationReference?.reference;
     const datetime = getDateFromResource(medAdmin, "datetime");
@@ -80,7 +75,7 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
         medAdmin,
         refReplacementMap,
         undefined,
-        assignMostDescriptiveStatus
+        preprocessStatus
       );
     } else if (medRef && datetime) {
       const key = JSON.stringify({ medRef, datetime });
@@ -90,7 +85,7 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
         medAdmin,
         refReplacementMap,
         undefined,
-        assignMostDescriptiveStatus
+        preprocessStatus
       );
     } else {
       danglingReferences.add(createRef(medAdmin));

@@ -2,6 +2,7 @@ import { CodeableConcept, Observation } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
@@ -12,10 +13,13 @@ import {
   getDateFromResource,
   hasBlacklistedText,
   isUnknownCoding,
-  pickMostDescriptiveStatus,
   unknownCoding,
 } from "../shared";
 import { extractCodes, extractValueFromObservation, statusRanking } from "./observation-shared";
+
+function preprocessStatus(existing: Observation, target: Observation) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateObservations(
   observations: Observation[]
@@ -114,7 +118,7 @@ export function groupSameObservations(observations: Observation[]): {
         identifierKeys,
         incomingResource: observation,
         refReplacementMap,
-        onPremerge: preProcessStatus,
+        onPremerge: preprocessStatus,
         onPostmerge: postProcessCodes,
       });
     } else {
@@ -144,12 +148,6 @@ function filterOutUnknownCodings(observation: Observation): {
   newObservation.code = code;
 
   return { observation: newObservation, code };
-}
-
-function preProcessStatus(existing: Observation, target: Observation) {
-  const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-  existing.status = status;
-  target.status = status;
 }
 
 function postProcessCodes(master: Observation): Observation {

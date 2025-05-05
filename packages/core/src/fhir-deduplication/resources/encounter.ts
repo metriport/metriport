@@ -6,7 +6,7 @@ import {
   createRef,
   deduplicateAndTrackResource,
   getDateFromResource,
-  pickMostDescriptiveStatus,
+  assignMostDescriptiveStatus,
 } from "../shared";
 
 const encounterStatus = [
@@ -34,6 +34,10 @@ export const statusRanking: Record<EncounterStatus, number> = {
   onleave: 7,
   finished: 8,
 };
+
+function preprocessStatus(existing: Encounter, target: Encounter) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateEncounters(encounters: Encounter[]): DeduplicationResult<Encounter> {
   const { encountersMap, refReplacementMap, danglingReferences } = groupSameEncounters(encounters);
@@ -103,7 +107,7 @@ export function groupSameEncounters(encounters: Encounter[]): {
         matchCandidateKeys,
         incomingResource: encounter,
         refReplacementMap,
-        onPremerge: assignMostDescriptiveStatus,
+        onPremerge: preprocessStatus,
       });
     } else {
       danglingReferences.add(createRef(encounter));
@@ -115,10 +119,4 @@ export function groupSameEncounters(encounters: Encounter[]): {
     refReplacementMap,
     danglingReferences,
   };
-}
-
-function assignMostDescriptiveStatus(existing: Encounter, target: Encounter) {
-  const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-  existing.status = status;
-  target.status = status;
 }
