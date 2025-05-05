@@ -7,6 +7,7 @@ import {
   GetTimeToWaitParams,
 } from "../common/retry";
 import { NetworkError, networkTimeoutErrors } from "./error";
+import { isMetriportError } from "../error/metriport-error";
 
 export const tooManyRequestsStatus = 429;
 const tooManyRequestsMultiplier = 3;
@@ -47,7 +48,8 @@ const defaultOptions: ExecuteWithNetworkRetriesOptions = {
 export function getHttpStatusFromError(error: any): number | undefined {
   if (!error) return undefined;
   if (axios.isAxiosError(error)) return error.response?.status;
-  if ("cause" in error) return getHttpStatusFromError(error.cause);
+  if (error.cause) return getHttpStatusFromError(error.cause);
+  if (isMetriportError(error)) return error.status;
   return undefined;
 }
 
