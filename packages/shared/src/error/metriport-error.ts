@@ -9,3 +9,7 @@ export class MetriportError extends Error {
     this.cause = cause;
   }
 }
+
+export function isMetriportError(err: unknown): err is MetriportError {
+  return err instanceof MetriportError;
+}

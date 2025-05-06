@@ -636,7 +636,8 @@ export class LambdasNestedStack extends NestedStack {
 
     featureFlagsTable.grantReadData(theLambda);
 
-    if (bedrock) addBedrockPolicyToLambda(theLambda);
+    // Always add the bedrock policy to the lambda, regardless of whether bedrock is defined or not
+    addBedrockPolicyToLambda(theLambda);
 
     return theLambda;
   }

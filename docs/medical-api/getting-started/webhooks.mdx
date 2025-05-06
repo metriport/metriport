@@ -55,7 +55,7 @@ Avoid parsing the request body before generating the signature - it could result
 different signature that's enough to invalidate it.
 
 Here's an example of how you can do this in Node.js - see the full sample code
-[here](https://github.com/metriport/metriport/blob/develop/samples/typescript-express/mock-webhook.ts):
+[here](https://github.com/metriport/metriport/blob/develop/samples/typescript-express/src/mock-webhook.ts):
 
 <Snippet file="webhook-signature-validation.mdx" />
 
@@ -173,7 +173,6 @@ The format follows:
 <ResponseField name="meta" required>
   Metadata about the message.
   <Expandable title="meta type property details">
-
     <ResponseField name="messageId" type="string" required>
       The ID for this message from Metriport, useful for debugging purposes only;
     </ResponseField>
@@ -190,9 +189,8 @@ The format follows:
 
     <ResponseField name="data" type="object" optional>
       The additional data you passed to the Metriport API when you called the endpoint related to this Webhook message.
-      See more details [here](/medical-api/handling-data/webhooks#passing-metadata).
+      This does not exist in webhooks for [realtime patient notifications](//medical-api/handling-data/realtime-patient-notifications). See more details [here](/medical-api/handling-data/webhooks#passing-metadata).
     </ResponseField>
-
   </Expandable>
 </ResponseField>
 

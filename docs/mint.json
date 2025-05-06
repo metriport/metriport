@@ -139,6 +139,7 @@
         "medical-api/handling-data/ai-summaries",
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
+        "medical-api/handling-data/realtime-patient-notifications",
         "medical-api/handling-data/data-analytics",
         "medical-api/handling-data/filters",
         "medical-api/handling-data/pagination",

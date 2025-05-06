@@ -6,6 +6,7 @@ import {
   CommonWellAPI,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { CommonWellOptions } from "@metriport/commonwell-sdk/client/commonwell";
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { makeApi } from "@metriport/core/external/commonwell/management/api-factory";
@@ -44,6 +45,14 @@ export function makeCommonWellAPI(orgName: string, orgOID: string): CommonWellAP
     return new CommonWellMock(orgName, orgOID);
   }
 
+  const options: CommonWellOptions = {
+    onError500: {
+      retry: true,
+      maxAttempts: 3,
+      initialDelay: 1_000,
+    },
+  };
+
   const isMemberAPI = orgOID === Config.getCWMemberOID();
   if (isMemberAPI) {
     return new CommonWell(
@@ -51,7 +60,8 @@ export function makeCommonWellAPI(orgName: string, orgOID: string): CommonWellAP
       Config.getCWMemberPrivateKey(),
       orgName,
       orgOID,
-      apiMode
+      apiMode,
+      options
     );
   }
 
@@ -60,7 +70,8 @@ export function makeCommonWellAPI(orgName: string, orgOID: string): CommonWellAP
     Config.getCWOrgPrivateKey(),
     orgName,
     orgOID,
-    apiMode
+    apiMode,
+    options
   );
 }
 

@@ -1,5 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
+import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/conversion";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
@@ -13,20 +14,20 @@ import { Config } from "../../../../shared/config";
 import { getOrganizationOrFail } from "../../organization/get-organization";
 import { createOrUpdateConsolidatedPatientData } from "../consolidated-create";
 import { convertFhirToCda } from "../convert-fhir-to-cda";
-import { getPatientOrFail } from "../get-patient";
 import { checkResourceLimit, hasCompositionResource, normalizeBundle } from "./shared";
 
 export async function handleDataContribution({
   requestId = uuidv7(),
-  patientId,
+  patient,
   cxId,
   bundle,
 }: {
   requestId: string;
-  patientId: string;
+  patient: Patient;
   cxId: string;
   bundle: ValidBundle;
 }): Promise<Bundle<Resource> | undefined> {
+  const patientId = patient.id;
   const { log } = out(`handleDataContribution - cxId ${cxId}, patientId ${patientId}`);
   const fhirBundleDestinationKey = createUploadFilePath(
     cxId,
@@ -34,21 +35,22 @@ export async function handleDataContribution({
     `${requestId}_${FHIR_BUNDLE_SUFFIX}.json`
   );
   const mainStartedAt = Date.now();
-  const [, organization, patient] = await Promise.all([
+
+  const normalizedBundle = normalizeBundle(bundle);
+  const fullBundle = hydrateBundle(normalizedBundle, patient, fhirBundleDestinationKey);
+  const validatedBundle = validateFhirEntries(fullBundle);
+
+  const [, organization] = await Promise.all([
     uploadFhirBundleToS3({
       fhirBundle: bundle,
       destinationKey: fhirBundleDestinationKey,
     }),
     getOrganizationOrFail({ cxId }),
-    getPatientOrFail({ id: patientId, cxId }),
   ]);
   log(`${Date.now() - mainStartedAt}ms to get org and patient, and store on S3`);
 
   const validationStartedAt = Date.now();
   const fhirOrganization = toFhirOrganization(organization);
-  const normalizedBundle = normalizeBundle(bundle);
-  const fullBundle = hydrateBundle(normalizedBundle, patient, fhirBundleDestinationKey);
-  const validatedBundle = validateFhirEntries(fullBundle);
   const incomingAmount = validatedBundle.entry.length;
   await checkResourceLimit(incomingAmount, patient);
   log(`${Date.now() - validationStartedAt}ms to hydrate, validate, and check limits`);
