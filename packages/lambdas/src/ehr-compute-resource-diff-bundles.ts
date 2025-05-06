@@ -19,6 +19,8 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
+const maxAttemptsRaw = getEnvOrFail("MAX_ATTEMPTS");
+const maxAttempts = parseInt(maxAttemptsRaw);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
@@ -43,8 +45,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
     `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceType ${resourceType}, contribute ${contribute}, jobId ${jobId}`
   );
 
+  const receiveCount = parseInt(message.attributes.ApproximateReceiveCount);
+  const throwOnError = receiveCount >= maxAttempts;
+  log(
+    `Receive count: ${receiveCount}, max attempts: ${maxAttempts}, throwOnError: ${throwOnError}`
+  );
+
   const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffBundlesLocal(waitTimeInMillis);
-  await ehrComputeResourceDiffHandler.computeResourceDiffBundles([parsedBody]);
+  await ehrComputeResourceDiffHandler.computeResourceDiffBundles([{ ...parsedBody, throwOnError }]);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);

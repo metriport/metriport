@@ -49,10 +49,12 @@ export function computeNewResources({
   newEhrResources: FhirResource[];
   newMetriportResources: FhirResource[];
 } {
-  if (ehrResources.length < 1)
+  if (ehrResources.length < 1) {
     return { newEhrResources: [], newMetriportResources: metriportResources };
-  if (metriportResources.length < 1)
+  }
+  if (metriportResources.length < 1) {
     return { newEhrResources: ehrResources, newMetriportResources: [] };
+  }
   const ehrResourceTypes = new Set(ehrResources.map(resource => resource.resourceType));
   if (ehrResourceTypes.size > 1) {
     throw new BadRequestError("Invalid ehr resource types", undefined, {
@@ -161,15 +163,17 @@ export function computeNewResources({
       });
   }
   const ehrResourceIds = ehrResources.map(resource => resource.id);
-  const newEhrResources = deduplicatedResources.filter(resource => {
-    if (!resource.id) return false;
-    return ehrResourceIds.includes(resource.id) && !resourceIsDerived(resource);
-  });
   const metriportResourceIds = metriportResources.map(resource => resource.id);
-  const newMetriportResources = deduplicatedResources.filter(resource => {
-    if (!resource.id) return false;
-    return !metriportResourceIds.includes(resource.id) && !resourceIsDerived(resource);
-  });
+  const newEhrResources: FhirResource[] = [];
+  const newMetriportResources: FhirResource[] = [];
+  for (const resource of deduplicatedResources) {
+    if (!resource.id) continue;
+    if (ehrResourceIds.includes(resource.id) && !resourceIsDerived(resource)) {
+      newEhrResources.push(resource as FhirResource);
+    } else if (metriportResourceIds.includes(resource.id) && !resourceIsDerived(resource)) {
+      newMetriportResources.push(resource as FhirResource);
+    }
+  }
   return {
     newEhrResources: newEhrResources as FhirResource[],
     newMetriportResources: newMetriportResources as FhirResource[],

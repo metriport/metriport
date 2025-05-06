@@ -34,7 +34,7 @@ router.post(
   "/:id/resource/refresh",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFrom("params").orFail("ehrId", req);
+    const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
@@ -65,7 +65,7 @@ router.post(
   "/:id/resource/diff",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFrom("params").orFail("ehrId", req);
+    const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
@@ -97,7 +97,7 @@ router.get(
   "/:id/resource/diff/latest",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFrom("params").orFail("ehrId", req);
+    const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
@@ -135,7 +135,7 @@ router.get(
   "/:id/resource/diff/:jobId",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFrom("params").orFail("ehrId", req);
+    const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
@@ -176,7 +176,7 @@ router.post(
   "/:id/resource/diff/set-entry-status",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFrom("params").orFail("ehrId", req);
+    const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
@@ -223,7 +223,7 @@ router.get(
   "/:id/resource/bundle/pre-signed-urls",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFrom("params").orFail("ehrId", req);
+    const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);

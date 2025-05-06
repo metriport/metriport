@@ -117,7 +117,7 @@ function settings(): {
     waitTime: waitTimeStartResourceDiff,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(10);
+  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiffBundles",
     entry: "ehr-compute-resource-diff-bundles",
@@ -523,6 +523,7 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
