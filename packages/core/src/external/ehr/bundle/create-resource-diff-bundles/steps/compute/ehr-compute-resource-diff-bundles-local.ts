@@ -140,7 +140,7 @@ async function getEhrResourcesFromApi({
   const fetchedResourceType = ehrResourcesBundle.resourceTypes[0];
   const fetchedPreSignedUrls = ehrResourcesBundle.preSignedUrls[0];
   if (!fetchedResourceType || !fetchedPreSignedUrls) {
-    throw new MetriportError("More than one resource type found in the EHR bundle", undefined, {
+    throw new MetriportError("No resource type found in the EHR bundle", undefined, {
       ehr,
       cxId,
       practiceId,
