@@ -9,7 +9,7 @@ import { mbToBytes } from "../shared/util";
 const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
 const DB_CONN_ALARM_THRESHOLD = 0.8;
 
-function getMaxPostgresConnections(maxAcu: number): number {
+export function getMaxPostgresConnections(maxAcu: number): number {
   if (maxAcu < 4) return 189;
   if (maxAcu < 8) return 823;
   if (maxAcu < 16) return 1_669;
@@ -95,7 +95,7 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
-  const maxConnectionsPerInstance =
+  const thresholdAlarmOpenConnectionsPerDbInstance =
     DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity);
 
   dbCluster.instanceIdentifiers.forEach((instanceId, index) => {
@@ -108,7 +108,7 @@ export function addDBClusterPerformanceAlarms(
         period: cdk.Duration.minutes(1),
       }),
       name: `DatabaseConnectionsAlarm-${index + 1}`,
-      threshold: maxConnectionsPerInstance,
+      threshold: thresholdAlarmOpenConnectionsPerDbInstance,
       evaluationPeriods: 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,

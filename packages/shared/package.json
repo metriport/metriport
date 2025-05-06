@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.21.1",
+  "version": "0.23.2",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -23,7 +23,9 @@
     "./domain": "./dist/domain/index.js",
     "./domain/*": "./dist/domain/*.js",
     "./interface/*": "./dist/interface/*.js",
-    "./medical": "./dist/medical/index.js"
+    "./medical": "./dist/medical/index.js",
+    "./util": "./dist/util/index.js",
+    "./util/*": "./dist/util/*.js"
   },
   "typesVersions": {
     "*": {
@@ -53,6 +55,12 @@
       ],
       "medical": [
         "dist/medical/index.d.ts"
+      ],
+      "util": [
+        "dist/util/index.d.ts"
+      ],
+      "util/*": [
+        "dist/util/*"
       ]
     }
   },
@@ -80,11 +88,12 @@
   },
   "dependencies": {
     "@medplum/core": "^2.2.10",
-    "axios": "^1.4.0",
+    "axios": "^1.8.2",
     "dayjs": "^1.11.9",
     "fast-xml-parser": "^4.4.1",
     "http-status": "~1.7.0",
     "lodash": "^4.17.21",
+    "semver": ">=5.7.2",
     "zod": "^3.22.1"
   },
   "devDependencies": {

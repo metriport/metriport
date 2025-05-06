@@ -14,26 +14,10 @@ const router = Router();
 const athenaAsyncMsg = "AthenaHealth processPatientsFromAppointments";
 
 /**
- * POST /internal/ehr/athenahealth/patient/from-appointments-subscription
- *
- * Fetches appointments since last call creates all patients not already existing
- */
-router.post(
-  "/from-appointments-subscription",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
-    processPatientsFromAppointments({
-      lookupMode: catchUp ? LookupModes.FromSubscriptionBackfill : LookupModes.FromSubscription,
-    }).catch(processAsyncError(athenaAsyncMsg));
-    return res.sendStatus(httpStatus.OK);
-  })
-);
-
-/**
  * POST /internal/ehr/athenahealth/patient/appointments-from-subscription
  *
  * Fetches appointment change events since last call and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments-from-subscription",
@@ -50,6 +34,7 @@ router.post(
  * POST /internal/ehr/athenahealth/patient/appointments-from-subscription-backfill
  *
  * Fetches appointment change events already processed and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments-from-subscription-backfill",
@@ -66,6 +51,7 @@ router.post(
  * POST /internal/ehr/athenahealth/patient/appointments
  *
  * Fetches appointments in the future and creates all patients not already existing
+ * @returns 200 OK
  */
 router.post(
   "/appointments",
@@ -82,8 +68,12 @@ router.post(
  * POST /internal/ehr/athenahealth/patient
  *
  * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of AthenaHealth Patient.
- * @returns Metriport Patient if found.
+ * @param req.query.cxId The ID of Metriport Customer.
+ * @param req.query.patientId The ID of AthenaHealth Patient.
+ * @param req.query.practiceId The ID of AthenaHealth Practice.
+ * @param req.query.departmentId The ID of AthenaHealth Department.
+ * @param req.query.triggerDq Whether to trigger a data quality check.
+ * @returns 200 OK
  */
 router.post(
   "/",

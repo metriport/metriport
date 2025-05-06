@@ -32,12 +32,15 @@ import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
+import { PatientImportJobModel } from "./medical/patient-import";
+import { PatientImportMappingModel } from "./medical/patient-import-mapping";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
+import { PatientJobModel } from "./patient-job";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -50,6 +53,8 @@ const models: ModelSetup[] = [
   CwPatientDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
+  PatientImportJobModel.setup,
+  PatientImportMappingModel.setup,
   HIEDirectoryEntryViewModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,
@@ -65,6 +70,7 @@ const models: ModelSetup[] = [
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
+  PatientJobModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];

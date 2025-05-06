@@ -146,7 +146,7 @@ These are messages you can expect to receive in the following scenarios:
     {
       "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
       "externalId": "1234567890",
-      "additionalIds": { 
+      "additionalIds": {
         "athenahealth": ["99992"]
       },
       "type": "document-download",
@@ -281,7 +281,7 @@ Example payload:
     {
       "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
       "externalId": "1234567890",
-      "additionalIds": { 
+      "additionalIds": {
         "athenahealth": ["99992"]
       },
       "status": "completed",
@@ -383,18 +383,15 @@ update and provide relevant information.
 You can expect to get two messages of this type for each Bulk Patient Create, with the status
 being the main difference between each:
 
-- `waiting`: initial state, waiting for the CSV file;
-- `processing`: the CSV file has been uploaded and is being processed;
-- `completed`: the bulk create is completed;
-- `failed`: the bulk create failed (likely due to an uploaded file with invalid format).
+- First message:
+  - `processing`: the CSV file has been uploaded and is being processed;
+- Second message - one of:
+  - `completed`: the bulk create is completed - includes the [result CSV file](#result-csv-file);
+  - `failed`: the bulk create failed (likely due to the uploaded file being invalid).
 
 <Info>
-  If the Medical Record doesn't contain any information, the
-  `Bundle` will be empty (the `entry` array will have no
-  elements).
+  The URL will only be valid for 180 seconds (3 minutes).
 </Info>
-
-<Info>The URL will only be valid for 180 seconds (3 minutes).</Info>
 
 Example payload:
 
@@ -447,7 +444,8 @@ The format follows:
 
     <ResponseField name="result" type="string">
       The URL to download the CSV file containing the result of
-      the Bulk Patient Create. It's valid for 5 minutes.
+      the Bulk Patient Create. It's valid for 3 minutes. Only present if the
+      status is `completed`.
     </ResponseField>
 
   </Expandable>
@@ -457,6 +455,10 @@ The format follows:
 
 The message `medical.bulk-patient-create` with status `completed` includes a URL in the `result`
 field, which you can use to download the result of the Bulk Patient Create.
+
+<Info>
+  The URL will only be valid for 180 seconds (3 minutes).
+</Info>
 
 The file is based on the same format as the
 [input CSV](/medical-api/api-reference/patient/bulk-create-patient#input-csv-file-format), with the
@@ -485,7 +487,9 @@ An example of a result file can be accessed
 If you want to download all of a patient's documents, especially when they have a large volume of documents, you can start a [Bulk Get Document URL query](/medical-api/api-reference/document/download-url-bulk). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
 You can use the value of the `url` property in the returned `documents` objects to download the files.
 
-<Info>The URLs will only be valid for 600 seconds (10 minutes).</Info>
+<Info>
+  The URLs will only be valid for 600 seconds (10 minutes).
+</Info>
 
 Here is an example payload:
 
@@ -501,7 +505,7 @@ Here is an example payload:
       "status": "completed",
       "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
       "externalId": "1234567890",
-      "additionalIds": { 
+      "additionalIds": {
         "athenahealth": ["99992"]
       },
       "documents": [

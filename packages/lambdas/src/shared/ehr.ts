@@ -1,5 +1,6 @@
 import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
 import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient";
+import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/healthie/link-patient/healthie-link-patient";
 import { MetriportError } from "@metriport/shared";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 
@@ -48,15 +49,15 @@ export function parseSyncPatient(bodyAsJson: SyncPatientPayload): ProcessSyncPat
   };
 }
 
-interface ElationLinkPatientPayload {
+interface LinkPatientPayload {
   cxId: unknown;
   practiceId: unknown;
   patientId: unknown;
 }
 
-export function elationParseLinkPatient(
-  bodyAsJson: ElationLinkPatientPayload
-): ElationProcessLinkPatientRequest {
+export function parseLinkPatient(
+  bodyAsJson: LinkPatientPayload
+): ElationProcessLinkPatientRequest | HealthieProcessLinkPatientRequest {
   const cxIdRaw = bodyAsJson.cxId;
   if (!cxIdRaw) throw new MetriportError("Missing cxId");
   if (typeof cxIdRaw !== "string") throw new MetriportError("Invalid cxId");

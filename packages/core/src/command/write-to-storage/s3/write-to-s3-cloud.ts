@@ -2,11 +2,13 @@ import { BadRequestError, sleep } from "@metriport/shared";
 import { chunk } from "lodash";
 import { SQSClient } from "../../../external/aws/sqs";
 import { Config } from "../../../util/config";
+import {
+  MAX_SQS_MESSAGE_SIZE,
+  SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
+  SQS_MESSAGE_BATCH_SIZE_STANDARD,
+} from "../../../util/sqs";
 import { S3Writer, WriteToS3Request } from "./write-to-s3";
 
-const MAX_SQS_MESSAGE_SIZE = 256000;
-const MAX_SQS_MESSAGE_BATCH_SIZE = 100;
-const MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP = 1000;
 /** ---------------------------------------------------------------------------
  * This class is used to write to S3 in a cloud environment via SQS. The max
  * payload size is 256KB.
@@ -15,11 +17,7 @@ export class S3WriterCloud implements S3Writer {
   private readonly sqsClient: SQSClient;
 
   constructor(private readonly writeToS3QueueUrl: string, region?: string, sqsClient?: SQSClient) {
-    if (!sqsClient) {
-      this.sqsClient = new SQSClient({ region: region ?? Config.getAWSRegion() });
-    } else {
-      this.sqsClient = sqsClient;
-    }
+    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
   async writeToS3(params: WriteToS3Request): Promise<void> {
@@ -33,12 +31,15 @@ export class S3WriterCloud implements S3Writer {
         fileName: paylodTooBig.fileName,
       });
     }
-    const chunks = chunk(params, MAX_SQS_MESSAGE_BATCH_SIZE);
+    const chunks = chunk(params, SQS_MESSAGE_BATCH_SIZE_STANDARD);
     for (const chunk of chunks) {
       await Promise.all(
-        chunk.map(p => this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, JSON.stringify(p)))
+        chunk.map(params => {
+          const payload = JSON.stringify(params);
+          return this.sqsClient.sendMessageToQueue(this.writeToS3QueueUrl, payload);
+        })
       );
-      await sleep(MAX_SQS_MESSAGE_BATCH_SIZE_TO_SLEEP);
+      await sleep(SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP);
     }
   }
 }

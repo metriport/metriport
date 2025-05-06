@@ -17,7 +17,9 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
 }
 
 export function validateDateOfBirth(date: string): boolean {
-  return validateIsPastOrPresent(date) && validateDateIsAfter1900(date);
+  const parsedDate = buildDayjs(date);
+  if (!parsedDate.isValid()) return false;
+  return validateDateIsAfter1900(parsedDate.format(ISO_DATE));
 }
 
 export function validateIsPastOrPresent(date: string): boolean {
@@ -32,9 +34,10 @@ export function validateIsPastOrPresentSafe(date: string): boolean {
 }
 
 export function validateDateIsAfter1900(date: string): boolean {
-  const dateToCheck = buildDayjs(date);
-  const year1900 = buildDayjs("1900-01-01");
-  return dateToCheck.isSame(year1900) || dateToCheck.isAfter(year1900);
+  if (!isValidISODate(date)) return false;
+  const yearStr = date.substring(0, 4);
+  const year = Number(yearStr);
+  return year >= 1900;
 }
 
 export function validateDateRange(start: string, end: string): boolean {
@@ -66,6 +69,34 @@ export function elapsedTimeFromNow(
 
 export function buildDayjs(date?: ConfigType, format?: string, strict?: boolean): dayjs.Dayjs {
   return dayjs.utc(date, format, strict);
+}
+
+/**
+ * Tries to parse a compact date string in the format YYYYMMDDhhmmss±hhmm
+ * (year, month, day, hour, minute, second, timezone)
+ * and converts it to ISO 8601 format.
+ *
+ * @param input The compact date string to parse
+ * @returns ISO 8601 formatted date string or undefined if input doesn't match expected format
+ */
+function tryParseCompactDate(input: string): string | undefined {
+  const match = input.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})([+-])(\d{2})(\d{2})$/);
+  if (!match) return undefined;
+
+  const [, year, month, day, hour, minute, second, sign, tzHour, tzMinute] = match;
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}${sign}${tzHour}:${tzMinute}`;
+}
+
+export function buildDayjsFromCompactDate(
+  date?: ConfigType,
+  format?: string,
+  strict?: boolean
+): dayjs.Dayjs {
+  if (typeof date === "string") {
+    const parsed = tryParseCompactDate(date);
+    if (parsed) return buildDayjs(parsed, format, strict);
+  }
+  return buildDayjs(date, format, strict);
 }
 
 export function sortDate(

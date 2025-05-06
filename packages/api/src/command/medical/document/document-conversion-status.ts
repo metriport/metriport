@@ -110,12 +110,16 @@ export async function calculateDocumentConversionStatus({
         patient: updatedPatient,
         conversionType: "pdf",
         context: `Post-DQ getConsolidated ${source}`,
+        requestId,
+        isDq: true,
       });
     } else if (isGlobalConversionCompleted) {
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
         context: "Post-DQ getConsolidated GLOBAL",
+        requestId,
+        isDq: true,
       });
     }
   } else {
@@ -130,6 +134,10 @@ export async function calculateDocumentConversionStatus({
       progressType: "convert",
       status: "completed",
     });
+
+    log(
+      `Running calculateDocumentConversionStatus without "source" - isConversionCompleted: ${isConversionCompleted}`
+    );
 
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook

@@ -353,6 +353,13 @@ export class Config {
     return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
   }
 
+  static getHealthieEnv(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_ENVIRONMENT");
+  }
+  static getHealthieApiKeyMap(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
+  }
+
   static getRateLimitTableName(): string | undefined {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }

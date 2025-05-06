@@ -123,11 +123,12 @@ type EnvConfigBase = {
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   ehrResponsesBucketName?: string;
+  ehrBundleBucketName: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
   fhirConverterBucketName?: string;
-  analyticsSecretNames?: {
+  analyticsSecretNames: {
     POST_HOG_API_KEY_SECRET: string;
   };
   locationService?: {
@@ -254,6 +255,12 @@ type EnvConfigBase = {
     canvas: {
       secrets: {
         EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP: string;
+      };
+    };
+    healthie: {
+      env: string;
+      secrets: {
+        EHR_HEALTHIE_API_KEY_MAP: string;
       };
     };
   };

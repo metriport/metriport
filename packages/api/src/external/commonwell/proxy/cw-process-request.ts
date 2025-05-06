@@ -47,11 +47,11 @@ const allowedQueryParams = ["status", "date", "_summary"];
  */
 export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   const { cxId, patientId } = await getPatientAndCxFromRequest(req);
-  const { log } = out(`${proxyPrefix} request - cxId ${cxId}, patient ${patientId}`);
+  const { log, debug } = out(`${proxyPrefix} request - cxId ${cxId}, patient ${patientId}`);
   log(`ORIGINAL URL: ${req.url}`);
   const { resource, count, params } = fromHttpRequestToFHIR(req);
 
-  log(`UPDATED resource: ${resource} / count : ${count} / params: ${params.toString()}`);
+  debug(`UPDATED resource: ${resource} / count : ${count} / params: ${params.toString()}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const organization = await getOrganizationOrFail({ cxId });
@@ -73,11 +73,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   }
 
   const bundle = prepareBundle([patientResource, ...docRefs], params);
-  log(
-    `Responding to CW (cx ${cxId} / patient ${patientId}): ${
-      bundle.entry?.length
-    } resources - ${JSON.stringify(bundle)}`
-  );
+  log(`Responding to CW (cx ${cxId} / patient ${patientId}): ${bundle.entry?.length} resources`);
   return bundle;
 }
 

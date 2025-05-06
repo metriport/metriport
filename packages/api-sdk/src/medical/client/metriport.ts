@@ -873,7 +873,7 @@ export class MetriportMedicalApi {
    * @param throwOnError Whether to throw an Error if the request body is not a valid webhook request.
    *        Optional, defaults to true.
    * @returns The webhook request - instance of WebhookRequest, or an instance of
-   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'true'.
+   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'false'.
    * @throws Error if the request body is not a valid webhook request and throwOnError is 'true'.
    *         Details can be obtained from the error object under the 'cause' property (instance
    *         of ZodError).
