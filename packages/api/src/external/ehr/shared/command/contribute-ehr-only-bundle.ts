@@ -3,6 +3,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import axios from "axios";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
 import { handleDataContribution } from "../../../../command/medical/patient/data-contribution/handle-data-contributions";
+import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { getResourceDiffBundlesJobPayload } from "../job/create-resource-diff-bundles/get-job-payload";
 import { ContributeEhrOnlyBundleParams } from "../utils/bundle";
 
@@ -37,7 +38,7 @@ export async function contributeEhrOnlyBundle({
     externalId: patientId,
     source: ehr,
   });
-  const metriportPatientId = existingPatient.patientId;
+  const metriportPatient = await getPatientOrFail({ cxId, id: existingPatient.patientId });
   const { preSignedUrls } = jobPayload.response;
   const requestId = uuidv7();
   for (const url of preSignedUrls) {
@@ -45,7 +46,7 @@ export async function contributeEhrOnlyBundle({
     const bundle = response.data;
     await handleDataContribution({
       cxId,
-      patientId: metriportPatientId,
+      patient: metriportPatient,
       bundle,
       requestId,
     });
