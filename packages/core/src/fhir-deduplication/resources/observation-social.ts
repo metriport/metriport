@@ -130,6 +130,10 @@ function preprocessDates(base: Observation, newObs: Observation) {
     .map(date => dayjs(date))
     .filter(date => date.isValid());
 
+  if (dates.length === 0) {
+    return;
+  }
+
   const earliestDate = dates.reduce((min, curr) => (curr.isBefore(min) ? curr : min), dates[0]);
   const latestDate = dates.reduce((max, curr) => (curr.isAfter(max) ? curr : max), dates[0]);
 
