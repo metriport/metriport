@@ -1,5 +1,6 @@
 import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { Bundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
 import { handleDataContribution } from "../../../../command/medical/patient/data-contribution/handle-data-contributions";
@@ -9,15 +10,16 @@ import { ContributeEhrOnlyBundleParams } from "../utils/bundle";
 
 /**
  * Fetch the pre-signed URLs for the EHR only bundles, fetch the bundles and contribute them
+ * back to the HIEs
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient
- * @param practiceId - The practice id of the EHR patient.
- * @param patientId - The patient id of the patient.
- * @param jobId - The job id of the resource diff bundles job.
+ * @param practiceId - The practice id of the EHR patient
+ * @param patientId - The patient id of the EHR patient
+ * @param jobId - The job id of the resource diff bundles job that produced the bundles
  * @throws NotFoundError if no job is found
  */
-export async function contributeEhrOnlyBundle({
+export async function contributeEhrOnlyBundles({
   ehr,
   cxId,
   practiceId,
@@ -33,22 +35,28 @@ export async function contributeEhrOnlyBundle({
     bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
   });
   if (!jobPayload.response) return;
-  const existingPatient = await getPatientMappingOrFail({
+  const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: patientId,
     source: ehr,
   });
-  const metriportPatient = await getPatientOrFail({ cxId, id: existingPatient.patientId });
+  const metriportPatient = await getPatientOrFail({ cxId, id: patientMapping.patientId });
   const { preSignedUrls } = jobPayload.response;
   const requestId = uuidv7();
+  const collectionBundle: Bundle & { type: "collection" } = {
+    resourceType: "Bundle",
+    type: "collection",
+    entry: [],
+  };
   for (const url of preSignedUrls) {
     const response = await axios.get(url);
-    const bundle = response.data;
-    await handleDataContribution({
-      cxId,
-      patient: metriportPatient,
-      bundle,
-      requestId,
-    });
+    const bundle: Bundle = response.data;
+    collectionBundle.entry.push(...bundle.entry);
   }
+  await handleDataContribution({
+    cxId,
+    patient: metriportPatient,
+    bundle: collectionBundle,
+    requestId,
+  });
 }

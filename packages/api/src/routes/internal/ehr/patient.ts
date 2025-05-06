@@ -6,7 +6,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
-import { contributeEhrOnlyBundle } from "../../../external/ehr/shared/command/contribute-ehr-only-bundle";
+import { contributeEhrOnlyBundles } from "../../../external/ehr/shared/command/contribute-ehr-only-bundles";
 import { fetchBundlePreSignedUrls } from "../../../external/ehr/shared/command/fetch-bundle-presignd-urls";
 import {
   getLatestResourceDiffBundlesJobPayload,
@@ -193,7 +193,7 @@ router.post(
       entryStatus,
       onCompleted: async () => {
         if (contribute) {
-          await contributeEhrOnlyBundle({
+          await contributeEhrOnlyBundles({
             ehr,
             cxId,
             practiceId,
