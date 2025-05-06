@@ -3,8 +3,10 @@ import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
+import { searchSemantic } from "@metriport/core/external/opensearch/semantic/search";
+import { Config } from "@metriport/core/util/config";
 import { getRequestId } from "@metriport/core/util/request";
-import { isTrue, stringToBoolean, NotFoundError, BadRequestError } from "@metriport/shared";
+import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -19,11 +21,11 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { setHieOptOut, getHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { countResources } from "../../external/fhir/patient/count-resources";
@@ -38,9 +40,9 @@ import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
+  PatientHieOptOutResponse,
   patientUpdateSchema,
   schemaUpdateToPatientData,
-  PatientHieOptOutResponse,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -177,6 +179,28 @@ router.get(
     });
 
     return res.json(data);
+  })
+);
+
+// TODO eng-41 document this
+router.get(
+  "/consolidated/search",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    // TODO ENG-41 Enable this for prod
+    if (!Config.isSandbox() && !Config.isStaging() && !Config.isDev()) {
+      throw new NotFoundError();
+    }
+
+    const { patient } = getPatientInfoOrFail(req);
+    const queryParam = getFrom("query").optional("query", req);
+    const query = queryParam ? queryParam.trim() : undefined;
+
+    const result = query
+      ? await searchSemantic({ patient, query })
+      : await getConsolidatedPatientData({ patient });
+
+    return res.status(status.OK).json(result);
   })
 );
 
