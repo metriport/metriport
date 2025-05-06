@@ -18,8 +18,8 @@ import {
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param patientId - The EHR patient id of the patient.
- * @param jobId - The job ID of the job.
- * @param bundleType - The type of bundle to fetch.
+ * @param jobId - The job id of the job.
+ * @param bundleType - The type of resource diff bundle to fetch.
  * @returns resource diff bundles job payload with data if completed
  * @throws NotFoundError if no job is found
  */
@@ -53,7 +53,7 @@ export async function getResourceDiffBundlesJobPayload({
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The EHR patient id of the patient.
- * @param bundleType - The type of bundle to fetch.
+ * @param bundleType - The type of resource diff bundle to fetch.
  * @returns resource diff bundles job data payload with data if completed or undefined if no job is found
  */
 export async function getLatestResourceDiffBundlesJobPayload({
@@ -65,12 +65,12 @@ export async function getLatestResourceDiffBundlesJobPayload({
 }: Omit<GetResourceDiffBundlesJobPayloadParams, "jobId">): Promise<
   ResourceDiffBundlesJobPayload | undefined
 > {
-  const existingPatient = await getPatientMappingOrFail({
+  const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: patientId,
     source: ehr,
   });
-  const metriportPatientId = existingPatient.patientId;
+  const metriportPatientId = patientMapping.patientId;
   const job = await getLatestPatientJob({
     cxId,
     patientId: metriportPatientId,

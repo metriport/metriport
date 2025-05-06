@@ -11,7 +11,7 @@ export type SetResourceDiffJobEntryStatusParams = ApiBaseParams & {
 };
 
 /**
- * Sends a request to the API to set the status of a patient job entry.
+ * Sends a request to the API to set the status of a patient job entry for a resource diff job.
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param practiceId - The practice ID.

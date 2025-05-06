@@ -10,9 +10,9 @@ import { StartRefreshEhrBundlesJobParams, getRefreshEhrBundlesJobType } from "..
  * the resources in EHR.
  *
  * @param ehr - The EHR source.
- * @param cxId - The cxId of the patient.
- * @param practiceId - The practice id of the patient.
- * @param patientId - The patient id of the patient.
+ * @param cxId - The CX ID of the patient.
+ * @param practiceId - The practice id of the EHR patient.
+ * @param patientId - The patient id of the EHR patient.
  * @param requestId - The request id of the job. Optional, defaults to a new UUID.
  * @returns The job id of the refresh EHR bundles job.
  */
@@ -23,14 +23,14 @@ export async function startRefreshEhrBundlesJob({
   patientId,
   requestId,
 }: StartRefreshEhrBundlesJobParams): Promise<string> {
-  const existingPatient = await getPatientMappingOrFail({
+  const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: patientId,
     source: ehr,
   });
   const metriportPatient = await getPatientOrFail({
     cxId,
-    id: existingPatient.patientId,
+    id: patientMapping.patientId,
   });
   const metriportPatientId = metriportPatient.id;
   const job = await createPatientJob({

@@ -47,12 +47,12 @@ export async function validateAndPrepareBundleFetch({
     metriportPatientId: string;
   }
 > {
-  const existingPatient = await getPatientMappingOrFail({
+  const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: patientId,
     source: ehr,
   });
-  const metriportPatientId = existingPatient.patientId;
+  const metriportPatientId = patientMapping.patientId;
   if (resourceType && !supportedResourceTypes.includes(resourceType)) {
     throw new BadRequestError("Resource type is not supported for bundle", undefined, {
       resourceType,

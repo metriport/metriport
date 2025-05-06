@@ -18,7 +18,7 @@ export type GetResourceDiffBundlesJobPayloadParams = {
   practiceId: string;
   patientId: string;
   jobId: string;
-  bundleType: BundleType;
+  bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY | BundleType.RESOURCE_DIFF_EHR_ONLY;
 };
 
 export type ResourceDiffBundlesJobPayload = PatientJobPayload<FetchBundlePreSignedUrls>;

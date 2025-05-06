@@ -66,7 +66,7 @@ export async function fetchBundlePreSignedUrls({
  * @param patientId - The patient id of the EHR patient.
  * @param resourceType - The resource type to fetch. Optional, all resource types will be fetched if not provided.
  * @param bundleType - The type of bundle to fetch.
- * @param jobId The job id of the resource diff bundles job.
+ * @param jobId - The job id of the resource diff bundles job.
  * @returns resource diff bundles pre-signed URLs
  * @throws NotFoundError if no job is found
  */

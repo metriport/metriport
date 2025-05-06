@@ -58,7 +58,9 @@ export enum BundleType {
 export function isBundleType(bundleType: string): bundleType is BundleType {
   return Object.values(BundleType).includes(bundleType as BundleType);
 }
-export function isResourceDiffBundleType(bundleType: string): bundleType is BundleType {
+export function isResourceDiffBundleType(
+  bundleType: string
+): bundleType is BundleType.RESOURCE_DIFF_EHR_ONLY | BundleType.RESOURCE_DIFF_METRIPORT_ONLY {
   return (
     bundleType === BundleType.RESOURCE_DIFF_EHR_ONLY ||
     bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY

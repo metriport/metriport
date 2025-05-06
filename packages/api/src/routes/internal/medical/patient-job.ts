@@ -16,8 +16,8 @@ const router = Router();
  * POST /internal/patient/job/:jobId/initialize
  *
  * Initializes the job.
- * @param req.query.cxId The CX ID.
- * @param req.params.jobId The job ID.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
  * @returns 200 OK
  */
 router.post(
@@ -36,8 +36,8 @@ router.post(
  *
  * Completes the job. Should only be used when the job has no entries to process. Otherwise, use
  * POST /internal/patient/job/:jobId/set-entry-status to set the status of the job entry.
- * @param req.query.cxId The CX ID.
- * @param req.params.jobId The job ID.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
  * @returns 200 OK
  */
 router.post(
@@ -55,9 +55,9 @@ router.post(
  * POST /internal/patient/job/:jobId/update-total
  *
  * Updates the total of the job.
- * @param req.query.cxId The CX ID.
- * @param req.params.jobId The job ID.
- * @param req.query.total The total number of entries to process.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
+ * @param req.query.total - The total number of entries to process.
  * @returns 200 OK
  */
 router.post(
@@ -83,9 +83,9 @@ router.post(
  * POST /internal/patient/job/:jobId/set-entry-status
  *
  * Sets the status of a patient job entry.
- * @param req.query.cxId The CX ID.
- * @param req.params.jobId The job ID.
- * @param req.query.entryStatus The status of the entry.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
+ * @param req.query.entryStatus - The status of the entry.
  * @returns 200 OK
  */
 router.post(

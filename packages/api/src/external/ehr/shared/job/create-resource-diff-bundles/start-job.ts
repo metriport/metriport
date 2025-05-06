@@ -13,9 +13,9 @@ import {
  * the resources in Metriport that are not in the EHR and vice versa.
  *
  * @param ehr - The EHR source.
- * @param cxId - The cxId of the patient.
- * @param practiceId - The practice id of the patient.
- * @param patientId - The patient id of the patient.
+ * @param cxId - The CX ID of the patient.
+ * @param practiceId - The practice id of the EHR patient.
+ * @param patientId - The patient id of the EHR patient.
  * @param contribute - Whether to contribute the EHR-only resource diff bundles to the HIEs. Optional, defaults to false.
  * @param requestId - The request id of the job. Optional, defaults to a new UUID.
  * @returns The job id of the resource diff bundles job.
@@ -28,14 +28,14 @@ export async function startCreateResourceDiffBundlesJob({
   contribute = false,
   requestId,
 }: StartCreateResourceDiffBundlesJobParams): Promise<string> {
-  const existingPatient = await getPatientMappingOrFail({
+  const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: patientId,
     source: ehr,
   });
   const metriportPatient = await getPatientOrFail({
     cxId,
-    id: existingPatient.patientId,
+    id: patientMapping.patientId,
   });
   const metriportPatientId = metriportPatient.id;
   const job = await createPatientJob({
