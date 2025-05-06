@@ -1,8 +1,10 @@
+import { BadRequestError } from "@metriport/shared";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../domain/patient";
 import { out } from "../../../util";
 import { Config } from "../../../util/config";
 import { DocumentReferenceWithId } from "../../fhir/document/document-reference";
+import { toFHIR as patientToFhir } from "../../fhir/patient/conversion";
 import { searchDocuments } from "../search-documents";
 import { OpenSearchSemanticSearcherDirect, SearchResult } from "./semantic-searcher-direct";
 import { getConsolidated } from "./shared";
@@ -22,6 +24,14 @@ export async function searchSemantic({
   maxNumberOfResults?: number;
 }): Promise<SearchSetBundle> {
   const { log } = out(`searchSemantic - cx ${patient.cxId}, pt ${patient.id}`);
+
+  if (maxNumberOfResults > 10_000) {
+    throw new BadRequestError("maxNumberOfResults cannot be greater than 10_000");
+  }
+  if (maxNumberOfResults < 1) {
+    throw new BadRequestError("maxNumberOfResults cannot be less than 1");
+  }
+
   log(`Getting consolidated and searching OS...`);
   const startedAt = Date.now();
 
@@ -42,12 +52,14 @@ export async function searchSemantic({
       const resourceType = entry.resource?.resourceType;
       if (!resourceId || !resourceType) return false;
       return (
-        isInSemanticResults(searchResults, resourceId, resourceType) ||
-        isInDocRefResults(docRefResults, resourceId, resourceType)
+        resourceType !== "Patient" &&
+        (isInSemanticResults(searchResults, resourceId, resourceType) ||
+          isInDocRefResults(docRefResults, resourceId, resourceType))
       );
     }) ?? [];
 
-  const sliced = filteredResources.slice(0, maxNumberOfResults);
+  const sliced = filteredResources.slice(0, maxNumberOfResults - 1);
+  sliced.push(patientToFhir(patient));
 
   log(`Done, returning ${sliced.length} filtered resources...`);
 
