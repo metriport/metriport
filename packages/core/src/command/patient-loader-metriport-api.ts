@@ -109,11 +109,11 @@ function validatePatient(patient: Patient): boolean {
 }
 
 //
-export function getDomainFromDTO(dto: PatientDTO): Patient {
+export function getDomainFromDTO(dto: PatientDTO, cxId = ""): Patient {
   return {
     id: dto.id,
     eTag: dto.eTag ?? "",
-    cxId: "",
+    cxId,
     createdAt: dto.dateCreated ?? new Date(),
     updatedAt: dto.dateCreated ?? new Date(),
     facilityIds: dto.facilityIds,
