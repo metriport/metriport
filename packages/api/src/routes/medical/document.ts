@@ -30,7 +30,8 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
+import { bundleSchema } from "./schemas/fhir";
+
 const router = Router();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -53,13 +54,9 @@ router.post(
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
     const { question } = searchSummarySchema.parse(req.query);
-    const { patient } = getPatientInfoOrFail(req);
-    const data = await getConsolidatedPatientData({
-      patient,
-      fromDashboard: true,
-    });
+    const bundle = bundleSchema.parse(req.body);
 
-    const summary = await generateSearchSummary(question, data);
+    const summary = await generateSearchSummary(question, bundle);
     return res.status(OK).json(summary);
   })
 );
