@@ -62,8 +62,6 @@ export async function generateSearchSummary(
       ],
     });
 
-    console.log("bundleText", bundleText);
-
     const promptText = createPromptWithJsonOutput(question, bundleText);
 
     // Use the LLM directly with the complete prompt
