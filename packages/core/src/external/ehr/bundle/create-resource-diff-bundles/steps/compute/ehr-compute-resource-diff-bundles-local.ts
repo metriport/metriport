@@ -33,7 +33,7 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         resourceType,
         contribute,
         jobId,
-        throwOnError = true,
+        reportError = true,
       } = payload;
       const entryStatusParams = {
         ehr,
@@ -90,8 +90,9 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         ]);
         await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "successful" });
       } catch (error) {
-        if (!throwOnError) continue;
-        await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
+        if (reportError) {
+          await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
+        }
         throw error;
       }
     }

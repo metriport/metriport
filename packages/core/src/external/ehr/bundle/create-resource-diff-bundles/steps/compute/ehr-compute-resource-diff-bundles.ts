@@ -3,7 +3,7 @@ import { CreateResourceDiffBundlesBaseRequest } from "../../create-resource-diff
 
 export type ComputeResourceDiffBundlesRequest = CreateResourceDiffBundlesBaseRequest & {
   resourceType: SupportedResourceType;
-  throwOnError?: boolean;
+  reportError?: boolean;
 };
 
 export interface EhrComputeResourceDiffBundlesHandler {

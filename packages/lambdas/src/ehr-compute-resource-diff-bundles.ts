@@ -46,13 +46,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   );
 
   const receiveCount = parseInt(message.attributes.ApproximateReceiveCount);
-  const throwOnError = receiveCount >= maxAttempts;
-  log(
-    `Receive count: ${receiveCount}, max attempts: ${maxAttempts}, throwOnError: ${throwOnError}`
-  );
+  const reportError = receiveCount >= maxAttempts;
+  log(`Receive count: ${receiveCount}, max attempts: ${maxAttempts}, reportError: ${reportError}`);
 
   const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffBundlesLocal(waitTimeInMillis);
-  await ehrComputeResourceDiffHandler.computeResourceDiffBundles([{ ...parsedBody, throwOnError }]);
+  await ehrComputeResourceDiffHandler.computeResourceDiffBundles([{ ...parsedBody, reportError }]);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
