@@ -1,8 +1,4 @@
 import {
-  AthenaSecondaryMappings,
-  athenaSecondaryMappingsSchema,
-} from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
-import {
   AthenaClientJwtTokenData,
   athenaClientSource,
   AthenaDashJwtTokenData,
@@ -17,25 +13,15 @@ import {
   canvasWebhookSource,
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import {
-  ElationSecondaryMappings,
-  elationSecondaryMappingsSchema,
-} from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
-import {
   ElationClientJwtTokenData,
   elationClientSource,
   ElationDashJwtTokenData,
   elationDashSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import {
-  HealthieSecondaryMappings,
-  healthieSecondaryMappingsSchema,
-} from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
-import {
   HealthieDashJwtTokenData,
   healthieDashSource,
 } from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
-import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { z } from "zod";
 import { findOrCreateJwtToken, getJwtToken } from "../../../../command/jwt-token";
 import { JwtTokenData, JwtTokenSource } from "../../../../domain/jwt-token";
 
@@ -78,19 +64,6 @@ export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhook
 }
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
-
-export type EhrCxMappingSecondaryMappings =
-  | AthenaSecondaryMappings
-  | ElationSecondaryMappings
-  | HealthieSecondaryMappings;
-export const ehrCxMappingSecondaryMappingsSchemaMap: {
-  [key in EhrSource]: z.Schema | undefined;
-} = {
-  [EhrSources.athena]: athenaSecondaryMappingsSchema,
-  [EhrSources.elation]: elationSecondaryMappingsSchema,
-  [EhrSources.canvas]: undefined,
-  [EhrSources.healthie]: healthieSecondaryMappingsSchema,
-};
 
 export async function checkJwtToken({
   token,
