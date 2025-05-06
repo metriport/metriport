@@ -48,11 +48,13 @@ export async function contributeEhrOnlyBundles({
     type: "collection",
     entry: [],
   };
-  for (const url of preSignedUrls) {
-    const response = await axios.get(url);
-    const bundle: Bundle = response.data;
-    collectionBundle.entry.push(...bundle.entry);
-  }
+  await Promise.all(
+    preSignedUrls.map(async url => {
+      const response = await axios.get(url);
+      const bundle: Bundle = response.data;
+      return collectionBundle.entry.push(...bundle.entry);
+    })
+  );
   await handleDataContribution({
     cxId,
     patient: metriportPatient,
