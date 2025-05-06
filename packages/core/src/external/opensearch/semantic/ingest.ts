@@ -1,7 +1,7 @@
 import { Patient } from "../../../domain/patient";
 import { out } from "../../../util";
 import { Config } from "../../../util/config";
-import { bundleToString } from "../../fhir/export/string/bundle-to-string";
+import { bundleToString, FhirResourceToText } from "../../fhir/export/string/bundle-to-string";
 import { OpenSearchTextIngestorDirect } from "../text-ingestor-direct";
 import { getConsolidated } from "./shared";
 
@@ -13,9 +13,7 @@ import { getConsolidated } from "./shared";
 export async function ingestSemantic({ patient }: { patient: Patient }) {
   const { log } = out(`ingestSemantic - cx ${patient.cxId}, pt ${patient.id}`);
 
-  const consolidated = await getConsolidated({ patient });
-
-  const convertedResources = bundleToString(consolidated);
+  const convertedResources = await getConsolidatedAsText({ patient });
 
   const ingestor = new OpenSearchTextIngestorDirect({
     region: Config.getAWSRegion(),
@@ -32,7 +30,7 @@ export async function ingestSemantic({ patient }: { patient: Patient }) {
     await ingestor.ingest({
       cxId: patient.cxId,
       patientId: patient.id,
-      resourceType: resource.resourceType,
+      resourceType: resource.type,
       resourceId: resource.id,
       content: resource.text,
     });
@@ -40,6 +38,15 @@ export async function ingestSemantic({ patient }: { patient: Patient }) {
   const elapsedTime = Date.now() - startedAt;
 
   log(`Ingested ${convertedResources.length} resources in ${elapsedTime} ms`);
+}
+
+export async function getConsolidatedAsText({
+  patient,
+}: {
+  patient: Patient;
+}): Promise<FhirResourceToText[]> {
+  const consolidated = await getConsolidated({ patient });
+  return bundleToString(consolidated);
 }
 
 // TODO eng-41 Convert this to actual code to create the index if not exists and decide where to call it from

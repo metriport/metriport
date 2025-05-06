@@ -3,23 +3,28 @@ dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metriport-api";
-import { searchSemantic } from "@metriport/core/external/opensearch/semantic/search";
+import { getConsolidatedAsText } from "@metriport/core/external/opensearch/semantic/ingest";
 import { sleep } from "@metriport/core/util/sleep";
 import { getEnvVarOrFail } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import fs from "fs";
 import { elapsedTimeAsStr } from "../shared/duration";
+import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 
 dayjs.extend(duration);
 
 /**
- * Script to search a patient's consolidated resources using OpenSearch semantic search.
+ * Script to output the text used for semantic search from a patient's consolidated resources.
  */
 
 const patientId = getEnvVarOrFail("PATIENT_ID");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
+
+const outputRootFolderName = `semantic-text-from-consolidated`;
+const getFolderName = buildGetDirPathInside(outputRootFolderName);
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -30,20 +35,20 @@ async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
 
-  const searchQuery = process.argv[2];
-  if (!searchQuery) {
-    console.error("Please provide a search query as the first argument");
-    process.exit(1);
-  }
+  console.log("Getting consolidated resources as text...");
 
   const patientDto = await metriportAPI.getPatient(patientId);
   const patient = getDomainFromDTO(patientDto, cxId);
 
-  console.log("Running search with: ", searchQuery);
+  const resources = await getConsolidatedAsText({ patient });
 
-  const searchResult = await searchSemantic({ patient, query: searchQuery });
-  const searchResultIds = searchResult.entry?.map(r => r.resource?.id) ?? [];
-  console.log("Search result: ", searchResultIds.join(", "));
+  const headers = ["id", "type", "text"];
+  const resourcesAsCsv = [headers, ...resources.map(r => [r.id, r.type, `"${r.text}"`])].join("\n");
+
+  const outputFilePrefix = getFolderName(`${cxId}_${patientId}`);
+  initRunsFolder(outputFilePrefix);
+  const outputFilePath = outputFilePrefix + ".csv";
+  fs.writeFileSync(outputFilePath, resourcesAsCsv);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
 }

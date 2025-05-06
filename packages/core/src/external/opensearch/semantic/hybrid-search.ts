@@ -5,7 +5,7 @@ export type HybridSearchParams = {
   cxId: string;
   patientId: string;
   modelId: string;
-  k?: number;
+  k?: number | undefined;
 };
 
 /**
@@ -31,6 +31,7 @@ export const createHybridSearchQuery = ({
     _source: {
       exclude: ["content_embedding"],
     },
+    size: k,
     query: {
       hybrid: {
         queries: [

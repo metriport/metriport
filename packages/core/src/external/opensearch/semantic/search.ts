@@ -12,9 +12,12 @@ import { getConsolidated } from "./shared";
 export async function searchSemantic({
   patient,
   query,
+  maxNumberOfResults = 10_000,
 }: {
   patient: Patient;
   query: string;
+  /** From 0 to 10_000, optional, defaults to 10_000 */
+  maxNumberOfResults?: number;
 }): Promise<SearchSetBundle> {
   const { log } = out(`searchSemantic - cx ${patient.cxId}, pt ${patient.id}`);
   log(`Getting consolidated and searching OS...`);
@@ -22,7 +25,7 @@ export async function searchSemantic({
 
   const [consolidated, searchResults] = await Promise.all([
     getConsolidated({ patient }),
-    searchOpenSearch({ query, cxId: patient.cxId, patientId: patient.id }),
+    searchOpenSearch({ query, cxId: patient.cxId, patientId: patient.id, maxNumberOfResults }),
   ]);
   const elapsedTime = Date.now() - startedAt;
   log(
@@ -54,10 +57,13 @@ async function searchOpenSearch({
   query,
   cxId,
   patientId,
+  maxNumberOfResults,
 }: {
   query: string;
   cxId: string;
   patientId: string;
+  /** From 0 to 10_000, optional. See OpenSearchSemanticSearcherDirect for defaults. */
+  maxNumberOfResults?: number | undefined;
 }) {
   const region = Config.getAWSRegion();
   const endpoint = Config.getSemanticSearchEndpoint();
@@ -74,6 +80,7 @@ async function searchOpenSearch({
     username,
     password,
     modelId,
+    maxNumberOfResults,
   });
   return await searchService.search({ query, cxId, patientId });
 }

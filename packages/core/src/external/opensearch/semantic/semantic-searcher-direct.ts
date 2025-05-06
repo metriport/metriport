@@ -10,6 +10,8 @@ export type OpenSearchSemanticSearcherDirectConfig = OpenSearchFileSearcherConfi
   username: string;
   password: string;
   modelId: string;
+  /** From 0 to 10_000, optional, defaults to 10 */
+  maxNumberOfResults?: number | undefined;
 };
 
 export type SearchResult = Omit<IngestRequest, "content">;
@@ -32,7 +34,7 @@ export class OpenSearchSemanticSearcherDirect {
   constructor(readonly config: OpenSearchSemanticSearcherDirectConfig) {}
 
   async search(req: SearchRequest): Promise<SearchResult[]> {
-    const { indexName, endpoint, username, password, modelId } = this.config;
+    const { indexName, endpoint, username, password, modelId, maxNumberOfResults } = this.config;
     const { cxId, patientId, query } = req;
     const { log, debug } = out(`OpenSearchSemanticSearcherDirect - cx ${cxId}, pt ${patientId}`);
 
@@ -40,7 +42,13 @@ export class OpenSearchSemanticSearcherDirect {
     const client = new Client({ node: endpoint, auth });
 
     log(`Searching on index ${indexName}...`);
-    const queryPayload = createHybridSearchQuery({ cxId, patientId, query, modelId });
+    const queryPayload = createHybridSearchQuery({
+      cxId,
+      patientId,
+      query,
+      modelId,
+      k: maxNumberOfResults,
+    });
 
     const response = (
       await client.search(
@@ -56,14 +64,19 @@ export class OpenSearchSemanticSearcherDirect {
         }
       )
     ).body as OpenSearchResponse;
-    debug(`Successfully searched, response: `, () => JSON.stringify(response));
+    // TODO eng-41 Remove this
+    debug(`Response: `, () => JSON.stringify(response));
 
-    return this.mapResult(response);
+    const items = response.hits.hits ?? [];
+
+    log(`Successfully searched, got ${items.length} results`);
+
+    return this.mapResult(items);
   }
 
-  private mapResult(input: OpenSearchResponse): SearchResult[] {
-    if (!input.hits || !input.hits.hits) return [];
-    return input.hits.hits.map(hit => {
+  private mapResult(input: OpenSearchResponseHit[]): SearchResult[] {
+    if (!input) return [];
+    return input.map(hit => {
       return {
         cxId: hit._source.cxId,
         patientId: hit._source.patientId,

@@ -76,9 +76,9 @@ const resourceToStringMap: Record<
   Procedure: new ProcedureToString(),
 } as const;
 
-export type TransformedResource = {
-  resourceType: Resource["resourceType"];
+export type FhirResourceToText = {
   id: string;
+  type: Resource["resourceType"];
   text: string;
 };
 
@@ -87,7 +87,7 @@ export type TransformedResource = {
  * @param bundle - FHIR Bundle to convert
  * @returns List of string representations of the resources in the bundle
  */
-export function bundleToString(bundle: Bundle): TransformedResource[] {
+export function bundleToString(bundle: Bundle): FhirResourceToText[] {
   if (!bundle.entry?.length) return [];
 
   return bundle.entry.flatMap(entry => {
@@ -98,8 +98,8 @@ export function bundleToString(bundle: Bundle): TransformedResource[] {
     const text = converter.toString(resource);
     if (!text) return [];
     return {
-      resourceType: resource.resourceType,
       id: resource.id,
+      type: resource.resourceType,
       text,
     };
   });
