@@ -1,5 +1,7 @@
-import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { supportedCanvasResources } from "@metriport/core/external/ehr/canvas/index";
+import {
+  BundleType,
+  getSupportedResourcesByEhr,
+} from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { BadRequestError } from "@metriport/shared";
 import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -94,7 +96,7 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
         canvasPatientId: params.patientId,
       });
     },
-    getSupportedResourceTypes: () => supportedCanvasResources,
+    getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.canvas),
   },
   [EhrSources.athena]: undefined,
   [EhrSources.elation]: undefined,

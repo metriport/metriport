@@ -1,6 +1,8 @@
-import { isResourceDiffBundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
+import {
+  isResourceDiffBundleType,
+  isSupportedResourceTypeByEhr,
+} from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { BadRequestError, isValidJobEntryStatus } from "@metriport/shared";
-import { isSupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -229,7 +231,7 @@ router.get(
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
     const resourceType = getFromQueryOrFail("resourceType", req);
-    if (!isSupportedResourceType(resourceType)) {
+    if (!isSupportedResourceTypeByEhr(ehr, resourceType)) {
       throw new BadRequestError("Resource type is not supported for bundle", undefined, {
         resourceType,
       });

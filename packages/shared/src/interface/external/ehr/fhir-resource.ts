@@ -5,12 +5,6 @@ export const supportedResourceTypes = [...resourceTypeForConsolidation, "Medicat
 
 export type SupportedResourceType = (typeof supportedResourceTypes)[number];
 
-export function isSupportedResourceType(
-  resourceType: string
-): resourceType is SupportedResourceType {
-  return supportedResourceTypes.includes(resourceType as SupportedResourceType);
-}
-
 export const fhirResourceSchema = z.intersection(
   z.object({
     id: z.string(),

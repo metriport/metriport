@@ -46,6 +46,13 @@ export function getSupportedResourcesByEhr(ehr: EhrSource): SupportedResourceTyp
   return [];
 }
 
+export function isSupportedResourceTypeByEhr(
+  ehr: EhrSource,
+  resourceType: string
+): resourceType is SupportedResourceType {
+  return getSupportedResourcesByEhr(ehr).includes(resourceType as SupportedResourceType);
+}
+
 export function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
