@@ -17,7 +17,7 @@ export type CreateResourceDiffBundlesParams = {
  *
  * @param cxId - The cxId of the patient.
  * @param patientId - The patientId of the patient.
- * @param direction - The direction of the resource diff bundles to create.
+ * @param requestId - The requestId of the resource diff bundles job. Optional, will generate a new one if not provided.
  */
 export async function createResourceDiffBundles({
   cxId,

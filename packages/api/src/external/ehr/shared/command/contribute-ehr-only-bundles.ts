@@ -9,7 +9,7 @@ import { getResourceDiffBundlesJobPayload } from "../job/create-resource-diff-bu
 import { ContributeEhrOnlyBundleParams } from "../utils/bundle";
 
 /**
- * Fetch the pre-signed URLs for the EHR only bundles, fetch the bundles and contribute them
+ * Fetch the pre-signed URLs for the EHR only bundles, fetch the bundles from s3 and contribute them
  * back to the HIEs
  *
  * @param ehr - The EHR source.
