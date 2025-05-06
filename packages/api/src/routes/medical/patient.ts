@@ -188,7 +188,7 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO ENG-41 Enable this for prod
-    if (!Config.isSandbox() && !Config.isDev()) {
+    if (!Config.isSandbox() && !Config.isStaging() && !Config.isDev()) {
       throw new NotFoundError();
     }
 
