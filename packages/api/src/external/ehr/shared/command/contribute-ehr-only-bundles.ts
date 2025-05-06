@@ -13,10 +13,10 @@ import { ContributeEhrOnlyBundleParams } from "../utils/bundle";
  * back to the HIEs
  *
  * @param ehr - The EHR source.
- * @param cxId - The CX ID of the patient
- * @param practiceId - The practice id of the EHR patient
- * @param patientId - The patient id of the EHR patient
- * @param jobId - The job id of the resource diff bundles job that produced the bundles
+ * @param cxId - The CX ID of the patient.
+ * @param practiceId - The practice id of the EHR patient.
+ * @param patientId - The patient id of the EHR patient.
+ * @param jobId - The job id of the resource diff bundles job.
  * @throws NotFoundError if no job is found
  */
 export async function contributeEhrOnlyBundles({

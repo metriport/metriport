@@ -15,11 +15,11 @@ import {
  * Get the resource diff bundles job payload by jobId
  *
  * @param ehr - The EHR source.
- * @param cxId The CX ID of the patient
+ * @param cxId The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param patientId - The EHR patient id of the patient.
- * @param jobId The job ID of the job
- * @param bundleType The type of bundle to fetch
+ * @param jobId The job ID of the job.
+ * @param bundleType The type of bundle to fetch.
  * @returns resource diff bundles job payload with data if completed
  * @throws NotFoundError if no job is found
  */
@@ -50,10 +50,10 @@ export async function getResourceDiffBundlesJobPayload({
  * Get the latest resource diff bundles job data payload
  *
  * @param ehr - The EHR source.
- * @param cxId The CX ID of the patient
+ * @param cxId The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The EHR patient id of the patient.
- * @param bundleType The type of bundle to fetch
+ * @param bundleType The type of bundle to fetch.
  * @returns resource diff bundles job data payload with data if completed or undefined if no job is found
  */
 export async function getLatestResourceDiffBundlesJobPayload({
