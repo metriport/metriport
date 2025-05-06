@@ -1,8 +1,12 @@
+import { BadRequestError } from "@metriport/shared";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../domain/patient";
 import { out } from "../../../util";
 import { Config } from "../../../util/config";
-import { OpenSearchSemanticSearcherDirect } from "./semantic-searcher-direct";
+import { DocumentReferenceWithId } from "../../fhir/document/document-reference";
+import { toFHIR as patientToFhir } from "../../fhir/patient/conversion";
+import { searchDocuments } from "../search-documents";
+import { OpenSearchSemanticSearcherDirect, SearchResult } from "./semantic-searcher-direct";
 import { getConsolidated } from "./shared";
 
 /**
@@ -20,12 +24,21 @@ export async function searchSemantic({
   maxNumberOfResults?: number;
 }): Promise<SearchSetBundle> {
   const { log } = out(`searchSemantic - cx ${patient.cxId}, pt ${patient.id}`);
+
+  if (maxNumberOfResults > 10_000) {
+    throw new BadRequestError("maxNumberOfResults cannot be greater than 10_000");
+  }
+  if (maxNumberOfResults < 1) {
+    throw new BadRequestError("maxNumberOfResults cannot be less than 1");
+  }
+
   log(`Getting consolidated and searching OS...`);
   const startedAt = Date.now();
 
-  const [consolidated, searchResults] = await Promise.all([
+  const [consolidated, searchResults, docRefResults] = await Promise.all([
     getConsolidated({ patient }),
-    searchOpenSearch({ query, cxId: patient.cxId, patientId: patient.id, maxNumberOfResults }),
+    searchOpenSearch({ cxId: patient.cxId, patientId: patient.id, query, maxNumberOfResults }),
+    searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query }),
   ]);
   const elapsedTime = Date.now() - startedAt;
   log(
@@ -38,19 +51,41 @@ export async function searchSemantic({
       const resourceId = entry.resource?.id;
       const resourceType = entry.resource?.resourceType;
       if (!resourceId || !resourceType) return false;
-      return searchResults.some(
-        r => r.resourceId === resourceId && r.resourceType === resourceType
+      return (
+        resourceType !== "Patient" &&
+        (isInSemanticResults(searchResults, resourceId, resourceType) ||
+          isInDocRefResults(docRefResults, resourceId, resourceType))
       );
     }) ?? [];
 
-  log(`Done, returning ${filteredResources.length} filtered resources...`);
+  const sliced = filteredResources.slice(0, maxNumberOfResults - 1);
+  sliced.push(patientToFhir(patient));
+
+  log(`Done, returning ${sliced.length} filtered resources...`);
 
   return {
     resourceType: "Bundle",
     type: "searchset",
-    entry: filteredResources,
-    total: filteredResources.length,
+    total: sliced.length,
+    entry: sliced,
   };
+}
+
+function isInSemanticResults(
+  searchResults: SearchResult[],
+  resourceId: string,
+  resourceType: string
+) {
+  return searchResults.some(r => r.resourceId === resourceId && r.resourceType === resourceType);
+}
+
+function isInDocRefResults(
+  docRefResults: DocumentReferenceWithId[],
+  resourceId: string,
+  resourceType: string
+) {
+  if (resourceType !== "DocumentReference") return false;
+  return docRefResults.some(r => r.id === resourceId);
 }
 
 async function searchOpenSearch({
