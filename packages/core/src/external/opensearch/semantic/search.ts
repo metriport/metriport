@@ -5,6 +5,7 @@ import { out } from "../../../util";
 import { Config } from "../../../util/config";
 import { DocumentReferenceWithId } from "../../fhir/document/document-reference";
 import { toFHIR as patientToFhir } from "../../fhir/patient/conversion";
+import { buildBundleEntry } from "../../fhir/shared/bundle";
 import { searchDocuments } from "../search-documents";
 import { OpenSearchSemanticSearcherDirect, SearchResult } from "./semantic-searcher-direct";
 import { getConsolidated } from "./shared";
@@ -59,7 +60,8 @@ export async function searchSemantic({
     }) ?? [];
 
   const sliced = filteredResources.slice(0, maxNumberOfResults - 1);
-  sliced.push(patientToFhir(patient));
+  const patientEntry = buildBundleEntry(patientToFhir(patient));
+  sliced.push(patientEntry);
 
   log(`Done, returning ${sliced.length} filtered resources...`);
 
