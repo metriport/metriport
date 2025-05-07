@@ -40,7 +40,7 @@ export async function fetchBundle({
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
   const { log } = out(
-    `EhrResourceDiff fetchBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}  `
+    `Ehr fetchBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}  `
   );
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];

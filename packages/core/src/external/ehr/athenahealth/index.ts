@@ -52,6 +52,12 @@ import {
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import {
+  Bundle,
+  FhirResourceBundle,
+  fhirResourceBundleSchema,
+  SupportedResourceType,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import {
   Patient,
   patientSchema,
   PatientSearch,
@@ -65,9 +71,13 @@ import { uniqBy } from "lodash";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
+import { BundleType } from "../bundle/bundle-shared";
 import {
   ApiConfig,
   createDataParams,
+  fetchBundlePreSignedUrlWithValidation,
+  fetchEhrBundleUsingCache,
+  fetchEhrFhirResourcesWithPagination,
   formatDate,
   getConditionSnomedCode,
   getConditionStartDate,
@@ -140,6 +150,38 @@ type DataPoint = {
   unit?: string;
   bp?: BloodPressure | undefined;
 };
+
+export const supportedAthenaHealthResources = [
+  "AllergyIntolerance",
+  "CarePlan",
+  "Condition",
+  "DiagnosticReport",
+  "Goal",
+  "Immunization",
+  "Media",
+  "MedicationDispense",
+  "MedicationRequest",
+  "Observation",
+  "Procedure",
+  "Specimen",
+  "Binary",
+  "Device",
+  "Encounter",
+  "Coverage",
+  "Group",
+  "RelatedPerson",
+  "Location",
+  "Organization",
+  "CareTeam",
+  "Practitioner",
+  "Provenance",
+] as SupportedResourceType[];
+export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
+export function isSupportedAthenaHealthResource(
+  resourceType: string
+): resourceType is SupportedAthenaHealthResource {
+  return supportedAthenaHealthResources.includes(resourceType as SupportedAthenaHealthResource);
+}
 
 class AthenaHealthApi {
   private axiosInstanceFhir: AxiosInstance;
@@ -676,6 +718,85 @@ class AthenaHealthApi {
       });
     }
     return allMedicationReferences;
+  }
+
+  async getBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    resourceType,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    resourceType: SupportedAthenaHealthResource;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+    );
+    const params = { patient: `Patient/${athenaPatientId}` };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: athenaPatientId,
+      resourceType,
+    };
+    const fetchResourcesFromEhr = () =>
+      fetchEhrFhirResourcesWithPagination({
+        makeRequest: () =>
+          this.makeRequest<FhirResourceBundle>({
+            cxId,
+            patientId: athenaPatientId,
+            s3Path: `fhir-resources-${resourceType}`,
+            method: "GET",
+            url: resourceTypeUrl,
+            schema: fhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          }),
+        url: resourceTypeUrl,
+      });
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.athena,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: athenaPatientId,
+      resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    return bundle;
+  }
+
+  async getBundleByResourceTypePreSignedUrl({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    resourceType,
+    bundleType,
+    jobId,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    resourceType: SupportedAthenaHealthResource;
+    bundleType: BundleType;
+    jobId?: string;
+  }): Promise<string | undefined> {
+    return fetchBundlePreSignedUrlWithValidation({
+      ehr: EhrSources.athena,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: athenaPatientId,
+      resourceType,
+      bundleType,
+      jobId,
+    });
   }
 
   async subscribeToEvent({

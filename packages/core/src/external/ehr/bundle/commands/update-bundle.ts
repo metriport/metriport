@@ -38,7 +38,7 @@ export async function updateBundle({
   s3BucketName = Config.getEhrBundleBucketName(),
 }: UpdateBundleParams): Promise<void> {
   const { log } = out(
-    `EhrResourceDiff createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
+    `Ehr createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
   );
   const inValidResource = resources.find(resource => resource.resourceType !== resourceType);
   if (inValidResource) {
