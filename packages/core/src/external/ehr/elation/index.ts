@@ -268,7 +268,7 @@ class ElationApi {
     metriportPatientId: string;
     elationPatientId: string;
     resourceType: SupportedElationResource;
-    bundleType: BundleType;
+    bundleType?: BundleType;
     jobId?: string;
   }): Promise<string | undefined> {
     return fetchBundlePreSignedUrlWithValidation({
@@ -277,7 +277,7 @@ class ElationApi {
       metriportPatientId,
       ehrPatientId: elationPatientId,
       resourceType,
-      bundleType,
+      bundleType: bundleType ?? BundleType.EHR,
       jobId,
     });
   }

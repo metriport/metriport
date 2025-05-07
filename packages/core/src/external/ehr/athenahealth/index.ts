@@ -785,7 +785,7 @@ class AthenaHealthApi {
     metriportPatientId: string;
     athenaPatientId: string;
     resourceType: SupportedAthenaHealthResource;
-    bundleType: BundleType;
+    bundleType?: BundleType;
     jobId?: string;
   }): Promise<string | undefined> {
     return fetchBundlePreSignedUrlWithValidation({
@@ -794,7 +794,7 @@ class AthenaHealthApi {
       metriportPatientId,
       ehrPatientId: athenaPatientId,
       resourceType,
-      bundleType,
+      bundleType: bundleType ?? BundleType.EHR,
       jobId,
     });
   }

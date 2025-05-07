@@ -2,7 +2,9 @@ import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
+import { supportedAthenaHealthResources } from "../athenahealth";
 import { supportedCanvasResources } from "../canvas";
+import { supportedElationResources } from "../elation";
 
 const globalPrefix = "bundle";
 const region = Config.getAWSRegion();
@@ -43,6 +45,8 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
 
 export function getSupportedResourcesByEhr(ehr: EhrSource): SupportedResourceType[] {
   if (ehr === EhrSources.canvas) return supportedCanvasResources as SupportedResourceType[];
+  if (ehr === EhrSources.elation) return supportedElationResources as SupportedResourceType[];
+  if (ehr === EhrSources.athena) return supportedAthenaHealthResources as SupportedResourceType[];
   return [];
 }
 

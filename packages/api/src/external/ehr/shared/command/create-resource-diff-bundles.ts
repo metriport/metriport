@@ -35,6 +35,20 @@ export async function createResourceDiffBundles({
         patientId: patientMapping.externalId,
         requestId,
       });
+    } else if (patientMapping.source === EhrSources.elation) {
+      await createResourceDiffBundlesJob({
+        ehr: EhrSources.elation,
+        cxId,
+        patientId: patientMapping.externalId,
+        requestId,
+      });
+    } else if (patientMapping.source === EhrSources.athena) {
+      await createResourceDiffBundlesJob({
+        ehr: EhrSources.athena,
+        cxId,
+        patientId: patientMapping.externalId,
+        requestId,
+      });
     }
   }
 }

@@ -450,7 +450,7 @@ class CanvasApi {
     metriportPatientId: string;
     canvasPatientId: string;
     resourceType: SupportedCanvasResource;
-    bundleType: BundleType;
+    bundleType?: BundleType;
     jobId?: string;
   }): Promise<string | undefined> {
     return fetchBundlePreSignedUrlWithValidation({
@@ -459,7 +459,7 @@ class CanvasApi {
       metriportPatientId,
       ehrPatientId: canvasPatientId,
       resourceType,
-      bundleType,
+      bundleType: bundleType ?? BundleType.EHR,
       jobId,
     });
   }
