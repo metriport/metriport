@@ -12,7 +12,7 @@ export async function deduplicate({
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
-}): Promise<Bundle<Resource>> {
+}): Promise<void> {
   const { log } = out(`Deduplicate. cx ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
   const initialBundleLength = bundle.entry?.length;
@@ -33,6 +33,4 @@ export async function deduplicate({
   log(`Finished deduplication in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
   await analyticsAsync(metrics);
-
-  return bundle;
 }

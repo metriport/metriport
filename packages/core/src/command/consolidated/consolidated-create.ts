@@ -61,23 +61,44 @@ export async function createConsolidatedFromConversions({
   ]);
   log(`Got ${conversions.length} resources from conversions`);
 
-  const withDups = buildConsolidatedBundle();
+  const bundle = buildConsolidatedBundle();
   const docRefsWithUpdatedMeta = updateMetaDataForDocRefs(docRefs);
-  withDups.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
-  withDups.total = withDups.entry.length;
+  bundle.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
+  bundle.total = bundle.entry.length;
+  const lengthWithDups = bundle.entry?.length;
   log(
-    `Added ${docRefsWithUpdatedMeta.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
+    `Added ${docRefsWithUpdatedMeta.length} docRefs and the Patient, to a total of ${bundle.entry.length} entries`
   );
 
+  const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
+  log(
+    `Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${withDupsDestFileName}`
+  );
+  await s3Utils.uploadFile({
+    bucket: destinationBucketName,
+    key: withDupsDestFileName,
+    file: Buffer.from(JSON.stringify(bundle)),
+    contentType: "application/json",
+  });
+
   log(`Deduplicating consolidated bundle...`);
-  const deduped = await deduplicate({ cxId, patientId, bundle: withDups });
-  log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
+  await deduplicate({ cxId, patientId, bundle });
+  log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
+
+  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
+  log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
+  await s3Utils.uploadFile({
+    bucket: destinationBucketName,
+    key: dedupDestFileName,
+    file: Buffer.from(JSON.stringify(bundle)),
+    contentType: "application/json",
+  });
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
-  if (isAiBriefFeatureFlagEnabled && deduped.entry && deduped.entry.length > 0) {
+  if (isAiBriefFeatureFlagEnabled && bundle.entry && bundle.entry.length > 0) {
     const binaryBundleEntry = await Promise.race([
-      generateAiBriefBundleEntry(deduped, cxId, patientId, log),
+      generateAiBriefBundleEntry(bundle, cxId, patientId, log),
       controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
     ]);
 
@@ -88,31 +109,12 @@ export async function createConsolidatedFromConversions({
         level: "warning",
       });
     } else if (binaryBundleEntry) {
-      deduped.entry?.push(binaryBundleEntry);
+      bundle.entry?.push(binaryBundleEntry);
     }
   }
 
-  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
-  const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
-  log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
-  log(`Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${dedupDestFileName}`);
-  await Promise.all([
-    s3Utils.uploadFile({
-      bucket: destinationBucketName,
-      key: dedupDestFileName,
-      file: Buffer.from(JSON.stringify(deduped)),
-      contentType: "application/json",
-    }),
-    s3Utils.uploadFile({
-      bucket: destinationBucketName,
-      key: withDupsDestFileName,
-      file: Buffer.from(JSON.stringify(withDups)),
-      contentType: "application/json",
-    }),
-  ]);
-
   log(`Done`);
-  return deduped;
+  return bundle;
 }
 
 export function buildConsolidatedBundle(entries: BundleEntry[] = []): Bundle {

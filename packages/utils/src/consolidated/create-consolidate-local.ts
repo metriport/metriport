@@ -63,7 +63,7 @@ export async function createConsolidatedFromLocal(
   });
   console.log(`Found ${jsonFileNames.length} JSON files.`);
 
-  const withDups = buildConsolidatedBundle();
+  const bundle = buildConsolidatedBundle();
   await executeAsynchronously(
     jsonFileNames,
     async filePath => {
@@ -73,25 +73,26 @@ export async function createConsolidatedFromLocal(
         console.log(`No valid bundle found in ${filePath}, skipping`);
         return;
       }
-      merge(singleConversion).into(withDups);
+      merge(singleConversion).into(bundle);
     },
     { numberOfParallelExecutions: 10 }
   );
 
-  withDups.entry?.push(patient);
+  bundle.entry?.push(patient);
+
+  fs.writeFileSync(
+    `${outputFolderName}/consolidated_with_dups.json`,
+    JSON.stringify(bundle, null, 2)
+  );
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
-  const deduped = await deduplicate({ cxId, patientId: patient.id!, bundle: withDups });
+  await deduplicate({ cxId, patientId: patient.id!, bundle });
 
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();
   console.log(`Total time: ${duration} ms / ${durationMin} min`);
   console.log(`File Location: ${outputFolderName}`);
 
-  fs.writeFileSync(
-    `${outputFolderName}/consolidated_with_dups.json`,
-    JSON.stringify(withDups, null, 2)
-  );
-  fs.writeFileSync(`${outputFolderName}/consolidated.json`, JSON.stringify(deduped, null, 2));
+  fs.writeFileSync(`${outputFolderName}/consolidated.json`, JSON.stringify(bundle, null, 2));
   return;
 }
 

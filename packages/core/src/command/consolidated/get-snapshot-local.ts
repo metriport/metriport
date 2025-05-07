@@ -46,21 +46,29 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
     originalBundle.total = originalBundle.entry.length;
 
-    const originalBundleWithoutContainedPatients = removeContainedPatients(
-      originalBundle,
-      patientId
-    );
+    const processedBundle = removeContainedPatients(originalBundle, patientId);
 
-    const dedupedBundle = await deduplicate({
+    try {
+      await uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: processedBundle,
+        type: "original",
+      });
+    } catch (error) {
+      log(`Failed to store original bundle on S3 - ${errorToString(error)}`);
+    }
+
+    await deduplicate({
       cxId,
       patientId,
-      bundle: originalBundleWithoutContainedPatients,
+      bundle: processedBundle,
     });
 
     const normalizedBundle = await normalize({
       cxId,
       patientId,
-      bundle: dedupedBundle,
+      bundle: processedBundle,
     });
 
     const resultBundle = normalizedBundle;
@@ -86,17 +94,11 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       throw new MetriportError(msg, error, additionalInfo);
     }
 
-    const [, , resultS3Info] = await Promise.all([
+    const [, resultS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
-        bundle: originalBundleWithoutContainedPatients,
-        type: "original",
-      }),
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: dedupedBundle,
+        bundle: processedBundle,
         type: "dedup",
       }),
       uploadConsolidatedSnapshotToS3({
