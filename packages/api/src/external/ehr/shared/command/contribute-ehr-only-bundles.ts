@@ -47,6 +47,7 @@ export async function contributeEhrOnlyBundles({
     type: "collection",
     entry: [],
   };
+  // TODO: Replace the id with the metriport patient id if needed
   await Promise.all(
     preSignedUrls.map(async url => {
       const response = await axios.get(url);
