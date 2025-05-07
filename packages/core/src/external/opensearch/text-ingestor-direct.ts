@@ -5,12 +5,13 @@ import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
+import { getErrorsFromBulkResponse } from "./bulk";
 import { contentFieldName, OpenSearchIngestorConfig } from "./index";
 
 dayjs.extend(duration);
 
 const DEFAULT_INGESTION_TIMEOUT = dayjs.duration(20, "seconds").asMilliseconds();
-const DEFAULT_BULK_INGESTION_TIMEOUT = dayjs.duration(1, "minute").asMilliseconds();
+const DEFAULT_BULK_INGESTION_TIMEOUT = dayjs.duration(2, "minute").asMilliseconds();
 
 /**
  * Didn't find a good reference for OpenSearch, so using Elasticsearch's reference:
@@ -19,8 +20,7 @@ const DEFAULT_BULK_INGESTION_TIMEOUT = dayjs.duration(1, "minute").asMillisecond
  * During tests, resources were 99.9% of the time under 250 Bytes.
  * 5MB / 250 Bytes = 20_000
  */
-// const bulkChunkSize = 10_000;
-const bulkChunkSize = 200;
+const bulkChunkSize = 10_000;
 
 export type IngestRequest = {
   cxId: string;
@@ -116,11 +116,11 @@ export class OpenSearchTextIngestorDirect {
 
     const chunks = chunk(resources, bulkChunkSize);
     const errors: string[] = [];
-    for (const chunk of chunks) {
+    for (const resourceChunk of chunks) {
       const { errors: chunkErrors } = await this.ingestBulkInternal({
         cxId,
         patientId,
-        resources: chunk,
+        resources: resourceChunk,
         indexName,
         client,
       });
@@ -176,10 +176,7 @@ export class OpenSearchTextIngestorDirect {
       { index: indexName, body: bulkBody },
       { requestTimeout: DEFAULT_BULK_INGESTION_TIMEOUT }
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errors = response.body.items.flatMap((item: any) =>
-      item[operation].status > 299 ? item[operation].error.reason : []
-    );
+    const errors = getErrorsFromBulkResponse(response, operation);
 
     const time = Date.now() - startedAt;
     debug(
