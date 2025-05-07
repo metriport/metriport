@@ -65,10 +65,10 @@ export async function createConsolidatedFromConversions({
   const docRefsWithUpdatedMeta = updateMetaDataForDocRefs(docRefs);
   bundle.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
   bundle.total = bundle.entry.length;
-  const lengthWithDups = bundle.entry?.length;
   log(
     `Added ${docRefsWithUpdatedMeta.length} docRefs and the Patient, to a total of ${bundle.entry.length} entries`
   );
+  const lengthWithDups = bundle.entry.length;
 
   const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
   log(
