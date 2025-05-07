@@ -559,6 +559,15 @@ export class APIStack extends Stack {
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
       searchIndexName: ccdaSearchIndexName,
+      semanticSearchEndpoint: props.config.semanticOpenSearch?.endpoint,
+      semanticSearchIndexName: props.config.semanticOpenSearch?.indexName,
+      semanticSearchModelId: props.config.semanticOpenSearch?.modelId,
+      semanticSearchAuth: props.config.semanticOpenSearch
+        ? {
+            userName: props.config.semanticOpenSearch.userName,
+            secret: props.config.semanticOpenSearch.password,
+          }
+        : undefined,
       featureFlagsTable,
       cookieStore,
     });
