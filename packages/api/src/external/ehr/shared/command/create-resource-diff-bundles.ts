@@ -28,28 +28,12 @@ export async function createResourceDiffBundles({
   if (patientMappings.length < 1) return;
   const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
-    if (patientMapping.source === EhrSources.canvas) {
-      await createResourceDiffBundlesJob({
-        ehr: EhrSources.canvas,
-        cxId,
-        patientId: patientMapping.externalId,
-        requestId,
-      });
-    } else if (patientMapping.source === EhrSources.elation) {
-      await createResourceDiffBundlesJob({
-        ehr: EhrSources.elation,
-        cxId,
-        patientId: patientMapping.externalId,
-        requestId,
-      });
-    } else if (patientMapping.source === EhrSources.athena) {
-      await createResourceDiffBundlesJob({
-        ehr: EhrSources.athena,
-        cxId,
-        patientId: patientMapping.externalId,
-        requestId,
-      });
-    }
+    await createResourceDiffBundlesJob({
+      ehr: patientMapping.source,
+      cxId,
+      patientId: patientMapping.externalId,
+      requestId,
+    });
   }
 }
 
