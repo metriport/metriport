@@ -18,7 +18,7 @@ import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-dat
 import { HIEDirectoryEntryViewModel } from "../external/hie/models/hie-directory-view";
 import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
-import updateDB from "../sequelize";
+import { migrateDB, seedDB } from "../sequelize";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { CxMappingModel } from "./cx-mapping";
@@ -134,8 +134,9 @@ async function initDB(): Promise<void> {
   try {
     await Promise.all([sequelize.authenticate(), sequelizeReadOnly.authenticate()]);
 
-    // run DB migrations - update the DB to the expected state
-    await updateDB(sequelize);
+    // run DB migrations and seed scripts- update the DB to the expected state
+    await migrateDB(sequelize);
+    await seedDB(sequelize);
 
     // define all models
     for (const setup of models) setup(sequelize);
