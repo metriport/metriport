@@ -15,7 +15,9 @@ export async function deduplicate({
 }): Promise<Bundle<Resource>> {
   const { log } = out(`Deduplicate. cx ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
-  const dedupedBundle = deduplicateFhir(bundle, cxId, patientId);
+  const initialBundleLength = bundle.entry?.length;
+  deduplicateFhir(bundle, cxId, patientId);
+  const finalBundleLength = bundle.entry?.length;
 
   const duration = elapsedTimeFromNow(startedAt);
   const metrics: EventMessageV1 = {
@@ -23,13 +25,14 @@ export async function deduplicate({
     event: EventTypes.fhirDeduplication,
     properties: {
       patientId: patientId,
-      initialBundleLength: bundle.entry?.length,
-      finalBundleLength: dedupedBundle.entry?.length,
+      initialBundleLength,
+      finalBundleLength,
       duration,
     },
   };
   log(`Finished deduplication in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
   await analyticsAsync(metrics);
-  return dedupedBundle;
+
+  return bundle;
 }

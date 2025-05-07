@@ -34,11 +34,7 @@ const medicationRelatedTypes = [
   "MedicationRequest",
 ];
 
-export function deduplicateFhir(
-  fhirBundle: Bundle<Resource>,
-  cxId: string,
-  patientId: string
-): Bundle<Resource> {
+export function deduplicateFhir(fhirBundle: Bundle<Resource>, cxId: string, patientId: string) {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
 
   const compositionsResult = deduplicateCompositions(resourceArrays.compositions);
@@ -214,8 +210,6 @@ export function deduplicateFhir(
         .map(entry => buildCompleteBundleEntry(entry, fhirBundle.type));
     });
   fhirBundle.total = fhirBundle.entry.length;
-
-  return fhirBundle;
 }
 
 export function removeResourcesWithDanglingLinks(
