@@ -175,7 +175,7 @@ class AthenaHealthApi {
 
     try {
       const response = await axios.post(url, createDataParams(data), {
-        headers: { "content-type": "application/x-www-form-urlencoded" },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         auth: {
           username: this.config.clientKey,
           password: this.config.clientSecret,
@@ -208,7 +208,7 @@ class AthenaHealthApi {
 
     const headers = {
       Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
-      "content-type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/x-www-form-urlencoded",
     };
 
     this.axiosInstanceFhir = axios.create({
@@ -303,9 +303,11 @@ class AthenaHealthApi {
   async getCustomFieldsForPatient({
     cxId,
     patientId,
+    departmentId,
   }: {
     cxId: string;
     patientId: string;
+    departmentId?: string;
   }): Promise<PatientCustomField[]> {
     const { debug } = out(
       `AthenaHealth getCustomFieldsForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -313,6 +315,7 @@ class AthenaHealthApi {
     const params = {
       showprivacycustomfields: "true",
       showcustomfields: "true",
+      ...(departmentId ? { departmentid: this.stripDepartmentId(departmentId) } : {}),
     };
     const queryParams = new URLSearchParams(params);
     const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
@@ -562,6 +565,7 @@ class AthenaHealthApi {
           }
           allCreatedVitals.push(createdVitalsSuccessSchema.parse(createdVitals));
         } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
           const vitalsToString = JSON.stringify(params.vitals);
           log(`Failed to create vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
           createVitalsErrors.push({ error, ...params, vitals: vitalsToString });
@@ -644,6 +648,7 @@ class AthenaHealthApi {
           });
           allMedicationReferences.push(...medicationReferences);
         } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
           log(
             `Failed to search for medication with search value ${searchValue}. Cause: ${errorToString(
               error
@@ -921,6 +926,12 @@ class AthenaHealthApi {
     return id.replace(`a-${this.practiceId}.${athenaDepartmentPrefix}-`, "");
   }
 
+  createDepartmentId(id: string) {
+    const prefix = `a-${this.practiceId}.${athenaDepartmentPrefix}-`;
+    if (id.startsWith(prefix)) return id;
+    return `${prefix}${id}`;
+  }
+
   private createVitalsData(
     dataPoint: DataPoint,
     clinicalElementId: string,
@@ -951,11 +962,13 @@ class AthenaHealthApi {
 
   private convertValue(clinicalElementId: string, value: number, units: string): number {
     if (!clinicalElementsThatRequireUnits.includes(clinicalElementId)) return value;
-    if (units === "g" || units.includes("gram")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    if (units === "g" || units === "gram" || units === "grams") return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
     if (units === "cm" || units.includes("centimeter")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
     if (units === "degf" || units === "f" || units.includes("fahrenheit")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
     if (units === "lb_av" || units.includes("pound")) return this.convertLbsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    if (units === "kg" || units.includes("kilogram")) return this.convertKiloGramsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    if (units === "kg" || units === "kilogram" || units === "kilograms") {
+      return this.convertKiloGramsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    }
     if (units === "in_i" || units.includes("inch")) return this.convertInchesToCm(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
     if (units === "cel" || units === "c" || units.includes("celsius")) {
       return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html

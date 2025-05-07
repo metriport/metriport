@@ -70,7 +70,7 @@ export abstract class BaseModel<T extends Model<any, any>>
         type: DataTypes.VIRTUAL,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         get<T extends Model<any, any>>(this: BaseModel<T>): string {
-          return Util.md5(this.id + "_" + this.version);
+          return generateETag(this.id, this.version);
         },
       },
     };
@@ -97,4 +97,8 @@ export function normalizeString<T extends string | null | undefined>(
   maxLength = MAX_VARCHAR_LENGTH
 ): T {
   return value != null ? limitStringLength(value, maxLength) : value;
+}
+
+export function generateETag(id: string, version: number): string {
+  return Util.md5(id + "_" + version);
 }

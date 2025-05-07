@@ -28,7 +28,7 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [snomedCodeMd] };
     condition2.code = { coding: [snomedCodeMd] };
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(1);
   });
 
@@ -38,7 +38,7 @@ describe("groupSameConditions", () => {
     condition.onsetPeriod = dateTime;
     condition2.onsetPeriod = dateTime;
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(1);
   });
 
@@ -47,7 +47,7 @@ describe("groupSameConditions", () => {
     condition2.code = { coding: [snomedCodeMd] };
     condition2.onsetPeriod = dateTime;
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(1);
   });
 
@@ -57,7 +57,7 @@ describe("groupSameConditions", () => {
     condition.onsetPeriod = dateTime;
     condition2.onsetPeriod = dateTime2;
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(2);
   });
 
@@ -65,7 +65,7 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [icd10CodeMd] };
     condition2.code = { coding: [icd10CodeMd] };
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(1);
   });
 
@@ -73,7 +73,7 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [icd10CodeMd] };
     condition2.code = { coding: [otherCodeSystemMd] };
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(1);
   });
 
@@ -86,7 +86,10 @@ describe("groupSameConditions", () => {
       code: { coding: [otherCodeSystemMd] },
     });
 
-    const { conditionsMap } = groupSameConditions([condition, condition2, condition3, condition4]);
+    const { conditionsMap } = groupSameConditions(
+      [condition, condition2, condition3, condition4],
+      true
+    );
     expect(conditionsMap.size).toBe(1);
   });
 
@@ -94,7 +97,7 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [icd10CodeMd] };
     condition2.code = { coding: [icd10CodeAo] };
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(2);
   });
 
@@ -111,7 +114,7 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [{ display: icd10CodeMd.display, system: icd10CodeMd.system }] };
     condition2.code = { coding: [{ display: icd10CodeAo.display, system: icd10CodeAo.system }] };
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(2);
   });
 
@@ -128,7 +131,7 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [{ display: icd10CodeMd.display, system: icd10CodeMd.system }] };
     condition2.code = { coding: [{ display: icd10CodeAo.display, system: icd10CodeAo.system }] };
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(2);
   });
 
@@ -138,7 +141,7 @@ describe("groupSameConditions", () => {
     condition.onsetPeriod = dateTime;
     condition2.onsetPeriod = dateTime;
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(2);
   });
 
@@ -146,7 +149,7 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [{ system: "some other system", code: "123" }] };
     condition.onsetPeriod = dateTime;
 
-    const { conditionsMap } = groupSameConditions([condition]);
+    const { conditionsMap } = groupSameConditions([condition], true);
     expect(conditionsMap.size).toBe(0);
   });
 
@@ -162,7 +165,7 @@ describe("groupSameConditions", () => {
     };
     condition.onsetPeriod = dateTime;
 
-    const { conditionsMap } = groupSameConditions([condition]);
+    const { conditionsMap } = groupSameConditions([condition], true);
     expect(conditionsMap.size).toBe(0);
   });
 
@@ -179,7 +182,7 @@ describe("groupSameConditions", () => {
     };
     condition.onsetPeriod = dateTime;
 
-    const { conditionsMap } = groupSameConditions([condition]);
+    const { conditionsMap } = groupSameConditions([condition], true);
     expect(conditionsMap.size).toBe(1);
   });
 
@@ -192,7 +195,7 @@ describe("groupSameConditions", () => {
     condition2.code = { coding: [icd10CodeMd, snomedCodeMd, otherCodeSystemMd] };
     condition.onsetPeriod = dateTime;
     condition2.onsetPeriod = dateTime;
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(1);
 
     const resultingCoding = conditionsMap.values().next().value.code.coding;
@@ -224,7 +227,7 @@ describe("groupSameConditions", () => {
     condition.onsetPeriod = dateTime;
     condition2.onsetPeriod = dateTime;
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(1);
     const groupedCondition = conditionsMap.values().next().value;
     expect(groupedCondition.code?.coding).toEqual([otherCodeSystemMd]);
@@ -236,7 +239,7 @@ describe("groupSameConditions", () => {
     condition.onsetPeriod = dateTime;
     condition2.onsetPeriod = dateTime;
 
-    const { conditionsMap } = groupSameConditions([condition, condition2]);
+    const { conditionsMap } = groupSameConditions([condition, condition2], true);
     expect(conditionsMap.size).toBe(1);
     const groupedCondition = conditionsMap.values().next().value;
     expect(groupedCondition.code?.coding).toEqual([otherCodeSystemMd]);

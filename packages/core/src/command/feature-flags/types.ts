@@ -34,6 +34,8 @@ export const cxBasedFFsSchema = z.object({
   cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
   cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
+  cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
+  cxsWithHl7NotificationWebhookFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 

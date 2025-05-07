@@ -1,4 +1,9 @@
-import { isValidISODate, validateDateIsAfter1900, validateIsPastOrPresentSafe } from "../date";
+import {
+  buildDayjsFromCompactDate,
+  isValidISODate,
+  validateDateIsAfter1900,
+  validateIsPastOrPresentSafe,
+} from "../date";
 
 describe("shared date functions", () => {
   describe("isValidISODate", () => {
@@ -9,8 +14,11 @@ describe("shared date functions", () => {
   });
 
   describe("validateIsPastOrPresentSafe", () => {
-    it("returns true for past dates", () => {
+    it("returns true for date in 2020", () => {
       expect(validateIsPastOrPresentSafe("2020-01-01")).toBe(true);
+    });
+
+    it("returns true for date in 1950", () => {
       expect(validateIsPastOrPresentSafe("1950-12-31")).toBe(true);
     });
 
@@ -29,15 +37,89 @@ describe("shared date functions", () => {
 describe("validateDateIsAfter1900", () => {
   it("returns true for dates after 1900", () => {
     expect(validateDateIsAfter1900("1999-12-31")).toBe(true);
-    expect(validateDateIsAfter1900("1970-01-31")).toBe(true);
   });
 
-  it("returns false for dates before 1900", () => {
-    expect(validateDateIsAfter1900("1899-12-31")).toBe(false);
-    expect(validateDateIsAfter1900("970-01-31")).toBe(false);
+  it("returns true for dates in 1970", () => {
+    expect(validateDateIsAfter1900("1970-01-31")).toBe(true);
   });
 
   it("returns true for 1900-01-01", () => {
     expect(validateDateIsAfter1900("1900-01-01")).toBe(true);
+  });
+
+  it("returns false for dates before 1900", () => {
+    expect(validateDateIsAfter1900("1899-12-31")).toBe(false);
+  });
+
+  it("returns false for dates with years less than 1000", () => {
+    expect(validateDateIsAfter1900("0007-01-01")).toBe(false);
+  });
+
+  it("returns false for dates with years less than 1000 (2)", () => {
+    expect(validateDateIsAfter1900("0014-01-01")).toBe(false);
+  });
+
+  it("returns false for dates with years less than 1000 (3)", () => {
+    expect(validateDateIsAfter1900("0123-01-01")).toBe(false);
+  });
+
+  it("returns false for dates with year 970", () => {
+    expect(validateDateIsAfter1900("970-01-31")).toBe(false);
+  });
+
+  it("handles MM/DD/YYYY format incorrectly returning false for valid years", () => {
+    expect(validateDateIsAfter1900("12/31/2020")).toBe(false);
+  });
+
+  it("handles DD/MM/YYYY format incorrectly returning false for valid years", () => {
+    expect(validateDateIsAfter1900("31/12/2020")).toBe(false);
+  });
+
+  it("handles YYYY.MM.DD format returning true for valid years", () => {
+    expect(validateDateIsAfter1900("2020.12.31")).toBe(true);
+  });
+
+  it("handles YYYY/MM/DD format returning true for valid years", () => {
+    expect(validateDateIsAfter1900("2020/12/31")).toBe(true);
+  });
+
+  it("handles textual month format incorrectly", () => {
+    expect(validateDateIsAfter1900("Dec 31, 2020")).toBe(false);
+  });
+
+  it("handles empty string format incorrectly", () => {
+    expect(validateDateIsAfter1900("")).toBe(false);
+  });
+});
+
+describe("buildDayjsFromCompactDate", () => {
+  it("parses compact date format correctly", () => {
+    const compactDate = "20240226123000+0000";
+    const result = buildDayjsFromCompactDate(compactDate);
+    expect(result.format()).toBe("2024-02-26T12:30:00Z");
+  });
+
+  it("correctly handles offset", () => {
+    const compactDate = "20240226123000+0130";
+    const result = buildDayjsFromCompactDate(compactDate);
+    expect(result.format()).toBe("2024-02-26T11:00:00Z");
+  });
+
+  it("handles regular date format", () => {
+    const regularDate = "2024-02-26T12:30:00Z";
+    const result = buildDayjsFromCompactDate(regularDate);
+    expect(result.format()).toBe("2024-02-26T12:30:00Z");
+  });
+
+  it("handles short date format", () => {
+    const regularDate = "2024-02-26";
+    const result = buildDayjsFromCompactDate(regularDate);
+    expect(result.format()).toBe("2024-02-26T00:00:00Z");
+  });
+
+  it("falls back to regular date parsing for invalid compact date format", () => {
+    const invalidDate = "20240226123000";
+    const result = buildDayjsFromCompactDate(invalidDate);
+    expect(result.format()).toBe("2024-02-26T12:30:00Z");
   });
 });

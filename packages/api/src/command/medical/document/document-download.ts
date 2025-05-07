@@ -4,16 +4,15 @@ import {
   Output as ConvertDocOutput,
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
+import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { BadRequestError, NotFoundError } from "@metriport/shared";
 import dayjs from "dayjs";
-import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 
 const URL_EXPIRATION_TIME = dayjs.duration(5, "minutes");
 const s3client = makeS3Client();
-const lambdaClient = makeLambdaClient();
+const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
 export const downloadDocument = async ({

@@ -44,6 +44,9 @@ export const config: EnvConfigNonSandbox = {
   },
   dashUrl: "https://url-of-your-dashboard.com",
   ehrDashUrl: "https://url-of-your-ehr-dashboard.com",
+  analyticsSecretNames: {
+    POST_HOG_API_KEY_SECRET: "your-posthog-api-key-secret",
+  },
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
@@ -147,6 +150,16 @@ export const config: EnvConfigNonSandbox = {
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
+    deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
+    incomingMessageBucketName: "test-incoming-message-bucket-name",
+    outgoingMessageBucketName: "test-outgoing-message-bucket-name",
+    notificationWebhookSenderQueue: {
+      arn: "arn:aws:sqs:us-west-1:000000000000:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      url: "https://sqs.us-west-1.amazonaws.com/000000000000/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    },
+    secrets: {
+      HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
+    },
     vpnConfigs: [
       {
         partnerName: "SampleHIE",
@@ -160,6 +173,9 @@ export const config: EnvConfigNonSandbox = {
       fargateTaskCountMin: 2,
       fargateTaskCountMax: 4,
     },
+    hl7v2RosterUploadLambda: {
+      bucketName: "your-roster-bucket",
+    },
   },
   acmCertMonitor: {
     scheduleExpressions: ["cw-schedule-expression"],
@@ -167,6 +183,7 @@ export const config: EnvConfigNonSandbox = {
   },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  ehrBundleBucketName: "test-ehr-bundle-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",

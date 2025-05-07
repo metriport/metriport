@@ -1,20 +1,16 @@
 import * as cdk from "aws-cdk-lib";
+import { Fn } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
-import { NetworkStackOutput } from "./network";
 import { MLLP_DEFAULT_PORT } from "./constants";
-import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import { Fn } from "aws-cdk-lib";
 
 const IPSEC_1 = "ipsec.1";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
-  vpc: ec2.Vpc;
-  vpnConfig: Hl7NotificationVpnConfig & {
-    presharedKey: secret.ISecret;
-  };
-  networkStack: NetworkStackOutput;
+  vpnConfig: Hl7NotificationVpnConfig;
+  networkStackId: string;
   index: number;
 }
 
@@ -22,28 +18,31 @@ export interface VpnStackProps extends cdk.NestedStackProps {
  * This stack creates all the infra to setup a VPN tunnel with an HIE sending us HL7 messages.
  * @see https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html
  */
-export class VpnStack extends cdk.NestedStack {
+export class VpnStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const { networkAcl } = props.networkStack;
-    const { partnerInternalCidrBlock, presharedKey } = props.vpnConfig;
+    const { partnerName, partnerInternalCidrBlock } = props.vpnConfig;
 
-    const customerGateway = new ec2.CfnCustomerGateway(
+    const networkAcl = ec2.NetworkAcl.fromNetworkAclId(
       this,
-      `${props.vpnConfig.partnerName}CustomerGateway`,
-      {
-        ipAddress: props.vpnConfig.partnerGatewayPublicIp,
-        type: IPSEC_1,
-        bgpAsn: 65000,
-        tags: [
-          {
-            key: "Name",
-            value: `${props.vpnConfig.partnerName}-cgw`,
-          },
-        ],
-      }
+      `NetworkAcl-${partnerName}`,
+      Fn.importValue(`${props.networkStackId}-NetworkAclId`)
     );
+
+    const vgwId = Fn.importValue(`${props.networkStackId}-VgwId`);
+
+    const customerGateway = new ec2.CfnCustomerGateway(this, `CustomerGateway-${partnerName}`, {
+      ipAddress: props.vpnConfig.partnerGatewayPublicIp,
+      type: IPSEC_1,
+      bgpAsn: 65000,
+      tags: [
+        {
+          key: "Name",
+          value: `${partnerName}-cgw`,
+        },
+      ],
+    });
 
     /**
      * Add new rules to the NACL for the static IPs we're using for this VPN.
@@ -77,61 +76,57 @@ export class VpnStack extends cdk.NestedStack {
       },
     ]);
 
+    const presharedKey1 = secret.Secret.fromSecretNameV2(
+      this,
+      `PresharedKey1-${partnerName}`,
+      `PresharedKey1-${partnerName}`
+    );
+    const presharedKey2 = secret.Secret.fromSecretNameV2(
+      this,
+      `PresharedKey2-${partnerName}`,
+      `PresharedKey2-${partnerName}`
+    );
     /**
      * We use 2 tunnels here because state HIEs often have a failover to a backup IP..
      */
-    const vpnConnection = new ec2.CfnVPNConnection(
-      this,
-      `${props.vpnConfig.partnerName}VpnConnection`,
-      {
-        type: IPSEC_1,
-        vpnGatewayId: props.networkStack.vgw.ref,
-        customerGatewayId: customerGateway.ref,
-        staticRoutesOnly: true,
-        tags: [
-          {
-            key: "Name",
-            value: `${props.vpnConfig.partnerName}-vpn`,
-          },
-        ],
-        vpnTunnelOptionsSpecifications: [
-          {
-            preSharedKey: Fn.sub(
-              "{{resolve:secretsmanager:${SecretArn}:SecretString:presharedKey1}}",
-              {
-                SecretArn: presharedKey.secretArn,
-              }
-            ),
-          },
-          {
-            preSharedKey: Fn.sub(
-              "{{resolve:secretsmanager:${SecretArn}:SecretString:presharedKey2}}",
-              {
-                SecretArn: presharedKey.secretArn,
-              }
-            ),
-          },
-        ],
-      }
-    );
+    const vpnConnection = new ec2.CfnVPNConnection(this, `VpnConnection-${partnerName}`, {
+      type: IPSEC_1,
+      vpnGatewayId: vgwId,
+      customerGatewayId: customerGateway.ref,
+      staticRoutesOnly: true,
+      tags: [
+        {
+          key: "Name",
+          value: `${partnerName}-vpn`,
+        },
+      ],
+      vpnTunnelOptionsSpecifications: [
+        {
+          preSharedKey: Fn.sub("{{resolve:secretsmanager:${SecretArn}:SecretString}}", {
+            SecretArn: presharedKey1.secretArn,
+          }),
+        },
+        {
+          preSharedKey: Fn.sub("{{resolve:secretsmanager:${SecretArn}:SecretString}}", {
+            SecretArn: presharedKey2.secretArn,
+          }),
+        },
+      ],
+    });
 
-    new ec2.CfnVPNConnectionRoute(
-      this,
-      `${props.vpnConfig.partnerName}-HieSideVpnConnectionRoute`,
-      {
-        destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
-        vpnConnectionId: vpnConnection.ref,
-      }
-    );
+    new ec2.CfnVPNConnectionRoute(this, `VpnConnectionRoute-${partnerName}`, {
+      destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
+      vpnConnectionId: vpnConnection.ref,
+    });
 
-    new cdk.CfnOutput(this, `${props.vpnConfig.partnerName}VpnConnectionId`, {
+    new cdk.CfnOutput(this, `VpnConnectionId-${partnerName}`, {
       value: vpnConnection.ref,
-      description: `VPN Connection for ${props.vpnConfig.partnerName}`,
+      description: `VPN Connection for ${partnerName}`,
     });
   }
 
   private setNaclRules(
-    networkAcl: ec2.NetworkAcl,
+    networkAcl: ec2.INetworkAcl,
     partnerInternalCidrBlock: string,
     direction: ec2.TrafficDirection,
     rules: {
@@ -157,7 +152,7 @@ export class VpnStack extends cdk.NestedStack {
   }
 
   private addIngressRules(
-    networkAcl: ec2.NetworkAcl,
+    networkAcl: ec2.INetworkAcl,
     partnerInternalCidrBlock: string,
     rules: {
       ruleNumber: number;
@@ -169,7 +164,7 @@ export class VpnStack extends cdk.NestedStack {
   }
 
   private addEgressRules(
-    networkAcl: ec2.NetworkAcl,
+    networkAcl: ec2.INetworkAcl,
     partnerInternalCidrBlock: string,
     rules: {
       ruleNumber: number;

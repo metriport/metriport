@@ -3,14 +3,14 @@ import { isEndpoint, isLocation } from "@metriport/core/external/fhir/shared/ind
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
-  isValidUrl,
   MetriportError,
+  isValidUrl,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import stringify from "json-stringify-safe";
-import { CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 import { CachedCqOrgLoader } from "./get-cq-organization-cached";
 import { getParentOid } from "./get-parent-org";
@@ -26,7 +26,7 @@ type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRI
 export async function parseCQOrganization(
   org: Organization,
   cache = new CachedCqOrgLoader()
-): Promise<CQDirectoryEntryData2> {
+): Promise<CQDirectoryEntryData> {
   const { log } = out(`parseCQOrganization`);
 
   const id = org.id ?? org.identifier?.[0]?.value;

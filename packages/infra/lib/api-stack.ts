@@ -39,13 +39,12 @@ import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-c
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
-import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
-import { createAppConfigStack } from "./app-config-stack";
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
+import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
@@ -105,6 +104,27 @@ export class APIStack extends Stack {
     const dnsZones = { privateZone, publicZone };
 
     //-------------------------------------------
+    // Vpc Endpoints
+    //-------------------------------------------
+    new ec2.InterfaceVpcEndpoint(this, "ApiVpcSqsEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SQS,
+      privateDnsEnabled: true,
+    });
+
+    //-------------------------------------------
+    // Buckets
+    //-------------------------------------------
+    let outgoingHl7NotificationBucket: s3.IBucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+      outgoingHl7NotificationBucket = s3.Bucket.fromBucketName(
+        this,
+        "OutgoingHl7MessageBucket",
+        props.config.hl7Notification.outgoingMessageBucketName
+      );
+    }
+
+    //-------------------------------------------
     // Security Setup
     //-------------------------------------------
     // Create a cert for HTTPS
@@ -141,11 +161,6 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    // TODO 2840 remove this
-    createAppConfigStack({
-      stack: this,
-      props: { config: props.config },
-    });
     const { featureFlagsTable } = new FeatureFlagsNestedStack(this, "FeatureFlags", {
       config: props.config,
       alarmAction: slackNotification?.alarmAction,
@@ -332,11 +347,14 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
+      fhirToBundleCountLambda,
       fhirConverterConnector: {
         queue: fhirConverterQueue,
-        dlq: fhirConverterDLQ,
+        lambda: fhirConverterLambda,
         bucket: fhirConverterBucket,
       },
+      hl7v2RosterUploadLambda,
+      conversionResultNotifierLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -351,12 +369,34 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // HL7 Notification Webhook Sender
+    //-------------------------------------------
+    let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
+    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+      const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
+        this,
+        "Hl7NotificationWebhookSenderNestedStack",
+        {
+          config: props.config,
+          lambdaLayers,
+          vpc: this.vpc,
+          alarmAction: slackNotification?.alarmAction,
+          outgoingHl7NotificationBucket,
+          secrets,
+        }
+      );
+
+      hl7NotificationWebhookSenderLambda = lambda;
+    }
+
+    //-------------------------------------------
     // Patient Import
     //-------------------------------------------
     const {
       parseLambda: patientImportParseLambda,
       createLambda: patientImportCreateLambda,
       queryLambda: patientImportQueryLambda,
+      resultLambda: patientImportResultLambda,
       bucket: patientImportBucket,
     } = new PatientImportNestedStack(this, "PatientImportNestedStack", {
       config: props.config,
@@ -373,11 +413,20 @@ export class APIStack extends Stack {
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
       elationLinkPatientLambda,
+      healthieLinkPatientQueue,
+      healthieLinkPatientLambda,
+      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
+      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
+      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
+      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
+      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
+      ehrBundleBucket,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
       lambdaLayers,
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
+      medicalDocumentsBucket,
     });
 
     //-------------------------------------------
@@ -483,16 +532,21 @@ export class APIStack extends Stack {
       fhirServerUrl: props.config.fhirServerUrl,
       fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      fhirConverterLambda: fhirConverter ? fhirConverter.lambda : undefined,
+      fhirConverterServiceLambda: fhirConverter ? fhirConverter.lambda : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
-      patientImportLambda: patientImportParseLambda,
+      patientImportParseLambda,
+      patientImportResultLambda,
       patientImportBucket,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
+      healthieLinkPatientQueue,
+      ehrStartResourceDiffBundlesQueue,
+      ehrRefreshEhrBundlesQueue,
+      ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
@@ -500,11 +554,21 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
+      fhirToBundleCountLambda,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
       searchIndexName: ccdaSearchIndexName,
+      semanticSearchEndpoint: props.config.semanticOpenSearch?.endpoint,
+      semanticSearchIndexName: props.config.semanticOpenSearch?.indexName,
+      semanticSearchModelId: props.config.semanticOpenSearch?.modelId,
+      semanticSearchAuth: props.config.semanticOpenSearch
+        ? {
+            userName: props.config.semanticOpenSearch.userName,
+            secret: props.config.semanticOpenSearch.password,
+          }
+        : undefined,
       featureFlagsTable,
       cookieStore,
     });
@@ -567,40 +631,41 @@ export class APIStack extends Stack {
       resource: apiService.service.taskDefinition.taskRole,
     });
 
-    const fhirConverterLambda = fhirConverterConnector.createLambda({
-      envType: props.config.environmentType,
-      stack: this,
-      lambdaLayers,
-      vpc: this.vpc,
-      sourceQueue: fhirConverterQueue,
-      dlq: fhirConverterDLQ,
-      fhirConverterBucket,
-      medicalDocumentsBucket,
-      fhirServerUrl: props.config.fhirServerUrl,
-      fhirConverterLambda: fhirConverter ? fhirConverter.lambda : undefined,
-      termServerUrl: props.config.termServerUrl,
-      apiServiceDnsAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-      featureFlagsTable,
-    });
-
     // Add ENV after the API service is created
-    fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    patientImportCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    const lambdasToGetApiUrl: (lambda.Function | undefined)[] = [
+      fhirToMedicalRecordLambda2,
+      outboundPatientDiscoveryLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
+      fhirToBundleLambda,
+      fhirToBundleCountLambda,
+      hl7v2RosterUploadLambda,
+      hl7NotificationWebhookSenderLambda,
+      patientImportCreateLambda,
+      patientImportParseLambda,
+      patientImportQueryLambda,
+      patientImportResultLambda,
+      ehrSyncPatientLambda,
+      elationLinkPatientLambda,
+      healthieLinkPatientLambda,
+      ehrStartResourceDiffBundlesLambda,
+      ehrComputeResourceDiffBundlesLambda,
+      ehrRefreshEhrBundlesLambda,
+      fhirConverterLambda,
+      conversionResultNotifierLambda,
+    ];
+    lambdasToGetApiUrl.forEach(lambda =>
+      lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
+    );
+
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
-    fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,

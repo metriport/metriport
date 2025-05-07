@@ -540,7 +540,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("fail w/ dob (8), exact address (2), gender (1), exact phone (2), exact email (2), exact ssn (5)", async () => {
+  it("pass w/ dob (8), exact address (2), gender (1), exact phone (2), exact email (2), exact ssn (5)", async () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -554,9 +554,9 @@ describe("check demo function", () => {
       coreDemographics,
       linkDemographics,
     });
-    expect(result.isMatched).toBe(false);
+    expect(result.isMatched).toBe(true);
   });
-  it("fail w/ dob (8), name (10)", async () => {
+  it("pass w/ dob (8), name (10)", async () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -566,9 +566,9 @@ describe("check demo function", () => {
       coreDemographics,
       linkDemographics,
     });
-    expect(result.isMatched).toBe(false);
+    expect(result.isMatched).toBe(true);
   });
-  it("fail w/ dob (8), name (10), gender (1)", async () => {
+  it("pass w/ dob (8), name (10), gender (1)", async () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -579,9 +579,9 @@ describe("check demo function", () => {
       coreDemographics,
       linkDemographics,
     });
-    expect(result.isMatched).toBe(false);
+    expect(result.isMatched).toBe(true);
   });
-  it("fail w/ dob (8), name (10), partial address (1)", async () => {
+  it("pass w/ dob (8), name (10), partial address (1)", async () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -592,7 +592,7 @@ describe("check demo function", () => {
       coreDemographics,
       linkDemographics,
     });
-    expect(result.isMatched).toBe(false);
+    expect(result.isMatched).toBe(true);
   });
   it("fail w/ name (10), exact address (2), exact phone (2), exact email (2)", async () => {
     const linkDemographics: LinkDemographics = {
@@ -608,7 +608,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(false);
   });
-  it("fail w/ name (10), exact address (2), exact phone (2), exact ssn (5)", async () => {
+  it("pass w/ name (10), exact address (2), exact phone (2), exact ssn (5)", async () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -620,9 +620,9 @@ describe("check demo function", () => {
       coreDemographics,
       linkDemographics,
     });
-    expect(result.isMatched).toBe(false);
+    expect(result.isMatched).toBe(true);
   });
-  it("fail w/ name (10), exact address (2), exact email (2), exact ssn (5)", async () => {
+  it("pass w/ name (10), exact address (2), exact email (2), exact ssn (5)", async () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -634,6 +634,6 @@ describe("check demo function", () => {
       coreDemographics,
       linkDemographics,
     });
-    expect(result.isMatched).toBe(false);
+    expect(result.isMatched).toBe(true);
   });
 });

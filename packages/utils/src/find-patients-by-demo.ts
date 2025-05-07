@@ -10,16 +10,12 @@ import csv from "csv-parser";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import {
-  dedupPatientCreates,
-  initPatientIdRepository,
-  mapCsvPatientToMetriportPatient,
-  storePatientCreates,
-} from "./bulk-insert-patients";
+import { initPatientIdRepository, mapCsvPatientToMetriportPatient } from "./bulk-insert-patients";
 import { elapsedTimeAsStr } from "./shared/duration";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
-import { logNotDryRun } from "./shared/log";
+import { dedupPatientCreatesReturnDuplicates, storePatientCreates } from "./shared/patient-create";
+import { mapHeadersForCsvParser } from "./csv/shared";
 
 dayjs.extend(duration);
 
@@ -59,6 +55,7 @@ const cxId = getEnvVarOrFail("CX_ID");
  */
 const facilityId = getEnvVar("FACILITY_ID") ?? "";
 const confirmationTime = dayjs.duration(10, "seconds");
+const columnSeparator = ",";
 
 const getFolderName = buildGetDirPathInside(`patients-by-demo`);
 
@@ -79,12 +76,17 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
-  console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
-  initRunsFolder();
   program.parse();
   const { dryrun: dryRunParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
+  console.log(
+    `############## Started at ${new Date(startedAt).toISOString()} ############## ${
+      dryRun ? "DRY RUN" : ""
+    }`
+  );
+
+  initRunsFolder();
 
   const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
@@ -94,18 +96,12 @@ async function main() {
 
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
-  const patientsFromCsv: PatientCreate[] = [];
+  const patientsFromCsv: { raw: string[]; create: PatientCreate }[] = [];
   const mappingErrors: Array<{ row: string; errors: string }> = [];
   const fileName = inputFileName;
 
   fs.createReadStream(fileName)
-    .pipe(
-      csv({
-        mapHeaders: ({ header }: { header: string }) => {
-          return header.replace(/[!@#$%^&*()+=\-[\]\\';,./{}|":<>?~_\s]/gi, "").toLowerCase();
-        },
-      })
-    )
+    .pipe(csv({ mapHeaders: mapHeadersForCsvParser }))
     .on("data", async data => {
       const result = mapCsvPatientToMetriportPatient(data);
       if (Array.isArray(result)) {
@@ -114,7 +110,9 @@ async function main() {
           errors: result.map(e => e.error).join("; "),
         });
       } else {
-        patientsFromCsv.push(result);
+        const raw = Object.values(data) as string[];
+        const rawNormalized = raw.map(r => (r.includes(columnSeparator) ? `"${r}"` : r));
+        patientsFromCsv.push({ raw: rawNormalized, create: result });
       }
     })
     .on("end", async () => {
@@ -131,40 +129,76 @@ async function main() {
 }
 
 async function findPatientsByDemo(
-  patientsFromCsv: PatientCreate[],
+  patientsFromCsv: { raw: string[]; create: PatientCreate }[],
   orgName: string,
   localFacilityId: string,
   outputFolderName: string,
   dryRun: boolean
 ) {
-  console.log(`Loaded ${patientsFromCsv.length} patients from the CSV, deduplicating them...`);
-  const dedupedPatients = dedupPatientCreates(patientsFromCsv);
+  console.log(`Loaded ${patientsFromCsv.length} patients from the CSV, processing them...`);
+  const patientCreates = patientsFromCsv.map(p => p.create);
 
-  const msg = `${dedupedPatients.length} unique patients from the CSV file to be searched on/updated at org/cx ${orgName}`;
+  const dupExternalIds = findDuplicateExternalIds(patientCreates);
+  console.log(`- ${dupExternalIds.length} duplicate externalIds`);
+
+  const { uniquePatients, duplicates } = dedupPatientCreatesReturnDuplicates(patientCreates);
+  console.log(`- ${duplicates.length} duplicate patients`);
+
+  const msg = `- ${uniquePatients.length} unique patients from the CSV file to be searched on/updated at org/cx ${orgName}`;
   console.log(msg);
 
-  storePatientCreates(dedupedPatients, outputFolderName + "/patients-from-csv.json");
+  storePatientCreates(uniquePatients, outputFolderName + "/patients-from-csv.json");
+  storePatientCreates(duplicates, outputFolderName + "/duplicates.json");
+  if (dupExternalIds.length > 0) {
+    fs.writeFileSync(
+      `${outputFolderName}/duplicate-external-ids.json`,
+      JSON.stringify(dupExternalIds, null, 2)
+    );
+    console.log(
+      `This script doesn't support duplicate externalIds. Please fix them before running again.`
+    );
+    return;
+  }
 
-  await displayWarningAndConfirmation(orgName, localFacilityId, dryRun);
+  if (dryRun) {
+    console.log(`Dry run complete. No patients were updated.`);
+    return;
+  }
+
+  await displayWarningAndConfirmation(orgName, localFacilityId);
 
   let page = 1;
+  const loadStartedAt = Date.now();
   const patientsFromDb: PatientDTO[] = [];
-  const { meta, patients } = await metriportAPI.listPatients({ facilityId: localFacilityId });
+  const { meta, patients } = await metriportAPI.listPatients({
+    facilityId: localFacilityId,
+    pagination: { count: 200 },
+  });
   patientsFromDb.push(...patients);
   let nextPage = meta.nextPage;
   while (nextPage) {
-    const { meta, patients } = await metriportAPI.listPatientsPage(nextPage);
+    const nextPageViaLb = (new URL(nextPage).pathname + new URL(nextPage).search).replace(
+      "/medical/v1",
+      ""
+    );
+    console.log(`Getting nextPage (${++page}): ${nextPageViaLb}`);
+    const { meta, patients } = await metriportAPI.listPatientsPage(nextPageViaLb);
     patientsFromDb.push(...patients);
     nextPage = meta.nextPage;
   }
-  console.log(`Patients loaded in ${--page} pages`);
+  console.log(
+    `${patientsFromDb.length} patients loaded in ${--page} pages, ${elapsedTimeAsStr(
+      loadStartedAt
+    )}`
+  );
 
+  console.log(`Matching...`);
   // Find matches between CSV patients and existing DB patients
   const matches: Array<{ csvPatient: PatientCreate; dbPatient: PatientDTO }> = [];
   const noMatches: PatientCreate[] = [];
   const multipleMatches: Array<{ csvPatient: PatientCreate; dbPatients: PatientDTO[] }> = [];
 
-  for (const csvPatient of dedupedPatients) {
+  for (const csvPatient of uniquePatients) {
     const matchingPatients = patientsFromDb.filter(dbPatient => {
       const sameFirstName =
         csvPatient.firstName.toLowerCase() === dbPatient.firstName.toLowerCase();
@@ -187,6 +221,10 @@ async function findPatientsByDemo(
   fs.writeFileSync(`${outputFolderName}/matches.json`, JSON.stringify(matches, null, 2));
   fs.writeFileSync(`${outputFolderName}/no-matches.json`, JSON.stringify(noMatches, null, 2));
   fs.writeFileSync(
+    `${outputFolderName}/no-matches.csv`,
+    patientCreatesToCsv(noMatches, patientsFromCsv)
+  );
+  fs.writeFileSync(
     `${outputFolderName}/multiple-matches.json`,
     JSON.stringify(multipleMatches, null, 2)
   );
@@ -205,12 +243,33 @@ async function findPatientsByDemo(
   fs.writeFileSync(`${outputFolderName}/patient-update.sql`, patientUpdateSql.join("\n"));
 }
 
-async function displayWarningAndConfirmation(
-  orgName: string,
-  localFacilityId: string,
-  dryRun: boolean
-) {
-  if (!dryRun) logNotDryRun();
+function patientCreatesToCsv(
+  patientCreates: PatientCreate[],
+  patientsFromCsv: { raw: string[]; create: PatientCreate }[]
+): string {
+  return patientCreates
+    .map(pc => {
+      // TODO support doing this when there's no externalId
+      const csvPatient = patientsFromCsv.find(p => p.create.externalId === pc.externalId);
+      return csvPatient?.raw ?? [];
+    })
+    .join("\n");
+}
+
+function findDuplicateExternalIds(patientCreates: PatientCreate[]): string[] {
+  const externalIds = patientCreates.flatMap(p => p.externalId ?? []);
+  const acc = externalIds.reduce((acc, id) => {
+    if (acc[id]) {
+      acc[id]++;
+    } else {
+      acc[id] = 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+  return Object.keys(acc).filter(id => acc[id] > 1);
+}
+
+async function displayWarningAndConfirmation(orgName: string, localFacilityId: string) {
   console.log(
     `Reading all patients at org/cx ${orgName}, facility ${localFacilityId}, in ${confirmationTime.asSeconds()} seconds...`
   );

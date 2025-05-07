@@ -314,6 +314,7 @@ export type SlimDiagnosticReport = Omit<
   presentedForm?: string[] | undefined;
   status?: string | undefined;
   reference?: Record<string, unknown>;
+  encounter?: string | undefined;
 };
 
 function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | undefined {
@@ -381,6 +382,7 @@ function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | 
     status,
     category,
     presentedForm: Array.from(uniqueData),
+    encounter: updRes.encounter?.reference ?? "",
   };
 }
 

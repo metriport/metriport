@@ -124,3 +124,10 @@ export function createDriversLicensePersonalIdentifier(
   };
   return personalIdentifier;
 }
+
+export function getConsolidatedQueryByRequestId(
+  patient: Pick<Patient, "data">,
+  requestId: string | undefined
+): ConsolidatedQuery | undefined {
+  return patient.data.consolidatedQueries?.find(q => q.requestId === requestId);
+}

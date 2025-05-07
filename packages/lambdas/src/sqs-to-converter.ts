@@ -1,4 +1,6 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { buildConversionResultHandler } from "@metriport/core/command/conversion-result/conversion-result-factory";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import {
   FhirConverterParams,
   FhirExtension,
@@ -19,22 +21,20 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
-import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
-import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
-import { getEnvOrFail, getEnv } from "./shared/env";
+import { getEnvOrFail } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
-import { apiClient } from "./shared/oss-api";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -44,12 +44,16 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
-const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
-const converterLambdaArn = getEnv("FHIR_CONVERTER_LAMBDA_ARN");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
+
+const conversionResultHandler = buildConversionResultHandler();
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
@@ -61,7 +65,6 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
-const ossApi = apiClient(apiUrl);
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 const HYDRATION_TIMEOUT_MS = 5_000;
@@ -140,7 +143,7 @@ export async function handler(event: SQSEvent) {
           log(
             `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
           );
-          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+          await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
         const { documentContents: payloadNoB64, b64Attachments } =
@@ -171,7 +174,7 @@ export async function handler(event: SQSEvent) {
 
         if (!payloadClean.trim().length) {
           log(`XML document is empty, skipping... Filename: ${s3FileName}`);
-          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+          await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
 
@@ -207,7 +210,6 @@ export async function handler(event: SQSEvent) {
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
             converterUrl,
-            converterLambdaArn,
             partitionedPayloads,
             converterParams,
             log,
@@ -319,7 +321,7 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMetrics(metrics);
       } catch (error) {
-        await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
         throw error;
       }
     }
@@ -336,13 +338,11 @@ export async function handler(event: SQSEvent) {
 
 async function convertPayloadToFHIR({
   converterUrl,
-  converterLambdaArn,
   partitionedPayloads,
   converterParams,
   log,
 }: {
   converterUrl: string;
-  converterLambdaArn?: string;
   partitionedPayloads: string[];
   converterParams: FhirConverterParams;
   log: typeof console.log;
@@ -391,16 +391,6 @@ async function convertPayloadToFHIR({
     );
 
     const conversionResult = res.data.fhirResource as Bundle<Resource>;
-
-    payload &&
-      (await sendConversionResultToLambda({
-        converterLambdaArn,
-        patientId: converterParams.patientId,
-        sourceFileName: converterParams.fileName,
-        converterParams,
-        payload,
-        originalConversionResult: conversionResult,
-      }));
 
     if (conversionResult?.entry && conversionResult.entry.length > 0) {
       log(
@@ -476,69 +466,11 @@ async function sendConversionResult({
   );
 
   log(`Sending result info to the API`);
-  await ossApi.internal.notifyApi(
-    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
-    log
-  );
-}
-
-async function sendConversionResultToLambda({
-  converterLambdaArn,
-  patientId,
-  sourceFileName,
-  converterParams,
-  payload,
-  originalConversionResult,
-}: {
-  converterLambdaArn?: string;
-  patientId: string;
-  sourceFileName: string;
-  converterParams: FhirConverterParams;
-  payload: string;
-  originalConversionResult: Bundle<Resource>;
-}): Promise<void> {
-  const log = prefixedLog(
-    `sendConversionResultToLambda, patient ${patientId} sourceFileName ${sourceFileName}`
-  );
-  if (!converterLambdaArn) {
-    log(`No converter lambda ARN, skipping...`);
-    return;
-  }
-  const lambdaClient = makeLambdaClient(region);
-  try {
-    const converterLambdaResult = await lambdaClient
-      .invoke({
-        FunctionName: converterLambdaArn,
-        Payload: JSON.stringify({
-          queryParameters: converterParams,
-          body: payload,
-        }),
-        InvocationType: "RequestResponse",
-      })
-      .promise();
-    if (converterLambdaResult.StatusCode === 200) {
-      if (!converterLambdaResult.Payload) {
-        log(`Lambda conversion result is empty`);
-        return;
-      }
-      const lambdaConversionResult = JSON.parse(converterLambdaResult.Payload.toString());
-      if (
-        JSON.stringify(lambdaConversionResult.fhirResource) !==
-        JSON.stringify(originalConversionResult)
-      ) {
-        log(
-          `Lambda conversion result does not match the original conversion result: ${JSON.stringify(
-            lambdaConversionResult.fhirResource
-          )} vs ${JSON.stringify(originalConversionResult)}`
-        );
-      } else {
-        log(`Lambda conversion result matches the original conversion result`);
-      }
-    } else {
-      log(`Lambda conversion error result: ${JSON.stringify(converterLambdaResult)}`);
-    }
-  } catch (error) {
-    log(`Error invoking lambda ${converterLambdaArn}: ${errorToString(error)}`);
-    return;
-  }
+  await conversionResultHandler.notifyApi({
+    cxId,
+    patientId,
+    jobId,
+    source: medicalDataSource,
+    status: "success",
+  });
 }

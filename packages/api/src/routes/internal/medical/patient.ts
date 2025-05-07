@@ -1,7 +1,9 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
-import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
+import {
+  getCxsWithCQDirectFeatureFlagValue,
+  getCxsWithEnhancedCoverageFeatureFlagValue,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import {
   Hl7v2Subscriber,
@@ -9,15 +11,14 @@ import {
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   BadRequestError,
-  PaginatedResponse,
   internalSendConsolidatedSchema,
   normalizeState,
-  patientImportSchema,
+  PaginatedResponse,
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
@@ -38,31 +39,26 @@ import {
   getConsolidatedAndSendToCx,
   startConsolidatedQuery,
 } from "../../../command/medical/patient/consolidated-get";
-import { createCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
-  GetHl7v2SubscribersParams,
   getHl7v2Subscribers,
-  getHl7v2SubscribersCount,
+  GetHl7v2SubscribersParams,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../../command/medical/patient/get-patient";
+import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
 } from "../../../command/medical/patient/update-patient";
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
-import {
-  getCxsWithCQDirectFeatureFlagValue,
-  getCxsWithEnhancedCoverageFeatureFlagValue,
-} from "../../../external/aws/app-config";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../../external/commonwell";
 import { findDuplicatedPersons } from "../../../external/commonwell/admin/find-patient-duplicates";
@@ -85,6 +81,7 @@ import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { dtoFromModel } from "../../medical/dtos/patientDTO";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
+import { hl7NotificationSchema } from "../../medical/schemas/hl7-notification";
 import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
 import { paginated } from "../../pagination";
@@ -104,13 +101,18 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../../util";
+import patientImportRoutes from "./patient-import";
+import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
+import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 
 dayjs.extend(duration);
 
 const router = Router();
 
 router.use("/settings", patientSettingsRoutes);
+router.use("/job", patientJobRoutes);
+router.use("/bulk", patientImportRoutes);
 
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });
@@ -166,7 +168,11 @@ router.get(
           pagination,
         });
       },
-      getTotalCount: () => getHl7v2SubscribersCount(params),
+      getTotalCount: () => {
+        // There's no use for calculating the actual number of subscribers for this route
+        return Promise.resolve(-1);
+      },
+      hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
     const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {
@@ -809,6 +815,7 @@ router.get(
  * Kicks off patient discovery for the given patient on both CQ and CW.
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
+ * @param req.query.requestId Optional. The request ID to be used for the data pipeline execution.
  * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
  */
 router.post(
@@ -818,10 +825,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
+    const requestId = getFrom("query").optional("requestId", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const patient = await getPatientOrFail({ cxId, id });
     const facilityId = patient.facilityIds[0];
-    const requestId = uuidv7();
 
     await runOrSchedulePatientDiscoveryAcrossHies({
       patient,
@@ -833,7 +840,7 @@ router.post(
   })
 );
 
-// TODO 2330 Review this
+// TODO 2330 Review this, it's not working
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/bulk/coverage-assessment
  *
@@ -847,31 +854,33 @@ router.post(
 router.post(
   "/bulk/coverage-assessment",
   requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getFrom("query").orFail("facilityId", req);
-    const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
-    const payload = patientImportSchema.parse(req.body);
+  // asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async () => {
+    throw new Error("Not implemented");
+    // const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    // const facilityId = getFrom("query").orFail("facilityId", req);
+    // const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
+    // const payload = patientImportSchema.parse(req.body);
 
-    const facility = await getFacilityOrFail({ cxId, id: facilityId });
-    const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
-      const payload = createPatientPayload(patient);
-      return {
-        cxId,
-        facilityId: facility.id,
-        ...payload,
-      };
-    });
+    // const facility = await getFacilityOrFail({ cxId, id: facilityId });
+    // const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
+    //   const payload = createPatientPayload(patient);
+    //   return {
+    //     cxId,
+    //     facilityId: facility.id,
+    //     ...payload,
+    //   };
+    // });
 
-    if (dryrun) return res.sendStatus(status.OK);
+    // if (dryrun) return res.sendStatus(status.OK);
 
-    createCoverageAssessments({
-      cxId,
-      facilityId,
-      patientCreates,
-    }).catch(processAsyncError("createCoverageAssessments"));
+    // createCoverageAssessments({
+    //   cxId,
+    //   facilityId,
+    //   patientCreates,
+    // }).catch(processAsyncError("createCoverageAssessments"));
 
-    return res.sendStatus(status.OK);
+    // return res.sendStatus(status.OK);
   })
 );
 
@@ -989,50 +998,6 @@ router.post(
   })
 );
 
-// TODO 2330 Rework this so it becomes an internal way to create a new bulk import job, maybe with
-// some custom/internal params (e.g., to avoid sending WHs, etc.), returning the upload URL and
-// removing the trigger of the actual import from here.
-// We prob want to have a LOCAL/dev way to trigger the import here by uploading the file in the
-// body, so we can skip the S3 trigger and have the process running local.
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/import
- *
- * @param req.query.cxId The customer ID.
- * @param req.params.id The patient ID.
- * @param req.query.facilityId The facility ID for running the patient import.
- * @param req.query.jobId The job Id of the fle.
- * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
- * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
- * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
- * @param req.query.dryRun Whether to simply validate or run the assessment, overrides the cx
- *                          provided one (optional, defaults to cx provided or false if none provides it).
- *
- */
-router.post(
-  "/import",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const jobId = getFrom("query").orFail("jobId", req);
-    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
-    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
-    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
-    const dryRun = getFromQueryAsBoolean("dryRun", req);
-
-    const patientImportParser = buildPatientImportParseHandler();
-    await patientImportParser.processJobParse({
-      cxId,
-      jobId,
-      triggerConsolidated,
-      disableWebhooks,
-      rerunPdOnNewDemographics,
-      dryRun,
-    });
-
-    return res.sendStatus(status.OK);
-  })
-);
-
 /**
  * POST /internal/patient/consolidated/query
  *
@@ -1137,6 +1102,57 @@ router.post(
     log(`response ${JSON.stringify(response)}`);
 
     return res.status(status.OK).json(response);
+  })
+);
+
+/**
+ * POST /internal/patient/:id/notification/
+ *
+ * This is a webhook endpoint for sending HL7 FHIR bundles.
+ *
+ * @param req.params.id The patient ID.
+ * @param req.query.cxId - The customer ID.
+ * @param req.query.presignedUrl - S3 presigned URL to access the FHIR bundle.
+ * @param req.query.triggerEvent - the type of HL7 notification.
+ */
+router.post(
+  "/:id/notification",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientId = getFromParamsOrFail("id", req);
+    const queryParams = hl7NotificationSchema.parse(req.query);
+
+    await processHl7FhirBundleWebhook({ patientId, ...queryParams });
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * DELETE /internal/patient/:id/external-data
+ *
+ * Resets the external data corresponding to a specific source for a specific patient by removing it completely.
+ *
+ * @param req.params.id The patient ID.
+ * @param req.query.source The HIE source (COMMONWELL or CAREQUALITY).
+ * @param req.query.cxId The customer ID.
+ * @return 200 OK upon successful reset.
+ */
+router.delete(
+  "/:id/external-data",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const source = getFrom("query").orFail("source", req);
+
+    await resetExternalDataSource({
+      cxId,
+      patientId: id,
+      source,
+    });
+
+    return res.sendStatus(status.OK);
   })
 );
 

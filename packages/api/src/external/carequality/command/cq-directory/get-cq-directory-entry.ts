@@ -1,11 +1,11 @@
 import { NotFoundError } from "@metriport/shared";
 import { CQDirectoryEntry } from "../../cq-directory";
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 
 export async function getCQDirectoryEntry(
   id: CQDirectoryEntry["id"]
 ): Promise<CQDirectoryEntry | undefined> {
-  const org = await CQDirectoryEntryModel.findOne({
+  const org = await CQDirectoryEntryViewModel.findOne({
     where: { id },
   });
   return org?.dataValues ?? undefined;

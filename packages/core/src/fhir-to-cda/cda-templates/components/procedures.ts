@@ -96,6 +96,7 @@ function createTableRowFromProcedure(
           {
             "#text":
               formatDateToHumanReadableFormat(procedure.resource.performedPeriod?.start) ??
+              formatDateToHumanReadableFormat(procedure.resource.performedDateTime) ??
               NOT_SPECIFIED,
           },
           {

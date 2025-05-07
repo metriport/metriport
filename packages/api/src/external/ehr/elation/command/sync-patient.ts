@@ -9,6 +9,7 @@ import { elationDashSource } from "@metriport/shared/interface/external/ehr/elat
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import {
   deleteTokenBasedOnExpBySourceAndData,
   findOrCreateJwtToken,
@@ -24,8 +25,10 @@ import { Config } from "../../../../shared/config";
 import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
 
+dayjs.extend(duration);
+
 export const longDurationTokenDuration = dayjs.duration(1, "year");
-export const shortDurationTokenDuration = dayjs.duration(30, "minutes");
+export const shortDurationTokenDuration = dayjs.duration(10, "hours");
 
 const unknownPatientId = "unknown";
 

@@ -8,6 +8,8 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
+import { getConsolidatedQueryByRequestId } from "../../domain/patient";
+import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
@@ -33,12 +35,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
   async execute(
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
-    const { cxId, id: patientId } = params.patient;
+    const { patient, requestId } = params;
+    const { cxId, id: patientId } = patient;
     const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);
 
-    const fhirPatient = patientToFhir(params.patient);
+    const fhirPatient = patientToFhir(patient);
     const patientEntry = buildBundleEntry(fhirPatient);
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
     originalBundle.total = originalBundle.entry.length;
@@ -60,8 +63,10 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       bundle: dedupedBundle,
     });
 
+    const resultBundle = normalizedBundle;
+
     try {
-      checkBundle(normalizedBundle, cxId, patientId);
+      checkBundle(resultBundle, cxId, patientId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const msg = "Bundle contains invalid data";
@@ -72,7 +77,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         uploadConsolidatedSnapshotToS3({
           ...params,
           s3BucketName: this.bucketName,
-          bundle: dedupedBundle,
+          bundle: resultBundle,
           type: "invalid",
         });
       } catch (error) {
@@ -81,7 +86,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       throw new MetriportError(msg, error, additionalInfo);
     }
 
-    const [, dedupedS3Info] = await Promise.all([
+    const [, , resultS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
@@ -97,12 +102,12 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
-        bundle: normalizedBundle,
+        bundle: resultBundle,
         type: "normalized",
       }),
     ]);
 
-    const { bucket, key } = dedupedS3Info;
+    const { bucket, key } = resultS3Info;
     const info = {
       bundleLocation: bucket,
       bundleFilename: key,
@@ -119,6 +124,18 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         bundleFilename: info.bundleFilename,
       });
     }
+
+    const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.consolidatedQuery,
+      properties: {
+        patientId: patientId,
+        conversionType: "bundle",
+        duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+        resourceCount: resultBundle.entry?.length,
+      },
+    });
 
     return info;
   }

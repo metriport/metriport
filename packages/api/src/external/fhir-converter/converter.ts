@@ -37,7 +37,7 @@ export function isConvertible(mimeType?: string | undefined): boolean {
  */
 export async function convertCDAToFHIR(params: {
   patient: { cxId: string; id: string };
-  document: { id: string; content?: ContentMimeType };
+  document: { id: string };
   s3FileName: string;
   s3BucketName: string;
   template?: FHIRConverterCDATemplate;
@@ -47,7 +47,7 @@ export async function convertCDAToFHIR(params: {
   source?: MedicalDataSource;
 }): Promise<void> {
   const {
-    patient,
+    patient: patientParam,
     document,
     s3FileName,
     s3BucketName,
@@ -57,6 +57,11 @@ export async function convertCDAToFHIR(params: {
     requestId,
     source,
   } = params;
+  const patient = {
+    id: patientParam.id,
+    cxId: patientParam.cxId,
+  };
+
   const { log } = out(
     `convertCDAToFHIR, patientId ${patient.id}, requestId ${requestId}, docId ${document.id}`
   );

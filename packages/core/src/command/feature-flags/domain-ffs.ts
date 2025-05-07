@@ -1,5 +1,4 @@
 import { errorToString } from "@metriport/shared";
-import { Config } from "../../util/config";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { getFeatureFlags } from "./ffs-on-dynamodb";
@@ -13,12 +12,10 @@ import {
 const { log } = out(`FFs`);
 
 export async function getFeatureFlagValueCxValues<T extends keyof StringValueFeatureFlags>(
-  region: string,
-  ffTableName: string,
   cxId: string,
   featureFlagNames?: T[]
 ): Promise<CxFeatureFlagStatus> {
-  const configContentValue = await getFeatureFlags(region, ffTableName);
+  const configContentValue = await getFeatureFlags();
   const targetFeatureFlags =
     featureFlagNames && featureFlagNames.length > 0
       ? featureFlagNames
@@ -40,12 +37,10 @@ export async function getFeatureFlagValueCxValues<T extends keyof StringValueFea
 }
 
 export async function getFeatureFlagValueStringArray<T extends keyof StringValueFeatureFlags>(
-  region: string,
-  ffTableName: string,
   featureFlagName: T
 ): Promise<StringValueFeatureFlags[T]> {
   try {
-    const configContentValue = await getFeatureFlags(region, ffTableName);
+    const configContentValue = await getFeatureFlags();
     return configContentValue[featureFlagName];
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
@@ -57,11 +52,9 @@ export async function getFeatureFlagValueStringArray<T extends keyof StringValue
 }
 
 export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureFlags>(
-  region: string,
-  ffTableName: string,
   featureFlagName: T
 ): Promise<BooleanFeatureFlags[T]> {
-  const configContentValue = await getFeatureFlags(region, ffTableName);
+  const configContentValue = await getFeatureFlags();
   return configContentValue[featureFlagName];
 }
 
@@ -75,11 +68,7 @@ export async function isFeatureFlagEnabled(
   defaultValue = false
 ): Promise<boolean> {
   try {
-    const featureFlag = await getFeatureFlagValueBoolean(
-      Config.getAWSRegion(),
-      Config.getFeatureFlagsTableName(),
-      featureFlagName
-    );
+    const featureFlag = await getFeatureFlagValueBoolean(featureFlagName);
     return featureFlag ? featureFlag.enabled : defaultValue;
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
@@ -99,11 +88,7 @@ export async function getCxsWithFeatureFlagEnabled(
   featureFlagName: keyof StringValueFeatureFlags
 ): Promise<string[]> {
   try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      Config.getAWSRegion(),
-      Config.getFeatureFlagsTableName(),
-      featureFlagName
-    );
+    const featureFlag = await getFeatureFlagValueStringArray(featureFlagName);
     if (featureFlag && featureFlag.enabled) {
       return featureFlag.values;
     }
@@ -116,29 +101,153 @@ export async function getCxsWithFeatureFlagEnabled(
   return [];
 }
 
-export async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
+export async function isCommonwellEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("commonwellFeatureFlag");
 }
 
-export async function isStrictMatchingAlgorithmEnabledForCx(cxId: string): Promise<boolean> {
-  const cxsWithStrictMatchingAlgorithmEnabled = await getCxsWithStrictMatchingAlgorithm();
-  return cxsWithStrictMatchingAlgorithmEnabled.includes(cxId);
+export async function isCarequalityEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("carequalityFeatureFlag");
+}
+
+export async function getCxsWithAiBriefFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
+}
+export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithFeatureFlagValue = await getCxsWithAiBriefFeatureFlag();
+  return cxsWithFeatureFlagValue.includes(cxId);
 }
 
 export async function getCxsWithStrictMatchingAlgorithm(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithStrictMatchingAlgorithm");
 }
-
-export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
-  const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
-  return cxsWithADHDFeatureFlagValue.includes(cxId);
+export async function isStrictMatchingAlgorithmEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithStrictMatchingAlgorithmEnabled = await getCxsWithStrictMatchingAlgorithm();
+  return cxsWithStrictMatchingAlgorithmEnabled.includes(cxId);
 }
 
+export async function getCxsWithAthenaCustomFieldsEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAthenaCustomFieldsEnabled");
+}
 export async function isAthenaCustomFieldsEnabledForCx(cxId: string): Promise<boolean> {
   const cxsWithAthenaCustomFieldsEnabled = await getCxsWithAthenaCustomFieldsEnabled();
   return cxsWithAthenaCustomFieldsEnabled.includes(cxId);
 }
 
-export async function getCxsWithAthenaCustomFieldsEnabled(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithAthenaCustomFieldsEnabled");
+export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithEnhancedCoverageFeatureFlag");
+}
+export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithECEnabled = await getCxsWithEnhancedCoverageFeatureFlagValue();
+  return cxIdsWithECEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithCQDirectFeatureFlag");
+}
+export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithCQDirectEnabled = await getCxsWithCQDirectFeatureFlagValue();
+  return cxIdsWithCQDirectEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithCWFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithCWFeatureFlag");
+}
+export async function isCWEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithCWDirectEnabled = await getCxsWithCWFeatureFlagValue();
+  return cxIdsWithCWDirectEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithIncreasedSandboxLimitFeatureFlag");
+}
+
+export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithNoWebhookPongFeatureFlag");
+}
+export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithNoWebhookPong = await getCxsWithNoWebhookPongFeatureFlagValue();
+  return cxIdsWithNoWebhookPong.some(i => i === cxId);
+}
+
+export async function getCxsWithCdaCustodianFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("getCxsWithCdaCustodianFeatureFlag");
+}
+export async function isCdaCustodianEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithFhirDedupEnabled = await getCxsWithCdaCustodianFeatureFlag();
+  return cxIdsWithFhirDedupEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWitDemoAugEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDemoAugEnabled");
+}
+export async function isDemoAugEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDemoAugEnabled = await getCxsWitDemoAugEnabled();
+  return cxIdsWithDemoAugEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWitStalePatientUpdateEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithStalePatientUpdateEnabled");
+}
+export async function isStalePatientUpdateEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithStalePatientUpdateEnabled = await getCxsWitStalePatientUpdateEnabled();
+  return cxIdsWithStalePatientUpdateEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithEpicEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithEpicEnabled");
+}
+export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithEpicEnabled = await getCxsWithEpicEnabled();
+  return cxIdsWithEpicEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithADHDFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithADHDMRFeatureFlag");
+}
+export async function isADHDFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithADHDEnabled = await getCxsWithADHDFeatureFlag();
+  return cxIdsWithADHDEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithNoMrLogoFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithNoMrLogoFeatureFlag");
+}
+export async function isLogoEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithNoMrLogo = await getCxsWithNoMrLogoFeatureFlag();
+  return !cxIdsWithNoMrLogo.some(i => i === cxId);
+}
+
+export async function getCxsWithBmiFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithBmiMrFeatureFlag");
+}
+export async function isBmiFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithBmiEnabled = await getCxsWithBmiFeatureFlag();
+  return cxIdsWithBmiEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithDermFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDermMrFeatureFlag");
+}
+export async function isDermFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDermEnabled = await getCxsWithDermFeatureFlag();
+  return cxIdsWithDermEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithPcpVisitAiSummaryFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithPcpVisitAiSummaryFeatureFlag");
+}
+export async function isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithPcpVisitAiSummaryEnabled = await getCxsWithPcpVisitAiSummaryFeatureFlag();
+  return cxIdsWithPcpVisitAiSummaryEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithHl7NotificationWebhookFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithHl7NotificationWebhookFeatureFlag");
+}
+export async function isHl7NotificationWebhookFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxIdsWithHl7NotificationWebhookEnabled =
+    await getCxsWithHl7NotificationWebhookFeatureFlag();
+  return cxIdsWithHl7NotificationWebhookEnabled.some(i => i === cxId);
 }

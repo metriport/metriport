@@ -6,7 +6,7 @@ export const runsFolderName = "runs";
 /**
  * Creates a symlink to the runs folder in the user's home directory
  */
-export function initRunsFolder() {
+export function initRunsFolder(subFolder?: string) {
   const homeDir = os.homedir();
   const dest = `${homeDir}/Documents/phi/runs`;
   if (!fs.existsSync(dest)) {
@@ -18,6 +18,12 @@ export function initRunsFolder() {
   } catch (error) {
     fs.symlinkSync(dest, pathName);
   }
+  if (subFolder) {
+    const subFolderPath = `${pathName}/${subFolder}`;
+    if (!fs.existsSync(subFolderPath)) {
+      fs.mkdirSync(subFolderPath, { recursive: true });
+    }
+  }
 }
 
 /**
@@ -28,14 +34,16 @@ export function initRunsFolder() {
  *
  * @param folder the name of the folder inside ./runs
  */
-export function buildGetDirPathInside(folder: string) {
-  return function (orgName: string): string {
-    const pathName = `./${runsFolderName}/${folder}`;
+export function buildGetDirPathInside(folder?: string) {
+  return function (orgName?: string): string {
+    const basePathName = `./${runsFolderName}`;
+    const pathName = basePathName + (folder ? `/${folder}` : "");
     return `${pathName}/${getFileNameForOrg(orgName)}`;
   };
 }
 
-export function getFileNameForOrg(orgName: string, extension?: string): string {
+export function getFileNameForOrg(orgName?: string, extension?: string): string {
   const ext = extension ? `.${extension}` : "";
-  return `${orgName?.replace(/[,.]/g, "").replaceAll(" ", "-")}_${new Date().toISOString()}${ext}`;
+  if (!orgName) return new Date().toISOString();
+  return `${orgName.replace(/[,.]/g, "").replaceAll(" ", "-")}_${new Date().toISOString()}${ext}`;
 }

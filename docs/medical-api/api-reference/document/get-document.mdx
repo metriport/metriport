@@ -8,12 +8,17 @@ This endpoint returns a URL which you can use to download the specified document
 using the file name provided from the [List Documents endpoint](/medical-api/api-reference/document/list-documents),
 or from the `meta.source` field of the FHIR resource you are interested in.
 
-<Info>The URL will only be valid for 60 seconds before you need to request a new one.</Info>
+<Info>
+  The URL will only be valid for 60 seconds before you need
+  to request a new one.
+</Info>
 
 ## Query Params
 
 <ParamField query="fileName" type="string" required>
-  The file name of the document.
+  The file name of the document. You can get this from the
+  [meta.source](/medical-api/fhir/overview#meta) attribute
+  of any FHIR resource.
 </ParamField>
 
 <ParamField query="conversionType" type="string">
@@ -31,9 +36,11 @@ A JSON object containing the URL will be returned.
 </ResponseField>
 
 <Tip>
-  For patients with a large volume of documents, you can use the
-  [Bulk Get Document URL endpoint](/medical-api/api-reference/document/download-url-bulk)
-  to get all download URLs instead of doing it one at a time.
+  For patients with a large volume of documents, you can use
+  the [Bulk Get Document URL
+  endpoint](/medical-api/api-reference/document/download-url-bulk)
+  to get all download URLs instead of doing it one at a
+  time.
 </Tip>
 
 <ResponseExample>
@@ -43,7 +50,9 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const downloadableUrl = await metriport.getDocumentUrl("abc123-def456");
+const downloadableUrl = await metriport.getDocumentUrl(
+  "abc123-def456"
+);
 ```
 
 </ResponseExample>
