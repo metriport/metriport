@@ -259,6 +259,5 @@ export function createLambda({
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: apiNotifierQueue, resource: conversionLambda });
-
   return conversionLambda;
 }
