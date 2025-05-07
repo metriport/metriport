@@ -3,6 +3,7 @@ import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization, OrgType } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, NotFoundError, USState } from "@metriport/shared";
@@ -97,7 +98,7 @@ export async function get(orgOid: string): Promise<CWSdkOrganization | undefined
 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
-    const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
+    const resp = await executeWithRetriesCw(() => commonWell.getOneOrg(metriportQueryMeta, cwId));
     debug(`resp getOneOrg: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
@@ -159,10 +160,8 @@ export async function update(cxId: string, org: CWOrganization, isObo = false): 
 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
-    const resp = await commonWell.updateOrg(
-      metriportQueryMeta,
-      commonwellOrg,
-      commonwellOrg.organizationId
+    const resp = await executeWithRetriesCw(() =>
+      commonWell.updateOrg(metriportQueryMeta, commonwellOrg, commonwellOrg.organizationId)
     );
     debug(`resp updateOrg: `, JSON.stringify(resp));
     //eslint-disable-next-line @typescript-eslint/no-explicit-any

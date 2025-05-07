@@ -7,21 +7,22 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { CwLink } from "../cw-patient-data";
-import { errorToString } from "@metriport/core/util/error/shared";
-import { USStateForAddress } from "@metriport/shared/dist/domain/address";
 import {
+  GenderAtBirth,
   Patient,
   PatientData,
   PatientExternalData,
   PatientExternalDataEntry,
-  GenderAtBirth,
 } from "@metriport/core/domain/patient";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { USStateForAddress } from "@metriport/shared/dist/domain/address";
 import { filterTruthy } from "../../../shared/filter-map-utils";
+import { CwLink } from "../cw-patient-data";
 import { PatientDataCommonwell } from "../patient-shared";
 const urnOidRegex = /^urn:oid:/;
 
@@ -148,23 +149,24 @@ export async function autoUpgradeNetworkLinks(
     const upgradeRequests: Promise<NetworkLink>[] = [];
     lola1LinksToUpgrade.forEach(async link => {
       if (link._links?.upgrade?.href) {
+        const href = link._links.upgrade.href;
         upgradeRequests.push(
-          commonWell
-            .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
-            .catch(error => {
-              const msg = `Failed to upgrade link`;
-              log(`${msg}. Cause: ${errorToString(error)}`);
-              capture.error(msg, {
-                extra: {
-                  commonwellPatientId,
-                  commonwellPersonId,
-                  cwReference: commonWell.lastReferenceHeader,
-                  context: executionContext,
-                  error,
-                },
-              });
-              throw error;
-            })
+          executeWithRetriesCw(() =>
+            commonWell.upgradeOrDowngradeNetworkLink(queryMeta, href)
+          ).catch(error => {
+            const msg = `Failed to upgrade link`;
+            log(`${msg}. Cause: ${errorToString(error)}`);
+            capture.error(msg, {
+              extra: {
+                commonwellPatientId,
+                commonwellPersonId,
+                cwReference: commonWell.lastReferenceHeader,
+                context: executionContext,
+                error,
+              },
+            });
+            throw error;
+          })
         );
       }
     });
@@ -180,7 +182,9 @@ export async function getPatientsNetworkLinks(
   const { debug, log } = out("CW getPatientNetworkLinks");
 
   try {
-    const networkLinks = await commonWell.getNetworkLinks(queryMeta, commonwellPatientId);
+    const networkLinks = await executeWithRetriesCw(() =>
+      commonWell.getNetworkLinks(queryMeta, commonwellPatientId)
+    );
 
     debug(`resp getNetworkLinks: `, JSON.stringify(networkLinks));
 
