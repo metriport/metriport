@@ -92,4 +92,34 @@ describe("mergeIntoTargetResource", () => {
     mergeIntoTargetResource(condition, condition2, false);
     expect(condition.extension).toBe(undefined);
   });
+
+  it("combines extensions when it's enabled", () => {
+    condition.extension = [
+      {
+        url: "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
+        valueString: "expect-this.xml",
+      },
+    ];
+    condition2.extension = [
+      {
+        url: "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
+        valueString: "do-not-include.xml",
+      },
+    ];
+    mergeIntoTargetResource(condition, condition2);
+    expect(condition.extension).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          valueString: "expect-this.xml",
+        }),
+      ])
+    );
+    expect(condition.extension).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          valueString: "do-not-include.xml",
+        }),
+      ])
+    );
+  });
 });
