@@ -6,15 +6,20 @@ import { convertSubscribersToHieFormat } from "../hl7v2-roster-generator";
 describe("AdtRosterGenerator", () => {
   describe("convertToHieFormat", () => {
     const mockSchema = {
+      id: "ID",
       firstName: "FIRST NAME",
       lastName: "LAST NAME",
       dob: "DOB",
       genderAtBirth: "GENDER",
-      "address[0].addressLine2": "STREET NUMBER",
-      "address[0].addressLine1": "STREET ADDRESS",
-      "address[0].city": "CITY",
-      "address[0].state": "STATE",
-      "address[0].zip": "ZIP",
+      address: [
+        {
+          addressLine1: "STREET ADDRESS",
+          addressLine2: "STREET NUMBER",
+          city: "CITY",
+          state: "STATE",
+          zip: "ZIP",
+        },
+      ],
       phone: "PHONE",
       email: "EMAIL",
       ssn: "SSN",
@@ -64,6 +69,7 @@ describe("AdtRosterGenerator", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
+        ID: "123",
         "FIRST NAME": "John",
         "LAST NAME": "Doe",
         "STREET ADDRESS": "123 Main St",
@@ -96,9 +102,9 @@ describe("AdtRosterGenerator", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
+        ID: "456",
         "FIRST NAME": "Jane",
         "LAST NAME": "Smith",
-        "STREET NUMBER": undefined,
         "STREET ADDRESS": "123 Main St",
         CITY: "Boston",
         STATE: "MA",

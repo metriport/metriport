@@ -84,6 +84,9 @@ export class Config {
   static getHl7Base64ScramblerSeed(): string {
     return getEnvVarOrFail("HL7_BASE64_SCRAMBLER_SEED");
   }
+  static getHieConfigs(): string {
+    return getEnvVarOrFail("HIE_CONFIGS");
+  }
 
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");

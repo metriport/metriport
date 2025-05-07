@@ -724,16 +724,26 @@ export class LambdasNestedStack extends NestedStack {
     const sentryDsn = config.lambdasSentryDSN;
     const envType = config.environmentType;
 
+    const envVars: Record<string, string> = {
+      BUCKET_NAME: hl7v2RosterBucket.bucketName,
+      API_URL: config.loadBalancerDnsName,
+    };
+
+    // Only add HIE configs for non-sandbox environments
+    if (!isSandbox(config) && config.hl7Notification.hieConfigs) {
+      envVars.HIE_CONFIGS = JSON.stringify(config.hl7Notification.hieConfigs);
+    }
+
+    if (sentryDsn) {
+      envVars.SENTRY_DSN = sentryDsn;
+    }
+
     const hl7v2RosterUploadLambda = createLambda({
       stack: this,
       name: "Hl7v2RosterUpload",
       entry: "hl7v2-roster",
       envType,
-      envVars: {
-        BUCKET_NAME: hl7v2RosterBucket.bucketName,
-        API_URL: config.loadBalancerDnsName,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
+      envVars,
       layers: [lambdaLayers.shared],
       memory: 4096,
       vpc,
