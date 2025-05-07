@@ -2,10 +2,10 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
 import { DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
-import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
-import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
-import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { isCommonwellExtension } from "@metriport/core/external/commonwell/extension";
+import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
+import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
@@ -59,8 +59,7 @@ const searchService = new OpenSearchFileIngestorDirect({
 const isSandbox = () => getEnvVarOrFail("ENV_TYPE") === "sandbox";
 
 async function getCxIds(): Promise<string[]> {
-  const fhirApi = makeFhirAdminApi(fhirBaseUrl);
-  return fhirApi.listTenants();
+  throw new Error("Fhir Admin API is deprecated - load CX IDs some other way.");
 }
 
 async function getDocRefs(
