@@ -1,4 +1,3 @@
-import { BadRequestError } from "@metriport/shared";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../domain/patient";
 import { out } from "../../../util";
@@ -18,27 +17,29 @@ export async function searchSemantic({
   patient,
   query,
   maxNumberOfResults = 10_000,
+  similarityThreshold,
 }: {
   patient: Patient;
   query: string;
   /** From 0 to 10_000, optional, defaults to 10_000 */
-  maxNumberOfResults?: number;
+  maxNumberOfResults?: number | undefined;
+  /** From 0 to 1, optional. See OpenSearchSemanticSearcherDirect for defaults. */
+  similarityThreshold?: number | undefined;
 }): Promise<SearchSetBundle> {
   const { log } = out(`searchSemantic - cx ${patient.cxId}, pt ${patient.id}`);
-
-  if (maxNumberOfResults > 10_000) {
-    throw new BadRequestError("maxNumberOfResults cannot be greater than 10_000");
-  }
-  if (maxNumberOfResults < 1) {
-    throw new BadRequestError("maxNumberOfResults cannot be less than 1");
-  }
 
   log(`Getting consolidated and searching OS...`);
   const startedAt = Date.now();
 
   const [consolidated, searchResults, docRefResults] = await Promise.all([
     getConsolidated({ patient }),
-    searchOpenSearch({ cxId: patient.cxId, patientId: patient.id, query, maxNumberOfResults }),
+    searchOpenSearch({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      query,
+      maxNumberOfResults,
+      similarityThreshold,
+    }),
     searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query }),
   ]);
   const elapsedTime = Date.now() - startedAt;
@@ -95,12 +96,13 @@ async function searchOpenSearch({
   cxId,
   patientId,
   maxNumberOfResults,
+  similarityThreshold,
 }: {
   query: string;
   cxId: string;
   patientId: string;
-  /** From 0 to 10_000, optional. See OpenSearchSemanticSearcherDirect for defaults. */
   maxNumberOfResults?: number | undefined;
+  similarityThreshold?: number | undefined;
 }) {
   const region = Config.getAWSRegion();
   const endpoint = Config.getSemanticSearchEndpoint();
@@ -117,7 +119,12 @@ async function searchOpenSearch({
     username,
     password,
     modelId,
-    maxNumberOfResults,
   });
-  return await searchService.search({ query, cxId, patientId });
+  return await searchService.search({
+    query,
+    cxId,
+    patientId,
+    maxNumberOfResults,
+    similarityThreshold,
+  });
 }

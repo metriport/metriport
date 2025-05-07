@@ -45,6 +45,7 @@ async function main() {
     patient,
     query: searchQuery,
     maxNumberOfResults: 1_234,
+    similarityThreshold: 0.2,
   });
   const searchResultIds = searchResult.entry?.map(r => r.resource?.id) ?? [];
   console.log("Search result: ", searchResultIds.join(", "));

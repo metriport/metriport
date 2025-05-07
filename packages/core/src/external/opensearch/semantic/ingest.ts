@@ -24,17 +24,17 @@ export async function ingestSemantic({ patient }: { patient: Patient }) {
     settings: { logLevel: "info" },
   });
 
-  // TODO eng-41 Figure out how to do this in bulk, chunking to the limit of items per bulk
   const startedAt = Date.now();
-  for (const resource of convertedResources) {
-    await ingestor.ingest({
-      cxId: patient.cxId,
-      patientId: patient.id,
-      resourceType: resource.type,
-      resourceId: resource.id,
-      content: resource.text,
-    });
-  }
+  const resources = convertedResources.map(resource => ({
+    resourceType: resource.type,
+    resourceId: resource.id,
+    content: resource.text,
+  }));
+  await ingestor.ingestBulk({
+    cxId: patient.cxId,
+    patientId: patient.id,
+    resources,
+  });
   const elapsedTime = Date.now() - startedAt;
 
   log(`Ingested ${convertedResources.length} resources in ${elapsedTime} ms`);
