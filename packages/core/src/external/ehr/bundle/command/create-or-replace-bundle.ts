@@ -33,7 +33,7 @@ export async function createOrReplaceBundle({
   s3BucketName = Config.getEhrBundleBucketName(),
 }: CreateOrReplaceBundleParams): Promise<void> {
   const { log } = out(
-    `EhrResourceDiff createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
+    `Ehr createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
   );
   const invalidResource = bundle.entry.find(entry => entry.resource.resourceType !== resourceType);
   if (invalidResource) {

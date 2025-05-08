@@ -28,14 +28,12 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
   if (patientMappings.length < 1) return;
   const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
-    if (patientMapping.source === EhrSources.canvas) {
-      await startCreateResourceDiffBundlesJobAcrossEhrs({
-        ehr: EhrSources.canvas,
-        cxId,
-        patientId: patientMapping.externalId,
-        requestId,
-      });
-    }
+    await startCreateResourceDiffBundlesJobAcrossEhrs({
+      ehr: patientMapping.source,
+      cxId,
+      patientId: patientMapping.externalId,
+      requestId,
+    });
   }
 }
 

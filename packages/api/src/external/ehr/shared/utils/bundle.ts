@@ -2,11 +2,22 @@ import {
   BundleType,
   getSupportedResourcesByEhr,
 } from "@metriport/core/external/ehr/bundle/bundle-shared";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
-import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import {
+  FhirResource,
+  SupportedResourceType,
+  fhirResourceSchema,
+  getDefaultBundle,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
+import { FHIRConverterSourceDataType } from "../../../fhir-converter/connector";
+import { FHIRConverterCDATemplate } from "../../../fhir-converter/converter";
+import { FHIRConverterConnectorHTTP } from "../../../fhir-converter/connector-http";
+import { createAthenaClient } from "../../athenahealth/shared";
 import { createCanvasClient } from "../../canvas/shared";
+import { createElationClient } from "../../elation/shared";
 
 type BaseBundleParams = {
   ehr: EhrSources;
@@ -93,8 +104,80 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
     },
     getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.canvas),
   },
-  [EhrSources.athena]: undefined,
-  [EhrSources.elation]: undefined,
+  [EhrSources.athena]: {
+    fetchBundlePreSignedUrl: async params => {
+      const athenaApi = await createAthenaClient({
+        cxId: params.cxId,
+        practiceId: params.practiceId,
+      });
+      return athenaApi.getBundleByResourceTypePreSignedUrl({
+        ...params,
+        athenaPatientId: params.patientId,
+      });
+    },
+    refreshEhrBundle: async params => {
+      const athenaApi = await createAthenaClient({
+        cxId: params.cxId,
+        practiceId: params.practiceId,
+      });
+      await athenaApi.getBundleByResourceType({
+        ...params,
+        athenaPatientId: params.patientId,
+        useCachedBundle: false,
+      });
+    },
+    getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.athena),
+  },
+  [EhrSources.elation]: {
+    fetchBundlePreSignedUrl: async params => {
+      const elationApi = await createElationClient({
+        cxId: params.cxId,
+        practiceId: params.practiceId,
+      });
+      return elationApi.getBundleByResourceTypePreSignedUrl({
+        ...params,
+        elationPatientId: params.patientId,
+      });
+    },
+    refreshEhrBundle: async params => {
+      const elationApi = await createElationClient({
+        cxId: params.cxId,
+        practiceId: params.practiceId,
+      });
+      await elationApi.getBundleByResourceType({
+        ...params,
+        elationPatientId: params.patientId,
+        ccdaToFhirConverter: async ccda => {
+          const connector = new FHIRConverterConnectorHTTP();
+          const bundle = await connector.requestConvert({
+            cxId: params.cxId,
+            patientId: params.patientId,
+            documentId: uuidv7(),
+            sourceType: FHIRConverterSourceDataType.cda,
+            payload: ccda,
+            template: FHIRConverterCDATemplate.ccd,
+            unusedSegments: "true",
+            invalidAccess: "true",
+            requestId: uuidv7(),
+          });
+          const defaultBundle = getDefaultBundle();
+          if (!bundle) return defaultBundle;
+          const resources: FhirResource[] = (bundle.entry || []).flatMap(e => {
+            if (!e.resource) return [];
+            const resource = fhirResourceSchema.safeParse(e.resource);
+            if (!resource.success) return [];
+            return resource.data;
+          });
+          defaultBundle.entry = resources.map(resource => {
+            return { resource };
+          });
+          return defaultBundle;
+        },
+        useCachedBundle: false,
+      });
+    },
+    getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.elation),
+  },
   [EhrSources.healthie]: undefined,
 };
 
