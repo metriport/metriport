@@ -32,7 +32,7 @@ export type HieConfig = {
   name: string;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
-  cron?: string;
+  cron: string;
   sftpConfig?: SftpConfig;
   schema: HieFieldMapping;
 };

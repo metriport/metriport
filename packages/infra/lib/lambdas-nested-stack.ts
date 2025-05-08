@@ -749,9 +749,6 @@ export class LambdasNestedStack extends NestedStack {
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
-        if (!hieConfig.cron) {
-          return;
-        }
         const scheduleName = `Hl7v2RosterUpload-${hieName}`;
 
         new events.Rule(this, `${scheduleName}-Rule`, {
