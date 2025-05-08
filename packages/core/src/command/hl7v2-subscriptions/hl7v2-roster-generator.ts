@@ -11,8 +11,8 @@ import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import {
+  HieConfig,
   HieFieldMapping,
-  Hl7v2RosterConfig,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
   // SftpConfig,
@@ -35,16 +35,11 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(config: Hl7v2RosterConfig): Promise<void> {
+  async execute(config: HieConfig): Promise<void> {
     const { log } = out("Hl7v2RosterGenerator");
-    const { subscriptions, hieConfig } = config;
-    const { states } = hieConfig;
+    const { states, subscriptions } = config;
 
-    log(
-      `Running with these configs: subs - ${subscriptions}, hie config - ${JSON.stringify(
-        hieConfig
-      )}`
-    );
+    log(`Running with this config: ${JSON.stringify(config)}`);
 
     const subscribers = await executeWithNetworkRetries(
       async () => this.getAllSubscribers(states, subscriptions, log),
@@ -66,11 +61,11 @@ export class Hl7v2RosterGenerator {
       return;
     }
 
-    const convertedSubscribers = convertSubscribersToHieFormat(subscribers, hieConfig.schema);
+    const convertedSubscribers = convertSubscribersToHieFormat(subscribers, config.schema);
     const rosterCsv = this.generateCsv(convertedSubscribers);
     log("Created CSV");
 
-    const fileName = this.buildDocumentNameForHl7v2Roster(hieConfig.name, subscriptions);
+    const fileName = this.buildDocumentNameForHl7v2Roster(config.name, subscriptions);
 
     await storeInS3WithRetries({
       s3Utils: this.s3Utils,

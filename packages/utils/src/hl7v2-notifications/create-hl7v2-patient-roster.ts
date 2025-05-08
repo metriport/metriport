@@ -2,8 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-roster-generator";
-import { Hl7v2RosterConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
-import { Hl7v2Subscription } from "@metriport/core/domain/patient-settings";
+import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "../../../api/src/shared/config";
 
@@ -23,7 +22,6 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const bucketName = getEnvVarOrFail("HL7V2_ROSTER_BUCKET_NAME");
 
 const lambdaClient = makeLambdaClient(region);
-const subscriptions: Hl7v2Subscription[] = ["adt"];
 
 /**
  * This script is used to trigger the generation and upload of the HL7v2 subscription roster to the S3 bucket.
@@ -58,7 +56,7 @@ async function playground() {
   }
 }
 
-function getConfig(): Hl7v2RosterConfig {
+function getConfig(): HieConfig {
   // const sftpConfig: SftpConfig = {
   //   host: sftpHost,
   //   port: sftpPort,
@@ -67,13 +65,7 @@ function getConfig(): Hl7v2RosterConfig {
   //   remotePath: sftpRemotePath,
   // };
 
-  const hieConfig = JSON.parse(configs);
-  const rosterConfig: Hl7v2RosterConfig = {
-    subscriptions,
-    hieConfig,
-  };
-
-  return rosterConfig;
+  return JSON.parse(configs);
 }
 
 playground();

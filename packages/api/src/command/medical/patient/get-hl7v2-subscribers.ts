@@ -1,3 +1,4 @@
+import { compressUuid } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { Hl7v2Subscriber, Hl7v2Subscription } from "@metriport/core/domain/patient-settings";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
@@ -99,9 +100,12 @@ function mapPatientsToSubscribers(patients: PatientModelReadOnly[]): Hl7v2Subscr
     )?.value;
     const phone = data.contact?.find(c => c.phone)?.phone;
     const email = data.contact?.find(c => c.email)?.email;
+    const packedPatientId = compressUuid(p.id);
+    const packedCxId = compressUuid(p.cxId);
+    const ciphered = `${packedCxId}_${packedPatientId}`;
 
     return {
-      id: p.id, // TODO 2791: Combine and scramble the id + cxId
+      id: ciphered,
       cxId: p.cxId,
       lastName: data.lastName,
       firstName: data.firstName,
