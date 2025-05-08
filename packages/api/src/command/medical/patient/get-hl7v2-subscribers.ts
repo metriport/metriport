@@ -105,8 +105,9 @@ function mapPatientsToSubscribers(patients: PatientModelReadOnly[]): Hl7v2Subscr
     const ciphered = `${packedCxId}_${packedPatientId}`;
 
     return {
-      id: ciphered,
+      id: p.id,
       cxId: p.cxId,
+      scrambledId: ciphered,
       lastName: data.lastName,
       firstName: data.firstName,
       dob: data.dob,

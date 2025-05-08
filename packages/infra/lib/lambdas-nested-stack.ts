@@ -758,7 +758,7 @@ export class LambdasNestedStack extends NestedStack {
           schedule: events.Schedule.expression(hieConfig.cron),
           targets: [
             new targets.LambdaFunction(hl7v2RosterUploadLambda, {
-              event: events.RuleTargetInput.fromObject({ hieConfig }),
+              event: events.RuleTargetInput.fromObject(hieConfig),
             }),
           ],
         });

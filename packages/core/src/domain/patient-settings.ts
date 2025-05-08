@@ -21,6 +21,7 @@ export interface PatientSettings extends BaseDomain, PatientSettingsCreate {}
 export type Hl7v2Subscriber = {
   id: string;
   cxId: string;
+  scrambledId: string;
   ssn?: string;
   driversLicense?: string;
   phone?: string;
