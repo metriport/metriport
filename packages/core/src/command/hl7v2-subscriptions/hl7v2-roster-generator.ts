@@ -4,7 +4,6 @@ import axios from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
-// import Client from "ssh2-sftp-client";
 import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { capture, out } from "../../util";
@@ -15,9 +14,10 @@ import {
   HieFieldMapping,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
-  // SftpConfig,
   addressFields,
 } from "./types";
+// TODO: ENG-24 - uncomment when SFTP becomes part of the flow
+// import Client from "ssh2-sftp-client";
 
 const region = Config.getAWSRegion();
 
@@ -82,7 +82,7 @@ export class Hl7v2RosterGenerator {
       },
     });
 
-    // TODO 2791: Uncomment when we update the SFTP configs to be fetched from the AWS secrets
+    // TODO: ENG-24 - uncomment when SFTP becomes part of the flow
     // const sftpConfig = targetConfig.sftpConfig;
     // if (sftpConfig) {
     //   try {
@@ -147,6 +147,7 @@ export class Hl7v2RosterGenerator {
     return stringify(records, { header: true, quoted: true });
   }
 
+  // TODO: ENG-24 - uncomment when SFTP becomes part of the flow
   // private async sendViaSftp(
   //   config: SftpConfig,
   //   rosterCsv: string,
