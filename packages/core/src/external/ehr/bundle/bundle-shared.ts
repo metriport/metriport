@@ -69,6 +69,10 @@ export enum BundleType {
 export function isBundleType(bundleType: string): bundleType is BundleType {
   return Object.values(BundleType).includes(bundleType as BundleType);
 }
+
+export type ResourceDiffBundleType =
+  | BundleType.RESOURCE_DIFF_EHR_ONLY
+  | BundleType.RESOURCE_DIFF_METRIPORT_ONLY;
 export function isResourceDiffBundleType(
   bundleType: string
 ): bundleType is BundleType.RESOURCE_DIFF_EHR_ONLY | BundleType.RESOURCE_DIFF_METRIPORT_ONLY {
@@ -77,6 +81,7 @@ export function isResourceDiffBundleType(
     bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY
   );
 }
+
 export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams) => string> = {
   [BundleType.EHR]: createFileKeyEhr,
   [BundleType.RESOURCE_DIFF_EHR_ONLY]: createFileKeyEhrOnly,

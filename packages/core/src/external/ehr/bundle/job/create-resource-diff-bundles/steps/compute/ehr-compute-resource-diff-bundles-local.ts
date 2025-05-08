@@ -5,14 +5,14 @@ import {
   fhirResourceSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
-import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
+import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
 import {
   FetchEhrBundleParams,
-  fetchEhrBundlePreSignedUrls as fetchEhrBundlePreSignedUrlsFromApi,
-} from "../../../../api/fetch-bundle-presigned-url";
-import { setResourceDiffJobEntryStatus } from "../../../../api/job/resource-diff-set-entry-status";
-import { BundleType } from "../../../bundle-shared";
-import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
+  fetchEhrBundlePreSignedUrls,
+} from "../../../../../api/bundle/fetch-ehr-bundle-presigned-url";
+import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
+import { BundleType } from "../../../../bundle-shared";
+import { updateBundle as updateBundleOnS3 } from "../../../../command/update-bundle";
 import { computeNewResources } from "../../utils";
 import {
   ComputeResourceDiffBundlesRequest,
@@ -31,7 +31,7 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         metriportPatientId,
         ehrPatientId,
         resourceType,
-        contribute,
+        contribute = false,
         jobId,
         reportError = true,
       } = payload;
@@ -129,13 +129,12 @@ async function getEhrResourcesFromApi({
   patientId,
   resourceType,
 }: Omit<FetchEhrBundleParams, "refresh">): Promise<FhirResource[]> {
-  const ehrResourcesBundle = await fetchEhrBundlePreSignedUrlsFromApi({
+  const ehrResourcesBundle = await fetchEhrBundlePreSignedUrls({
     ehr,
     cxId,
     practiceId,
     patientId,
     resourceType,
-    refresh: false,
   });
   const fetchedResourceType = ehrResourcesBundle.resourceTypes[0];
   const fetchedPreSignedUrls = ehrResourcesBundle.preSignedUrls[0];

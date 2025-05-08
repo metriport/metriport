@@ -1,12 +1,12 @@
 import { sleep } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { chunk } from "lodash";
-import { Config } from "../../../../../../util/config";
+import { Config } from "../../../../../../../util/config";
 import {
   SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
   SQS_MESSAGE_BATCH_SIZE_FIFO,
-} from "../../../../../../util/sqs";
-import { SQSClient } from "../../../../../aws/sqs";
+} from "../../../../../../../util/sqs";
+import { SQSClient } from "../../../../../../aws/sqs";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,

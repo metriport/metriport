@@ -2,9 +2,9 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getCxMappingsByCustomer } from "../../../../command/mapping/cx";
-import { getPatientMappings } from "../../../../command/mapping/patient";
-import { startCreateResourceDiffBundlesJob } from "../job/create-resource-diff-bundles/start-job";
+import { getCxMappingsByCustomer } from "../../../../../../command/mapping/cx";
+import { getPatientMappings } from "../../../../../../command/mapping/patient";
+import { startCreateResourceDiffBundlesJob } from "./start-job";
 
 export type CreateResourceDiffBundlesParams = {
   cxId: string;
@@ -13,13 +13,13 @@ export type CreateResourceDiffBundlesParams = {
 };
 
 /**
- * Creates the resource diff bundles job asynchronously for each EHR integration
+ * Starts the resource diff bundles job asynchronously for each EHR integration
  *
  * @param cxId - The cxId of the patient.
  * @param patientId - The patientId of the patient.
  * @param requestId - The requestId of the resource diff bundles job. Optional, will generate a new one if not provided.
  */
-export async function createResourceDiffBundles({
+export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
   cxId,
   patientId,
   requestId: requestIdParam,
@@ -28,7 +28,7 @@ export async function createResourceDiffBundles({
   if (patientMappings.length < 1) return;
   const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
-    await createResourceDiffBundlesJob({
+    await startCreateResourceDiffBundlesJobAcrossEhrs({
       ehr: patientMapping.source,
       cxId,
       patientId: patientMapping.externalId,
@@ -37,7 +37,7 @@ export async function createResourceDiffBundles({
   }
 }
 
-async function createResourceDiffBundlesJob({
+async function startCreateResourceDiffBundlesJobAcrossEhrs({
   ehr,
   cxId,
   patientId,

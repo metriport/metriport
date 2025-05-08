@@ -1,11 +1,11 @@
 import { sleep } from "@metriport/shared";
 import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { fetchEhrBundlePreSignedUrls as fetchEhrBundlePreSignedUrlsFromApi } from "../../../../api/fetch-bundle-presigned-url";
-import { completeJob } from "../../../../api/job/complete-job";
-import { initializeJob } from "../../../../api/job/initialize-job";
-import { updateJobTotal } from "../../../../api/job/update-job-total";
-import { BundleType, getSupportedResourcesByEhr } from "../../../bundle-shared";
-import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../commands/create-or-replace-bundle";
+import { completeJob } from "../../../../../api/job/complete-job";
+import { initializeJob } from "../../../../../api/job/initialize-job";
+import { updateJobTotal } from "../../../../../api/job/update-job-total";
+import { refreshEhrBundle } from "../../../../../api/bundle/refresh-ehr-bundle";
+import { BundleType, getSupportedResourcesByEhr } from "../../../../bundle-shared";
+import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../../command/create-or-replace-bundle";
 import { ComputeResourceDiffBundlesRequest } from "../compute/ehr-compute-resource-diff-bundles";
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
 import {
@@ -31,13 +31,12 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
     const computeResourceDiffParams: ComputeResourceDiffBundlesRequest[] = [];
     for (const resourceType of supportedResources) {
       await Promise.all([
-        fetchEhrBundlePreSignedUrlsFromApi({
+        refreshEhrBundle({
           ehr,
           cxId,
           practiceId,
           patientId: ehrPatientId,
           resourceType,
-          refresh: true,
         }),
         ...[BundleType.RESOURCE_DIFF_METRIPORT_ONLY, BundleType.RESOURCE_DIFF_EHR_ONLY].map(
           bundleType =>

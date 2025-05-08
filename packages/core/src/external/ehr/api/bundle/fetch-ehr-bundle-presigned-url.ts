@@ -1,13 +1,12 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
-import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
-import { ApiBaseParams } from "./api-shared";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+import { ApiBaseParams } from "../api-shared";
 
 export type FetchEhrBundleParams = Omit<ApiBaseParams, "departmentId"> & {
   resourceType: SupportedResourceType;
-  refresh: boolean;
 };
 
 /**
@@ -18,7 +17,6 @@ export type FetchEhrBundleParams = Omit<ApiBaseParams, "departmentId"> & {
  * @param practiceId - The practice ID.
  * @param patientId - The patient ID.
  * @param resourceType - The resource type.
- * @param refresh - Whether to refresh the bundle.
  * @returns The EHR bundle pre-signed URLs.
  */
 export async function fetchEhrBundlePreSignedUrls({
@@ -27,18 +25,16 @@ export async function fetchEhrBundlePreSignedUrls({
   practiceId,
   patientId,
   resourceType,
-  refresh,
 }: FetchEhrBundleParams): Promise<{
   preSignedUrls: string;
   resourceTypes: SupportedResourceType[];
 }> {
-  const { log, debug } = out(`Ehr fetchBundle - cxId ${cxId}`);
+  const { log, debug } = out(`Ehr fetchEhrBundlePreSignedUrls - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
     practiceId,
     resourceType,
-    refresh: refresh.toString(),
   });
   const fetchBundleUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/bundle/pre-signed-urls?${queryParams.toString()}`;
   try {
@@ -58,7 +54,6 @@ export async function fetchEhrBundlePreSignedUrls({
       practiceId,
       patientId,
       resourceType,
-      refresh,
       url: fetchBundleUrl,
       context: "ehr.fetchEhrBundlePreSignedUrls",
     });

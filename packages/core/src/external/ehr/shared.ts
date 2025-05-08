@@ -30,12 +30,12 @@ import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 import { BundleType, isResourceDiffBundleType } from "./bundle/bundle-shared";
-import { createOrReplaceBundle } from "./bundle/commands/create-or-replace-bundle";
+import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import {
   FetchBundleParams,
   fetchBundle,
   fetchBundlePreSignedUrl,
-} from "./bundle/commands/fetch-bundle";
+} from "./bundle/command/fetch-bundle";
 
 dayjs.extend(duration);
 

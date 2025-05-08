@@ -1,5 +1,5 @@
-import { StartResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles";
-import { EhrStartResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-local";
+import { StartResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles";
+import { EhrStartResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-local";
 import { MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
@@ -48,7 +48,7 @@ const ehrStartResourceDiffBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
-  contribute: z.boolean(),
+  contribute: z.boolean().optional(),
   jobId: z.string(),
 });
 

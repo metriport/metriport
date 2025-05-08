@@ -1,12 +1,12 @@
-import { buildEhrStartResourceDiffBundlesHandler } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-factory";
+import { buildEhrStartResourceDiffBundlesHandler } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/start/ehr-start-resource-diff-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { createPatientJob } from "../../../../../command/job/patient/create";
-import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
+import { createPatientJob } from "../../../../../../command/job/patient/create";
+import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
+import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
 import {
   StartCreateResourceDiffBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
-} from "../../utils/job";
+} from "../../../utils/job";
 
 /**
  * Starts the resource diff job to produce the resource type bundles containing

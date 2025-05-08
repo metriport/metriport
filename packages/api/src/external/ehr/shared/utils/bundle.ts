@@ -19,7 +19,7 @@ import { createAthenaClient } from "../../athenahealth/shared";
 import { createCanvasClient } from "../../canvas/shared";
 import { createElationClient } from "../../elation/shared";
 
-export type FetchBundleParams = {
+type BaseBundleParams = {
   ehr: EhrSources;
   cxId: string;
   practiceId: string;
@@ -27,27 +27,28 @@ export type FetchBundleParams = {
   resourceType?: SupportedResourceType;
 };
 
-export type FetchBundleParamsResourceDiff = FetchBundleParams & {
-  bundleType: BundleType;
+export type FetchBundleParams = BaseBundleParams & { bundleType: BundleType; jobId?: string };
+
+export type RefreshEhrBundleParams = BaseBundleParams;
+
+export type ContributeEhrOnlyBundleParams = Omit<BaseBundleParams, "resourceType"> & {
   jobId: string;
 };
 
-type FetchBundleClientParams = {
+type BaseBundleParamsForClient = Required<BaseBundleParams> & {
   metriportPatientId: string;
-  resourceType: SupportedResourceType;
 };
 
-export type FetchBundleParamsFromClient = FetchBundleParams & FetchBundleClientParams;
+export type FetchBundleParamsForClient = FetchBundleParams & BaseBundleParamsForClient;
 
-export type FetchBundleParamsResourceDiffFromClient = FetchBundleParamsResourceDiff &
-  FetchBundleClientParams;
+export type RefreshEhrBundleParamsForClient = RefreshEhrBundleParams & BaseBundleParamsForClient;
 
-export type FetchBundlePreSignedUrls = {
+export type FetchedBundlePreSignedUrls = {
   preSignedUrls: string[];
   resourceTypes: SupportedResourceType[];
 };
 
-export async function validateAndPrepareBundleFetch({
+export async function validateAndPrepareBundleFetchOrRefresh({
   ehr,
   cxId,
   patientId,
@@ -55,11 +56,7 @@ export async function validateAndPrepareBundleFetch({
   supportedResourceTypes,
 }: Pick<FetchBundleParams, "ehr" | "cxId" | "patientId" | "resourceType"> & {
   supportedResourceTypes: SupportedResourceType[];
-}): Promise<
-  FetchBundlePreSignedUrls & {
-    metriportPatientId: string;
-  }
-> {
+}): Promise<FetchedBundlePreSignedUrls & { metriportPatientId: string }> {
   const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: patientId,
@@ -77,26 +74,13 @@ export async function validateAndPrepareBundleFetch({
 }
 
 export type BundleFunctions = {
-  refreshBundle: (params: FetchBundleParamsFromClient) => Promise<void>;
-  fetchBundlePreSignedUrl: (
-    params: FetchBundleParamsFromClient | FetchBundleParamsResourceDiffFromClient
-  ) => Promise<string | undefined>;
+  fetchBundlePreSignedUrl: (params: FetchBundleParamsForClient) => Promise<string | undefined>;
+  refreshEhrBundle: (params: RefreshEhrBundleParamsForClient) => Promise<void>;
   getSupportedResourceTypes: () => SupportedResourceType[];
 };
 
 const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
   [EhrSources.canvas]: {
-    refreshBundle: async params => {
-      const canvasApi = await createCanvasClient({
-        cxId: params.cxId,
-        practiceId: params.practiceId,
-      });
-      await canvasApi.getBundleByResourceType({
-        ...params,
-        canvasPatientId: params.patientId,
-        useCachedBundle: false,
-      });
-    },
     fetchBundlePreSignedUrl: async params => {
       const canvasApi = await createCanvasClient({
         cxId: params.cxId,
@@ -107,20 +91,20 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
         canvasPatientId: params.patientId,
       });
     },
-    getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.canvas),
-  },
-  [EhrSources.athena]: {
-    refreshBundle: async params => {
-      const athenaApi = await createAthenaClient({
+    refreshEhrBundle: async params => {
+      const canvasApi = await createCanvasClient({
         cxId: params.cxId,
         practiceId: params.practiceId,
       });
-      await athenaApi.getBundleByResourceType({
+      await canvasApi.getBundleByResourceType({
         ...params,
-        athenaPatientId: params.patientId,
+        canvasPatientId: params.patientId,
         useCachedBundle: false,
       });
     },
+    getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.canvas),
+  },
+  [EhrSources.athena]: {
     fetchBundlePreSignedUrl: async params => {
       const athenaApi = await createAthenaClient({
         cxId: params.cxId,
@@ -131,10 +115,31 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
         athenaPatientId: params.patientId,
       });
     },
+    refreshEhrBundle: async params => {
+      const athenaApi = await createAthenaClient({
+        cxId: params.cxId,
+        practiceId: params.practiceId,
+      });
+      await athenaApi.getBundleByResourceType({
+        ...params,
+        athenaPatientId: params.patientId,
+        useCachedBundle: false,
+      });
+    },
     getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.athena),
   },
   [EhrSources.elation]: {
-    refreshBundle: async params => {
+    fetchBundlePreSignedUrl: async params => {
+      const elationApi = await createElationClient({
+        cxId: params.cxId,
+        practiceId: params.practiceId,
+      });
+      return elationApi.getBundleByResourceTypePreSignedUrl({
+        ...params,
+        elationPatientId: params.patientId,
+      });
+    },
+    refreshEhrBundle: async params => {
       const elationApi = await createElationClient({
         cxId: params.cxId,
         practiceId: params.practiceId,
@@ -171,16 +176,6 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
         useCachedBundle: false,
       });
     },
-    fetchBundlePreSignedUrl: async params => {
-      const elationApi = await createElationClient({
-        cxId: params.cxId,
-        practiceId: params.practiceId,
-      });
-      return elationApi.getBundleByResourceTypePreSignedUrl({
-        ...params,
-        elationPatientId: params.patientId,
-      });
-    },
     getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.elation),
   },
   [EhrSources.healthie]: undefined,
@@ -193,11 +188,3 @@ export function getBundleFunctions(ehr: EhrSources): BundleFunctions {
   }
   return bundleFunctions;
 }
-
-export type ContributeEhrOnlyBundleParams = {
-  ehr: EhrSources;
-  cxId: string;
-  practiceId: string;
-  patientId: string;
-  jobId: string;
-};
