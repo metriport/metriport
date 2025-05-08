@@ -40,7 +40,7 @@ import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
-const BASE64_REGEX = /^[A-Za-z0-9+/]+={0,2}$/;
+const BASE64_REGEX = /^["']?[A-Za-z0-9+/]+={0,2}["']?$/;
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -78,7 +78,7 @@ export async function processAttachments({
   fhirUrl: string;
   medicalDataSource?: string | undefined;
 }) {
-  const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
+  const { log } = out(`processAttachments - filepath ${filePath}`);
   try {
     const s3Utils = getS3UtilsInstance();
 
