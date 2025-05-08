@@ -3,7 +3,7 @@ import athena from "./athenahealth";
 import canvas from "./canvas";
 import elation from "./elation";
 import healthie from "./healthie";
-import { processEhrId } from "./middware";
+import { processEhrId } from "./middleware";
 import patient from "./patient";
 
 const routes = Router();
