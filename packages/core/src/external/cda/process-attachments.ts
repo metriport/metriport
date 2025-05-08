@@ -23,6 +23,7 @@ import {
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { capture } from "../../util";
+import { isValidBase64 } from "../../util/base64";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { detectFileType } from "../../util/file-type";
@@ -40,7 +41,6 @@ import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
-const BASE64_REGEX = /^[A-Za-z0-9+/]+={0,2}$/;
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -279,13 +279,9 @@ function getFileDetails(
   }
 
   return {
-    fileB64Contents: cleanB64,
+    fileB64Contents: unquotedB64,
     mimeType,
   };
-}
-
-function isValidBase64(cleanBase64String: string): boolean {
-  return BASE64_REGEX.test(cleanBase64String);
 }
 
 function buildDocumentReferenceFromAct(
