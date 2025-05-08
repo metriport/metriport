@@ -7,12 +7,13 @@ import { BadRequestError } from "@metriport/shared";
 import {
   FhirResource,
   SupportedResourceType,
-  fhirResourcesSchema,
+  fhirResourceSchema,
   getDefaultBundle,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
 import { FHIRConverterSourceDataType } from "../../../fhir-converter/connector";
+import { FHIRConverterCDATemplate } from "../../../fhir-converter/converter";
 import { FHIRConverterConnectorHTTP } from "../../../fhir-converter/connector-http";
 import { createAthenaClient } from "../../athenahealth/shared";
 import { createCanvasClient } from "../../canvas/shared";
@@ -149,16 +150,16 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
             documentId: uuidv7(),
             sourceType: FHIRConverterSourceDataType.cda,
             payload: ccda,
-            template: "ccda-to-fhir",
-            unusedSegments: "",
-            invalidAccess: "",
+            template: FHIRConverterCDATemplate.ccd,
+            unusedSegments: "true",
+            invalidAccess: "true",
             requestId: uuidv7(),
           });
           const defaultBundle = getDefaultBundle();
           if (!bundle) return defaultBundle;
           const resources: FhirResource[] = (bundle.entry || []).flatMap(e => {
             if (!e.resource) return [];
-            const resource = fhirResourcesSchema.safeParse(e.resource);
+            const resource = fhirResourceSchema.safeParse(e.resource);
             if (!resource.success) return [];
             return resource.data;
           });

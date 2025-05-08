@@ -214,8 +214,9 @@ class ElationApi {
       `Elation getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} elationPatientId ${elationPatientId} resourceType ${resourceType}`
     );
     const sectionName = elationResourceTypeToSectionNameMap.get(resourceType);
-    if (!sectionName)
+    if (!sectionName) {
       throw new BadRequestError("Invalid resource type", undefined, { resourceType });
+    }
     const params = { sections: sectionName };
     const urlParams = new URLSearchParams(params);
     const ccdaUrl = `ccda/${elationPatientId}?${urlParams.toString()}`;
