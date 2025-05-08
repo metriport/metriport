@@ -40,7 +40,7 @@ import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
-const BASE64_REGEX = /^["']?[A-Za-z0-9+/]+={0,2}["']?$/;
+const BASE64_REGEX = /^[A-Za-z0-9+/]+={0,2}$/;
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -256,8 +256,9 @@ function getFileDetails(
 
   // Clean up the base64 string - remove any whitespace, newlines etc
   const cleanB64 = fileB64Contents.replace(/\s/g, "");
+  const unquotedB64 = cleanB64.replace(/^["']|["']$/g, "");
 
-  if (!isValidBase64(cleanB64)) {
+  if (!isValidBase64(unquotedB64)) {
     const msg = `Invalid base64 string in attachment`;
     log(msg);
     capture.message(msg, {
@@ -268,7 +269,7 @@ function getFileDetails(
     return undefined;
   }
 
-  const fileBuffer = Buffer.from(cleanB64, "base64");
+  const fileBuffer = Buffer.from(unquotedB64, "base64");
   let mimeType = detectFileType(fileBuffer).mimeType;
   log(`Detected mimetype: ${mimeType}`);
 
