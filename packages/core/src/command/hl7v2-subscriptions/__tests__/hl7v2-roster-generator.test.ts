@@ -1,3 +1,4 @@
+import { faker } from "@faker-js/faker";
 import { USState } from "@metriport/shared";
 import { Address } from "../../../domain/address";
 import { Hl7v2Subscriber } from "../../../domain/patient-settings";
@@ -49,11 +50,15 @@ describe("AdtRosterGenerator", () => {
     const email = "john@doe.com";
 
     it("should convert all fields correctly including multiple addresses and identifiers", () => {
+      const patientId = faker.string.uuid();
+      const cxId = faker.string.uuid();
+      const combinedId = `${cxId}_${patientId}`;
+
       const subscribers: Hl7v2Subscriber[] = [
         {
-          id: "123",
-          cxId: "cx123",
-          scrambledId: "cx123_123",
+          id: patientId,
+          cxId,
+          scrambledId: combinedId,
           firstName: "John",
           lastName: "Doe",
           dob: "1990-01-01",
@@ -70,7 +75,7 @@ describe("AdtRosterGenerator", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
-        ID: "cx123_123",
+        ID: combinedId,
         "FIRST NAME": "John",
         "LAST NAME": "Doe",
         "STREET ADDRESS": "123 Main St",
@@ -87,11 +92,15 @@ describe("AdtRosterGenerator", () => {
     });
 
     it("should handle missing optional fields", () => {
+      const patientId = faker.string.uuid();
+      const cxId = faker.string.uuid();
+      const combinedId = `${cxId}_${patientId}`;
+
       const subscribers: Hl7v2Subscriber[] = [
         {
-          id: "456",
-          cxId: "cx456",
-          scrambledId: "cx456_456",
+          id: patientId,
+          cxId,
+          scrambledId: combinedId,
           firstName: "Jane",
           lastName: "Smith",
           dob: "1985-12-31",
@@ -104,7 +113,7 @@ describe("AdtRosterGenerator", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
-        ID: "cx456_456",
+        ID: combinedId,
         "FIRST NAME": "Jane",
         "LAST NAME": "Smith",
         "STREET ADDRESS": "123 Main St",
