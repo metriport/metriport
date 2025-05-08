@@ -6,7 +6,7 @@ import { convertSubscribersToHieFormat } from "../hl7v2-roster-generator";
 describe("AdtRosterGenerator", () => {
   describe("convertToHieFormat", () => {
     const mockSchema = {
-      id: "ID",
+      scrambledId: "ID",
       firstName: "FIRST NAME",
       lastName: "LAST NAME",
       dob: "DOB",
@@ -53,6 +53,7 @@ describe("AdtRosterGenerator", () => {
         {
           id: "123",
           cxId: "cx123",
+          scrambledId: "cx123_123",
           firstName: "John",
           lastName: "Doe",
           dob: "1990-01-01",
@@ -69,7 +70,7 @@ describe("AdtRosterGenerator", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
-        ID: "123",
+        ID: "cx123_123",
         "FIRST NAME": "John",
         "LAST NAME": "Doe",
         "STREET ADDRESS": "123 Main St",
@@ -90,6 +91,7 @@ describe("AdtRosterGenerator", () => {
         {
           id: "456",
           cxId: "cx456",
+          scrambledId: "cx456_456",
           firstName: "Jane",
           lastName: "Smith",
           dob: "1985-12-31",
@@ -102,7 +104,7 @@ describe("AdtRosterGenerator", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
-        ID: "456",
+        ID: "cx456_456",
         "FIRST NAME": "Jane",
         "LAST NAME": "Smith",
         "STREET ADDRESS": "123 Main St",
