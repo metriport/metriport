@@ -26,7 +26,7 @@ export async function fetchEhrBundlePreSignedUrls({
   patientId,
   resourceType,
 }: FetchEhrBundleParams): Promise<{
-  preSignedUrls: string;
+  preSignedUrls: string[];
   resourceTypes: SupportedResourceType[];
 }> {
   const { log, debug } = out(`Ehr fetchEhrBundlePreSignedUrls - cxId ${cxId}`);
