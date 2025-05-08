@@ -17,6 +17,7 @@ export type HieAddressFieldMapping = {
 
 export type HieFieldMapping = {
   id: string;
+  scrambledId: string;
   firstName: string;
   lastName: string;
   dob: string;
