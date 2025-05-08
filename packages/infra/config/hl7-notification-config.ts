@@ -1,4 +1,4 @@
-import { HieConfig, HieName } from "@metriport/core/command/hl7v2-subscriptions/types";
+import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 
 export interface Hl7NotificationConfig {
   secrets: {
@@ -21,7 +21,7 @@ export interface Hl7NotificationConfig {
   hl7v2RosterUploadLambda: {
     bucketName: string;
   };
-  hieConfigs?: Record<HieName, HieConfig>;
+  hieConfigs?: Record<string, HieConfig>;
 }
 
 export type Hl7NotificationVpnConfig = {

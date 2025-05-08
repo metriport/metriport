@@ -1,9 +1,6 @@
 import { USState } from "@metriport/shared";
 import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
 
-export const hieNames = ["HTX"] as const;
-export type HieName = (typeof hieNames)[number];
-
 export type SftpConfig = {
   host: string;
   port: number;
