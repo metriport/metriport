@@ -3,7 +3,7 @@ import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monit
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
-import { errorToString, getEnvVar, sleep } from "@metriport/shared";
+import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Config } from "../../../../shared/config";
@@ -26,7 +26,7 @@ dayjs.extend(duration);
 const BATCH_SIZE = 5_000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
-const heartbeatUrl = getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
+const heartbeatUrl = Config.getCqDirRebuildHeartbeatUrl();
 
 const dbCreds = Config.getDBCreds();
 const sequelize = initDbPool(dbCreds, {
