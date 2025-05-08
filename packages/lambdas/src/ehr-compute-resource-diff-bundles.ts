@@ -62,7 +62,7 @@ const ehrComputeResourceDiffBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
-  contribute: z.boolean(),
+  contribute: z.boolean().optional(),
   jobId: z.string(),
   resourceType: z.enum(supportedResourceTypes),
 });

@@ -31,7 +31,7 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
         metriportPatientId,
         ehrPatientId,
         resourceType,
-        contribute,
+        contribute = false,
         jobId,
         reportError = true,
       } = payload;

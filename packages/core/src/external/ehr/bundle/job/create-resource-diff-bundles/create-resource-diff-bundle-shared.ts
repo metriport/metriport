@@ -6,6 +6,6 @@ export type CreateResourceDiffBundlesBaseRequest = {
   practiceId: string;
   metriportPatientId: string;
   ehrPatientId: string;
-  contribute: boolean;
+  contribute?: boolean;
   jobId: string;
 };

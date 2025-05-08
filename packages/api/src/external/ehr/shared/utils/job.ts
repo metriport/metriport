@@ -1,4 +1,4 @@
-import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
+import { ResourceDiffBundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { PatientJobPayload } from "../../../../command/job/patient/get";
 import { FetchedBundlePreSignedUrls } from "./bundle";
@@ -18,7 +18,7 @@ export type GetResourceDiffBundlesJobPayloadParams = {
   practiceId: string;
   patientId: string;
   jobId: string;
-  bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY | BundleType.RESOURCE_DIFF_EHR_ONLY;
+  bundleType: ResourceDiffBundleType;
 };
 
 export type ResourceDiffBundlesJobPayload = PatientJobPayload<FetchedBundlePreSignedUrls>;
