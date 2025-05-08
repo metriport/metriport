@@ -2,11 +2,11 @@ import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Bundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
-import { getPatientMappingOrFail } from "../../../../command/mapping/patient";
-import { handleDataContribution } from "../../../../command/medical/patient/data-contribution/handle-data-contributions";
-import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
-import { getResourceDiffBundlesJobPayload } from "../job/create-resource-diff-bundles/get-job-payload";
-import { ContributeEhrOnlyBundleParams } from "../utils/bundle";
+import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
+import { handleDataContribution } from "../../../../../command/medical/patient/data-contribution/handle-data-contributions";
+import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
+import { getResourceDiffBundlesJobPayload } from "../../job/create-resource-diff-bundles/get-job-payload";
+import { ContributeEhrOnlyBundleParams } from "../../utils/bundle";
 
 /**
  * Contribute the EHR only bundles to the HIEs

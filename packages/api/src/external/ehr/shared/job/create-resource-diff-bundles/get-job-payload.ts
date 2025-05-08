@@ -4,7 +4,7 @@ import {
   getPatientJobByIdOrFail,
 } from "../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { fetchBundlePreSignedUrls } from "../../command/fetch-bundle-presignd-urls";
+import { fetchBundlePreSignedUrls } from "../../command/bundle/fetch-bundle-presignd-urls";
 import {
   GetResourceDiffBundlesJobPayloadParams,
   ResourceDiffBundlesJobPayload,

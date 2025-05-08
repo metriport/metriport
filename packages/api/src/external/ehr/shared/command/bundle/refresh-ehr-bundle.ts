@@ -3,7 +3,7 @@ import {
   RefreshEhrBundleParams,
   RefreshEhrBundleParamsForClient,
   validateAndPrepareBundleFetchOrRefresh,
-} from "../utils/bundle";
+} from "../../utils/bundle";
 
 /**
  * Refresh the EHR bundle

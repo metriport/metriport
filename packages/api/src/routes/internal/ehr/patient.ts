@@ -9,9 +9,9 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
-import { contributeEhrOnlyBundles } from "../../../external/ehr/shared/command/contribute-ehr-only-bundles";
-import { fetchBundlePreSignedUrls } from "../../../external/ehr/shared/command/fetch-bundle-presignd-urls";
-import { refreshEhrBundle } from "../../../external/ehr/shared/command/refresh-ehr-bundle";
+//import { contributeEhrOnlyBundles } from "../../../external/ehr/shared/command/bundle/contribute-ehr-only-bundles";
+import { fetchBundlePreSignedUrls } from "../../../external/ehr/shared/command/bundle/fetch-bundle-presignd-urls";
+import { refreshEhrBundle } from "../../../external/ehr/shared/command/bundle/refresh-ehr-bundle";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
@@ -183,8 +183,8 @@ router.post(
     const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFrom("params").orFail("id", req);
-    const practiceId = getFromQueryOrFail("practiceId", req);
+    //const patientId = getFrom("params").orFail("id", req);
+    //const practiceId = getFromQueryOrFail("practiceId", req);
     const jobId = getFromQueryOrFail("jobId", req);
     const entryStatus = getFromQueryOrFail("entryStatus", req);
     if (!isValidJobEntryStatus(entryStatus)) {
@@ -197,6 +197,7 @@ router.post(
       entryStatus,
       onCompleted: async () => {
         if (contribute) {
+          /*
           await contributeEhrOnlyBundles({
             ehr,
             cxId,
@@ -204,6 +205,7 @@ router.post(
             patientId,
             jobId,
           });
+          */
         }
       },
     });

@@ -6,7 +6,7 @@ import {
   FetchedBundlePreSignedUrls,
   getBundleFunctions,
   validateAndPrepareBundleFetchOrRefresh,
-} from "../utils/bundle";
+} from "../../utils/bundle";
 
 /**
  * Fetch the pre-signed URLs for the given bundle type
