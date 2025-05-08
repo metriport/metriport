@@ -12,7 +12,6 @@ import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import {
   HieFieldMapping,
-  HieName,
   Hl7v2RosterConfig,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
@@ -23,11 +22,6 @@ import {
 const region = Config.getAWSRegion();
 
 type SubscriberRecord = Record<string, string>;
-
-export type RosterGenerateProps = {
-  config: Hl7v2RosterConfig;
-  hieName: HieName;
-};
 
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
@@ -41,15 +35,14 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(props: RosterGenerateProps): Promise<void> {
-    const { config, hieName } = props;
+  async execute(config: Hl7v2RosterConfig): Promise<void> {
     const { log } = out("Hl7v2RosterGenerator");
-    const { states, subscriptions, hieConfigs } = config;
-    const targetConfig = hieConfigs[hieName];
+    const { subscriptions, hieConfig } = config;
+    const { states } = hieConfig;
 
     log(
-      `Running with these configs: states - ${states}, subs - ${subscriptions}, hie config - ${JSON.stringify(
-        targetConfig
+      `Running with these configs: subs - ${subscriptions}, hie config - ${JSON.stringify(
+        hieConfig
       )}`
     );
 
@@ -73,11 +66,11 @@ export class Hl7v2RosterGenerator {
       return;
     }
 
-    const convertedSubscribers = convertSubscribersToHieFormat(subscribers, targetConfig.schema);
+    const convertedSubscribers = convertSubscribersToHieFormat(subscribers, hieConfig.schema);
     const rosterCsv = this.generateCsv(convertedSubscribers);
     log("Created CSV");
 
-    const fileName = this.buildDocumentNameForHl7v2Roster(targetConfig.name, subscriptions);
+    const fileName = this.buildDocumentNameForHl7v2Roster(hieConfig.name, subscriptions);
 
     await storeInS3WithRetries({
       s3Utils: this.s3Utils,

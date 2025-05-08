@@ -33,14 +33,14 @@ export type HieFieldMapping = {
 
 export type HieConfig = {
   name: string;
-  sftpConfig?: SftpConfig;
+  states: USState[];
   cron?: string;
+  sftpConfig?: SftpConfig;
   schema: HieFieldMapping;
 };
 
 export type Hl7v2RosterConfig = {
-  hieConfigs: Record<HieName, HieConfig>;
-  states: USState[];
+  hieConfig: HieConfig;
   subscriptions: Hl7v2Subscription[];
 };
 
