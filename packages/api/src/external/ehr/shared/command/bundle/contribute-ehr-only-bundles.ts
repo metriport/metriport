@@ -55,6 +55,7 @@ export async function contributeEhrOnlyBundles({
       return collectionBundle.entry.push(...bundle.entry);
     })
   );
+  if (collectionBundle.entry.length < 1) return;
   await handleDataContribution({
     cxId,
     patient: metriportPatient,
