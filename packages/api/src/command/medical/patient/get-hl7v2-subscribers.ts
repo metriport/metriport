@@ -100,14 +100,14 @@ function mapPatientsToSubscribers(patients: PatientModelReadOnly[]): Hl7v2Subscr
     )?.value;
     const phone = data.contact?.find(c => c.phone)?.phone;
     const email = data.contact?.find(c => c.email)?.email;
-    const packedPatientId = compressUuid(p.id);
-    const packedCxId = compressUuid(p.cxId);
-    const ciphered = `${packedCxId}_${packedPatientId}`;
+    const compressedPatientId = compressUuid(p.id);
+    const compressedCxId = compressUuid(p.cxId);
+    const scrambledId = `${compressedCxId}_${compressedPatientId}`;
 
     return {
       id: p.id,
       cxId: p.cxId,
-      scrambledId: ciphered,
+      scrambledId,
       lastName: data.lastName,
       firstName: data.firstName,
       dob: data.dob,
