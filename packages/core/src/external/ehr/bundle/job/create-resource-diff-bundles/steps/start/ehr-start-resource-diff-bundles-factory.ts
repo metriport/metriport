@@ -1,4 +1,4 @@
-import { Config } from "../../../../../../util/config";
+import { Config } from "../../../../../../../util/config";
 import { EhrStartResourceDiffBundlesHandler } from "./ehr-start-resource-diff-bundles";
 import { EhrStartResourceDiffBundlesCloud } from "./ehr-start-resource-diff-bundles-cloud";
 import { EhrStartResourceDiffBundlesLocal } from "./ehr-start-resource-diff-bundles-local";

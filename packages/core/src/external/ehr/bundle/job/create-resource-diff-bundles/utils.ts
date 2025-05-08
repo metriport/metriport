@@ -20,24 +20,24 @@ import {
 } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
 import { FhirResource } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { deduplicateAllergyIntolerances } from "../../../../fhir-deduplication/resources/allergy-intolerance";
-import { deduplicateCompositions } from "../../../../fhir-deduplication/resources/composition";
-import { deduplicateConditions } from "../../../../fhir-deduplication/resources/condition";
-import { deduplicateDiagReports } from "../../../../fhir-deduplication/resources/diagnostic-report";
-import { deduplicateEncounters } from "../../../../fhir-deduplication/resources/encounter";
-import { deduplicateFamilyMemberHistories } from "../../../../fhir-deduplication/resources/family-member-history";
-import { deduplicateImmunizations } from "../../../../fhir-deduplication/resources/immunization";
-import { deduplicateLocations } from "../../../../fhir-deduplication/resources/location";
-import { deduplicateMedications } from "../../../../fhir-deduplication/resources/medication";
-import { deduplicateMedAdmins } from "../../../../fhir-deduplication/resources/medication-administration";
-import { deduplicateMedRequests } from "../../../../fhir-deduplication/resources/medication-request";
-import { deduplicateMedStatements } from "../../../../fhir-deduplication/resources/medication-statement";
-import { deduplicateObservations } from "../../../../fhir-deduplication/resources/observation";
-import { deduplicateOrganizations } from "../../../../fhir-deduplication/resources/organization";
-import { deduplicatePractitioners } from "../../../../fhir-deduplication/resources/practitioner";
-import { deduplicateProcedures } from "../../../../fhir-deduplication/resources/procedure";
-import { deduplicateRelatedPersons } from "../../../../fhir-deduplication/resources/related-person";
-import { artifactRelatedArtifactUrl } from "../../../../fhir-deduplication/shared";
+import { deduplicateAllergyIntolerances } from "../../../../../fhir-deduplication/resources/allergy-intolerance";
+import { deduplicateCompositions } from "../../../../../fhir-deduplication/resources/composition";
+import { deduplicateConditions } from "../../../../../fhir-deduplication/resources/condition";
+import { deduplicateDiagReports } from "../../../../../fhir-deduplication/resources/diagnostic-report";
+import { deduplicateEncounters } from "../../../../../fhir-deduplication/resources/encounter";
+import { deduplicateFamilyMemberHistories } from "../../../../../fhir-deduplication/resources/family-member-history";
+import { deduplicateImmunizations } from "../../../../../fhir-deduplication/resources/immunization";
+import { deduplicateLocations } from "../../../../../fhir-deduplication/resources/location";
+import { deduplicateMedications } from "../../../../../fhir-deduplication/resources/medication";
+import { deduplicateMedAdmins } from "../../../../../fhir-deduplication/resources/medication-administration";
+import { deduplicateMedRequests } from "../../../../../fhir-deduplication/resources/medication-request";
+import { deduplicateMedStatements } from "../../../../../fhir-deduplication/resources/medication-statement";
+import { deduplicateObservations } from "../../../../../fhir-deduplication/resources/observation";
+import { deduplicateOrganizations } from "../../../../../fhir-deduplication/resources/organization";
+import { deduplicatePractitioners } from "../../../../../fhir-deduplication/resources/practitioner";
+import { deduplicateProcedures } from "../../../../../fhir-deduplication/resources/procedure";
+import { deduplicateRelatedPersons } from "../../../../../fhir-deduplication/resources/related-person";
+import { artifactRelatedArtifactUrl } from "../../../../../fhir-deduplication/shared";
 
 export function computeNewResources({
   ehrResources,

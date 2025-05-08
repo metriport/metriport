@@ -1,5 +1,5 @@
-import { ComputeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles";
-import { EhrComputeResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-local";
+import { ComputeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles";
+import { EhrComputeResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-local";
 import { MetriportError } from "@metriport/shared";
 import { supportedResourceTypes } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";

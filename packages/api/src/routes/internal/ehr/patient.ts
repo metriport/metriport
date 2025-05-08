@@ -15,9 +15,9 @@ import { refreshEhrBundle } from "../../../external/ehr/shared/command/bundle/re
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
-} from "../../../external/ehr/shared/job/create-resource-diff-bundles/get-job-payload";
-import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/create-resource-diff-bundles/start-job";
-import { startRefreshEhrBundlesJob } from "../../../external/ehr/shared/job/refresh-ehr-bundles/start-job";
+} from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/get-job-payload";
+import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-job";
+import { startRefreshEhrBundlesJob } from "../../../external/ehr/shared/job/bundle/refresh-ehr-bundles/start-job";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "../../util";

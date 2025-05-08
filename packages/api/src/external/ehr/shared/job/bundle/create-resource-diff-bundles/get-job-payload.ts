@@ -2,14 +2,14 @@ import {
   createPatientJobPayload,
   getLatestPatientJob,
   getPatientJobByIdOrFail,
-} from "../../../../../command/job/patient/get";
-import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { fetchBundlePreSignedUrls } from "../../command/bundle/fetch-bundle-presignd-urls";
+} from "../../../../../../command/job/patient/get";
+import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
+import { fetchBundlePreSignedUrls } from "../../../command/bundle/fetch-bundle-presignd-urls";
 import {
   GetResourceDiffBundlesJobPayloadParams,
   ResourceDiffBundlesJobPayload,
   getCreateResourceDiffBundlesJobType,
-} from "../../utils/job";
+} from "../../../utils/job";
 
 /**
  * Get the resource diff bundles job payload by job id

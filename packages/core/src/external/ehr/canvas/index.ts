@@ -37,8 +37,8 @@ import { BundleType, isResourceDiffBundleType } from "../bundle/bundle-shared";
 import {
   createOrReplaceBundle,
   CreateOrReplaceBundleParams,
-} from "../bundle/commands/create-or-replace-bundle";
-import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/commands/fetch-bundle";
+} from "../bundle/command/create-or-replace-bundle";
+import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/command/fetch-bundle";
 import {
   ApiConfig,
   fetchBundleUsingTtl,

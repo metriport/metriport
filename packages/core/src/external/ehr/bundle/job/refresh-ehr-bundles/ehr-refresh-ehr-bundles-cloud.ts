@@ -1,6 +1,6 @@
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { Config } from "../../../../util/config";
-import { SQSClient } from "../../../aws/sqs";
+import { Config } from "../../../../../util/config";
+import { SQSClient } from "../../../../aws/sqs";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
 export class EhrRefreshEhrBundlesCloud implements EhrRefreshEhrBundlesHandler {

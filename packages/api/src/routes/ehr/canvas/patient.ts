@@ -7,8 +7,8 @@ import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/com
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
-} from "../../../external/ehr/shared/job/create-resource-diff-bundles/get-job-payload";
-import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/create-resource-diff-bundles/start-job";
+} from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/get-job-payload";
+import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-job";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";

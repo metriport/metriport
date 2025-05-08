@@ -5,7 +5,7 @@ import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/cons
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { startCreateResourceDiffBundlesJobsAcrossEhrs } from "../../../external/ehr/shared/job/create-resource-diff-bundles/start-jobs-across-ehrs";
+import { startCreateResourceDiffBundlesJobsAcrossEhrs } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-jobs-across-ehrs";
 import { getConsolidated } from "../patient/consolidated-get";
 
 /**

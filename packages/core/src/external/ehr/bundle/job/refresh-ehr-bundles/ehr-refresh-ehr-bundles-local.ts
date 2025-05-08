@@ -1,10 +1,10 @@
 import { sleep } from "@metriport/shared";
-import { completeJob } from "../../api/job/complete-job";
-import { initializeJob } from "../../api/job/initialize-job";
-import { setJobEntryStatus } from "../../api/job/set-entry-status";
-import { updateJobTotal } from "../../api/job/update-job-total";
-import { refreshEhrBundle } from "../../api/bundle/refresh-ehr-bundle";
-import { getSupportedResourcesByEhr } from "../bundle-shared";
+import { refreshEhrBundle } from "../../../api/bundle/refresh-ehr-bundle";
+import { completeJob } from "../../../api/job/complete-job";
+import { initializeJob } from "../../../api/job/initialize-job";
+import { setJobEntryStatus } from "../../../api/job/set-entry-status";
+import { updateJobTotal } from "../../../api/job/update-job-total";
+import { getSupportedResourcesByEhr } from "../../bundle-shared";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
 export class EhrRefreshEhrBundlesLocal implements EhrRefreshEhrBundlesHandler {

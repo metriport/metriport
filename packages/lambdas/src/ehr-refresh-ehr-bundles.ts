@@ -1,5 +1,5 @@
-import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles";
-import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles-local";
+import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/bundle/job/refresh-ehr-bundles/ehr-refresh-ehr-bundles";
+import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/bundle/job/refresh-ehr-bundles/ehr-refresh-ehr-bundles-local";
 import { MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";

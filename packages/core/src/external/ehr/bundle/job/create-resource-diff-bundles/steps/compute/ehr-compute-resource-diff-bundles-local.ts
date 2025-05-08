@@ -5,14 +5,14 @@ import {
   fhirResourceSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
-import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
+import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
 import {
   FetchEhrBundleParams,
   fetchEhrBundlePreSignedUrls,
-} from "../../../../api/bundle/fetch-ehr-bundle-presigned-url";
-import { setResourceDiffJobEntryStatus } from "../../../../api/job/resource-diff-set-entry-status";
-import { BundleType } from "../../../bundle-shared";
-import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
+} from "../../../../../api/bundle/fetch-ehr-bundle-presigned-url";
+import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
+import { BundleType } from "../../../../bundle-shared";
+import { updateBundle as updateBundleOnS3 } from "../../../../command/update-bundle";
 import { computeNewResources } from "../../utils";
 import {
   ComputeResourceDiffBundlesRequest,

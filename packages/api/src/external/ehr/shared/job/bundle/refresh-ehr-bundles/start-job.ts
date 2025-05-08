@@ -1,9 +1,9 @@
-import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles-factory";
+import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/bundle/job/refresh-ehr-bundles/ehr-refresh-ehr-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { createPatientJob } from "../../../../../command/job/patient/create";
-import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
-import { StartRefreshEhrBundlesJobParams, getRefreshEhrBundlesJobType } from "../../utils/job";
+import { createPatientJob } from "../../../../../../command/job/patient/create";
+import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
+import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
+import { StartRefreshEhrBundlesJobParams, getRefreshEhrBundlesJobType } from "../../../utils/job";
 
 /**
  * Starts the refresh EHR bundles job to produce the resource type bundles containing
