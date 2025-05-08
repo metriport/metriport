@@ -11,7 +11,7 @@ import httpStatus from "http-status";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
 //import { contributeEhrOnlyBundles } from "../../../external/ehr/shared/command/bundle/contribute-ehr-only-bundles";
 import { fetchBundlePreSignedUrls } from "../../../external/ehr/shared/command/bundle/fetch-bundle-presignd-urls";
-import { refreshEhrBundle } from "../../../external/ehr/shared/command/bundle/refresh-ehr-bundle";
+import { refreshEhrBundles } from "../../../external/ehr/shared/command/bundle/refresh-ehr-bundles";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
@@ -277,7 +277,7 @@ router.post(
         resourceType,
       });
     }
-    await refreshEhrBundle({
+    await refreshEhrBundles({
       ehr,
       cxId,
       practiceId,

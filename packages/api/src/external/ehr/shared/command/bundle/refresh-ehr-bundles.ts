@@ -14,7 +14,7 @@ import {
  * @param patientId - The patient id of the EHR patient.
  * @param resourceType - The resource type to fetch. Optional, all supported resource types will be fetched if not provided.
  */
-export async function refreshEhrBundle({
+export async function refreshEhrBundles({
   ehr,
   cxId,
   practiceId,
