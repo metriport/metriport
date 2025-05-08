@@ -129,15 +129,6 @@ export async function getDocumentsFromCQ({
       if (!gateway) {
         const msg = `Gateway not found - Doc Query`;
         log(`${msg}: ${patientLink.oid} skipping...`);
-        capture.message(msg, {
-          extra: {
-            context: `cq.pd.getCQDirectoryEntry`,
-            patientId,
-            requestId,
-            cxId,
-            gateway: patientLink,
-          },
-        });
         return;
       } else if (!gateway.urlDQ) {
         log(`Gateway ${gateway.id} has no DQ URL, skipping...`);
