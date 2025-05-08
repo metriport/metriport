@@ -1,4 +1,5 @@
 import {
+  BundleType,
   isResourceDiffBundleType,
   isSupportedResourceTypeByEhr,
 } from "@metriport/core/external/ehr/bundle/bundle-shared";
@@ -10,6 +11,7 @@ import httpStatus from "http-status";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
 import { contributeEhrOnlyBundles } from "../../../external/ehr/shared/command/contribute-ehr-only-bundles";
 import { fetchBundlePreSignedUrls } from "../../../external/ehr/shared/command/fetch-bundle-presignd-urls";
+import { refreshEhrBundle } from "../../../external/ehr/shared/command/refresh-ehr-bundle";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
@@ -25,12 +27,12 @@ const router = Router();
 /**
  * POST /internal/ehr/:ehrId/patient/:id/resource/refresh
  *
- * Refreshes the cached bundles of resources in EHR across all supported resource types.
+ * Starts the job to refresh the cached bundles of resources in EHR across all supported resource types.
  * @param req.query.ehrId - The EHR to refresh the bundles for.
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.id - The ID of EHR Patient.
  * @param req.query.practiceId - The ID of EHR Practice.
- * @returns 200 OK
+ * @returns The job ID of the refresh job
  */
 router.post(
   "/:id/resource/refresh",
@@ -212,14 +214,13 @@ router.post(
 /**
  * GET /internal/ehr/:ehrId/patient/:id/resource/bundle/pre-signed-urls
  *
- * Fetches the pre-signed URLs for the EHR bundles for the EHR patient by resource type
+ * Fetches the pre-signed URLs for the EHR bundle.
  * @param req.query.cxId - The CX ID of the patient.
- * @param req.params.ehrId - The EHR to fetch the resource diff job for.
+ * @param req.query.ehrId - The EHR to refresh the bundles for.
  * @param req.params.id - The ID of EHR Patient.
  * @param req.query.practiceId - The ID of EHR Practice.
- * @param req.query.resourceType - The resource type to fetch
- * @param req.query.refresh - Whether to refresh the bundle (optional)
- * @returns EHR bundle
+ * @param req.query.resourceType - The resource type to refresh.
+ * @returns EHR bundle pre-signed URLs
  */
 router.get(
   "/:id/resource/bundle/pre-signed-urls",
@@ -236,16 +237,52 @@ router.get(
         resourceType,
       });
     }
-    const refresh = getFromQueryAsBoolean("refresh", req);
     const preSignedUrls = await fetchBundlePreSignedUrls({
       ehr,
       cxId,
       practiceId,
       patientId,
       resourceType,
-      refresh,
+      bundleType: BundleType.EHR,
     });
     return res.status(httpStatus.OK).json(preSignedUrls);
+  })
+);
+
+/**
+ * POST /internal/ehr/:ehrId/patient/:id/resource/bundle/refresh
+ *
+ * Refreshes the EHR bundle.
+ * @param req.query.cxId - The CX ID of the patient.
+ * @param req.query.ehrId - The EHR to refresh the bundles for.
+ * @param req.params.id - The ID of EHR Patient.
+ * @param req.query.practiceId - The ID of EHR Practice.
+ * @param req.query.resourceType - The resource type to refresh.
+ * @returns 200 OK
+ */
+router.post(
+  "/:id/resource/bundle/refresh",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const ehr = getFromQueryOrFail("ehrId", req);
+    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("params").orFail("id", req);
+    const practiceId = getFromQueryOrFail("practiceId", req);
+    const resourceType = getFromQueryOrFail("resourceType", req);
+    if (!isSupportedResourceTypeByEhr(ehr, resourceType)) {
+      throw new BadRequestError("Resource type is not supported for bundle", undefined, {
+        resourceType,
+      });
+    }
+    await refreshEhrBundle({
+      ehr,
+      cxId,
+      practiceId,
+      patientId,
+      resourceType,
+    });
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

@@ -8,8 +8,8 @@ import axios from "axios";
 import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
 import {
   FetchEhrBundleParams,
-  fetchEhrBundlePreSignedUrls as fetchEhrBundlePreSignedUrlsFromApi,
-} from "../../../../api/fetch-bundle-presigned-url";
+  fetchEhrBundlePreSignedUrls,
+} from "../../../../api/bundle/fetch-ehr-bundle-presigned-url";
 import { setResourceDiffJobEntryStatus } from "../../../../api/job/resource-diff-set-entry-status";
 import { BundleType } from "../../../bundle-shared";
 import { updateBundle as updateBundleOnS3 } from "../../../commands/update-bundle";
@@ -129,13 +129,12 @@ async function getEhrResourcesFromApi({
   patientId,
   resourceType,
 }: Omit<FetchEhrBundleParams, "refresh">): Promise<FhirResource[]> {
-  const ehrResourcesBundle = await fetchEhrBundlePreSignedUrlsFromApi({
+  const ehrResourcesBundle = await fetchEhrBundlePreSignedUrls({
     ehr,
     cxId,
     practiceId,
     patientId,
     resourceType,
-    refresh: false,
   });
   const fetchedResourceType = ehrResourcesBundle.resourceTypes[0];
   const fetchedPreSignedUrls = ehrResourcesBundle.preSignedUrls[0];

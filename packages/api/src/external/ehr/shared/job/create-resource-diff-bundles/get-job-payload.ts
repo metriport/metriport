@@ -4,7 +4,7 @@ import {
   getPatientJobByIdOrFail,
 } from "../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { fetchResourceDiffBundlesPreSignedUrls } from "../../command/fetch-bundle-presignd-urls";
+import { fetchBundlePreSignedUrls } from "../../command/fetch-bundle-presignd-urls";
 import {
   GetResourceDiffBundlesJobPayloadParams,
   ResourceDiffBundlesJobPayload,
@@ -17,7 +17,7 @@ import {
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
- * @param patientId - The EHR patient id of the patient.
+ * @param patientId - The patient id of the EHR patient.
  * @param jobId - The job id of the job.
  * @param bundleType - The type of resource diff bundle to fetch.
  * @returns resource diff bundles job payload with data if completed
@@ -33,7 +33,7 @@ export async function getResourceDiffBundlesJobPayload({
 }: GetResourceDiffBundlesJobPayloadParams): Promise<ResourceDiffBundlesJobPayload> {
   const job = await getPatientJobByIdOrFail({ cxId, jobId });
   if (job.status === "completed") {
-    const data = await fetchResourceDiffBundlesPreSignedUrls({
+    const data = await fetchBundlePreSignedUrls({
       ehr,
       cxId,
       patientId,
@@ -52,7 +52,7 @@ export async function getResourceDiffBundlesJobPayload({
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
- * @param ehrPatientId - The EHR patient id of the patient.
+ * @param patientId - The patient id of the EHR patient.
  * @param bundleType - The type of resource diff bundle to fetch.
  * @returns resource diff bundles job data payload with data if completed or undefined if no job is found
  */
@@ -79,7 +79,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
   });
   if (!job) return undefined;
   if (job.status === "completed") {
-    const data = await fetchResourceDiffBundlesPreSignedUrls({
+    const data = await fetchBundlePreSignedUrls({
       ehr,
       cxId,
       practiceId,
