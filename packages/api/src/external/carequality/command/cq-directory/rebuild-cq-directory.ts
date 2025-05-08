@@ -1,8 +1,9 @@
 import { Organization } from "@medplum/fhirtypes";
+import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
-import { errorToString, sleep } from "@metriport/shared";
+import { errorToString, getEnvVar, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Config } from "../../../../shared/config";
@@ -25,6 +26,7 @@ dayjs.extend(duration);
 const BATCH_SIZE = 5_000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
+const heartbeatUrl = getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
 
 const dbCreds = Config.getDBCreds();
 const sequelize = initDbPool(dbCreds, {
@@ -121,7 +123,6 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   }
   try {
     await updateCqDirectoryViewDefinition(sequelize);
-    log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -130,6 +131,10 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
     });
     throw error;
   }
+
+  log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
+
+  if (heartbeatUrl) await sendHeartbeatToMonitoringService(heartbeatUrl);
 }
 
 /**
