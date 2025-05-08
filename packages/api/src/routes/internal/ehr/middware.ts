@@ -1,6 +1,6 @@
 import { BadRequestError } from "@metriport/shared";
+import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { NextFunction, Request, Response } from "express";
-import { isEhrSource } from "../../../../../shared/dist";
 import { getFrom } from "../../util";
 
 export function processEhrId(req: Request, res: Response, next: NextFunction) {
