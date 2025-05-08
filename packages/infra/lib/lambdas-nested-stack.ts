@@ -22,6 +22,8 @@ import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -751,6 +753,27 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     hl7v2RosterBucket.grantReadWrite(hl7v2RosterUploadLambda);
+
+    // Create EventBridge schedules for each HIE config
+    if (!isSandbox(config) && config.hl7Notification.hieConfigs) {
+      const hieConfigs = config.hl7Notification.hieConfigs;
+
+      Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
+        if (!hieConfig.cron) {
+          return;
+        }
+        const scheduleName = `Hl7v2RosterUpload-${hieName}`;
+
+        new events.Rule(this, `${scheduleName}-Rule`, {
+          schedule: events.Schedule.expression(hieConfig.cron),
+          targets: [
+            new targets.LambdaFunction(hl7v2RosterUploadLambda, {
+              event: events.RuleTargetInput.fromObject({ hieConfig }),
+            }),
+          ],
+        });
+      });
+    }
 
     return hl7v2RosterUploadLambda;
   }
