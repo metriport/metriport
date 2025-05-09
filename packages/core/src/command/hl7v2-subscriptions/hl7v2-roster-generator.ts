@@ -16,8 +16,6 @@ import {
   Hl7v2SubscriberParams,
   addressFields,
 } from "./types";
-// TODO: ENG-24 - uncomment when SFTP becomes part of the flow
-// import Client from "ssh2-sftp-client";
 
 const region = Config.getAWSRegion();
 
@@ -35,7 +33,7 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(config: HieConfig): Promise<void> {
+  async execute(config: HieConfig): Promise<string | undefined> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states, subscriptions } = config;
 
@@ -82,30 +80,8 @@ export class Hl7v2RosterGenerator {
       },
     });
 
-    // TODO: ENG-24 - uncomment when SFTP becomes part of the flow
-    // const sftpConfig = targetConfig.sftpConfig;
-    // if (sftpConfig) {
-    //   try {
-    //     await executeWithNetworkRetries(async () => this.sendViaSftp(sftpConfig, rosterCsv, log), {
-    //       maxAttempts: NUMBER_OF_ATTEMPTS,
-    //       initialDelay: BASE_DELAY.asMilliseconds(),
-    //       log,
-    //     });
-    //   } catch (err) {
-    //     const msg = `Failed to SFTP upload HL7v2 roster`;
-    //     capture.error(msg, {
-    //       extra: {
-    //         targetConfig,
-    //         states,
-    //         subscriptions,
-    //         err,
-    //       },
-    //     });
-    //   }
-    // }
-
     log("Done");
-    return;
+    return rosterCsv;
   }
 
   private async getAllSubscribers(
@@ -146,44 +122,6 @@ export class Hl7v2RosterGenerator {
     if (records.length === 0) return "";
     return stringify(records, { header: true, quoted: true });
   }
-
-  // TODO: ENG-24 - uncomment when SFTP becomes part of the flow
-  // private async sendViaSftp(
-  //   config: SftpConfig,
-  //   rosterCsv: string,
-  //   log: typeof console.log
-  // ): Promise<void> {
-  //   const sftp = new Client();
-
-  //   try {
-  //     log(`[SFTP] Uploading roster to ${config.host}:${config.port}${config.remotePath}`);
-
-  //     await sftp.connect({
-  //       host: config.host,
-  //       port: config.port,
-  //       username: config.username,
-  //       password: config.password,
-  //     });
-  //     log(`[SFTP] Successfully established connection :)`);
-
-  //     const dirPath = config.remotePath.substring(0, config.remotePath.lastIndexOf("/"));
-  //     if (dirPath) {
-  //       await sftp.mkdir(dirPath, true);
-  //       log(`[SFTP] Successfully created/verified directory structure`);
-  //     }
-
-  //     await sftp.put(Buffer.from(rosterCsv), config.remotePath);
-  //     log("[SFTP] Upload successful!");
-
-  //     return;
-  //   } catch (error) {
-  //     log(`[SFTP] SFTP failed! ${errorToString(error)}`);
-  //     throw error;
-  //   } finally {
-  //     await sftp.end();
-  //     log(`[SFTP] Connection cleaned up.`);
-  //   }
-  // }
 
   private buildDocumentNameForHl7v2Roster(
     hieName: string,
