@@ -69,24 +69,24 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
 
     if (medRef && datetime && dosage) {
       const key = JSON.stringify({ medRef, datetime, dosage });
-      deduplicateWithinMap(
-        medAdminsMap,
-        key,
-        medAdmin,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medAdminsMap,
+        dedupKey: key,
+        candidateResource: medAdmin,
         refReplacementMap,
-        undefined,
-        preprocessStatus
-      );
+        isExtensionIncluded: true,
+        onPremerge: preprocessStatus,
+      });
     } else if (medRef && datetime) {
       const key = JSON.stringify({ medRef, datetime });
-      deduplicateWithinMap(
-        medAdminsMap,
-        key,
-        medAdmin,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medAdminsMap,
+        dedupKey: key,
+        candidateResource: medAdmin,
         refReplacementMap,
-        undefined,
-        preprocessStatus
-      );
+        isExtensionIncluded: true,
+        onPremerge: preprocessStatus,
+      });
     } else {
       danglingReferences.add(createRef(medAdmin));
     }

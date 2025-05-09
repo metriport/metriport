@@ -79,28 +79,28 @@ export function groupSameObservationsSocial(observations: Observation[]): {
 
     if (keyCode) {
       const key = JSON.stringify({ value, keyCode });
-      deduplicateWithinMap(
-        observationsMap,
-        key,
-        observation,
-        refReplacementMap,
-        undefined,
-        preprocessStatusAndDates,
-        postProcess
-      );
+      deduplicateWithinMap({
+        dedupedResourcesMap: observationsMap,
+        dedupKey: key,
+        candidateResource: observation,
+        refReplacementMap: refReplacementMap,
+        isExtensionIncluded: true,
+        onPremerge: preprocessStatusAndDates,
+        onPostmerge: postProcess,
+      });
     } else {
       const display = extractDisplayFromConcept(observation.code);
       if (display) {
         const key = JSON.stringify({ value, display });
-        deduplicateWithinMap(
-          observationsMap,
-          key,
-          observation,
-          refReplacementMap,
-          undefined,
-          preprocessStatus,
-          postProcess
-        );
+        deduplicateWithinMap({
+          dedupedResourcesMap: observationsMap,
+          dedupKey: key,
+          candidateResource: observation,
+          refReplacementMap: refReplacementMap,
+          isExtensionIncluded: true,
+          onPremerge: preprocessStatus,
+          onPostmerge: postProcess,
+        });
       } else {
         danglingReferences.add(createRef(observation));
       }

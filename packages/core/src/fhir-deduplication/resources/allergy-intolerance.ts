@@ -64,15 +64,14 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
       const { allergy: newAllergy, substance } = preprocess(allergy);
       if (substance) {
         const key = JSON.stringify({ substance });
-        deduplicateWithinMap(
-          allergiesMap,
-          key,
-          newAllergy,
+        deduplicateWithinMap({
+          dedupedResourcesMap: allergiesMap,
+          dedupKey: key,
+          candidateResource: newAllergy,
           refReplacementMap,
-          undefined,
-          undefined,
-          postProcessAllergy
-        );
+          isExtensionIncluded: true,
+          onPostmerge: postProcessAllergy,
+        });
       } else {
         danglingReferences.add(createRef(allergy));
       }
@@ -86,7 +85,13 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
     if (allergy) {
       const key = JSON.stringify({ allergy });
       // no post processing so we dont remove the unknown allergy
-      deduplicateWithinMap(allergiesMap, key, allergy, refReplacementMap, undefined);
+      deduplicateWithinMap({
+        dedupedResourcesMap: allergiesMap,
+        dedupKey: key,
+        candidateResource: allergy,
+        refReplacementMap,
+        isExtensionIncluded: true,
+      });
 
       const index = blacklistedAllergies.indexOf(allergy);
       if (index !== -1) {

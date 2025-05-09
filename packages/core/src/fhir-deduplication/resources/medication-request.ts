@@ -72,14 +72,14 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
       const datetime = getDateFromString(date, "datetime");
       // TODO: Include medRequest.dosage into the key when we start mapping it on the FHIR converter
       const key = JSON.stringify({ medRef, datetime });
-      deduplicateWithinMap(
-        medRequestsMap,
-        key,
-        medRequest,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medRequestsMap,
+        dedupKey: key,
+        candidateResource: medRequest,
         refReplacementMap,
-        undefined,
-        preprocessStatus
-      );
+        isExtensionIncluded: true,
+        onPremerge: preprocessStatus,
+      });
     } else {
       danglingReferences.add(createRef(medRequest));
     }

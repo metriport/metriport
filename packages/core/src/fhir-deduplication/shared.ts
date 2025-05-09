@@ -149,15 +149,23 @@ export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string
 /**
  * Deduplicates a resource within the resource map. If the key doesn't match an existing resource, the target resource will be added to the map.
  */
-export function deduplicateWithinMap<T extends Resource>(
-  dedupedResourcesMap: Map<string, T>,
-  dedupKey: string,
-  candidateResource: T,
-  refReplacementMap: Map<string, string>,
+export function deduplicateWithinMap<T extends Resource>({
+  dedupedResourcesMap,
+  dedupKey,
+  candidateResource,
+  refReplacementMap,
   isExtensionIncluded = true,
-  onPremerge?: OnPremergeCallback<T> | undefined,
-  onPostmerge?: OnPostmergeCallback<T> | undefined
-): void {
+  onPremerge,
+  onPostmerge,
+}: {
+  dedupedResourcesMap: Map<string, T>;
+  dedupKey: string;
+  candidateResource: T;
+  refReplacementMap: Map<string, string>;
+  isExtensionIncluded?: boolean;
+  onPremerge?: OnPremergeCallback<T> | undefined;
+  onPostmerge?: OnPostmergeCallback<T> | undefined;
+}): void {
   const existingResource = dedupedResourcesMap.get(dedupKey);
   // if its a duplicate, combine the resources
   if (existingResource?.id) {
@@ -231,15 +239,15 @@ export function fillL1L2Maps<T extends Resource>({
   for (const key of getterKeys) {
     map2Key = map1.get(key); // Potential improvement. We just select the first uuid that matches. What if multple matches exist?
     if (map2Key) {
-      deduplicateWithinMap(
-        map2,
-        map2Key,
-        targetResource,
+      deduplicateWithinMap({
+        dedupedResourcesMap: map2,
+        dedupKey: map2Key,
+        candidateResource: targetResource,
         refReplacementMap,
         isExtensionIncluded,
         onPremerge,
-        onPostmerge
-      );
+        onPostmerge,
+      });
       break;
     }
   }
@@ -249,15 +257,15 @@ export function fillL1L2Maps<T extends Resource>({
       map1.set(key, map2Key);
     }
     // fill L2 map only once to avoid duplicate entries
-    deduplicateWithinMap(
-      map2,
-      map2Key,
-      targetResource,
+    deduplicateWithinMap({
+      dedupedResourcesMap: map2,
+      dedupKey: map2Key,
+      candidateResource: targetResource,
       refReplacementMap,
       isExtensionIncluded,
       onPremerge,
-      onPostmerge
-    );
+      onPostmerge,
+    });
   }
 }
 
@@ -561,15 +569,15 @@ export function deduplicateAndTrackResource<T extends Resource>({
   for (const candidateKey of matchCandidateKeys) {
     masterResourceId = resourceKeyMap.get(candidateKey);
     if (masterResourceId) {
-      deduplicateWithinMap(
+      deduplicateWithinMap({
         dedupedResourcesMap,
-        masterResourceId,
-        incomingResource,
+        dedupKey: masterResourceId,
+        candidateResource: incomingResource,
         refReplacementMap,
-        keepExtensions,
+        isExtensionIncluded: keepExtensions,
         onPremerge,
-        onPostmerge
-      );
+        onPostmerge,
+      });
       break;
     }
   }
@@ -580,15 +588,15 @@ export function deduplicateAndTrackResource<T extends Resource>({
     for (const identifier of identifierKeys) {
       resourceKeyMap.set(identifier, masterResourceId);
     }
-    deduplicateWithinMap(
+    deduplicateWithinMap({
       dedupedResourcesMap,
-      masterResourceId,
-      incomingResource,
+      dedupKey: masterResourceId,
+      candidateResource: incomingResource,
       refReplacementMap,
-      keepExtensions,
+      isExtensionIncluded: keepExtensions,
       onPremerge,
-      onPostmerge
-    );
+      onPostmerge,
+    });
   }
 }
 

@@ -71,34 +71,34 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
     const dosage = medStatement.dosage;
     if (medRef && datetime && dosage) {
       const key = JSON.stringify({ medRef, datetime, dosage });
-      deduplicateWithinMap(
-        medStatementsMap,
-        key,
-        medStatement,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medStatementsMap,
+        dedupKey: key,
+        candidateResource: medStatement,
         refReplacementMap,
-        undefined,
-        preprocessStatus
-      );
+        isExtensionIncluded: true,
+        onPremerge: preprocessStatus,
+      });
     } else if (medRef && datetime) {
       const key = JSON.stringify({ medRef, datetime });
-      deduplicateWithinMap(
-        medStatementsMap,
-        key,
-        medStatement,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medStatementsMap,
+        dedupKey: key,
+        candidateResource: medStatement,
         refReplacementMap,
-        undefined,
-        preprocessStatus
-      );
+        isExtensionIncluded: true,
+        onPremerge: preprocessStatus,
+      });
     } else if (medRef) {
       const key = JSON.stringify({ medRef });
-      deduplicateWithinMap(
-        medStatementsMap,
-        key,
-        medStatement,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medStatementsMap,
+        dedupKey: key,
+        candidateResource: medStatement,
         refReplacementMap,
-        undefined,
-        preprocessStatus
-      );
+        isExtensionIncluded: true,
+        onPremerge: preprocessStatus,
+      });
     } else {
       danglingReferences.add(createRef(medStatement));
     }
