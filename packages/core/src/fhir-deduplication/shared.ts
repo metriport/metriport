@@ -152,7 +152,7 @@ export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string
 export function deduplicateWithinMap<T extends Resource>(
   dedupedResourcesMap: Map<string, T>,
   dedupKey: string,
-  targetResource: T,
+  candidateResource: T,
   refReplacementMap: Map<string, string>,
   isExtensionIncluded = true,
   onPremerge?: OnPremergeCallback<T> | undefined,
@@ -162,22 +162,22 @@ export function deduplicateWithinMap<T extends Resource>(
   // if its a duplicate, combine the resources
   if (existingResource?.id) {
     const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
-    let merged = existingResource;
+    let target = existingResource;
     if (onPremerge) {
-      onPremerge(merged, targetResource);
+      onPremerge(target, candidateResource);
     }
-    mergeIntoTargetResource(merged, targetResource, isExtensionIncluded);
+    mergeIntoTargetResource(target, candidateResource, isExtensionIncluded);
     if (onPostmerge) {
-      merged = onPostmerge(merged);
+      target = onPostmerge(target);
     }
-    dedupedResourcesMap.set(dedupKey, merged);
+    dedupedResourcesMap.set(dedupKey, target);
 
-    if (targetResource.id) {
-      const consumedRef = `${targetResource.resourceType}/${targetResource.id}`;
+    if (candidateResource.id) {
+      const consumedRef = `${candidateResource.resourceType}/${candidateResource.id}`;
       refReplacementMap.set(consumedRef, masterRef);
     }
   } else {
-    dedupedResourcesMap.set(dedupKey, targetResource);
+    dedupedResourcesMap.set(dedupKey, candidateResource);
   }
 }
 
