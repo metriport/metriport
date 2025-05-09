@@ -16,7 +16,6 @@ import { createQueue } from "./shared/sqs";
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeHealthieLinkPatient = Duration.seconds(10); // 6 patients/min
-const waitTimeStartResourceDiff = Duration.seconds(10); // 6 patients/min
 const waitTimeComputeResourceDiff = Duration.millis(0); // No limit
 const waitTimeRefreshBundle = Duration.seconds(10); // 6 patients/min
 
@@ -24,7 +23,6 @@ function settings(): {
   syncPatient: QueueAndLambdaSettings;
   elationLinkPatient: QueueAndLambdaSettings;
   healthieLinkPatient: QueueAndLambdaSettings;
-  startResourceDiffBundles: QueueAndLambdaSettings;
   computeResourceDiffBundles: QueueAndLambdaSettings;
   refreshEhrBundles: QueueAndLambdaSettings;
 } {
@@ -91,31 +89,6 @@ function settings(): {
     },
     waitTime: waitTimeHealthieLinkPatient,
   };
-  const startResourceDiffBundlesLambdaTimeout = waitTimeStartResourceDiff.plus(
-    Duration.minutes(10)
-  );
-  const startResourceDiffBundles: QueueAndLambdaSettings = {
-    name: "EhrStartResourceDiffBundles",
-    entry: "ehr-start-resource-diff-bundles",
-    lambda: {
-      memory: 1024,
-      timeout: startResourceDiffBundlesLambdaTimeout,
-    },
-    queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 1_000,
-      maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(
-        startResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
-      ),
-      createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-    },
-    waitTime: waitTimeStartResourceDiff,
-  };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
   const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
@@ -166,7 +139,6 @@ function settings(): {
     syncPatient,
     elationLinkPatient,
     healthieLinkPatient,
-    startResourceDiffBundles,
     computeResourceDiffBundles,
     refreshEhrBundles,
   };
@@ -177,7 +149,6 @@ interface EhrNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
-  medicalDocumentsBucket: s3.Bucket;
 }
 
 export class EhrNestedStack extends NestedStack {
@@ -187,8 +158,6 @@ export class EhrNestedStack extends NestedStack {
   readonly elationLinkPatientQueue: Queue;
   readonly healthieLinkPatientLambda: Lambda;
   readonly healthieLinkPatientQueue: Queue;
-  readonly startResourceDiffBundlesLambda: Lambda;
-  readonly startResourceDiffBundlesQueue: Queue;
   readonly computeResourceDiffBundlesLambda: Lambda;
   readonly computeResourceDiffBundlesQueue: Queue;
   readonly refreshEhrBundlesLambda: Lambda;
@@ -255,25 +224,14 @@ export class EhrNestedStack extends NestedStack {
     this.computeResourceDiffBundlesLambda = computeResourceDiffBundles.lambda;
     this.computeResourceDiffBundlesQueue = computeResourceDiffBundles.queue;
 
-    const startResourceDiffBundles = this.setupStartResourceDiffBundles({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      medicalDocumentsBucket: props.medicalDocumentsBucket,
-      ehrBundleBucket: this.ehrBundleBucket,
-      computeResourceDiffBundlesQueue: this.computeResourceDiffBundlesQueue,
-    });
-    this.startResourceDiffBundlesLambda = startResourceDiffBundles.lambda;
-    this.startResourceDiffBundlesQueue = startResourceDiffBundles.queue;
-
     const refreshEhrBundles = this.setupRefreshEhrBundles({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      ehrBundleBucket: this.ehrBundleBucket,
+      computeResourceDiffBundlesQueue: this.computeResourceDiffBundlesQueue,
     });
     this.refreshEhrBundlesLambda = refreshEhrBundles.lambda;
     this.refreshEhrBundlesQueue = refreshEhrBundles.queue;
@@ -426,65 +384,6 @@ export class EhrNestedStack extends NestedStack {
     return { lambda, queue };
   }
 
-  private setupStartResourceDiffBundles(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    medicalDocumentsBucket: s3.Bucket;
-    ehrBundleBucket: s3.Bucket;
-    computeResourceDiffBundlesQueue: Queue;
-  }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
-    const {
-      name,
-      entry,
-      lambda: lambdaSettings,
-      queue: queueSettings,
-      eventSource: eventSourceSettings,
-      waitTime,
-    } = settings().startResourceDiffBundles;
-
-    const queue = createQueue({
-      ...queueSettings,
-      stack: this,
-      name,
-      fifo: true,
-      createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
-      envType,
-      alarmSnsAction: alarmAction,
-    });
-
-    const lambda = createLambda({
-      ...lambdaSettings,
-      stack: this,
-      name,
-      entry,
-      envType,
-      envVars: {
-        // API_URL set on the api-stack after the OSS API is created
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
-        MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
-        EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
-        EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
-          ownProps.computeResourceDiffBundlesQueue.queueUrl,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      layers: [lambdaLayers.shared],
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-
-    ownProps.computeResourceDiffBundlesQueue.grantSendMessages(lambda);
-    ownProps.ehrBundleBucket.grantWrite(lambda);
-
-    return { lambda, queue };
-  }
-
   private setupComputeResourceDiffBundles(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -534,7 +433,8 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
-    ownProps.ehrBundleBucket.grantReadWrite(lambda);
+    // Grante read to medical document bucket set on the api-stack
+    ownProps.ehrBundleBucket.grantWrite(lambda);
 
     return { lambda, queue };
   }
@@ -545,6 +445,8 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    ehrBundleBucket: s3.Bucket;
+    computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
     const {
@@ -584,6 +486,9 @@ export class EhrNestedStack extends NestedStack {
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
+    ownProps.ehrBundleBucket.grantWrite(lambda);
+    ownProps.computeResourceDiffBundlesQueue.grantSendMessages(lambda);
 
     return { lambda, queue };
   }

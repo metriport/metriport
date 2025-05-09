@@ -7,7 +7,6 @@ import { ApiBaseParams } from "../api-shared";
 export type SetResourceDiffJobEntryStatusParams = ApiBaseParams & {
   jobId: string;
   entryStatus: JobEntryStatus;
-  contribute: boolean;
 };
 
 /**
@@ -26,7 +25,6 @@ export async function setResourceDiffJobEntryStatus({
   patientId,
   jobId,
   entryStatus,
-  contribute,
 }: SetResourceDiffJobEntryStatusParams): Promise<void> {
   const { log, debug } = out(`Ehr setResourceDiffJobEntryStatus - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
@@ -35,7 +33,6 @@ export async function setResourceDiffJobEntryStatus({
     practiceId,
     jobId,
     entryStatus,
-    contribute: contribute.toString(),
   });
   const updateJobUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/diff/set-entry-status?${queryParams.toString()}`;
   try {

@@ -29,28 +29,22 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
 
+  console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const {
-    ehr,
-    cxId,
-    practiceId,
-    metriportPatientId,
-    ehrPatientId,
-    contribute,
-    jobId,
-    resourceType,
-  } = parsedBody;
+  const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, jobId, resourceType } =
+    parsedBody;
 
   const log = prefixedLog(
-    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceType ${resourceType}, contribute ${contribute}, jobId ${jobId}`
+    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceType ${resourceType}, jobId ${jobId}`
   );
+  log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
   const receiveCount = parseInt(message.attributes.ApproximateReceiveCount);
   const reportError = receiveCount >= maxAttempts;
   log(`Receive count: ${receiveCount}, max attempts: ${maxAttempts}, reportError: ${reportError}`);
 
   const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffBundlesLocal(waitTimeInMillis);
-  await ehrComputeResourceDiffHandler.computeResourceDiffBundles([{ ...parsedBody, reportError }]);
+  await ehrComputeResourceDiffHandler.computeResourceDiffBundles({ ...parsedBody, reportError });
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -62,9 +56,8 @@ const ehrComputeResourceDiffBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
-  contribute: z.boolean().optional(),
-  jobId: z.string(),
   resourceType: z.enum(supportedResourceTypes),
+  jobId: z.string(),
 });
 
 function parseBody(body?: unknown): ComputeResourceDiffBundlesRequest {

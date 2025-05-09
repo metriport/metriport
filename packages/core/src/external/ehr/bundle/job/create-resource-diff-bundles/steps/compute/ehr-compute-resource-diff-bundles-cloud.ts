@@ -1,12 +1,7 @@
-import { sleep } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { chunk } from "lodash";
 import { Config } from "../../../../../../../util/config";
-import {
-  SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
-  SQS_MESSAGE_BATCH_SIZE_FIFO,
-} from "../../../../../../../util/sqs";
 import { SQSClient } from "../../../../../../aws/sqs";
+import { createSqsGroupId } from "../../create-resource-diff-bundle-shared";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
@@ -23,21 +18,13 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
     this.sqsClient = sqsClient ?? new SQSClient({ region });
   }
 
-  async computeResourceDiffBundles(params: ComputeResourceDiffBundlesRequest[]): Promise<void> {
-    const chunks = chunk(params, SQS_MESSAGE_BATCH_SIZE_FIFO);
-    for (const chunk of chunks) {
-      await Promise.all(
-        chunk.map(params => {
-          const { ehrPatientId } = params;
-          const payload = JSON.stringify(params);
-          return this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
-            fifo: true,
-            messageDeduplicationId: createUuidFromText(payload),
-            messageGroupId: ehrPatientId,
-          });
-        })
-      );
-      await sleep(SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP);
-    }
+  async computeResourceDiffBundles(params: ComputeResourceDiffBundlesRequest): Promise<void> {
+    const { metriportPatientId, resourceType } = params;
+    const payload = JSON.stringify(params);
+    await this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
+      fifo: true,
+      messageDeduplicationId: createUuidFromText(payload),
+      messageGroupId: createSqsGroupId(metriportPatientId, resourceType),
+    });
   }
 }

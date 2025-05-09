@@ -1,8 +1,9 @@
 import { Bundle, MetriportError, sleep } from "@metriport/shared";
 import {
+  createBundleFromResourceList,
   FhirResource,
-  SupportedResourceType,
   fhirResourceSchema,
+  SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
 import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
@@ -12,7 +13,7 @@ import {
 } from "../../../../../api/bundle/fetch-ehr-bundle-presigned-url";
 import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
 import { BundleType } from "../../../../bundle-shared";
-import { updateBundle as updateBundleOnS3 } from "../../../../command/update-bundle";
+import { createOrReplaceBundle } from "../../../../command/create-or-replace-bundle";
 import { computeNewResources } from "../../utils";
 import {
   ComputeResourceDiffBundlesRequest,
@@ -22,79 +23,75 @@ import {
 export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async computeResourceDiffBundles(payloads: ComputeResourceDiffBundlesRequest[]): Promise<void> {
-    for (const payload of payloads) {
-      const {
-        ehr,
-        cxId,
-        practiceId,
-        metriportPatientId,
-        ehrPatientId,
-        resourceType,
-        contribute = false,
-        jobId,
-        reportError = true,
-      } = payload;
-      const entryStatusParams = {
-        ehr,
-        cxId,
-        practiceId,
-        patientId: ehrPatientId,
-        contribute,
-        jobId,
-      };
-      try {
-        const [metriportResources, ehrResources] = await Promise.all([
-          getMetriportResourcesFromS3({
-            cxId,
-            patientId: metriportPatientId,
-            resourceType,
-          }),
-          getEhrResourcesFromApi({
-            ehr,
-            cxId,
-            practiceId,
-            patientId: ehrPatientId,
-            resourceType,
-          }),
-        ]);
-        const { newEhrResources, newMetriportResources } = computeNewResources({
-          ehrResources,
-          metriportResources,
-        });
-        await Promise.all([
-          newEhrResources.length > 0
-            ? updateBundleOnS3({
-                ehr,
-                cxId,
-                metriportPatientId,
-                ehrPatientId,
-                bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
-                resources: newEhrResources,
-                resourceType,
-                jobId,
-              })
-            : undefined,
-          newMetriportResources.length > 0
-            ? updateBundleOnS3({
-                ehr,
-                cxId,
-                metriportPatientId,
-                ehrPatientId,
-                bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
-                resources: newMetriportResources,
-                resourceType,
-                jobId,
-              })
-            : undefined,
-        ]);
-        await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "successful" });
-      } catch (error) {
-        if (reportError) {
-          await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
-        }
-        throw error;
+  async computeResourceDiffBundles(payload: ComputeResourceDiffBundlesRequest): Promise<void> {
+    const {
+      ehr,
+      cxId,
+      practiceId,
+      metriportPatientId,
+      ehrPatientId,
+      resourceType,
+      jobId,
+      reportError = true,
+    } = payload;
+    const entryStatusParams = {
+      ehr,
+      cxId,
+      practiceId,
+      patientId: ehrPatientId,
+      jobId,
+    };
+    try {
+      const [metriportResources, ehrResources] = await Promise.all([
+        getMetriportResourcesFromS3({
+          cxId,
+          patientId: metriportPatientId,
+          resourceType,
+        }),
+        getEhrResourcesFromApi({
+          ehr,
+          cxId,
+          practiceId,
+          patientId: ehrPatientId,
+          resourceType,
+        }),
+      ]);
+      const { newEhrResources, newMetriportResources } = computeNewResources({
+        ehrResources,
+        metriportResources,
+      });
+      await Promise.all([
+        newEhrResources.length > 0
+          ? createOrReplaceBundle({
+              ehr,
+              cxId,
+              metriportPatientId,
+              ehrPatientId,
+              bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
+              bundle: createBundleFromResourceList(newEhrResources),
+              resourceType,
+              jobId,
+            })
+          : undefined,
+        newMetriportResources.length > 0
+          ? createOrReplaceBundle({
+              ehr,
+              cxId,
+              metriportPatientId,
+              ehrPatientId,
+              bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+              bundle: createBundleFromResourceList(newMetriportResources),
+              resourceType,
+              jobId,
+            })
+          : undefined,
+      ]);
+      await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "successful" });
+    } catch (error) {
+      if (reportError) {
+        await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
       }
+      throw error;
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }

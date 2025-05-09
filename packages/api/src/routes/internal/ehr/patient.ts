@@ -9,7 +9,6 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
-//import { contributeEhrOnlyBundles } from "../../../external/ehr/shared/command/bundle/contribute-ehr-only-bundles";
 import { fetchBundlePreSignedUrls } from "../../../external/ehr/shared/command/bundle/fetch-bundle-presignd-urls";
 import { refreshEhrBundles } from "../../../external/ehr/shared/command/bundle/refresh-ehr-bundles";
 import {
@@ -17,41 +16,11 @@ import {
   getResourceDiffBundlesJobPayload,
 } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/get-job-payload";
 import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-job";
-import { startRefreshEhrBundlesJob } from "../../../external/ehr/shared/job/bundle/refresh-ehr-bundles/start-job";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "../../util";
+import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";
 
 const router = Router();
-
-/**
- * POST /internal/ehr/:ehrId/patient/:id/resource/refresh
- *
- * Starts the job to refresh the cached bundles of resources in EHR across all supported resource types.
- * @param req.query.ehrId - The EHR to refresh the bundles for.
- * @param req.query.cxId - The CX ID of the patient.
- * @param req.params.id - The ID of EHR Patient.
- * @param req.query.practiceId - The ID of EHR Practice.
- * @returns The job ID of the refresh job
- */
-router.post(
-  "/:id/resource/refresh",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFromQueryOrFail("ehrId", req);
-    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFrom("params").orFail("id", req);
-    const practiceId = getFromQueryOrFail("practiceId", req);
-    const jobId = await startRefreshEhrBundlesJob({
-      ehr,
-      cxId,
-      practiceId,
-      patientId,
-    });
-    return res.status(httpStatus.OK).json(jobId);
-  })
-);
 
 /**
  * POST /internal/ehr/:ehrId/patient/:id/resource/diff
@@ -74,13 +43,11 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
-    const contribute = getFromQueryAsBoolean("contribute", req);
     const jobId = await startCreateResourceDiffBundlesJob({
       ehr,
       cxId,
       patientId,
       practiceId,
-      contribute,
     });
     return res.status(httpStatus.OK).json(jobId);
   })
@@ -190,23 +157,12 @@ router.post(
     if (!isValidJobEntryStatus(entryStatus)) {
       throw new BadRequestError("Status must a valid job entry status");
     }
-    const contribute = getFromQueryAsBoolean("contribute", req);
     await setPatientJobEntryStatus({
       jobId,
       cxId,
       entryStatus,
       onCompleted: async () => {
-        if (contribute) {
-          /*
-          await contributeEhrOnlyBundles({
-            ehr,
-            cxId,
-            practiceId,
-            patientId,
-            jobId,
-          });
-          */
-        }
+        //TODO: Contribute EHR-only bundles
       },
     });
     return res.sendStatus(httpStatus.OK);

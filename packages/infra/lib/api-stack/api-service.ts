@@ -111,7 +111,6 @@ export function createAPIService({
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
-  ehrStartResourceDiffBundlesQueue,
   ehrRefreshEhrBundlesQueue,
   ehrBundleBucket,
   generalBucket,
@@ -153,7 +152,6 @@ export function createAPIService({
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
-  ehrStartResourceDiffBundlesQueue: IQueue;
   ehrRefreshEhrBundlesQueue: IQueue;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
@@ -288,7 +286,6 @@ export function createAPIService({
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
-          EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL: ehrStartResourceDiffBundlesQueue.queueUrl,
           EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
           EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
@@ -453,11 +450,6 @@ export function createAPIService({
   provideAccessToQueue({
     accessType: "send",
     queue: healthieLinkPatientQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: ehrStartResourceDiffBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
   provideAccessToQueue({

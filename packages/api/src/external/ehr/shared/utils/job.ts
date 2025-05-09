@@ -8,7 +8,6 @@ export type StartCreateResourceDiffBundlesJobParams = {
   cxId: string;
   practiceId: string;
   patientId: string;
-  contribute?: boolean;
   requestId?: string;
 };
 
@@ -25,16 +24,4 @@ export type ResourceDiffBundlesJobPayload = PatientJobPayload<FetchedBundlePreSi
 
 export function getCreateResourceDiffBundlesJobType(ehr: EhrSources) {
   return `${ehr}-create-resource-diff-bundles`;
-}
-
-export type StartRefreshEhrBundlesJobParams = {
-  ehr: EhrSources;
-  cxId: string;
-  practiceId: string;
-  patientId: string;
-  requestId?: string;
-};
-
-export function getRefreshEhrBundlesJobType(ehr: EhrSources) {
-  return `${ehr}-refresh-ehr-bundles`;
 }
