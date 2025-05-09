@@ -8,9 +8,10 @@ const address = z.object({
   country: z.string().optional(),
 });
 
-const telecome = z.object({
+const telecom = z.object({
   value: z.string().optional(),
   system: z.enum(["phone", "email"]).optional(),
+  use: z.enum(["home", "mobile", "old", "temp", "work"]).optional(),
 });
 
 const name = z.object({
@@ -23,7 +24,7 @@ export const patientSchema = z.object({
   name: name.array().optional(),
   address: address.array().optional(),
   birthDate: z.string(),
-  telecom: telecome.array().optional(),
+  telecom: telecom.array().optional(),
 });
 
 export type Patient = z.infer<typeof patientSchema>;
