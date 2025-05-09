@@ -1,4 +1,5 @@
-import { getFileExtension } from "../../util/mime";
+import { JSON_FILE_EXTENSION, getFileExtension } from "../../util/mime";
+import { CONTRIBUTION_BUNDLE_FULL } from "../consolidated/filename";
 import { createFileName, createFolderName } from "../filename";
 
 export const UPLOADS_FOLDER = "uploads";
@@ -9,6 +10,26 @@ export function createUploadFilePath(cxId: string, patientId: string, docName: s
   const folderName = createFolderName(cxId, patientId);
   const fileName = createFileName(cxId, patientId, docName);
   return `${folderName}/${UPLOADS_FOLDER}/${fileName}`;
+}
+
+export function createContributionBundleFilePath(
+  cxId: string,
+  patientId: string,
+  requestId: string
+): string {
+  const folderName = createFolderName(cxId, patientId);
+  const fileName = createFileName(cxId, patientId, `${requestId}_${FHIR_BUNDLE_SUFFIX}`);
+  return `${folderName}/${UPLOADS_FOLDER}/${fileName}${JSON_FILE_EXTENSION}`;
+}
+
+export function createFullContributionBundleFilePath(cxId: string, patientId: string): string {
+  const folderName = createFolderName(cxId, patientId);
+  return `${folderName}/${UPLOADS_FOLDER}/${CONTRIBUTION_BUNDLE_FULL}${JSON_FILE_EXTENSION}`;
+}
+
+export function createUploadDirectoryPath(cxId: string, patientId: string): string {
+  const folderName = createFolderName(cxId, patientId);
+  return `${folderName}/${UPLOADS_FOLDER}`;
 }
 
 export function createUploadMetadataFilePath(

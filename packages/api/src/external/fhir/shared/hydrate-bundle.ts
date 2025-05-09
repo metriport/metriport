@@ -1,29 +1,36 @@
 import { Extension, Reference, Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
+import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/conversion";
+import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
 import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { isValidUuid } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
+import { cloneDeep } from "lodash";
+import { cleanupSpecialCharsFromBundle } from "../../../command/medical/patient/data-contribution/shared";
 import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
+import { validateFhirEntries } from "./json-validator";
 
 /**
  * Removes the Patient resource if provided, adds the Metriport and Document extensions to all the provided resources,
- * ensures that all resources have UUIDs for IDs
+ * ensures that all resources have UUIDs for IDs. Finally, adds the correct patient resource.
  */
-export function hydrateBundle(
+export function preprocessAndValidateUploadBundle(
   bundle: ValidBundle,
   patient: Patient,
   fhirBundleDestinationKey: string
 ): ValidBundle {
-  const bundleWithoutPatient = removePatientResource(bundle, patient.id);
+  const cleanBundle = cleanupSpecialCharsFromBundle(bundle);
+  const bundleWithoutPatient = removeProvidedPatientResource(cleanBundle, patient.id);
   const docExtension = buildDocIdFhirExtension(fhirBundleDestinationKey);
   const bundleWithExtensions = validateUuidsAndAddExtensions(
     bundleWithoutPatient,
     docExtension,
     patient.id
   );
-
-  return bundleWithExtensions;
+  const bundleWithCorrectPatient = addPatientResource(bundleWithExtensions, patient);
+  const validatedBundle = validateFhirEntries(bundleWithCorrectPatient);
+  return validatedBundle;
 }
 
 function validateUuidsAndAddExtensions(
@@ -89,7 +96,11 @@ function addUniqueExtension(resource: any, extension: Extension) {
   return resource;
 }
 
-function removePatientResource(bundle: ValidBundle, id: string): ValidBundle {
+/**
+ * Removes the FHIR Patient resource from the Bundle in case it was directly provided by the customer,
+ * since we can't be sure it's consistent with the record in our system.
+ */
+function removeProvidedPatientResource(bundle: ValidBundle, id: string): ValidBundle {
   const entriesWithoutPatient = bundle.entry.filter(e => {
     const res: Resource = e.resource;
     if (res.resourceType === "Patient") {
@@ -103,5 +114,20 @@ function removePatientResource(bundle: ValidBundle, id: string): ValidBundle {
   return {
     ...bundle,
     entry: entriesWithoutPatient,
+  };
+}
+
+/**
+ * Inserts the up-to-date FHIR representation of the patient as it's stored in our system.
+ */
+function addPatientResource(bundle: ValidBundle, patient: Patient): ValidBundle {
+  const updBundle = cloneDeep(bundle);
+
+  const fhirPatient = toFhirPatient(patient);
+  const patientBundleEntry = buildBundleEntry(fhirPatient);
+
+  return {
+    ...updBundle,
+    entry: [...updBundle.entry, patientBundleEntry],
   };
 }

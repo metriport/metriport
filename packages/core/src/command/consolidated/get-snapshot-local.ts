@@ -11,7 +11,6 @@ import axios from "axios";
 import { getConsolidatedQueryByRequestId } from "../../domain/patient";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
-import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
@@ -144,25 +143,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
 async function getBundle(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<SearchSetBundle> {
-  const { forceDataFromFhir } = !params.isAsync ? params : { forceDataFromFhir: false };
   const { cxId } = params.patient;
-  const isGetFromS3 = !forceDataFromFhir;
-  const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
-  log(`forceDataFromFhir: ${forceDataFromFhir}`);
-  if (isGetFromS3) {
-    const startedAt = new Date();
-    const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId });
-    if (consolidatedBundle) {
-      log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
-      return consolidatedBundle;
-    }
-    log(`(from S3) Not found/created`);
-  }
-  // Used for contributed data (shareback)
+  const { log } = out(`getBundle - fromS3`);
   const startedAt = new Date();
-  const originalBundle = await getConsolidatedFromFhirServer(params);
-  log(`(from FHIR) Took ${elapsedTimeFromNow(startedAt)}ms`);
-  return originalBundle;
+  const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId });
+
+  log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
+  return consolidatedBundle;
 }
 
 async function postSnapshotToApi({

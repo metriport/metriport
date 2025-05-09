@@ -1,20 +1,32 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
+import {
+  getFullContributionBundle,
+  uploadFullContributionBundle,
+} from "@metriport/core/command/consolidated/contribution-bundle-create";
+import { processBundleUploadTransaction } from "@metriport/core/command/contributed/process-upload-bundle";
+import { processBundle } from "@metriport/core/domain/conversion/bundle-modifications/process";
+import { createContributionBundleFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
-import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/conversion";
+import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { BadRequestError, errorToString } from "@metriport/shared";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { processCcdRequest } from "../../../../external/cda/process-ccd-request";
-import { hydrateBundle } from "../../../../external/fhir/shared/hydrate-bundle";
-import { validateFhirEntries } from "../../../../external/fhir/shared/json-validator";
+import { preprocessAndValidateUploadBundle } from "../../../../external/fhir/shared/hydrate-bundle";
+import { OrganizationModel } from "../../../../models/medical/organization";
 import { Bundle as ValidBundle } from "../../../../routes/medical/schemas/fhir";
 import { Config } from "../../../../shared/config";
 import { getOrganizationOrFail } from "../../organization/get-organization";
-import { createOrUpdateConsolidatedPatientData } from "../consolidated-create";
 import { convertFhirToCda } from "../convert-fhir-to-cda";
-import { checkResourceLimit, hasCompositionResource, normalizeBundle } from "./shared";
+import { checkResourceLimit, hasCompositionResource } from "./shared";
+
+dayjs.extend(utc);
+
+type UploadResponse = { bundle: Bundle<Resource> | undefined; status: number };
 
 export async function handleDataContribution({
   requestId = uuidv7(),
@@ -26,42 +38,97 @@ export async function handleDataContribution({
   patient: Patient;
   cxId: string;
   bundle: ValidBundle;
-}): Promise<Bundle<Resource> | undefined> {
+}): Promise<UploadResponse> {
+  if (!bundle.entry || bundle.entry.length === 0) {
+    throw new BadRequestError(`The bundle is missing entries`);
+  }
+
   const patientId = patient.id;
-  const { log } = out(`handleDataContribution - cxId ${cxId}, patientId ${patientId}`);
-  const fhirBundleDestinationKey = createUploadFilePath(
+  const { log } = out(`handleDataContribution - cx ${cxId}, pt ${patientId}`);
+
+  const fhirBundleDestinationKey = createContributionBundleFilePath(cxId, patientId, requestId);
+  const organization = await getOrganizationOrFail({ cxId });
+
+  const incomingAmount = bundle.entry?.length ?? 0;
+  await checkResourceLimit(incomingAmount, patient); // Only affects sandbox and dev env
+
+  const processingStartedAt = Date.now();
+  const validatedBundle = preprocessAndValidateUploadBundle(
+    bundle,
+    patient,
+    fhirBundleDestinationKey
+  );
+  const processedBundle = await processBundle({
+    bundle: validatedBundle,
     cxId,
     patientId,
-    `${requestId}_${FHIR_BUNDLE_SUFFIX}.json`
+    options: { deduplicate: false },
+  });
+
+  log(`${Date.now() - processingStartedAt}ms to process the incoming bundle`);
+
+  const responseBundle = await validateUploadAgainstExistingData(patient, processedBundle);
+
+  // intentionally async – make sure we catch errors to avoid unhandled rejections
+  processCdaBundle(processedBundle, cxId, patientId, requestId, organization).catch(err =>
+    out("handleDataContribution").log(`processCdaBundle failed: ${errorToString(err)}`)
   );
-  const mainStartedAt = Date.now();
 
-  const normalizedBundle = normalizeBundle(bundle);
-  const fullBundle = hydrateBundle(normalizedBundle, patient, fhirBundleDestinationKey);
-  const validatedBundle = validateFhirEntries(fullBundle);
+  await uploadFhirBundleToS3({
+    fhirBundle: validatedBundle,
+    destinationKey: fhirBundleDestinationKey,
+  });
 
-  const [, organization] = await Promise.all([
-    uploadFhirBundleToS3({
-      fhirBundle: bundle,
-      destinationKey: fhirBundleDestinationKey,
-    }),
-    getOrganizationOrFail({ cxId }),
-  ]);
-  log(`${Date.now() - mainStartedAt}ms to get org and patient, and store on S3`);
+  if (!Config.isSandbox()) {
+    // intentionally async
+    processCcdRequest({ patient, organization, requestId });
+  }
 
-  const validationStartedAt = Date.now();
-  const fhirOrganization = toFhirOrganization(organization);
-  const incomingAmount = validatedBundle.entry.length;
-  await checkResourceLimit(incomingAmount, patient);
-  log(`${Date.now() - validationStartedAt}ms to hydrate, validate, and check limits`);
+  return responseBundle;
+}
 
-  // Do it before storing on the FHIR server since this also validates the bundle
-  if (!Config.isSandbox() && hasCompositionResource(validatedBundle)) {
+export async function validateUploadAgainstExistingData(
+  patient: Patient,
+  incomingBundle: Bundle<Resource>
+): Promise<UploadResponse> {
+  const existingBundle = await getFullContributionBundle(patient);
+  const { outcomesBundle, mergedBundle } = processBundleUploadTransaction(
+    incomingBundle,
+    existingBundle
+  );
+  const status = outcomesBundle.entry?.some(e => e.response?.status === "400") ? 400 : 200;
+
+  if (status === 200 && mergedBundle) {
+    await uploadFullContributionBundle({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      contributionBundle: mergedBundle,
+    });
+  }
+
+  return { bundle: outcomesBundle, status };
+}
+
+/**
+ * If the bundle contains a composition resource, convert it to CDA and upload it.
+ */
+async function processCdaBundle(
+  bundle: Bundle<Resource>,
+  cxId: string,
+  patientId: string,
+  requestId: string,
+  organization: OrganizationModel
+) {
+  const { log } = out(`processCdaBundle - cx ${cxId}, pt ${patientId}`);
+  if (!Config.isSandbox() && hasCompositionResource(bundle)) {
+    const fhirOrganization = toFhirOrganization(organization);
     const cdaConversionStartedAt = Date.now();
-    const fhirPatient = toFhirPatient(patient);
-    validatedBundle.entry.push({ resource: fhirPatient });
-    validatedBundle.entry.push({ resource: fhirOrganization });
-    const converted = await convertFhirToCda({ cxId, validatedBundle });
+    const bundleForCda = {
+      ...bundle,
+      entry: [...(bundle.entry ?? []), buildBundleEntry(fhirOrganization)],
+    };
+
+    const converted = await convertFhirToCda({ cxId, bundle: bundleForCda });
     // intentionally async
     uploadCdaDocuments({
       cxId,
@@ -69,22 +136,8 @@ export async function handleDataContribution({
       cdaBundles: converted,
       organization: fhirOrganization,
       docId: requestId,
-    }).then(() => log(`${Date.now() - cdaConversionStartedAt}ms to convert to CDA`));
+    })
+      .then(() => log(`${Date.now() - cdaConversionStartedAt}ms to convert to CDA`))
+      .catch(err => log(`Failed to upload CDA documents: ${errorToString(err)}`));
   }
-
-  const storeStartedAt = Date.now();
-  const consolidatedDataUploadResults = await createOrUpdateConsolidatedPatientData({
-    cxId,
-    patientId: patient.id,
-    requestId,
-    fhirBundle: validatedBundle,
-  });
-  log(`${Date.now() - storeStartedAt}ms to store on FHIR server and S3`);
-
-  if (!Config.isSandbox()) {
-    // intentionally async
-    processCcdRequest({ patient, organization, requestId });
-  }
-
-  return consolidatedDataUploadResults;
 }
