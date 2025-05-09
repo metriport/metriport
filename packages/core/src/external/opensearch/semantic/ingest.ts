@@ -2,6 +2,7 @@ import { Patient } from "../../../domain/patient";
 import { out } from "../../../util";
 import { Config } from "../../../util/config";
 import { bundleToString, FhirResourceToText } from "../../fhir/export/string/bundle-to-string";
+import { OnBulkItemError } from "../bulk";
 import { OpenSearchTextIngestorDirect } from "../text-ingestor-direct";
 import { getConsolidated } from "./shared";
 
@@ -10,7 +11,13 @@ import { getConsolidated } from "./shared";
  *
  * @param patient The patient to ingest.
  */
-export async function ingestSemantic({ patient }: { patient: Patient }) {
+export async function ingestSemantic({
+  patient,
+  onItemError,
+}: {
+  patient: Patient;
+  onItemError?: OnBulkItemError;
+}) {
   const { log } = out(`ingestSemantic - cx ${patient.cxId}, pt ${patient.id}`);
 
   const convertedResources = await getConsolidatedAsText({ patient });
@@ -34,6 +41,7 @@ export async function ingestSemantic({ patient }: { patient: Patient }) {
     cxId: patient.cxId,
     patientId: patient.id,
     resources,
+    onItemError,
   });
   const elapsedTime = Date.now() - startedAt;
 

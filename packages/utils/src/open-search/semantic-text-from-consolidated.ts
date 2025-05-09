@@ -24,7 +24,6 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 
 const outputRootFolderName = `semantic-text-from-consolidated`;
-const getFolderName = buildGetDirPathInside(outputRootFolderName);
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -34,6 +33,10 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
+  initRunsFolder(outputRootFolderName);
+  const getFolderName = buildGetDirPathInside(outputRootFolderName);
+  const outputFilePrefix = getFolderName(`${cxId}_${patientId}`);
+  const outputFilePath = outputFilePrefix + ".csv";
 
   console.log("Getting consolidated resources as text...");
 
@@ -45,9 +48,6 @@ async function main() {
   const headers = ["id", "type", "text"];
   const resourcesAsCsv = [headers, ...resources.map(r => [r.id, r.type, `"${r.text}"`])].join("\n");
 
-  const outputFilePrefix = getFolderName(`${cxId}_${patientId}`);
-  initRunsFolder(outputFilePrefix);
-  const outputFilePath = outputFilePrefix + ".csv";
   fs.writeFileSync(outputFilePath, resourcesAsCsv);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
