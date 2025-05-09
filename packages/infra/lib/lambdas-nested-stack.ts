@@ -745,7 +745,7 @@ export class LambdasNestedStack extends NestedStack {
     hl7v2RosterBucket.grantReadWrite(hl7v2RosterUploadLambda);
 
     // Create EventBridge schedules for each HIE config
-    if (!isSandbox(config) && config.hl7Notification.hieConfigs) {
+    if (config.hl7Notification.hieConfigs) {
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {

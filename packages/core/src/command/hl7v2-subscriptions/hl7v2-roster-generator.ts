@@ -36,8 +36,14 @@ export class Hl7v2RosterGenerator {
   async execute(config: HieConfig): Promise<string | undefined> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states, subscriptions } = config;
+    const loggingDetails = {
+      hieName: config.name,
+      schema: config.schema,
+      states,
+      subscriptions,
+    };
 
-    log(`Running with this config: ${JSON.stringify(config)}`);
+    log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
 
     const subscribers = await executeWithNetworkRetries(
       async () => this.getAllSubscribers(states, subscriptions, log),
@@ -53,7 +59,7 @@ export class Hl7v2RosterGenerator {
       const msg = `No subscribers found, skipping roster generation`;
       log(msg);
       capture.message(msg, {
-        extra: config,
+        extra: loggingDetails,
         level: "info",
       });
       return;
@@ -75,7 +81,7 @@ export class Hl7v2RosterGenerator {
       errorConfig: {
         errorMessage: "Error uploading preprocessed CSV",
         context: "Hl7v2RosterGenerator",
-        captureParams: config,
+        captureParams: loggingDetails,
         shouldCapture: true,
       },
     });
