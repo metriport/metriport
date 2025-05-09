@@ -250,7 +250,6 @@ export function createAPIService({
           // }),
           ...secretsToECS(secrets),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
-          ...secretsToECS(buildSecrets(stack, props.config.hl7Notification.secrets)),
         },
         environment: {
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE

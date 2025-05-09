@@ -1,19 +1,21 @@
-import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { MetriportError, USState, executeWithNetworkRetries } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
+import { Patient } from "../../domain/patient";
 import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { capture, out } from "../../util";
+import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
+import { compressUuid } from "./hl7v2-to-fhir-conversion/shared";
 import {
   HieConfig,
-  HieFieldMapping,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
+  MetriportToHieFieldMapping,
   addressFields,
 } from "./types";
 
@@ -33,7 +35,7 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(config: HieConfig): Promise<string | undefined> {
+  async execute(config: HieConfig): Promise<string> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states, subscriptions } = config;
     const loggingDetails = {
@@ -45,27 +47,23 @@ export class Hl7v2RosterGenerator {
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
 
-    const subscribers = await executeWithNetworkRetries(
-      async () => this.getAllSubscribers(states, subscriptions, log),
+    const patients = await executeWithNetworkRetries(
+      async () => this.getAllSubscribedPatients(states, subscriptions),
       {
         maxAttempts: NUMBER_OF_ATTEMPTS,
         initialDelay: BASE_DELAY.asMilliseconds(),
         log,
       }
     );
-    log(`Found ${subscribers.length} total subscribers`);
+    log(`Found ${patients.length} total patients`);
 
-    if (subscribers.length === 0) {
-      const msg = `No subscribers found, skipping roster generation`;
+    if (patients.length === 0) {
+      const msg = `No patients found, skipping roster generation`;
       log(msg);
-      capture.message(msg, {
-        extra: loggingDetails,
-        level: "info",
-      });
-      return;
+      throw new MetriportError(msg, { extra: loggingDetails });
     }
 
-    const convertedSubscribers = convertSubscribersToHieFormat(subscribers, config.schema);
+    const convertedSubscribers = convertPatientsToHieFormat(patients, config.schema, states);
     const rosterCsv = this.generateCsv(convertedSubscribers);
     log("Created CSV");
 
@@ -79,7 +77,7 @@ export class Hl7v2RosterGenerator {
       contentType: CSV_MIME_TYPE,
       log,
       errorConfig: {
-        errorMessage: "Error uploading preprocessed CSV",
+        errorMessage: "Error uploading patient roster CSV",
         context: "Hl7v2RosterGenerator",
         captureParams: loggingDetails,
         shouldCapture: true,
@@ -90,38 +88,27 @@ export class Hl7v2RosterGenerator {
     return rosterCsv;
   }
 
-  private async getAllSubscribers(
+  private async getAllSubscribedPatients(
     states: string[],
-    subscriptions: Hl7v2Subscription[],
-    log: typeof console.log
-  ): Promise<Hl7v2Subscriber[]> {
-    const allSubscribers: Hl7v2Subscriber[] = [];
-    let currentUrl = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
+    subscriptions: Hl7v2Subscription[]
+  ): Promise<Patient[]> {
+    const allSubscribers: Patient[] = [];
+    let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
       states: states.join(","),
       subscriptions,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 
-    try {
-      while (currentUrl) {
-        const response = await axios.get(currentUrl, {
-          params: baseParams,
-        });
-        baseParams = undefined;
-
-        const data = response.data as Hl7v2SubscriberApiResponse;
-        allSubscribers.push(...data.patients);
-
-        currentUrl = data.meta.nextPage || "";
-        if (!currentUrl) break;
-      }
-      return allSubscribers;
-    } catch (error) {
-      const msg = `Failed to fetch ADT subscribers`;
-      log(`${msg} - err: ${errorToString(error)}`);
-      throw new MetriportError(msg, error);
+    while (currentUrl) {
+      const response: AxiosResponse<Hl7v2SubscriberApiResponse> = await axios.get(currentUrl, {
+        params: baseParams,
+      });
+      baseParams = undefined;
+      allSubscribers.push(...response.data.patients);
+      currentUrl = response.data.meta.nextPage;
     }
+    return allSubscribers;
   }
 
   private generateCsv(records: SubscriberRecord[]): string {
@@ -138,46 +125,77 @@ export class Hl7v2RosterGenerator {
   }
 }
 
-export function convertSubscribersToHieFormat(
-  subscribers: Hl7v2Subscriber[],
-  schema: HieFieldMapping
+export function convertPatientsToHieFormat(
+  patients: Patient[],
+  schema: MetriportToHieFieldMapping,
+  states: USState[]
 ): SubscriberRecord[] {
-  return subscribers.map(s => convertSubscriberToHieFormat(s, schema));
+  return patients
+    .map(s => mapPatientToSubscriber(s, states))
+    .map(s => convertSubscriberToHieFormat(s, schema));
 }
 
 export function convertSubscriberToHieFormat(
   subscriber: Hl7v2Subscriber,
-  schema: HieFieldMapping
+  schema: MetriportToHieFieldMapping
 ): SubscriberRecord {
   const result: SubscriberRecord = {};
 
   // Handle top-level fields
-  for (const [field, hieField] of Object.entries(schema)) {
-    if (field === "address") continue; // Skip address, we'll handle it separately
-    const value = _.get(subscriber, field);
+  for (const [metriportSubscriberField, hieField] of Object.entries(schema)) {
+    if (metriportSubscriberField === "address") continue; // Skip address, we'll handle it separately
+    const value = _.get(subscriber, metriportSubscriberField);
     if (typeof hieField === "string" && value !== undefined) {
       result[hieField] = String(value);
     }
   }
 
-  // Handle address fields
-  if (subscriber.address && subscriber.address.length > 0) {
-    const addressMapping = schema.address;
+  const addressMapping = schema.address;
 
-    let addressIndex = 0;
-    for (const address of addressMapping) {
-      const currentSubscriberAddress = subscriber.address[addressIndex];
-      if (!currentSubscriberAddress) continue;
-      for (const field of addressFields) {
-        const hieField = address[field];
-        const value = _.get(currentSubscriberAddress, field);
-        if (value !== undefined) {
-          result[hieField] = String(value);
-        }
+  let addressIndex = 0;
+  for (const address of addressMapping) {
+    const currentSubscriberAddress = subscriber.address[addressIndex];
+    if (!currentSubscriberAddress) continue;
+    for (const field of addressFields) {
+      const hieField = address[field];
+      const value = _.get(currentSubscriberAddress, field);
+      if (value !== undefined) {
+        result[hieField] = String(value);
       }
-      addressIndex++;
     }
+    addressIndex++;
   }
 
   return result;
+}
+
+function mapPatientToSubscriber(p: Patient, states: string[]): Hl7v2Subscriber {
+  const data = p.data;
+  const addresses = data.address.filter(a => states.includes(a.state));
+  const ssn = data.personalIdentifiers?.find(id => id.type === "ssn")?.value;
+  const driversLicense = data.personalIdentifiers?.find(id => id.type === "driversLicense")?.value;
+  const phone = data.contact?.find(c => c.phone)?.phone;
+  const email = data.contact?.find(c => c.email)?.email;
+  const scrambledId = packIdAndCxId(p.cxId, p.id);
+
+  return {
+    id: p.id,
+    cxId: p.cxId,
+    scrambledId,
+    lastName: data.lastName,
+    firstName: data.firstName,
+    dob: data.dob,
+    genderAtBirth: data.genderAtBirth,
+    address: addresses,
+    ...(ssn ? { ssn } : undefined),
+    ...(driversLicense ? { driversLicense } : undefined),
+    ...(phone ? { phone } : undefined),
+    ...(email ? { email } : undefined),
+  };
+}
+
+export function packIdAndCxId(cxId: string, patientId: string): string {
+  const compressedCxId = compressUuid(cxId);
+  const compressedPatientId = compressUuid(patientId);
+  return `${compressedCxId}_${compressedPatientId}`;
 }
