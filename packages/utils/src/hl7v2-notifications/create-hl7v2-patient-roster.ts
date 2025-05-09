@@ -31,7 +31,7 @@ async function main() {
       const lambdaName = getEnvVarOrFail("HL7V2_ROSTER_UPLOAD_LAMBDA_NAME");
       const lambdaClient = makeLambdaClient(region);
 
-      await lambdaClient.invoke({
+      lambdaClient.invoke({
         FunctionName: lambdaName,
         InvocationType: "RequestResponse",
         Payload: JSON.stringify(config),

@@ -89,33 +89,3 @@ function transformSubscriptionsToObject(
 ): Record<string, boolean> {
   return subscriptions.reduce((acc, subscription) => ({ ...acc, [subscription]: true }), {});
 }
-
-// function mapPatientsToSubscribers(patients: PatientModelReadOnly[]): Hl7v2Subscriber[] {
-//   return patients.map(p => {
-//     const data = p.data;
-//     const ssn = data.personalIdentifiers?.find(id => id.type === "ssn")?.value;
-//     const driversLicense = data.personalIdentifiers?.find(
-//       id => id.type === "driversLicense"
-//     )?.value;
-//     const phone = data.contact?.find(c => c.phone)?.phone;
-//     const email = data.contact?.find(c => c.email)?.email;
-//     const compressedPatientId = compressUuid(p.id);
-//     const compressedCxId = compressUuid(p.cxId);
-//     const scrambledId = `${compressedCxId}_${compressedPatientId}`;
-
-//     return {
-//       id: p.id,
-//       cxId: p.cxId,
-//       scrambledId,
-//       lastName: data.lastName,
-//       firstName: data.firstName,
-//       dob: data.dob,
-//       genderAtBirth: data.genderAtBirth,
-//       address: data.address,
-//       ...(ssn ? { ssn } : undefined),
-//       ...(driversLicense ? { driversLicense } : undefined),
-//       ...(phone ? { phone } : undefined),
-//       ...(email ? { email } : undefined),
-//     };
-//   });
-// }
