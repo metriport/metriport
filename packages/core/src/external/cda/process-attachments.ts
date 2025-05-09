@@ -10,6 +10,7 @@ import {
 } from "@medplum/fhirtypes";
 import { errorToString, executeWithNetworkRetries, toArray } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { MedicalDataSource, isMedicalDataSource } from "..";
 import { createAttachmentUploadFilePath } from "../../domain/document/upload";
 import {
@@ -30,7 +31,6 @@ import { detectFileType } from "../../util/file-type";
 import { out } from "../../util/log";
 import { OCTET_MIME_TYPE } from "../../util/mime";
 import { sizeInBytes } from "../../util/string";
-import { uuidv4 } from "../../util/uuid-v7";
 import { S3Utils, UploadParams } from "../aws/s3";
 import { cqExtension } from "../carequality/extension";
 import { cwExtension } from "../commonwell/extension";
@@ -271,10 +271,10 @@ function getFileDetails(
 
   const fileBuffer = Buffer.from(unquotedB64, "base64");
   let mimeType = detectFileType(fileBuffer).mimeType;
-  log(`Detected mimetype: ${mimeType}`);
+  log(`[getFileDetails] Detected mimetype: ${mimeType}`);
 
   if (mimeType === OCTET_MIME_TYPE && mediaTypeProvider._mediaType) {
-    log(`Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
+    log(`[getFileDetails] Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
     mimeType = mediaTypeProvider._mediaType;
   }
 
@@ -290,11 +290,13 @@ function buildDocumentReferenceFromAct(
   act: ConcernActEntryAct
 ) {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
+  const docRefId = createUuidFromText(JSON.stringify(act));
   const identifiers = getIdentifiers(act.id);
   const date = getDate(act.effectiveTime);
   const type = getType(act.code);
 
   return fillDocumentReference(docRef, {
+    docRefId,
     identifiers,
     type,
     date,
@@ -388,10 +390,12 @@ function buildDocumentReferenceFromObsMedia(
   obsMedia: ObservationMedia
 ): DocumentReference {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
+  const docRefId = createUuidFromText(JSON.stringify(obsMedia));
   const identifiers = getIdentifiers(obsMedia.id);
   const date = getDate(organizer.effectiveTime);
   const type = getType(organizer.code);
   return fillDocumentReference(docRef, {
+    docRefId,
     identifiers,
     type,
     date,
@@ -402,12 +406,13 @@ function fillDocumentReference(
   docRef: DocumentReference,
   params: {
     identifiers: Identifier[];
+    docRefId: string;
     type?: CodeableConcept | undefined;
     date?: string | undefined;
   }
 ): DocumentReference {
-  const { identifiers, type, date } = params;
-  docRef.id = uuidv4();
+  const { identifiers, type, date, docRefId } = params;
+  docRef.id = docRefId;
 
   if (identifiers.length > 0) docRef.identifier = identifiers;
   if (type) {
