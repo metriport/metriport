@@ -45,6 +45,7 @@ const codeChallenge = new CodeChallengeFromSecretManager(
 /**
  * Lambda that executes the logic to keep the session w/ CW active.
  */
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async () => {
   console.log(
     `Running with cookieSecretArn: ${cookieSecretArn}, ` +
