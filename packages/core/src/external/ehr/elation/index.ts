@@ -97,7 +97,7 @@ class ElationApi {
 
     try {
       const response = await axios.post(url, createDataParams(data), {
-        headers: { "content-type": "application/x-www-form-urlencoded" },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
       const tokenData = elationClientJwtTokenResponseSchema.parse(response.data);
@@ -128,7 +128,7 @@ class ElationApi {
       baseURL: this.baseUrl,
       headers: {
         Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
-        "content-type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/x-www-form-urlencoded",
       },
     });
   }
@@ -173,7 +173,7 @@ class ElationApi {
       method: "PATCH",
       url: patientUrl,
       data: { metadata },
-      headers: { "content-type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       schema: patientSchema,
       additionalInfo,
       debug,
@@ -226,7 +226,7 @@ class ElationApi {
       data,
       schema: createdProblemSchema,
       additionalInfo,
-      headers: { "content-type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       debug,
     });
     return problem;

@@ -1,41 +1,28 @@
-import { errorToString } from "@metriport/shared";
 import { makeLambdaClient } from "../../../../external/aws/lambda";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
-import { PatientImportParseHandler, StartPatientImportRequest } from "./patient-import-parse";
+import { PatientImportParse, PatientImportParseRequest } from "./patient-import-parse";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
 
-export class PatientImportParseCloud implements PatientImportParseHandler {
-  constructor(private readonly processPatientImportLambda: string) {}
+export class PatientImportParseCloud implements PatientImportParse {
+  constructor(private readonly jobParseLambda: string) {}
 
-  async processJobParse(params: StartPatientImportRequest): Promise<void> {
+  async processJobParse(params: PatientImportParseRequest): Promise<void> {
     const { cxId, jobId } = params;
-    const { log } = out(`processJobParse.cloud - cxId ${cxId} jobId ${jobId}`);
-    try {
-      const payload = JSON.stringify(params);
-      await lambdaClient
-        .invoke({
-          FunctionName: this.processPatientImportLambda,
-          InvocationType: "Event",
-          Payload: payload,
-        })
-        .promise();
-      log(`Lambda invoked successfully - ${payload}`);
-    } catch (error) {
-      const msg = `Failure while parsing the job of patient import @ PatientImport`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          context: "patient-import-parse-cloud.processJobParse",
-          error,
-        },
-      });
-      throw error;
-    }
+    const { log } = out(`PatientImport processJobParse.cloud - cx ${cxId}, job ${jobId}`);
+
+    log(`Invoking lambda ${this.jobParseLambda}`);
+    const payload = JSON.stringify(params);
+    // Intentionally only erroring if we fail to invoke the lambda, not if the lambda
+    // execution fails (would use defaultLambdaInvocationResponseHandler for that)
+    await lambdaClient
+      .invoke({
+        FunctionName: this.jobParseLambda,
+        InvocationType: "Event",
+        Payload: payload,
+      })
+      .promise();
   }
 }

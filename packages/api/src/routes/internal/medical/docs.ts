@@ -144,6 +144,8 @@ router.post(
     const source = getFrom("query").optional("source", req);
     const details = getFrom("query").optional("details", req);
     const jobId = getFrom("query").optional("jobId", req);
+    const countRaw = getFrom("query").optional("count", req);
+    const count = countRaw ? parseInt(countRaw) : undefined;
     const convertResult = convertResultSchema.parse(status);
 
     // keeping the old logic for now, but we should avoid having these optional parameters that can
@@ -160,6 +162,7 @@ router.post(
       source,
       convertResult,
       details,
+      count,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -353,6 +356,7 @@ router.get(
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
+ * @param req.query.requestId - Optional; The request ID for the document query.
  * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
  * @param req.query.forceQuery - Optional; Whether to force doc query to run. DEFAULTS TRUE.
  * @param req.query.forcePatientDiscovery - Optional; Whether to force patient discovery before document query.
@@ -367,6 +371,7 @@ router.post(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
+    const requestId = getFrom("query").optional("requestId", req);
     const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
     const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
@@ -377,6 +382,7 @@ router.post(
       cxId,
       patientId,
       facilityId,
+      requestId,
       forceQuery,
       forcePatientDiscovery,
       cqManagingOrgName,

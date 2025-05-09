@@ -1,3 +1,33 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json"
+  "extends": "@tsconfig/node18/tsconfig.json",
+  // "extends": "@tsconfig/strictest",
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
+    // START - From @tsconfig/strictest
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    // #340 - Left this ones out bc it was causing too many changes
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    // "verbatimModuleSyntax": true,
+    // #340 - Left this one out bc it required adding _ as prefix for unused params in addition to ts-eslint's no-unused-vars
+    "noUnusedParameters": true,
+    // END - From @tsconfig/strictest
+
+    "sourceMap": false /* Create source map files for emitted JavaScript files. */,
+    "rootDir": "./src" /* Specify the root folder within your source files. */,
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */,
+    // "noErrorTruncation": true,
+    // "resolveJsonModule": true
+  },
+  "include": ["./src/**/*"],
+  // "exclude": []
 }

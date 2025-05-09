@@ -2,7 +2,7 @@ import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-pa
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
+import { BadRequestError, errorToString, NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -110,6 +110,7 @@ async function getAppointments({
       }),
     };
   } catch (error) {
+    if (error instanceof BadRequestError || error instanceof NotFoundError) return {};
     log(`Failed to get appointments. Cause: ${errorToString(error)}`);
     return { error };
   }

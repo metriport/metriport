@@ -22,7 +22,6 @@ import { Bundle as ValidBundle } from "../../../../routes/medical/schemas/fhir";
 import { Config } from "../../../../shared/config";
 import { getOrganizationOrFail } from "../../organization/get-organization";
 import { convertFhirToCda } from "../convert-fhir-to-cda";
-import { getPatientOrFail } from "../get-patient";
 import { checkResourceLimit, hasCompositionResource } from "./shared";
 
 dayjs.extend(utc);
@@ -30,27 +29,25 @@ dayjs.extend(utc);
 type UploadResponse = { bundle: Bundle<Resource> | undefined; status: number };
 
 export async function handleDataContribution({
-  cxId,
-  patientId,
   requestId = uuidv7(),
+  patient,
+  cxId,
   bundle,
 }: {
-  cxId: string;
-  patientId: string;
   requestId: string;
+  patient: Patient;
+  cxId: string;
   bundle: ValidBundle;
 }): Promise<UploadResponse> {
   if (!bundle.entry || bundle.entry.length === 0) {
     throw new BadRequestError(`The bundle is missing entries`);
   }
 
+  const patientId = patient.id;
   const { log } = out(`handleDataContribution - cx ${cxId}, pt ${patientId}`);
 
   const fhirBundleDestinationKey = createContributionBundleFilePath(cxId, patientId, requestId);
-  const [organization, patient] = await Promise.all([
-    getOrganizationOrFail({ cxId }),
-    getPatientOrFail({ id: patientId, cxId }),
-  ]);
+  const organization = await getOrganizationOrFail({ cxId });
 
   const incomingAmount = bundle.entry?.length ?? 0;
   await checkResourceLimit(incomingAmount, patient); // Only affects sandbox and dev env

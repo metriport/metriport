@@ -180,7 +180,7 @@ async function getCqDataFromDb(
     select p.cx_id, p.id, pdr.data as response_data, de.name as gateway_name
     from patient p
       left join patient_discovery_result pdr ON pdr.patient_id = p.id::uuid ${matchQuery}
-      left join cq_directory_entry de ON de.id = pdr.data->'gateway'->>'oid'
+      left join cq_directory_entry_view de ON de.id = pdr.data->'gateway'->>'oid'
     where p.id = :patientId
   `;
   const replacements = {

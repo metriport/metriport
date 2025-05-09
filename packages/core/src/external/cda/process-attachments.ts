@@ -23,6 +23,7 @@ import {
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { capture } from "../../util";
+import { isValidBase64 } from "../../util/base64";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { detectFileType } from "../../util/file-type";
@@ -40,7 +41,6 @@ import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
-const BASE64_REGEX = /^[A-Za-z0-9+/]+={0,2}$/;
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -78,7 +78,7 @@ export async function processAttachments({
   fhirUrl: string;
   medicalDataSource?: string | undefined;
 }) {
-  const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
+  const { log } = out(`processAttachments - filepath ${filePath}`);
   try {
     const s3Utils = getS3UtilsInstance();
 
@@ -256,8 +256,9 @@ function getFileDetails(
 
   // Clean up the base64 string - remove any whitespace, newlines etc
   const cleanB64 = fileB64Contents.replace(/\s/g, "");
+  const unquotedB64 = cleanB64.replace(/^["']|["']$/g, "");
 
-  if (!isValidBase64(cleanB64)) {
+  if (!isValidBase64(unquotedB64)) {
     const msg = `Invalid base64 string in attachment`;
     log(msg);
     capture.message(msg, {
@@ -268,7 +269,7 @@ function getFileDetails(
     return undefined;
   }
 
-  const fileBuffer = Buffer.from(cleanB64, "base64");
+  const fileBuffer = Buffer.from(unquotedB64, "base64");
   let mimeType = detectFileType(fileBuffer).mimeType;
   log(`Detected mimetype: ${mimeType}`);
 
@@ -278,13 +279,9 @@ function getFileDetails(
   }
 
   return {
-    fileB64Contents: cleanB64,
+    fileB64Contents: unquotedB64,
     mimeType,
   };
-}
-
-function isValidBase64(cleanBase64String: string): boolean {
-  return BASE64_REGEX.test(cleanBase64String);
 }
 
 function buildDocumentReferenceFromAct(

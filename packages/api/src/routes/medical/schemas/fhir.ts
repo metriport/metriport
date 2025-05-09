@@ -5,7 +5,7 @@ import { z } from "zod";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { getFrom } from "../../util";
 
-const typeSchema = z.enum(["collection"]);
+const typeSchema = z.enum(["collection", "searchset"]);
 
 const bundleEntrySchema = z.array(
   z.object({

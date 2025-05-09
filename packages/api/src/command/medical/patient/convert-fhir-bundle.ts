@@ -10,11 +10,12 @@ import {
   createMRSummaryFileName,
   createSandboxMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
-import { Patient } from "@metriport/core/domain/patient";
-import { isWkhtmltopdfEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -40,6 +41,7 @@ export const emptyMetaProp = "na";
 export async function handleBundleToMedicalRecord({
   bundle,
   patient,
+  requestId,
   resources,
   dateFrom,
   dateTo,
@@ -47,6 +49,7 @@ export async function handleBundleToMedicalRecord({
 }: {
   bundle: Bundle<Resource>;
   patient: Pick<Patient, "id" | "cxId" | "data">;
+  requestId?: string;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -81,6 +84,18 @@ export async function handleBundleToMedicalRecord({
     newBundle.entry = [];
     newBundle.total = 0;
   }
+
+  const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.consolidatedQuery,
+    properties: {
+      patientId: patient.id,
+      conversionType,
+      duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+      resourceCount: newBundle.entry?.length,
+    },
+  });
   return newBundle;
 }
 
@@ -130,16 +145,10 @@ async function convertFHIRBundleToMedicalRecord({
   conversionType: MedicalRecordFormat;
 }): Promise<ConversionOutput> {
   const { log } = out(`convertFHIRBundleToMedicalRecord - cx ${patient.cxId} pt ${patient.id}`);
-  const lambdaNameOld = Config.getFHIRToMedicalRecordLambdaName();
-  const lambdaNameNew = Config.getFHIRToMedicalRecordLambda2Name();
-  const isWkhtmltopdfEnabled = await isWkhtmltopdfEnabledForCx(patient.cxId);
+  const lambdaName = Config.getFHIRToMedicalRecordLambda2Name();
 
-  const [activeLambdaName, inactiveLambdaName, inactiveSuffix] = isWkhtmltopdfEnabled
-    ? [lambdaNameNew, lambdaNameOld, "_puppeteer"]
-    : [lambdaNameOld, lambdaNameNew, "_wkhtmltopdf"];
-
-  if (!activeLambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
-  log(`Using lambda name: ${activeLambdaName} - isWkhtmltopdfEnabled: ${isWkhtmltopdfEnabled}`);
+  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+  log(`Using lambda name: ${lambdaName}`);
 
   // Store the bundle on S3
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
@@ -167,29 +176,17 @@ async function convertFHIRBundleToMedicalRecord({
     dateTo,
     conversionType,
   };
-  const inactiveLambdaPayload: ConversionInput = {
-    ...activeLambdaPayload,
-    resultFileNameSuffix: inactiveSuffix,
-  };
 
   const [result] = await Promise.all([
     lambdaClient
       .invoke({
-        FunctionName: activeLambdaName,
+        FunctionName: lambdaName,
         InvocationType: "RequestResponse",
         Payload: JSON.stringify(activeLambdaPayload),
       })
       .promise(),
-    inactiveLambdaName &&
-      lambdaClient
-        .invoke({
-          FunctionName: inactiveLambdaName,
-          InvocationType: "RequestResponse",
-          Payload: JSON.stringify(inactiveLambdaPayload),
-        })
-        .promise(),
   ]);
-  const resultPayload = getLambdaResultPayload({ result, lambdaName: activeLambdaName });
+  const resultPayload = getLambdaResultPayload({ result, lambdaName });
   return JSON.parse(resultPayload) as ConversionOutput;
 }
 

@@ -1,3 +1,4 @@
+import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { BadRequestError, EhrSources } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
@@ -18,8 +19,8 @@ import {
 import { checkApiQuota } from "../../command/medical/admin/api";
 import { dbMaintenance } from "../../command/medical/admin/db-maintenance";
 import {
-  PopulateFhirServerResponse,
   populateFhirServer,
+  PopulateFhirServerResponse,
 } from "../../command/medical/admin/populate-fhir";
 import { getFacilities, getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import {
@@ -28,11 +29,11 @@ import {
   revokeMapiAccess,
 } from "../../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { subscribeToAllWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import { isCxMappingSource, secondaryMappingsSchemaMap } from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
-import { isEnhancedCoverageEnabledForCx } from "../../external/aws/app-config";
 import { initCQOrgIncludeList } from "../../external/commonwell/organization";
+import { subscribeToAllWebhooks as subscribeToElationWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
+import { subscribeToAllWebhooks as subscribeToHealthieWebhooks } from "../../external/ehr/healthie/command/subscribe-to-webhook";
 import { OrganizationModel } from "../../models/medical/organization";
 import userRoutes from "../devices/internal-user";
 import { requestLogger } from "../helpers/request-logger";
@@ -47,6 +48,7 @@ import commonwellRoutes from "./hie/commonwell";
 import jwtToken from "./jwt-token";
 import docsRoutes from "./medical/docs";
 import facilityRoutes from "./medical/facility";
+import ffsRoutes from "./medical/feature-flags";
 import feedbackRoutes from "./medical/feedback";
 import mpiRoutes from "./medical/mpi";
 import organizationRoutes from "./medical/organization";
@@ -54,6 +56,7 @@ import patientRoutes from "./medical/patient";
 
 const router = Router();
 
+router.use("/feature-flags", ffsRoutes);
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
 router.use("/facility", facilityRoutes);
@@ -247,6 +250,7 @@ router.post(
 
 /**
  * GET /internal/cx-ff-status
+ * @deprecated move this to the /feature-flags route
  *
  * Retrieves the customer status of enabled HIEs via the Feature Flags.
  *
@@ -264,6 +268,7 @@ router.get(
 
 /**
  * PUT /internal/cx-ff-status
+ * @deprecated move this to the /feature-flags route
  *
  * Updates the customer status of enabled HIEs via the Feature Flags.
  *
@@ -323,7 +328,9 @@ router.post(
       secondaryMappings,
     });
     if (source === EhrSources.elation) {
-      await subscribeToAllWebhooks({ cxId, externalId });
+      await subscribeToElationWebhooks({ cxId, externalId });
+    } else if (source === EhrSources.healthie) {
+      await subscribeToHealthieWebhooks({ cxId, externalId });
     }
     return res.sendStatus(httpStatus.OK);
   })

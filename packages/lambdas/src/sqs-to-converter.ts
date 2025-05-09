@@ -1,4 +1,6 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { buildConversionResultHandler } from "@metriport/core/command/conversion-result/conversion-result-factory";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import {
   FhirConverterParams,
   FhirExtension,
@@ -19,21 +21,20 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
-import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
-import { apiClient } from "./shared/oss-api";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -43,11 +44,16 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
-const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
+
+const conversionResultHandler = buildConversionResultHandler();
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
@@ -59,7 +65,6 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
-const ossApi = apiClient(apiUrl);
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 const HYDRATION_TIMEOUT_MS = 5_000;
@@ -138,7 +143,7 @@ export async function handler(event: SQSEvent) {
           log(
             `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
           );
-          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+          await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
         const { documentContents: payloadNoB64, b64Attachments } =
@@ -169,7 +174,7 @@ export async function handler(event: SQSEvent) {
 
         if (!payloadClean.trim().length) {
           log(`XML document is empty, skipping... Filename: ${s3FileName}`);
-          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+          await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
 
@@ -316,7 +321,7 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMetrics(metrics);
       } catch (error) {
-        await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
         throw error;
       }
     }
@@ -461,8 +466,11 @@ async function sendConversionResult({
   );
 
   log(`Sending result info to the API`);
-  await ossApi.internal.notifyApi(
-    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
-    log
-  );
+  await conversionResultHandler.notifyApi({
+    cxId,
+    patientId,
+    jobId,
+    source: medicalDataSource,
+    status: "success",
+  });
 }

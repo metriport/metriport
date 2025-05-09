@@ -13,6 +13,8 @@ const router = Router();
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of AthenaHealth Patient.
+ * @param req.query.practiceId The ID of AthenaHealth Practice.
+ * @param req.query.departmentId The ID of AthenaHealth Department.
  * @returns Metriport Patient if found.
  */
 router.get(
@@ -23,10 +25,12 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
+    const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
     const patientId = await syncAthenaPatientIntoMetriport({
       cxId,
       athenaPracticeId,
       athenaPatientId,
+      athenaDepartmentId,
     });
     return res.status(httpStatus.OK).json(patientId);
   })
@@ -37,6 +41,8 @@ router.get(
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of AthenaHealth Patient.
+ * @param req.query.practiceId The ID of AthenaHealth Practice.
+ * @param req.query.departmentId The ID of AthenaHealth Department.
  * @returns Metriport Patient if found.
  */
 router.post(
@@ -47,10 +53,12 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
+    const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
     const patientId = await syncAthenaPatientIntoMetriport({
       cxId,
       athenaPracticeId,
       athenaPatientId,
+      athenaDepartmentId,
     });
     return res.status(httpStatus.OK).json(patientId);
   })

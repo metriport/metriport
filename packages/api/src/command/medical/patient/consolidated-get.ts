@@ -18,7 +18,6 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -52,6 +51,7 @@ type GetConsolidatedPatientData = {
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+  requestId?: string;
   fromDashboard?: boolean;
 };
 
@@ -259,6 +259,7 @@ export async function getConsolidated({
     if (!bundle) {
       bundle = await getConsolidatedPatientData({
         patient,
+        requestId,
         resources,
         dateFrom,
         dateTo,
@@ -268,22 +269,6 @@ export async function getConsolidated({
     bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
-    const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
-      q => q.requestId === requestId
-    );
-
-    const defaultAnalyticsProps = {
-      distinctId: patient.cxId,
-      event: EventTypes.consolidatedQuery,
-      properties: {
-        patientId: patient.id,
-        conversionType: "bundle",
-        duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-        resourceCount: bundle.entry?.length,
-      },
-    };
-
-    analytics(defaultAnalyticsProps);
 
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
@@ -291,19 +276,11 @@ export async function getConsolidated({
       bundle = await handleBundleToMedicalRecord({
         bundle,
         patient,
+        requestId,
         resources,
         dateFrom,
         dateTo,
         conversionType,
-      });
-
-      analytics({
-        ...defaultAnalyticsProps,
-        properties: {
-          ...defaultAnalyticsProps.properties,
-          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-          conversionType,
-        },
       });
     }
 
@@ -408,6 +385,7 @@ async function uploadConsolidatedJsonAndReturnUrl({
  */
 export async function getConsolidatedPatientData({
   patient,
+  requestId,
   resources,
   dateFrom,
   dateTo,
@@ -416,6 +394,7 @@ export async function getConsolidatedPatientData({
   const payload: ConsolidatedSnapshotRequestSync = {
     patient,
     resources,
+    requestId,
     dateFrom,
     dateTo,
     isAsync: false,
