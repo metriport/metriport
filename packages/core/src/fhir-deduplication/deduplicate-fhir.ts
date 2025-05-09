@@ -34,7 +34,11 @@ const medicationRelatedTypes = [
   "MedicationRequest",
 ];
 
-export function deduplicateFhir(fhirBundle: Bundle<Resource>, cxId: string, patientId: string) {
+export function deduplicateFhir(
+  fhirBundle: Bundle<Resource>,
+  cxId: string,
+  patientId: string
+): void {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
 
   const compositionsResult = deduplicateCompositions(resourceArrays.compositions);
