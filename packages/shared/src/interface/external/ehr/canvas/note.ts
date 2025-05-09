@@ -18,6 +18,6 @@ export type Note = z.infer<typeof noteSchema>;
 
 export const noteListResponseSchema = z.object({
   results: noteSchema.array(),
-  next: z.string().nullable(),
+  next: z.string().nullable().optional(),
 });
 export type NoteListResponse = z.infer<typeof noteListResponseSchema>;

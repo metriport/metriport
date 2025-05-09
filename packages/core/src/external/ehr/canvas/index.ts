@@ -8,7 +8,6 @@ import {
   Medication,
   MedicationStatement,
   Patient as PatientFhir,
-  Practitioner,
 } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -32,6 +31,10 @@ import {
   fhirResourceBundleSchema,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import {
+  practitionerSchema,
+  Practitioner,
+} from "@metriport/shared/interface/external/ehr/practitioner";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -188,15 +191,6 @@ class CanvasApi {
       }
       throw new Error("An unexpected error occurred during the request");
     }
-  }
-
-  async getPractitioner(name: string): Promise<Practitioner> {
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.get(
-        `Practitioner?name=${name}&include-non-scheduleable-practitioners=true`
-      )
-    );
-    return response.data.entry[0].resource;
   }
 
   async createPatient(patient: PatientFhir): Promise<string> {
@@ -373,6 +367,34 @@ class CanvasApi {
     return patient;
   }
 
+  async getPractitioner({
+    cxId,
+    patientId,
+    practitionerId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+  }): Promise<Practitioner> {
+    const { debug } = out(
+      `Canvas getPractitioner - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const practitionerUrl = `/Practitioner/${practitionerId}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId };
+    const practitioner = await this.makeRequest<Practitioner>({
+      cxId,
+      patientId,
+      s3Path: "practitioner",
+      method: "GET",
+      url: practitionerUrl,
+      schema: practitionerSchema,
+      additionalInfo,
+      debug,
+      useFhir: true,
+    });
+    return practitioner;
+  }
+
   async createNote({
     cxId,
     patientId,
@@ -451,7 +473,7 @@ class CanvasApi {
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
     async function paginateNotes(
       api: CanvasApi,
-      url: string | null,
+      url: string | null | undefined,
       acc: Note[] | undefined = []
     ): Promise<Note[]> {
       if (!url) return acc;
@@ -517,22 +539,99 @@ class CanvasApi {
     return newNote;
   }
 
+  async getPractitionerPrimaryLocation({
+    cxId,
+    patientId,
+    practitionerId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+  }): Promise<string> {
+    const practitioner = await this.getPractitioner({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId };
+    if (!practitioner.extension) {
+      throw new BadRequestError(
+        "Practitioner does not have a primary location",
+        undefined,
+        additionalInfo
+      );
+    }
+    const primaryLocation = practitioner.extension.find(
+      e =>
+        e.url ===
+        "http://schemas.canvasmedical.com/fhir/extensions/practitioner-primary-practice-location"
+    );
+    if (!primaryLocation) {
+      throw new BadRequestError(
+        "Practitioner does not have a primary location",
+        undefined,
+        additionalInfo
+      );
+    }
+    const valueReference = primaryLocation.valueReference;
+    if (!valueReference) {
+      throw new BadRequestError(
+        "Practitioner primary location value reference is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    if (!valueReference.type || valueReference.type !== "Location") {
+      throw new BadRequestError(
+        "Practitioner primary location type is missing or is not a location",
+        undefined,
+        additionalInfo
+      );
+    }
+    if (!valueReference.reference) {
+      throw new BadRequestError(
+        "Practitioner primary location reference is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    const locationId = valueReference.reference.split("/")[1];
+    if (!locationId) {
+      throw new BadRequestError(
+        "Practitioner primary location ID is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    return locationId;
+  }
+
   async createCondition({
     cxId,
     patientId,
     practitionerId,
-    practiceLocationId,
     condition,
   }: {
     cxId: string;
     patientId: string;
     practitionerId: string;
-    practiceLocationId: string;
     condition: Condition;
   }): Promise<void> {
     const { debug } = out(
       `Canvas createCondition - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      conditionId: condition.id,
+    };
+    const formattedCondition = this.formatCondition(condition, additionalInfo);
+    const practiceLocationId = await this.getPractitionerPrimaryLocation({
+      cxId,
+      patientId,
+      practitionerId,
+    });
     const note = await this.getOrCreateMetriportImportNote({
       cxId,
       patientId,
@@ -541,23 +640,15 @@ class CanvasApi {
     });
     const noteId = note.noteKey;
     const conditionUrl = `/Condition`;
-    const additionalInfo = {
-      cxId,
-      practiceId: this.practiceId,
-      patientId,
-      conditionId: condition.id,
-      noteId,
-    };
-    condition.subject = { reference: `Patient/${patientId}` };
-    condition.recorder = { reference: `Practitioner/${practitionerId}` };
-    condition.extension = [
-      ...(condition.extension ?? []),
+    formattedCondition.subject = { reference: `Patient/${patientId}` };
+    formattedCondition.recorder = { reference: `Practitioner/${practitionerId}` };
+    formattedCondition.extension = [
+      ...(formattedCondition.extension ?? []),
       {
         url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
         valueId: noteId,
       },
     ];
-    const formattedCondition = this.formatCondition(condition, additionalInfo);
     await this.makeRequest<undefined>({
       cxId,
       patientId,
@@ -566,7 +657,7 @@ class CanvasApi {
       url: conditionUrl,
       data: { ...formattedCondition },
       schema: z.undefined(),
-      additionalInfo,
+      additionalInfo: { ...additionalInfo, noteId },
       headers: { "content-type": "application/json" },
       debug,
       useFhir: true,

@@ -3,13 +3,13 @@ import { isResourceDiffDirection } from "@metriport/shared/interface/external/eh
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { createCondition } from "../../../external/ehr/canvas/command/create-condition";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
 } from "../../../external/ehr/canvas/job/create-resource-diff-bundles/get-job-payload";
 import { createResourceDiffBundlesJob } from "../../../external/ehr/canvas/job/create-resource-diff-bundles/start-job";
-import { createCondition } from "../../../external/ehr/canvas/command/create-condition";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
@@ -119,14 +119,12 @@ router.post(
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
-    const canvasPracticeLocationId = getFromQueryOrFail("practiceLocationId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
     const conditionDetails = await createCondition({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
-      canvasPracticeLocationId,
       condition: payload,
     });
     return res.status(httpStatus.OK).json(conditionDetails);
