@@ -14,6 +14,7 @@ const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
  * Lambda function that handles ACM Certificate Approaching Expiration events
  * and sends events to Slack.
  */
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async () => {
   console.log(`Calling checkExpiringCertificates()...`);
 

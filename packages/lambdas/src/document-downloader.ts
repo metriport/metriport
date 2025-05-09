@@ -10,7 +10,6 @@ import { DownloadResult } from "@metriport/core/external/commonwell/document/doc
 import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
 import { getEnvType } from "@metriport/core/util/env-var";
-import * as Sentry from "@sentry/serverless";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { capture } from "./shared/capture";
@@ -33,11 +32,11 @@ const cwOrgPrivateKeySecret = getEnvOrFail("CW_ORG_PRIVATE_KEY");
 
 const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 
-export const handler = Sentry.AWSLambda.wrapHandler(
+export const handler = capture.wrapHandler(
   async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
     const { orgName, orgOid, npi, cxId, fileInfo, document } = req;
     capture.setUser({ id: cxId });
-    capture.setExtra({ lambdaName });
+    capture.setExtra({ lambdaName, cxId, orgOid });
     console.log(
       `Running with envType: ${getEnvType()}, apiMode: ${apiMode}, region: ${region}, ` +
         `bucketName: ${bucketName}, orgName: ${orgName}, orgOid: ${orgOid}, ` +

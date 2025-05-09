@@ -29,6 +29,7 @@ const SIGNED_URL_DURATION_SECONDS = 60;
  * - generate a signed URL for the file (60s expiration);
  * - returns a redirect to the signed URL.
  */
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (event: lambda.APIGatewayRequestAuthorizerEvent) => {
     try {
