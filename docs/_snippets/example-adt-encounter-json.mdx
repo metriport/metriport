@@ -1,0 +1,107 @@
+```json
+{
+  "resourceType": "Encounter",
+  "id": "uuid",
+  "meta": {
+    "extension": [
+      {
+        "url": "https://api.metriport.com/created-at",
+        "valueInstant": "2025-03-15T16:45:10.000+00:00"
+      }
+    ],
+    "versionId": "0.1.0"
+  },
+  "status": "finished",
+  "period": {
+    "start": "2024-03-15T14:20:00.000Z",
+    "end": "2024-03-15T16:45:00.000Z"
+  },
+  "class": {
+    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+    "code": "AMB",
+    "display": "Ambulatory"
+  },
+  "serviceType": {
+    "coding": [
+      {
+        "code": "394592004",
+        "display": "Cardiology"
+      }
+    ],
+    "text": "Cardiology"
+  },
+  "subject": {
+    "reference": "Patient/78a4d9e5-f2b3-42c8-9a84-52f3e21c2b9d",
+    "type": "Patient",
+    "display": "Sarah Johnson"
+  },
+  "location": [
+    {
+      "location": {
+        "reference": "Location/3ca5e8d2-7c84-45ab-91e7-834f8becde12",
+        "type": "Location",
+        "display": "Memorial Hospital"
+      }
+    }
+  ],
+  "participant": [
+    {
+      "type": [
+        {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+              "code": "ATND",
+              "display": "attender"
+            }
+          ]
+        }
+      ],
+      "individual": {
+        "reference": "Practitioner/49e3c8f1-d67a-47b8-b9a2-cf23e8d0e941",
+        "type": "Practitioner",
+        "display": "Dr. Maria Rodriguez"
+      }
+    }
+  ],
+  "reasonCode": [
+    {
+      "text": "Chest pain"
+    }
+  ],
+  "diagnosis": [
+    {
+      "condition": {
+        "reference": "Condition/8724f6e9-c531-48ba-9d34-7e2a81c05fb3",
+        "type": "Condition",
+        "display": "Stable Angina"
+      },
+      "use": {
+        "coding": [
+          {
+            "system": "https://terminology.hl7.org/5.2.0/CodeSystem-v2-0052.html",
+            "code": "AD",
+            "display": "Final diagnosis"
+          }
+        ]
+      },
+      "rank": 1
+    }
+  ],
+  "identifier": [
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "VN",
+            "display": "visit number"
+          }
+        ],
+        "text": "visit number"
+      },
+      "value": "987654321"
+    }
+  ]
+}
+```

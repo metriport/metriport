@@ -5,7 +5,7 @@ import { Config } from "../../../../../../util/config";
 import {
   MAX_SQS_MESSAGE_SIZE,
   SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
-  SQS_MESSAGE_BATCH_SIZE,
+  SQS_MESSAGE_BATCH_SIZE_FIFO,
 } from "../../../../../../util/sqs";
 import { SQSClient } from "../../../../../aws/sqs";
 import {
@@ -34,7 +34,7 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
           ? undefined
           : p.existingResources,
     }));
-    const chunks = chunk(paramsWithoutExistingResources, SQS_MESSAGE_BATCH_SIZE);
+    const chunks = chunk(paramsWithoutExistingResources, SQS_MESSAGE_BATCH_SIZE_FIFO);
     for (const chunk of chunks) {
       await Promise.all(
         chunk.map(params => {

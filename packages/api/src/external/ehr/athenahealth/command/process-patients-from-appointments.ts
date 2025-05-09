@@ -3,7 +3,7 @@ import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-pa
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { MetriportError, errorToString } from "@metriport/shared";
+import { BadRequestError, MetriportError, NotFoundError, errorToString } from "@metriport/shared";
 import {
   AthenaSecondaryMappings,
   BookedAppointment,
@@ -174,6 +174,7 @@ async function getAppointments({
       }),
     };
   } catch (error) {
+    if (error instanceof BadRequestError || error instanceof NotFoundError) return {};
     log(`Failed to get appointments. Cause: ${errorToString(error)}`);
     return { error };
   }

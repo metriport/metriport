@@ -377,11 +377,12 @@ export async function getPatientByExternalId({
 }): Promise<PatientWithIdentifiers | undefined> {
   if (!source) {
     const patients = await PatientModel.findAll({ where: { cxId, externalId } });
-    if (patients.length < 1) return undefined;
     if (patients.length > 1) {
       throw new BadRequestError(`Found multiple patients with external ID ${externalId}`);
     }
-    return await attachPatientIdentifiers(patients[0].dataValues);
+    const patient = patients[0];
+    if (!patient) return undefined;
+    return await attachPatientIdentifiers(patient.dataValues);
   }
   const patientMapping = await getPatientMapping({
     cxId,

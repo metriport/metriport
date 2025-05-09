@@ -17,8 +17,7 @@ export async function checkJobRecordExists({
 }): Promise<boolean> {
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyJob(cxId, jobId);
-  await s3Utils.fileExists(s3BucketName, key);
-  return true;
+  return await s3Utils.fileExists(s3BucketName, key);
 }
 
 /**
@@ -37,7 +36,7 @@ export async function checkJobRecordExistsOrFail({
 }): Promise<boolean> {
   const jobRecordExists = await checkJobRecordExists({ cxId, jobId, s3BucketName });
   if (!jobRecordExists) {
-    throw new NotFoundError("Job record not found", { cxId, jobId, s3BucketName });
+    throw new NotFoundError("Job record not found", undefined, { cxId, jobId, s3BucketName });
   }
   return jobRecordExists;
 }

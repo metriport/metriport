@@ -61,6 +61,23 @@ export class Config {
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
+
+  static getSemanticSearchEndpoint(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_ENDPOINT");
+  }
+  static getSemanticSearchUsername(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_USERNAME");
+  }
+  static getSemanticSearchPassword(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_PASSWORD");
+  }
+  static getSemanticSearchIndexName(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_INDEX");
+  }
+  static getSemanticSearchModelId(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_MODEL_ID");
+  }
+
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
@@ -84,6 +101,7 @@ export class Config {
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
+
   static getCdaToFhirConversionBucketName(): string | undefined {
     return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
   }
@@ -130,6 +148,9 @@ export class Config {
   static getFHIRtoBundleLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_BUNDLE_LAMBDA_NAME");
   }
+  static getFHIRtoBundleCountLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME");
+  }
 
   static getBedrockRegion(): string | undefined {
     return getEnvVar("BEDROCK_REGION");
@@ -154,10 +175,8 @@ export class Config {
   static getPatientImportBucket(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_BUCKET_NAME");
   }
-  // TODO 2330 We should prob remove this as the cloud implementation of the parse step
-  // should only be triggered by S3, not the API.
-  static getPatientImportLambdaName(): string {
-    return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
+  static getPatientImportParseLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_PARSE_LAMBDA_NAME");
   }
   static getPatientImportCreateQueueUrl(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_CREATE_QUEUE_URL");
@@ -165,12 +184,18 @@ export class Config {
   static getPatientImportQueryQueueUrl(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_QUERY_QUEUE_URL");
   }
+  static getPatientImportResultLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_RESULT_LAMBDA_NAME");
+  }
 
   static getEhrSyncPatientQueueUrl(): string {
     return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
   }
   static getElationLinkPatientQueueUrl(): string {
     return getEnvVarOrFail("ELATION_LINK_PATIENT_QUEUE_URL");
+  }
+  static getHealthieLinkPatientQueueUrl(): string {
+    return getEnvVarOrFail("HEALTHIE_LINK_PATIENT_QUEUE_URL");
   }
   static getEhrStartResourceDiffBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL");

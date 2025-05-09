@@ -62,6 +62,7 @@ export class SecretsStack extends Stack {
       ...props.config.ehrIntegration?.athenaHealth.secrets,
       ...props.config.ehrIntegration?.elation.secrets,
       ...props.config.ehrIntegration?.canvas.secrets,
+      ...props.config.ehrIntegration?.healthie.secrets,
     };
 
     if (Object.keys(ehrSecrets).length) {
@@ -72,11 +73,9 @@ export class SecretsStack extends Stack {
       }
     }
 
-    if (props.config.analyticsSecretNames) {
-      for (const secretName of Object.values(props.config.analyticsSecretNames)) {
-        const secret = makeSecret(secretName);
-        logSecretInfo(this, secret, secretName);
-      }
+    for (const secretName of Object.values(props.config.analyticsSecretNames)) {
+      const secret = makeSecret(secretName);
+      logSecretInfo(this, secret, secretName);
     }
 
     if (!isSandbox(props.config)) {

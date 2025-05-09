@@ -90,6 +90,11 @@ export async function getDocumentsFromCQ({
       (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
+      log(
+        `Scheduling document query for patient ${patientId}, hasNoCQStatus ${hasNoCQStatus}, ` +
+          `isProcessing ${isProcessing}, forcePatientDiscovery ${forcePatientDiscovery}, ` +
+          `isStale ${isStale}`
+      );
       await scheduleDocQuery({
         requestId,
         patient,
@@ -124,15 +129,6 @@ export async function getDocumentsFromCQ({
       if (!gateway) {
         const msg = `Gateway not found - Doc Query`;
         log(`${msg}: ${patientLink.oid} skipping...`);
-        capture.message(msg, {
-          extra: {
-            context: `cq.pd.getCQDirectoryEntry`,
-            patientId,
-            requestId,
-            cxId,
-            gateway: patientLink,
-          },
-        });
         return;
       } else if (!gateway.urlDQ) {
         log(`Gateway ${gateway.id} has no DQ URL, skipping...`);

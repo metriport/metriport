@@ -1,11 +1,11 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -347,6 +347,7 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
+      fhirToBundleCountLambda,
       fhirConverterConnector: {
         queue: fhirConverterQueue,
         lambda: fhirConverterLambda,
@@ -381,6 +382,7 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
           outgoingHl7NotificationBucket,
+          secrets,
         }
       );
 
@@ -394,6 +396,7 @@ export class APIStack extends Stack {
       parseLambda: patientImportParseLambda,
       createLambda: patientImportCreateLambda,
       queryLambda: patientImportQueryLambda,
+      resultLambda: patientImportResultLambda,
       bucket: patientImportBucket,
     } = new PatientImportNestedStack(this, "PatientImportNestedStack", {
       config: props.config,
@@ -410,6 +413,8 @@ export class APIStack extends Stack {
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
       elationLinkPatientLambda,
+      healthieLinkPatientQueue,
+      healthieLinkPatientLambda,
       startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
       startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
       computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
@@ -532,10 +537,12 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
-      patientImportLambda: patientImportParseLambda,
+      patientImportParseLambda,
+      patientImportResultLambda,
       patientImportBucket,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
+      healthieLinkPatientQueue,
       ehrStartResourceDiffBundlesQueue,
       ehrRefreshEhrBundlesQueue,
       ehrBundleBucket,
@@ -546,11 +553,21 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
+      fhirToBundleCountLambda,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
       searchIndexName: ccdaSearchIndexName,
+      semanticSearchEndpoint: props.config.semanticOpenSearch?.endpoint,
+      semanticSearchIndexName: props.config.semanticOpenSearch?.indexName,
+      semanticSearchModelId: props.config.semanticOpenSearch?.modelId,
+      semanticSearchAuth: props.config.semanticOpenSearch
+        ? {
+            userName: props.config.semanticOpenSearch.userName,
+            secret: props.config.semanticOpenSearch.password,
+          }
+        : undefined,
       featureFlagsTable,
       cookieStore,
     });
@@ -614,22 +631,31 @@ export class APIStack extends Stack {
     });
 
     // Add ENV after the API service is created
-    fhirToMedicalRecordLambda2?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    hl7NotificationWebhookSenderLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    hl7v2RosterUploadLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    patientImportCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    patientImportQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrSyncPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    elationLinkPatientLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrStartResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrComputeResourceDiffBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    ehrRefreshEhrBundlesLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    fhirConverterLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    conversionResultNotifierLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    const lambdasToGetApiUrl: (lambda.Function | undefined)[] = [
+      fhirToMedicalRecordLambda2,
+      outboundPatientDiscoveryLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
+      fhirToBundleLambda,
+      fhirToBundleCountLambda,
+      hl7v2RosterUploadLambda,
+      hl7NotificationWebhookSenderLambda,
+      patientImportCreateLambda,
+      patientImportParseLambda,
+      patientImportQueryLambda,
+      patientImportResultLambda,
+      ehrSyncPatientLambda,
+      elationLinkPatientLambda,
+      healthieLinkPatientLambda,
+      ehrStartResourceDiffBundlesLambda,
+      ehrComputeResourceDiffBundlesLambda,
+      ehrRefreshEhrBundlesLambda,
+      fhirConverterLambda,
+      conversionResultNotifierLambda,
+    ];
+    lambdasToGetApiUrl.forEach(lambda =>
+      lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
+    );
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket

@@ -7,10 +7,11 @@ import {
   MetriportError,
   NotFoundError,
   errorToString,
+  executeWithRetries,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-import { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import { AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { z } from "zod";
@@ -101,7 +102,9 @@ export async function makeRequest<T>({
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
   );
-  const isJsonContentType = headers?.["content-type"] === "application/json";
+  const isJsonContentType =
+    headers?.["content-type"] === "application/json" ||
+    headers?.["Content-Type"] === "application/json";
   const fullAdditionalInfo = {
     ...additionalInfo,
     cxId,
@@ -113,19 +116,31 @@ export async function makeRequest<T>({
   };
   let response: AxiosResponse;
   try {
-    response = await axiosInstance.request({
-      method,
-      url,
-      data: method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {}),
-      headers: {
-        ...axiosInstance.defaults.headers.common,
-        ...headers,
-      },
-    });
+    response = await executeWithRetries(
+      () =>
+        axiosInstance.request({
+          method,
+          ...(url !== "" ? { url } : {}),
+          data:
+            method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {}),
+          headers: {
+            ...axiosInstance.defaults.headers.common,
+            ...headers,
+          },
+        }),
+      {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        shouldRetry: (_, error: any) => {
+          if (!error) return false;
+          if (isNotRetriableAxiosError(error)) return false;
+          return true;
+        },
+      }
+    );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    if (error instanceof AxiosError) {
-      const message = createAxiosErrorMessage(error);
+    if (isAxiosError(error)) {
+      const message = errorToString(error);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -210,13 +225,8 @@ export function createDataParams(data: RequestData): string {
   return dataParams.toString();
 }
 
-function createAxiosErrorMessage(error: AxiosError): string {
-  if (error.response?.data) {
-    return Object.entries(error.response.data)
-      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v.toString()}`)
-      .join(", ");
-  }
-  return error.message;
+export function isNotRetriableAxiosError(error: unknown): boolean {
+  return isAxiosError(error) && (error.response?.status === 400 || error.response?.status === 404);
 }
 
 export function getConditionSnomedCoding(condition: Condition): Coding | undefined {

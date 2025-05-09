@@ -1,7 +1,7 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
-import { JwtTokenInfo, MetriportError } from "@metriport/shared";
+import { JwtTokenInfo, MetriportError, BadRequestError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   AthenaSecondaryMappings,
@@ -31,6 +31,14 @@ import {
   ElationDashJwtTokenData,
   elationDashSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
+import {
+  HealthieSecondaryMappings,
+  healthieSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
+import {
+  HealthieDashJwtTokenData,
+  healthieDashSource,
+} from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
@@ -52,6 +60,11 @@ export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   clientSecret: string;
 };
 
+export type EhrEnvAndApiKey<Env extends EhrEnv> = {
+  environment: Env;
+  apiKey: string;
+};
+
 type EhrClient = AthenaHealthApi | ElationApi | CanvasApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
@@ -62,6 +75,7 @@ export const ehrDashJwtTokenSources = [
   athenaDashSource,
   canvasDashSource,
   elationDashSource,
+  healthieDashSource,
 ] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
@@ -71,7 +85,8 @@ export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTok
 export type EhrDashJwtTokenData =
   | AthenaDashJwtTokenData
   | CanvasDashJwtTokenData
-  | ElationDashJwtTokenData;
+  | ElationDashJwtTokenData
+  | HealthieDashJwtTokenData;
 
 export const ehrClientJwtTokenSources = [
   athenaClientSource,
@@ -96,13 +111,17 @@ export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhook
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
 
-export type EhrCxMappingSecondaryMappings = AthenaSecondaryMappings | ElationSecondaryMappings;
+export type EhrCxMappingSecondaryMappings =
+  | AthenaSecondaryMappings
+  | ElationSecondaryMappings
+  | HealthieSecondaryMappings;
 export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [key in EhrSource]: z.Schema | undefined;
 } = {
   [EhrSources.athena]: athenaSecondaryMappingsSchema,
   [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: undefined,
+  [EhrSources.healthie]: healthieSecondaryMappingsSchema,
 };
 
 export type Appointment = {
@@ -131,6 +150,26 @@ export function getLookForwardTimeRange({ lookForward }: { lookForward: Duration
   const currentDatetime = buildDayjs();
   const startRange = buildDayjs(currentDatetime).toDate();
   const endRange = buildDayjs(currentDatetime).add(lookForward).toDate();
+  return {
+    startRange,
+    endRange,
+  };
+}
+
+export function getLookForwardTimeRangeWithOffset({
+  lookForward,
+  offset,
+}: {
+  lookForward: Duration;
+  offset: Duration;
+}): {
+  startRange: Date;
+  endRange: Date;
+} {
+  const currentDatetime = buildDayjs();
+  const startRange = buildDayjs(currentDatetime).add(offset).toDate();
+  const endRange = buildDayjs(currentDatetime).add(lookForward).toDate();
+  if (startRange > endRange) throw new BadRequestError("Start range is greater than end range");
   return {
     startRange,
     endRange,

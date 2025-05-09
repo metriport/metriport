@@ -13,6 +13,8 @@ const router = Router();
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of AthenaHealth Patient.
+ * @param req.query.practiceId The ID of AthenaHealth Practice.
+ * @param req.query.departmentId The ID of AthenaHealth Department.
  * @returns Metriport Patient if found.
  */
 router.get(
@@ -39,6 +41,8 @@ router.get(
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of AthenaHealth Patient.
+ * @param req.query.practiceId The ID of AthenaHealth Practice.
+ * @param req.query.departmentId The ID of AthenaHealth Department.
  * @returns Metriport Patient if found.
  */
 router.post(
