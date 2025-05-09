@@ -141,9 +141,6 @@ export async function processOutboundDocumentQueryResps({
     await storeInitDocRefInFHIR(docsToDownload, cxId, patientId, log);
 
     const outboundDocumentQueryResults = await replaceDqUrlWithDrUrl({
-      patientId,
-      requestId,
-      cxId,
       responsesWithDocsToDownload,
       log,
     });
@@ -348,15 +345,9 @@ async function addMetriportDocRefID({
 }
 
 async function replaceDqUrlWithDrUrl({
-  patientId,
-  requestId,
-  cxId,
   responsesWithDocsToDownload,
   log,
 }: {
-  patientId: string;
-  requestId: string;
-  cxId: string;
   responsesWithDocsToDownload: OutboundDocumentQueryResp[];
   log: typeof console.log;
 }): Promise<OutboundDocumentQueryResp[]> {
@@ -370,15 +361,6 @@ async function replaceDqUrlWithDrUrl({
       if (!gateway) {
         const msg = `Gateway not found - Doc Retrieval`;
         log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
-        capture.message(msg, {
-          extra: {
-            context: `cq.dq.getCQDirectoryEntry`,
-            patientId,
-            requestId,
-            cxId,
-            gateway: outboundDocumentQueryResp.gateway,
-          },
-        });
         return;
       } else if (!gateway.urlDR) {
         log(`Gateway ${gateway.id} has no DR URL, skipping...`);
