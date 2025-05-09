@@ -204,7 +204,7 @@ export class Config {
     return getEnvVarOrFail("SYSTEM_ROOT_ORG_NAME");
   }
 
-  // Attempt to produce a valid offset from environment as a non-negative integer
+  // Reads SYSTEM_ROOT_ORG_OFFSET to apply a base offset for organization numbers (useful for isolating ID ranges in testing/dev)
   static getSystemRootOrgOffset(): number {
     const offset = getEnvVar("SYSTEM_ROOT_ORG_OFFSET");
     if (offset != null) {
