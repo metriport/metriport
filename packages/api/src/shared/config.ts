@@ -204,6 +204,18 @@ export class Config {
     return getEnvVarOrFail("SYSTEM_ROOT_ORG_NAME");
   }
 
+  // Attempt to produce a valid offset from environment as a non-negative integer
+  static getSystemRootOrgOffset(): number {
+    const offset = getEnvVar("SYSTEM_ROOT_ORG_OFFSET");
+    if (offset != null) {
+      const parsed = parseInt(offset);
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        return parsed;
+      }
+    }
+    return 0;
+  }
+
   static getGatewayEndpoint(): string {
     return getEnvVarOrFail("CW_GATEWAY_ENDPOINT");
   }
