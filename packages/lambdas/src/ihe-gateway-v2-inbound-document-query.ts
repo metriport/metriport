@@ -16,6 +16,7 @@ const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const { log } = out(`ihe-gateway-v2-inbound-document-query`);
 
+// TODO move to capture.wrapHandler()
 export async function handler(event: APIGatewayProxyEventV2) {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });

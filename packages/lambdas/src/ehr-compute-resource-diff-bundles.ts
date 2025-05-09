@@ -20,6 +20,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
 

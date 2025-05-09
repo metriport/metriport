@@ -5,6 +5,7 @@ import { getEnvOrFail } from "./shared/env";
 const apiUrl = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("BUCKET_NAME");
 
+// TODO move to capture.wrapHandler()
 export async function handler(config: Hl7v2RosterConfig): Promise<void> {
   await generateAndUploadHl7v2Roster({ config, bucketName, apiUrl });
 }
