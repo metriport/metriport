@@ -16,7 +16,7 @@ const configs = getEnvVarOrFail("HIE_CONFIGS");
  * - Set the required env vars
  * - Run the script with this command from /packages/utils: `ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
  */
-async function playground() {
+async function main() {
   try {
     const config = JSON.parse(configs);
     const startedAt = Date.now();
@@ -25,19 +25,17 @@ async function playground() {
       const apiUrl = getEnvVarOrFail("API_URL");
       const bucketName = getEnvVarOrFail("HL7V2_ROSTER_BUCKET_NAME");
 
-      new Hl7v2RosterGenerator(apiUrl, bucketName).execute(config);
+      await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(config);
     } else {
       const region = getEnvVarOrFail("AWS_REGION");
       const lambdaName = getEnvVarOrFail("HL7V2_ROSTER_UPLOAD_LAMBDA_NAME");
       const lambdaClient = makeLambdaClient(region);
 
-      await lambdaClient
-        .invoke({
-          FunctionName: lambdaName,
-          InvocationType: "RequestResponse",
-          Payload: JSON.stringify(config),
-        })
-        .promise();
+      await lambdaClient.invoke({
+        FunctionName: lambdaName,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify(config),
+      });
     }
 
     const duration = Date.now() - startedAt;
@@ -48,4 +46,4 @@ async function playground() {
   }
 }
 
-playground();
+main();
