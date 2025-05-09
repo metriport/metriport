@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-roster-generator";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { getEnvVarOrFail } from "../../../api/src/shared/config";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 const isLocal = true;
 const configs = getEnvVarOrFail("HIE_CONFIGS");

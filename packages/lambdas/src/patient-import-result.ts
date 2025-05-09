@@ -13,6 +13,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ cxId, jobId }: ProcessPatientResult): Promise<void> => {
     capture.setExtra({ cxId, jobId, context: lambdaName });

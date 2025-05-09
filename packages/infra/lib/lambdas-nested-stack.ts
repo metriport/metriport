@@ -691,7 +691,7 @@ export class LambdasNestedStack extends NestedStack {
     const acmCertificateMonitorLambda = createScheduledLambda({
       stack: this,
       layers: [lambdaLayers.shared],
-      name: "AcmCertificateMonitor",
+      name: "ScheduledAcmCertificateMonitor",
       entry: "acm-cert-monitor",
       vpc,
       memory: 256,
