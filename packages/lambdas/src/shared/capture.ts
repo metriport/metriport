@@ -73,6 +73,20 @@ export const capture = {
     });
   },
 
+  /**
+   * Wraps an AWS Lambda handler to capture errors and send them to Sentry.
+   *
+   * While using this, don't call `capture.[error|message]` to report errors
+   * to Sentry/Slack, this function already takes care of this as long as
+   * the error is "bubbled up" out of the lambda handler.
+   *
+   * To send "extra"/additional data to Sentry, you can make sure to throw a
+   * MetriportError (or subclass) with the "extra" set on the error's
+   * `additionalInfo` property.
+   *
+   * @param handler — The AWS Lambda handler to wrap.
+   * @returns — The wrapped handler.
+   */
   wrapHandler: (handler: AWSLambda.Handler): AWSLambda.Handler => {
     return Sentry.AWSLambda.wrapHandler(async (event, context, callback) => {
       try {
