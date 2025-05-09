@@ -1,9 +1,9 @@
 import { getSupportedResourcesByEhr } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { completePatientJob } from "../../../../../../command/job/patient/complete";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
 import { updatePatientJobTotal } from "../../../../../../command/job/patient/update-total";
-import { completeJob } from "../../../../../../command/job/complete";
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
 import {
@@ -50,7 +50,7 @@ export async function startCreateResourceDiffBundlesJob({
   const jobId = job.id;
   const resourceTypes = getSupportedResourcesByEhr(ehr);
   if (resourceTypes.length < 1) {
-    await completeJob({ cxId, jobId });
+    await completePatientJob({ cxId, jobId });
     return jobId;
   }
   await updatePatientJobTotal({ cxId, jobId, total: resourceTypes.length });

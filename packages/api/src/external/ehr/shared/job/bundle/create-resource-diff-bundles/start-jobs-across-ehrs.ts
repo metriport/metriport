@@ -29,7 +29,7 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
   const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
     if (patientMapping.source === EhrSources.canvas) {
-      await startCreateResourceDiffBundlesJobAcrossEhrs({
+      await startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.canvas,
         cxId,
         patientId: patientMapping.externalId,
@@ -39,7 +39,7 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
   }
 }
 
-async function startCreateResourceDiffBundlesJobAcrossEhrs({
+async function startCreateResourceDiffBundlesJobAtEhr({
   ehr,
   cxId,
   patientId,
