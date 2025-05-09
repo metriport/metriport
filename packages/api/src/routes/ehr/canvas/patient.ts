@@ -119,12 +119,14 @@ router.post(
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
+    const canvasPracticeLocationId = getFromQueryOrFail("practiceLocationId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
     const conditionDetails = await createCondition({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
+      canvasPracticeLocationId,
       condition: payload,
     });
     return res.status(httpStatus.OK).json(conditionDetails);

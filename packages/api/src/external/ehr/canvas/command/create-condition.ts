@@ -6,12 +6,14 @@ export async function createCondition({
   canvasPatientId,
   canvasPracticeId,
   canvasPractitionerId,
+  canvasPracticeLocationId,
   condition,
 }: {
   cxId: string;
   canvasPatientId: string;
   canvasPracticeId: string;
   canvasPractitionerId: string;
+  canvasPracticeLocationId: string;
   condition: Condition;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
@@ -19,6 +21,7 @@ export async function createCondition({
     cxId,
     patientId: canvasPatientId,
     practitionerId: canvasPractitionerId,
+    practiceLocationId: canvasPracticeLocationId,
     condition,
   });
 }

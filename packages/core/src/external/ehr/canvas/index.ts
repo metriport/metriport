@@ -17,6 +17,10 @@ import {
   AppointmentListResponse,
   appointmentListResponseSchema,
   canvasClientJwtTokenResponseSchema,
+  Note,
+  NoteListResponse,
+  noteListResponseSchema,
+  noteSchema,
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
@@ -58,6 +62,9 @@ interface CanvasApiConfig extends ApiConfig {
 
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
+const canvasNoteTitle = "Metriport Chart Import";
+const canvasNoteTypeName = "Chart review";
+const canvasNoteStatusForWriting = "NEW";
 export type CanvasEnv = string;
 
 export const supportedCanvasDiffResources = [
@@ -205,32 +212,6 @@ class CanvasApi {
   async getLocation(): Promise<Location> {
     const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(`Location`));
     return response.data.entry[0].resource;
-  }
-
-  async createNote({
-    patientKey,
-    providerKey,
-    practiceLocationKey,
-    noteTypeName,
-  }: {
-    patientKey: string;
-    providerKey: string;
-    practiceLocationKey: string;
-    noteTypeName: string;
-  }) {
-    const payload = {
-      title: "Metriport Chart Import",
-      noteTypeName,
-      patientKey,
-      providerKey,
-      practiceLocationKey,
-      encounterStartTime: new Date().toISOString(),
-    };
-
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceCustomApi.post("notes/v1/Note", payload)
-    );
-    return response.data.noteKey;
   }
 
   async updateNoteTitle({ noteKey, title }: { noteKey: string; title: string }): Promise<void> {
@@ -392,22 +373,173 @@ class CanvasApi {
     return patient;
   }
 
-  async createCondition({
+  async createNote({
     cxId,
     patientId,
     practitionerId,
-    condition,
-    noteId,
+    practiceLocationId,
+    title,
+    noteType,
   }: {
     cxId: string;
     patientId: string;
     practitionerId: string;
+    practiceLocationId: string;
+    title: string;
+    noteType: string;
+  }): Promise<Note> {
+    const { debug } = out(
+      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} practiceLocationId ${practiceLocationId}`
+    );
+    const noteUrl = "notes/v1/Note";
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const data = {
+      title,
+      noteTypeName: noteType,
+      patientKey: patientId,
+      providerKey: practitionerId,
+      practiceLocationKey: practiceLocationId,
+      encounterStartTime: new Date().toISOString(),
+    };
+
+    const note = await this.makeRequest<Note>({
+      cxId,
+      patientId,
+      s3Path: "create-note",
+      method: "POST",
+      url: noteUrl,
+      data,
+      schema: noteSchema,
+      additionalInfo,
+      headers: { "content-type": "application/json" },
+      debug,
+    });
+    return note;
+  }
+
+  async listNotes({
+    cxId,
+    patientId,
+    practitionerId,
+    noteType,
+    fromDate,
+    toDate,
+    orderDec = false,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    noteType: string;
+    fromDate: Date;
+    toDate: Date;
+    orderDec?: boolean;
+  }): Promise<Note[]> {
+    const { debug } = out(
+      `Canvas listNotes - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} noteType ${noteType} fromDate ${fromDate} toDate ${toDate}`
+    );
+    const params = {
+      note_type_name: noteType,
+      patient_key: patientId,
+      provider_key: practitionerId,
+      datetime_of_service__gte: fromDate.toISOString(),
+      datetime_of_service__lte: toDate.toISOString(),
+      limit: "1000",
+      ordering: orderDec ? "-datetime_of_service" : "datetime_of_service",
+    };
+    const urlParams = new URLSearchParams(params);
+    const noteUrl = `notes/v1/Note?${urlParams.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    async function paginateNotes(
+      api: CanvasApi,
+      url: string | null,
+      acc: Note[] | undefined = []
+    ): Promise<Note[]> {
+      if (!url) return acc;
+      const notesListResponse = await api.makeRequest<NoteListResponse>({
+        cxId,
+        patientId,
+        s3Path: "notes",
+        method: "GET",
+        url,
+        schema: noteListResponseSchema,
+        additionalInfo,
+        headers: { "content-type": "application/json" },
+        debug,
+      });
+      acc.push(...(notesListResponse.results ?? []));
+      const nextUrl = notesListResponse.next;
+      return paginateNotes(api, nextUrl, acc);
+    }
+    const notes = await paginateNotes(this, noteUrl);
+    return notes;
+  }
+
+  async getOrCreateMetriportImportNote({
+    cxId,
+    patientId,
+    practitionerId,
+    practiceLocationId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    practiceLocationId: string;
+  }): Promise<Note> {
+    const notes = await this.listNotes({
+      cxId,
+      patientId,
+      practitionerId,
+      noteType: canvasNoteTypeName,
+      fromDate: buildDayjs().subtract(1, "day").toDate(),
+      toDate: buildDayjs().toDate(),
+      orderDec: true,
+    });
+    const note = notes.find(
+      n =>
+        n.title === canvasNoteTitle &&
+        n.practiceLocationKey === practiceLocationId &&
+        n.currentState === canvasNoteStatusForWriting
+    );
+    if (note) {
+      const noteCreatedAt = buildDayjs(note.datetimeOfService);
+      const noteCreatedToday =
+        noteCreatedAt.format("YYYY-MM-DD") === buildDayjs().format("YYYY-MM-DD");
+      if (noteCreatedToday) return note;
+    }
+    const newNote = await this.createNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+      title: canvasNoteTitle,
+      noteType: canvasNoteTypeName,
+    });
+    return newNote;
+  }
+
+  async createCondition({
+    cxId,
+    patientId,
+    practitionerId,
+    practiceLocationId,
+    condition,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    practiceLocationId: string;
     condition: Condition;
-    noteId?: string;
   }): Promise<void> {
     const { debug } = out(
-      `Canvas createCondition - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} noteId ${noteId}`
+      `Canvas createCondition - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
+    const note = await this.getOrCreateMetriportImportNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+    });
+    const noteId = note.noteKey;
     const conditionUrl = `/Condition`;
     const additionalInfo = {
       cxId,
@@ -418,15 +550,13 @@ class CanvasApi {
     };
     condition.subject = { reference: `Patient/${patientId}` };
     condition.recorder = { reference: `Practitioner/${practitionerId}` };
-    if (noteId) {
-      condition.extension = [
-        ...(condition.extension ?? []),
-        {
-          url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
-          valueId: noteId,
-        },
-      ];
-    }
+    condition.extension = [
+      ...(condition.extension ?? []),
+      {
+        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+        valueId: noteId,
+      },
+    ];
     const formattedCondition = this.formatCondition(condition, additionalInfo);
     await this.makeRequest<undefined>({
       cxId,
