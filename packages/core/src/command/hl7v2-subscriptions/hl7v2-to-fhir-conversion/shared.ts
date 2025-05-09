@@ -28,6 +28,8 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
   "ICD-9": ICD_9_URL, // ICD-9
 };
 
+const hl7UnknownCodingSystems: Set<string> = new Set(["HRV"]);
+
 function decompressUuid(shortId: string) {
   return unpackUuid(new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).unscramble(shortId));
 }
@@ -130,8 +132,12 @@ export function getOptionalValueFromField(
 export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): string | undefined {
   if (!systemName) return undefined;
 
-  const systemUrl = hl7CodingSystemToUrlMap[systemName.trim().toUpperCase()];
-  if (!systemUrl) {
+  const cleanedSystemName = systemName.trim().toUpperCase();
+  const systemUrl = hl7CodingSystemToUrlMap[cleanedSystemName];
+  const hasUnknownCodingSystem = hl7UnknownCodingSystems.has(cleanedSystemName);
+
+  // Don't warn on any explicitly unknown coding systems
+  if (!systemUrl && !hasUnknownCodingSystem) {
     const { log } = out(`mapHl7SystemNameToSystemUrl`);
     const msg = "Failed to map HL7 system name to URL";
     log(`${msg}: ${systemName}`);
