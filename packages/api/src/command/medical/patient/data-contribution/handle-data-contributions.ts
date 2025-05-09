@@ -72,8 +72,10 @@ export async function handleDataContribution({
 
   const responseBundle = await validateUploadAgainstExistingData(patient, processedBundle);
 
-  // intentionally async
-  processCdaBundle(processedBundle, cxId, patientId, requestId, organization);
+  // intentionally async – make sure we catch errors to avoid unhandled rejections
+  processCdaBundle(processedBundle, cxId, patientId, requestId, organization).catch(err =>
+    out("handleDataContribution").log(`processCdaBundle failed: ${errorToString(err)}`)
+  );
 
   await uploadFhirBundleToS3({
     fhirBundle: validatedBundle,
@@ -124,8 +126,12 @@ async function processCdaBundle(
   if (!Config.isSandbox() && hasCompositionResource(bundle)) {
     const fhirOrganization = toFhirOrganization(organization);
     const cdaConversionStartedAt = Date.now();
-    bundle.entry?.push(buildBundleEntry(fhirOrganization));
-    const converted = await convertFhirToCda({ cxId, bundle });
+    const bundleForCda = {
+      ...bundle,
+      entry: [...(bundle.entry ?? []), buildBundleEntry(fhirOrganization)],
+    };
+
+    const converted = await convertFhirToCda({ cxId, bundle: bundleForCda });
     // intentionally async
     uploadCdaDocuments({
       cxId,
