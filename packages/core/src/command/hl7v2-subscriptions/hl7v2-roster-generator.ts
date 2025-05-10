@@ -58,9 +58,9 @@ export class Hl7v2RosterGenerator {
     log(`Found ${patients.length} total patients`);
 
     if (patients.length === 0) {
-      const msg = `No patients found, skipping roster generation`;
-      log(msg);
-      throw new MetriportError(msg, { extra: loggingDetails });
+      throw new MetriportError("No patients found, skipping roster generation", {
+        extra: loggingDetails,
+      });
     }
 
     const convertedSubscribers = convertPatientsToHieFormat(patients, config.schema, states);

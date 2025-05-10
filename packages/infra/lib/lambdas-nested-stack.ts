@@ -24,6 +24,7 @@ import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
+import { validateCronExpression } from "./shared/cron-validator";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -750,6 +751,9 @@ export class LambdasNestedStack extends NestedStack {
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const scheduleName = `Hl7v2RosterUpload-${hieName}`;
+
+        // Validate cron expression before creating the rule
+        validateCronExpression(hieConfig.cron);
 
         new events.Rule(this, `${scheduleName}-Rule`, {
           schedule: events.Schedule.expression(hieConfig.cron),

@@ -15,27 +15,20 @@ import { HieConfig } from "./types";
 export async function uploadThroughSftp(config: HieConfig, file: string): Promise<void> {
   const { log } = out("[STUB] - Hl7v2RosterUploader");
   // const { states, subscriptions } = config;
-
-  // log(`Running with this config: ${JSON.stringify(config)}`);
+  // const loggingDetails = {
+  //   hieName: config.name,
+  //   schema: config.schema,
+  //   states,
+  //   subscriptions,
+  // };
+  // log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
   // const sftpConfig = config.sftpConfig;
   // if (sftpConfig) {
-  //   try {
   //     await executeWithNetworkRetries(async () => sendViaSftp(sftpConfig, file, log), {
   //       maxAttempts: NUMBER_OF_ATTEMPTS,
   //       initialDelay: BASE_DELAY.asMilliseconds(),
   //       log,
   //     });
-  //   } catch (err) {
-  //     const msg = `Failed to SFTP upload HL7v2 roster`;
-  //     capture.error(msg, {
-  //       extra: {
-  //         config,
-  //         states,
-  //         subscriptions,
-  //         err,
-  //       },
-  //     });
-  //   }
   // }
 
   log("Done");
