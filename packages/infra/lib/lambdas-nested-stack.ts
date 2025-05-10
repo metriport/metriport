@@ -19,7 +19,7 @@ import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
-import { Secrets } from "./shared/secrets";
+import { Secrets, buildSecrets, secretsToECS } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 import * as events from "aws-cdk-lib/aws-events";
@@ -735,6 +735,7 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         BUCKET_NAME: hl7v2RosterBucket.bucketName,
         API_URL: config.loadBalancerDnsName,
+        ...secretsToECS(buildSecrets(this, config.hl7Notification.secrets)),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
