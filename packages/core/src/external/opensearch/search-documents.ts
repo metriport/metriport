@@ -1,7 +1,7 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { log as _log } from "../../util/log";
 import { uniqBy } from "lodash";
-import { isDocStatusReady } from ".";
+import { isDocStatusReady } from "./document-status";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
 import { isCarequalityExtension } from "../carequality/extension";

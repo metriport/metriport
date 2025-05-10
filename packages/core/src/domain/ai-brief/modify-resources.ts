@@ -587,7 +587,7 @@ function getSlimLocation(res: Location): SlimLocation {
   };
 }
 
-function cleanUpNote(note: string): string {
+export function cleanUpNote(note: string): string {
   return note
     .trim()
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
