@@ -4,7 +4,6 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { PatientSettingsData } from "@metriport/core/domain/patient-settings";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
