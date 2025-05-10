@@ -31,11 +31,11 @@ import {
   fhirResourceBundleSchema,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import {
-  practitionerSchema,
-  Practitioner,
-} from "@metriport/shared/interface/external/ehr/practitioner";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
+import {
+  Practitioner,
+  practitionerSchema,
+} from "@metriport/shared/interface/external/ehr/practitioner";
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
@@ -52,7 +52,7 @@ import {
   ApiConfig,
   fetchBundleUsingTtl,
   formatDate,
-  getConditionSnomedCoding,
+  getConditionIcd10Coding,
   getConditionStartDate,
   getConditionStatus,
   makeRequest,
@@ -939,22 +939,22 @@ class CanvasApi {
       ...(condition.meta ? { meta: condition.meta } : {}),
       ...(condition.extension ? { extension: condition.extension } : {}),
     };
-    const snomedCoding = getConditionSnomedCoding(condition);
-    if (!snomedCoding) {
-      throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
+    const icd10Coding = getConditionIcd10Coding(condition);
+    if (!icd10Coding) {
+      throw new BadRequestError("No ICD-10 code found for condition", undefined, additionalInfo);
     }
-    if (!snomedCoding.code) {
-      throw new BadRequestError("No code found for SNOMED coding", undefined, additionalInfo);
+    if (!icd10Coding.code) {
+      throw new BadRequestError("No code found for ICD-10 coding", undefined, additionalInfo);
     }
-    if (!snomedCoding.display) {
-      throw new BadRequestError("No display found for SNOMED coding", undefined, additionalInfo);
+    if (!icd10Coding.display) {
+      throw new BadRequestError("No display found for ICD-10 coding", undefined, additionalInfo);
     }
     formattedCondition.code = {
       coding: [
         {
-          system: "http://snomed.info/sct",
-          code: snomedCoding.code,
-          display: snomedCoding.display,
+          code: icd10Coding.code,
+          system: "http://hl7.org/fhir/sid/icd-10-cm",
+          display: icd10Coding.display,
         },
       ],
     };
@@ -973,7 +973,10 @@ class CanvasApi {
     }
     formattedCondition.clinicalStatus = {
       coding: [
-        { system: "http://terminology.hl7.org/CodeSystem/condition-clinical", code: problemStatus },
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          code: problemStatus,
+        },
       ],
     };
     formattedCondition.category = [

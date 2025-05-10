@@ -18,7 +18,7 @@ import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
-import { SNOMED_CODE } from "../../util/constants";
+import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
 import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
@@ -227,6 +227,16 @@ export function createDataParams(data: RequestData): string {
 
 export function isNotRetriableAxiosError(error: unknown): boolean {
   return isAxiosError(error) && (error.response?.status === 400 || error.response?.status === 404);
+}
+
+export function getConditionIcd10Coding(condition: Condition): Coding | undefined {
+  const code = condition.code;
+  const icdCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(ICD_10_CODE);
+  });
+  if (!icdCoding) return undefined;
+  return icdCoding;
 }
 
 export function getConditionSnomedCoding(condition: Condition): Coding | undefined {
