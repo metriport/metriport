@@ -2,12 +2,26 @@ import { faker } from "@faker-js/faker";
 import { USState } from "@metriport/shared";
 import { makePatient } from "../../../domain/__tests__/patient";
 import { Address } from "../../../domain/address";
-import { convertPatientsToHieFormat, packIdAndCxId } from "../hl7v2-roster-generator";
+import * as rosterGeneratorModule from "../hl7v2-roster-generator";
+import * as packIdsModule from "../utils";
 
 const states = [USState.MA];
 
 describe("AdtRosterGenerator", () => {
-  describe("convertToHieFormat", () => {
+  let scrambleIdMock: jest.SpyInstance;
+  let patientId: string;
+  let cxId: string;
+  let scrambledId: string;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    scrambleIdMock = jest.spyOn(packIdsModule, "createScrambledId");
+    patientId = faker.string.uuid();
+    cxId = faker.string.uuid();
+    scrambledId = `${cxId}_${patientId}`;
+    scrambleIdMock.mockReturnValueOnce(scrambledId);
+  });
+
+  describe("convertPatientsToHieFormat", () => {
     const mockSchema = {
       scrambledId: "ID",
       firstName: "FIRST NAME",
@@ -52,10 +66,6 @@ describe("AdtRosterGenerator", () => {
     const email = "john@doe.com";
 
     it("should convert all fields correctly including multiple addresses and identifiers", () => {
-      const patientId = faker.string.uuid();
-      const cxId = faker.string.uuid();
-      const scrambledId = packIdAndCxId(cxId, patientId);
-
       const patient = makePatient({
         id: patientId,
         cxId,
@@ -79,8 +89,14 @@ describe("AdtRosterGenerator", () => {
       });
 
       const subscribers = [patient];
-      const result = convertPatientsToHieFormat(subscribers, mockSchema, states);
 
+      const result = rosterGeneratorModule.convertPatientsToHieFormat(
+        subscribers,
+        mockSchema,
+        states
+      );
+
+      expect(scrambleIdMock).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         ID: scrambledId,
@@ -100,10 +116,6 @@ describe("AdtRosterGenerator", () => {
     });
 
     it("should handle missing optional fields", () => {
-      const patientId = faker.string.uuid();
-      const cxId = faker.string.uuid();
-      const scrambledId = packIdAndCxId(cxId, patientId);
-
       const patient = makePatient({
         id: patientId,
         cxId,
@@ -119,8 +131,13 @@ describe("AdtRosterGenerator", () => {
       delete patient.data.personalIdentifiers;
 
       const subscribers = [patient];
-      const result = convertPatientsToHieFormat(subscribers, mockSchema, states);
+      const result = rosterGeneratorModule.convertPatientsToHieFormat(
+        subscribers,
+        mockSchema,
+        states
+      );
 
+      expect(scrambleIdMock).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         ID: scrambledId,
@@ -152,10 +169,6 @@ describe("AdtRosterGenerator", () => {
         country: "USA",
       };
 
-      const patientId = faker.string.uuid();
-      const cxId = faker.string.uuid();
-      const scrambledId = packIdAndCxId(cxId, patientId);
-
       const patient = makePatient({
         id: patientId,
         cxId,
@@ -171,8 +184,13 @@ describe("AdtRosterGenerator", () => {
       delete patient.data.personalIdentifiers;
 
       const subscribers = [patient];
-      const result = convertPatientsToHieFormat(subscribers, mockSchema, states);
+      const result = rosterGeneratorModule.convertPatientsToHieFormat(
+        subscribers,
+        mockSchema,
+        states
+      );
 
+      expect(scrambleIdMock).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         ID: scrambledId,

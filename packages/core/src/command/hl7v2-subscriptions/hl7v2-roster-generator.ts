@@ -10,7 +10,6 @@ import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
-import { compressUuid } from "./hl7v2-to-fhir-conversion/shared";
 import {
   HieConfig,
   Hl7v2SubscriberApiResponse,
@@ -18,6 +17,7 @@ import {
   MetriportToHieFieldMapping,
   addressFields,
 } from "./types";
+import { createScrambledId } from "./utils";
 
 const region = Config.getAWSRegion();
 
@@ -169,14 +169,14 @@ export function convertSubscriberToHieFormat(
   return result;
 }
 
-function mapPatientToSubscriber(p: Patient, states: string[]): Hl7v2Subscriber {
+export function mapPatientToSubscriber(p: Patient, states: string[]): Hl7v2Subscriber {
   const data = p.data;
   const addresses = data.address.filter(a => states.includes(a.state));
   const ssn = data.personalIdentifiers?.find(id => id.type === "ssn")?.value;
   const driversLicense = data.personalIdentifiers?.find(id => id.type === "driversLicense")?.value;
   const phone = data.contact?.find(c => c.phone)?.phone;
   const email = data.contact?.find(c => c.email)?.email;
-  const scrambledId = packIdAndCxId(p.cxId, p.id);
+  const scrambledId = createScrambledId(p.cxId, p.id);
 
   return {
     id: p.id,
@@ -192,10 +192,4 @@ function mapPatientToSubscriber(p: Patient, states: string[]): Hl7v2Subscriber {
     ...(phone ? { phone } : undefined),
     ...(email ? { email } : undefined),
   };
-}
-
-export function packIdAndCxId(cxId: string, patientId: string): string {
-  const compressedCxId = compressUuid(cxId);
-  const compressedPatientId = compressUuid(patientId);
-  return `${compressedCxId}_${compressedPatientId}`;
 }
