@@ -48,6 +48,7 @@ export async function recreateConsolidated({
       const payload: ConsolidatedSnapshotRequestSync = {
         patient,
         isAsync: false,
+        sendAnalytics: true,
       };
       const connector = buildConsolidatedSnapshotConnector();
       await connector.execute(payload);
