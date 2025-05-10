@@ -1,11 +1,11 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createRef,
   deduplicateWithinMap,
   getDateFromString,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const medicationRequestStatus = [
@@ -30,6 +30,10 @@ const statusRanking: Record<MedicationRequestStatus, number> = {
   cancelled: 6,
   completed: 7,
 };
+
+function preprocessStatus(existing: MedicationRequest, target: MedicationRequest) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateMedRequests(
   medications: MedicationRequest[]
@@ -60,15 +64,6 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(
-    master: MedicationRequest,
-    existing: MedicationRequest,
-    target: MedicationRequest
-  ): MedicationRequest {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
-  }
-
   for (const medRequest of medRequests) {
     const medRef = medRequest.medicationReference?.reference;
     const date = medRequest.authoredOn;
@@ -77,14 +72,13 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
       const datetime = getDateFromString(date, "datetime");
       // TODO: Include medRequest.dosage into the key when we start mapping it on the FHIR converter
       const key = JSON.stringify({ medRef, datetime });
-      deduplicateWithinMap(
-        medRequestsMap,
-        key,
-        medRequest,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medRequestsMap,
+        dedupKey: key,
+        candidateResource: medRequest,
         refReplacementMap,
-        undefined,
-        assignMostDescriptiveStatus
-      );
+        onPremerge: preprocessStatus,
+      });
     } else {
       danglingReferences.add(createRef(medRequest));
     }

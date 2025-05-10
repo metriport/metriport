@@ -9,6 +9,7 @@ import {
 } from "../../util/constants";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
@@ -18,7 +19,6 @@ import {
   fetchCodingCodeOrDisplayOrSystem,
   getPerformedDateFromResource,
   hasBlacklistedText,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const procedureStatus = [
@@ -44,6 +44,10 @@ export const statusRanking: Record<ProcedureStatus, number> = {
   stopped: 6,
   completed: 7,
 };
+
+function preprocessStatus(existing: Procedure, target: Procedure) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateProcedures(procedures: Procedure[]): DeduplicationResult<Procedure> {
   const { proceduresMap, refReplacementMap, danglingReferences } = groupSameProcedures(procedures);
@@ -73,11 +77,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function removeCodesAndAssignStatus(
-    master: Procedure,
-    existing: Procedure,
-    target: Procedure
-  ): Procedure {
+  function postProcessCodes(master: Procedure): Procedure {
     const code = master.code;
     const codings = code?.coding;
 
@@ -107,7 +107,6 @@ export function groupSameProcedures(procedures: Procedure[]): {
       delete master.code.coding;
     }
 
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
   }
 
@@ -166,7 +165,8 @@ export function groupSameProcedures(procedures: Procedure[]): {
         matchCandidateKeys,
         incomingResource: procedure,
         refReplacementMap,
-        customMergeLogic: removeCodesAndAssignStatus,
+        onPremerge: preprocessStatus,
+        onPostmerge: postProcessCodes,
       });
     } else {
       danglingReferences.add(createRef(procedure));

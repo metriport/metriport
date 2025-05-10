@@ -3,13 +3,13 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createRef,
   fetchCodingCodeOrDisplayOrSystem,
   fillL1L2Maps,
   getDateFromResource,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const diagnosticReportStatus = [
@@ -38,6 +38,10 @@ const statusRanking: Record<DiagnosticReportStatus, number> = {
   appended: 0,
   cancelled: 0,
 };
+
+function preprocessStatus(existing: DiagnosticReport, target: DiagnosticReport) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateDiagReports(
   medications: DiagnosticReport[]
@@ -70,11 +74,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function removeCodesAndAssignStatus(
-    master: DiagnosticReport,
-    existing: DiagnosticReport,
-    target: DiagnosticReport
-  ): DiagnosticReport {
+  function postProcessCodes(master: DiagnosticReport) {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
       const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
@@ -87,7 +87,6 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       };
     }
 
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
   }
 
@@ -157,7 +156,8 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
         setterKeys,
         targetResource: diagReport,
         refReplacementMap,
-        applySpecialModifications: removeCodesAndAssignStatus,
+        onPremerge: preprocessStatus,
+        onPostmerge: postProcessCodes,
       });
     } else {
       danglingReferences.add(createRef(diagReport));

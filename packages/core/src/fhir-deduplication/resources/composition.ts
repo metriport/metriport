@@ -32,10 +32,20 @@ export function groupSameCompositions(compositions: Composition[]): {
 
     if (documentName) {
       const key = JSON.stringify({ documentName });
-      deduplicateWithinMap(compositionsMap, key, composition, refReplacementMap);
+      deduplicateWithinMap({
+        dedupedResourcesMap: compositionsMap,
+        dedupKey: key,
+        candidateResource: composition,
+        refReplacementMap,
+      });
     } else {
       const key = JSON.stringify({ id: composition.id });
-      deduplicateWithinMap(compositionsMap, key, composition, refReplacementMap);
+      deduplicateWithinMap({
+        dedupedResourcesMap: compositionsMap,
+        dedupKey: key,
+        candidateResource: composition,
+        refReplacementMap,
+      });
     }
   }
 

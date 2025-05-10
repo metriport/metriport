@@ -1,5 +1,4 @@
 import { Bundle, EncounterDiagnosis, Resource } from "@medplum/fhirtypes";
-import { cloneDeep } from "lodash";
 import {
   ExtractedFhirTypes,
   buildCompleteBundleEntry,
@@ -35,13 +34,20 @@ const medicationRelatedTypes = [
   "MedicationRequest",
 ];
 
-export function deduplicateFhir(
+/**
+ * This function is dangerous because it mutates the bundle in place.
+ *
+ * @param {Object} params - The parameters for deduplication
+ * @param {string} params.cxId - The customer ID
+ * @param {string} params.patientId - The patient ID
+ * @param {Bundle<Resource>} params.bundle - The FHIR bundle to deduplicate
+ */
+export function dangerouslyDeduplicateFhir(
   fhirBundle: Bundle<Resource>,
   cxId: string,
   patientId: string
-): Bundle<Resource> {
-  const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
-  let resourceArrays = extractFhirTypesFromBundle(deduplicatedBundle);
+): void {
+  let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
 
   const compositionsResult = deduplicateCompositions(resourceArrays.compositions);
   resourceArrays.compositions = compositionsResult.combinedResources;
@@ -206,18 +212,16 @@ export function deduplicateFhir(
     });
   }
 
-  deduplicatedBundle.entry = Object.entries(resourceArrays)
+  fhirBundle.entry = Object.entries(resourceArrays)
     .filter(([resourceType]) => resourceType !== "devices")
     .flatMap(([, resources]) => {
       const entriesArray = Array.isArray(resources) ? resources : [resources];
       return entriesArray
         .flatMap(v => v || [])
         .map(removeDuplicateReferences)
-        .map(entry => buildCompleteBundleEntry(entry, deduplicatedBundle.type));
+        .map(entry => buildCompleteBundleEntry(entry, fhirBundle.type));
     });
-  deduplicatedBundle.total = deduplicatedBundle.entry.length;
-
-  return deduplicatedBundle;
+  fhirBundle.total = fhirBundle.entry.length;
 }
 
 export function removeResourcesWithDanglingLinks(

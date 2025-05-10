@@ -1,23 +1,49 @@
-import { Observation } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Observation, Quantity } from "@medplum/fhirtypes";
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 import { groupSameObservations } from "../resources/observation";
 import { groupSameObservationsSocial } from "../resources/observation-social";
-import { unknownCode, unknownCoding } from "../shared";
+import {
+  unknownCode as unknownCodeImported,
+  unknownCoding as unknownCodingImported,
+} from "../shared";
 import { dateTime, makePeriod } from "./examples/condition-examples";
 import {
-  loincCodeTobacco,
-  snomedCodeTobacco,
-  valueConceptTobacco,
-  valueHeight,
+  loincCodeTobacco as loincCodeTobaccoImported,
+  snomedCodeTobacco as snomedCodeTobaccoImported,
+  valueConceptTobacco as valueConceptTobaccoImported,
+  valueHeight as valueHeightImported,
 } from "./examples/observation-examples";
+import { deepClone } from "@medplum/core";
+
+type CodeableConceptWithCoding = CodeableConcept & { coding: Coding[] };
 
 describe("groupSameObservationsSocial", () => {
-  it("correctly groups duplicate observations based on values and loinc codes", () => {
-    const params = {
+  let loincCodeTobacco: CodeableConceptWithCoding;
+  let snomedCodeTobacco: CodeableConceptWithCoding;
+  let valueConceptTobacco: CodeableConceptWithCoding;
+  let valueHeight: Quantity;
+  let unknownCoding: Coding;
+  let unknownCode: CodeableConcept;
+  let params: {
+    code: CodeableConcept;
+    valueCodeableConcept: CodeableConcept;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    loincCodeTobacco = deepClone(loincCodeTobaccoImported);
+    snomedCodeTobacco = deepClone(snomedCodeTobaccoImported);
+    valueConceptTobacco = deepClone(valueConceptTobaccoImported);
+    valueHeight = deepClone(valueHeightImported);
+    unknownCoding = deepClone(unknownCodingImported);
+    unknownCode = deepClone(unknownCodeImported);
+    params = deepClone({
       code: loincCodeTobacco,
       valueCodeableConcept: valueConceptTobacco,
-    };
+    });
+  });
 
+  it("correctly groups duplicate observations based on values and loinc codes", () => {
     const observation = makeObservation(params);
     const observation2 = makeObservation(params);
 
@@ -26,10 +52,10 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("correctly groups duplicate observations based on values and snomed codes", () => {
-    const params = {
+    const params = deepClone({
       code: loincCodeTobacco,
       valueQuantity: valueHeight,
-    };
+    });
 
     const observation = makeObservation(params);
     const observation2 = makeObservation(params);
@@ -39,11 +65,6 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("correctly groups duplicate observations based on values and loinc codes even when snomed is present", () => {
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
     const observation = makeObservation(params);
     const observation2 = makeObservation({
       ...params,
@@ -57,11 +78,6 @@ describe("groupSameObservationsSocial", () => {
   it("correctly builds effectivePeriod on the combined observation", () => {
     const period = makePeriod();
     const period2 = makePeriod("2010-01-01T12:00:00.000Z", "2013-12-01T12:00:00.000Z");
-
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
 
     const observation = makeObservation({
       ...params,
@@ -88,10 +104,6 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("does not group observations with different codes", () => {
-    const params = {
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
     const observation = makeObservation({ ...params, code: loincCodeTobacco });
     const observation2 = makeObservation({ ...params, code: snomedCodeTobacco });
 
@@ -100,11 +112,6 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("does not group observations with different values", () => {
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
     const observation = makeObservation(params);
     const observation2 = makeObservation({
       ...params,
@@ -123,12 +130,8 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("removes observations with unknown codes", () => {
-    const params = {
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
-    const observation = makeObservation({ ...params, code: loincCodeTobacco });
-    const observation2 = makeObservation({ ...params, code: unknownCode });
+    const observation = makeObservation(deepClone({ ...params, code: loincCodeTobacco }));
+    const observation2 = makeObservation(deepClone({ ...params, code: unknownCode }));
 
     const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
     expect(observationsMap.size).toBe(1);
@@ -138,16 +141,11 @@ describe("groupSameObservationsSocial", () => {
   });
 
   it("removes unknown codes, but keeps all other codes", () => {
-    const params = {
-      code: loincCodeTobacco,
-      valueCodeableConcept: valueConceptTobacco,
-    };
-
-    const madeUpCoding = {
+    const madeUpCoding = deepClone({
       system: "some-other-custom-coding-system",
       code: "no-one-knows-the-meaning",
       display: "ancient words",
-    };
+    });
 
     const observation = makeObservation(params);
     const observation2 = makeObservation({
@@ -177,6 +175,17 @@ describe("groupSameObservationsSocial", () => {
 });
 
 describe("groupSameObservations", () => {
+  let loincCodeTobacco: CodeableConceptWithCoding;
+  let snomedCodeTobacco: CodeableConceptWithCoding;
+  let valueHeight: Quantity;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    loincCodeTobacco = deepClone(loincCodeTobaccoImported);
+    snomedCodeTobacco = deepClone(snomedCodeTobaccoImported);
+    valueHeight = deepClone(valueHeightImported);
+  });
+
   it("correctly groups duplicate observations based on values, dates, and loinc codes", () => {
     const params = {
       effectiveDateTime: dateTime.start,

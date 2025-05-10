@@ -61,17 +61,16 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
 
   if (hasValidAllergies) {
     for (const allergy of validAllergies) {
-      const { allergy: newAllergy, substance } = preProcess(allergy);
+      const { allergy: newAllergy, substance } = preprocess(allergy);
       if (substance) {
         const key = JSON.stringify({ substance });
-        deduplicateWithinMap(
-          allergiesMap,
-          key,
-          newAllergy,
+        deduplicateWithinMap({
+          dedupedResourcesMap: allergiesMap,
+          dedupKey: key,
+          candidateResource: newAllergy,
           refReplacementMap,
-          undefined,
-          postProcess
-        );
+          onPostmerge: postProcessAllergy,
+        });
       } else {
         danglingReferences.add(createRef(allergy));
       }
@@ -85,7 +84,12 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
     if (allergy) {
       const key = JSON.stringify({ allergy });
       // no post processing so we dont remove the unknown allergy
-      deduplicateWithinMap(allergiesMap, key, allergy, refReplacementMap, undefined);
+      deduplicateWithinMap({
+        dedupedResourcesMap: allergiesMap,
+        dedupKey: key,
+        candidateResource: allergy,
+        refReplacementMap,
+      });
 
       const index = blacklistedAllergies.indexOf(allergy);
       if (index !== -1) {
@@ -105,7 +109,7 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   };
 }
 
-function preProcess(allergy: AllergyIntolerance): {
+function preprocess(allergy: AllergyIntolerance): {
   allergy: AllergyIntolerance;
   substance?: CodeableConcept;
 } {
@@ -126,8 +130,8 @@ function preProcess(allergy: AllergyIntolerance): {
   return { allergy: newAllergy, substance };
 }
 
-function postProcess(allergy: AllergyIntolerance): AllergyIntolerance {
-  const { allergy: newAllergy } = preProcess(allergy);
+function postProcessAllergy(allergy: AllergyIntolerance): AllergyIntolerance {
+  const { allergy: newAllergy } = preprocess(allergy);
   return newAllergy;
 }
 
