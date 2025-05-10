@@ -9,7 +9,7 @@ import {
 } from "@metriport/core/command/consolidated/consolidated-create";
 import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/conversion";
 import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
-import { deduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
+import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents, getFileNames, makeDir } from "@metriport/core/util/fs";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -69,7 +69,7 @@ async function main() {
 
     const cxId = uuidv4();
     const patientId = existingPatientId ?? uuidv4();
-    deduplicateFhir(bundle, cxId, patientId);
+    dangerouslyDeduplicateFhir(bundle, cxId, patientId);
 
     console.log(
       `Went from ${initialSize} to ${bundle.entry?.length} resources in ${elapsedTimeFromNow(

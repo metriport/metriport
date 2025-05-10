@@ -6,7 +6,7 @@ import {
   buildConsolidatedBundle,
   merge,
 } from "@metriport/core/command/consolidated/consolidated-create";
-import { deduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
+import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/shared";
@@ -85,7 +85,7 @@ export async function createConsolidatedFromLocal(
     JSON.stringify(bundle, null, 2)
   );
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
-  await deduplicate({ cxId, patientId: patient.id!, bundle });
+  await dangerouslyDeduplicate({ cxId, patientId: patient.id!, bundle });
 
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();

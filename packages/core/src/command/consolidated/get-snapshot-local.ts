@@ -12,7 +12,7 @@ import { getConsolidatedQueryByRequestId } from "../../domain/patient";
 import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
-import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { isPatient } from "../../external/fhir/shared";
@@ -59,7 +59,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       log(`Failed to store original bundle on S3 - ${errorToString(error)}`);
     }
 
-    await deduplicate({
+    await dangerouslyDeduplicate({
       cxId,
       patientId,
       bundle: processedBundle,

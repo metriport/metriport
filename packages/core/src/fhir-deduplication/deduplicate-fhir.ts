@@ -34,7 +34,15 @@ const medicationRelatedTypes = [
   "MedicationRequest",
 ];
 
-export function deduplicateFhir(
+/**
+ * This function is dangerous because it mutates the bundle in place.
+ *
+ * @param {Object} params - The parameters for deduplication
+ * @param {string} params.cxId - The customer ID
+ * @param {string} params.patientId - The patient ID
+ * @param {Bundle<Resource>} params.bundle - The FHIR bundle to deduplicate
+ */
+export function dangerouslyDeduplicateFhir(
   fhirBundle: Bundle<Resource>,
   cxId: string,
   patientId: string

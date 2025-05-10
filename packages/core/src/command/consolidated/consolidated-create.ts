@@ -8,7 +8,7 @@ import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
-import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
@@ -82,7 +82,7 @@ export async function createConsolidatedFromConversions({
   });
 
   log(`Deduplicating consolidated bundle...`);
-  await deduplicate({ cxId, patientId, bundle });
+  await dangerouslyDeduplicate({ cxId, patientId, bundle });
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
   const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);

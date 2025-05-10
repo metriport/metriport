@@ -1,10 +1,18 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { deduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
+import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { out } from "../../../util";
 import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
 
-export async function deduplicate({
+/**
+ * This function is dangerous because it mutates the bundle in place.
+ *
+ * @param {Object} params - The parameters for deduplication
+ * @param {string} params.cxId - The customer ID
+ * @param {string} params.patientId - The patient ID
+ * @param {Bundle<Resource>} params.bundle - The FHIR bundle to deduplicate
+ */
+export async function dangerouslyDeduplicate({
   cxId,
   patientId,
   bundle,
@@ -16,7 +24,7 @@ export async function deduplicate({
   const { log } = out(`Deduplicate. cx ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
   const initialBundleLength = bundle.entry?.length;
-  deduplicateFhir(bundle, cxId, patientId);
+  dangerouslyDeduplicateFhir(bundle, cxId, patientId);
   const finalBundleLength = bundle.entry?.length;
 
   const duration = elapsedTimeFromNow(startedAt);
