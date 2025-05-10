@@ -6,7 +6,6 @@ import {
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import {
-  Hl7v2Subscriber,
   hl7v2SubscriptionRequestSchema,
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
@@ -16,9 +15,9 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import {
   BadRequestError,
+  PaginatedResponse,
   internalSendConsolidatedSchema,
   normalizeState,
-  PaginatedResponse,
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
@@ -32,6 +31,7 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
+import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
 import {
   ConsolidatedQueryParams,
@@ -40,17 +40,17 @@ import {
   startConsolidatedQuery,
 } from "../../../command/medical/patient/consolidated-get";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
-  getHl7v2Subscribers,
   GetHl7v2SubscribersParams,
+  getHl7v2Subscribers,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
+  getPatients,
 } from "../../../command/medical/patient/get-patient";
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import {
@@ -74,6 +74,7 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { parseISODate } from "../../../shared/date";
 import { getETag } from "../../../shared/http";
@@ -104,7 +105,6 @@ import {
 import patientImportRoutes from "./patient-import";
 import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
-import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 
 dayjs.extend(duration);
 
@@ -175,7 +175,7 @@ router.get(
       hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
-    const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {
+    const response: PaginatedResponse<PatientModelReadOnly, "patients"> = {
       meta,
       patients: items,
     };

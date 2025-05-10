@@ -42,7 +42,7 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
     dob: data.dob ?? dayjs(faker.date.past()).format(ISO_DATE),
     genderAtBirth: data.genderAtBirth ?? faker.helpers.arrayElement(["F", "M"]),
     personalIdentifiers: data.personalIdentifiers ?? [makePersonalIdentifier()],
-    contact: [makeContact()],
+    contact: data.contact ?? [makeContact()],
     address: data.address ?? [makeAddressStrict()],
     consolidatedLinkDemographics: data.consolidatedLinkDemographics,
     documentQueryProgress: data.documentQueryProgress,

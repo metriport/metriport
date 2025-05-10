@@ -19,9 +19,12 @@ import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
-import { Secrets } from "./shared/secrets";
+import { Secrets, buildSecrets, secretsToECS } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import { validateCronExpression } from "./shared/cron-validator";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -732,6 +735,7 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         BUCKET_NAME: hl7v2RosterBucket.bucketName,
         API_URL: config.loadBalancerDnsName,
+        ...secretsToECS(buildSecrets(this, config.hl7Notification.secrets)),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -741,6 +745,27 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     hl7v2RosterBucket.grantReadWrite(hl7v2RosterUploadLambda);
+
+    // Create EventBridge schedules for each HIE config
+    if (config.hl7Notification.hieConfigs) {
+      const hieConfigs = config.hl7Notification.hieConfigs;
+
+      Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
+        const scheduleName = `Hl7v2RosterUpload-${hieName}`;
+
+        // Validate cron expression before creating the rule
+        validateCronExpression(hieConfig.cron);
+
+        new events.Rule(this, `${scheduleName}-Rule`, {
+          schedule: events.Schedule.expression(hieConfig.cron),
+          targets: [
+            new targets.LambdaFunction(hl7v2RosterUploadLambda, {
+              event: events.RuleTargetInput.fromObject(hieConfig),
+            }),
+          ],
+        });
+      });
+    }
 
     return hl7v2RosterUploadLambda;
   }
