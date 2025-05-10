@@ -3,7 +3,6 @@ import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { searchSemantic } from "@metriport/core/external/opensearch/semantic/search";
 import { Config } from "@metriport/core/util/config";
 import { getRequestId } from "@metriport/core/util/request";
 import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
@@ -25,6 +24,7 @@ import { handleDataContribution } from "../../command/medical/patient/data-contr
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { searchConsolidated } from "../../command/medical/patient/search/search-consolidated";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
@@ -208,12 +208,14 @@ router.get(
     const { patient } = getPatientInfoOrFail(req);
     const queryParam = getFrom("query").optional("query", req);
     const query = queryParam ? queryParam.trim() : undefined;
-    const similarityParam = getFrom("query").optional("similarityThreshold", req);
-    const similarityThreshold = similarityParam ? parseFloat(similarityParam) : undefined;
+    // const similarityParam = getFrom("query").optional("similarityThreshold", req);
+    // const similarityThreshold = similarityParam ? parseFloat(similarityParam) : undefined;
 
-    const result = query
-      ? await searchSemantic({ patient, query, similarityThreshold })
-      : await getConsolidatedPatientData({ patient });
+    const result = await searchConsolidated({
+      patient,
+      query,
+      // similarityThreshold,
+    });
 
     return res.status(status.OK).json(result);
   })
