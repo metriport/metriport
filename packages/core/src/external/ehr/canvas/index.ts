@@ -450,14 +450,22 @@ class CanvasApi {
       `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} practiceLocationId ${practiceLocationId}`
     );
     const noteUrl = "notes/v1/Note";
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+      title,
+      noteType,
+    };
     const data = {
       title,
       noteTypeName: noteType,
       patientKey: patientId,
       providerKey: practitionerId,
       practiceLocationKey: practiceLocationId,
-      encounterStartTime: new Date().toISOString(),
+      encounterStartTime: buildDayjs().toISOString(),
     };
 
     const note = await this.makeRequest<Note>({
@@ -493,7 +501,7 @@ class CanvasApi {
     orderDec?: boolean;
   }): Promise<Note[]> {
     const { debug } = out(
-      `Canvas listNotes - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} noteType ${noteType} fromDate ${fromDate} toDate ${toDate}`
+      `Canvas listNotes - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const params = {
       note_type_name: noteType,
@@ -506,7 +514,15 @@ class CanvasApi {
     };
     const urlParams = new URLSearchParams(params);
     const noteUrl = `notes/v1/Note?${urlParams.toString()}`;
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      practitionerId,
+      noteType,
+      fromDate: fromDate.toISOString(),
+      toDate: toDate.toISOString(),
+    };
     async function paginateNotes(
       api: CanvasApi,
       url: string | null | undefined,
