@@ -130,7 +130,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "diff"
-          cdk_version: "2.122.0"
+          cdk_version: "2.133.0"
           cdk_stack: "${{ inputs.secrets_cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -142,7 +142,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.122.0"
+          cdk_version: "2.133.0"
           cdk_stack: "${{ inputs.secrets_cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -157,7 +157,7 @@ jobs:
         if: inputs.hl7_notification_stack != null
         with:
           cdk_action: "diff"
-          cdk_version: "2.122.0"
+          cdk_version: "2.133.0"
           cdk_stack: "${{ inputs.hl7_notification_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -170,7 +170,7 @@ jobs:
         if: inputs.hl7_notification_stack != null
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.122.0"
+          cdk_version: "2.133.0"
           cdk_stack: "${{ inputs.hl7_notification_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:

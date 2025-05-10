@@ -103,7 +103,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.122.0"
+          cdk_version: "2.133.0"
           cdk_stack: "VpnStack-${{ inputs.partner_name }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
