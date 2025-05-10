@@ -1,21 +1,21 @@
 import { Bundle, Medication, Observation, Patient, Resource } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
-import { ISO_DATE, buildDayjs } from "@metriport/shared/common/date";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { cloneDeep } from "lodash";
+import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 import {
+  applyResourceSpecificFilters,
+  getSlimPatient,
   SlimCondition,
   SlimDiagnosticReport,
   SlimObservation,
   SlimOrganization,
   SlimResource,
-  applyResourceSpecificFilters,
-  getSlimPatient,
 } from "../../domain/ai-brief/modify-resources";
 import { findDiagnosticReportResources, findPatientResource } from "../../external/fhir/shared";
+import { sizeInBytes } from "../../util/string";
 import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date";
 import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
-import { cloneDeep } from "lodash";
-import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
-import { sizeInBytes } from "../../util/string";
 
 const NUM_HISTORICAL_YEARS = 1;
 const MAX_REPORTS_PER_GROUP = 3;
@@ -56,23 +56,24 @@ export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof cons
   const dateFrom = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
   const filteredBundle = filterBundleByDate(bundle, dateFrom);
   const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
+  const bundleText = JSON.stringify(slimPayloadBundle);
 
   const duration = Date.now() - startedAt;
+  // TODO At some point we should remove this, at least the metrics on initial bundle since we're
+  // converting the whole bundle to string just to get the size in bytes
   const metrics = {
     initialBundleSize: bundle.entry?.length,
     initialBundleBytes: sizeInBytes(JSON.stringify(bundle)),
     finalBundleSize: slimPayloadBundle?.length,
-    finalBundleBytes: sizeInBytes(JSON.stringify(slimPayloadBundle)),
+    finalBundleBytes: sizeInBytes(bundleText),
     durationMs: duration,
   };
-
   log(`Bundle filtering metrics: ${JSON.stringify(metrics)}`);
 
-  const bundleText = JSON.stringify(slimPayloadBundle);
   return bundleText;
 }
 
-function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
+export function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
   if (bundle.entry?.length === 0) return undefined;
 
   const patient = findPatientResource(bundle);
@@ -101,7 +102,7 @@ function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
     return updRes;
   });
 
-  const withFilteredReports = filterOutDiagnosticReports(processedEntries);
+  const withFilteredReports = filterOutDuplicatedDiagnosticReports(processedEntries);
   const withLatestObservations = filterLatestObservationsByCode(withFilteredReports);
 
   const containedResourceIds = Array.from(containedResourceIdsSet).flatMap(id => {
@@ -384,7 +385,7 @@ function replaceReferencesWithData(
   return { updRes, ids: Array.from(referencedIds) };
 }
 
-function filterOutDiagnosticReports(entries: SlimResource[]): SlimResource[] {
+function filterOutDuplicatedDiagnosticReports(entries: SlimResource[]): SlimResource[] {
   const reports: SlimDiagnosticReport[] = [];
   const otherEntries = entries.filter(entry => {
     if (entry.resourceType === "DiagnosticReport") {
@@ -394,7 +395,7 @@ function filterOutDiagnosticReports(entries: SlimResource[]): SlimResource[] {
     return true;
   });
   const withOnlyLatestLabs = filterOutOldLabs(reports);
-  const withLimitedReportsPerPerformer = filterReportsByPerformerAndCategory(withOnlyLatestLabs);
+  const withLimitedReportsPerPerformer = groupReportsByPerformerAndCategory(withOnlyLatestLabs);
   const withoutDuplicateReports = filterOutDuplicateReports(withLimitedReportsPerPerformer);
 
   return [...withoutDuplicateReports, ...otherEntries];
@@ -429,7 +430,7 @@ function filterOutOldLabs(reports: SlimDiagnosticReport[]): SlimDiagnosticReport
   return [...recentLabReports, ...nonLabReports];
 }
 
-function filterReportsByPerformerAndCategory(
+function groupReportsByPerformerAndCategory(
   reports: SlimDiagnosticReport[]
 ): SlimDiagnosticReport[] {
   const reportGroups = new Map<string, SlimDiagnosticReport[]>();
@@ -556,7 +557,7 @@ function getObservationDate(obs: SlimObservation): string | undefined {
 }
 
 /**
- * Removes the resources that are already references by other resources from the bundle.
+ * Removes the resources that are already referenced by other resources from the bundle.
  * Removes resource IDs and empty objects.
  * Removes resources that don't provide any useful information unless they are referenced by another resource.
  * Adds the SlimPatient into the bundle.
