@@ -320,6 +320,7 @@ class ElationApi {
       schema: z.undefined(),
       additionalInfo,
       debug,
+      emptyResponse: true,
     });
   }
 
@@ -383,6 +384,7 @@ class ElationApi {
     schema,
     additionalInfo,
     debug,
+    emptyResponse = false,
   }: MakeRequestParamsInEhr<T>): Promise<T> {
     return await makeRequest<T>({
       ehr: EhrSources.elation,
@@ -398,6 +400,7 @@ class ElationApi {
       schema,
       additionalInfo,
       debug,
+      emptyResponse,
     });
   }
 

@@ -16,6 +16,6 @@ class MetriportApp(Application):
         if (metriport_token == ""):
           raise Exception("Metriport token is empty")
         patient_id = self.context['patient']['id']
-
-        url = f"{METRIPORT_DASH_URL}#patient={patient_id}&access_token={metriport_token}"
+        practitioner_id = self.context['user']['id']
+        url = f"{METRIPORT_DASH_URL}#patient={patient_id}&practitioner={practitioner_id}&access_token={metriport_token}"
         return LaunchModalEffect(url=url, target=LaunchModalEffect.TargetType.RIGHT_CHART_PANE_LARGE).apply()

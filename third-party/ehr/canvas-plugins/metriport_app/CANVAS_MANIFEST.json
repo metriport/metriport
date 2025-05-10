@@ -1,6 +1,6 @@
 {
     "sdk_version": "0.21.0",
-    "plugin_version": "0.0.2",
+    "plugin_version": "0.0.3",
     "name": "metriport_app",
     "description": "Metriport App",
     "origins": {
