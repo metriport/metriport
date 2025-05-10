@@ -23,10 +23,12 @@ const MAX_BULK_RETRIES = 3;
  * Didn't find a good reference for OpenSearch, so using Elasticsearch's reference:
  * https://www.elastic.co/guide/en/elasticsearch/guide/current/bulk.html#_how_big_is_too_big
  * "A good bulk size to start playing with is around 5-15MB in size."
- * During tests, resources were 99.9% of the time under 250 Bytes.
- * 5MB / 250 Bytes = 20_000
+ * During tests got resource w/ 10KB.
+ * 10MB / 10KB = 1_000
  */
-const bulkChunkSize = 10_000;
+// TODO Don't pre-chunk, but build the chunks on the fly based on the max the server can handle
+// on each bulk request (~5MB)
+const bulkChunkSize = 500;
 
 export type IngestRequest = {
   cxId: string;
