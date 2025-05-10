@@ -213,6 +213,11 @@ class CanvasApi {
     return patientId;
   }
 
+  async getLocation(): Promise<Location> {
+    const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(`Location`));
+    return response.data.entry[0].resource;
+  }
+
   async createNoteLegacy({
     patientKey,
     providerKey,
@@ -237,11 +242,6 @@ class CanvasApi {
       this.axiosInstanceCustomApi.post("notes/v1/Note", payload)
     );
     return response.data.noteKey;
-  }
-
-  async getLocation(): Promise<Location> {
-    const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(`Location`));
-    return response.data.entry[0].resource;
   }
 
   async updateNoteTitle({ noteKey, title }: { noteKey: string; title: string }): Promise<void> {
