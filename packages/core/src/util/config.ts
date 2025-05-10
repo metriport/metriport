@@ -216,4 +216,44 @@ export class Config {
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
+
+  static getSurescriptsSftpHost(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
+  }
+
+  static getSurescriptsSftpPort(): number {
+    return parseInt(getEnvVarOrFail("SURESCRIPTS_SFTP_PORT"));
+  }
+
+  static getSurescriptsSftpUsername(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_USERNAME");
+  }
+
+  static getSurescriptsSftpPassword(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PASSWORD");
+  }
+
+  static getSurescriptsSftpSenderId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_ID");
+  }
+
+  static getSurescriptsSftpSenderPassword(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_PASSWORD");
+  }
+
+  static getSurescriptsSftpReceiverId(): string | undefined {
+    return getEnvVar("SURESCRIPTS_SFTP_RECEIVER_ID");
+  }
+
+  static getSurescriptsSftpVersion(): string {
+    return getEnvVar("SURESCRIPTS_SFTP_VERSION") ?? "2.0";
+  }
+
+  static getSurescriptsSftpAgent(): string {
+    return getEnvVar("SURESCRIPTS_SFTP_AGENT") ?? "Metriport";
+  }
+
+  static getSurescriptsSftpPrivateKey(): string | undefined {
+    return getEnvVar("SURESCRIPTS_SFTP_PRIVATE_KEY");
+  }
 }
