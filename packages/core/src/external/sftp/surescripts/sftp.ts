@@ -3,31 +3,33 @@ import { Config } from "../../../util/config";
 import { createWritableBuffer, SftpConfig } from "../shared";
 import { IdGenerator, createIdGenerator } from "../shared";
 
-interface SurescriptsSftpConfig extends Partial<SftpConfig>, TransmissionConfig {}
+export interface SurescriptsSftpConfig extends Partial<SftpConfig>, TransmissionConfig {}
 
-interface TransmissionConfig {
+export interface TransmissionConfig {
   senderId: string;
   senderPassword: string;
   receiverId?: string;
   version?: string;
 }
 
-interface SftpClient {
+export interface SftpClient {
   connect(): Promise<void>;
   read(remotePath: string): Promise<Buffer>;
   write(remotePath: string, content: Buffer): Promise<boolean>;
 }
 
-enum TransmissionType {
+export enum TransmissionType {
   Enroll = "ENR",
   Unenroll = "UNR",
 }
 
-interface Transmission<T extends TransmissionType> {
+export interface Transmission<T extends TransmissionType> {
   type: T;
+  population: string; // unique population identifier
   id: string;
   date: string;
   time: string;
+  compression?: "gzip";
 }
 
 const surescriptsHost = "sftp.surescripts.com";
@@ -64,7 +66,7 @@ class SurescriptsSftpClient implements SftpClient {
     this.version = config.version ?? Config.getSurescriptsSftpVersion() ?? surescriptsVersion;
   }
 
-  createTransmission<T extends TransmissionType>(type: T): Transmission<T> {
+  createTransmission<T extends TransmissionType>(type: T, population: string): Transmission<T> {
     const now = new Date();
     const year = now.getFullYear();
     const month = (now.getMonth() + 1).toString().padStart(2, "0");
@@ -78,9 +80,11 @@ class SurescriptsSftpClient implements SftpClient {
 
     return {
       type,
+      population,
       id: this.idGenerator().toString("ascii"),
       date: [year, month, date].join(""),
       time: [hour, minute, second, centisecond].join(""),
+      compression: "gzip",
     };
   }
 
@@ -117,3 +121,9 @@ class SurescriptsSftpClient implements SftpClient {
 }
 
 export default SurescriptsSftpClient;
+
+// function getTransmissionFileName<T>(transmission: Transmission<T>): string {
+//   return `${transmission.population}${transmission.id}${transmission.date}${
+//     transmission.compression ? `.${transmission.compression}` : ""
+//   }`;
+// }
