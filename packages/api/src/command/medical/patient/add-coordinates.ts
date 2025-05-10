@@ -1,5 +1,4 @@
 import { Address, combineAddresses } from "@metriport/core/domain/address";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { capture } from "@metriport/core/util/notifications";
 import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/address";
 import { Config } from "../../../shared/config";
@@ -72,15 +71,6 @@ async function addGeographicCoordinates(
         };
 
         const aboveThreshold = result.relevance > ADDRESS_MATCH_RELEVANCE_THRESHOLD;
-
-        analytics({
-          distinctId: cxId,
-          event: EventTypes.addressRelevance,
-          properties: {
-            relevance: result.relevance,
-            aboveThreshold,
-          },
-        });
 
         if (!aboveThreshold) {
           belowThreshold.push(result);

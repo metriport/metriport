@@ -17,6 +17,7 @@ const slackNotificationUrl = getEnvOrFail("SLACK_NOTIFICATION_URL");
 const patientImportParseLambdaName = getEnvOrFail("PATIENT_IMPORT_PARSE_LAMBDA_NAME");
 const isSandbox = Config.isSandbox();
 
+// TODO move to capture.wrapHandler()
 export async function handler(event: S3Event) {
   capture.setExtra({ context: `patient-import-upload-notification`, event });
   const errors: unknown[] = [];
