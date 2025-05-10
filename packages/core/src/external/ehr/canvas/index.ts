@@ -213,6 +213,32 @@ class CanvasApi {
     return patientId;
   }
 
+  async createNoteLegacy({
+    patientKey,
+    providerKey,
+    practiceLocationKey,
+    noteTypeName,
+  }: {
+    patientKey: string;
+    providerKey: string;
+    practiceLocationKey: string;
+    noteTypeName: string;
+  }) {
+    const payload = {
+      title: "Metriport Chart Import",
+      noteTypeName,
+      patientKey,
+      providerKey,
+      practiceLocationKey,
+      encounterStartTime: new Date().toISOString(),
+    };
+
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceCustomApi.post("notes/v1/Note", payload)
+    );
+    return response.data.noteKey;
+  }
+
   async getLocation(): Promise<Location> {
     const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(`Location`));
     return response.data.entry[0].resource;
