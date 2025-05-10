@@ -8,6 +8,7 @@ import {
   Medication,
   MedicationStatement,
   Patient as PatientFhir,
+  Practitioner as PractitionerFhir,
 } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -191,6 +192,15 @@ class CanvasApi {
       }
       throw new Error("An unexpected error occurred during the request");
     }
+  }
+
+  async getPractitionerLegacy(name: string): Promise<PractitionerFhir> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceFhirApi.get(
+        `Practitioner?name=${name}&include-non-scheduleable-practitioners=true`
+      )
+    );
+    return response.data.entry[0].resource;
   }
 
   async createPatient(patient: PatientFhir): Promise<string> {
