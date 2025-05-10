@@ -1,4 +1,7 @@
 import { SearchSetBundle } from "@metriport/shared/medical";
+import { ConsolidatedSnapshotRequestSync } from "../../../command/consolidated/get-snapshot";
+import { buildConsolidatedSnapshotConnector } from "../../../command/consolidated/get-snapshot-factory";
+import { getConsolidatedSnapshotFromS3 } from "../../../command/consolidated/snapshot-on-s3";
 import { Patient } from "../../../domain/patient";
 import { out } from "../../../util";
 import { Config } from "../../../util/config";
@@ -7,27 +10,22 @@ import { toFHIR as patientToFhir } from "../../fhir/patient/conversion";
 import { buildBundleEntry } from "../../fhir/shared/bundle";
 import { SearchResult } from "../index-based-on-resource";
 import { searchDocuments } from "../search-documents";
-import { OpenSearchSemanticSearcherDirect } from "./semantic-searcher-direct";
-import { getConsolidated } from "./shared";
-
+import { OpenSearchLexicalSearcherDirect } from "./lexical-searcher-direct";
 /**
- * Performs a semantic search on a patient's consolidated resources in OpenSearch
+ * Performs a lexical search on a patient's consolidated resources in OpenSearch
  * and returns the resources from consolidated that match the search results.
  */
-export async function searchSemantic({
+export async function searchLexical({
   patient,
   query,
   maxNumberOfResults = 10_000,
-  similarityThreshold,
 }: {
   patient: Patient;
   query: string;
   /** From 0 to 10_000, optional, defaults to 10_000 */
   maxNumberOfResults?: number | undefined;
-  /** From 0 to 1, optional. See OpenSearchSemanticSearcherDirect for defaults. */
-  similarityThreshold?: number | undefined;
 }): Promise<SearchSetBundle> {
-  const { log } = out(`searchSemantic - cx ${patient.cxId}, pt ${patient.id}`);
+  const { log } = out(`searchLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
   log(`Getting consolidated and searching OS...`);
   const startedAt = Date.now();
@@ -39,7 +37,6 @@ export async function searchSemantic({
       patientId: patient.id,
       query,
       maxNumberOfResults,
-      similarityThreshold,
     }),
     searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query }),
   ]);
@@ -56,7 +53,7 @@ export async function searchSemantic({
       if (!resourceId || !resourceType) return false;
       return (
         resourceType !== "Patient" &&
-        (isInSemanticResults(searchResults, resourceId, resourceType) ||
+        (isInLexicalResults(searchResults, resourceId, resourceType) ||
           isInDocRefResults(docRefResults, resourceId, resourceType))
       );
     }) ?? [];
@@ -75,7 +72,7 @@ export async function searchSemantic({
   };
 }
 
-function isInSemanticResults(
+function isInLexicalResults(
   searchResults: SearchResult[],
   resourceId: string,
   resourceType: string
@@ -97,35 +94,41 @@ async function searchOpenSearch({
   cxId,
   patientId,
   maxNumberOfResults,
-  similarityThreshold,
 }: {
   query: string;
   cxId: string;
   patientId: string;
   maxNumberOfResults?: number | undefined;
-  similarityThreshold?: number | undefined;
 }) {
   const region = Config.getAWSRegion();
-  const endpoint = Config.getSemanticSearchEndpoint();
-  const indexName = Config.getSemanticSearchIndexName();
-  const username = Config.getSemanticSearchUsername();
-  const password = Config.getSemanticSearchPassword();
-  const modelId = Config.getSemanticSearchModelId();
+  const endpoint = Config.getSearchEndpoint();
+  const indexName = Config.getSearchIndexName();
+  const username = Config.getSearchUsername();
+  const password = Config.getSearchPassword();
 
   // TODO eng-41 make this a factory so we can delegate the processing to a lambda
-  const searchService = new OpenSearchSemanticSearcherDirect({
+  const searchService = new OpenSearchLexicalSearcherDirect({
     region,
     endpoint,
     indexName,
     username,
     password,
-    modelId,
   });
   return await searchService.search({
     query,
     cxId,
     patientId,
     maxNumberOfResults,
-    similarityThreshold,
   });
+}
+
+async function getConsolidated({ patient }: { patient: Patient }): Promise<SearchSetBundle> {
+  const payload: ConsolidatedSnapshotRequestSync = {
+    patient,
+    isAsync: false,
+  };
+  const connector = buildConsolidatedSnapshotConnector();
+  const { bundleLocation, bundleFilename } = await connector.execute(payload);
+  const bundle = await getConsolidatedSnapshotFromS3({ bundleLocation, bundleFilename });
+  return bundle;
 }
