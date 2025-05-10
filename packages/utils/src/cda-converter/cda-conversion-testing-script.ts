@@ -4,10 +4,10 @@ dotenv.config();
 import { Bundle } from "@medplum/fhirtypes";
 import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-generators";
 import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
+import { getEnvVarOrFail } from "@metriport/shared";
 import axios, { AxiosInstance } from "axios";
 import fs from "fs";
 import path from "path";
-import { getEnvVarOrFail } from "../../../api/src/shared/config";
 
 /**
  * The objective of these tests are to test two things:

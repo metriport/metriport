@@ -61,6 +61,23 @@ export class Config {
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
+
+  static getSemanticSearchEndpoint(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_ENDPOINT");
+  }
+  static getSemanticSearchUsername(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_USERNAME");
+  }
+  static getSemanticSearchPassword(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_PASSWORD");
+  }
+  static getSemanticSearchIndexName(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_INDEX");
+  }
+  static getSemanticSearchModelId(): string {
+    return getEnvVarOrFail("SEMANTIC_SEARCH_MODEL_ID");
+  }
+
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }

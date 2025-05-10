@@ -22,6 +22,7 @@ const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 const maxAttemptsRaw = getEnvOrFail("MAX_ATTEMPTS");
 const maxAttempts = parseInt(maxAttemptsRaw);
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
 

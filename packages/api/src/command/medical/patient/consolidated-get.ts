@@ -97,7 +97,9 @@ export async function startConsolidatedQuery({
 
   if (currentConsolidatedProgress) {
     log(
-      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${currentConsolidatedProgress}, skipping...`
+      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${JSON.stringify(
+        currentConsolidatedProgress
+      )}, skipping...`
     );
     return currentConsolidatedProgress;
   }
@@ -295,7 +297,7 @@ export async function getConsolidated({
     }
     return { bundle, filters };
   } catch (error) {
-    const msg = "Failed to get FHIR resources";
+    const msg = "Failed to get consolidated data";
     log(`${msg}: ${JSON.stringify(filters)}`);
     capture.error(msg, {
       extra: {

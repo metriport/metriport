@@ -126,6 +126,10 @@ export function createAPIService({
   searchEndpoint,
   searchAuth,
   searchIndexName,
+  semanticSearchAuth,
+  semanticSearchEndpoint,
+  semanticSearchIndexName,
+  semanticSearchModelId,
   featureFlagsTable,
   cookieStore,
 }: {
@@ -167,6 +171,11 @@ export function createAPIService({
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
+  semanticSearchEndpoint: string | undefined;
+  semanticSearchIndexName: string | undefined;
+  semanticSearchModelId: string | undefined;
+  // TODO eng-41 Make this an actual Secret before going to prod
+  semanticSearchAuth: { userName: string; secret: string } | undefined;
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
 }): {
@@ -233,6 +242,10 @@ export function createAPIService({
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
+          // TODO eng-41 Make this an actual Secret before going to prod
+          // ...(semanticSearchAuth && {
+          // SEMANTIC_SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(semanticSearchAuth.secret),
+          // }),
           ...secretsToECS(secrets),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
         },
@@ -308,6 +321,15 @@ export function createAPIService({
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
+          ...(semanticSearchEndpoint &&
+            semanticSearchAuth && {
+              SEMANTIC_SEARCH_ENDPOINT: semanticSearchEndpoint,
+              SEMANTIC_SEARCH_USERNAME: semanticSearchAuth.userName,
+              // TODO eng-41 Make this an actual Secret before going to prod
+              SEMANTIC_SEARCH_PASSWORD: semanticSearchAuth.secret,
+              SEMANTIC_SEARCH_INDEX: semanticSearchIndexName,
+              SEMANTIC_SEARCH_MODEL_ID: semanticSearchModelId,
+            }),
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
             CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
           }),
@@ -339,6 +361,9 @@ export function createAPIService({
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
             EHR_DASH_URL: props.config.ehrDashUrl,
+          }),
+          ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
+            CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
         },
       },
