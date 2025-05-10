@@ -82,6 +82,12 @@ export async function processOutboundPatientDiscoveryResps({
       if (startedNewPd) return;
     }
 
+    const startedNewPd = await runNexPdIfScheduled({
+      patient,
+      requestId,
+    });
+    if (startedNewPd) return;
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -95,13 +101,6 @@ export async function processOutboundPatientDiscoveryResps({
         ...countStats,
       },
     });
-
-    const startedNewPd = await runNexPdIfScheduled({
-      patient,
-      requestId,
-    });
-    if (startedNewPd) return;
-    await updatePatientDiscoveryStatus({ patient, status: "completed" });
     await queryDocsIfScheduled({ patientIds: patient });
     log("Completed.");
   } catch (error) {
