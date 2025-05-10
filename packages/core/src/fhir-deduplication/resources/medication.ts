@@ -81,7 +81,7 @@ export function groupSameMedications(medications: Medication[]): {
         dedupKey: rxnormCode,
         candidateResource: medication,
         refReplacementMap,
-        isExtensionIncluded: false,
+        keepExtensions: false,
         onPostmerge: removeOtherCodes,
       });
     } else if (ndcCode) {
@@ -90,7 +90,7 @@ export function groupSameMedications(medications: Medication[]): {
         dedupKey: ndcCode,
         candidateResource: medication,
         refReplacementMap,
-        isExtensionIncluded: false,
+        keepExtensions: false,
         onPostmerge: removeOtherCodes,
       });
     } else if (snomedCode) {
@@ -99,7 +99,7 @@ export function groupSameMedications(medications: Medication[]): {
         dedupKey: snomedCode,
         candidateResource: medication,
         refReplacementMap,
-        isExtensionIncluded: false,
+        keepExtensions: false,
         onPostmerge: removeOtherCodes,
       });
     } else {
@@ -111,7 +111,6 @@ export function groupSameMedications(medications: Medication[]): {
           dedupKey: compKey,
           candidateResource: medication,
           refReplacementMap,
-          isExtensionIncluded: true,
         });
       } else {
         danglingReferences.add(createRef(medication));

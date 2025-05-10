@@ -76,7 +76,6 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
         dedupKey: key,
         candidateResource: medStatement,
         refReplacementMap,
-        isExtensionIncluded: true,
         onPremerge: preprocessStatus,
       });
     } else if (medRef && datetime) {
@@ -86,7 +85,6 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
         dedupKey: key,
         candidateResource: medStatement,
         refReplacementMap,
-        isExtensionIncluded: true,
         onPremerge: preprocessStatus,
       });
     } else if (medRef) {
@@ -96,7 +94,6 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
         dedupKey: key,
         candidateResource: medStatement,
         refReplacementMap,
-        isExtensionIncluded: true,
         onPremerge: preprocessStatus,
       });
     } else {

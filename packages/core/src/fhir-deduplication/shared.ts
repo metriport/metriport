@@ -54,16 +54,16 @@ function createExtensionRelatedArtifact(resourceType: string, id: string | undef
 export function mergeIntoTargetResource<T extends Resource & { extension?: any[] }>(
   target: T,
   source: T,
-  isExtensionIncluded = true
+  keepExtensions = true
 ) {
   const extensionRef = createExtensionRelatedArtifact(source.resourceType, source.id);
   const originalExtension = "extension" in target ? [...target.extension] : [];
-  mutativeDeepMerge(target, source, isExtensionIncluded);
+  mutativeDeepMerge(target, source, keepExtensions);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
   // regardless of whether new information was found
 
-  if (!isExtensionIncluded) {
+  if (!keepExtensions) {
     delete target.extension;
   } else if ("extension" in target) {
     target.extension = [...originalExtension, extensionRef];
@@ -79,12 +79,12 @@ const conditionKeysToIgnore = ["id", "resourceType", "subject"];
  * Mutatively merge the contents of source into target
  * @param target the object that will be modified
  * @param source the object that is the source of data entering target
- * @param isExtensionIncluded whether to include the extension field when merging resources
+ * @param keepExtensions whether to include the extension field when merging resources
  */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded: boolean) {
+export function mutativeDeepMerge(target: any, source: any, keepExtensions: boolean) {
   for (const key of Object.keys(source)) {
-    if (key === "extension" && !isExtensionIncluded) continue;
+    if (key === "extension" && !keepExtensions) continue;
     if (conditionKeysToIgnore.includes(key)) continue;
 
     if (Array.isArray(source[key]) && Array.isArray(target[key])) {
@@ -92,7 +92,7 @@ export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded:
       mutativeMergeArrays(target[key], source[key]);
     } else if (source[key] instanceof Object && key in target) {
       // Recursively merge objects
-      mutativeDeepMerge(target[key], source[key], isExtensionIncluded);
+      mutativeDeepMerge(target[key], source[key], keepExtensions);
     } else {
       if (key === "__proto__" || key === "constructor") continue;
       if (
@@ -109,9 +109,9 @@ export function mutativeDeepMerge(target: any, source: any, isExtensionIncluded:
  * Merge the two objects, returning a new object
  */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
+export function deepMerge(target: any, source: any, keepExtensions: boolean): any {
   const combined = cloneDeep(target);
-  mutativeDeepMerge(combined, source, isExtensionIncluded);
+  mutativeDeepMerge(combined, source, keepExtensions);
   return combined;
 }
 
@@ -154,7 +154,7 @@ export function deduplicateWithinMap<T extends Resource>({
   dedupKey,
   candidateResource,
   refReplacementMap,
-  isExtensionIncluded = true,
+  keepExtensions = true,
   onPremerge,
   onPostmerge,
 }: {
@@ -162,7 +162,7 @@ export function deduplicateWithinMap<T extends Resource>({
   dedupKey: string;
   candidateResource: T;
   refReplacementMap: Map<string, string>;
-  isExtensionIncluded?: boolean;
+  keepExtensions?: boolean;
   onPremerge?: OnPremergeCallback<T> | undefined;
   onPostmerge?: OnPostmergeCallback<T> | undefined;
 }): void {
@@ -174,7 +174,7 @@ export function deduplicateWithinMap<T extends Resource>({
     if (onPremerge) {
       onPremerge(target, candidateResource);
     }
-    mergeIntoTargetResource(target, candidateResource, isExtensionIncluded);
+    mergeIntoTargetResource(target, candidateResource, keepExtensions);
     if (onPostmerge) {
       target = onPostmerge(target);
     }
@@ -221,7 +221,7 @@ export function fillL1L2Maps<T extends Resource>({
   setterKeys,
   targetResource,
   refReplacementMap,
-  isExtensionIncluded = true,
+  keepExtensions = true,
   onPremerge,
   onPostmerge,
 }: {
@@ -231,7 +231,7 @@ export function fillL1L2Maps<T extends Resource>({
   setterKeys: string[];
   targetResource: T;
   refReplacementMap: Map<string, string>;
-  isExtensionIncluded?: boolean;
+  keepExtensions?: boolean;
   onPremerge?: OnPremergeCallback<T>;
   onPostmerge?: OnPostmergeCallback<T>;
 }): void {
@@ -244,7 +244,7 @@ export function fillL1L2Maps<T extends Resource>({
         dedupKey: map2Key,
         candidateResource: targetResource,
         refReplacementMap,
-        isExtensionIncluded,
+        keepExtensions,
         onPremerge,
         onPostmerge,
       });
@@ -262,7 +262,7 @@ export function fillL1L2Maps<T extends Resource>({
       dedupKey: map2Key,
       candidateResource: targetResource,
       refReplacementMap,
-      isExtensionIncluded,
+      keepExtensions,
       onPremerge,
       onPostmerge,
     });
@@ -574,7 +574,7 @@ export function deduplicateAndTrackResource<T extends Resource>({
         dedupKey: masterResourceId,
         candidateResource: incomingResource,
         refReplacementMap,
-        isExtensionIncluded: keepExtensions,
+        keepExtensions,
         onPremerge,
         onPostmerge,
       });
@@ -593,7 +593,7 @@ export function deduplicateAndTrackResource<T extends Resource>({
       dedupKey: masterResourceId,
       candidateResource: incomingResource,
       refReplacementMap,
-      isExtensionIncluded: keepExtensions,
+      keepExtensions,
       onPremerge,
       onPostmerge,
     });

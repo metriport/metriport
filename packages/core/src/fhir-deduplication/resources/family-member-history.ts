@@ -65,7 +65,6 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
         dedupKey: key,
         candidateResource: famMemberHist,
         refReplacementMap,
-        isExtensionIncluded: true,
       });
     } else {
       danglingReferences.add(createRef(famMemberHist));

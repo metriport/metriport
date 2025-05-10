@@ -74,7 +74,6 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
         dedupKey: key,
         candidateResource: medAdmin,
         refReplacementMap,
-        isExtensionIncluded: true,
         onPremerge: preprocessStatus,
       });
     } else if (medRef && datetime) {
@@ -84,7 +83,6 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
         dedupKey: key,
         candidateResource: medAdmin,
         refReplacementMap,
-        isExtensionIncluded: true,
         onPremerge: preprocessStatus,
       });
     } else {

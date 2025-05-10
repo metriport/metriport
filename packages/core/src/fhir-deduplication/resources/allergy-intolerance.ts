@@ -69,7 +69,6 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
           dedupKey: key,
           candidateResource: newAllergy,
           refReplacementMap,
-          isExtensionIncluded: true,
           onPostmerge: postProcessAllergy,
         });
       } else {
@@ -90,7 +89,6 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
         dedupKey: key,
         candidateResource: allergy,
         refReplacementMap,
-        isExtensionIncluded: true,
       });
 
       const index = blacklistedAllergies.indexOf(allergy);

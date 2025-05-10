@@ -77,7 +77,6 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
         dedupKey: key,
         candidateResource: medRequest,
         refReplacementMap,
-        isExtensionIncluded: true,
         onPremerge: preprocessStatus,
       });
     } else {

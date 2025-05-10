@@ -84,7 +84,6 @@ export function groupSameObservationsSocial(observations: Observation[]): {
         dedupKey: key,
         candidateResource: observation,
         refReplacementMap: refReplacementMap,
-        isExtensionIncluded: true,
         onPremerge: preprocessStatusAndDates,
         onPostmerge: postProcess,
       });
@@ -97,7 +96,6 @@ export function groupSameObservationsSocial(observations: Observation[]): {
           dedupKey: key,
           candidateResource: observation,
           refReplacementMap: refReplacementMap,
-          isExtensionIncluded: true,
           onPremerge: preprocessStatus,
           onPostmerge: postProcess,
         });

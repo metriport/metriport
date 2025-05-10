@@ -27,11 +27,11 @@ import {
  */
 export function deduplicateConditions(
   conditions: Condition[],
-  isExtensionIncluded = true
+  keepExtensions = true
 ): DeduplicationResult<Condition> {
   const { conditionsMap, refReplacementMap, danglingReferences } = groupSameConditions(
     conditions,
-    isExtensionIncluded
+    keepExtensions
   );
   return {
     combinedResources: combineResources({
@@ -44,7 +44,7 @@ export function deduplicateConditions(
 
 export function groupSameConditions(
   conditions: Condition[],
-  isExtensionIncluded: boolean
+  keepExtensions: boolean
 ): {
   conditionsMap: Map<string, Condition>;
   refReplacementMap: Map<string, string>;
@@ -110,7 +110,7 @@ export function groupSameConditions(
         targetResource: condition,
         refReplacementMap,
         onPostmerge: removeOtherCodes,
-        isExtensionIncluded,
+        keepExtensions,
       });
     } else {
       danglingReferences.add(createRef(condition));
