@@ -1,19 +1,15 @@
-import { Bundle, MetriportError, sleep } from "@metriport/shared";
+import { sleep } from "@metriport/shared";
 import {
   createBundleFromResourceList,
   FhirResource,
   fhirResourceSchema,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import axios from "axios";
 import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
-import {
-  FetchEhrBundleParams,
-  fetchEhrBundlePreSignedUrls,
-} from "../../../../../api/bundle/fetch-ehr-bundle-presigned-url";
 import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
 import { BundleType } from "../../../../bundle-shared";
 import { createOrReplaceBundle } from "../../../../command/create-or-replace-bundle";
+import { fetchBundle, FetchBundleParams } from "../../../../command/fetch-bundle";
 import { computeNewResources } from "../../utils";
 import {
   ComputeResourceDiffBundlesRequest,
@@ -48,11 +44,11 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
           patientId: metriportPatientId,
           resourceType,
         }),
-        getEhrResourcesFromApi({
+        getEhrResourcesFromS3({
           ehr,
           cxId,
-          practiceId,
-          patientId: ehrPatientId,
+          metriportPatientId,
+          ehrPatientId,
           resourceType,
         }),
       ]);
@@ -119,32 +115,21 @@ async function getMetriportResourcesFromS3({
   });
 }
 
-async function getEhrResourcesFromApi({
+async function getEhrResourcesFromS3({
   ehr,
   cxId,
-  practiceId,
-  patientId,
+  metriportPatientId,
+  ehrPatientId,
   resourceType,
-}: Omit<FetchEhrBundleParams, "refresh">): Promise<FhirResource[]> {
-  const ehrResourcesBundle = await fetchEhrBundlePreSignedUrls({
+}: Omit<FetchBundleParams, "bundleType">): Promise<FhirResource[]> {
+  const bundle = await fetchBundle({
     ehr,
     cxId,
-    practiceId,
-    patientId,
+    metriportPatientId,
+    ehrPatientId,
     resourceType,
+    bundleType: BundleType.EHR,
   });
-  const fetchedResourceType = ehrResourcesBundle.resourceTypes[0];
-  const fetchedPreSignedUrls = ehrResourcesBundle.preSignedUrls[0];
-  if (!fetchedResourceType || !fetchedPreSignedUrls) {
-    throw new MetriportError("No resource type found in the EHR bundle", undefined, {
-      ehr,
-      cxId,
-      practiceId,
-      patientId,
-      resourceType,
-    });
-  }
-  const ehrResource = await axios.get(fetchedPreSignedUrls);
-  const bundle: Bundle = ehrResource.data;
-  return bundle.entry.map(entry => entry.resource);
+  if (!bundle) return [];
+  return bundle.bundle.entry.map(entry => entry.resource);
 }

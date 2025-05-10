@@ -1,5 +1,4 @@
 import {
-  BundleType,
   isResourceDiffBundleType,
   isSupportedResourceTypeByEhr,
 } from "@metriport/core/external/ehr/bundle/bundle-shared";
@@ -9,7 +8,6 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
-import { fetchBundlePreSignedUrls } from "../../../external/ehr/shared/command/bundle/fetch-bundle-presignd-urls";
 import { refreshEhrBundles } from "../../../external/ehr/shared/command/bundle/refresh-ehr-bundles";
 import {
   getLatestResourceDiffBundlesJobPayload,
@@ -166,44 +164,6 @@ router.post(
       },
     });
     return res.sendStatus(httpStatus.OK);
-  })
-);
-
-/**
- * GET /internal/ehr/:ehrId/patient/:id/resource/bundle/pre-signed-urls
- *
- * Fetches the pre-signed URLs for the EHR bundle.
- * @param req.query.cxId - The CX ID of the patient.
- * @param req.query.ehrId - The EHR to refresh the bundles for.
- * @param req.params.id - The ID of EHR Patient.
- * @param req.query.practiceId - The ID of EHR Practice.
- * @param req.query.resourceType - The resource type to refresh.
- * @returns EHR bundle pre-signed URLs
- */
-router.get(
-  "/:id/resource/bundle/pre-signed-urls",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFromQueryOrFail("ehrId", req);
-    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFrom("params").orFail("id", req);
-    const practiceId = getFromQueryOrFail("practiceId", req);
-    const resourceType = getFromQueryOrFail("resourceType", req);
-    if (!isSupportedResourceTypeByEhr(ehr, resourceType)) {
-      throw new BadRequestError("Resource type is not supported for bundle", undefined, {
-        resourceType,
-      });
-    }
-    const preSignedUrls = await fetchBundlePreSignedUrls({
-      ehr,
-      cxId,
-      practiceId,
-      patientId,
-      resourceType,
-      bundleType: BundleType.EHR,
-    });
-    return res.status(httpStatus.OK).json(preSignedUrls);
   })
 );
 
