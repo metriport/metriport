@@ -60,19 +60,31 @@ function validateField(
   max: number,
   allowQuestionMark = false
 ): void {
-  if (value === "*") return;
-  if (allowQuestionMark && value === "?") return;
+  const wildcard = allowQuestionMark ? "[*?]" : "\\*";
+  const num = `\\d+`;
+  const range = `${num}-${num}`;
+  const step = `(?:${wildcard}|${range}|${num})/${num}`;
+  const segmentPattern = new RegExp(`^(?:${wildcard}|${range}|${step}|${num})$`);
 
-  const parts = value.split(/[,-/]/);
-  for (const part of parts) {
-    const num = parseInt(part, 10);
-    if (isNaN(num) || num < min || num > max) {
+  for (const segment of value.split(",")) {
+    if (!segmentPattern.test(segment)) {
       throw new Error(
-        `Invalid ${fieldName} in cron expression: "${value}". Must be ${min}-${max}${
-          allowQuestionMark ? " or ?" : ""
-        }`
+        `Invalid ${fieldName} segment in cron expression: "${segment}". ` +
+          `Allowed: ${min}-${max}${allowQuestionMark ? " or ?" : ""}, ` +
+          `ranges (x-y), steps (*/n or x-y/n), or lists separated by commas.`
       );
     }
+
+    // Extract all numbers and ensure bounds
+    const nums = [...segment.matchAll(/\d+/g)].map(m => parseInt(m[0], 10));
+    nums.forEach(n => {
+      if (n < min || n > max) {
+        throw new Error(
+          `Invalid ${fieldName} value in cron expression: "${n}". ` +
+            `Must be between ${min} and ${max}.`
+        );
+      }
+    });
   }
 }
 

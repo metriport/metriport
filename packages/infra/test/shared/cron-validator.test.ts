@@ -53,6 +53,7 @@ describe("validateCronExpression", () => {
       "cron(0-59 * * * ? *)", // Range
       "cron(0,15,30,45 * * * ? *)", // List
       "cron(0/15 * * * ? *)", // Step
+      "cron(*/5 * * * ? *)", // Wildcard Step
     ];
 
     validSpecialChars.forEach(expression => {
