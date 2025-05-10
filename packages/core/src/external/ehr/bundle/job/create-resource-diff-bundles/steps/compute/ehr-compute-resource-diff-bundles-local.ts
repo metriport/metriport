@@ -1,0 +1,135 @@
+import { sleep } from "@metriport/shared";
+import {
+  createBundleFromResourceList,
+  FhirResource,
+  fhirResourceSchema,
+  SupportedResourceType,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
+import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
+import { BundleType } from "../../../../bundle-shared";
+import { createOrReplaceBundle } from "../../../../command/create-or-replace-bundle";
+import { fetchBundle, FetchBundleParams } from "../../../../command/fetch-bundle";
+import { computeNewResources } from "../../utils";
+import {
+  ComputeResourceDiffBundlesRequest,
+  EhrComputeResourceDiffBundlesHandler,
+} from "./ehr-compute-resource-diff-bundles";
+
+export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
+  constructor(private readonly waitTimeInMillis: number) {}
+
+  async computeResourceDiffBundles(payload: ComputeResourceDiffBundlesRequest): Promise<void> {
+    const {
+      ehr,
+      cxId,
+      practiceId,
+      metriportPatientId,
+      ehrPatientId,
+      resourceType,
+      jobId,
+      reportError = true,
+    } = payload;
+    const entryStatusParams = {
+      ehr,
+      cxId,
+      practiceId,
+      patientId: ehrPatientId,
+      jobId,
+    };
+    try {
+      const [metriportResources, ehrResources] = await Promise.all([
+        getMetriportResourcesFromS3({
+          cxId,
+          patientId: metriportPatientId,
+          resourceType,
+        }),
+        getEhrResourcesFromS3({
+          ehr,
+          cxId,
+          metriportPatientId,
+          ehrPatientId,
+          resourceType,
+        }),
+      ]);
+      const { newEhrResources, newMetriportResources } = computeNewResources({
+        ehrResources,
+        metriportResources,
+      });
+      await Promise.all([
+        newEhrResources.length > 0
+          ? createOrReplaceBundle({
+              ehr,
+              cxId,
+              metriportPatientId,
+              ehrPatientId,
+              bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
+              bundle: createBundleFromResourceList(newEhrResources),
+              resourceType,
+              jobId,
+            })
+          : undefined,
+        newMetriportResources.length > 0
+          ? createOrReplaceBundle({
+              ehr,
+              cxId,
+              metriportPatientId,
+              ehrPatientId,
+              bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+              bundle: createBundleFromResourceList(newMetriportResources),
+              resourceType,
+              jobId,
+            })
+          : undefined,
+      ]);
+      await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "successful" });
+    } catch (error) {
+      if (reportError) {
+        await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
+      }
+      throw error;
+    }
+    if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
+  }
+}
+
+async function getMetriportResourcesFromS3({
+  cxId,
+  patientId,
+  resourceType,
+}: {
+  cxId: string;
+  patientId: string;
+  resourceType: SupportedResourceType;
+}): Promise<FhirResource[]> {
+  const consolidated = await getConsolidated({ cxId, patientId });
+  const resources = consolidated?.bundle?.entry?.filter(
+    entry => entry.resource?.resourceType === resourceType
+  );
+  if (!resources || resources.length < 1) return [];
+  return resources.flatMap(entry => {
+    if (!entry.resource) return [];
+    const parsedResourceSafe = fhirResourceSchema.safeParse(entry.resource);
+    if (!parsedResourceSafe.success) return [];
+    return [parsedResourceSafe.data];
+  });
+}
+
+async function getEhrResourcesFromS3({
+  ehr,
+  cxId,
+  metriportPatientId,
+  ehrPatientId,
+  resourceType,
+}: Omit<FetchBundleParams, "bundleType">): Promise<FhirResource[]> {
+  const bundle = await fetchBundle({
+    ehr,
+    cxId,
+    metriportPatientId,
+    ehrPatientId,
+    resourceType,
+    bundleType: BundleType.EHR,
+  });
+  if (!bundle) return [];
+  return bundle.bundle.entry.map(entry => entry.resource);
+}

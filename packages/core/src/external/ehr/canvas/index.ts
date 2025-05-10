@@ -29,17 +29,16 @@ import {
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
-import { BundleType } from "../bundle/bundle-shared";
+import { BundleType, isResourceDiffBundleType } from "../bundle/bundle-shared";
 import {
   createOrReplaceBundle,
   CreateOrReplaceBundleParams,
-} from "../bundle/commands/create-or-replace-bundle";
-import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/commands/fetch-bundle";
+} from "../bundle/command/create-or-replace-bundle";
+import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/command/fetch-bundle";
 import {
   ApiConfig,
   fetchBundleUsingTtl,
@@ -56,7 +55,7 @@ const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 export type CanvasEnv = string;
 
-export const supportedCanvasDiffResources = [
+export const supportedCanvasResources = [
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
@@ -67,12 +66,12 @@ export const supportedCanvasDiffResources = [
   "Procedure",
   "Immunization",
 ] as SupportedResourceType[];
-export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
-export const isSupportedCanvasDiffResource = (
+export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
+export function isSupportedCanvasResource(
   resourceType: string
-): resourceType is SupportedCanvasDiffResource => {
-  return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
-};
+): resourceType is SupportedCanvasResource {
+  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
+}
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -390,7 +389,7 @@ class CanvasApi {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasDiffResource;
+    resourceType: SupportedCanvasResource;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
@@ -456,29 +455,39 @@ class CanvasApi {
     return bundle;
   }
 
-  async getResourceDiffBundlePreSignedUrlByResourceType({
+  async getBundleByResourceTypePreSignedUrl({
     cxId,
     metriportPatientId,
     canvasPatientId,
     resourceType,
-    direction,
+    bundleType,
     jobId,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasDiffResource;
-    direction: ResourceDiffDirection;
-    jobId: string;
+    resourceType: SupportedCanvasResource;
+    bundleType?: BundleType;
+    jobId?: string;
   }): Promise<string | undefined> {
+    if (isResourceDiffBundleType(bundleType as string) && !jobId) {
+      throw new BadRequestError(
+        "Job ID must be provided when fetching resource diff bundles",
+        undefined,
+        {
+          cxId,
+          metriportPatientId,
+          canvasPatientId,
+          resourceType,
+          bundleType,
+        }
+      );
+    }
     return this.getBundlePreSignedUrl({
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType:
-        direction === ResourceDiffDirection.METRIPORT_ONLY
-          ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
-          : BundleType.RESOURCE_DIFF_EHR_ONLY,
+      bundleType: bundleType ?? BundleType.EHR,
       resourceType,
       jobId,
     });

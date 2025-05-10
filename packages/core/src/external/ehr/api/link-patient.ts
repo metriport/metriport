@@ -7,7 +7,7 @@ import { ApiBaseParams } from "./api-shared";
 export type LinkPatientParams = Omit<ApiBaseParams, "departmentId">;
 
 /**
- * Sends a request to the API to link a patient with Elation.
+ * Sends a request to the API to link a patient with the EHR.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.

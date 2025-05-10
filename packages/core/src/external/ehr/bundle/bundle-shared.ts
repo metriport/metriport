@@ -2,7 +2,7 @@ import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
-import { supportedCanvasDiffResources } from "../canvas";
+import { supportedCanvasResources } from "../canvas";
 
 const globalPrefix = "bundle";
 const region = Config.getAWSRegion();
@@ -42,8 +42,15 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
 }
 
 export function getSupportedResourcesByEhr(ehr: EhrSource): SupportedResourceType[] {
-  if (ehr === EhrSources.canvas) return supportedCanvasDiffResources as SupportedResourceType[];
+  if (ehr === EhrSources.canvas) return supportedCanvasResources as SupportedResourceType[];
   return [];
+}
+
+export function isSupportedResourceTypeByEhr(
+  ehr: EhrSource,
+  resourceType: string
+): resourceType is SupportedResourceType {
+  return getSupportedResourcesByEhr(ehr).includes(resourceType as SupportedResourceType);
 }
 
 export function getS3UtilsInstance(): S3Utils {
@@ -55,6 +62,22 @@ export enum BundleType {
   RESOURCE_DIFF_EHR_ONLY = "ResourceDiffEhrOnly",
   RESOURCE_DIFF_METRIPORT_ONLY = "ResourceDiffMetriportOnly",
 }
+export function isBundleType(bundleType: string): bundleType is BundleType {
+  return Object.values(BundleType).includes(bundleType as BundleType);
+}
+
+export type ResourceDiffBundleType =
+  | BundleType.RESOURCE_DIFF_EHR_ONLY
+  | BundleType.RESOURCE_DIFF_METRIPORT_ONLY;
+export function isResourceDiffBundleType(
+  bundleType: string
+): bundleType is BundleType.RESOURCE_DIFF_EHR_ONLY | BundleType.RESOURCE_DIFF_METRIPORT_ONLY {
+  return (
+    bundleType === BundleType.RESOURCE_DIFF_EHR_ONLY ||
+    bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+  );
+}
+
 export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams) => string> = {
   [BundleType.EHR]: createFileKeyEhr,
   [BundleType.RESOURCE_DIFF_EHR_ONLY]: createFileKeyEhrOnly,

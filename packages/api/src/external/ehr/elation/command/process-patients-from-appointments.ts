@@ -20,7 +20,7 @@ import {
   getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
-} from "../../shared";
+} from "../../shared/utils/appointment";
 import { createElationClient } from "../shared";
 import {
   CreateOrUpdateElationPatientMetadataParams,

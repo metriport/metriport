@@ -1,7 +1,7 @@
-import { ComputeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles";
-import { EhrComputeResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-local";
+import { ComputeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles";
+import { EhrComputeResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-local";
 import { MetriportError } from "@metriport/shared";
-import { fhirResourceSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { supportedResourceTypes } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -19,6 +19,8 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
+const maxAttemptsRaw = getEnvOrFail("MAX_ATTEMPTS");
+const maxAttempts = parseInt(maxAttemptsRaw);
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
@@ -28,15 +30,22 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
 
+  console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, newResource } = parsedBody;
+  const { ehr, cxId, practiceId, metriportPatientId, ehrPatientId, jobId, resourceType } =
+    parsedBody;
 
   const log = prefixedLog(
-    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceId ${newResource.id}`
+    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, resourceType ${resourceType}, jobId ${jobId}`
   );
+  log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
+
+  const receiveCount = parseInt(message.attributes.ApproximateReceiveCount);
+  const reportError = receiveCount >= maxAttempts;
+  log(`Receive count: ${receiveCount}, max attempts: ${maxAttempts}, reportError: ${reportError}`);
 
   const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffBundlesLocal(waitTimeInMillis);
-  await ehrComputeResourceDiffHandler.computeResourceDiffBundlesMetriportOnly([parsedBody]);
+  await ehrComputeResourceDiffHandler.computeResourceDiffBundles({ ...parsedBody, reportError });
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -48,9 +57,8 @@ const ehrComputeResourceDiffBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
+  resourceType: z.enum(supportedResourceTypes),
   jobId: z.string(),
-  existingResources: fhirResourceSchema.array().optional(),
-  newResource: fhirResourceSchema,
 });
 
 function parseBody(body?: unknown): ComputeResourceDiffBundlesRequest {

@@ -7,7 +7,7 @@ import { getPatientOrFail } from "../../../../command/medical/patient/get-patien
 import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,
-} from "../../shared-fhir";
+} from "../../shared/utils/fhir";
 import { createCanvasClient } from "../shared";
 
 export type SyncCanvasPatientIntoMetriportParams = {

@@ -10,7 +10,7 @@ import { Config } from "../../../../shared/config";
 import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,
-} from "../../shared-fhir";
+} from "../../shared/utils/fhir";
 import { createAthenaClient } from "../shared";
 
 const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";

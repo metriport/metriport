@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { resourceTypeForConsolidation } from "../../../medical/fhir/resources";
 
-const supportedResourceTypes = [...resourceTypeForConsolidation, "Medication"] as const;
+export const supportedResourceTypes = [...resourceTypeForConsolidation, "Medication"] as const;
 
 export type SupportedResourceType = (typeof supportedResourceTypes)[number];
 
