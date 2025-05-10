@@ -11,7 +11,8 @@ import {
   processErrorsFromBulkResponse,
   OnBulkItemError,
 } from "./bulk";
-import { contentFieldName, OpenSearchIngestorConfig } from "./index";
+import { OpenSearchConfigDirectAccess } from "./index";
+import { IndexFields } from "./index-based-on-resource";
 
 dayjs.extend(duration);
 
@@ -30,15 +31,9 @@ const MAX_BULK_RETRIES = 3;
 // on each bulk request (~5MB)
 const bulkChunkSize = 500;
 
-export type IngestRequest = {
-  cxId: string;
-  patientId: string;
-} & IngestRequestResource;
-export type IngestRequestResource = {
-  resourceType: string;
-  resourceId: string;
-  [contentFieldName]: string;
-};
+type IngestRequest = IndexFields;
+type IngestRequestResource = Omit<IndexFields, "cxId" | "patientId">;
+
 export type IngestBulkRequest = {
   cxId: string;
   patientId: string;
@@ -50,10 +45,7 @@ export type OpenSearchFileIngestorDirectSettings = {
   logLevel?: "info" | "debug" | "none";
 };
 
-export type OpenSearchTextIngestorDirectConfig = OpenSearchIngestorConfig & {
-  endpoint: string;
-  username: string;
-  password: string;
+export type OpenSearchTextIngestorDirectConfig = OpenSearchConfigDirectAccess & {
   settings?: OpenSearchFileIngestorDirectSettings;
 };
 
