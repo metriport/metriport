@@ -11,7 +11,7 @@ import {
   createConsolidatedSnapshotFileNameWithSuffix,
   createConsolidatedDataFileNameWithSuffix,
 } from "@metriport/core/domain/consolidated/filename";
-import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/file-search-connector-factory";
+import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/file/file-search-connector-factory";
 import { capture } from "@metriport/core/util";
 import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
 import { updateCQPatientData } from "../../external/carequality/command/cq-patient-data/update-cq-data";

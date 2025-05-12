@@ -1,4 +1,4 @@
-import { SearchResult } from "./index-based-on-file";
+import { SearchResult } from "../index-based-on-file";
 
 export type SearchRequest = {
   cxId: string;

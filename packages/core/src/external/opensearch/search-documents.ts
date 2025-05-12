@@ -1,6 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
-import { isDocStatusReady } from "./document-status";
 import { Config } from "../../util/config";
 import { log as _log } from "../../util/log";
 import { capture } from "../../util/notifications";
@@ -10,7 +9,8 @@ import { DocumentReferenceWithId } from "../fhir/document/document-reference";
 import { getDocuments } from "../fhir/document/get-documents";
 import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
 import { insertSourceDocumentToDocRefMeta } from "../fhir/shared/meta";
-import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
+import { isDocStatusReady } from "./document-status";
+import { makeSearchServiceQuery } from "./file/file-search-connector-factory";
 
 export async function searchDocuments({
   cxId,

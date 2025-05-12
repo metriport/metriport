@@ -1,8 +1,8 @@
 import { Client } from "@opensearch-project/opensearch";
-import { contentFieldName, OpenSearchConfigDirectAccess, OpenSearchResponse } from ".";
-import { out } from "../../util";
+import { contentFieldName, OpenSearchConfigDirectAccess, OpenSearchResponse } from "..";
+import { out } from "../../../util";
 import { OpenSearchFileSearcher, SearchRequest } from "./file-searcher";
-import { SearchResult } from "./index-based-on-file";
+import { SearchResult } from "../index-based-on-file";
 export type OpenSearchFileSearcherDirectConfig = OpenSearchConfigDirectAccess;
 
 export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {

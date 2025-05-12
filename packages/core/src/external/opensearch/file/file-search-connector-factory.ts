@@ -1,9 +1,11 @@
-import { OpenSearchFileIngestor } from "@metriport/core/external/opensearch/file-ingestor";
-import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
-import { OpenSearchFileIngestorSQS } from "@metriport/core/external/opensearch/file-ingestor-sqs";
-import { OpenSearchFileSearcher } from "@metriport/core/external/opensearch/file-searcher";
-import { OpenSearchFileSearcherDirect } from "@metriport/core/external/opensearch/file-searcher-direct";
-import { Config } from "../../shared/config";
+import { OpenSearchFileIngestor } from "./file-ingestor";
+import { OpenSearchFileIngestorDirect } from "./file-ingestor-direct";
+import { OpenSearchFileIngestorSQS } from "./file-ingestor-sqs";
+import { OpenSearchFileSearcher } from "./file-searcher";
+import { OpenSearchFileSearcherDirect } from "./file-searcher-direct";
+import { OpenSearchFileRemoverDirect } from "./file-remover-direct";
+import { OpenSearchFileRemover } from "./file-remover";
+import { Config } from "../../../util/config";
 
 export function makeSearchServiceIngest(): OpenSearchFileIngestor {
   const region = Config.getAWSRegion();
@@ -34,6 +36,22 @@ export function makeSearchServiceQuery(): OpenSearchFileSearcher {
   const username = Config.getSearchUsername();
   const password = Config.getSearchPassword();
   return new OpenSearchFileSearcherDirect({
+    region,
+    endpoint,
+    indexName,
+    username,
+    password,
+  });
+}
+
+export function makeSearchServiceRemover(): OpenSearchFileRemover {
+  const region = Config.getAWSRegion();
+  const endpoint = "https://" + Config.getSearchEndpoint();
+  const indexName = Config.getSearchIndexName();
+  const username = Config.getSearchUsername();
+  const password = Config.getSearchPassword();
+
+  return new OpenSearchFileRemoverDirect({
     region,
     endpoint,
     indexName,
