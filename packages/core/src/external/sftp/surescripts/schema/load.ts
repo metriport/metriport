@@ -1,17 +1,5 @@
 import { z } from "zod";
-
-// Wraps an SFTP file operation with a schema for each line of the generated file.
-export type FileFieldSchema<T extends object> = Array<FileField<T>>;
-
-// Describes a single field for a row in a generated file.
-export interface FileField<T extends object> {
-  field: number;
-  key?: keyof T;
-  generate?: (row: T) => string;
-  description?: string;
-  optional?: boolean;
-  leaveEmpty?: boolean;
-}
+import { FileFieldSchema, dateToString } from "./shared";
 
 // PATIENT FILE LOAD
 // These are schemas for the first row (header) and subsequent rows (details) of a patient load operation.
@@ -67,16 +55,13 @@ export const patientLoadHeaderOrder: FileFieldSchema<PatientLoadHeader> = [
   },
   {
     field: 6,
-    generate({ transmissionDate }: PatientLoadHeader) {
-      const year = transmissionDate.getFullYear();
-      const month = (transmissionDate.getMonth() + 1).toString().padStart(2, "0");
-      const date = transmissionDate.getDate().toString().padStart(2, "0");
-      return [year, month, date].join("");
+    toSurescripts({ transmissionDate }: PatientLoadHeader) {
+      return dateToString(transmissionDate);
     },
   },
   {
     field: 7,
-    generate({ transmissionDate }: PatientLoadHeader) {
+    toSurescripts({ transmissionDate }: PatientLoadHeader) {
       const hour = transmissionDate.getHours().toString().padStart(2, "0");
       const minute = transmissionDate.getMinutes().toString().padStart(2, "0");
       const second = transmissionDate.getSeconds().toString().padStart(2, "0");
@@ -93,7 +78,6 @@ export const patientLoadHeaderOrder: FileFieldSchema<PatientLoadHeader> = [
   {
     field: 9,
     key: "transmissionAction",
-    optional: true,
   },
   {
     field: 10,
@@ -110,12 +94,10 @@ export const patientLoadHeaderOrder: FileFieldSchema<PatientLoadHeader> = [
   {
     field: 13,
     key: "fileSchedule",
-    optional: true,
   },
   {
     field: 14,
     key: "lookBackInMonths",
-    optional: true,
   },
 ];
 
@@ -193,32 +175,26 @@ export const patientFileLoadDetailOrder: FileFieldSchema<PatientFileLoadDetail> 
   {
     field: 7,
     key: "prefix",
-    optional: true,
   },
   {
     field: 8,
     key: "suffix",
-    optional: true,
   },
   {
     field: 9,
     key: "addressLine1",
-    optional: true,
   },
   {
     field: 10,
     key: "addressLine2",
-    optional: true,
   },
   {
     field: 11,
     key: "city",
-    optional: true,
   },
   {
     field: 12,
     key: "state",
-    optional: true,
   },
   {
     field: 13,
@@ -241,12 +217,10 @@ export const patientFileLoadDetailOrder: FileFieldSchema<PatientFileLoadDetail> 
   {
     field: 17,
     key: "endMonitoringDate",
-    optional: true,
   },
   {
     field: 18,
     key: "requestedNotifications",
-    optional: true,
   },
 ];
 
@@ -277,11 +251,8 @@ export const patientUnloadOrder: FileFieldSchema<PatientUnload> = [
   {
     field: 3,
     key: "endMonitoringDate",
-    generate({ endMonitoringDate }: PatientUnload) {
-      const year = endMonitoringDate.getFullYear();
-      const month = (endMonitoringDate.getMonth() + 1).toString().padStart(2, "0");
-      const date = endMonitoringDate.getDate().toString().padStart(2, "0");
-      return [year, month, date].join("");
+    toSurescripts({ endMonitoringDate }: PatientUnload) {
+      return dateToString(endMonitoringDate);
     },
   },
 ];
