@@ -13,6 +13,7 @@ import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
+import { executeWithRetriesCw } from "../shared";
 import {
   Document,
   DocumentDownloader,
@@ -291,9 +292,8 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     stream: stream.Writable;
   }): Promise<void> {
     try {
-      await executeWithNetworkRetries(
-        () => this.cwApi.retrieveDocument(this.cwQueryMeta, location, stream),
-        { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 }
+      await executeWithRetriesCw(() =>
+        this.cwApi.retrieveDocument(this.cwQueryMeta, location, stream)
       );
     } catch (error) {
       const { details, code, status } = getNetworkErrorDetails(error);
