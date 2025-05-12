@@ -27,8 +27,7 @@ export interface Transmission<T extends TransmissionType> {
   type: T;
   population: string; // unique population identifier
   id: string;
-  date: string;
-  time: string;
+  date: Date;
   compression?: "gzip";
 }
 
@@ -67,23 +66,11 @@ class SurescriptsSftpClient implements SftpClient {
   }
 
   createTransmission<T extends TransmissionType>(type: T, population: string): Transmission<T> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, "0");
-    const date = now.getDate().toString().padStart(2, "0");
-    const hour = now.getHours().toString().padStart(2, "0");
-    const minute = now.getMinutes().toString().padStart(2, "0");
-    const second = now.getSeconds().toString().padStart(2, "0");
-    const centisecond = Math.round(now.getMilliseconds() / 10)
-      .toString()
-      .padStart(2, "0");
-
     return {
       type,
       population,
       id: this.idGenerator().toString("ascii"),
-      date: [year, month, date].join(""),
-      time: [hour, minute, second, centisecond].join(""),
+      date: new Date(),
       compression: "gzip",
     };
   }
