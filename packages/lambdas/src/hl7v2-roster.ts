@@ -5,7 +5,7 @@ import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 
 const apiUrl = getEnvOrFail("API_URL");
-const bucketName = getEnvOrFail("BUCKET_NAME");
+const bucketName = getEnvOrFail("HL7V2_ROSTER_BUCKET_NAME");
 
 export const handler = capture.wrapHandler(async (config: HieConfig): Promise<void> => {
   capture.setExtra({

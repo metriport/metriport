@@ -130,9 +130,7 @@ export function convertPatientsToHieFormat(
   schema: MetriportToHieFieldMapping,
   states: USState[]
 ): SubscriberRecord[] {
-  return patients
-    .map(s => mapPatientToSubscriber(s, states))
-    .map(s => convertSubscriberToHieFormat(s, schema));
+  return patients.map(s => convertSubscriberToHieFormat(mapPatientToSubscriber(s, states), schema));
 }
 
 export function convertSubscriberToHieFormat(
