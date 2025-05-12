@@ -2,6 +2,9 @@ name: Branch to Staging
 
 # Used to manually deploy a branch to staging
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
