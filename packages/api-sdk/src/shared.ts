@@ -1,6 +1,6 @@
 import {
   isValidISODate,
-  validateDateIsAfter1900Safe,
+  validateIsAfter1900Safe,
   validateIsPastOrPresentSafe,
 } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
@@ -27,7 +27,7 @@ export const defaultDateString = defaultString.refine(isValidISODate, {
 export const pastOrTodayDateString = defaultDateString.refine(validateIsPastOrPresentSafe, {
   message: `Date can't be in the future`,
 });
-export const validDateOfBirthString = pastOrTodayDateString.refine(validateDateIsAfter1900Safe, {
+export const validDateOfBirthString = pastOrTodayDateString.refine(validateIsAfter1900Safe, {
   message: `Date can't be before 1900`,
 });
 

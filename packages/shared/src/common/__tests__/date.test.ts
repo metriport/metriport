@@ -1,7 +1,7 @@
 import {
   buildDayjsFromCompactDate,
   isValidISODate,
-  validateDateIsAfter1900Safe,
+  validateIsAfter1900Safe,
   validateIsPastOrPresentSafe,
 } from "../date";
 
@@ -34,45 +34,45 @@ describe("shared date functions", () => {
   });
 });
 
-describe("validateDateIsAfter1900Safe", () => {
+describe("validateIsAfter1900Safe", () => {
   it("returns true for dates after 1900", () => {
-    expect(validateDateIsAfter1900Safe("1999-12-31")).toBe(true);
+    expect(validateIsAfter1900Safe("1999-12-31")).toBe(true);
   });
 
   it("returns true for dates in 1970", () => {
-    expect(validateDateIsAfter1900Safe("1970-01-31")).toBe(true);
+    expect(validateIsAfter1900Safe("1970-01-31")).toBe(true);
   });
 
   it("returns true for 1900-01-01", () => {
-    expect(validateDateIsAfter1900Safe("1900-01-01")).toBe(true);
+    expect(validateIsAfter1900Safe("1900-01-01")).toBe(true);
   });
 
   it("returns false for dates before 1900", () => {
-    expect(validateDateIsAfter1900Safe("1899-12-31")).toBe(false);
+    expect(validateIsAfter1900Safe("1899-12-31")).toBe(false);
   });
 
   it("returns false for dates with years less than 1000 (3)", () => {
-    expect(validateDateIsAfter1900Safe("0123-01-01")).toBe(false);
+    expect(validateIsAfter1900Safe("0123-01-01")).toBe(false);
   });
 
   it("handles MM/DD/YYYY format correctly", () => {
-    expect(validateDateIsAfter1900Safe("12/31/2020")).toBe(true);
+    expect(validateIsAfter1900Safe("12/31/2020")).toBe(true);
   });
 
   it("handles YYYY.MM.DD format correctly", () => {
-    expect(validateDateIsAfter1900Safe("2020.12.31")).toBe(true);
+    expect(validateIsAfter1900Safe("2020.12.31")).toBe(true);
   });
 
   it("handles YYYY/MM/DD format correctly", () => {
-    expect(validateDateIsAfter1900Safe("2020/12/31")).toBe(true);
+    expect(validateIsAfter1900Safe("2020/12/31")).toBe(true);
   });
 
   it("handles textual month format correctly", () => {
-    expect(validateDateIsAfter1900Safe("Dec 31, 2020")).toBe(true);
+    expect(validateIsAfter1900Safe("Dec 31, 2020")).toBe(true);
   });
 
   it("handles empty string format incorrectly", () => {
-    expect(validateDateIsAfter1900Safe("")).toBe(false);
+    expect(validateIsAfter1900Safe("")).toBe(false);
   });
 });
 

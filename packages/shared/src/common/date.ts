@@ -25,7 +25,7 @@ export function validateDateOfBirthSafe(date: string): boolean {
   if (date.length !== 10) return false;
   if (!isValidAmericanDate(date)) return false;
   if (!isValidISODate(date)) return false;
-  return validateIsPastOrPresentSafe(date) && validateDateIsAfter1900Safe(date);
+  return validateIsPastOrPresentSafe(date) && validateIsAfter1900Safe(date);
 }
 
 export function validateIsPastOrPresent(date: string): boolean {
@@ -43,13 +43,13 @@ export function validateIsPastOrPresentSafe(date: string): boolean {
 }
 
 export function validateIsAfter1900(date: string): boolean {
-  if (!validateDateIsAfter1900Safe(date)) {
+  if (!validateIsAfter1900Safe(date)) {
     throw new BadRequestError(`Date can't be before 1900`, undefined, { date });
   }
   return true;
 }
 
-export function validateDateIsAfter1900Safe(date: string): boolean {
+export function validateIsAfter1900Safe(date: string): boolean {
   const dateToCheck = buildDayjs(date);
   if (!dateToCheck.isValid()) return false;
   const date19000101 = buildDayjs("1900-01-01");
