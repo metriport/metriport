@@ -1,7 +1,7 @@
 export * from "./api/index";
 export { toArray } from "./common/array";
 export { isTrue } from "./common/boolean";
-export { dateSchema, optionalDateSchema, validateDateIsAfter1900 } from "./common/date";
+export { dateSchema, optionalDateSchema } from "./common/date";
 export { getDomainFromEmailWithoutTld } from "./common/email";
 export * from "./common/env-var";
 export { emptyFunction } from "./common/general";
