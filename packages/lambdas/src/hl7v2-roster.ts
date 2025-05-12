@@ -10,7 +10,7 @@ const bucketName = getEnvOrFail("HL7V2_ROSTER_BUCKET_NAME");
 export const handler = capture.wrapHandler(async (config: HieConfig): Promise<void> => {
   capture.setExtra({
     config: config.name,
-    states: config.schema,
+    states: config.states,
     subscriptions: config.subscriptions,
     context: "hl7-roster.execute",
   });
