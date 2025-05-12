@@ -17,7 +17,7 @@ on:
 jobs:
   api:
     # can't use contains(github.event.inputs.jobs_to_run, 'api') because this would trigger on 'redeploy-api-gw' or 'infra-api-lambdas'
-    if: contains(fromJSON('[",api,", ",all,"]'),format(',{0},', github.event.inputs.jobs_to_run))
+    if: contains(format(',{0},', github.event.inputs.jobs_to_run), ',api,') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-api.yml
     with:
       deploy_env: "staging"
@@ -34,7 +34,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   mllp-server:
-    if: contains(fromJSON('["mllp-server", "all"]'), github.event.inputs.jobs_to_run)
+    if: contains(github.event.inputs.jobs_to_run, 'mllp-server') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-mllp-server.yml
     with:
       deploy_env: "staging"
@@ -51,7 +51,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-hl7-notification:
-    if: contains(fromJSON('["infra-hl7-notification", "all"]'), github.event.inputs.jobs_to_run)
+    if: contains(github.event.inputs.jobs_to_run, 'infra-hl7-notification') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-hl7-notification-cdk.yml
     with:
       deploy_env: "staging"
@@ -68,7 +68,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-api-lambdas:
-    if: contains(fromJSON('["infra-api-lambdas", "all"]'), github.event.inputs.jobs_to_run)
+    if: contains(github.event.inputs.jobs_to_run, 'infra-api-lambdas') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-cdk.yml
     with:
       deploy_env: "staging"
@@ -85,7 +85,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   secrets_cdk_stack:
-    if: contains(fromJSON('["secrets_cdk_stack", "all"]'), github.event.inputs.jobs_to_run)
+    if: contains(github.event.inputs.jobs_to_run, 'secrets_cdk_stack') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-cdk.yml
     with:
       deploy_env: "staging"
@@ -102,7 +102,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   location_services_cdk_stack:
-    if: contains(fromJSON('["location_services_cdk_stack", "all"]'), github.event.inputs.jobs_to_run) && ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }} != null
+    if: contains(github.event.inputs.jobs_to_run, 'location_services_cdk_stack') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-cdk.yml
     with:
       deploy_env: "staging"
@@ -119,7 +119,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   ihe_stack:
-    if: contains(fromJSON('["ihe_stack", "all"]'), github.event.inputs.jobs_to_run) && ${{ vars.IHE_STACK_NAME }} != null
+    if: contains(github.event.inputs.jobs_to_run, 'ihe_stack') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-cdk.yml
     with:
       deploy_env: "staging"
@@ -136,7 +136,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   redeploy-api-gw:
-    if: contains(fromJSON('["redeploy-api-gw", "all"]'), github.event.inputs.jobs_to_run)
+    if: contains(github.event.inputs.jobs_to_run, 'redeploy-api-gw') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_redeploy_api-gw.yml
     needs: [infra-api-lambdas]
     with:
@@ -151,7 +151,7 @@ jobs:
 
   e2e-tests:
     if: |
-      contains(fromJSON('["e2e-tests", "all"]'), github.event.inputs.jobs_to_run) && 
+      (contains(github.event.inputs.jobs_to_run, 'e2e-tests') || contains(github.event.inputs.jobs_to_run, 'all')) && 
       !failure() && 
       (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.redeploy-api-gw.result == 'success')
     uses: ./.github/workflows/_e2e-tests.yml
