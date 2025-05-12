@@ -286,7 +286,7 @@ export type EnvConfigSandbox = EnvConfigBase & {
   connectWidgetUrl: string;
   sandboxSeedDataBucketName: string;
   engineeringCxId?: never;
-  hl7Notification: never;
+  hl7Notification?: never;
 };
 
 export type EnvConfig = EnvConfigSandbox | EnvConfigNonSandbox;
