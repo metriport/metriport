@@ -98,7 +98,7 @@ const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("active", "active");
 problemStatusesMap.set("relapse", "active");
 problemStatusesMap.set("recurrence", "active");
-//problemStatusesMap.set("remission", "active");
+problemStatusesMap.set("remission", "resolved");
 problemStatusesMap.set("resolved", "resolved");
 problemStatusesMap.set("inactive", "resolved");
 
