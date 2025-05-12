@@ -88,7 +88,7 @@ jobs:
             secrets:
               - "packages/infra/**"
               - "package*.json"
-            locations-services:
+            location_services:
               - "packages/infra/lib/location-services*"
               - "packages/infra/shared/**"
               - "packages/infra/package*.json"
