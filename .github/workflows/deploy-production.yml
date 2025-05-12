@@ -1,5 +1,8 @@
 name: Deploy - PRODUCTION
 
+permissions:
+  contents: read
+
 on:
   push: # a commit to the specified branches, if any
     branches:
@@ -31,6 +34,8 @@ jobs:
       fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       terminology: ${{ steps.changes.outputs.terminology }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
+      secrets: ${{ steps.changes.outputs.secrets }}
+      location_services: ${{ steps.changes.outputs.location_services }}
       infra-hl7-notification: ${{ steps.changes.outputs.infra-hl7-notification }}
     steps:
       - name: Login to Docker Hub
@@ -78,10 +83,18 @@ jobs:
               - "packages/terminology/src/**"
               - "packages/infra/**"
             infra-lambdas:
+              - "packages/shared/**"
               - "packages/core/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
-              - "packages/shared/**"
+              - "package*.json"
+            secrets:
+              - "packages/infra/**"
+              - "package*.json"
+            location_services:
+              - "packages/infra/lib/location-services*"
+              - "packages/infra/shared/**"
+              - "packages/infra/package*.json"
               - "package*.json"
             infra-hl7-notification:
               - "packages/infra/lib/hl7-notification-stack/**"
@@ -165,10 +178,7 @@ jobs:
     needs: files-changed
     with:
       deploy_env: "production"
-      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_PRODUCTION }}
-      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
       cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
-      ihe_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
@@ -184,9 +194,75 @@ jobs:
     if: ${{ !failure() && needs.infra-api-lambdas.result == 'success' }}
     with:
       deploy_env: "sandbox"
-      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_SANDBOX }}
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  secrets_cdk_stack_prod:
+    uses: ./.github/workflows/_deploy-cdk.yml
+    needs: files-changed
+    if: needs.files-changed.outputs.secrets == 'true'
+    with:
+      deploy_env: "production"
+      cdk_stack: ${{ vars.SECRET_STACK_NAME_PRODUCTION }}
+      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  secrets_cdk_stack_sandbox:
+    uses: ./.github/workflows/_deploy-cdk.yml
+    needs: [secrets_cdk_stack_prod]
+    if: ${{ !failure() && needs.secrets_cdk_stack_prod.result == 'success' }}
+    with:
+      deploy_env: "sandbox"
+      cdk_stack: ${{ vars.SECRET_STACK_NAME_SANDBOX }}
+      AWS_REGION: ${{ vars.API_REGION_SANDBOX }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  location_services_cdk_stack:
+    uses: ./.github/workflows/_deploy-cdk.yml
+    needs: files-changed
+    if: needs.files-changed.outputs.location_services == 'true'
+    with:
+      deploy_env: "production"
+      cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
+      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  ihe_stack:
+    uses: ./.github/workflows/_deploy-cdk.yml
+    needs: files-changed
+    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' }}
+    with:
+      deploy_env: "production"
+      cdk_stack: ${{ vars.IHE_STACK_NAME }}
+      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
