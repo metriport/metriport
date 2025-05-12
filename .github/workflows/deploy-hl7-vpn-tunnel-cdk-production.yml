@@ -14,6 +14,7 @@ jobs:
     with:
       deploy_env: production
       partner_name: ${{ github.event.inputs.partner_name }}
+      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_PRODUCTION }}
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
