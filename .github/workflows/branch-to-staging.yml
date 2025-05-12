@@ -15,6 +15,13 @@ on:
         type: string
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display parameters
+        shell: bash
+        run: echo "${{ format('<h1>Parameters</h1><p>{0}</p>', tojson(inputs)) }}" > "$GITHUB_STEP_SUMMARY"
+
   api:
     # can't use contains(github.event.inputs.jobs_to_run, 'api') because this would trigger on 'redeploy-api-gw' or 'infra-api-lambdas'
     if: contains(format(',{0},', github.event.inputs.jobs_to_run), ',api,') || contains(github.event.inputs.jobs_to_run, 'all')
