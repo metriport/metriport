@@ -22,8 +22,6 @@ import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets, buildSecrets, secretsToECS } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
-import * as events from "aws-cdk-lib/aws-events";
-import * as targets from "aws-cdk-lib/aws-events-targets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -71,7 +69,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirToBundleCountLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
-  readonly hl7v2RosterUploadLambda: Lambda | undefined;
+  readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
   readonly conversionResultNotifierLambda: lambda.Function;
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -215,7 +213,7 @@ export class LambdasNestedStack extends NestedStack {
         ],
       });
 
-      this.hl7v2RosterUploadLambda = this.setupRosterUploadLambda({
+      this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
         lambdaLayers: this.lambdaLayers,
         vpc: props.vpc,
         hl7v2RosterBucket,
@@ -715,53 +713,46 @@ export class LambdasNestedStack extends NestedStack {
     return acmCertificateMonitorLambda;
   }
 
-  private setupRosterUploadLambda(ownProps: {
+  private setupRosterUploadLambdas(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     hl7v2RosterBucket: s3.IBucket;
     config: EnvConfig;
     alarmAction: SnsAction | undefined;
-  }): Lambda {
+  }): Lambda[] {
     const { lambdaLayers, vpc, hl7v2RosterBucket, config, alarmAction } = ownProps;
     const sentryDsn = config.lambdasSentryDSN;
     const envType = config.environmentType;
 
-    const hl7v2RosterUploadLambda = createLambda({
-      stack: this,
-      name: "Hl7v2RosterUpload",
-      entry: "hl7v2-roster",
-      envType,
-      envVars: {
-        HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
-        API_URL: config.loadBalancerDnsName,
-        ...secretsToECS(buildSecrets(this, config.hl7Notification.secrets)),
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      layers: [lambdaLayers.shared],
-      memory: 4096,
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    hl7v2RosterBucket.grantReadWrite(hl7v2RosterUploadLambda);
-
-    // Create EventBridge schedules for each HIE config
+    const rosterUploadLambdas: Lambda[] = [];
     if (config.hl7Notification.hieConfigs) {
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
-        const scheduleName = `Hl7v2RosterUpload-${hieName}`;
-        new events.Rule(this, `${scheduleName}-Rule`, {
-          schedule: events.Schedule.expression(hieConfig.cron),
-          targets: [
-            new targets.LambdaFunction(hl7v2RosterUploadLambda, {
-              event: events.RuleTargetInput.fromObject(hieConfig),
-            }),
-          ],
+        const lambda = createScheduledLambda({
+          stack: this,
+          name: `Hl7v2RosterUpload-${hieName}`,
+          entry: "hl7v2-roster",
+          scheduleExpression: hieConfig.cron,
+          eventInput: hieConfig,
+          envType,
+          envVars: {
+            HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
+            API_URL: config.loadBalancerDnsName,
+            ...secretsToECS(buildSecrets(this, config.hl7Notification.secrets)),
+            ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+          },
+          layers: [lambdaLayers.shared],
+          memory: 4096,
+          vpc,
+          alarmSnsAction: alarmAction,
         });
+        rosterUploadLambdas.push(lambda);
+
+        hl7v2RosterBucket.grantReadWrite(lambda);
       });
     }
 
-    return hl7v2RosterUploadLambda;
+    return rosterUploadLambdas;
   }
 }
