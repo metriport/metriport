@@ -57,7 +57,7 @@ export function mapCsvPatientToMetriportPatient(
   let dob: string | undefined = undefined;
   try {
     dob = normalizeDobSafe(csvPatient.dob ?? csvPatient.DOB ?? "");
-    if (!dob) throw new BadRequestError(`Missing dob`);
+    if (!dob) throw new BadRequestError(`Missing dob or dob is not valid.`);
   } catch (error) {
     errors.push({ field: dobFieldName, error: errorToString(error) });
   }
