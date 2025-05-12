@@ -182,7 +182,20 @@ router.get(
   })
 );
 
-// TODO eng-41 document this
+/**
+ * GET /patient/:id/consolidated/search
+ *
+ * Runs a semantic search on a patient's consolidated data and return the
+ * resources that match the query.
+ *
+ * Also includes DocumentResources that match the query lexically, using the
+ * document search (GET /document)
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.query The query to search for.
+ * @param req.query.similarityThreshold The similarity threshold to use for the semantic search.
+ */
 router.get(
   "/consolidated/search",
   requestLogger,
@@ -195,9 +208,11 @@ router.get(
     const { patient } = getPatientInfoOrFail(req);
     const queryParam = getFrom("query").optional("query", req);
     const query = queryParam ? queryParam.trim() : undefined;
+    const similarityParam = getFrom("query").optional("similarityThreshold", req);
+    const similarityThreshold = similarityParam ? parseFloat(similarityParam) : undefined;
 
     const result = query
-      ? await searchSemantic({ patient, query })
+      ? await searchSemantic({ patient, query, similarityThreshold })
       : await getConsolidatedPatientData({ patient });
 
     return res.status(status.OK).json(result);

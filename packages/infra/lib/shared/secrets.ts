@@ -25,6 +25,9 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.ehrIntegration?.athenaHealth.secrets
       ? buildSecrets(scope, config.ehrIntegration.athenaHealth.secrets)
       : undefined),
+    ...(config.ehrIntegration?.eclinicalworks.secrets
+      ? buildSecrets(scope, config.ehrIntegration.eclinicalworks.secrets)
+      : undefined),
     ...(config.ehrIntegration?.elation.secrets
       ? buildSecrets(scope, config.ehrIntegration.elation.secrets)
       : undefined),

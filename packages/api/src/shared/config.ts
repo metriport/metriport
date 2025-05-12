@@ -342,6 +342,18 @@ export class Config {
     return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
   }
 
+  static getEclinicalworksEnv(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
+  }
+
+  static getEclinicalworksClientKey(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_CLIENT_KEY");
+  }
+
+  static getEclinicalworksClientSecret(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_CLIENT_SECRET");
+  }
+
   static getElationEnv(): string | undefined {
     return getEnvVar("EHR_ELATION_ENVIRONMENT");
   }

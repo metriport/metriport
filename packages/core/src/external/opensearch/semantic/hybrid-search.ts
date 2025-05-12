@@ -12,13 +12,13 @@ export type HybridSearchParams = {
  * Generates a hybrid search query that combines lexical and neural search with filters
  * for cxId and patientId. This ensures both search methods respect the same filtering criteria.
  */
-export const createHybridSearchQuery = ({
+export function createHybridSearchQuery({
   query,
   cxId,
   patientId,
   modelId,
   k = 5,
-}: HybridSearchParams) => {
+}: HybridSearchParams) {
   const absoluteFilters = [
     {
       term: { cxId },
@@ -29,7 +29,8 @@ export const createHybridSearchQuery = ({
   ];
   return {
     _source: {
-      exclude: ["content_embedding"],
+      // removes these from the response
+      exclude: ["content_embedding", contentFieldName],
     },
     size: k,
     query: {
@@ -70,4 +71,4 @@ export const createHybridSearchQuery = ({
       },
     },
   };
-};
+}

@@ -1,4 +1,7 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
+import EclinicalworksApi, {
+  EclinicalworksEnv,
+} from "@metriport/core/external/ehr/eclinicalworks/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
 import { JwtTokenInfo, MetriportError, BadRequestError } from "@metriport/shared";
@@ -7,12 +10,22 @@ import {
   AthenaSecondaryMappings,
   athenaSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
+// no mappings for eclinicalworks
+
 import {
   AthenaClientJwtTokenData,
   athenaClientSource,
   AthenaDashJwtTokenData,
   athenaDashSource,
 } from "@metriport/shared/interface/external/ehr/athenahealth/jwt-token";
+
+import {
+  EclinicalworksClientJwtTokenData,
+  eclinicalworksClientSource,
+  EclinicalworksDashJwtTokenData,
+  eclinicalworksDashSource,
+} from "@metriport/shared/interface/external/ehr/eclinicalworks/jwt-token";
+
 import {
   CanvasClientJwtTokenData,
   canvasClientSource,
@@ -53,7 +66,7 @@ export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
 export const parallelPatients = 200;
 
-type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv;
+type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | EclinicalworksEnv;
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   environment: Env;
   clientKey: string;
@@ -65,7 +78,11 @@ export type EhrEnvAndApiKey<Env extends EhrEnv> = {
   apiKey: string;
 };
 
-type EhrClient = AthenaHealthApi | ElationApi | CanvasApi;
+export interface IEhrClient {
+  getTwoLeggedAuthTokenInfo(): JwtTokenInfo;
+}
+
+type EhrClient = AthenaHealthApi | ElationApi | CanvasApi | EclinicalworksApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   practiceId: string;
@@ -76,6 +93,7 @@ export const ehrDashJwtTokenSources = [
   canvasDashSource,
   elationDashSource,
   healthieDashSource,
+  eclinicalworksDashSource,
 ] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
@@ -86,12 +104,14 @@ export type EhrDashJwtTokenData =
   | AthenaDashJwtTokenData
   | CanvasDashJwtTokenData
   | ElationDashJwtTokenData
-  | HealthieDashJwtTokenData;
+  | HealthieDashJwtTokenData
+  | EclinicalworksDashJwtTokenData;
 
 export const ehrClientJwtTokenSources = [
   athenaClientSource,
   elationClientSource,
   canvasClientSource,
+  eclinicalworksClientSource,
 ] as const;
 export type EhrClientJwtTokenSource = (typeof ehrClientJwtTokenSources)[number];
 export function isEhrClientJwtTokenSource(source: string): source is EhrClientJwtTokenSource {
@@ -101,7 +121,8 @@ export function isEhrClientJwtTokenSource(source: string): source is EhrClientJw
 export type EhrClientJwtTokenData =
   | AthenaClientJwtTokenData
   | ElationClientJwtTokenData
-  | CanvasClientJwtTokenData;
+  | CanvasClientJwtTokenData
+  | EclinicalworksClientJwtTokenData;
 
 export const ehrWebhookJwtTokenSources = [canvasWebhookSource] as const;
 export type EhrWebhookJwtTokenSource = (typeof ehrWebhookJwtTokenSources)[number];
@@ -111,6 +132,7 @@ export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhook
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
 
+// @todo: webhook stuff
 export type EhrCxMappingSecondaryMappings =
   | AthenaSecondaryMappings
   | ElationSecondaryMappings
@@ -122,6 +144,7 @@ export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: undefined,
   [EhrSources.healthie]: healthieSecondaryMappingsSchema,
+  [EhrSources.eclinicalworks]: undefined,
 };
 
 export type Appointment = {
@@ -186,7 +209,7 @@ async function getLatestClientJwtTokenInfo({
   practiceId,
   source,
 }: EhrPerPracticeParams & { source: EhrClientJwtTokenSource }): Promise<JwtTokenInfo | undefined> {
-  const data = { cxId, practiceId, source };
+  const data = { cxId, practiceId, source } as EhrClientJwtTokenData;
   const token = await getLatestExpiringJwtTokenBySourceAndData({ source, data });
   if (!token) return undefined;
   return {
@@ -200,11 +223,7 @@ export type GetEnvParams<Env extends EhrEnv, EnvArgs> = {
   getEnv: (params: EnvArgs) => EhrEnvAndClientCredentials<Env>;
 };
 
-export async function createEhrClient<
-  Env extends EhrEnv,
-  Client extends EhrClient,
-  EnvArgs = undefined
->({
+export async function createEhrClient<Env extends EhrEnv, Client extends EhrClient>({
   cxId,
   practiceId,
   source,
@@ -212,7 +231,7 @@ export async function createEhrClient<
   getClient,
 }: EhrPerPracticeParams & {
   source: EhrClientJwtTokenSource;
-  getEnv: GetEnvParams<Env, EnvArgs>;
+  getEnv: GetEnvParams<Env, EnvArgs>; //any would work but linter not happy
   getClient: (params: EhrClientParams<Env>) => Promise<Client>;
 }): Promise<Client> {
   const [environment, twoLeggedAuthTokenInfo] = await Promise.all([
@@ -224,9 +243,15 @@ export async function createEhrClient<
     practiceId,
     ...environment,
   });
-  const newAuthInfo = client.getTwoLeggedAuthTokenInfo();
+  // Use type assertion to let TypeScript know this client has the getTwoLeggedAuthTokenInfo method
+  const newAuthInfo = (client as IEhrClient).getTwoLeggedAuthTokenInfo();
   if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
-  const data = { cxId, practiceId, source };
+
+  if (!isEhrClientJwtTokenSource(source)) {
+    throw new BadRequestError(`Unsupported EHR source: ${source}`);
+  }
+
+  const data = { cxId, practiceId, source } as EhrClientJwtTokenData;
   await findOrCreateJwtToken({
     token: newAuthInfo.access_token,
     exp: newAuthInfo.exp,

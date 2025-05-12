@@ -247,6 +247,15 @@ type EnvConfigBase = {
         EHR_ATHENA_CLIENT_SECRET: string;
       };
     };
+
+    eclinicalworks: {
+      env: string;
+      secrets: {
+        EHR_ECLINICALWORKS_CLIENT_KEY: string;
+        EHR_ECLINICALWORKS_CLIENT_SECRET: string;
+      };
+    };
+
     elation: {
       env: string;
       secrets: {

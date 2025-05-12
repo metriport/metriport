@@ -38,7 +38,7 @@ export function getCanvasEnv({
 export async function createCanvasClient(
   perPracticeParams: EhrPerPracticeParams
 ): Promise<CanvasApi> {
-  return await createEhrClient<CanvasEnv, CanvasApi, EhrPerPracticeParams>({
+  return await createEhrClient<CanvasEnv, CanvasApi>({
     ...perPracticeParams,
     source: canvasClientJwtTokenSource,
     getEnv: { params: perPracticeParams, getEnv: getCanvasEnv },
