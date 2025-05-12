@@ -1,12 +1,12 @@
 import { Organization as CWSdkOrganization } from "@metriport/commonwell-sdk";
+import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization, OrgType } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, NotFoundError, USState } from "@metriport/shared";
-import { Config, getEnvVarOrFail } from "../../shared/config";
-import { isEnhancedCoverageEnabledForCx } from "../aws/app-config";
+import { errorToString, getEnvVarOrFail, NotFoundError, USState } from "@metriport/shared";
+import { Config } from "../../shared/config";
 import {
   getCertificate,
   makeCommonWellAPI,

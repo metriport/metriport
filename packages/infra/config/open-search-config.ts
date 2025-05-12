@@ -17,3 +17,12 @@ export type OpenSearchConnectorConfig = {
   };
   lambda: LambdaConfig;
 };
+
+export type SemanticOpenSearchConfig = {
+  modelId: string;
+  endpoint: string;
+  indexName: string;
+  userName: string;
+  // TODO eng-41 Remove this and move it to an actual Secret before going to prod
+  password: string;
+};

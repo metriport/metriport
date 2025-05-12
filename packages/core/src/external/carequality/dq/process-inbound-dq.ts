@@ -2,12 +2,7 @@ import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ih
 import { ensureCcdExists } from "../../../shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "../../../shareback/metadata/get-metadata-xml";
 import { out } from "../../../util/log";
-import {
-  IHEGatewayError,
-  XDSRegistryError,
-  XDSUnknownPatientId,
-  constructDQErrorResponse,
-} from "../error";
+import { constructDQErrorResponse, IHEGatewayError, XDSRegistryError } from "../error";
 import { validateBasePayload } from "../shared";
 import { decodePatientId } from "./utils";
 
@@ -16,12 +11,9 @@ export async function processInboundDq(
 ): Promise<InboundDocumentQueryResp> {
   try {
     validateBasePayload(payload);
-    const id_pair = decodePatientId(payload.externalGatewayPatient.id);
 
-    if (!id_pair) {
-      throw new XDSUnknownPatientId("Patient ID is not valid");
-    }
-    const { cxId, id: patientId } = id_pair;
+    const id_pair = decodePatientId(payload.externalGatewayPatient.id);
+    const { cxId, patientId } = id_pair;
     const { log } = out(`Inbound DQ: ${cxId}, patientId: ${patientId}`);
 
     await ensureCcdExists({ cxId, patientId, log });

@@ -1,8 +1,10 @@
 import { Capture } from "@metriport/core/util/capture";
 import { getEnvType, getEnvVar } from "@metriport/core/util/env-var";
+import { errorToString, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { Extras } from "@sentry/types";
 import { ScopeContext } from "@sentry/types/types/scope";
+import * as AWSLambda from "aws-lambda";
 
 const sentryDsn = getEnvVar("SENTRY_DSN");
 
@@ -68,6 +70,34 @@ export const capture = {
     return Sentry.captureMessage(message, {
       ...captureContext,
       extra,
+    });
+  },
+
+  /**
+   * Wraps an AWS Lambda handler to capture errors and send them to Sentry.
+   *
+   * While using this, don't call `capture.[error|message]` to report errors
+   * to Sentry/Slack, this function already takes care of this as long as
+   * the error is "bubbled up" out of the lambda handler.
+   *
+   * To send "extra"/additional data to Sentry, you can make sure to throw a
+   * MetriportError (or subclass) with the "extra" set on the error's
+   * `additionalInfo` property.
+   *
+   * @param handler — The AWS Lambda handler to wrap.
+   * @returns — The wrapped handler.
+   */
+  wrapHandler: (handler: AWSLambda.Handler): AWSLambda.Handler => {
+    return Sentry.AWSLambda.wrapHandler(async (event, context, callback) => {
+      try {
+        return await handler(event, context, callback);
+      } catch (error) {
+        console.log(`Error: ${errorToString(error)}`);
+        if (error instanceof MetriportError && error.additionalInfo) {
+          capture.setExtra(error.additionalInfo);
+        }
+        throw error;
+      }
     });
   },
 };

@@ -6,6 +6,7 @@ import {
 import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
 import { initPostHog } from "@metriport/core/external/analytics/posthog";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -13,12 +14,22 @@ import { getEnvOrFail } from "./shared/env";
 // Keep this as early on the file as possible
 capture.init();
 
+// Automatically set by AWS
+const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const apiUrl = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("BUCKET_NAME");
-const region = getEnvOrFail("AWS_REGION");
 const postHogSecretName = getEnvOrFail("POST_HOG_API_KEY_SECRET");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
 
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
+
+/**
+ * Lambdas that get invoked directly by the API have the error handling code in the API, so we don't
+ * wrap them in the Sentry's wrapHandler().
+ */
+// TODO move to capture.wrapHandler()
 export async function handler(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<ConsolidatedSnapshotResponse | void> {
@@ -46,6 +57,9 @@ export async function handler(
       dateTo,
     };
     log(`${msg}: ${JSON.stringify(filters)}`);
+    if (params.isAsync) {
+      capture.error(msg, { extra: { filters, error } });
+    }
     throw error;
   } finally {
     await postHog.shutdown();

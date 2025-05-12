@@ -1,27 +1,29 @@
-import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  isCQDirectEnabledForCx,
+  isStalePatientUpdateEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { errorToString } from "@metriport/core/util/error/shared";
+import { errorToString, processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { isCQDirectEnabledForCx, isStalePatientUpdateEnabledForCx } from "../../aws/app-config";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
+import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
-import { getCQData, discover } from "../patient";
-import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
+import { discover, getCQData } from "../patient";
 import { getCqInitiator } from "../shared";
-import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
+import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const staleLookbackHours = 24;
 
@@ -88,6 +90,11 @@ export async function getDocumentsFromCQ({
       (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
+      log(
+        `Scheduling document query for patient ${patientId}, hasNoCQStatus ${hasNoCQStatus}, ` +
+          `isProcessing ${isProcessing}, forcePatientDiscovery ${forcePatientDiscovery}, ` +
+          `isStale ${isStale}`
+      );
       await scheduleDocQuery({
         requestId,
         patient,
@@ -122,15 +129,6 @@ export async function getDocumentsFromCQ({
       if (!gateway) {
         const msg = `Gateway not found - Doc Query`;
         log(`${msg}: ${patientLink.oid} skipping...`);
-        capture.message(msg, {
-          extra: {
-            context: `cq.pd.getCQDirectoryEntry`,
-            patientId,
-            requestId,
-            cxId,
-            gateway: patientLink,
-          },
-        });
         return;
       } else if (!gateway.urlDQ) {
         log(`Gateway ${gateway.id} has no DQ URL, skipping...`);

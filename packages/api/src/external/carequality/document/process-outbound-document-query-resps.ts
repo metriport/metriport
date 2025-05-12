@@ -1,8 +1,9 @@
+import { isCQDirectEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -10,29 +11,28 @@ import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gat
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { setDocRetrieveStartAt } from "../../hie/set-doc-retrieve-start";
-import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
-import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
-import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
-import { getCqInitiator } from "../shared";
-import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
-import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
-import { getCQData } from "../patient";
-import {
-  cqToFHIR,
-  DocumentReferenceWithMetriportId,
-  containsMetriportId,
-  getContentTypeOrUnknown,
-  containsDuplicateMetriportId,
-} from "./shared";
 import {
   getDocumentReferenceContentTypeCounts,
   getOutboundDocQuerySuccessFailureCount,
 } from "../../hie/carequality-analytics";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { setDocRetrieveStartAt } from "../../hie/set-doc-retrieve-start";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
+import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
+import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
+import { getCQData } from "../patient";
+import { getCqInitiator } from "../shared";
+import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
+import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
+import {
+  containsDuplicateMetriportId,
+  containsMetriportId,
+  cqToFHIR,
+  DocumentReferenceWithMetriportId,
+  getContentTypeOrUnknown,
+} from "./shared";
 
 const parallelUpsertsToFhir = 10;
 const resultPoller = makeOutboundResultPoller();
@@ -59,21 +59,6 @@ export async function processOutboundDocumentQueryResps({
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
     const { successCount, failureCount } = getOutboundDocQuerySuccessFailureCount(response);
 
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.documentQuery,
-      properties: {
-        requestId,
-        patientId,
-        hie: MedicalDataSource.CAREQUALITY,
-        duration,
-        documentCount: docRefs.length,
-        successCount,
-        failureCount,
-        ...contentTypeCounts,
-      },
-    });
-
     const responsesWithDocsToDownload = await getRespWithDocsToDownload({
       cxId,
       patientId,
@@ -90,6 +75,23 @@ export async function processOutboundDocumentQueryResps({
     ).length;
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentQuery,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.CAREQUALITY,
+        duration,
+        documentCount: docRefs.length,
+        docsToDownloadCount: docsToDownload.length,
+        convertibleCount: convertibleDocCount,
+        successCount,
+        failureCount,
+        ...contentTypeCounts,
+      },
+    });
 
     if (docsToDownload.length === 0) {
       log(`No new documents to download.`);
@@ -141,9 +143,6 @@ export async function processOutboundDocumentQueryResps({
     await storeInitDocRefInFHIR(docsToDownload, cxId, patientId, log);
 
     const outboundDocumentQueryResults = await replaceDqUrlWithDrUrl({
-      patientId,
-      requestId,
-      cxId,
       responsesWithDocsToDownload,
       log,
     });
@@ -348,15 +347,9 @@ async function addMetriportDocRefID({
 }
 
 async function replaceDqUrlWithDrUrl({
-  patientId,
-  requestId,
-  cxId,
   responsesWithDocsToDownload,
   log,
 }: {
-  patientId: string;
-  requestId: string;
-  cxId: string;
   responsesWithDocsToDownload: OutboundDocumentQueryResp[];
   log: typeof console.log;
 }): Promise<OutboundDocumentQueryResp[]> {
@@ -370,15 +363,6 @@ async function replaceDqUrlWithDrUrl({
       if (!gateway) {
         const msg = `Gateway not found - Doc Retrieval`;
         log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
-        capture.message(msg, {
-          extra: {
-            context: `cq.dq.getCQDirectoryEntry`,
-            patientId,
-            requestId,
-            cxId,
-            gateway: outboundDocumentQueryResp.gateway,
-          },
-        });
         return;
       } else if (!gateway.urlDR) {
         log(`Gateway ${gateway.id} has no DR URL, skipping...`);

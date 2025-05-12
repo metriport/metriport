@@ -1,4 +1,5 @@
 import { Organization } from "@medplum/fhirtypes";
+import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
@@ -7,7 +8,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementApiOrFail } from "../../api";
-import { CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntryData } from "../../cq-directory";
 import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { getAdditionalOrgs } from "./additional-orgs";
@@ -25,6 +26,7 @@ dayjs.extend(duration);
 const BATCH_SIZE = 5_000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
+const heartbeatUrl = Config.getCqDirRebuildHeartbeatUrl();
 
 const dbCreds = Config.getDBCreds();
 const sequelize = initDbPool(dbCreds, {
@@ -55,11 +57,12 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           start: currentPosition,
           count: BATCH_SIZE,
           active: true,
+          sortKey: "_id",
         });
         log(`Loaded ${orgs.length} entries in ${Date.now() - loadStartedAt}ms`);
         if (orgs.length < BATCH_SIZE) isDone = true;
         cache.populate(orgs);
-        const parsedOrgs: CQDirectoryEntryData2[] = [];
+        const parsedOrgs: CQDirectoryEntryData[] = [];
         const [alreadyInsertedIds] = await Promise.all([
           getCqDirectoryIds(sequelize),
           executeAsynchronously(
@@ -120,7 +123,6 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   }
   try {
     await updateCqDirectoryViewDefinition(sequelize);
-    log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -129,6 +131,10 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
     });
     throw error;
   }
+
+  log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
+
+  if (heartbeatUrl) await sendHeartbeatToMonitoringService(heartbeatUrl);
 }
 
 /**
@@ -136,7 +142,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
  * and very likely won't have any patient that matches our test's demographics, so we might
  * as well keep them inactive to minimize cost/scale issues on pre-prod envs.
  */
-function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData2[]): CQDirectoryEntryData2[] {
+function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData[]): CQDirectoryEntryData[] {
   if (Config.isStaging() || Config.isDev()) {
     return parsedOrgs.map(org => ({
       ...org,

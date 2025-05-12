@@ -1,6 +1,6 @@
 import { PatientData } from "@metriport/core/domain/patient";
 import { epicMatchingAlgorithm, strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
-import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { CwLink } from "../commonwell/cw-patient-data";
 import { cwLinkToPatientData } from "../commonwell/link/shared";
 import { cqLinkToPatientData } from "../carequality/shared";

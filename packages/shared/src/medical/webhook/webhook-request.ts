@@ -1,5 +1,6 @@
 import { z, ZodError, ZodFormattedError } from "zod";
 import { dateSchema } from "../../common/date";
+import { patientImportJobStatus } from "../../domain/patient/patient-import/status";
 import { SearchSetBundle } from "../fhir/bundle";
 
 export const pingWebhookTypeSchema = z.literal(`ping`);
@@ -17,11 +18,18 @@ export type DocumentConversionWebhookType = z.infer<typeof docConversionWebhookT
 export const docBulkDownloadWebhookTypeSchema = z.literal(`medical.document-bulk-download-urls`);
 export type DocumentBulkDownloadWebhookType = z.infer<typeof docBulkDownloadWebhookTypeSchema>;
 
+const hl7NotificationWebhookTypeSchema = z.enum(["patient.admit", "patient.discharge"]);
+export type Hl7WebhookTypeSchemaType = z.infer<typeof hl7NotificationWebhookTypeSchema>;
+export const bulkPatientImportWebhookTypeSchema = z.literal(`medical.bulk-patient-create`);
+export type BulkPatientImportWebhookType = z.infer<typeof bulkPatientImportWebhookTypeSchema>;
+
 export const mapiWebhookTypeSchema = consolidatedWebhookTypeSchema
   .or(consolidatedWebhookTypeSchema)
   .or(docDownloadWebhookTypeSchema)
   .or(docConversionWebhookTypeSchema)
-  .or(docBulkDownloadWebhookTypeSchema);
+  .or(docBulkDownloadWebhookTypeSchema)
+  .or(hl7NotificationWebhookTypeSchema)
+  .or(bulkPatientImportWebhookTypeSchema);
 export type MAPIWebhookType = z.infer<typeof mapiWebhookTypeSchema>;
 
 export const webhookTypeSchema = pingWebhookTypeSchema.or(mapiWebhookTypeSchema);
@@ -153,12 +161,25 @@ export type DocumentBulkDownloadWebhookRequest = z.infer<
   typeof documentBulkDownloadWebhookRequestSchema
 >;
 
+export const bulkPatientImportWebhookEntrySchema = z.object({
+  requestId: z.string(),
+  status: z.enum(patientImportJobStatus),
+  result: z.string().nullish(),
+});
+export type BulkPatientImportWebhookEntry = z.infer<typeof bulkPatientImportWebhookEntrySchema>;
+export const bulkPatientImportWebhookRequestSchema = z.object({
+  meta: createWebhookMetadataSchema(bulkPatientImportWebhookTypeSchema),
+  bulkPatientCreate: bulkPatientImportWebhookEntrySchema,
+});
+export type BulkPatientImportWebhookRequest = z.infer<typeof bulkPatientImportWebhookRequestSchema>;
+
 export const webhookRequestSchema = z.union([
   pingWebhookRequestDataSchema,
   consolidatedWebhookRequestSchema,
   documentDownloadWebhookRequestSchema,
   documentConversionWebhookRequestSchema,
   documentBulkDownloadWebhookRequestSchema,
+  bulkPatientImportWebhookRequestSchema,
 ]);
 export type WebhookRequest = z.infer<typeof webhookRequestSchema>;
 
@@ -205,6 +226,15 @@ export function isDocumentBulkDownloadWebhookRequest(
   whRequest: WebhookRequest
 ): whRequest is DocumentBulkDownloadWebhookRequest {
   if (whRequest.meta.type === "medical.document-bulk-download-urls") {
+    return true;
+  }
+  return false;
+}
+
+export function isBulkPatientImportWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is BulkPatientImportWebhookRequest {
+  if (whRequest.meta.type === "medical.bulk-patient-create") {
     return true;
   }
   return false;

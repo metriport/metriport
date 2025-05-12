@@ -1,0 +1,27 @@
+---
+title: "Get Patient by External ID"
+description: "Get a Patient based on External Identifier."
+api: "GET /medical/v1/patient/external-id"
+---
+
+## Query Params
+
+<Snippet file="patient-external-id.mdx" />
+
+## Response
+
+<Snippet file="patient-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patient = await metriport.getPatientByExternalId("1234567890");
+```
+
+</ResponseExample>
+
+<Snippet file="patient-response-json.mdx" />

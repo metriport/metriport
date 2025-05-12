@@ -5,15 +5,20 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "start": "ts-node ./index.ts",
-    "mock-webhook": "ts-node ./mock-webhook.ts"
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
+    "build": "tsc -p .",
+    "typecheck": "tsc --noEmit",
+    "start": "ts-node-dev src/index.ts",
+    "mock-webhook": "ts-node-dev src/mock-webhook.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api-sdk": "^14.0.2-alpha.0",
-    "@metriport/shared": "^0.14.3",
+    "@metriport/api-sdk": "^14.14.0-alpha.0",
+    "@metriport/shared": "^0.23.1",
+    "axios": ">=1.8.2",
     "express": "^4.19.2"
   },
   "devDependencies": {

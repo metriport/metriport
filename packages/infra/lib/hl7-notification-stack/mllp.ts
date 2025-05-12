@@ -1,25 +1,33 @@
 import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
-import { MLLP_DEFAULT_PORT, VPN_ACCESSIBLE_SUBNET_GROUP_NAME } from "./constants";
+import { buildSecrets, secretsToECS } from "../shared/secrets";
+import { MLLP_DEFAULT_PORT, MLLP_SERVER_NLB_INTERNAL_IP } from "./constants";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
   vpc: ec2.Vpc;
   ecrRepo: Repository;
+  hl7NotificationBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket;
 }
 
 export class MllpStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
-    const { vpc, ecrRepo } = props;
+    const { vpc, ecrRepo, incomingHl7NotificationBucket, hl7NotificationBucket, config } = props;
+    const { notificationWebhookSenderQueue } = config.hl7Notification;
     const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
       props.config.hl7Notification.mllpServer;
 
@@ -46,13 +54,24 @@ export class MllpStack extends cdk.NestedStack {
       "Allow outbound traffic from MLLP server"
     );
 
-    const nlb = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB", {
+    const nlb = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB2", {
       vpc,
       internetFacing: false,
-      vpcSubnets: {
-        subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
-      },
     });
+
+    // Set static IP address for NLB in private subnet
+    const privateSubnet = vpc.privateSubnets[0];
+    if (!privateSubnet || vpc.privateSubnets.length !== 1) {
+      throw new Error("Should have exactly one private subnet");
+    }
+    const cfnNlb = nlb.node.defaultChild as elbv2.CfnLoadBalancer;
+    cfnNlb.addDeletionOverride("Properties.Subnets");
+    cfnNlb.subnetMappings = [
+      {
+        subnetId: privateSubnet.subnetId,
+        privateIPv4Address: MLLP_SERVER_NLB_INTERNAL_IP,
+      },
+    ];
 
     const listener = nlb.addListener("MllpListener", {
       port: MLLP_DEFAULT_PORT,
@@ -71,34 +90,61 @@ export class MllpStack extends cdk.NestedStack {
       },
     });
 
-    // Create Fargate Service
-    const taskDefinition = new ecs.FargateTaskDefinition(this, "MllpServerTask", {
-      cpu: fargateCpu,
-      memoryLimitMiB: fargateMemoryLimitMiB,
+    const taskRole = new iam.Role(this, "MllpServerTaskRole", {
+      assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
     });
 
-    taskDefinition.addContainer("MllpServer", {
-      image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
-      environment: {
-        NODE_ENV: "production",
-        ENV_TYPE: props.config.environmentType,
-        MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-        ...(props.version ? { RELEASE_SHA: props.version } : undefined),
-      },
-      portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
-    });
+    taskRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["sqs:SendMessage"],
+        resources: [notificationWebhookSenderQueue.arn],
+      })
+    );
 
     const fargateService = new ecs.FargateService(this, "MllpServerService", {
       cluster,
-      taskDefinition,
+      taskDefinition: new ecs.FargateTaskDefinition(this, "MllpServerTask", {
+        cpu: fargateCpu,
+        memoryLimitMiB: fargateMemoryLimitMiB,
+        taskRole,
+      }),
       desiredCount: fargateTaskCountMin,
       vpcSubnets: {
-        subnetGroupName: VPN_ACCESSIBLE_SUBNET_GROUP_NAME,
+        subnets: vpc.privateSubnets,
       },
       securityGroups: [mllpSecurityGroup],
     });
 
+    const logGroup = new LogGroup(this, "MllpServerLogGroup", {
+      logGroupName: "/aws/ecs/mllp-server",
+      retention: logs.RetentionDays.ONE_YEAR,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    fargateService.taskDefinition.addContainer("MllpServer", {
+      image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
+      secrets: secretsToECS({
+        ...buildSecrets(this, props.config.hl7Notification.secrets),
+        ...buildSecrets(this, props.config.analyticsSecretNames),
+      }),
+      environment: {
+        NODE_ENV: "production",
+        ENV_TYPE: props.config.environmentType,
+        MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
+        HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
+        HL7_NOTIFICATION_QUEUE_URL: notificationWebhookSenderQueue.url,
+        ...(props.version ? { RELEASE_SHA: props.version } : undefined),
+      },
+      portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
+      logging: ecs.LogDriver.awsLogs({
+        logGroup,
+        streamPrefix: "mllp-server",
+      }),
+    });
+
     targetGroup.addTarget(fargateService);
+    hl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
+    incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
       minCapacity: fargateTaskCountMin,
@@ -131,6 +177,11 @@ export class MllpStack extends cdk.NestedStack {
     new cdk.CfnOutput(this, "MllpNlbDnsName", {
       value: nlb.loadBalancerDnsName,
       description: "DNS name of the Network Load Balancer for MLLP",
+    });
+
+    new cdk.CfnOutput(this, "MllpNlbInternalIp", {
+      value: MLLP_SERVER_NLB_INTERNAL_IP,
+      description: "Internal IP address of the MLLP Network Load Balancer",
     });
   }
 }

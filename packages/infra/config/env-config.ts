@@ -2,7 +2,7 @@ import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/c
 import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
-import { OpenSearchConnectorConfig } from "./open-search-config";
+import { OpenSearchConnectorConfig, SemanticOpenSearchConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
 import { Hl7NotificationConfig } from "./hl7-notification-config";
 
@@ -123,11 +123,12 @@ type EnvConfigBase = {
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   ehrResponsesBucketName?: string;
+  ehrBundleBucketName: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
   fhirConverterBucketName?: string;
-  analyticsSecretNames?: {
+  analyticsSecretNames: {
     POST_HOG_API_KEY_SECRET: string;
   };
   locationService?: {
@@ -141,6 +142,7 @@ type EnvConfigBase = {
     anthropicVersion: string;
   };
   openSearch: OpenSearchConnectorConfig;
+  semanticOpenSearch?: SemanticOpenSearchConfig;
   carequality?: {
     secretNames: {
       CQ_MANAGEMENT_API_KEY: string;
@@ -236,6 +238,7 @@ type EnvConfigBase = {
   };
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
   };
   ehrIntegration?: {
     athenaHealth: {
@@ -254,6 +257,12 @@ type EnvConfigBase = {
     canvas: {
       secrets: {
         EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP: string;
+      };
+    };
+    healthie: {
+      env: string;
+      secrets: {
+        EHR_HEALTHIE_API_KEY_MAP: string;
       };
     };
   };

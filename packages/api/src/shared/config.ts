@@ -1,17 +1,5 @@
 import { Config as CoreConfig } from "@metriport/core/util/config";
-import {
-  getEnvVar as coreGetEnvVar,
-  getEnvVarOrFail as coreGetEnvVarOrFail,
-} from "@metriport/core/util/env-var";
-
-/**
- * @deprecated Use core's version instead
- */
-export const getEnvVar = (varName: string): string | undefined => coreGetEnvVar(varName);
-/**
- * @deprecated Use core's version instead
- */
-export const getEnvVarOrFail = (varName: string): string => coreGetEnvVarOrFail(varName);
+import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
 
 export class Config {
   // env config
@@ -289,9 +277,6 @@ export class Config {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 
-  static getFHIRToMedicalRecordLambdaName(): string | undefined {
-    return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
-  }
   static getFHIRToMedicalRecordLambda2Name(): string | undefined {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME");
   }
@@ -332,19 +317,6 @@ export class Config {
     return getEnvVar("CW_CQ_PATIENT_LINK_QUEUE_URL");
   }
 
-  // app config for feature flags
-  static getAppConfigAppId(): string {
-    return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
-  }
-  static getAppConfigConfigId(): string {
-    return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
-  }
-  static getAppConfigEnvironmentId(): string {
-    return getEnvVarOrFail("APPCONFIG_ENVIRONMENT_ID");
-  }
-  static getAppConfigDeploymentStrategyId(): string {
-    return getEnvVarOrFail("APPCONFIG_DEPLOYMENT_STRATEGY_ID");
-  }
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }
@@ -373,7 +345,18 @@ export class Config {
     return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
   }
 
+  static getHealthieEnv(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_ENVIRONMENT");
+  }
+  static getHealthieApiKeyMap(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
+  }
+
   static getRateLimitTableName(): string | undefined {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
+  }
+
+  static getCqDirRebuildHeartbeatUrl() {
+    return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
   }
 }

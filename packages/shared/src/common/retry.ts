@@ -29,7 +29,7 @@ export type ExecuteWithRetriesOptions<T> = {
    * Set to 0 to disable backoff.
    */
   backoffMultiplier?: number;
-  /** The maximum number of retries. Defaults to 10. */
+  /** The maximum number of retries. Defaults to 5. */
   maxAttempts?: number;
   /** Function to determine if the error should be retried. Defaults to always retry. */
   shouldRetry?: (

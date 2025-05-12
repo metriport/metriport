@@ -26,6 +26,7 @@ import {
 import { handleMetriportSync, HandleMetriportSyncParams } from "./patient";
 
 const parallelPatientMatches = 5;
+const testLastName = "zztest";
 
 type GetPatientByDemoParams = {
   cxId: string;
@@ -91,6 +92,7 @@ export function createNamesFromFhir(patient: Patient): { firstName: string; last
   if (!patient.name) throw new BadRequestError("Patient has no name");
   const names = patient.name.flatMap(name => {
     if (!name.family) return [];
+    if (name.family === testLastName) throw new BadRequestError("Patient has test name");
     const lastName = name.family.trim();
     if (lastName === "") return [];
     if (!name.given) return [];

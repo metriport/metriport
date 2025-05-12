@@ -23,6 +23,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const mpi = new InboundMpiMetriportApi(apiUrl);
 const { log } = out(`ihe-gateway-v2-inbound-patient-discovery`);
 
+// TODO move to capture.wrapHandler()
 export async function handler(event: APIGatewayProxyEventV2) {
   const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
   const postHog = initPostHog(postHogApiKey, "lambda");

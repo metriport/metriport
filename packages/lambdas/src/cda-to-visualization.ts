@@ -32,6 +32,7 @@ const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ fileName, conversionType, bucketName }: Input): Promise<Output> => {
     console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);

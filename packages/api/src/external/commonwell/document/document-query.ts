@@ -7,6 +7,11 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import {
+  isCQDirectEnabledForCx,
+  isEnhancedCoverageEnabledForCx,
+  isStalePatientUpdateEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -29,11 +34,6 @@ import {
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import {
-  isCQDirectEnabledForCx,
-  isEnhancedCoverageEnabledForCx,
-  isStalePatientUpdateEnabledForCx,
-} from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -163,6 +163,11 @@ export async function queryAndProcessDocuments({
       (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
+      log(
+        `Scheduling document query for patient ${patientId}, hasNoCWStatus ${hasNoCWStatus}, ` +
+          `isProcessing ${isProcessing}, forcePatientDiscovery ${forcePatientDiscovery}, ` +
+          `isStale ${isStale}`
+      );
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
@@ -221,6 +226,16 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
+    const fhirDocRefs = await downloadDocsAndUpsertFHIR({
+      patient,
+      facilityId,
+      documents: cwDocuments,
+      forceDownload,
+      ignoreDocRefOnFHIRServer,
+      ignoreFhirConversionAndUpsert,
+      requestId,
+    });
+
     const duration = elapsedTimeFromNow(startedAt);
     const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
@@ -236,16 +251,6 @@ export async function queryAndProcessDocuments({
         documentCount: cwDocuments.length,
         ...contentTypeCounts,
       },
-    });
-
-    const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-      patient,
-      facilityId,
-      documents: cwDocuments,
-      forceDownload,
-      ignoreDocRefOnFHIRServer,
-      ignoreFhirConversionAndUpsert,
-      requestId,
     });
 
     log(`Finished processing ${fhirDocRefs.length} documents.`);
@@ -293,7 +298,7 @@ export async function internalGetDocuments({
   initiator: HieInitiator;
 }): Promise<Document[]> {
   const context = "cw.queryDocument";
-  const { log } = out(`CW internalGetDocuments - M patient ${patient.id}`);
+  const { log, debug } = out(`CW internalGetDocuments - M patient ${patient.id}`);
 
   const cwData = patient.data.externalData.COMMONWELL;
 
@@ -315,7 +320,7 @@ export async function internalGetDocuments({
   try {
     const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
     reportDocQueryMetric(queryStart);
-    log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
+    debug(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 
     for (const item of queryResponse.entry) {
       if (item.content?.resourceType === documentReferenceResourceType) {
@@ -554,6 +559,7 @@ async function downloadDocsAndUpsertFHIR({
     isConvertible(doc.content?.mimeType)
   ).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
   // TODO move to executeAsynchronously() from core

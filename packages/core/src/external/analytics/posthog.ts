@@ -19,23 +19,26 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   groups?: Record<string, string | number>; // Mapping of group type to group id
   sendFeatureFlags?: boolean;
   timestamp?: Date;
+  platform?: string;
 }
 
 export enum EventTypes {
+  patientCreate = "patientCreate",
   query = "query",
   webhook = "webhook",
   error = "error",
-  addressRelevance = "addressRelevance",
   aiBriefGeneration = "aiBriefGeneration",
   patientDiscovery = "patientDiscovery",
   rerunOnNewDemographics = "rerunOnNewDemographics",
   runScheduledPatientDiscovery = "runScheduledPatientDiscovery",
+  billableQuery = "billableQuery",
   documentQuery = "documentQuery",
   documentRetrieval = "documentRetrieval",
   documentConversion = "documentConversion",
   fhirDeduplication = "fhirDeduplication",
   fhirNormalization = "fhirNormalization",
   fhirHydration = "fhirHydration",
+  hl7NotificationReceived = "hl7NotificationReceived",
   consolidatedQuery = "consolidatedQuery",
   inboundPatientDiscovery = "inbound.patientDiscovery",
   inboundDocumentQuery = "inbound.documentQuery",

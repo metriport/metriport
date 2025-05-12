@@ -1,6 +1,7 @@
 import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/steps/query/patient-import-query";
-import { PatientImportQueryHandlerLocal } from "@metriport/core/command/patient-import/steps/query/patient-import-query-local";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { PatientImportQueryLocal } from "@metriport/core/command/patient-import/steps/query/patient-import-query-local";
+import { errorToString } from "@metriport/shared";
+import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -23,10 +24,9 @@ const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
-// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler(event: SQSEvent) {
-  let errorHandled = false;
-  const errorMsg = "Error processing event on " + lambdaName;
+// TODO move to capture.wrapHandler()
+export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event: SQSEvent) {
+  capture.setExtra({ event, context: lambdaName });
   const startedAt = new Date().getTime();
   try {
     const message = getSingleMessageOrFail(event.Records, lambdaName);
@@ -34,57 +34,28 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const {
-      cxId,
-      jobId,
-      patientId,
-      triggerConsolidated,
-      disableWebhooks,
-      rerunPdOnNewDemographics,
-    } = parsedBody;
+    const { cxId, jobId, rowNumber, patientId } = parsedBody;
+    capture.setExtra({ ...parsedBody });
 
-    const log = prefixedLog(`cxId ${cxId}, job ${jobId}, patientId ${patientId}`);
-    try {
-      log(
-        `Parsed: ${JSON.stringify(
-          parsedBody
-        )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
-      );
+    const log = prefixedLog(
+      `cxId ${cxId}, job ${jobId}, rowNumber ${rowNumber}, patientId ${patientId}`
+    );
+    log(
+      `Parsed: ${JSON.stringify(
+        parsedBody
+      )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
+    );
 
-      const processPatientQueryRequest: ProcessPatientQueryRequest = {
-        cxId,
-        jobId,
-        patientId,
-        triggerConsolidated,
-        disableWebhooks,
-        rerunPdOnNewDemographics,
-      };
-      const patientImportHandler = new PatientImportQueryHandlerLocal(
-        patientImportBucket,
-        waitTimeInMillis
-      );
+    const patientImportHandler = new PatientImportQueryLocal(patientImportBucket, waitTimeInMillis);
+    await patientImportHandler.processPatientQuery(parsedBody);
 
-      await patientImportHandler.processPatientQuery(processPatientQueryRequest);
-
-      const finishedAt = new Date().getTime();
-      console.log(`Done local duration: ${finishedAt - startedAt}ms`);
-    } catch (error) {
-      errorHandled = true;
-      console.log(`${errorMsg}: ${errorToString(error)}`);
-      capture.error(errorMsg, {
-        extra: { event, context: lambdaName, error },
-      });
-      throw new MetriportError(errorMsg, error, { ...parsedBody });
-    }
+    const finishedAt = new Date().getTime();
+    console.log(`Done local duration: ${finishedAt - startedAt}ms`);
   } catch (error) {
-    if (errorHandled) throw error;
-    console.log(`${errorMsg}: ${errorToString(error)}`);
-    capture.error(errorMsg, {
-      extra: { event, context: lambdaName, error },
-    });
-    throw new MetriportError(errorMsg, error);
+    console.log(`Error processing event on ${lambdaName}: ${errorToString(error)}`);
+    throw error;
   }
-}
+});
 
 function parseBody(body?: unknown): ProcessPatientQueryRequest {
   if (!body) throw new Error(`Missing message body`);
@@ -99,13 +70,25 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
   const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
 
+  const rowNumberRaw = bodyAsJson.rowNumber;
+  if (rowNumberRaw == undefined) throw new Error(`Missing rowNumber`);
+  if (typeof rowNumberRaw !== "number") throw new Error(`Invalid rowNumber`);
+
   const patientIdRaw = bodyAsJson.patientId;
   if (!patientIdRaw) throw new Error(`Missing patientId`);
   if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
 
+  const dataPipelineRequestIdRaw = bodyAsJson.dataPipelineRequestId;
+  if (!dataPipelineRequestIdRaw) throw new Error(`Missing dataPipelineRequestId`);
+  if (typeof dataPipelineRequestIdRaw !== "string") {
+    throw new Error(`Invalid dataPipelineRequestId`);
+  }
+
   const cxId = cxIdRaw;
   const jobId = jobIdRaw;
+  const rowNumber = rowNumberRaw;
   const patientId = patientIdRaw;
+  const dataPipelineRequestId = dataPipelineRequestIdRaw;
   const triggerConsolidated = triggerConsolidatedRaw;
   const disableWebhooks = disableWebhooksRaw;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw;
@@ -113,7 +96,9 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   return {
     cxId,
     jobId,
+    rowNumber,
     patientId,
+    dataPipelineRequestId,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,

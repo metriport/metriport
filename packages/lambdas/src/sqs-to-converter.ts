@@ -1,4 +1,6 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { buildConversionResultHandler } from "@metriport/core/command/conversion-result/conversion-result-factory";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import {
   FhirConverterParams,
   FhirExtension,
@@ -20,7 +22,6 @@ import {
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
 import { initPostHog } from "@metriport/core/external/analytics/posthog";
-import { isHydrationEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
@@ -29,19 +30,13 @@ import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64"
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import {
-  MetriportError,
-  errorToString,
-  executeWithNetworkRetries,
-  getEnvVarOrFail,
-} from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, getEnvVarOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
-import { apiClient } from "./shared/oss-api";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -51,12 +46,17 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
-const apiUrl = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const postHogSecretName = getEnvVarOrFail("POST_HOG_API_KEY_SECRET");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
+
+const conversionResultHandler = buildConversionResultHandler();
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
@@ -68,7 +68,6 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
-const ossApi = apiClient(apiUrl);
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 const HYDRATION_TIMEOUT_MS = 5_000;
@@ -100,252 +99,240 @@ type EventBody = {
   documentExtension: FhirExtension;
 };
 
-// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 // TODO: 2502 - Migrate most of the logic to the core to simplify the lambda handler as much as possible
-export async function handler(event: SQSEvent) {
+
+export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
   const postHog = initPostHog(postHogApiKey, "lambda");
-  try {
-    // Process messages from SQS
-    const records = event.Records;
-    if (!records || records.length < 1) {
-      console.log(`No records, discarding this event: ${JSON.stringify(event)}`);
-      return;
-    }
-    if (records.length > 1) {
-      capture.message("Got more than one message from SQS", {
-        extra: {
-          event,
-          context: lambdaName,
-          additional: `This lambda is supposed to run w/ only 1 message per batch, got ${records.length} (still processing them all)`,
-        },
-      });
-    }
-    console.log(`Processing ${records.length} records...`);
+  // Process messages from SQS
+  const records = event.Records;
+  if (!records || records.length < 1) {
+    console.log(`No records, discarding this event: ${JSON.stringify(event)}`);
+    return;
+  }
+  if (records.length > 1) {
+    capture.message("Got more than one message from SQS", {
+      extra: {
+        event,
+        context: lambdaName,
+        additional: `This lambda is supposed to run w/ only 1 message per batch, got ${records.length} (still processing them all)`,
+      },
+    });
+  }
+  console.log(`Processing ${records.length} records...`);
 
-    for (const [i, message] of records.entries()) {
-      // Process one record from the SQS message
-      console.log(`Record ${i}, messageId: ${message.messageId}`);
-      if (!message.messageAttributes) throw new Error(`Missing message attributes`);
-      if (!message.body) throw new Error(`Missing message body`);
-      const attrib = message.messageAttributes;
-      const cxId = attrib.cxId?.stringValue;
-      const patientId = attrib.patientId?.stringValue;
-      const jobId = attrib.jobId?.stringValue;
-      const medicalDataSource = attrib.source?.stringValue;
-      if (!cxId) throw new Error(`Missing cxId`);
-      if (!patientId) throw new Error(`Missing patientId`);
-      const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
-      const lambdaParams = { cxId, patientId, jobId, source: medicalDataSource };
-      try {
-        log(`Body: ${message.body}`);
-        const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
-        const metrics: Metrics = {};
+  for (const [i, message] of records.entries()) {
+    // Process one record from the SQS message
+    console.log(`Record ${i}, messageId: ${message.messageId}`);
+    if (!message.messageAttributes) throw new Error(`Missing message attributes`);
+    if (!message.body) throw new Error(`Missing message body`);
+    const attrib = message.messageAttributes;
+    const cxId = attrib.cxId?.stringValue;
+    const patientId = attrib.patientId?.stringValue;
+    const jobId = attrib.jobId?.stringValue;
+    const medicalDataSource = attrib.source?.stringValue;
+    const converterUrl = attrib.serverUrl?.stringValue;
+    const unusedSegments = attrib.unusedSegments?.stringValue;
+    const invalidAccess = attrib.invalidAccess?.stringValue;
+    if (!cxId) throw new Error(`Missing cxId`);
+    if (!patientId) throw new Error(`Missing patientId`);
+    if (!converterUrl) throw new Error(`Missing converterUrl`);
+    capture.setExtra({ cxId, patientId, jobId, source: medicalDataSource });
+    const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
+    const lambdaParams = { cxId, patientId, jobId, source: medicalDataSource };
+    try {
+      log(`Body: ${message.body}`);
+      const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
+      const metrics: Metrics = {};
 
-        log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
-        const downloadStart = Date.now();
-        const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
-        if (payloadRaw.includes("nonXMLBody")) {
-          log(
-            `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
-          );
-          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
-          continue;
-        }
-        const { documentContents: payloadNoB64, b64Attachments } =
-          removeBase64PdfEntries(payloadRaw);
+      log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
+      const downloadStart = Date.now();
+      const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
+      if (payloadRaw.includes("nonXMLBody")) {
+        log(
+          `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
+        );
+        await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        continue;
+      }
+      const { documentContents: payloadNoB64, b64Attachments } = removeBase64PdfEntries(payloadRaw);
 
+      if (b64Attachments && b64Attachments.total > 0) {
+        log(`Extracted ${b64Attachments.total} B64 attachments - will process them soon`);
+      }
+      const dealWithAttachments = async () => {
         if (b64Attachments && b64Attachments.total > 0) {
-          log(`Extracted ${b64Attachments.total} B64 attachments - will process them soon`);
+          await processAttachments({
+            b64Attachments,
+            cxId,
+            patientId,
+            filePath: s3FileName,
+            medicalDataSource,
+            s3BucketName: medicalDocumentsBucketName,
+            fhirUrl,
+          });
         }
-        const dealWithAttachments = async () => {
-          if (b64Attachments && b64Attachments.total > 0) {
-            await processAttachments({
-              b64Attachments,
-              cxId,
-              patientId,
-              filePath: s3FileName,
-              medicalDataSource,
-              s3BucketName: medicalDocumentsBucketName,
-              fhirUrl,
-            });
-          }
-        };
+      };
 
-        const payloadClean = cleanUpPayload(payloadNoB64);
-        metrics.download = {
-          duration: Date.now() - downloadStart,
-          timestamp: new Date(),
-        };
+      const payloadClean = cleanUpPayload(payloadNoB64);
+      metrics.download = {
+        duration: Date.now() - downloadStart,
+        timestamp: new Date(),
+      };
 
-        if (!payloadClean.trim().length) {
-          log(`XML document is empty, skipping... Filename: ${s3FileName}`);
-          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
-          continue;
-        }
+      if (!payloadClean.trim().length) {
+        log(`XML document is empty, skipping... Filename: ${s3FileName}`);
+        await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        continue;
+      }
 
-        const conversionStart = Date.now();
+      const conversionStart = Date.now();
 
-        const converterUrl = attrib.serverUrl?.stringValue;
-        if (!converterUrl) throw new Error(`Missing converterUrl`);
-        const unusedSegments = attrib.unusedSegments?.stringValue;
-        const invalidAccess = attrib.invalidAccess?.stringValue;
-        const converterParams: FhirConverterParams = {
-          patientId,
-          fileName: s3FileName,
-          unusedSegments,
-          invalidAccess,
-        };
+      const converterParams: FhirConverterParams = {
+        patientId,
+        fileName: s3FileName,
+        unusedSegments,
+        invalidAccess,
+      };
 
-        const preConversionFilename = buildDocumentNameForPreConversion(s3FileName);
-        const cleanFileName = buildDocumentNameForCleanConversion(s3FileName);
-        const conversionResultFilename = buildDocumentNameForFromConverter(s3FileName);
+      const preConversionFilename = buildDocumentNameForPreConversion(s3FileName);
+      const cleanFileName = buildDocumentNameForCleanConversion(s3FileName);
+      const conversionResultFilename = buildDocumentNameForFromConverter(s3FileName);
 
-        await storePreprocessedPayloadInS3({
+      await storePreprocessedPayloadInS3({
+        s3Utils,
+        payload: payloadClean,
+        bucketName: conversionResultBucketName,
+        fileName: cleanFileName,
+        context: lambdaName,
+        lambdaParams,
+        log,
+      });
+
+      const partitionedPayloads = partitionPayload(payloadClean);
+
+      const [conversionResult] = await Promise.all([
+        convertPayloadToFHIR({
+          converterUrl,
+          partitionedPayloads,
+          converterParams,
+          log,
+        }),
+        dealWithAttachments(),
+        storePartitionedPayloadsInS3({
           s3Utils,
-          payload: payloadClean,
-          bucketName: conversionResultBucketName,
-          fileName: cleanFileName,
+          partitionedPayloads,
+          conversionResultBucketName,
+          preConversionFilename,
           context: lambdaName,
           lambdaParams,
           log,
-        });
+        }),
+      ]);
 
-        const partitionedPayloads = partitionPayload(payloadClean);
+      metrics.conversion = {
+        duration: Date.now() - conversionStart,
+        timestamp: new Date(),
+      };
 
-        const [conversionResult] = await Promise.all([
-          convertPayloadToFHIR({
-            converterUrl,
-            partitionedPayloads,
-            converterParams,
-            log,
+      await storePreProcessedConversionResult({
+        s3Utils,
+        conversionResult,
+        conversionResultBucketName,
+        conversionResultFilename,
+        context: lambdaName,
+        lambdaParams,
+        log,
+      });
+
+      let hydratedBundle = conversionResult;
+      try {
+        const hydratedResult = await Promise.race<Bundle<Resource>>([
+          hydrate({
+            cxId,
+            patientId,
+            bundle: conversionResult,
           }),
-          dealWithAttachments(),
-          storePartitionedPayloadsInS3({
-            s3Utils,
-            partitionedPayloads,
-            conversionResultBucketName,
-            preConversionFilename,
-            context: lambdaName,
-            lambdaParams,
-            log,
-          }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
+          ),
         ]);
 
-        metrics.conversion = {
-          duration: Date.now() - conversionStart,
-          timestamp: new Date(),
-        };
+        hydratedBundle = hydratedResult;
 
-        await storePreProcessedConversionResult({
+        await storeHydratedConversionResult({
           s3Utils,
-          conversionResult,
-          conversionResultBucketName,
-          conversionResultFilename,
-          context: lambdaName,
-          lambdaParams,
-          log,
-        });
-
-        let hydratedBundle = conversionResult;
-
-        // TODO: 2563 - Remove this after prod testing is done
-        if (await isHydrationEnabledForCx(cxId)) {
-          try {
-            const result = await Promise.race([
-              hydrate({
-                cxId,
-                patientId,
-                bundle: conversionResult,
-              }),
-              new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
-              ),
-            ]);
-
-            hydratedBundle = result;
-
-            await storeHydratedConversionResult({
-              s3Utils,
-              bundle: hydratedBundle,
-              bucketName: conversionResultBucketName,
-              fileName: s3FileName,
-              context: lambdaName,
-              lambdaParams,
-              log,
-            });
-          } catch (error) {
-            const msg = "Failed to hydrate the converted bundle";
-            log(`${msg}: ${errorToString(error)}`);
-            capture.message(msg, {
-              extra: {
-                error,
-                cxId,
-                patientId,
-                context: lambdaName,
-                s3FileName,
-              },
-              level: "warning",
-            });
-          }
-        }
-
-        const normalizedBundle = await normalize({
-          cxId,
-          patientId,
           bundle: hydratedBundle,
-        });
-
-        await storeNormalizedConversionResult({
-          s3Utils,
-          bundle: normalizedBundle,
           bucketName: conversionResultBucketName,
           fileName: s3FileName,
           context: lambdaName,
           lambdaParams,
           log,
         });
-
-        const postProcessStart = Date.now();
-        const updatedConversionResult = postProcessBundle(
-          normalizedBundle,
-          patientId,
-          documentExtension
-        );
-        metrics.postProcess = {
-          duration: Date.now() - postProcessStart,
-          timestamp: new Date(),
-        };
-
-        // Store the conversion result in S3 and send it to the destination(s)
-        await sendConversionResult({
-          cxId,
-          patientId,
-          sourceFileName: s3FileName,
-          conversionPayload: updatedConversionResult,
-          jobId,
-          medicalDataSource,
-          log,
-        });
-
-        await cloudWatchUtils.reportMetrics(metrics);
       } catch (error) {
-        await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
-        throw error;
+        const msg = "Failed to hydrate the converted bundle. Continuing w/o hydration.";
+        log(`${msg}: ${errorToString(error)}`);
+        capture.message(msg, {
+          extra: {
+            error,
+            cxId,
+            patientId,
+            context: lambdaName,
+            s3FileName,
+          },
+          level: "warning",
+        });
+        // Intentionally not rethrowing here, we don't want to break conversion b/c of a hydration failure
       }
+
+      const normalizedBundle = await normalize({
+        cxId,
+        patientId,
+        bundle: hydratedBundle,
+      });
+
+      await storeNormalizedConversionResult({
+        s3Utils,
+        bundle: normalizedBundle,
+        bucketName: conversionResultBucketName,
+        fileName: s3FileName,
+        context: lambdaName,
+        lambdaParams,
+        log,
+      });
+
+      const postProcessStart = Date.now();
+      const updatedConversionResult = postProcessBundle(
+        normalizedBundle,
+        patientId,
+        documentExtension
+      );
+      metrics.postProcess = {
+        duration: Date.now() - postProcessStart,
+        timestamp: new Date(),
+      };
+
+      // Store the conversion result in S3 and send it to the destination(s)
+      await sendConversionResult({
+        cxId,
+        patientId,
+        sourceFileName: s3FileName,
+        conversionPayload: updatedConversionResult,
+        jobId,
+        medicalDataSource,
+        log,
+      });
+
+      await cloudWatchUtils.reportMetrics(metrics);
+    } catch (error) {
+      await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
+      throw error;
+    } finally {
+      await postHog.shutdown();
     }
-    console.log(`Done`);
-  } catch (error) {
-    const msg = "Error processing event on " + lambdaName;
-    console.log(`${msg}: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: { event, context: lambdaName, error },
-    });
-    throw new MetriportError(msg);
-  } finally {
-    await postHog.shutdown();
   }
-}
+  console.log(`Done`);
+});
 
 async function convertPayloadToFHIR({
   converterUrl,
@@ -477,8 +464,11 @@ async function sendConversionResult({
   );
 
   log(`Sending result info to the API`);
-  await ossApi.internal.notifyApi(
-    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
-    log
-  );
+  await conversionResultHandler.notifyApi({
+    cxId,
+    patientId,
+    jobId,
+    source: medicalDataSource,
+    status: "success",
+  });
 }

@@ -4,6 +4,7 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { PatientSettingsData } from "@metriport/core/domain/patient-settings";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util";
@@ -14,7 +15,7 @@ import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { PatientWithIdentifiers, attachPatientIdentifiers, getPatientByDemo } from "./get-patient";
+import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
 import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
 
@@ -84,6 +85,20 @@ export async function createPatient({
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
   const newPatient = await PatientModel.create(patientCreate);
+
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.patientCreate,
+    properties: {
+      patientId: newPatient.id,
+      facilityId,
+      rerunPdOnNewDemographics,
+      runPd,
+      forceCommonwell,
+      forceCarequality,
+    },
+  });
+
   const fhirPatient = toFHIR(newPatient);
 
   await Promise.all([
