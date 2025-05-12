@@ -4,6 +4,8 @@ import {
   ConsolidatedSnapshotResponse,
 } from "@metriport/core/command/consolidated/get-snapshot";
 import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
+import { initPostHog } from "@metriport/core/external/analytics/posthog";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
@@ -17,6 +19,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const apiUrl = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("BUCKET_NAME");
+const postHogSecretName = getEnvOrFail("POST_HOG_API_KEY_SECRET");
 const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
 
 // Call this before reading FFs
@@ -30,9 +33,13 @@ FeatureFlags.init(region, featureFlagsTableName);
 export async function handler(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<ConsolidatedSnapshotResponse | void> {
+  const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
+  const postHog = initPostHog(postHogApiKey, "lambda");
+
   const { patient, requestId, resources, dateFrom, dateTo } = params;
   const conversionType = params.isAsync ? params.conversionType : undefined;
   const { log } = out(`cx ${patient.cxId}, patient ${patient.id}, req ${requestId}`);
+
   try {
     log(
       `Running with dateFrom: ${dateFrom}, dateTo: ${dateTo}, conversionType: ${conversionType}` +
@@ -54,5 +61,7 @@ export async function handler(
       capture.error(msg, { extra: { filters, error } });
     }
     throw error;
+  } finally {
+    await postHog.shutdown();
   }
 }

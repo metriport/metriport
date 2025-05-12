@@ -62,8 +62,8 @@ export async function lookupMultipleCodes(
   ) as CodeSystemLookupOutput[];
 
   const metadata = {
-    numParams: params.length,
-    numFound: data.length,
+    numParameters: params.length,
+    codesFound: data.length,
     lookupDuration: duration,
   };
 

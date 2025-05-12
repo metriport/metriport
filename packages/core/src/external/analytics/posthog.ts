@@ -1,6 +1,11 @@
+import { errorToString } from "@metriport/shared";
 import { PostHog } from "posthog-node";
+import { out } from "../../util";
 import { Config } from "../../util/config";
+import { MetriportError } from "../../util/error/metriport-error";
 
+const GROUP_TYPE = "customer";
+const { log } = out("posthog-analytics");
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
 export interface IdentifyMessageV1 {
   distinctId: string;
@@ -15,37 +20,6 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   sendFeatureFlags?: boolean;
   timestamp?: Date;
   platform?: string;
-}
-
-const defaultPostHogApiKey = Config.getPostHogApiKey();
-const groupType = "customer";
-
-export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
-  const apiKey = postApiKey ?? defaultPostHogApiKey;
-
-  if (!apiKey) return;
-
-  const posthog = new PostHog(apiKey);
-
-  params.properties = {
-    ...(params.properties ? { ...params.properties } : undefined),
-    environment: Config.getEnvType(),
-    platform: params.platform ?? "oss-api",
-  };
-  params.groups = { [groupType]: params.distinctId };
-  posthog.capture(params);
-
-  return posthog;
-}
-
-export async function analyticsAsync(params: EventMessageV1, postApiKey?: string) {
-  const posthog = analytics(params, postApiKey);
-
-  if (!posthog) return;
-
-  // Needed to send requests to PostHog in lambda
-  // https://posthog.com/docs/libraries/node#using-in-a-short-lived-process-like-aws-lambda
-  await posthog.shutdown();
 }
 
 export enum EventTypes {
@@ -73,4 +47,74 @@ export enum EventTypes {
 
 export enum EventErrMessage {
   no_access = "no access",
+}
+
+// TODO: 2731 - Create helper functions to create analytics events
+
+class PostHogAnalytics {
+  private static instance: PostHogAnalytics;
+  private client?: PostHog;
+  private platform: "oss-api" | "lambda";
+
+  private constructor(apiKey: string, platform: "oss-api" | "lambda") {
+    this.client = new PostHog(apiKey);
+    this.platform = platform;
+  }
+
+  /**
+   * Initialize PostHog analytics - should be called once on API startup or Lambda init
+   */
+  static init(apiKey: string, platform: "oss-api" | "lambda"): PostHogAnalytics {
+    if (!this.instance) {
+      this.instance = new PostHogAnalytics(apiKey, platform);
+    }
+    return this.instance;
+  }
+
+  static getInstance(): PostHogAnalytics {
+    if (!this.instance) {
+      throw new MetriportError("PostHog instance not initialized - call init() first");
+    }
+    return this.instance;
+  }
+
+  capture(params: EventMessageV1): void {
+    if (!this.client) return;
+
+    const enrichedParams = {
+      ...params,
+      properties: {
+        ...(params.properties ?? {}),
+        environment: Config.getEnvType(),
+        platform: this.platform,
+      },
+      groups: { [GROUP_TYPE]: params.distinctId },
+    };
+
+    this.client.capture(enrichedParams);
+  }
+
+  async shutdown(): Promise<void> {
+    // Necessary for calls within an AWS Lambda
+    await this.client?.shutdown();
+  }
+}
+
+/**
+ * Initialize PostHog analytics - should be called once on API startup or Lambda init
+ */
+export function initPostHog(apiKey: string, platform: "oss-api" | "lambda"): PostHogAnalytics {
+  PostHogAnalytics.init(apiKey, platform);
+  return PostHogAnalytics.getInstance();
+}
+
+/**
+ * Capture a single analytics event
+ */
+export function analytics(params: EventMessageV1): void {
+  try {
+    PostHogAnalytics.getInstance().capture(params);
+  } catch (error) {
+    log(`Failed to capture analytics: ${errorToString(error)}`);
+  }
 }

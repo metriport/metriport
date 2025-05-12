@@ -70,7 +70,12 @@ export async function createConsolidatedFromConversions({
   );
 
   log(`Deduplicating consolidated bundle...`);
-  const deduped = await deduplicate({ cxId, patientId, bundle: withDups });
+  const deduped = await deduplicate({
+    cxId,
+    patientId,
+    bundle: withDups,
+  });
+
   log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);

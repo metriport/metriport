@@ -16,7 +16,8 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
-import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { getConfig } from "./shared/config";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
@@ -25,6 +26,7 @@ import { isSandbox } from "./shared/util";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
+const posthogEnvVarName = "POST_HOG_API_KEY_SECRET";
 const pollingBuffer = Duration.seconds(30);
 
 interface LambdasNestedStackProps extends NestedStackProps {
@@ -53,6 +55,7 @@ type GenericConsolidatedLambdaProps = {
   alarmAction: SnsAction | undefined;
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
+  secrets?: Secrets;
 };
 
 type ConsolidatedLambdaProps = Omit<GenericConsolidatedLambdaProps, "name" | "entry" | "memory">;
@@ -160,6 +163,7 @@ export class LambdasNestedStack extends NestedStack {
       config: props.config,
       featureFlagsTable: props.featureFlagsTable,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
+      secrets: props.secrets,
       apiNotifierQueue: conversionResultNotifierQueue,
       alarmSnsAction: props.alarmAction,
     });
@@ -171,11 +175,13 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       envType: props.config.environmentType,
+      secrets: props.secrets,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
     });
+
     this.fhirToBundleCountLambda = this.setupFhirBundleCountLambda({
       lambdaLayers: this.lambdaLayers,
       vpc: props.vpc,
@@ -596,11 +602,14 @@ export class LambdasNestedStack extends NestedStack {
     conversionsBucket,
     sentryDsn,
     envType,
+    secrets,
     alarmAction,
     featureFlagsTable,
     bedrock,
   }: GenericConsolidatedLambdaProps): Lambda {
+    const config = getConfig();
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
+    const posthogSecretKeyName = config.analyticsSecretNames?.[posthogEnvVarName];
 
     const theLambda = createLambda({
       stack: this,
@@ -622,6 +631,9 @@ export class LambdasNestedStack extends NestedStack {
           AI_BRIEF_MODEL_ID: bedrock?.modelId,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(posthogSecretKeyName && {
+          [posthogEnvVarName]: posthogSecretKeyName,
+        }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 6144,
@@ -634,6 +646,7 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket.grantReadWrite(theLambda);
     conversionsBucket.grantRead(theLambda);
 
+    if (secrets && posthogSecretKeyName) secrets[posthogEnvVarName]?.grantRead(theLambda);
     featureFlagsTable.grantReadData(theLambda);
 
     // Always add the bedrock policy to the lambda, regardless of whether bedrock is defined or not

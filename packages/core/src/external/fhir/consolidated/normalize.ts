@@ -1,7 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes, analytics } from "../../analytics/posthog";
 import { normalizeFhir } from "../normalization/normalize-fhir";
 
 export async function normalize({
@@ -18,18 +18,19 @@ export async function normalize({
 
   const normalizedBundle = normalizeFhir(bundle);
 
+  // TODO: 2731 - Create and use helper functions to create analytics events for Posthog
   const duration = elapsedTimeFromNow(startedAt);
   const metrics: EventMessageV1 = {
     distinctId: cxId,
     event: EventTypes.fhirNormalization,
     properties: {
       patientId: patientId,
-      bundleLength: normalizedBundle.entry?.length,
+      bundleSize: normalizedBundle.entry?.length,
       duration,
     },
   };
-  log(`Finished normalization in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
-  await analyticsAsync(metrics);
+  log(`Finished normalization in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
+  analytics(metrics);
   return normalizedBundle;
 }

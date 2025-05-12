@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else.
+import { initPostHog } from "@metriport/core/external/analytics/posthog";
 import { capture } from "@metriport/core/util";
 import { sleep } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
@@ -25,9 +26,11 @@ dayjs.extend(duration);
 
 const app: Application = express();
 const version = Config.getVersion();
+const defaultPostHogApiKey = Config.getPostHogApiKey();
 
 // Must be before routes
 initSentry(app);
+initPostHog(defaultPostHogApiKey, "oss-api");
 
 app.use(helmet()); // needs to come before any route declaration, including cors()
 app.use(express.json({ limit: "20mb" }));

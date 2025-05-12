@@ -2,7 +2,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { deduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes, analytics } from "../../analytics/posthog";
 
 export async function deduplicate({
   cxId,
@@ -18,6 +18,8 @@ export async function deduplicate({
   const dedupedBundle = deduplicateFhir(bundle, cxId, patientId);
 
   const duration = elapsedTimeFromNow(startedAt);
+
+  // TODO: 2731 - Create and use helper functions to create analytics events for Posthog
   const metrics: EventMessageV1 = {
     distinctId: cxId,
     event: EventTypes.fhirDeduplication,
@@ -28,8 +30,8 @@ export async function deduplicate({
       duration,
     },
   };
-  log(`Finished deduplication in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
-  await analyticsAsync(metrics);
+  log(`Finished deduplication in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
+  analytics(metrics);
   return dedupedBundle;
 }

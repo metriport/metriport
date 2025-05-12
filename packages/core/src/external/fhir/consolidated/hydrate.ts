@@ -1,7 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
-import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
+import { EventMessageV1, EventTypes, analytics } from "../../analytics/posthog";
 import { hydrateFhir } from "../hydration/hydrate-fhir";
 
 export async function hydrate({
@@ -16,12 +16,13 @@ export async function hydrate({
   const { log } = out(`Hydrate. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
 
+  // TODO: 2731 - Create and use helper functions to create analytics events for Posthog
   const metrics: EventMessageV1 = {
     distinctId: cxId,
     event: EventTypes.fhirHydration,
     properties: {
       patientId: patientId,
-      bundleLength: bundle.entry?.length,
+      bundleSize: bundle.entry?.length,
     },
   };
 
@@ -36,6 +37,7 @@ export async function hydrate({
   }
 
   log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
-  await analyticsAsync(metrics);
+  analytics(metrics);
+
   return hydratedBundle;
 }

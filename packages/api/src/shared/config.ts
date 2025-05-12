@@ -37,6 +37,10 @@ export class Config {
     return getEnvVarOrFail("AWS_REGION");
   }
 
+  static getPostHogApiKey(): string {
+    return getEnvVarOrFail("POST_HOG_API_KEY_SECRET");
+  }
+
   static getLbTimeoutInMillis(): number | undefined {
     const timeoutAsString = getEnvVar("LB_TIMEOUT_IN_MILLIS");
     if (timeoutAsString) return parseInt(timeoutAsString);

@@ -21,14 +21,16 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
-import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { initPostHog } from "@metriport/core/external/analytics/posthog";
+import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, getEnvVarOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
@@ -45,6 +47,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
+const postHogSecretName = getEnvVarOrFail("POST_HOG_API_KEY_SECRET");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
@@ -99,6 +102,8 @@ type EventBody = {
 // TODO: 2502 - Migrate most of the logic to the core to simplify the lambda handler as much as possible
 
 export const handler = capture.wrapHandler(async (event: SQSEvent) => {
+  const postHogApiKey = await getSecretValueOrFail(postHogSecretName, region);
+  const postHog = initPostHog(postHogApiKey, "lambda");
   // Process messages from SQS
   const records = event.Records;
   if (!records || records.length < 1) {
@@ -322,6 +327,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     } catch (error) {
       await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
       throw error;
+    } finally {
+      await postHog.shutdown();
     }
   }
   console.log(`Done`);
