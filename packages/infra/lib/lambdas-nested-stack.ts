@@ -725,7 +725,7 @@ export class LambdasNestedStack extends NestedStack {
     const envType = config.environmentType;
 
     const rosterUploadLambdas: Lambda[] = [];
-    if (config.hl7Notification.hieConfigs) {
+    if (config.hl7Notification?.hieConfigs) {
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
