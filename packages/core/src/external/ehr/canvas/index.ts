@@ -40,6 +40,8 @@ import {
 import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { z } from "zod";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
@@ -60,6 +62,8 @@ import {
   MakeRequestParamsInEhr,
 } from "../shared";
 
+dayjs.extend(duration);
+
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
 }
@@ -69,6 +73,7 @@ const canvasDateFormat = "YYYY-MM-DD";
 const canvasNoteTitle = "Metriport Chart Import";
 const canvasNoteTypeName = "Chart review";
 const canvasNoteStatusForWriting = "NEW";
+const utcToEstOffset = dayjs.duration(-5, "hours");
 export type CanvasEnv = string;
 
 export const supportedCanvasDiffResources = [
@@ -575,9 +580,10 @@ class CanvasApi {
         n.currentState === canvasNoteStatusForWriting
     );
     if (note) {
-      const noteCreatedAt = buildDayjs(note.datetimeOfService);
+      const noteCreatedAtEst = buildDayjs(note.datetimeOfService).add(utcToEstOffset);
+      const nowEst = buildDayjs().add(utcToEstOffset);
       const noteCreatedToday =
-        noteCreatedAt.format("YYYY-MM-DD") === buildDayjs().format("YYYY-MM-DD");
+        noteCreatedAtEst.format("YYYY-MM-DD") === nowEst.format("YYYY-MM-DD");
       if (noteCreatedToday) return note;
     }
     const newNote = await this.createNote({
