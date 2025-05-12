@@ -296,11 +296,10 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 }
       );
     } catch (error) {
-      const { details, code, status } = getNetworkErrorDetails(error);
+      const { code, status } = getNetworkErrorDetails(error);
       const additionalInfo = {
         cwReferenceHeader: this.cwApi.lastReferenceHeader,
         documentLocation: location,
-        details,
         code,
         status,
       };
