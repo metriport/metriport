@@ -6,6 +6,7 @@ import { BadRequestError } from "../error/bad-request";
 dayjs.extend(utc);
 
 export const ISO_DATE = "YYYY-MM-DD";
+export const AMERICAN_DATE = "MM/DD/YYYY";
 
 /** @see https://day.js.org/docs/en/parse/is-valid  */
 export function isValidISODate(date: string): boolean {
@@ -16,10 +17,15 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
   return date ? isValidISODate(date) : true;
 }
 
-export function validateDateOfBirth(date: string): boolean {
-  const parsedDate = buildDayjs(date);
-  if (!parsedDate.isValid()) return false;
-  return validateDateIsAfter1900(parsedDate.format(ISO_DATE));
+export function isValidAmericanDate(date: string): boolean {
+  return buildDayjs(date, AMERICAN_DATE, true).isValid();
+}
+
+export function validateDateOfBirthSafe(date: string): boolean {
+  if (date.length !== 10) return false;
+  if (!isValidAmericanDate(date)) return false;
+  if (!isValidISODate(date)) return false;
+  return validateIsPastOrPresentSafe(date) && validateDateIsAfter1900Safe(date);
 }
 
 export function validateIsPastOrPresent(date: string): boolean {
@@ -28,25 +34,43 @@ export function validateIsPastOrPresent(date: string): boolean {
   }
   return true;
 }
+
 export function validateIsPastOrPresentSafe(date: string): boolean {
-  if (buildDayjs(date).isAfter(buildDayjs())) return false;
+  const dateToCheck = buildDayjs(date);
+  if (!dateToCheck.isValid()) return false;
+  const now = buildDayjs();
+  return dateToCheck.isSame(now) || dateToCheck.isBefore(now);
+}
+
+export function validateIsAfter1900(date: string): boolean {
+  if (!validateDateIsAfter1900Safe(date)) {
+    throw new BadRequestError(`Date can't be before 1900`, undefined, { date });
+  }
   return true;
 }
 
-export function validateDateIsAfter1900(date: string): boolean {
-  if (!isValidISODate(date)) return false;
-  const yearStr = date.substring(0, 4);
-  const year = Number(yearStr);
-  return year >= 1900;
+export function validateDateIsAfter1900Safe(date: string): boolean {
+  const dateToCheck = buildDayjs(date);
+  if (!dateToCheck.isValid()) return false;
+  const date19000101 = buildDayjs("1900-01-01");
+  return dateToCheck.isSame(date19000101) || dateToCheck.isAfter(date19000101);
 }
 
 export function validateDateRange(start: string, end: string): boolean {
-  if (buildDayjs(start).isAfter(end)) {
+  if (!validateDateRangeSafe(start, end)) {
     throw new BadRequestError(`Invalid date range: 'start' must be before 'end'`, undefined, {
       start,
       end,
     });
   }
+  return true;
+}
+
+export function validateDateRangeSafe(start: string, end: string): boolean {
+  const dateToCheckStart = buildDayjs(start);
+  const dateToCheckEnd = buildDayjs(end);
+  if (!dateToCheckStart.isValid() || !dateToCheckEnd.isValid()) return false;
+  if (dateToCheckStart.isAfter(dateToCheckEnd)) return false;
   return true;
 }
 

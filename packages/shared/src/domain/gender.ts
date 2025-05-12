@@ -1,3 +1,5 @@
+import { BadRequestError } from "../error/bad-request";
+
 export type GenderAtBirth = "F" | "M" | "O" | "U";
 
 export function normalizeGenderSafe(gender: string): "F" | "M" | "O" | "U" | undefined {
@@ -16,6 +18,8 @@ export function normalizeGenderSafe(gender: string): "F" | "M" | "O" | "U" | und
 
 export function normalizeGender(gender: string): GenderAtBirth {
   const genderOrUndefined = normalizeGenderSafe(gender);
-  if (!genderOrUndefined) throw new Error("Invalid gender");
+  if (!genderOrUndefined) {
+    throw new BadRequestError("Invalid gender", undefined, { gender });
+  }
   return genderOrUndefined;
 }
