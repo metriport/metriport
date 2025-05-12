@@ -35,7 +35,7 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { reportMetric } from "../../aws/cloudwatch";
-import { ingestIntoSearchEngine } from "../../aws/opensearch";
+import { ingestIntoSearchEngine } from "@metriport/core/external/opensearch/file/ingest";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { cwToFHIR } from "../../fhir/document";
@@ -708,7 +708,7 @@ async function downloadDocsAndUpsertFHIR({
               }),
               ingestIntoSearchEngine(
                 patient,
-                fhirDocRef,
+                fhirDocRef.id,
                 {
                   key: file.key,
                   bucket: file.bucket,

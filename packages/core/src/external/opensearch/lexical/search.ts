@@ -11,6 +11,7 @@ import { buildBundleEntry } from "../../fhir/shared/bundle";
 import { SearchResult } from "../index-based-on-resource";
 import { searchDocuments } from "../search-documents";
 import { OpenSearchLexicalSearcherDirect } from "./lexical-searcher-direct";
+
 /**
  * Performs a lexical search on a patient's consolidated resources in OpenSearch
  * and returns the resources from consolidated that match the search results.

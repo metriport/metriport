@@ -1,15 +1,15 @@
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { out } from "../../util/log";
-import { makeS3Client } from "../aws/s3";
-import { genericStopWords, htmlStopWords } from "./cda";
+import { out } from "../../../util/log";
+import { makeS3Client } from "../../aws/s3";
+import { genericStopWords, htmlStopWords } from "../cda";
 import {
   IngestRequest,
   OpenSearchFileIngestor,
   OpenSearchFileIngestorConfig,
 } from "./file-ingestor";
-import { IndexFields } from "./index-based-on-file";
+import { IndexFields } from "../index-based-on-file";
 
 dayjs.extend(duration);
 

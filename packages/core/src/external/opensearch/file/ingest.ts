@@ -1,24 +1,24 @@
-import { errorToString } from "@metriport/core/util/error/shared";
-import { capture } from "@metriport/core/util/notifications";
-import { Patient } from "@metriport/core/domain/patient";
-import { DocumentReferenceWithId } from "../fhir/document";
-import { makeSearchServiceIngest } from "../opensearch/file-search-connector-factory";
+import { Patient } from "../../../domain/patient";
+import { errorToString } from "../../../util/error/shared";
+import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
+import { makeSearchServiceIngest } from "./file-search-connector-factory";
 
 export async function ingestIntoSearchEngine(
   patient: Pick<Patient, "id" | "cxId">,
-  fhirDoc: DocumentReferenceWithId,
+  entryId: string,
   file: {
     key: string;
     bucket: string;
     contentType: string | undefined;
   },
   requestId: string,
-  log = console.log
+  log = out(`ingestIntoSearchEngine`).log
 ): Promise<void> {
   const openSearch = makeSearchServiceIngest();
   if (!openSearch.isIngestible({ contentType: file.contentType, fileName: file.key })) {
     log(
-      `Skipping ingestion of doc ${fhirDoc.id} / file ${file.key} into OpenSearch: not ingestible`
+      `Skipping ingestion of entry ${entryId} / file ${file.key} into OpenSearch: not ingestible`
     );
     return;
   }
@@ -26,14 +26,14 @@ export async function ingestIntoSearchEngine(
     await openSearch.ingest({
       cxId: patient.cxId,
       patientId: patient.id,
-      entryId: fhirDoc.id,
+      entryId: entryId,
       s3FileName: file.key,
       s3BucketName: file.bucket,
       requestId,
     });
   } catch (error) {
-    const msg = `Error ingesting doc into OpenSearch`;
-    log(`${msg}. Document ID: ${fhirDoc.id}, file key: ${file.key}: ${errorToString(error)}`);
+    const msg = `Error ingesting file into OpenSearch`;
+    log(`${msg}. Entry ID: ${entryId}, file key: ${file.key}: ${errorToString(error)}`);
     capture.message(msg, {
       extra: {
         context: `ingestIntoSearchEngine`,

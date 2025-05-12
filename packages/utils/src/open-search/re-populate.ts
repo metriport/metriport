@@ -3,7 +3,7 @@ dotenv.config();
 // Keep dotenv import and config before everything else
 import { DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
-import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
+import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file/file-ingestor-direct";
 import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { isCommonwellExtension } from "@metriport/core/external/commonwell/extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";

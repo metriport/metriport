@@ -1,6 +1,6 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
-import { FileIngestorSQSPayload } from "@metriport/core/external/opensearch/file-ingestor-sqs";
+import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file/file-ingestor-direct";
+import { FileIngestorSQSPayload } from "@metriport/core/external/opensearch/file/file-ingestor-sqs";
 import { errorToString, executeWithRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import dayjs from "dayjs";

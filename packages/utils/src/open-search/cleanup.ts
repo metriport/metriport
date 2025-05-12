@@ -2,7 +2,7 @@
 import {
   OpenSearchFileIngestorDirect,
   OpenSearchFileIngestorDirectConfig,
-} from "@metriport/core/external/opensearch/file-ingestor-direct";
+} from "@metriport/core/external/opensearch/file/file-ingestor-direct";
 import * as fs from "fs";
 
 /**
