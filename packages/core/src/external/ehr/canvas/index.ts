@@ -8,7 +8,7 @@ import {
   Medication,
   MedicationStatement,
   Patient as PatientFhir,
-  Practitioner,
+  Practitioner as PractitionerFhir,
 } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -17,6 +17,10 @@ import {
   AppointmentListResponse,
   appointmentListResponseSchema,
   canvasClientJwtTokenResponseSchema,
+  Note,
+  NoteListResponse,
+  noteListResponseSchema,
+  noteSchema,
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
@@ -29,8 +33,15 @@ import {
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
+import {
+  Practitioner,
+  practitionerSchema,
+} from "@metriport/shared/interface/external/ehr/practitioner";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { z } from "zod";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
 import { BundleType, isResourceDiffBundleType } from "../bundle/bundle-shared";
@@ -43,9 +54,14 @@ import {
   ApiConfig,
   fetchBundleUsingTtl,
   formatDate,
+  getConditionIcd10Coding,
+  getConditionStartDate,
+  getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
+
+dayjs.extend(duration);
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -53,6 +69,10 @@ interface CanvasApiConfig extends ApiConfig {
 
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
+const canvasNoteTitle = "Metriport Chart Import";
+const canvasNoteTypeName = "Chart review";
+const canvasNoteStatusForWriting = "NEW";
+const utcToEstOffset = dayjs.duration(-5, "hours");
 export type CanvasEnv = string;
 
 export const supportedCanvasResources = [
@@ -72,6 +92,14 @@ export function isSupportedCanvasResource(
 ): resourceType is SupportedCanvasResource {
   return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
 }
+
+const problemStatusesMap = new Map<string, string>();
+problemStatusesMap.set("active", "active");
+problemStatusesMap.set("relapse", "active");
+problemStatusesMap.set("recurrence", "active");
+problemStatusesMap.set("remission", "resolved");
+problemStatusesMap.set("resolved", "resolved");
+problemStatusesMap.set("inactive", "resolved");
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -170,7 +198,7 @@ class CanvasApi {
     }
   }
 
-  async getPractitioner(name: string): Promise<Practitioner> {
+  async getPractitionerLegacy(name: string): Promise<PractitionerFhir> {
     const response = await this.handleAxiosRequest(() =>
       this.axiosInstanceFhirApi.get(
         `Practitioner?name=${name}&include-non-scheduleable-practitioners=true`
@@ -194,7 +222,7 @@ class CanvasApi {
     return response.data.entry[0].resource;
   }
 
-  async createNote({
+  async createNoteLegacy({
     patientKey,
     providerKey,
     practiceLocationKey,
@@ -230,7 +258,7 @@ class CanvasApi {
     );
   }
 
-  async createCondition({
+  async createConditionLegacy({
     condition,
     patientId,
     practitionerId,
@@ -377,6 +405,321 @@ class CanvasApi {
       useFhir: true,
     });
     return patient;
+  }
+
+  async getPractitioner({
+    cxId,
+    patientId,
+    practitionerId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+  }): Promise<Practitioner> {
+    const { debug } = out(
+      `Canvas getPractitioner - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const practitionerUrl = `/Practitioner/${practitionerId}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId };
+    const practitioner = await this.makeRequest<Practitioner>({
+      cxId,
+      patientId,
+      s3Path: "practitioner",
+      method: "GET",
+      url: practitionerUrl,
+      schema: practitionerSchema,
+      additionalInfo,
+      debug,
+      useFhir: true,
+    });
+    return practitioner;
+  }
+
+  async createNote({
+    cxId,
+    patientId,
+    practitionerId,
+    practiceLocationId,
+    title,
+    noteType,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    practiceLocationId: string;
+    title: string;
+    noteType: string;
+  }): Promise<Note> {
+    const { debug } = out(
+      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} practiceLocationId ${practiceLocationId}`
+    );
+    const noteUrl = "notes/v1/Note";
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+      title,
+      noteType,
+    };
+    const data = {
+      title,
+      noteTypeName: noteType,
+      patientKey: patientId,
+      providerKey: practitionerId,
+      practiceLocationKey: practiceLocationId,
+      encounterStartTime: buildDayjs().toISOString(),
+    };
+
+    const note = await this.makeRequest<Note>({
+      cxId,
+      patientId,
+      s3Path: "create-note",
+      method: "POST",
+      url: noteUrl,
+      data,
+      schema: noteSchema,
+      additionalInfo,
+      headers: { "content-type": "application/json" },
+      debug,
+    });
+    return note;
+  }
+
+  async listNotes({
+    cxId,
+    patientId,
+    practitionerId,
+    noteType,
+    fromDate,
+    toDate,
+    orderDec = false,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    noteType: string;
+    fromDate: Date;
+    toDate: Date;
+    orderDec?: boolean;
+  }): Promise<Note[]> {
+    const { debug } = out(
+      `Canvas listNotes - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const params = {
+      note_type_name: noteType,
+      patient_key: patientId,
+      provider_key: practitionerId,
+      datetime_of_service__gte: fromDate.toISOString(),
+      datetime_of_service__lte: toDate.toISOString(),
+      limit: "1000",
+      ordering: orderDec ? "-datetime_of_service" : "datetime_of_service",
+    };
+    const urlParams = new URLSearchParams(params);
+    const noteUrl = `notes/v1/Note?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      practitionerId,
+      noteType,
+      fromDate: fromDate.toISOString(),
+      toDate: toDate.toISOString(),
+    };
+    async function paginateNotes(
+      api: CanvasApi,
+      url: string | null | undefined,
+      acc: Note[] | undefined = []
+    ): Promise<Note[]> {
+      if (!url) return acc;
+      const notesListResponse = await api.makeRequest<NoteListResponse>({
+        cxId,
+        patientId,
+        s3Path: "notes",
+        method: "GET",
+        url,
+        schema: noteListResponseSchema,
+        additionalInfo,
+        headers: { "content-type": "application/json" },
+        debug,
+      });
+      acc.push(...(notesListResponse.results ?? []));
+      const nextUrl = notesListResponse.next;
+      return paginateNotes(api, nextUrl, acc);
+    }
+    const notes = await paginateNotes(this, noteUrl);
+    return notes;
+  }
+
+  async getOrCreateMetriportImportNote({
+    cxId,
+    patientId,
+    practitionerId,
+    practiceLocationId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    practiceLocationId: string;
+  }): Promise<Note> {
+    const notes = await this.listNotes({
+      cxId,
+      patientId,
+      practitionerId,
+      noteType: canvasNoteTypeName,
+      fromDate: buildDayjs().subtract(1, "day").toDate(),
+      toDate: buildDayjs().toDate(),
+      orderDec: true,
+    });
+    const note = notes.find(
+      n =>
+        n.title === canvasNoteTitle &&
+        n.practiceLocationKey === practiceLocationId &&
+        n.currentState === canvasNoteStatusForWriting
+    );
+    if (note) {
+      const noteCreatedAtEst = buildDayjs(note.datetimeOfService).add(utcToEstOffset);
+      const nowEst = buildDayjs().add(utcToEstOffset);
+      const noteCreatedToday =
+        noteCreatedAtEst.format("YYYY-MM-DD") === nowEst.format("YYYY-MM-DD");
+      if (noteCreatedToday) return note;
+    }
+    const newNote = await this.createNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+      title: canvasNoteTitle,
+      noteType: canvasNoteTypeName,
+    });
+    return newNote;
+  }
+
+  async getPractitionerPrimaryLocation({
+    cxId,
+    patientId,
+    practitionerId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+  }): Promise<string> {
+    const practitioner = await this.getPractitioner({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId };
+    if (!practitioner.extension) {
+      throw new BadRequestError(
+        "Practitioner does not have a primary location",
+        undefined,
+        additionalInfo
+      );
+    }
+    const primaryLocation = practitioner.extension.find(
+      e =>
+        e.url ===
+        "http://schemas.canvasmedical.com/fhir/extensions/practitioner-primary-practice-location"
+    );
+    if (!primaryLocation) {
+      throw new BadRequestError(
+        "Practitioner does not have a primary location",
+        undefined,
+        additionalInfo
+      );
+    }
+    const valueReference = primaryLocation.valueReference;
+    if (!valueReference) {
+      throw new BadRequestError(
+        "Practitioner primary location value reference is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    if (!valueReference.type || valueReference.type !== "Location") {
+      throw new BadRequestError(
+        "Practitioner primary location type is missing or is not a location",
+        undefined,
+        additionalInfo
+      );
+    }
+    if (!valueReference.reference) {
+      throw new BadRequestError(
+        "Practitioner primary location reference is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    const locationId = valueReference.reference.split("/")[1];
+    if (!locationId) {
+      throw new BadRequestError(
+        "Practitioner primary location ID is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    return locationId;
+  }
+
+  async createCondition({
+    cxId,
+    patientId,
+    practitionerId,
+    condition,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    condition: Condition;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createCondition - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      conditionId: condition.id,
+    };
+    const formattedCondition = this.formatCondition(condition, additionalInfo);
+    const practiceLocationId = await this.getPractitionerPrimaryLocation({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const note = await this.getOrCreateMetriportImportNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+    });
+    const noteId = note.noteKey;
+    const conditionUrl = `/Condition`;
+    formattedCondition.subject = { reference: `Patient/${patientId}` };
+    formattedCondition.recorder = { reference: `Practitioner/${practitionerId}` };
+    formattedCondition.extension = [
+      ...(formattedCondition.extension ?? []),
+      {
+        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+        valueId: noteId,
+      },
+    ];
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: `fhir/condition/${additionalInfo.conditionId}`,
+      method: "POST",
+      url: conditionUrl,
+      data: { ...formattedCondition },
+      schema: z.undefined(),
+      additionalInfo: { ...additionalInfo, noteId },
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
   }
 
   async getBundleByResourceType({
@@ -561,6 +904,7 @@ class CanvasApi {
     schema,
     additionalInfo,
     debug,
+    emptyResponse = false,
     useFhir = false,
   }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
@@ -578,6 +922,7 @@ class CanvasApi {
       schema,
       additionalInfo,
       debug,
+      emptyResponse,
     });
   }
 
@@ -647,6 +992,71 @@ class CanvasApi {
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, canvasDateFormat);
+  }
+
+  private formatCondition(
+    condition: Condition,
+    additionalInfo: Record<string, string | undefined>
+  ): Condition {
+    const formattedCondition: Condition = {
+      resourceType: "Condition",
+      ...(condition.id ? { id: condition.id } : {}),
+      ...(condition.subject ? { subject: condition.subject } : {}),
+      ...(condition.recorder ? { recorder: condition.recorder } : {}),
+      ...(condition.meta ? { meta: condition.meta } : {}),
+      ...(condition.extension ? { extension: condition.extension } : {}),
+    };
+    const icd10Coding = getConditionIcd10Coding(condition);
+    if (!icd10Coding) {
+      throw new BadRequestError("No ICD-10 code found for condition", undefined, additionalInfo);
+    }
+    if (!icd10Coding.code) {
+      throw new BadRequestError("No code found for ICD-10 coding", undefined, additionalInfo);
+    }
+    if (!icd10Coding.display) {
+      throw new BadRequestError("No display found for ICD-10 coding", undefined, additionalInfo);
+    }
+    formattedCondition.code = {
+      coding: [
+        {
+          code: icd10Coding.code,
+          system: "http://hl7.org/fhir/sid/icd-10-cm",
+          display: icd10Coding.display,
+        },
+      ],
+    };
+    const startDate = getConditionStartDate(condition);
+    const formattedStartDate = formatDate(startDate, canvasDateFormat);
+    if (!formattedStartDate) {
+      throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
+    }
+    formattedCondition.onsetDateTime = formattedStartDate;
+    const conditionStatus = getConditionStatus(condition);
+    const problemStatus = conditionStatus
+      ? problemStatusesMap.get(conditionStatus.toLowerCase())
+      : undefined;
+    if (!problemStatus) {
+      throw new BadRequestError("No problem status found for condition", undefined, additionalInfo);
+    }
+    formattedCondition.clinicalStatus = {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          code: problemStatus,
+        },
+      ],
+    };
+    formattedCondition.category = [
+      {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/condition-category",
+            code: "encounter-diagnosis",
+          },
+        ],
+      },
+    ];
+    return formattedCondition;
   }
 }
 
