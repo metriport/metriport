@@ -433,7 +433,7 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
-    // Grante read to medical document bucket set on the api-stack
+    // Grant read to medical document bucket set on the api-stack
     ownProps.ehrBundleBucket.grantWrite(lambda);
 
     return { lambda, queue };
