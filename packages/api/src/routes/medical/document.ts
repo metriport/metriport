@@ -1,10 +1,11 @@
 import { UploadDocumentResult } from "@metriport/api-sdk";
+import { generateSearchSummary } from "@metriport/core/command/search-summary/create";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { searchDocuments } from "@metriport/core/external/opensearch/search-documents";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
-import { generateSearchSummary } from "@metriport/core/command/search-summary/create";
+import { optionalDateSchema } from "@metriport/shared/common/date";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
@@ -13,7 +14,6 @@ import { downloadDocument } from "../../command/medical/document/document-downlo
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import {} from "../../command/medical/patient/update-hie-opt-out";
 import ForbiddenError from "../../errors/forbidden";
 import {
   composeDocumentReference,
@@ -25,12 +25,11 @@ import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
 import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
-import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
-import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { bundleSchema } from "./schemas/fhir";
+import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
 const region = Config.getAWSRegion();
