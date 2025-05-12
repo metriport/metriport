@@ -259,13 +259,17 @@ export function getConditionStartDate(condition: Condition): string | undefined 
   return condition.onsetDateTime ?? condition.onsetPeriod?.start;
 }
 
+const qualifierSuffix = "(qualifier value)";
+
 export function getConditionStatus(condition: Condition): string | undefined {
   const statusFromCoding = (condition.clinicalStatus?.coding ?? []).flatMap(coding => {
     const code = coding?.display ?? coding?.code;
     if (!code) return [];
     return [code];
   });
-  return condition.clinicalStatus?.text ?? statusFromCoding[0];
+  const status = condition.clinicalStatus?.text ?? statusFromCoding[0];
+  if (status) return status.replace(qualifierSuffix, "").trim();
+  return undefined;
 }
 
 /**
