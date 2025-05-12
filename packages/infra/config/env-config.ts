@@ -238,6 +238,7 @@ type EnvConfigBase = {
   };
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
   };
   ehrIntegration?: {
     athenaHealth: {

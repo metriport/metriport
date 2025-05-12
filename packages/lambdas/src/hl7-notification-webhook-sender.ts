@@ -16,6 +16,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const bucketName = getEnvOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
 const apiUrl = getEnvOrFail("API_URL");
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent): Promise<void> => {
   const params = getSingleMessageOrFail(event.Records, lambdaName);
   if (!params) {

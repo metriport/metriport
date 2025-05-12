@@ -59,21 +59,6 @@ export async function processOutboundDocumentQueryResps({
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
     const { successCount, failureCount } = getOutboundDocQuerySuccessFailureCount(response);
 
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.documentQuery,
-      properties: {
-        requestId,
-        patientId,
-        hie: MedicalDataSource.CAREQUALITY,
-        duration,
-        documentCount: docRefs.length,
-        successCount,
-        failureCount,
-        ...contentTypeCounts,
-      },
-    });
-
     const responsesWithDocsToDownload = await getRespWithDocsToDownload({
       cxId,
       patientId,
@@ -90,6 +75,23 @@ export async function processOutboundDocumentQueryResps({
     ).length;
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentQuery,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.CAREQUALITY,
+        duration,
+        documentCount: docRefs.length,
+        docsToDownloadCount: docsToDownload.length,
+        convertibleCount: convertibleDocCount,
+        successCount,
+        failureCount,
+        ...contentTypeCounts,
+      },
+    });
 
     if (docsToDownload.length === 0) {
       log(`No new documents to download.`);
@@ -141,9 +143,6 @@ export async function processOutboundDocumentQueryResps({
     await storeInitDocRefInFHIR(docsToDownload, cxId, patientId, log);
 
     const outboundDocumentQueryResults = await replaceDqUrlWithDrUrl({
-      patientId,
-      requestId,
-      cxId,
       responsesWithDocsToDownload,
       log,
     });
@@ -348,15 +347,9 @@ async function addMetriportDocRefID({
 }
 
 async function replaceDqUrlWithDrUrl({
-  patientId,
-  requestId,
-  cxId,
   responsesWithDocsToDownload,
   log,
 }: {
-  patientId: string;
-  requestId: string;
-  cxId: string;
   responsesWithDocsToDownload: OutboundDocumentQueryResp[];
   log: typeof console.log;
 }): Promise<OutboundDocumentQueryResp[]> {
@@ -370,15 +363,6 @@ async function replaceDqUrlWithDrUrl({
       if (!gateway) {
         const msg = `Gateway not found - Doc Retrieval`;
         log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
-        capture.message(msg, {
-          extra: {
-            context: `cq.dq.getCQDirectoryEntry`,
-            patientId,
-            requestId,
-            cxId,
-            gateway: outboundDocumentQueryResp.gateway,
-          },
-        });
         return;
       } else if (!gateway.urlDR) {
         log(`Gateway ${gateway.id} has no DR URL, skipping...`);

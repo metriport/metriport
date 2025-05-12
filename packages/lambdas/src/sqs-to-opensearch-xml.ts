@@ -41,7 +41,7 @@ const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace
 
 type EventBody = FileIngestorSQSPayload;
 
-// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
+// TODO move to capture.wrapHandler()
 export async function handler(event: SQSEvent) {
   try {
     // Process messages from SQS

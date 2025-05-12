@@ -226,6 +226,16 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
+    const fhirDocRefs = await downloadDocsAndUpsertFHIR({
+      patient,
+      facilityId,
+      documents: cwDocuments,
+      forceDownload,
+      ignoreDocRefOnFHIRServer,
+      ignoreFhirConversionAndUpsert,
+      requestId,
+    });
+
     const duration = elapsedTimeFromNow(startedAt);
     const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
@@ -241,16 +251,6 @@ export async function queryAndProcessDocuments({
         documentCount: cwDocuments.length,
         ...contentTypeCounts,
       },
-    });
-
-    const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-      patient,
-      facilityId,
-      documents: cwDocuments,
-      forceDownload,
-      ignoreDocRefOnFHIRServer,
-      ignoreFhirConversionAndUpsert,
-      requestId,
     });
 
     log(`Finished processing ${fhirDocRefs.length} documents.`);
@@ -559,6 +559,7 @@ async function downloadDocsAndUpsertFHIR({
     isConvertible(doc.content?.mimeType)
   ).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
   // TODO move to executeAsynchronously() from core

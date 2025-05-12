@@ -1,15 +1,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import {
-  HieConfig,
-  Hl7v2RosterConfig,
-  // SftpConfig,
-} from "@metriport/core/command/hl7v2-subscriptions/types";
-import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { USState } from "@metriport/shared";
-import { getEnvVarOrFail } from "../../../api/src/shared/config";
+import { HieConfig, Hl7v2RosterConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { Hl7v2Subscription } from "@metriport/core/domain/patient-settings";
+import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { getEnvVarOrFail, USState } from "@metriport/shared";
 
 const region = getEnvVarOrFail("AWS_REGION");
 const lambdaName = getEnvVarOrFail("HL7V2_ROSTER_UPLOAD_LAMBDA_NAME");
