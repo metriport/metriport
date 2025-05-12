@@ -1,5 +1,8 @@
 name: Deploy - Staging
 
+permissions:
+  contents: read
+
 on:
   push: # a commit to the specified branches, if any
     branches:
