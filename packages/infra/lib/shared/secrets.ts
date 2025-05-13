@@ -34,6 +34,9 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.ehrIntegration?.healthie.secrets
       ? buildSecrets(scope, config.ehrIntegration.healthie.secrets)
       : undefined),
+    ...(config.hl7Notification?.secrets
+      ? buildSecrets(scope, config.hl7Notification?.secrets)
+      : undefined),
   };
   return secrets;
 }
