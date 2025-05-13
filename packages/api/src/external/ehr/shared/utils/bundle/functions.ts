@@ -18,14 +18,14 @@ import {
 export async function validateAndPrepareBundleFetchOrRefresh({
   ehr,
   cxId,
-  patientId,
+  ehrPatientId,
   resourceType,
-}: Pick<FetchBundleParams, "ehr" | "cxId" | "patientId" | "resourceType">): Promise<
+}: Pick<FetchBundleParams, "ehr" | "cxId" | "ehrPatientId" | "resourceType">): Promise<
   Pick<FetchedBundlePreSignedUrls, "resourceTypes"> & { metriportPatientId: string }
 > {
   const patientMapping = await getPatientMappingOrFail({
     cxId,
-    externalId: patientId,
+    externalId: ehrPatientId,
     source: ehr,
   });
   const metriportPatientId = patientMapping.patientId;

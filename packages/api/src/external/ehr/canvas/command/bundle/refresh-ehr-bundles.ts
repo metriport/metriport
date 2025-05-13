@@ -4,14 +4,14 @@ import { createCanvasClient } from "../../shared";
 export async function refreshEhrBundles({
   cxId,
   practiceId,
-  patientId,
+  ehrPatientId,
   metriportPatientId,
   resourceType,
 }: RefreshEhrBundleParamsForClient): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId });
   await api.getBundleByResourceType({
     cxId,
-    canvasPatientId: patientId,
+    canvasPatientId: ehrPatientId,
     metriportPatientId,
     resourceType,
     useCachedBundle: false,

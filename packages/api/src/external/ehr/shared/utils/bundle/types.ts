@@ -6,7 +6,7 @@ type BaseBundleParams = {
   ehr: EhrSources;
   cxId: string;
   practiceId: string;
-  patientId: string;
+  ehrPatientId: string;
   resourceType?: string;
 };
 

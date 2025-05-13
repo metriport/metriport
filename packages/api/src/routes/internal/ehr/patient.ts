@@ -40,7 +40,7 @@ router.post(
     const jobId = await startCreateResourceDiffBundlesJob({
       ehr,
       cxId,
-      patientId,
+      ehrPatientId: patientId,
       practiceId,
     });
     return res.status(httpStatus.OK).json(jobId);
@@ -76,7 +76,7 @@ router.get(
     const bundle = await getLatestResourceDiffBundlesJobPayload({
       ehr,
       cxId,
-      patientId,
+      ehrPatientId: patientId,
       practiceId,
       bundleType,
     });
@@ -115,7 +115,7 @@ router.get(
     const bundle = await getResourceDiffBundlesJobPayload({
       ehr,
       cxId,
-      patientId,
+      ehrPatientId: patientId,
       practiceId,
       bundleType,
       jobId,
@@ -183,8 +183,8 @@ router.post(
     await refreshEhrBundles({
       ehr,
       cxId,
+      ehrPatientId: patientId,
       practiceId,
-      patientId,
       resourceType,
     });
     return res.sendStatus(httpStatus.OK);

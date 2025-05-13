@@ -87,7 +87,7 @@ router.post(
       ehr: EhrSources.canvas,
       cxId,
       practiceId: canvasPracticeId,
-      patientId: canvasPatientId,
+      ehrPatientId: canvasPatientId,
     });
     return res.status(httpStatus.OK).json(jobId);
   })
@@ -112,8 +112,8 @@ router.get(
     const bundle = await getLatestResourceDiffBundlesJobPayload({
       ehr: EhrSources.canvas,
       cxId,
-      patientId: canvasPatientId,
       practiceId: canvasPracticeId,
+      ehrPatientId: canvasPatientId,
       bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
     });
     return res.status(httpStatus.OK).json(bundle);
@@ -141,8 +141,8 @@ router.get(
     const bundle = await getResourceDiffBundlesJobPayload({
       ehr: EhrSources.canvas,
       cxId,
-      patientId: canvasPatientId,
       practiceId: canvasPracticeId,
+      ehrPatientId: canvasPatientId,
       jobId,
       bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
     });

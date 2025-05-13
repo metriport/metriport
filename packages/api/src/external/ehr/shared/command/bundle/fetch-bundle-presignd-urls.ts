@@ -16,7 +16,7 @@ import {
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
- * @param patientId - The patient id of the EHR patient.
+ * @param ehrPatientId - The patient id of the EHR patient.
  * @param resourceType - The resource type to fetch. Optional, all supported resource types will be fetched if not provided.
  * @param bundleType - The bundle type to fetch. Optional, the EHR bundle will be fetched if not provided.
  * @param jobId - The job id of the resource diff bundles job. Required for fetching resource diffs bundles. Ignored for EHR bundles.
@@ -26,7 +26,7 @@ export async function fetchBundlePreSignedUrls({
   ehr,
   cxId,
   practiceId,
-  patientId,
+  ehrPatientId,
   resourceType,
   bundleType,
   jobId,
@@ -38,7 +38,7 @@ export async function fetchBundlePreSignedUrls({
   const { metriportPatientId, resourceTypes } = await validateAndPrepareBundleFetchOrRefresh({
     ehr,
     cxId,
-    patientId,
+    ehrPatientId,
     resourceType,
   });
   const preSignedUrls: string[] = [];
@@ -48,7 +48,7 @@ export async function fetchBundlePreSignedUrls({
       ehr,
       cxId,
       practiceId,
-      patientId,
+      ehrPatientId,
       resourceType,
       metriportPatientId,
       bundleType,

@@ -17,7 +17,7 @@ import {
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
- * @param patientId - The patient id of the EHR patient.
+ * @param ehrPatientId - The patient id of the EHR patient.
  * @param jobId - The job id of the job.
  * @param bundleType - The type of resource diff bundle to fetch.
  * @returns resource diff bundles job payload with data if completed
@@ -27,7 +27,7 @@ export async function getResourceDiffBundlesJobPayload({
   ehr,
   cxId,
   practiceId,
-  patientId,
+  ehrPatientId,
   jobId,
   bundleType,
 }: GetResourceDiffBundlesJobPayloadParams): Promise<ResourceDiffBundlesJobPayload> {
@@ -36,7 +36,7 @@ export async function getResourceDiffBundlesJobPayload({
     const data = await fetchBundlePreSignedUrls({
       ehr,
       cxId,
-      patientId,
+      ehrPatientId,
       practiceId,
       bundleType,
       jobId,
@@ -52,7 +52,7 @@ export async function getResourceDiffBundlesJobPayload({
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
- * @param patientId - The patient id of the EHR patient.
+ * @param ehrPatientId - The patient id of the EHR patient.
  * @param bundleType - The type of resource diff bundle to fetch.
  * @returns resource diff bundles job data payload with data if completed or undefined if no job is found
  */
@@ -60,14 +60,14 @@ export async function getLatestResourceDiffBundlesJobPayload({
   ehr,
   cxId,
   practiceId,
-  patientId,
+  ehrPatientId,
   bundleType,
 }: Omit<GetResourceDiffBundlesJobPayloadParams, "jobId">): Promise<
   ResourceDiffBundlesJobPayload | undefined
 > {
   const patientMapping = await getPatientMappingOrFail({
     cxId,
-    externalId: patientId,
+    externalId: ehrPatientId,
     source: ehr,
   });
   const metriportPatientId = patientMapping.patientId;
@@ -75,7 +75,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
     cxId,
     patientId: metriportPatientId,
     jobType: getCreateResourceDiffBundlesJobType(ehr),
-    jobGroupId: patientId,
+    jobGroupId: ehrPatientId,
   });
   if (!job) return undefined;
   if (job.status === "completed") {
@@ -83,7 +83,7 @@ export async function getLatestResourceDiffBundlesJobPayload({
       ehr,
       cxId,
       practiceId,
-      patientId,
+      ehrPatientId,
       bundleType,
       jobId: job.id,
     });

@@ -7,7 +7,7 @@ export type StartCreateResourceDiffBundlesJobParams = {
   ehr: EhrSources;
   cxId: string;
   practiceId: string;
-  patientId: string;
+  ehrPatientId: string;
   requestId?: string;
 };
 
@@ -15,7 +15,7 @@ export type GetResourceDiffBundlesJobPayloadParams = {
   ehr: EhrSources;
   cxId: string;
   practiceId: string;
-  patientId: string;
+  ehrPatientId: string;
   jobId: string;
   bundleType: ResourceDiffBundleType;
 };

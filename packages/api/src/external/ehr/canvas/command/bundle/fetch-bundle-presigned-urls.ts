@@ -4,7 +4,7 @@ import { createCanvasClient } from "../../shared";
 export async function fetchBundlePreSignedUrl({
   cxId,
   practiceId,
-  patientId,
+  ehrPatientId,
   metriportPatientId,
   resourceType,
   bundleType,
@@ -13,7 +13,7 @@ export async function fetchBundlePreSignedUrl({
   const api = await createCanvasClient({ cxId, practiceId });
   return api.getBundleByResourceTypePreSignedUrl({
     cxId,
-    canvasPatientId: patientId,
+    canvasPatientId: ehrPatientId,
     metriportPatientId,
     resourceType,
     bundleType,
