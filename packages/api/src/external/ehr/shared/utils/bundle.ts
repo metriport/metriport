@@ -42,30 +42,28 @@ export async function validateAndPrepareBundleFetchOrRefresh({
   cxId,
   patientId,
   resourceType,
-  supportedResourceTypes,
-}: Pick<FetchBundleParams, "ehr" | "cxId" | "patientId" | "resourceType"> & {
-  supportedResourceTypes: SupportedResourceType[];
-}): Promise<FetchedBundlePreSignedUrls & { metriportPatientId: string }> {
+}: Pick<FetchBundleParams, "ehr" | "cxId" | "patientId" | "resourceType">): Promise<
+  Pick<FetchedBundlePreSignedUrls, "resourceTypes"> & { metriportPatientId: string }
+> {
   const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: patientId,
     source: ehr,
   });
   const metriportPatientId = patientMapping.patientId;
+  const supportedResourceTypes = getSupportedResourcesByEhr(ehr);
   if (resourceType && !supportedResourceTypes.includes(resourceType)) {
     throw new BadRequestError("Resource type is not supported for bundle", undefined, {
       resourceType,
     });
   }
-  const preSignedUrls: string[] = [];
   const resourceTypes = resourceType ? [resourceType] : supportedResourceTypes;
-  return { preSignedUrls, resourceTypes, metriportPatientId };
+  return { resourceTypes, metriportPatientId };
 }
 
 export type BundleFunctions = {
   fetchBundlePreSignedUrl: (params: FetchBundleParamsForClient) => Promise<string | undefined>;
   refreshEhrBundle: (params: RefreshEhrBundleParamsForClient) => Promise<void>;
-  getSupportedResourceTypes: () => SupportedResourceType[];
 };
 
 const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
@@ -91,7 +89,6 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
         useCachedBundle: false,
       });
     },
-    getSupportedResourceTypes: () => getSupportedResourcesByEhr(EhrSources.canvas),
   },
   [EhrSources.athena]: undefined,
   [EhrSources.elation]: undefined,

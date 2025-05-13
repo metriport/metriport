@@ -29,12 +29,12 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
   const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
     if (patientMapping.source === EhrSources.canvas) {
-      await startCreateResourceDiffBundlesJobAtEhr({
+      startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.canvas,
         cxId,
         patientId: patientMapping.externalId,
         requestId,
-      });
+      }).catch(processAsyncError(`${EhrSources.canvas} startCreateResourceDiffBundlesJobAtEhr`));
     }
   }
 }
@@ -56,11 +56,11 @@ async function startCreateResourceDiffBundlesJobAtEhr({
   if (cxMappings.length > 1) {
     throw new MetriportError("Multiple CX mappings found", undefined, { ehr, cxId });
   }
-  startCreateResourceDiffBundlesJob({
+  await startCreateResourceDiffBundlesJob({
     ehr,
     cxId,
     practiceId: cxMapping.externalId,
     patientId,
     requestId,
-  }).catch(processAsyncError(`${ehr} createResourceDiffBundlesJob`));
+  });
 }

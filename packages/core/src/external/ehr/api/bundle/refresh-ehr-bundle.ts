@@ -3,7 +3,7 @@ import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams } from "../api-shared";
+import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
 
 export type RefreshEhrBundleParams = Omit<ApiBaseParams, "departmentId"> & {
   resourceType: SupportedResourceType;
@@ -35,8 +35,7 @@ export async function refreshEhrBundle({
   const refreshBundleUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/bundle/refresh?${queryParams.toString()}`;
   try {
     const response = await api.post(refreshBundleUrl);
-    if (!response.data) throw new Error(`No body returned from ${refreshBundleUrl}`);
-    debug(`${refreshBundleUrl} resp: ${JSON.stringify(response.data)}`);
+    validateAndLogResponse(refreshBundleUrl, response, debug);
   } catch (error) {
     const msg = "Failure while refreshing EHR bundle @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

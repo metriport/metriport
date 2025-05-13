@@ -2,7 +2,7 @@ import { errorToString, JobEntryStatus, MetriportError } from "@metriport/shared
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams } from "../api-shared";
+import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
 
 export type SetJobEntryStatusParams = Pick<ApiBaseParams, "cxId"> & {
   jobId: string;
@@ -26,8 +26,7 @@ export async function setJobEntryStatus({
   const updateJobUrl = `/internal/patient/job/${jobId}/set-entry-status?${queryParams.toString()}`;
   try {
     const response = await api.post(updateJobUrl);
-    if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);
-    debug(`${updateJobUrl} resp: ${JSON.stringify(response.data)}`);
+    validateAndLogResponse(updateJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while setting job entry status @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

@@ -2,7 +2,7 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams } from "../api-shared";
+import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
 
 export type CompleteJobParams = Pick<ApiBaseParams, "cxId"> & {
   jobId: string;
@@ -20,8 +20,7 @@ export async function completeJob({ jobId, cxId }: CompleteJobParams): Promise<v
   const completeJobUrl = `/internal/patient/job/${jobId}/complete?${queryParams.toString()}`;
   try {
     const response = await api.post(completeJobUrl);
-    if (!response.data) throw new Error(`No body returned from ${completeJobUrl}`);
-    debug(`${completeJobUrl} resp: ${JSON.stringify(response.data)}`);
+    validateAndLogResponse(completeJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while completing job @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

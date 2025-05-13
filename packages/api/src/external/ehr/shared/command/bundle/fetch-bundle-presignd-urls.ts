@@ -32,15 +32,14 @@ export async function fetchBundlePreSignedUrls({
   if (isResourceDiffBundleType(bundleType) && !jobId) {
     throw new BadRequestError("Job ID is required for resource diff bundles");
   }
-  const { fetchBundlePreSignedUrl, getSupportedResourceTypes } = getBundleFunctions(ehr);
-  const { metriportPatientId, preSignedUrls, resourceTypes } =
-    await validateAndPrepareBundleFetchOrRefresh({
-      ehr,
-      cxId,
-      patientId,
-      resourceType,
-      supportedResourceTypes: getSupportedResourceTypes(),
-    });
+  const { fetchBundlePreSignedUrl } = getBundleFunctions(ehr);
+  const { metriportPatientId, resourceTypes } = await validateAndPrepareBundleFetchOrRefresh({
+    ehr,
+    cxId,
+    patientId,
+    resourceType,
+  });
+  const preSignedUrls: string[] = [];
   let resourceTypesFound = [...resourceTypes];
   for (const resourceType of resourceTypes) {
     const clientParams: FetchBundleParamsForClient = {

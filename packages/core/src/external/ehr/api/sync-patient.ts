@@ -2,7 +2,7 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { ApiBaseParams } from "./api-shared";
+import { ApiBaseParams, validateAndLogResponse } from "./api-shared";
 
 export type SyncPatientParams = ApiBaseParams & {
   triggerDq: boolean;
@@ -38,8 +38,7 @@ export async function syncPatient({
   const syncPatientUrl = `/internal/ehr/${ehr}/patient?${queryParams.toString()}`;
   try {
     const response = await api.post(syncPatientUrl);
-    if (!response.data) throw new Error(`No body returned from ${syncPatientUrl}`);
-    debug(`${syncPatientUrl} resp: ${JSON.stringify(response.data)}`);
+    validateAndLogResponse(syncPatientUrl, response, debug);
   } catch (error) {
     const msg = "Failure while syncing patient @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

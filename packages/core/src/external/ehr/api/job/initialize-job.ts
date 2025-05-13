@@ -2,7 +2,7 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams } from "../api-shared";
+import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
 
 export type InitializeJobParams = Pick<ApiBaseParams, "cxId"> & {
   jobId: string;
@@ -20,8 +20,7 @@ export async function initializeJob({ jobId, cxId }: InitializeJobParams): Promi
   const initializeJobUrl = `/internal/patient/job/${jobId}/initialize?${queryParams.toString()}`;
   try {
     const response = await api.post(initializeJobUrl);
-    if (!response.data) throw new Error(`No body returned from ${initializeJobUrl}`);
-    debug(`${initializeJobUrl} resp: ${JSON.stringify(response.data)}`);
+    validateAndLogResponse(initializeJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while initializing job @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

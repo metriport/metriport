@@ -21,13 +21,12 @@ export async function refreshEhrBundles({
   patientId,
   resourceType,
 }: RefreshEhrBundleParams): Promise<void> {
-  const { refreshEhrBundle, getSupportedResourceTypes } = getBundleFunctions(ehr);
+  const { refreshEhrBundle } = getBundleFunctions(ehr);
   const { metriportPatientId, resourceTypes } = await validateAndPrepareBundleFetchOrRefresh({
     ehr,
     cxId,
     patientId,
     resourceType,
-    supportedResourceTypes: getSupportedResourceTypes(),
   });
   for (const resourceType of resourceTypes) {
     const clientParams: RefreshEhrBundleParamsForClient = {

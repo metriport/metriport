@@ -2,7 +2,7 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams } from "../api-shared";
+import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
 
 export type UpdateJobTotalParams = Pick<ApiBaseParams, "cxId"> & {
   jobId: string;
@@ -22,8 +22,7 @@ export async function updateJobTotal({ jobId, cxId, total }: UpdateJobTotalParam
   const updateJobUrl = `/internal/patient/job/${jobId}/update-total?${queryParams.toString()}`;
   try {
     const response = await api.post(updateJobUrl);
-    if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);
-    debug(`${updateJobUrl} resp: ${JSON.stringify(response.data)}`);
+    validateAndLogResponse(updateJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while updating job total @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
