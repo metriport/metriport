@@ -3,13 +3,15 @@ import { Config } from "../../../util/config";
 import { createWritableBuffer, SftpConfig } from "../shared";
 import { IdGenerator, createIdGenerator } from "../shared";
 
-export interface SurescriptsSftpConfig extends Partial<SftpConfig>, TransmissionConfig {}
+export interface SurescriptsSftpConfig extends Partial<SftpConfig>, TransmissionConfig {
+  usage?: "test" | "production";
+}
 
 export interface TransmissionConfig {
   senderId: string;
   senderPassword: string;
   receiverId?: string;
-  version?: string;
+  version?: "2.0";
 }
 
 export interface SftpClient {
@@ -36,7 +38,7 @@ const surescriptsPort = 22;
 const surescriptsReceiverId = "S00000000000006";
 const surescriptsVersion = "2.0";
 
-class SurescriptsSftpClient implements SftpClient {
+export class SurescriptsSftpClient implements SftpClient {
   private client: Client;
   private idGenerator: IdGenerator;
 
@@ -44,10 +46,11 @@ class SurescriptsSftpClient implements SftpClient {
   private port: number;
   private username: string;
   private password: string;
-  private senderId: string;
-  private senderPassword: string;
-  private receiverId: string;
-  private version: string;
+  senderId: string;
+  senderPassword: string;
+  receiverId: string;
+  version: "2.0";
+  usage: "test" | "production";
 
   constructor(config: SurescriptsSftpConfig) {
     this.client = new Client();
@@ -59,10 +62,10 @@ class SurescriptsSftpClient implements SftpClient {
     this.password = config.password ?? "M94WJ7CW6H";
     this.senderId = config.senderId;
     this.senderPassword = config.senderPassword;
-
+    this.usage = config.usage ?? "test";
     this.receiverId =
       config.receiverId ?? Config.getSurescriptsSftpReceiverId() ?? surescriptsReceiverId;
-    this.version = config.version ?? Config.getSurescriptsSftpVersion() ?? surescriptsVersion;
+    this.version = config.version ?? surescriptsVersion;
   }
 
   createTransmission<T extends TransmissionType>(type: T, population: string): Transmission<T> {

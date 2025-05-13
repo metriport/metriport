@@ -102,7 +102,7 @@ export const patientLoadHeaderOrder: FileFieldSchema<PatientLoadHeader> = [
 ];
 
 // These are the subsequent rows (details) of a patient load operation.
-export const patientFileLoadDetailSchema = z.object({
+export const patientLoadDetailSchema = z.object({
   recordType: z.enum(["PAT", "PNM", "PMA"]),
   recordSequenceNumber: z.number(),
   assigningAuthority: z.string().min(1).max(64),
@@ -143,7 +143,7 @@ export const patientFileLoadDetailSchema = z.object({
   data: z.array(z.any()),
 });
 
-export const patientFileLoadDetailOrder: FileFieldSchema<PatientFileLoadDetail> = [
+export const patientLoadDetailOrder: FileFieldSchema<PatientLoadDetail> = [
   {
     field: 0,
     key: "recordType",
@@ -224,7 +224,7 @@ export const patientFileLoadDetailOrder: FileFieldSchema<PatientFileLoadDetail> 
   },
 ];
 
-export type PatientFileLoadDetail = z.infer<typeof patientFileLoadDetailSchema>;
+export type PatientLoadDetail = z.infer<typeof patientLoadDetailSchema>;
 
 // Patient unload schema (another possible row in a PFL operation)
 const patientUnloadSchema = z.object({
@@ -257,8 +257,19 @@ export const patientUnloadOrder: FileFieldSchema<PatientUnload> = [
   },
 ];
 
-const patientLoadFooterSchema = z.object({
+export const patientLoadFooterSchema = z.object({
   recordType: z.enum(["TRL"]),
   totalRecords: z.number(),
 });
 export type PatientLoadFooter = z.infer<typeof patientLoadFooterSchema>;
+
+export const patientLoadFooterOrder: FileFieldSchema<PatientLoadFooter> = [
+  {
+    field: 0,
+    key: "recordType",
+  },
+  {
+    field: 1,
+    key: "totalRecords",
+  },
+];
