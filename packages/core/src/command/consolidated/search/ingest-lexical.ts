@@ -1,8 +1,12 @@
-import { Patient } from "@metriport/core/src/domain/patient";
-import { Config } from "@metriport/core/src/util/config";
+import { Patient } from "../../../domain/patient";
 import { OnBulkItemError } from "../../../external/opensearch/bulk";
+import {
+  OpenSearchLexicalSearcherDirect,
+  OpenSearchLexicalSearcherDirectConfig,
+} from "../../../external/opensearch/lexical/lexical-searcher-direct";
 import { OpenSearchTextIngestorDirect } from "../../../external/opensearch/text-ingestor-direct";
 import { out } from "../../../util";
+import { Config } from "../../../util/config";
 import { getConsolidatedAsText } from "../consolidated-get";
 
 /**
@@ -19,16 +23,15 @@ export async function ingestLexical({
 }) {
   const { log } = out(`ingestLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
-  const convertedResources = await getConsolidatedAsText({ patient });
-
   const ingestor = new OpenSearchTextIngestorDirect({
-    region: Config.getAWSRegion(),
-    endpoint: Config.getSearchEndpoint(),
-    indexName: Config.getSearchIndexName(),
-    username: Config.getSearchUsername(),
-    password: Config.getSearchPassword(),
+    ...getConfigs(),
     settings: { logLevel: "info" },
   });
+
+  const [convertedResources] = await Promise.all([
+    getConsolidatedAsText({ patient }),
+    ingestor.delete({ cxId: patient.cxId, patientId: patient.id }),
+  ]);
 
   const startedAt = Date.now();
   const resources = convertedResources.map(resource => ({
@@ -45,4 +48,22 @@ export async function ingestLexical({
   const elapsedTime = Date.now() - startedAt;
 
   log(`Ingested ${convertedResources.length} resources in ${elapsedTime} ms`);
+}
+
+/**
+ * Initialize the lexical index in OpenSearch.
+ */
+export async function initializeLexicalIndex() {
+  const searchService = new OpenSearchLexicalSearcherDirect(getConfigs());
+  await searchService.createIndexIfNotExists();
+}
+
+function getConfigs(): OpenSearchLexicalSearcherDirectConfig {
+  return {
+    region: Config.getAWSRegion(),
+    endpoint: Config.getSearchEndpoint(),
+    indexName: Config.getLexicalSearchIndexName(),
+    username: Config.getSearchUsername(),
+    password: Config.getSearchPassword(),
+  };
 }

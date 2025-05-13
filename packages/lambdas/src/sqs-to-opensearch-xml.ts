@@ -60,7 +60,7 @@ export async function handler(event: SQSEvent) {
     }
     const openSearch = new OpenSearchFileIngestorDirect({
       region,
-      endpoint: "https://" + host,
+      endpoint: host,
       indexName,
       username,
       password,

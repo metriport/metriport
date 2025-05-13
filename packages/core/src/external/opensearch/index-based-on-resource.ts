@@ -8,4 +8,12 @@ export type IndexFields = {
   [contentFieldName]: string;
 };
 
+export const indexDefinition: Record<keyof IndexFields, { type: string }> = {
+  cxId: { type: "keyword" },
+  patientId: { type: "keyword" },
+  resourceType: { type: "keyword" },
+  resourceId: { type: "keyword" },
+  content: { type: "text" },
+};
+
 export type SearchResult = Omit<IndexFields, "content">;

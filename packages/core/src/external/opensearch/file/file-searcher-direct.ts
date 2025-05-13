@@ -3,6 +3,7 @@ import { contentFieldName, OpenSearchConfigDirectAccess, OpenSearchResponse } fr
 import { out } from "../../../util";
 import { OpenSearchFileSearcher, SearchRequest } from "./file-searcher";
 import { SearchResult } from "../index-based-on-file";
+
 export type OpenSearchFileSearcherDirectConfig = OpenSearchConfigDirectAccess;
 
 export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {

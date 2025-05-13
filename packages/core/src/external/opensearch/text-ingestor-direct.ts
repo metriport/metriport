@@ -13,6 +13,7 @@ import {
 } from "./bulk";
 import { OpenSearchConfigDirectAccess } from "./index";
 import { IndexFields } from "./index-based-on-resource";
+import { createLexicalDeleteQuery } from "./lexical/lexical-search";
 
 dayjs.extend(duration);
 
@@ -31,8 +32,9 @@ const MAX_BULK_RETRIES = 3;
 // on each bulk request (~5MB)
 const bulkChunkSize = 500;
 
-type IngestRequest = IndexFields;
-type IngestRequestResource = Omit<IndexFields, "cxId" | "patientId">;
+export type IngestRequest = IndexFields;
+export type IngestRequestResource = Omit<IndexFields, "cxId" | "patientId">;
+export type DeleteRequest = Pick<IndexFields, "cxId" | "patientId">;
 
 export type IngestBulkRequest = {
   cxId: string;
@@ -186,6 +188,26 @@ export class OpenSearchTextIngestorDirect {
     debug(`${operation}ed ${resources.length} resources in ${time} ms, ${errorCount} errors`);
 
     return errorCount;
+  }
+
+  async delete({ cxId, patientId }: DeleteRequest): Promise<void> {
+    const defaultLogger = out(`ingest - ${cxId} - ${patientId}`);
+    const { log, debug } = this.getLog(defaultLogger);
+
+    const { indexName } = this.config;
+    const auth = { username: this.username, password: this.password };
+    const client = new Client({ node: this.endpoint, auth });
+
+    log(`Deleting resources from index ${indexName}...`);
+    const startedAt = Date.now();
+
+    const response = await client.deleteByQuery({
+      index: indexName,
+      body: createLexicalDeleteQuery({ cxId, patientId }),
+    });
+    const time = Date.now() - startedAt;
+    log(`Successfully deleted in ${time} milliseconds`);
+    debug(`Response: `, () => JSON.stringify(response.body));
   }
 
   private getLog(defaultLogger: ReturnType<typeof out>): ReturnType<typeof out> {

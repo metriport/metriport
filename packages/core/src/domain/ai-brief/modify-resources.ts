@@ -53,6 +53,7 @@ const REMOVE_FROM_NOTE = [
   "Minor syntax, contextual, and spelling errors may be related to the use of this software and were not intentional. If corrections are necessary, please contact provider.",
   "<content>",
   "</content>",
+  "<content/>",
   "<root>",
   "</root>",
   "&lt;",

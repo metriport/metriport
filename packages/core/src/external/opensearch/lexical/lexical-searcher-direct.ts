@@ -1,8 +1,8 @@
 import { BadRequestError } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import { out } from "../../../util";
-import { OpenSearchConfigDirectAccess, OpenSearchResponseHit, OpenSearchResponse } from "../index";
-import { SearchResult } from "../index-based-on-resource";
+import { OpenSearchConfigDirectAccess, OpenSearchResponse, OpenSearchResponseHit } from "../index";
+import { indexDefinition, SearchResult } from "../index-based-on-resource";
 import { createLexicalSearchQuery } from "./lexical-search";
 
 const defaultNumberOfResults = 100;
@@ -28,11 +28,11 @@ export class OpenSearchLexicalSearcherDirect {
     query,
     maxNumberOfResults = defaultNumberOfResults,
   }: SearchRequest): Promise<SearchResult[]> {
-    const { indexName, endpoint, username, password } = this.config;
     const { log, debug } = out(`OpenSearchLexicalSearcherDirect - cx ${cxId}, pt ${patientId}`);
 
     this.validateMaxNumberOfResults(maxNumberOfResults);
 
+    const { indexName, endpoint, username, password } = this.config;
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
@@ -77,5 +77,22 @@ export class OpenSearchLexicalSearcherDirect {
         resourceId: hit._source.resourceId,
       };
     });
+  }
+
+  async createIndexIfNotExists(): Promise<void> {
+    const { indexName, endpoint, username, password } = this.config;
+    const auth = { username, password };
+    const client = new Client({ node: endpoint, auth });
+
+    const indexExistsResp = await client.indices.exists({
+      index: indexName,
+      include_defaults: false,
+      ignore_unavailable: false,
+    });
+    const indexExists = Boolean(indexExistsResp.body);
+    if (indexExists) return;
+
+    const body = { mappings: { properties: indexDefinition } };
+    await client.indices.create({ index: indexName, body });
   }
 }

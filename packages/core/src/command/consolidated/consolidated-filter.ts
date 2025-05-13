@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import {
   ResourceTypeForConsolidation,
   SearchSetBundle,
@@ -93,12 +94,18 @@ export async function filterConsolidated(
     `Filtered by date (${dateFrom} - ${dateTo}) to ${filtered?.entry?.length} entries, checking missing refs...`
   );
 
+  const startedAtAddMissingRefs = new Date();
   const hydrated = addMissingReferencesFn(filtered, bundle, addMissingReferencesFn);
-  log(`Hydrated missing refs, the bundle now has ${hydrated?.entry?.length} entries, returning.`);
+  log(
+    `Hydrated missing refs, the bundle now has ${
+      hydrated?.entry?.length
+    } entries, returning... Took ${elapsedTimeFromNow(startedAtAddMissingRefs)}ms`
+  );
 
   return hydrated;
 }
 
+// TODO rewrite this https://linear.app/metriport/issue/ENG-279/rewrite-getreferences-too-slow
 export function addMissingReferences(
   filteredBundle: Bundle,
   originalBundle: Bundle,

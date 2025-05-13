@@ -1,14 +1,14 @@
 import { SearchSetBundle } from "@metriport/shared/medical";
-import { getConsolidatedPatientData } from "../consolidated-get";
 import { Patient } from "../../../domain/patient";
-import { out } from "../../../util";
-import { Config } from "../../../util/config";
 import { DocumentReferenceWithId } from "../../../external/fhir/document/document-reference";
 import { toFHIR as patientToFhir } from "../../../external/fhir/patient/conversion";
 import { buildBundleEntry } from "../../../external/fhir/shared/bundle";
 import { SearchResult } from "../../../external/opensearch/index-based-on-resource";
-import { searchDocuments } from "../../../external/opensearch/search-documents";
 import { OpenSearchLexicalSearcherDirect } from "../../../external/opensearch/lexical/lexical-searcher-direct";
+import { searchDocuments } from "../../../external/opensearch/search-documents";
+import { out } from "../../../util";
+import { Config } from "../../../util/config";
+import { getConsolidatedPatientData } from "../consolidated-get";
 
 /**
  * Performs a lexical search on a patient's consolidated resources in OpenSearch
@@ -99,19 +99,13 @@ async function searchOpenSearch({
   patientId: string;
   maxNumberOfResults?: number | undefined;
 }) {
-  const region = Config.getAWSRegion();
-  const endpoint = Config.getSearchEndpoint();
-  const indexName = Config.getSearchIndexName();
-  const username = Config.getSearchUsername();
-  const password = Config.getSearchPassword();
-
   // TODO eng-41 make this a factory so we can delegate the processing to a lambda
   const searchService = new OpenSearchLexicalSearcherDirect({
-    region,
-    endpoint,
-    indexName,
-    username,
-    password,
+    region: Config.getAWSRegion(),
+    endpoint: Config.getSearchEndpoint(),
+    indexName: Config.getLexicalSearchIndexName(),
+    username: Config.getSearchUsername(),
+    password: Config.getSearchPassword(),
   });
   return await searchService.search({
     query,
