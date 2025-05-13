@@ -3,9 +3,8 @@ dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getIdFromReference } from "@metriport/core/external/fhir/shared/references";
-import { sleep } from "@metriport/shared";
+import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import axios from "axios";
-import { getEnvVarOrFail } from "../../../api/src/shared/config";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
