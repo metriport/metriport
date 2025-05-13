@@ -1,226 +1,195 @@
-import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { MetriportError, USState, executeWithNetworkRetries } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
-import Client from "ssh2-sftp-client";
+import { Patient } from "../../domain/patient";
 import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { capture, out } from "../../util";
+import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import {
-  Hl7v2RosterConfig,
+  HieConfig,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
-  SftpConfig,
+  MetriportToHieFieldMapping,
+  addressFields,
 } from "./types";
+import { createScrambledId } from "./utils";
 
 const region = Config.getAWSRegion();
 
 type SubscriberRecord = Record<string, string>;
-
-type RosterGenerateProps = {
-  config: Hl7v2RosterConfig;
-  bucketName: string;
-  apiUrl: string;
-};
 
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
-function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
+export class Hl7v2RosterGenerator {
+  private readonly s3Utils: S3Utils;
+
+  constructor(private readonly apiUrl: string, private readonly bucketName: string) {
+    this.s3Utils = new S3Utils(region);
+  }
+
+  async execute(config: HieConfig): Promise<string> {
+    const { log } = out("Hl7v2RosterGenerator");
+    const { states, subscriptions } = config;
+    const loggingDetails = {
+      hieName: config.name,
+      mapping: config.mapping,
+      states,
+      subscriptions,
+    };
+
+    log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
+
+    const patients = await executeWithNetworkRetries(
+      async () => this.getAllSubscribedPatients(states, subscriptions),
+      {
+        maxAttempts: NUMBER_OF_ATTEMPTS,
+        initialDelay: BASE_DELAY.asMilliseconds(),
+        log,
+      }
+    );
+    log(`Found ${patients.length} total patients`);
+
+    if (patients.length === 0) {
+      throw new MetriportError("No patients found, skipping roster generation", {
+        extra: loggingDetails,
+      });
+    }
+
+    const convertedSubscribers = convertPatientsToHieFormat(patients, config.mapping, states);
+    const rosterCsv = this.generateCsv(convertedSubscribers);
+    log("Created CSV");
+
+    const fileName = this.buildDocumentNameForHl7v2Roster(config.name, subscriptions);
+
+    await storeInS3WithRetries({
+      s3Utils: this.s3Utils,
+      payload: rosterCsv,
+      bucketName: this.bucketName,
+      fileName,
+      contentType: CSV_MIME_TYPE,
+      log,
+      errorConfig: {
+        errorMessage: "Error uploading patient roster CSV",
+        context: "Hl7v2RosterGenerator",
+        captureParams: loggingDetails,
+        shouldCapture: true,
+      },
+    });
+
+    log("Done");
+    return rosterCsv;
+  }
+
+  private async getAllSubscribedPatients(
+    states: string[],
+    subscriptions: Hl7v2Subscription[]
+  ): Promise<Patient[]> {
+    const allSubscribers: Patient[] = [];
+    let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
+    let baseParams: Hl7v2SubscriberParams | undefined = {
+      states: states.join(","),
+      subscriptions,
+      count: NUMBER_OF_PATIENTS_PER_PAGE,
+    };
+
+    while (currentUrl) {
+      const response: AxiosResponse<Hl7v2SubscriberApiResponse> = await axios.get(currentUrl, {
+        params: baseParams,
+      });
+      baseParams = undefined;
+      allSubscribers.push(...response.data.patients);
+      currentUrl = response.data.meta.nextPage;
+    }
+    return allSubscribers;
+  }
+
+  private generateCsv(records: SubscriberRecord[]): string {
+    if (records.length === 0) return "";
+    return stringify(records, { header: true, quoted: true });
+  }
+
+  private buildDocumentNameForHl7v2Roster(
+    hieName: string,
+    subscriptions: Hl7v2Subscription[]
+  ): string {
+    const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
+    return `${todaysDate}/${hieName}/${subscriptions.join("-")}.${CSV_FILE_EXTENSION}`;
+  }
 }
 
-export function convertSubscribersToHieFormat(
-  subscribers: Hl7v2Subscriber[],
-  schema: Record<string, string>
+export function convertPatientsToHieFormat(
+  patients: Patient[],
+  mapping: MetriportToHieFieldMapping,
+  states: USState[]
 ): SubscriberRecord[] {
-  const convertToOutgoingSchema = (s: Hl7v2Subscriber) => convertSubscriberToHieFormat(s, schema);
-  return subscribers.map(convertToOutgoingSchema);
+  return patients.map(s =>
+    convertSubscriberToHieFormat(mapPatientToSubscriber(s, states), mapping)
+  );
 }
 
 export function convertSubscriberToHieFormat(
   subscriber: Hl7v2Subscriber,
-  schema: Record<string, string>
+  mapping: MetriportToHieFieldMapping
 ): SubscriberRecord {
   const result: SubscriberRecord = {};
 
-  for (const [ourField, hieField] of Object.entries(schema)) {
-    const value = _.get(subscriber, ourField);
-    if (value !== undefined) {
+  // Handle top-level fields
+  for (const [metriportSubscriberField, hieField] of Object.entries(mapping)) {
+    if (metriportSubscriberField === "address") continue; // Skip address, we'll handle it separately
+    const value = _.get(subscriber, metriportSubscriberField);
+    if (typeof hieField === "string" && value !== undefined) {
       result[hieField] = String(value);
     }
+  }
+
+  const addressMapping = mapping.address;
+
+  let addressIndex = 0;
+  for (const address of addressMapping) {
+    const currentSubscriberAddress = subscriber.address[addressIndex];
+    if (!currentSubscriberAddress) continue;
+    for (const field of addressFields) {
+      const hieField = address[field];
+      const value = _.get(currentSubscriberAddress, field);
+      if (value !== undefined) {
+        result[hieField] = String(value);
+      }
+    }
+    addressIndex++;
   }
 
   return result;
 }
 
-/**
- * TODO: Split the function into:
- *   - build roster
- *   - store on S3
- *   - send
- */
-export async function generateAndUploadHl7v2Roster({
-  config,
-  bucketName,
-  apiUrl,
-}: RosterGenerateProps): Promise<void> {
-  const { log } = out("Hl7v2RosterGenerator");
-  const { states, subscriptions, hieConfig } = config;
-  log(`Running with these configs: ${JSON.stringify(config)}`);
+export function mapPatientToSubscriber(p: Patient, states: string[]): Hl7v2Subscriber {
+  const data = p.data;
+  const addresses = data.address.filter(a => states.includes(a.state));
+  const ssn = data.personalIdentifiers?.find(id => id.type === "ssn")?.value;
+  const driversLicense = data.personalIdentifiers?.find(id => id.type === "driversLicense")?.value;
+  const phone = data.contact?.find(c => c.phone)?.phone;
+  const email = data.contact?.find(c => c.email)?.email;
+  const scrambledId = createScrambledId(p.cxId, p.id);
 
-  const subscribers = await executeWithNetworkRetries(
-    async () => getAllSubscribers(apiUrl, states, subscriptions, log),
-    {
-      maxAttempts: NUMBER_OF_ATTEMPTS,
-      initialDelay: BASE_DELAY.asMilliseconds(),
-      log,
-    }
-  );
-  log(`Found ${subscribers.length} total subscribers`);
-
-  if (subscribers.length === 0) {
-    const msg = `No subscribers found, skipping roster generation`;
-    log(msg);
-    capture.message(msg, {
-      extra: config,
-      level: "info",
-    });
-    return;
-  }
-
-  // TODO 2791: Make sure the IDs is scrambled in the underlying get-subscribers function
-  const convertedSubscribers = convertSubscribersToHieFormat(subscribers, hieConfig.schema);
-  const rosterCsv = generateCsv(convertedSubscribers);
-  log("Created CSV");
-
-  const fileName = buildDocumentNameForHl7v2Roster(hieConfig.name, subscriptions);
-  const s3Client = getS3UtilsInstance();
-
-  await storeInS3WithRetries({
-    s3Utils: s3Client,
-    payload: rosterCsv,
-    bucketName,
-    fileName,
-    contentType: CSV_MIME_TYPE,
-    log,
-    errorConfig: {
-      errorMessage: "Error uploading preprocessed CSV",
-      context: "Hl7v2RosterGenerator",
-      captureParams: config,
-      shouldCapture: true,
-    },
-  });
-
-  // TODO 2791: Uncomment when we update the SFTP configs to be fetched from the AWS secrets
-  // try {
-  //   await executeWithNetworkRetries(async () => sendViaSftp(hieConfig.sftpConfig, rosterCsv, log), {
-  //     maxAttempts: NUMBER_OF_ATTEMPTS,
-  //     initialDelay: BASE_DELAY.asMilliseconds(),
-  //     log,
-  //   });
-  // } catch (err) {
-  //   const msg = `Failed to SFTP upload HL7v2 roster`;
-  //   capture.error(msg, {
-  //     extra: {
-  //       hieConfig,
-  //       states,
-  //       subscriptions,
-  //       err,
-  //     },
-  //   });
-  // }
-  log("Done");
-  return;
-}
-
-async function getAllSubscribers(
-  apiUrl: string,
-  states: string[],
-  subscriptions: Hl7v2Subscription[],
-  log: typeof console.log
-): Promise<Hl7v2Subscriber[]> {
-  const allSubscribers: Hl7v2Subscriber[] = [];
-  let currentUrl = `${apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
-  let baseParams: Hl7v2SubscriberParams | undefined = {
-    states: states.join(","),
-    subscriptions,
-    count: NUMBER_OF_PATIENTS_PER_PAGE,
+  return {
+    id: p.id,
+    cxId: p.cxId,
+    scrambledId,
+    lastName: data.lastName,
+    firstName: data.firstName,
+    dob: data.dob,
+    genderAtBirth: data.genderAtBirth,
+    address: addresses,
+    ...(ssn ? { ssn } : undefined),
+    ...(driversLicense ? { driversLicense } : undefined),
+    ...(phone ? { phone } : undefined),
+    ...(email ? { email } : undefined),
   };
-
-  try {
-    while (currentUrl) {
-      const response = await axios.get(currentUrl, {
-        params: baseParams,
-      });
-      baseParams = undefined;
-
-      const data = response.data as Hl7v2SubscriberApiResponse;
-      allSubscribers.push(...data.patients);
-
-      currentUrl = data.meta.nextPage || "";
-      if (!currentUrl) break;
-    }
-    return allSubscribers;
-  } catch (error) {
-    const msg = `Failed to fetch ADT subscribers`;
-    log(`${msg} - err: ${errorToString(error)}`);
-    throw new MetriportError(msg, error);
-  }
-}
-
-function generateCsv(records: SubscriberRecord[]): string {
-  if (records.length === 0) return "";
-  return stringify(records, { header: true, quoted: true });
-}
-
-export async function sendViaSftp(
-  config: SftpConfig,
-  rosterCsv: string,
-  log: typeof console.log
-): Promise<void> {
-  const sftp = new Client();
-
-  try {
-    log(`[SFTP] Uploading roster to ${config.host}:${config.port}${config.remotePath}`);
-
-    await sftp.connect({
-      host: config.host,
-      port: config.port,
-      username: config.username,
-      password: config.password,
-    });
-    log(`[SFTP] Successfully established connection :)`);
-
-    const dirPath = config.remotePath.substring(0, config.remotePath.lastIndexOf("/"));
-    if (dirPath) {
-      await sftp.mkdir(dirPath, true);
-      log(`[SFTP] Successfully created/verified directory structure`);
-    }
-
-    await sftp.put(Buffer.from(rosterCsv), config.remotePath);
-    log("[SFTP] Upload successful!");
-
-    return;
-  } catch (error) {
-    log(`[SFTP] SFTP failed! ${errorToString(error)}`);
-    throw error;
-  } finally {
-    await sftp.end();
-    log(`[SFTP] Connection cleaned up.`);
-  }
-}
-
-export function buildDocumentNameForHl7v2Roster(
-  hieName: string,
-  subscriptions: Hl7v2Subscription[]
-): string {
-  const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
-  return `${todaysDate}/${hieName}/${subscriptions.join("-")}.${CSV_FILE_EXTENSION}`;
 }
