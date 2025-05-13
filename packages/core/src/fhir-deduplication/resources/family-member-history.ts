@@ -60,7 +60,12 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
     // const date = getDateFromResource(famMemberHist, "date"); // We're currently not mapping the date for FamilyMemberHistory.hbs
     if (relationship) {
       const key = JSON.stringify({ relationship, dob });
-      deduplicateWithinMap(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
+      deduplicateWithinMap({
+        dedupedResourcesMap: famMemberHistsMap,
+        dedupKey: key,
+        candidateResource: famMemberHist,
+        refReplacementMap,
+      });
     } else {
       danglingReferences.add(createRef(famMemberHist));
     }
