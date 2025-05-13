@@ -20,6 +20,9 @@ describe("AdtRosterGenerator", () => {
     scrambledId = `${cxId}_${patientId}`;
     scrambleIdMock.mockReturnValueOnce(scrambledId);
   });
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
 
   describe("convertPatientsToHieFormat", () => {
     const mockSchema = {

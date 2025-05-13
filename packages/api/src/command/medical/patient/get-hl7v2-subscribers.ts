@@ -4,6 +4,7 @@ import { out } from "@metriport/core/util/log";
 import { MetriportError, USState, errorToString } from "@metriport/shared";
 import { FindOptions, Op, Order, Sequelize, WhereOptions } from "sequelize";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
@@ -53,7 +54,7 @@ export async function getHl7v2Subscribers({
   states,
   subscriptions,
   pagination,
-}: GetHl7v2SubscribersParams): Promise<PatientModelReadOnly[]> {
+}: GetHl7v2SubscribersParams): Promise<Patient[]> {
   const { log } = out(`Get HL7v2 subscribers`);
   log(`States: ${states}, pagination params: ${JSON.stringify(pagination)}`);
   const statesString = combineStatesIntoReplacementObject(states);

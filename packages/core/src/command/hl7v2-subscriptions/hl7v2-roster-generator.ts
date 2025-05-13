@@ -40,7 +40,7 @@ export class Hl7v2RosterGenerator {
     const { states, subscriptions } = config;
     const loggingDetails = {
       hieName: config.name,
-      schema: config.schema,
+      mapping: config.mapping,
       states,
       subscriptions,
     };
@@ -63,7 +63,7 @@ export class Hl7v2RosterGenerator {
       });
     }
 
-    const convertedSubscribers = convertPatientsToHieFormat(patients, config.schema, states);
+    const convertedSubscribers = convertPatientsToHieFormat(patients, config.mapping, states);
     const rosterCsv = this.generateCsv(convertedSubscribers);
     log("Created CSV");
 
@@ -127,20 +127,22 @@ export class Hl7v2RosterGenerator {
 
 export function convertPatientsToHieFormat(
   patients: Patient[],
-  schema: MetriportToHieFieldMapping,
+  mapping: MetriportToHieFieldMapping,
   states: USState[]
 ): SubscriberRecord[] {
-  return patients.map(s => convertSubscriberToHieFormat(mapPatientToSubscriber(s, states), schema));
+  return patients.map(s =>
+    convertSubscriberToHieFormat(mapPatientToSubscriber(s, states), mapping)
+  );
 }
 
 export function convertSubscriberToHieFormat(
   subscriber: Hl7v2Subscriber,
-  schema: MetriportToHieFieldMapping
+  mapping: MetriportToHieFieldMapping
 ): SubscriberRecord {
   const result: SubscriberRecord = {};
 
   // Handle top-level fields
-  for (const [metriportSubscriberField, hieField] of Object.entries(schema)) {
+  for (const [metriportSubscriberField, hieField] of Object.entries(mapping)) {
     if (metriportSubscriberField === "address") continue; // Skip address, we'll handle it separately
     const value = _.get(subscriber, metriportSubscriberField);
     if (typeof hieField === "string" && value !== undefined) {
@@ -148,7 +150,7 @@ export function convertSubscriberToHieFormat(
     }
   }
 
-  const addressMapping = schema.address;
+  const addressMapping = mapping.address;
 
   let addressIndex = 0;
   for (const address of addressMapping) {

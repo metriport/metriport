@@ -6,7 +6,7 @@ import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 const isLocal = true;
-const configs = getEnvVarOrFail("HIE_CONFIGS");
+const configs = getEnvVarOrFail("HIE_CONFIGS"); // You can get this from the config files in metriport-internal repo
 
 /**
  * This script is used to trigger the generation and upload of the HL7v2 subscription roster to the S3 bucket.

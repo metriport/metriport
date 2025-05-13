@@ -35,7 +35,7 @@ export type HieConfig = {
   subscriptions: Hl7v2Subscription[];
   cron: string;
   sftpConfig?: SftpConfig;
-  schema: MetriportToHieFieldMapping;
+  mapping: MetriportToHieFieldMapping;
 };
 
 export type Hl7v2SubscriberParams = {
