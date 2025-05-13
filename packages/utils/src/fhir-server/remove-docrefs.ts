@@ -24,7 +24,7 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
  *  - Run the script with ts-node src/fhir-server/remove-docrefs.ts from the `package/utils` directory
  */
 
-const patientIds = [""];
+const patientIds: string[] = []; // Add patient IDs here
 
 async function deleteDocumentReferences() {
   const responses = await Promise.all(
