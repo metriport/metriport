@@ -2,8 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { getIdFromReference } from "@metriport/core/external/fhir/shared/references";
 import { sleep } from "@metriport/shared";
-import { exec } from "child_process";
+import axios from "axios";
 import { getEnvVarOrFail } from "../../../api/src/shared/config";
 
 const apiKey = getEnvVarOrFail("API_KEY");
@@ -26,8 +27,13 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 const patientIds = [""];
 
 async function deleteDocumentReferences() {
-  for (const patientId of patientIds) {
-    const docRefs = (await metriportAPI.listDocuments(patientId)).documents;
+  const responses = await Promise.all(
+    patientIds.map(patientId => metriportAPI.listDocuments(patientId))
+  );
+
+  for (const response of responses) {
+    let patientId;
+    const docRefs = response.documents;
     const documentIdSet = new Set<string>();
 
     // Find the DocRef IDs to delete
@@ -41,20 +47,17 @@ async function deleteDocumentReferences() {
     }
 
     for (const docId of [...documentIdSet]) {
-      const curl = `curl --location --request DELETE '${apiUrl}/${cxId}/DocumentReference/${docId}?_expunge=true'`;
-
-      exec(curl, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          console.error(`stderr: ${stderr}`);
-          return;
-        }
-        console.log(`Response: ${stdout}`);
-      });
+      try {
+        await axios.delete(`${apiUrl}/${cxId}/DocumentReference/${docId}?_expunge=true`);
+      } catch {
+        console.log("something went wrong with", docId);
+      }
       await sleep(500);
+    }
+
+    const docRefPatientRef = response.documents.find(d => d.subject?.reference)?.subject;
+    if (docRefPatientRef) {
+      patientId = getIdFromReference(docRefPatientRef);
     }
 
     console.log("Done with", patientId);
