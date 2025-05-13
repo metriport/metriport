@@ -7,7 +7,7 @@ export function normalizeEncounters(encounters: Encounter[], locations: Location
   return encounters.flatMap(encounter => {
     const reasons = getEncounterReason(encounter);
     const location = getEncounterLocation(encounter, locations);
-    const type = renderClassDisplay(encounter);
+    const type = getEncounterClassText(encounter);
     if (!reasons && !location && !type) return [];
 
     return encounter;
@@ -50,18 +50,19 @@ function getEncounterLocation(encounter: Encounter, locations: Location[]): stri
   return locationNames?.join(", ");
 }
 
-function renderClassDisplay(encounter: Encounter): string | undefined {
-  const isUsefulDisplay = isDisplayUseful(encounter.class?.display);
+function getEncounterClassText(encounter: Encounter): string | undefined {
+  const classDisplay = encounter.class?.display;
+  const isUsefulClassDisplay = isDisplayUseful(classDisplay);
 
-  if (encounter.class?.display && isUsefulDisplay) {
-    return normalizeDisplay(encounter.class?.display);
+  if (classDisplay && isUsefulClassDisplay) {
+    return normalizeDisplay(classDisplay);
   } else if (encounter.class?.extension) {
     const extension = encounter.class?.extension?.find(coding => {
       return coding.valueCoding?.code === encounter.class?.code;
     });
-    return extension?.valueCoding?.display
-      ? normalizeDisplay(extension.valueCoding.display)
-      : undefined;
+
+    const extDisplay = extension?.valueCoding?.display;
+    return extDisplay && isDisplayUseful(extDisplay) ? normalizeDisplay(extDisplay) : undefined;
   } else if (encounter.type) {
     const allTypeStringSet = new Set<string>();
 
@@ -70,7 +71,8 @@ function renderClassDisplay(encounter: Encounter): string | undefined {
         allTypeStringSet.add(normalizeDisplay(type.text));
       }
       type.coding?.forEach(c => {
-        if (c.display) allTypeStringSet.add(c.display);
+        if (c.display && isDisplayUseful(c.display))
+          allTypeStringSet.add(normalizeDisplay(c.display));
       });
     }
     return Array.from(allTypeStringSet).join(", ");
