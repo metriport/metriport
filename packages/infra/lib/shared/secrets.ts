@@ -14,7 +14,6 @@ export function buildSecrets(scope: Construct, secretNames: Record<string, strin
 }
 
 export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
-  console.log("FROM INSIDE GET SECRETS", config.hl7Notification?.secrets);
   const secrets: Secrets = {
     ...buildSecrets(scope, config.providerSecretNames),
     ...buildSecrets(scope, config.cwSecretNames),
