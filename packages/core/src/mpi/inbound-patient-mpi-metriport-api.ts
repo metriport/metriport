@@ -22,10 +22,13 @@ export class InboundMpiMetriportApi implements MPI {
         genderAtBirth: normalizedPatientDemo.genderAtBirth,
       },
     });
+
+    const patientsThatAreOptedIn = foundPatients.filter(patient => !patient.hieOptOut);
+
     const matchingPatients = matchPatients(
       epicMatchingAlgorithm,
       [],
-      foundPatients.map(patientToPatientMPI),
+      patientsThatAreOptedIn.map(patientToPatientMPI),
       normalizedPatientDemo,
       this.SIMILARITY_THRESHOLD
     );
