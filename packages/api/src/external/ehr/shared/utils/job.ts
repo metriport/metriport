@@ -1,7 +1,7 @@
 import { ResourceDiffBundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { PatientJobPayload } from "../../../../command/job/patient/get";
-import { FetchedBundlePreSignedUrls } from "./bundle";
+import { FetchedBundlePreSignedUrls } from "./bundle/types";
 
 export type StartCreateResourceDiffBundlesJobParams = {
   ehr: EhrSources;

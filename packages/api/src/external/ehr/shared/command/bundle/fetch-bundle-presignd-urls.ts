@@ -1,12 +1,14 @@
 import { isResourceDiffBundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { BadRequestError } from "@metriport/shared";
 import {
+  getBundleFunctions,
+  validateAndPrepareBundleFetchOrRefresh,
+} from "../../utils/bundle/functions";
+import {
   FetchBundleParams,
   FetchBundleParamsForClient,
   FetchedBundlePreSignedUrls,
-  getBundleFunctions,
-  validateAndPrepareBundleFetchOrRefresh,
-} from "../../utils/bundle";
+} from "../../utils/bundle/types";
 
 /**
  * Fetch the pre-signed URLs for the given bundle type

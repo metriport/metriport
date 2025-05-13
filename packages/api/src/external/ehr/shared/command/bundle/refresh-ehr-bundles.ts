@@ -1,9 +1,8 @@
 import {
   getBundleFunctions,
-  RefreshEhrBundleParams,
-  RefreshEhrBundleParamsForClient,
   validateAndPrepareBundleFetchOrRefresh,
-} from "../../utils/bundle";
+} from "../../utils/bundle/functions";
+import { RefreshEhrBundleParams, RefreshEhrBundleParamsForClient } from "../../utils/bundle/types";
 
 /**
  * Refresh the EHR bundle
