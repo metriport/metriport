@@ -19,7 +19,7 @@ import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
-import { Secrets } from "./shared/secrets";
+import { Secrets, buildSecrets, secretsToECS } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
@@ -728,6 +728,14 @@ export class LambdasNestedStack extends NestedStack {
 
     const rosterUploadLambdas: Lambda[] = [];
     if (config.hl7Notification?.hieConfigs) {
+      const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
+      if (!hl7ScramblerSeedSecret) {
+        throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
+      }
+
+      const hl7Secrets = secretsToECS(buildSecrets(this, config.hl7Notification.secrets));
+      console.log("hl7Secrets keys are", Object.keys(hl7Secrets));
+      console.log("hl7ScramblerSeedSecret keys are", Object.keys(hl7ScramblerSeedSecret));
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
@@ -741,6 +749,7 @@ export class LambdasNestedStack extends NestedStack {
           envVars: {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
+            ...hl7Secrets,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
           layers: [lambdaLayers.shared],
@@ -749,10 +758,6 @@ export class LambdasNestedStack extends NestedStack {
           alarmSnsAction: alarmAction,
         });
 
-        const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
-        if (!hl7ScramblerSeedSecret) {
-          throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
-        }
         hl7ScramblerSeedSecret.grantRead(lambda);
         hl7v2RosterBucket.grantReadWrite(lambda);
 
