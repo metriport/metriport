@@ -1,4 +1,9 @@
-import { errorToString, JobEntryStatus, MetriportError } from "@metriport/shared";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  JobEntryStatus,
+  MetriportError,
+} from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
@@ -25,7 +30,9 @@ export async function setJobEntryStatus({
   const queryParams = new URLSearchParams({ cxId, entryStatus });
   const updateJobUrl = `/internal/patient/job/${jobId}/set-entry-status?${queryParams.toString()}`;
   try {
-    const response = await api.post(updateJobUrl);
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(updateJobUrl);
+    });
     validateAndLogResponse(updateJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while setting job entry status @ Api";

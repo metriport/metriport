@@ -1,5 +1,10 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  executeWithNetworkRetries,
+  MetriportError,
+} from "@metriport/shared";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
@@ -49,11 +54,13 @@ export async function createOrReplaceBundle({
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
   const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, jobId });
   try {
-    await s3Utils.uploadFile({
-      bucket: s3BucketName,
-      key,
-      file: Buffer.from(JSON.stringify(bundle), "utf8"),
-      contentType: "application/json",
+    await executeWithNetworkRetries(async () => {
+      await s3Utils.uploadFile({
+        bucket: s3BucketName,
+        key,
+        file: Buffer.from(JSON.stringify(bundle), "utf8"),
+        contentType: "application/json",
+      });
     });
   } catch (error) {
     const msg = "Failure while creating or replacing bundle @ S3";

@@ -1,4 +1,9 @@
-import { errorToString, JobEntryStatus, MetriportError } from "@metriport/shared";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  JobEntryStatus,
+  MetriportError,
+} from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
@@ -36,7 +41,9 @@ export async function setResourceDiffJobEntryStatus({
   });
   const updateJobUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/diff/set-entry-status?${queryParams.toString()}`;
   try {
-    const response = await api.post(updateJobUrl);
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(updateJobUrl);
+    });
     validateAndLogResponse(updateJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while setting resource diff job entry status @ Api";

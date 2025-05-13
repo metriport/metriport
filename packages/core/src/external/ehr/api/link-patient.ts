@@ -1,4 +1,4 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
@@ -29,7 +29,9 @@ export async function linkPatient({
   });
   const linkPatientUrl = `/internal/ehr/${ehr}/patient/link?${queryParams.toString()}`;
   try {
-    const response = await api.post(linkPatientUrl);
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(linkPatientUrl);
+    });
     validateAndLogResponse(linkPatientUrl, response, debug);
   } catch (error) {
     const msg = "Failure while linking patient @ Api";

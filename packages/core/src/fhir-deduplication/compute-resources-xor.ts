@@ -19,6 +19,7 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
+import { z } from "zod";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
 import { deduplicateCompositions } from "./resources/composition";
 import { deduplicateConditions } from "./resources/condition";
@@ -42,17 +43,20 @@ import { artifactRelatedArtifactUrl } from "./shared";
  * Computes the XOR of two lists of resources.
  * @param targetResources - The target resources.
  * @param sourceResources - The source resources.
+ * @param schema - The schema of the resources. Optional, default to casting the `Resource` type.
  * @returns The XOR of the target and source resources.
  */
-export function computeResourcesXorAlongResourceType({
+export function computeResourcesXorAlongResourceType<T extends Resource>({
   targetResources,
   sourceResources,
+  schema,
 }: {
-  targetResources: Resource[];
-  sourceResources: Resource[];
+  targetResources: T[];
+  sourceResources: T[];
+  schema?: z.ZodSchema<T>;
 }): {
-  computedXorTargetResources: Resource[];
-  computedXorSourceResources: Resource[];
+  computedXorTargetResources: T[];
+  computedXorSourceResources: T[];
 } {
   if (targetResources.length < 1) {
     return { computedXorTargetResources: [], computedXorSourceResources: sourceResources };
@@ -60,11 +64,11 @@ export function computeResourcesXorAlongResourceType({
   if (sourceResources.length < 1) {
     return { computedXorTargetResources: targetResources, computedXorSourceResources: [] };
   }
-  const targetResourceIds: string[] = [];
+  const targetResourceIds: Set<string> = new Set();
   const targetResourceTypes: Set<string> = new Set();
   const targetResourcesNoDerivedFromExtension: Resource[] = [];
   for (const resource of targetResources) {
-    if (resource.id) targetResourceIds.push(resource.id);
+    if (resource.id) targetResourceIds.add(resource.id);
     targetResourceTypes.add(resource.resourceType);
     targetResourcesNoDerivedFromExtension.push(removeDerivedFromExtension(resource));
   }
@@ -73,11 +77,11 @@ export function computeResourcesXorAlongResourceType({
       targetResourceTypes: Array.from(targetResourceTypes).join(","),
     });
   }
-  const sourceResourceIds: string[] = [];
+  const sourceResourceIds: Set<string> = new Set();
   const sourceResourceTypes: Set<string> = new Set();
   const sourceResourcesNoDerivedFromExtension: Resource[] = [];
   for (const resource of sourceResources) {
-    if (resource.id) sourceResourceIds.push(resource.id);
+    if (resource.id) sourceResourceIds.add(resource.id);
     sourceResourceTypes.add(resource.resourceType);
     sourceResourcesNoDerivedFromExtension.push(removeDerivedFromExtension(resource));
   }
@@ -175,14 +179,14 @@ export function computeResourcesXorAlongResourceType({
         resourceType: targetResourceType,
       });
   }
-  const computedXorTargetResources: Resource[] = [];
-  const computedXorSourceResources: Resource[] = [];
+  const computedXorTargetResources: T[] = [];
+  const computedXorSourceResources: T[] = [];
   for (const resource of deduplicatedResources) {
     if (!resource.id || isResourceDerived(resource)) continue;
-    if (targetResourceIds.includes(resource.id)) {
-      computedXorTargetResources.push(resource);
-    } else if (sourceResourceIds.includes(resource.id)) {
-      computedXorSourceResources.push(resource);
+    if (targetResourceIds.has(resource.id)) {
+      computedXorTargetResources.push(schema ? schema.parse(resource) : (resource as T));
+    } else if (sourceResourceIds.has(resource.id)) {
+      computedXorSourceResources.push(schema ? schema.parse(resource) : (resource as T));
     }
   }
   return { computedXorTargetResources, computedXorSourceResources };

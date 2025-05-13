@@ -1,4 +1,4 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
@@ -19,7 +19,9 @@ export async function initializeJob({ jobId, cxId }: InitializeJobParams): Promi
   const queryParams = new URLSearchParams({ cxId });
   const initializeJobUrl = `/internal/patient/job/${jobId}/initialize?${queryParams.toString()}`;
   try {
-    const response = await api.post(initializeJobUrl);
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(initializeJobUrl);
+    });
     validateAndLogResponse(initializeJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while initializing job @ Api";

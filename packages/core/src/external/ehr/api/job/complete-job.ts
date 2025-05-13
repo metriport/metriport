@@ -1,4 +1,4 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
@@ -19,7 +19,9 @@ export async function completeJob({ jobId, cxId }: CompleteJobParams): Promise<v
   const queryParams = new URLSearchParams({ cxId });
   const completeJobUrl = `/internal/patient/job/${jobId}/complete?${queryParams.toString()}`;
   try {
-    const response = await api.post(completeJobUrl);
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(completeJobUrl);
+    });
     validateAndLogResponse(completeJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while completing job @ Api";

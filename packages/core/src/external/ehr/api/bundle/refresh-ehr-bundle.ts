@@ -1,4 +1,4 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
 import { Config } from "../../../../util/config";
@@ -34,7 +34,9 @@ export async function refreshEhrBundle({
   });
   const refreshBundleUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/bundle/refresh?${queryParams.toString()}`;
   try {
-    const response = await api.post(refreshBundleUrl);
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(refreshBundleUrl);
+    });
     validateAndLogResponse(refreshBundleUrl, response, debug);
   } catch (error) {
     const msg = "Failure while refreshing EHR bundle @ Api";
