@@ -1,8 +1,9 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { log as _log } from "../../util/log";
 import { uniqBy } from "lodash";
 import { isDocStatusReady } from ".";
+import { updateMetaDataForDocRef } from "../../command/consolidated/consolidated-create";
 import { Config } from "../../util/config";
+import { log as _log } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { isCarequalityExtension } from "../carequality/extension";
 import { isCommonwellExtension } from "../commonwell/extension";
@@ -44,7 +45,7 @@ export async function searchDocuments({
   }
 
   const unique = uniqBy(success, "id");
-  const ready = unique.filter(isDocStatusReady);
+  const ready = unique.filter(isDocStatusReady).map(updateMetaDataForDocRef);
   return ready;
 }
 

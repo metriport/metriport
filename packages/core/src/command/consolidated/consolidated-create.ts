@@ -211,17 +211,19 @@ export function merge(inputBundle: Bundle) {
 }
 
 function updateMetaDataForDocRefs(docRefs: DocumentReference[]): DocumentReference[] {
-  return docRefs.map(docRef => {
-    const contentWithTitle = docRef.content?.find(atch => atch.attachment?.title);
-    const sourceFile = contentWithTitle?.attachment?.title;
-    if (!sourceFile) return docRef;
+  return docRefs.map(updateMetaDataForDocRef);
+}
 
-    return {
-      ...docRef,
-      meta: {
-        ...docRef.meta,
-        source: sourceFile,
-      },
-    };
-  });
+export function updateMetaDataForDocRef<T extends DocumentReference>(docRef: T): T {
+  const contentWithTitle = docRef.content?.find(atch => atch.attachment?.title);
+  const sourceFile = contentWithTitle?.attachment?.title;
+  if (!sourceFile) return docRef;
+
+  return {
+    ...docRef,
+    meta: {
+      ...docRef.meta,
+      source: sourceFile,
+    },
+  };
 }
