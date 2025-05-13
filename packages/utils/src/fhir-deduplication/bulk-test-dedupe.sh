@@ -1,7 +1,8 @@
 #!/bin/bash
 
 SKIP_DOWNLOADS=false
-FILE_COUNT=100
+FILE_COUNT=800
+LOOKBACK_DAYS=60
 BASE_DIR=""
 
 # Function to display help
@@ -165,7 +166,6 @@ cancelation_cleanup() {
 cleanup() {
   cd $run_path
   # First send SIGTERM to all children of this script
-  rm nondeduplicated-files.tsv
   update_samples_folder_path "" 1>/dev/null 2>&1
   git checkout $featurebranch 1>/dev/null 2>&1
   popd 1>/dev/null 2>&1
@@ -187,7 +187,7 @@ update_samples_folder_path() {
 wait_and_wipe_prior_runs() {
   printf ">>> Deleting all outputs from past runs in 10s...\n"
   printf ">>> Press Ctrl+C to cancel\n"
-  sleep  10
+  sleep  0
   printf ">>> Deleting...\n"
 
   rm -rf unprocessed
@@ -205,14 +205,14 @@ wait_and_wipe_prior_runs() {
 
 # Step 1: Search for nondeduplicated files
 search_nondeduplicated_files() {
-  echo ">>> 1. Searching for nondeduplicated files in S3 from the last 2 weeks..."
+  echo ">>> 1. Searching for nondeduplicated files in S3 from the last $LOOKBACK_DAYS days..."
 
   # Start list objects query
   {
     aws s3api list-objects-v2 \
       --bucket metriport-medical-documents \
       --prefix "" \
-      --query "Contents[?LastModified>='$(date -v-14d +%Y-%m-%d)'].[Key,LastModified,Size]" \
+      --query "Contents[?LastModified>='$(date -v-"$LOOKBACK_DAYS"d +%Y-%m-%d)'].[Key,LastModified,Size]" \
       --output text \
       | grep with-dup
   } > nondeduplicated-files.tsv 2>/dev/null &
@@ -232,9 +232,11 @@ search_nondeduplicated_files() {
     sleep 0.5
   done
 
-  found_count=$(wc -l < nondeduplicated-files.tsv)
-  if [ "$found_count" -lt "$FILE_COUNT" ]; then
-      echo "WARNING: Only $found_count files found for the last 2 weeks, continuing with $found_count files"
+  export num_files_to_process=$(wc -l < nondeduplicated-files.tsv)
+  if [ "$num_files_to_process" -lt "$FILE_COUNT" ]; then
+      echo "WARNING: Only $num_files_to_process files found for the last $LOOKBACK_DAYS days, continuing with $num_files_to_process files"
+  else
+      export num_files_to_process=$FILE_COUNT
   fi
 
   echo ""
@@ -247,11 +249,12 @@ download_nondeduplicated_files() {
 
   mkdir -p unprocessed
 
-  awk '{print $1}' nondeduplicated-files.tsv | head -$found_count |  \
+  awk '{print $1}' nondeduplicated-files.tsv | head -$num_files_to_process |  \
       parallel -j 10 --bar \
       'aws s3 cp "s3://metriport-medical-documents/{}" "unprocessed/$(basename {})" >/dev/null 2>&1'
 
   downloadedcount=$(ls unprocessed | wc -l)
+  rm nondeduplicated-files.tsv
 
   echo "Download complete: $downloadedcount files downloaded to $(echo $BASE_DIR)/unprocessed/"
   echo ""
@@ -354,7 +357,7 @@ diff_master_and_featurebranch_outputs() {
       counter=$((counter + 1))
 
       printf "\r\033[K"
-      printf "Processing %d of $($found_count || $FILE_COUNT): %s" "$counter" "$basename_file"
+      printf "Processing %d of $(echo $num_files_to_process || $FILE_COUNT): %s" "$counter" "$basename_file"
 
       # Add a header for this file in the diff output
       echo "=== Diff for: $basename_file ===" >> diff_outputs.txt
@@ -390,6 +393,7 @@ pushd packages/utils/runs/bulk-test-dedupe 1>/dev/null 2>&1
 echo "###########################################################"
 echo "###       Running with params:                          ###"
 echo "###       FILE_COUNT: $FILE_COUNT                               ###"
+echo "###       LOOKBACK_DAYS: $LOOKBACK_DAYS                             ###"
 echo "###       SKIP_DOWNLOADS: $SKIP_DOWNLOADS                         ###"
 echo "###                                                     ###"
 echo "###       This script can take a long time to run!      ###"
@@ -410,6 +414,9 @@ fi
 generate_baseline_from_master
 generate_from_feature_branch
 diff_master_and_featurebranch_outputs
+
+echo ""
+echo ">>> Bulk dedupe diff complete! See the results in $run_path/diff_outputs.txt"
 
 cleanup
 exit 0
