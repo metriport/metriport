@@ -16,10 +16,10 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
-import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
-import { Secrets, buildSecrets, secretsToECS } from "./shared/secrets";
+import { Secrets } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
@@ -216,6 +216,7 @@ export class LambdasNestedStack extends NestedStack {
       this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
         lambdaLayers: this.lambdaLayers,
         vpc: props.vpc,
+        secrets: props.secrets,
         hl7v2RosterBucket,
         config: props.config,
         alarmAction: props.alarmAction,
@@ -716,20 +717,18 @@ export class LambdasNestedStack extends NestedStack {
   private setupRosterUploadLambdas(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
+    secrets: Secrets;
     hl7v2RosterBucket: s3.IBucket;
     config: EnvConfig;
     alarmAction: SnsAction | undefined;
   }): Lambda[] {
-    const { lambdaLayers, vpc, hl7v2RosterBucket, config, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, secrets, hl7v2RosterBucket, config, alarmAction } = ownProps;
     const sentryDsn = config.lambdasSentryDSN;
     const envType = config.environmentType;
 
     const rosterUploadLambdas: Lambda[] = [];
     if (config.hl7Notification?.hieConfigs) {
       const hieConfigs = config.hl7Notification.hieConfigs;
-
-      const secrets = buildSecrets(this, config.hl7Notification.secrets);
-      const ecsSecrets = secretsToECS(secrets);
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const lambda = createScheduledLambda({
@@ -742,7 +741,6 @@ export class LambdasNestedStack extends NestedStack {
           envVars: {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
-            ...ecsSecrets,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
           layers: [lambdaLayers.shared],
@@ -751,13 +749,16 @@ export class LambdasNestedStack extends NestedStack {
           alarmSnsAction: alarmAction,
         });
 
-        Object.values(secrets).forEach(secret => {
-          secret.grantRead(lambda);
-        });
+        // config.hl7Notification.secrets
+        const hl7ScramblerSeedSecretKey = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
+        const hl7ScramblerSeedSecret = secrets[hl7ScramblerSeedSecretKey];
+        if (!hl7ScramblerSeedSecret) {
+          throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
+        }
+        hl7ScramblerSeedSecret.grantRead(lambda);
+        hl7v2RosterBucket.grantReadWrite(lambda);
 
         rosterUploadLambdas.push(lambda);
-
-        hl7v2RosterBucket.grantReadWrite(lambda);
       });
     }
 
