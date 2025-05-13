@@ -6,7 +6,7 @@ import {
   buildConsolidatedBundle,
   merge,
 } from "@metriport/core/command/consolidated/consolidated-create";
-import { deduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
+import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents } from "@metriport/core/util/fs";
@@ -64,7 +64,7 @@ export async function createConsolidatedFromLocal(
   });
   console.log(`Found ${jsonFileNames.length} JSON files.`);
 
-  const withDups = buildConsolidatedBundle();
+  const bundle = buildConsolidatedBundle();
   await executeAsynchronously(
     jsonFileNames,
     async filePath => {
@@ -74,28 +74,32 @@ export async function createConsolidatedFromLocal(
         console.log(`No valid bundle found in ${filePath}, skipping`);
         return;
       }
-      merge(singleConversion).into(withDups);
+      merge(singleConversion).into(bundle);
     },
     { numberOfParallelExecutions: 10 }
   );
 
-  withDups.entry?.push(patient);
+  bundle.entry?.push(patient);
+
+  fs.writeFileSync(
+    `${outputFolderName}/consolidated_with_dups.json`,
+    JSON.stringify(bundle, null, 2)
+  );
+
+  const initialResourceCount = countResources(bundle);
+
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
-  const deduped = await deduplicate({ cxId, patientId: patient.id!, bundle: withDups });
-  const normalized = await normalize({ cxId, patientId: patient.id!, bundle: deduped });
+  await dangerouslyDeduplicate({ cxId, patientId: patient.id!, bundle });
+  const normalized = await normalize({ cxId, patientId: patient.id!, bundle });
 
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();
   console.log(`Total time: ${duration} ms / ${durationMin} min`);
   console.log(`File Location: ${outputFolderName}`);
 
-  fs.writeFileSync(
-    `${outputFolderName}/consolidated_with_dups.json`,
-    JSON.stringify(withDups, null, 2)
-  );
   fs.writeFileSync(`${outputFolderName}/consolidated.json`, JSON.stringify(normalized, null, 2));
 
-  console.log("countResources before", countResources(withDups));
+  console.log("countResources before", initialResourceCount);
   console.log("countResources after", countResources(normalized));
   return;
 }
