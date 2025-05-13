@@ -728,6 +728,9 @@ export class LambdasNestedStack extends NestedStack {
     if (config.hl7Notification?.hieConfigs) {
       const hieConfigs = config.hl7Notification.hieConfigs;
 
+      const secrets = buildSecrets(this, config.hl7Notification.secrets);
+      const ecsSecrets = secretsToECS(secrets);
+
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const lambda = createScheduledLambda({
           stack: this,
@@ -739,7 +742,7 @@ export class LambdasNestedStack extends NestedStack {
           envVars: {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
-            ...secretsToECS(buildSecrets(this, config.hl7Notification.secrets)),
+            ...ecsSecrets,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
           layers: [lambdaLayers.shared],
