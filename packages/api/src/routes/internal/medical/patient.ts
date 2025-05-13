@@ -5,6 +5,7 @@ import {
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { Patient } from "@metriport/core/domain/patient";
 import {
   hl7v2SubscriptionRequestSchema,
   validHl7v2Subscriptions,
@@ -74,7 +75,6 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
-import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { parseISODate } from "../../../shared/date";
 import { getETag } from "../../../shared/http";
@@ -175,7 +175,7 @@ router.get(
       hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
-    const response: PaginatedResponse<PatientModelReadOnly, "patients"> = {
+    const response: PaginatedResponse<Patient, "patients"> = {
       meta,
       patients: items,
     };
