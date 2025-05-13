@@ -1,14 +1,14 @@
 import { SearchSetBundle } from "@metriport/shared/medical";
+import { getConsolidatedPatientData } from "../consolidated-get";
 import { Patient } from "../../../domain/patient";
 import { out } from "../../../util";
 import { Config } from "../../../util/config";
-import { DocumentReferenceWithId } from "../../fhir/document/document-reference";
-import { toFHIR as patientToFhir } from "../../fhir/patient/conversion";
-import { buildBundleEntry } from "../../fhir/shared/bundle";
-import { SearchResult } from "../index-based-on-resource";
-import { searchDocuments } from "../search-documents";
-import { OpenSearchSemanticSearcherDirect } from "./semantic-searcher-direct";
-import { getConsolidated } from "./shared";
+import { DocumentReferenceWithId } from "../../../external/fhir/document/document-reference";
+import { toFHIR as patientToFhir } from "../../../external/fhir/patient/conversion";
+import { buildBundleEntry } from "../../../external/fhir/shared/bundle";
+import { SearchResult } from "../../../external/opensearch/index-based-on-resource";
+import { searchDocuments } from "../../../external/opensearch/search-documents";
+import { OpenSearchSemanticSearcherDirect } from "../../../external/opensearch/semantic/semantic-searcher-direct";
 
 /**
  * Performs a semantic search on a patient's consolidated resources in OpenSearch
@@ -33,7 +33,7 @@ export async function searchSemantic({
   const startedAt = Date.now();
 
   const [consolidated, searchResults, docRefResults] = await Promise.all([
-    getConsolidated({ patient }),
+    getConsolidatedPatientData({ patient }),
     searchOpenSearch({
       cxId: patient.cxId,
       patientId: patient.id,

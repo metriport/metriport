@@ -5,7 +5,7 @@ import {
   getDefaultBundle,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { getConsolidated } from "../../../../../../command/consolidated/consolidated-get";
+import { getConsolidatedFile } from "../../../../../../command/consolidated/consolidated-get";
 import { fetchEhrBundle as fetchEhrBundleFromApi } from "../../../../api/fetch-bundle";
 import { initializeJob } from "../../../../api/initialize-job";
 import { updateJobTotal } from "../../../../api/update-job-total";
@@ -34,7 +34,7 @@ export class EhrStartResourceDiffBundlesLocal implements EhrStartResourceDiffBun
     jobId,
   }: StartResourceDiffBundlesRequest): Promise<void> {
     await initializeJob({ cxId, jobId });
-    const consolidated = await getConsolidated({ cxId, patientId: metriportPatientId });
+    const consolidated = await getConsolidatedFile({ cxId, patientId: metriportPatientId });
     if (!consolidated || !consolidated.bundle?.entry || consolidated.bundle.entry.length < 1) {
       return;
     }

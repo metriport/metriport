@@ -14,7 +14,8 @@ import { out } from "../../util";
 import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
-import { getConsolidated } from "./consolidated-get";
+import { getConsolidatedFile } from "./consolidated-get";
+
 const maxHydrationIterations = 5;
 
 /**
@@ -55,7 +56,7 @@ async function getOrCreateConsolidatedOnS3({
 }): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
-  const preGenerated = await getConsolidated({
+  const preGenerated = await getConsolidatedFile({
     cxId,
     patientId,
   });

@@ -15,7 +15,7 @@ const MAX_HYDRATION_ROUNDS = 3;
 
 export type ConsolidatedFhirToBundlePayload = {
   patient: Pick<Patient, "id" | "cxId">;
-  requestId?: string;
+  requestId?: string | undefined;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;

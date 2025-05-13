@@ -4,7 +4,7 @@ dotenv.config();
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metriport-api";
 import { BulkResponseErrorItem } from "@metriport/core/external/opensearch/bulk";
-import { ingestSemantic } from "@metriport/core/external/opensearch/semantic/ingest";
+import { ingestSemantic } from "@metriport/core/command/consolidated/search/ingest-semantic";
 import { sleep } from "@metriport/core/util/sleep";
 import { getEnvVarOrFail } from "@metriport/shared";
 import dayjs from "dayjs";

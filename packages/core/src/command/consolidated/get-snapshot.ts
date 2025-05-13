@@ -4,7 +4,7 @@ import { Patient } from "../../domain/patient";
 
 export type ConsolidatedSnapshotRequest = {
   patient: Patient;
-  requestId?: string;
+  requestId?: string | undefined;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;

@@ -1,16 +1,14 @@
 import { SearchSetBundle } from "@metriport/shared/medical";
-import { ConsolidatedSnapshotRequestSync } from "../../../command/consolidated/get-snapshot";
-import { buildConsolidatedSnapshotConnector } from "../../../command/consolidated/get-snapshot-factory";
-import { getConsolidatedSnapshotFromS3 } from "../../../command/consolidated/snapshot-on-s3";
+import { getConsolidatedPatientData } from "../consolidated-get";
 import { Patient } from "../../../domain/patient";
 import { out } from "../../../util";
 import { Config } from "../../../util/config";
-import { DocumentReferenceWithId } from "../../fhir/document/document-reference";
-import { toFHIR as patientToFhir } from "../../fhir/patient/conversion";
-import { buildBundleEntry } from "../../fhir/shared/bundle";
-import { SearchResult } from "../index-based-on-resource";
-import { searchDocuments } from "../search-documents";
-import { OpenSearchLexicalSearcherDirect } from "./lexical-searcher-direct";
+import { DocumentReferenceWithId } from "../../../external/fhir/document/document-reference";
+import { toFHIR as patientToFhir } from "../../../external/fhir/patient/conversion";
+import { buildBundleEntry } from "../../../external/fhir/shared/bundle";
+import { SearchResult } from "../../../external/opensearch/index-based-on-resource";
+import { searchDocuments } from "../../../external/opensearch/search-documents";
+import { OpenSearchLexicalSearcherDirect } from "../../../external/opensearch/lexical/lexical-searcher-direct";
 
 /**
  * Performs a lexical search on a patient's consolidated resources in OpenSearch
@@ -32,7 +30,7 @@ export async function searchLexical({
   const startedAt = Date.now();
 
   const [consolidated, searchResults, docRefResults] = await Promise.all([
-    getConsolidated({ patient }),
+    getConsolidatedPatientData({ patient }),
     searchOpenSearch({
       cxId: patient.cxId,
       patientId: patient.id,
@@ -121,15 +119,4 @@ async function searchOpenSearch({
     patientId,
     maxNumberOfResults,
   });
-}
-
-async function getConsolidated({ patient }: { patient: Patient }): Promise<SearchSetBundle> {
-  const payload: ConsolidatedSnapshotRequestSync = {
-    patient,
-    isAsync: false,
-  };
-  const connector = buildConsolidatedSnapshotConnector();
-  const { bundleLocation, bundleFilename } = await connector.execute(payload);
-  const bundle = await getConsolidatedSnapshotFromS3({ bundleLocation, bundleFilename });
-  return bundle;
 }

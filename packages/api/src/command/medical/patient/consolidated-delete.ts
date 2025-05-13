@@ -14,7 +14,7 @@ import duration from "dayjs/plugin/duration";
 import { chunk, flatten } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { capture } from "../../../shared/notifications";
-import { getConsolidatedPatientData } from "./consolidated-get";
+import { getConsolidatedPatientData } from "@metriport/core/command/consolidated/consolidated-get";
 
 dayjs.extend(duration);
 

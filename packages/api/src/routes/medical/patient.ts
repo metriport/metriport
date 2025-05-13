@@ -1,9 +1,10 @@
 import { ConsolidatedQuery, consolidationConversionType } from "@metriport/api-sdk";
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
+import { getConsolidatedPatientData } from "@metriport/core/command/consolidated/consolidated-get";
+import { searchConsolidated } from "@metriport/core/command/consolidated/search/search-consolidated";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { Config } from "@metriport/core/util/config";
 import { getRequestId } from "@metriport/core/util/request";
 import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -12,10 +13,7 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import {
-  getConsolidatedPatientData,
-  startConsolidatedQuery,
-} from "../../command/medical/patient/consolidated-get";
+import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
@@ -24,7 +22,6 @@ import { handleDataContribution } from "../../command/medical/patient/data-contr
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
-import { searchConsolidated } from "../../command/medical/patient/search/search-consolidated";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
@@ -185,37 +182,23 @@ router.get(
 /**
  * GET /patient/:id/consolidated/search
  *
- * Runs a semantic search on a patient's consolidated data and return the
- * resources that match the query.
+ * Searches on a patient's consolidated data and returns the resources that match the query.
  *
- * Also includes DocumentResources that match the query lexically, using the
- * document search (GET /document)
+ * Also includes DocumentResources that match the query, using the document search (GET /document)
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.query The query to search for.
- * @param req.query.similarityThreshold The similarity threshold to use for the semantic search.
  */
 router.get(
   "/consolidated/search",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    // TODO ENG-41 Enable this for prod
-    if (!Config.isSandbox() && !Config.isStaging() && !Config.isDev()) {
-      throw new NotFoundError();
-    }
-
     const { patient } = getPatientInfoOrFail(req);
     const queryParam = getFrom("query").optional("query", req);
     const query = queryParam ? queryParam.trim() : undefined;
-    // const similarityParam = getFrom("query").optional("similarityThreshold", req);
-    // const similarityThreshold = similarityParam ? parseFloat(similarityParam) : undefined;
 
-    const result = await searchConsolidated({
-      patient,
-      query,
-      // similarityThreshold,
-    });
+    const result = await searchConsolidated({ patient, query });
 
     return res.status(status.OK).json(result);
   })
