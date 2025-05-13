@@ -3,31 +3,18 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { out } from "../../../util/log";
 import { makeS3Client } from "../../aws/s3";
-import { genericStopWords, htmlStopWords } from "../cda";
+import { removeHtmlTags } from "../../html/remove-tags";
+import { IndexFields } from "../index-based-on-file";
 import {
   IngestRequest,
   OpenSearchFileIngestor,
   OpenSearchFileIngestorConfig,
 } from "./file-ingestor";
-import { IndexFields } from "../index-based-on-file";
 
 dayjs.extend(duration);
 
 const DEFAULT_INGESTION_TIMEOUT = dayjs.duration(10, "minutes").asMilliseconds();
 
-export const regexGenericWords = new RegExp(
-  `(${genericStopWords.map(w => w.toLowerCase()).join("|")})`,
-  "g"
-);
-// removes the tag w/ attributes, but without content
-export const regexHTML = new RegExp(
-  `</?(${htmlStopWords.map(w => w.toLowerCase()).join("|")})(\\s.*?)?/?>`,
-  "g"
-);
-export const regexFormatting = new RegExp(/(__+|--+)/g);
-export const regexMarkupAttributes = new RegExp(/((\w+(:\w+)?)(:\w+)?="(?<content>[^"]+?)")/g);
-export const regexAdditionalMarkup = new RegExp(/<(\w+(:\w+)?)(\s*|\s(?<content>[^>]+?))\/?>/g);
-export const regexClosingMarkup = new RegExp(/<\/(\w+(:\w+)?)>/g);
 export const regexQuotesNewlinesTabs = new RegExp(/"|(\n\n)|\n|\t|\r|<!/g);
 export const regexMultipleSpaces = new RegExp(/(\s\s+)/g);
 
@@ -101,41 +88,15 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
 
   // IMPORTANT: keep this in sync w/ the Lambda's sqs-to-opensearch-xml.ts version of it.
   // Ideally we would use the same code the Lambda does, but since the cost/benefit doesn't seeem to be worth it.
-  protected cleanUpContents(contents: string, log = console.log, isTracing = false): string {
+  protected cleanUpContents(
+    contents: string,
+    log = out(`cleanUpContents`).log,
+    isTracing = false
+  ): string {
     log(`Cleaning up file contents...`);
-
-    const trace = (msg: string) => isTracing && log(msg);
-
-    // Have this here so we can debug it easier when there's a problem. Use the unit test to add new
-    // cases to represent future issues.
-    let step = 1;
-    const runStep = (fn: () => string, action: string): string => {
-      const res = fn();
-      trace(`Step${step}: ${action}`);
-      trace(`Step${step}: ${res}`);
-      step++;
-      return res;
-    };
-    const regexStep = (updatedContents: string, regex: RegExp, replacement: string): string => {
-      return runStep(() => updatedContents.replace(regex, replacement), regex.toString());
-    };
-
-    // The order is important!
-    const step1 = runStep(() => contents.trim().toLowerCase(), "trim + lowercase");
-    const regexSteps = [
-      (input: string) => regexStep(input, regexHTML, " "),
-      (input: string) => regexStep(input, regexFormatting, " "),
-      (input: string) => regexStep(input, regexMarkupAttributes, " $<content> "),
-      (input: string) => regexStep(input, regexAdditionalMarkup, " $<content> "),
-      (input: string) => regexStep(input, regexClosingMarkup, " "),
-      (input: string) => regexStep(input, regexGenericWords, " "),
-      (input: string) => regexStep(input, regexQuotesNewlinesTabs, " "),
-      (input: string) => regexStep(input, regexMultipleSpaces, " "),
-    ];
-    let lastStepResult = step1;
-    for (const step of regexSteps) {
-      lastStepResult = step(lastStepResult);
-    }
+    const step1 = removeHtmlTags({ contents, log, isTracing });
+    const step2 = step1.toLowerCase();
+    const lastStepResult = step2;
     return lastStepResult;
   }
 
@@ -190,7 +151,7 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     return defaultLogger.log;
   }
 
-  private async makeSureIndexExists(client: Client, indexName: string, log = console.log) {
+  async makeSureIndexExists(client: Client, indexName: string, log = console.log) {
     const indexExists = Boolean((await client.indices.exists({ index: indexName })).body);
     if (!indexExists) {
       log(`Index ${indexName} doesn't exist, creating one...`);

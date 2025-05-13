@@ -1,6 +1,9 @@
 import { CodeableConcept } from "@medplum/fhirtypes";
-import { checkDeny } from "./deny";
+import { checkDeny, isAllowedSystem } from "./deny";
 import { FIELD_SEPARATOR } from "./separator";
+
+const SEP_BETWEEN_CODING = "/";
+const SEP_BETWEEN_TEXT_AND_CODING = ":";
 
 /**
  * Formats a single FHIR codeable concept into a string representation
@@ -10,11 +13,47 @@ import { FIELD_SEPARATOR } from "./separator";
 export function formatCodeableConcept(concept: CodeableConcept | undefined): string | undefined {
   if (!concept) return undefined;
 
-  // Prefer text if available
-  if (concept.text) return checkDeny(concept.text);
+  const textPre = checkDeny(concept.text);
+  const text = textPre ? textPre.trim() : undefined;
 
-  // Otherwise use coding display or code
-  return concept.coding?.map(c => checkDeny(c.display ?? c.code)).join(FIELD_SEPARATOR) ?? "";
+  const emptyCode = "<!empty!>";
+  const codingMap =
+    concept.coding?.reduce((acc, cur) => {
+      const system = isAllowedSystem(cur.system);
+      if (!system) return acc;
+      const codePre = checkDeny(cur.code);
+      const code = codePre ? codePre.trim() : undefined;
+      const displayPre = checkDeny(cur.display);
+      const display = displayPre ? displayPre.trim() : undefined;
+      if (code) {
+        if (acc[code]) return acc;
+        acc[code] = codeAndDisplayToString(code, display);
+        return acc;
+      }
+      const altCode = "";
+      const codeAndDisplay = codeAndDisplayToString(altCode, cur.display);
+      if (!codeAndDisplay) return acc;
+      if (acc[emptyCode]) {
+        acc[emptyCode] = acc[emptyCode] + "; " + codeAndDisplay;
+      } else {
+        acc[emptyCode] = codeAndDisplay;
+      }
+      return acc;
+    }, {} as Record<string, string>) ?? {};
+
+  let codingStr = "";
+  for (const coding of Object.values(codingMap)) {
+    const separator = codingStr.length > 0 ? ` ${SEP_BETWEEN_CODING} ` : "";
+    codingStr = codingStr + separator + coding;
+  }
+
+  if (!codingStr && !text) return undefined;
+  if (!codingStr && text) return text;
+  return `${text ?? ""}${text ? `${SEP_BETWEEN_TEXT_AND_CODING} ` : ""}${codingStr}`;
+}
+
+function codeAndDisplayToString(code: string, display: string | undefined): string {
+  return code + (display ? `${code ? " " : ""}(${display})` : "");
 }
 
 /**

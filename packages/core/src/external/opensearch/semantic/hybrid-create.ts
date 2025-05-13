@@ -1,5 +1,4 @@
-// TODO eng-41 Convert this to actual code to create the index if not exists and decide where to call it from
-
+// TODO eng-41 Convert this to actual code to create the index for hybrid search (lexical + neural/semantic)
 /*
 PUT /medical-resources
 {

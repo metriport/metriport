@@ -1,4 +1,8 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
+import {
+  ingestLexical,
+  initializeLexicalIndex,
+} from "@metriport/core/command/consolidated/search/ingest-lexical";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import {
   getCxsWithCQDirectFeatureFlagValue,
@@ -16,15 +20,15 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import {
   BadRequestError,
-  MetriportError,
-  PaginatedResponse,
+  errorToString,
   internalSendConsolidatedSchema,
+  MetriportError,
   normalizeState,
+  PaginatedResponse,
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { errorToString } from "@metriport/shared/common/error";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -44,17 +48,17 @@ import {
 } from "../../../command/medical/patient/consolidated-get";
 import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
-  GetHl7v2SubscribersParams,
   getHl7v2Subscribers,
+  GetHl7v2SubscribersParams,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../../command/medical/patient/get-patient";
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import {
@@ -1105,6 +1109,35 @@ router.post(
     log(`response ${JSON.stringify(response)}`);
 
     return res.status(status.OK).json(response);
+  })
+);
+
+/**
+ * POST /internal/patient/consolidated/ingest
+ *
+ * Ingest patients' consolidated resources into OpenSearch for lexical search.
+ *
+ * To process a small amount of patients. If we need a larger amount of patients, we should
+ * move this to a queue-based design, one pt per message.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.patientIds The patient IDs.
+ */
+router.post(
+  "/consolidated/ingest",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+
+    await initializeLexicalIndex();
+
+    for (const patientId of patientIds) {
+      const patient = await getPatientOrFail({ cxId, id: patientId });
+      await ingestLexical({ patient });
+    }
+
+    return res.sendStatus(status.OK);
   })
 );
 

@@ -580,7 +580,7 @@ export class APIStack extends Stack {
       fhirToBundleCountLambda,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
-      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchEndpoint: "https://" + ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
       searchIndexName: ccdaSearchIndexName,
       semanticSearchEndpoint: props.config.semanticOpenSearch?.endpoint,
