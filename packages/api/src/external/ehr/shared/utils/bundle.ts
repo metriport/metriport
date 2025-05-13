@@ -1,6 +1,7 @@
 import {
   BundleType,
   getSupportedResourcesByEhr,
+  isSupportedResourceTypeByEhr,
 } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { BadRequestError } from "@metriport/shared";
 import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
@@ -13,7 +14,7 @@ type BaseBundleParams = {
   cxId: string;
   practiceId: string;
   patientId: string;
-  resourceType?: SupportedResourceType;
+  resourceType?: string;
 };
 
 export type FetchBundleParams = BaseBundleParams & { bundleType: BundleType; jobId?: string };
@@ -25,6 +26,7 @@ export type ContributeEhrOnlyBundleParams = Omit<BaseBundleParams, "resourceType
 };
 
 type BaseBundleParamsForClient = Required<BaseBundleParams> & {
+  resourceType: SupportedResourceType;
   metriportPatientId: string;
 };
 
@@ -51,13 +53,14 @@ export async function validateAndPrepareBundleFetchOrRefresh({
     source: ehr,
   });
   const metriportPatientId = patientMapping.patientId;
-  const supportedResourceTypes = getSupportedResourcesByEhr(ehr);
-  if (resourceType && !supportedResourceTypes.includes(resourceType)) {
+  if (resourceType && !isSupportedResourceTypeByEhr(ehr, resourceType)) {
     throw new BadRequestError("Resource type is not supported for bundle", undefined, {
       resourceType,
     });
   }
-  const resourceTypes = resourceType ? [resourceType] : supportedResourceTypes;
+  const resourceTypes = resourceType
+    ? [resourceType as SupportedResourceType]
+    : getSupportedResourcesByEhr(ehr);
   return { resourceTypes, metriportPatientId };
 }
 

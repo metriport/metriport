@@ -73,7 +73,6 @@ router.post(
  * The job is started asynchronously.
  * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
- * @param req.query.direction The direction of the resource diff bundles to create.
  * @returns The job ID of the resource diff job
  */
 router.post(
@@ -91,6 +90,63 @@ router.post(
       patientId: canvasPatientId,
     });
     return res.status(httpStatus.OK).json(jobId);
+  })
+);
+
+/**
+ * GET /ehr/canvas/patient/:id/resource/diff/latest
+ *
+ * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
+ * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @returns Resource diff job and pre-signed URLs for the bundles if completed
+ */
+router.get(
+  "/:id/resource/diff/latest",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const bundle = await getLatestResourceDiffBundlesJobPayload({
+      ehr: EhrSources.canvas,
+      cxId,
+      patientId: canvasPatientId,
+      practiceId: canvasPracticeId,
+      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+    });
+    return res.status(httpStatus.OK).json(bundle);
+  })
+);
+
+/**
+ * GET /ehr/canvas/patient/:id/resource/diff/:jobId
+ *
+ * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
+ * @param req.params.id The ID of Canvas Patient.
+ * @param req.params.jobId The job ID of the job
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @returns Resource diff job and pre-signed URLs for the bundles if completed
+ */
+router.get(
+  "/:id/resource/diff/:jobId",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const jobId = getFrom("params").orFail("jobId", req);
+    const bundle = await getResourceDiffBundlesJobPayload({
+      ehr: EhrSources.canvas,
+      cxId,
+      patientId: canvasPatientId,
+      practiceId: canvasPracticeId,
+      jobId,
+      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+    });
+    return res.status(httpStatus.OK).json(bundle);
   })
 );
 
@@ -122,65 +178,6 @@ router.post(
       condition: payload,
     });
     return res.status(httpStatus.OK).json(conditionDetails);
-  })
-);
-
-/**
- * GET /ehr/canvas/patient/:id/resource/diff/latest
- *
- * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
- * @param req.params.id The ID of Canvas Patient.
- * @param req.query.practiceId The ID of Canvas Practice.
- * @param req.query.direction The direction of the resource diff bundles to fetch.
- * @returns Resource diff job and pre-signed URLs for the bundles if completed
- */
-router.get(
-  "/:id/resource/diff/latest",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const canvasPatientId = getFrom("params").orFail("id", req);
-    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const bundle = await getLatestResourceDiffBundlesJobPayload({
-      ehr: EhrSources.canvas,
-      cxId,
-      patientId: canvasPatientId,
-      practiceId: canvasPracticeId,
-      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
-    });
-    return res.status(httpStatus.OK).json(bundle);
-  })
-);
-
-/**
- * GET /ehr/canvas/patient/:id/resource/diff/:jobId
- *
- * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
- * @param req.params.id The ID of Canvas Patient.
- * @param req.params.jobId The job ID of the job
- * @param req.query.practiceId The ID of Canvas Practice.
- * @param req.query.direction The direction of the resource diff bundles to fetch.
- * @returns Resource diff job and pre-signed URLs for the bundles if completed
- */
-router.get(
-  "/:id/resource/diff/:jobId",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const canvasPatientId = getFrom("params").orFail("id", req);
-    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const jobId = getFrom("params").orFail("jobId", req);
-    const bundle = await getResourceDiffBundlesJobPayload({
-      ehr: EhrSources.canvas,
-      cxId,
-      patientId: canvasPatientId,
-      practiceId: canvasPracticeId,
-      jobId,
-      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
-    });
-    return res.status(httpStatus.OK).json(bundle);
   })
 );
 

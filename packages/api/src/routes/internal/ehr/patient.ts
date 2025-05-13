@@ -1,7 +1,4 @@
-import {
-  isResourceDiffBundleType,
-  isSupportedResourceTypeByEhr,
-} from "@metriport/core/external/ehr/bundle/bundle-shared";
+import { isResourceDiffBundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { BadRequestError, isValidJobEntryStatus } from "@metriport/shared";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
@@ -29,7 +26,6 @@ const router = Router();
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.id - The ID of EHR Patient.
  * @param req.query.practiceId - The ID of EHR Practice.
- * @param req.query.contribute - Whether to contribute the EHR-only bundle to the EHR.
  * @returns The job ID of the resource diff job
  */
 router.post(
@@ -135,10 +131,8 @@ router.get(
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.ehrId - The EHR to fetch the resource diff job for.
  * @param req.params.id - The ID of EHR Patient.
- * @param req.query.practiceId - The ID of EHR Practice.
  * @param req.query.jobId - The job ID.
  * @param req.query.entryStatus - The status of the entry.
- * @param req.query.bundleType - The type of bundle to fetch.
  * @returns 200 OK
  */
 router.post(
@@ -148,8 +142,6 @@ router.post(
     const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    //const patientId = getFrom("params").orFail("id", req);
-    //const practiceId = getFromQueryOrFail("practiceId", req);
     const jobId = getFromQueryOrFail("jobId", req);
     const entryStatus = getFromQueryOrFail("entryStatus", req);
     if (!isValidJobEntryStatus(entryStatus)) {
@@ -188,11 +180,6 @@ router.post(
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
     const resourceType = getFromQueryOrFail("resourceType", req);
-    if (!isSupportedResourceTypeByEhr(ehr, resourceType)) {
-      throw new BadRequestError("Resource type is not supported for bundle", undefined, {
-        resourceType,
-      });
-    }
     await refreshEhrBundles({
       ehr,
       cxId,
