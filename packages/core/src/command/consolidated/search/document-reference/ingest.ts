@@ -1,8 +1,8 @@
-import { Patient } from "../../../domain/patient";
-import { errorToString } from "../../../util/error/shared";
-import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
-import { makeSearchServiceIngest } from "./file-search-connector-factory";
+import { Patient } from "../../../../domain/patient";
+import { errorToString } from "../../../../util/error/shared";
+import { out } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
+import { makeSearchServiceIngest } from "../../../../external/opensearch/file/file-search-connector-factory";
 
 export async function ingestIntoSearchEngine(
   patient: Pick<Patient, "id" | "cxId">,

@@ -2,7 +2,7 @@ import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import {
   ingestLexical,
   initializeLexicalIndex,
-} from "@metriport/core/command/consolidated/search/ingest-lexical";
+} from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import {
   getCxsWithCQDirectFeatureFlagValue,

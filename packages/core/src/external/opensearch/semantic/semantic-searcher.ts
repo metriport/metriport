@@ -2,14 +2,16 @@ import { BadRequestError } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import { out } from "../../../util";
 import { OpenSearchConfigDirectAccess, OpenSearchResponse, OpenSearchResponseHit } from "../index";
-import { indexDefinition, SearchResult } from "../index-based-on-resource";
-import { createLexicalSearchQuery } from "./lexical-search";
+import { SearchResult } from "../index-based-on-resource";
+import { createHybridSearchQuery } from "./hybrid-search";
 
+const defaultSimilarityThreshold = 0.2;
 const defaultNumberOfResults = 100;
 
-export type OpenSearchLexicalSearcherDirectConfig = OpenSearchConfigDirectAccess;
+export type OpenSearchSemanticSearcherConfig = OpenSearchConfigDirectAccess & {
+  modelId: string;
+};
 
-// TODO ENG-268 move to superclass when we have one
 export type SearchRequest = {
   cxId: string;
   patientId: string;
@@ -17,30 +19,36 @@ export type SearchRequest = {
   query: string;
   /** From 0 to 10_000, optional, defaults to 100 */
   maxNumberOfResults?: number | undefined;
+  /** From 0 to 1, optional, defaults to 0.2 */
+  similarityThreshold?: number | undefined;
 };
 
-export class OpenSearchLexicalSearcherDirect {
-  constructor(readonly config: OpenSearchLexicalSearcherDirectConfig) {}
+export class OpenSearchSemanticSearcher {
+  constructor(readonly config: OpenSearchSemanticSearcherConfig) {}
 
   async search({
     cxId,
     patientId,
     query,
     maxNumberOfResults = defaultNumberOfResults,
+    similarityThreshold = defaultSimilarityThreshold,
   }: SearchRequest): Promise<SearchResult[]> {
-    const { log, debug } = out(`OpenSearchLexicalSearcherDirect - cx ${cxId}, pt ${patientId}`);
+    const { indexName, endpoint, username, password, modelId } = this.config;
+    const { log, debug } = out(`${this.constructor.name}.search - cx ${cxId}, pt ${patientId}`);
 
     this.validateMaxNumberOfResults(maxNumberOfResults);
+    this.validateSimilarityThreshold(similarityThreshold);
 
-    const { indexName, endpoint, username, password } = this.config;
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
     log(`Searching on index ${indexName}...`);
-    const queryPayload = createLexicalSearchQuery({
+    const queryPayload = createHybridSearchQuery({
       cxId,
       patientId,
       query,
+      modelId,
+      k: maxNumberOfResults,
     });
 
     const response = (
@@ -55,7 +63,16 @@ export class OpenSearchLexicalSearcherDirect {
     const items = response.hits.hits ?? [];
     log(`Successfully searched, got ${items.length} results`);
 
-    return this.mapResult(items);
+    const filteredItems = items.filter(item => item._score >= similarityThreshold);
+    if (filteredItems.length !== items.length) {
+      log(
+        `Filtered ${
+          items.length - filteredItems.length
+        } results due to similarity threshold (${similarityThreshold})`
+      );
+    }
+
+    return this.mapResult(filteredItems);
   }
 
   private validateMaxNumberOfResults(maxNumberOfResults: number) {
@@ -64,6 +81,15 @@ export class OpenSearchLexicalSearcherDirect {
     }
     if (maxNumberOfResults < 1) {
       throw new BadRequestError("maxNumberOfResults cannot be less than 1");
+    }
+  }
+
+  private validateSimilarityThreshold(similarityThreshold: number) {
+    if (similarityThreshold > 1) {
+      throw new BadRequestError("similarityThreshold cannot be greater than 1");
+    }
+    if (similarityThreshold <= 0) {
+      throw new BadRequestError("similarityThreshold cannot be less than or equal to 0");
     }
   }
 
@@ -77,22 +103,5 @@ export class OpenSearchLexicalSearcherDirect {
         resourceId: hit._source.resourceId,
       };
     });
-  }
-
-  async createIndexIfNotExists(): Promise<void> {
-    const { indexName, endpoint, username, password } = this.config;
-    const auth = { username, password };
-    const client = new Client({ node: endpoint, auth });
-
-    const indexExistsResp = await client.indices.exists({
-      index: indexName,
-      include_defaults: false,
-      ignore_unavailable: false,
-    });
-    const indexExists = Boolean(indexExistsResp.body);
-    if (indexExists) return;
-
-    const body = { mappings: { properties: indexDefinition } };
-    await client.indices.create({ index: indexName, body });
   }
 }

@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { searchDocuments } from "../../opensearch/search-documents";
+import { searchDocuments } from "../../../command/consolidated/search/document-reference/search";
 import { S3Utils } from "../s3";
 import { DocumentBulkSignerLambdaResponse } from "./document-bulk-signer-response";
 

@@ -1,7 +1,7 @@
 import { ConsolidatedQuery, consolidationConversionType } from "@metriport/api-sdk";
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
 import { getConsolidatedPatientData } from "@metriport/core/command/consolidated/consolidated-get";
-import { searchConsolidated } from "@metriport/core/command/consolidated/search/search-consolidated";
+import { searchConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/search-consolidated";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";

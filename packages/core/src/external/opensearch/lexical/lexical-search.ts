@@ -1,11 +1,8 @@
 import { contentFieldName } from "../index";
+import { getPatientFilters } from "../shared/filters";
 
 export type LexicalSearchParams = {
   query: string;
-  cxId: string;
-  patientId: string;
-};
-export type DeleteParams = {
   cxId: string;
   patientId: string;
 };
@@ -35,16 +32,4 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
       },
     },
   };
-}
-
-export function createLexicalDeleteQuery({ cxId, patientId }: DeleteParams) {
-  return {
-    query: {
-      bool: { must: getPatientFilters(cxId, patientId) },
-    },
-  };
-}
-
-function getPatientFilters(cxId: string, patientId: string) {
-  return [{ term: { cxId } }, { term: { patientId } }];
 }
