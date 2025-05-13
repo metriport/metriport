@@ -65,6 +65,17 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       bundle: processedBundle,
     });
 
+    try {
+      uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: processedBundle,
+        type: "dedup",
+      });
+    } catch (error) {
+      log(`Failed to store dedup bundle on S3 - ${errorToString(error)}`);
+    }
+
     const normalizedBundle = await normalize({
       cxId,
       patientId,
@@ -94,22 +105,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       throw new MetriportError(msg, error, additionalInfo);
     }
 
-    const [, resultS3Info] = await Promise.all([
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: processedBundle,
-        type: "dedup",
-      }),
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: resultBundle,
-        type: "normalized",
-      }),
-    ]);
+    const { bucket, key } = await uploadConsolidatedSnapshotToS3({
+      ...params,
+      s3BucketName: this.bucketName,
+      bundle: resultBundle,
+      type: "normalized",
+    });
 
-    const { bucket, key } = resultS3Info;
     const info = {
       bundleLocation: bucket,
       bundleFilename: key,

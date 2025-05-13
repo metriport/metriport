@@ -16,6 +16,7 @@ import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { controlDuration } from "../../util/race-control";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
+import { errorToString } from "@metriport/shared/dist/error/shared";
 
 dayjs.extend(duration);
 
@@ -74,12 +75,19 @@ export async function createConsolidatedFromConversions({
   log(
     `Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${withDupsDestFileName}`
   );
-  await s3Utils.uploadFile({
-    bucket: destinationBucketName,
-    key: withDupsDestFileName,
-    file: Buffer.from(JSON.stringify(bundle)),
-    contentType: "application/json",
-  });
+  try {
+    await s3Utils.uploadFile({
+      bucket: destinationBucketName,
+      key: withDupsDestFileName,
+      file: Buffer.from(JSON.stringify(bundle)),
+      contentType: "application/json",
+    });
+  } catch (e) {
+    log(
+      `Error uploading consolidated bundle to ${destinationBucketName}, key ${withDupsDestFileName}`
+    );
+    log(errorToString(e));
+  }
 
   log(`Deduplicating consolidated bundle...`);
   await dangerouslyDeduplicate({ cxId, patientId, bundle });
