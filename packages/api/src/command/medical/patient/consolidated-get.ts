@@ -1,17 +1,14 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
   ConsolidatedQuery,
-  ConsolidationConversionType,
   GetConsolidatedFilters,
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
 import {
-  ConsolidatedSnapshotRequestAsync,
-  ConsolidatedSnapshotRequestSync,
-} from "@metriport/core/command/consolidated/get-snapshot";
-import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
-import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+  getConsolidatedPatientData,
+  getConsolidatedPatientDataAsync,
+} from "@metriport/core/command/consolidated/consolidated-get";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -23,7 +20,6 @@ import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { intersection } from "lodash";
-import { processAsyncError } from "../../../errors";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -46,17 +42,6 @@ export type GetConsolidatedParams = {
   requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
-
-type GetConsolidatedPatientData = {
-  patient: Patient;
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-  requestId?: string;
-  fromDashboard?: boolean;
-  // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
-  forceDataFromFhir?: boolean;
-};
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
   requestId: string;
@@ -393,70 +378,4 @@ async function uploadConsolidatedJsonAndReturnUrl({
     const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json");
     return { bundle: newBundle, filters };
   }
-}
-
-/**
- * Get consolidated patient data from FHIR server.
- * Uses ConsolidatedDataConnector, which uses an environment-specific strategy/implementation
- * to load data from the FHIR server:
- * - dev/local: loads data from the FHIR server directly;
- * - cloud envs, calls a lambda to execute the loadingn of data from the FHIR server.
- *
- * @param documentIds (Optional) List of document reference IDs to filter by. If provided, only
- *            resources derived from these document references will be returned.
- * @param resources (Optional) List of resources to filter by. If provided, only
- *            those resources will be included.
- * @returns FHIR bundle of resources matching the filters.
- */
-export async function getConsolidatedPatientData({
-  patient,
-  requestId,
-  resources,
-  dateFrom,
-  dateTo,
-  fromDashboard = false,
-  forceDataFromFhir = false,
-}: GetConsolidatedPatientData): Promise<SearchSetBundle> {
-  const payload: ConsolidatedSnapshotRequestSync = {
-    patient,
-    resources,
-    requestId,
-    dateFrom,
-    dateTo,
-    isAsync: false,
-    fromDashboard,
-    forceDataFromFhir,
-  };
-  const connector = buildConsolidatedSnapshotConnector();
-  const { bundleLocation, bundleFilename } = await connector.execute(payload);
-  const bundle = await getConsolidatedSnapshotFromS3({ bundleLocation, bundleFilename });
-  return bundle;
-}
-
-export async function getConsolidatedPatientDataAsync({
-  patient,
-  resources,
-  dateFrom,
-  dateTo,
-  requestId,
-  conversionType,
-  fromDashboard,
-}: GetConsolidatedPatientData & {
-  requestId: string;
-  conversionType?: ConsolidationConversionType;
-}): Promise<void> {
-  const payload: ConsolidatedSnapshotRequestAsync = {
-    patient,
-    requestId,
-    conversionType,
-    resources,
-    dateFrom,
-    dateTo,
-    isAsync: true,
-    fromDashboard,
-  };
-  const connector = buildConsolidatedSnapshotConnector();
-  connector
-    .execute(payload)
-    .catch(processAsyncError("Failed to get consolidated patient data async", true));
 }

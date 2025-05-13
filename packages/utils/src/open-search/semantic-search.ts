@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metriport-api";
-import { searchSemantic } from "@metriport/core/external/opensearch/semantic/search";
+import { searchSemantic } from "@metriport/core/command/consolidated/search/search-semantic";
 import { sleep } from "@metriport/core/util/sleep";
 import { getEnvVarOrFail } from "@metriport/shared";
 import dayjs from "dayjs";
