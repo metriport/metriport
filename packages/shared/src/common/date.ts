@@ -21,6 +21,13 @@ export function isValidAmericanDate(date: string): boolean {
   return buildDayjs(date, AMERICAN_DATE, true).isValid();
 }
 
+export function validateDateOfBirth(date: string): boolean {
+  if (!validateDateOfBirthSafe(date)) {
+    throw new BadRequestError(`Invalid date of birth`, undefined, { date });
+  }
+  return true;
+}
+
 export function validateDateOfBirthSafe(date: string): boolean {
   if (date.length !== 10) return false;
   if (!isValidAmericanDate(date)) return false;

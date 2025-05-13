@@ -1,8 +1,8 @@
 import { Period } from "@metriport/core/domain/patient";
 import {
-  validateDateOfBirthSafe,
-  validateDateRangeSafe,
-  validateIsPastOrPresentSafe,
+  validateDateOfBirth,
+  validateDateRange,
+  validateIsPastOrPresent,
 } from "@metriport/shared/common/date";
 import { cloneDeep } from "lodash";
 import { PatientCreateCmd } from "./create-patient";
@@ -22,17 +22,16 @@ export function validate<T extends PatientCreateCmd | PatientUpdateCmd | Patient
 ): boolean {
   if (!patient.address || patient.address.length < 1) return false;
   patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriod(pid.period));
-  return validateDateOfBirthSafe(patient.dob);
+  validateDateOfBirth(patient.dob);
+  return true;
 }
 
 function validatePeriod(period: Period): boolean {
   if (period.start && period.end) {
-    return (
-      validateIsPastOrPresentSafe(period.start) && validateDateRangeSafe(period.start, period.end)
-    );
+    validateIsPastOrPresent(period.start) && validateDateRange(period.start, period.end);
   }
   if (period.start) {
-    return validateIsPastOrPresentSafe(period.start);
+    validateIsPastOrPresent(period.start);
   }
   return true;
 }
