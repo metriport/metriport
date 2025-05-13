@@ -16,7 +16,7 @@ import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { controlDuration } from "../../util/race-control";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
-import { errorToString } from "@metriport/shared/dist/error/shared";
+import { errorToString } from "@metriport/shared";
 
 dayjs.extend(duration);
 
