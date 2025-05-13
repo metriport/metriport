@@ -5,16 +5,16 @@ import { buildReferenceFromStringRelative } from "../../shared/bundle";
 
 export function normalizeEncounters(encounters: Encounter[], locations: Location[]): Encounter[] {
   return encounters.flatMap(encounter => {
-    const reasons = getEncounterReason(encounter);
-    const location = getEncounterLocation(encounter, locations);
-    const type = getEncounterClassText(encounter);
-    if (!reasons && !location && !type) return [];
+    const hasReason = hasEncounterReason(encounter);
+    const hasLocation = hasEncounterLocation(encounter, locations);
+    const hasType = hasEncounterType(encounter);
+    if (!hasReason && !hasLocation && !hasType) return [];
 
     return encounter;
   });
 }
 
-function getEncounterReason(encounter: Encounter): string | undefined {
+function hasEncounterReason(encounter: Encounter): boolean {
   const reasonSet = new Set<string>();
 
   for (const reason of encounter.reasonCode ?? []) {
@@ -31,11 +31,10 @@ function getEncounterReason(encounter: Encounter): string | undefined {
     });
   }
 
-  const reasons = Array.from(reasonSet);
-  return reasons.length > 0 ? reasons.join(", ") : undefined;
+  return reasonSet.size > 0;
 }
 
-function getEncounterLocation(encounter: Encounter, locations: Location[]): string | undefined {
+function hasEncounterLocation(encounter: Encounter, locations: Location[]): boolean {
   const locationNames = encounter.location?.flatMap(locationRef => {
     const refString = locationRef.location?.reference;
     if (!refString) return [];
@@ -47,22 +46,22 @@ function getEncounterLocation(encounter: Encounter, locations: Location[]): stri
     return locations.find(l => l.id === refId)?.name ?? [];
   });
 
-  return locationNames?.join(", ");
+  return locationNames && locationNames.length > 0 ? true : false;
 }
 
-function getEncounterClassText(encounter: Encounter): string | undefined {
+function hasEncounterType(encounter: Encounter): boolean {
   const classDisplay = encounter.class?.display;
   const isUsefulClassDisplay = isDisplayUseful(classDisplay);
 
   if (classDisplay && isUsefulClassDisplay) {
-    return normalizeDisplay(classDisplay);
+    return true;
   } else if (encounter.class?.extension) {
     const extension = encounter.class?.extension?.find(coding => {
       return coding.valueCoding?.code === encounter.class?.code;
     });
 
     const extDisplay = extension?.valueCoding?.display;
-    return extDisplay && isDisplayUseful(extDisplay) ? normalizeDisplay(extDisplay) : undefined;
+    return extDisplay && isDisplayUseful(extDisplay) ? true : false;
   } else if (encounter.type) {
     const allTypeStringSet = new Set<string>();
 
@@ -75,10 +74,10 @@ function getEncounterClassText(encounter: Encounter): string | undefined {
           allTypeStringSet.add(normalizeDisplay(c.display));
       });
     }
-    return Array.from(allTypeStringSet).join(", ");
+    return allTypeStringSet.size > 0;
   }
 
-  return undefined;
+  return false;
 }
 
 function isDisplayUseful(display: string | undefined) {
