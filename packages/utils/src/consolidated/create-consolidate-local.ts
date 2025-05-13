@@ -1,12 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { BundleEntry, Patient } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import {
   buildConsolidatedBundle,
   merge,
 } from "@metriport/core/command/consolidated/consolidated-create";
 import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
+import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/shared";
@@ -84,18 +85,35 @@ export async function createConsolidatedFromLocal(
     `${outputFolderName}/consolidated_with_dups.json`,
     JSON.stringify(bundle, null, 2)
   );
+
+  const initialResourceCount = countResources(bundle);
+
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
   await dangerouslyDeduplicate({ cxId, patientId: patient.id!, bundle });
+  const normalized = await normalize({ cxId, patientId: patient.id!, bundle });
 
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();
   console.log(`Total time: ${duration} ms / ${durationMin} min`);
   console.log(`File Location: ${outputFolderName}`);
 
-  fs.writeFileSync(`${outputFolderName}/consolidated.json`, JSON.stringify(bundle, null, 2));
+  fs.writeFileSync(`${outputFolderName}/consolidated.json`, JSON.stringify(normalized, null, 2));
+
+  console.log("countResources before", initialResourceCount);
+  console.log("countResources after", countResources(normalized));
   return;
 }
 
 createConsolidatedFromLocal(bundlesFolder, outputFolder).then(() => {
   process.exit(0);
 });
+
+function countResources(bundle: Bundle): Record<string, number> {
+  const counts: Record<string, number> = {};
+  bundle.entry?.forEach(entry => {
+    if (!entry.resource) return;
+    const resourceType: string = entry.resource.resourceType;
+    counts[resourceType] = (counts[resourceType] || 0) + 1;
+  });
+  return counts;
+}

@@ -1,4 +1,4 @@
-import { Condition } from "@medplum/fhirtypes";
+import { Coding, Condition } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
@@ -18,7 +18,7 @@ import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
-import { SNOMED_CODE } from "../../util/constants";
+import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
 import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
@@ -75,6 +75,7 @@ export type MakeRequestParams<T> = {
   schema: z.Schema<T>;
   additionalInfo: AdditionalInfo;
   debug: typeof console.log;
+  emptyResponse?: boolean;
 };
 
 export type MakeRequestParamsInEhr<T> = Omit<
@@ -96,6 +97,7 @@ export async function makeRequest<T>({
   schema,
   additionalInfo,
   debug,
+  emptyResponse = false,
 }: MakeRequestParams<T>): Promise<T> {
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
@@ -168,7 +170,7 @@ export async function makeRequest<T>({
     }
     throw error;
   }
-  if (!response.data && method === "DELETE") {
+  if (!response.data && emptyResponse) {
     const outcome = schema.safeParse(undefined);
     if (!outcome.success) {
       const msg = `Response not parsed @ ${ehr}`;
@@ -227,12 +229,28 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
   return isAxiosError(error) && (error.response?.status === 400 || error.response?.status === 404);
 }
 
-export function getConditionSnomedCode(condition: Condition): string | undefined {
+export function getConditionIcd10Coding(condition: Condition): Coding | undefined {
+  const code = condition.code;
+  const icdCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(ICD_10_CODE);
+  });
+  if (!icdCoding) return undefined;
+  return icdCoding;
+}
+
+export function getConditionSnomedCoding(condition: Condition): Coding | undefined {
   const code = condition.code;
   const snomedCoding = code?.coding?.find(coding => {
     const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
     return system?.includes(SNOMED_CODE);
   });
+  if (!snomedCoding) return undefined;
+  return snomedCoding;
+}
+
+export function getConditionSnomedCode(condition: Condition): string | undefined {
+  const snomedCoding = getConditionSnomedCoding(condition);
   if (!snomedCoding) return undefined;
   return snomedCoding.code;
 }
@@ -241,13 +259,17 @@ export function getConditionStartDate(condition: Condition): string | undefined 
   return condition.onsetDateTime ?? condition.onsetPeriod?.start;
 }
 
+const qualifierSuffix = "(qualifier value)";
+
 export function getConditionStatus(condition: Condition): string | undefined {
   const statusFromCoding = (condition.clinicalStatus?.coding ?? []).flatMap(coding => {
     const code = coding?.display ?? coding?.code;
     if (!code) return [];
     return [code];
   });
-  return condition.clinicalStatus?.text ?? statusFromCoding[0];
+  const status = condition.clinicalStatus?.text ?? statusFromCoding[0];
+  if (status) return status.replace(qualifierSuffix, "").trim();
+  return undefined;
 }
 
 /**
