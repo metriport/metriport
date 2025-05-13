@@ -750,6 +750,11 @@ export class LambdasNestedStack extends NestedStack {
           vpc,
           alarmSnsAction: alarmAction,
         });
+
+        Object.values(secrets).forEach(secret => {
+          secret.grantRead(lambda);
+        });
+
         rosterUploadLambdas.push(lambda);
 
         hl7v2RosterBucket.grantReadWrite(lambda);
