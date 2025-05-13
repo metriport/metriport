@@ -1,7 +1,7 @@
 import {
   AllergyIntolerance,
   Appointment as AppointmentFhir,
-  Bundle as BundleFhir,
+  Bundle,
   Condition,
   Encounter,
   Location,
@@ -9,6 +9,7 @@ import {
   MedicationStatement,
   Patient as PatientFhir,
   Practitioner as PractitionerFhir,
+  Resource,
 } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -25,7 +26,6 @@ import {
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
 import {
-  Bundle,
   createBundleFromResourceList,
   FhirResource,
   FhirResourceBundle,
@@ -355,7 +355,7 @@ class CanvasApi {
   }: {
     rxNormCode?: string;
     medicationName?: string;
-  }): Promise<BundleFhir> {
+  }): Promise<Bundle> {
     if (!rxNormCode && !medicationName) {
       throw new Error("At least one of rxNormCode or medicationName must be provided");
     }
@@ -786,7 +786,7 @@ class CanvasApi {
         resourceTypeInBundle: invalidEntry.resourceType,
       });
     }
-    const bundle = createBundleFromResourceList(fhirResources);
+    const bundle = createBundleFromResourceList(fhirResources as Resource[]);
     await this.updateCachedBundle({
       cxId,
       metriportPatientId,

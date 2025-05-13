@@ -1,7 +1,8 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { z } from "zod";
 import { resourceTypeForConsolidation } from "../../../medical/fhir/resources";
 
-export const supportedResourceTypes = [...resourceTypeForConsolidation, "Medication"] as const;
+export const supportedResourceTypes = [...resourceTypeForConsolidation] as const;
 
 export type SupportedResourceType = (typeof supportedResourceTypes)[number];
 
@@ -30,18 +31,11 @@ export const fhirResourceBundleSchema = z.object({
 export type FhirResourceBundle = z.infer<typeof fhirResourceBundleSchema>;
 
 export type BundleWithLastModified = {
-  bundle: {
-    resourceType: "Bundle";
-    entry: {
-      resource: FhirResource;
-    }[];
-  };
+  bundle: Bundle;
   lastModified: Date | undefined;
 };
 
-export type Bundle = BundleWithLastModified["bundle"];
-
-export function createBundleFromResourceList(resourceList: FhirResource[]): Bundle {
+export function createBundleFromResourceList(resourceList: Resource[]): Bundle {
   return {
     resourceType: "Bundle",
     entry: resourceList.map(resource => ({ resource })),

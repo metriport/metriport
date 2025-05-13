@@ -1,5 +1,5 @@
+import { Bundle } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
-import { Bundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
@@ -35,12 +35,13 @@ export async function createOrReplaceBundle({
   const { log } = out(
     `EhrResourceDiff createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
   );
-  const invalidResource = bundle.entry.find(entry => entry.resource.resourceType !== resourceType);
+  if (!bundle.entry) return;
+  const invalidResource = bundle.entry.find(entry => entry.resource?.resourceType !== resourceType);
   if (invalidResource) {
     throw new BadRequestError("Invalid resource type in bundle", undefined, {
       bundleType,
       resourceType,
-      invalidResourceResourceType: invalidResource.resource.resourceType,
+      invalidResourceResourceType: invalidResource.resource?.resourceType,
     });
   }
   const s3Utils = getS3UtilsInstance();

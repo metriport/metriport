@@ -1,16 +1,15 @@
+import { Resource } from "@medplum/fhirtypes";
 import { sleep } from "@metriport/shared";
 import {
   createBundleFromResourceList,
-  FhirResource,
-  fhirResourceSchema,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
+import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
 import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
 import { BundleType } from "../../../../bundle-shared";
 import { createOrReplaceBundle } from "../../../../command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../command/fetch-bundle";
-import { computeNewResources } from "../../utils";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
@@ -52,31 +51,34 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
           resourceType,
         }),
       ]);
-      const { newEhrResources, newMetriportResources } = computeNewResources({
-        ehrResources,
-        metriportResources,
+      const {
+        computedXorTargetResources: ehrResourcesXor,
+        computedXorSourceResources: metriportResourcesXor,
+      } = computeResourcesXorAlongResourceType({
+        targetResources: metriportResources,
+        sourceResources: ehrResources,
       });
       await Promise.all([
-        newEhrResources.length > 0
+        ehrResourcesXor.length > 0
           ? createOrReplaceBundle({
               ehr,
               cxId,
               metriportPatientId,
               ehrPatientId,
               bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
-              bundle: createBundleFromResourceList(newEhrResources),
+              bundle: createBundleFromResourceList(ehrResourcesXor),
               resourceType,
               jobId,
             })
           : undefined,
-        newMetriportResources.length > 0
+        metriportResourcesXor.length > 0
           ? createOrReplaceBundle({
               ehr,
               cxId,
               metriportPatientId,
               ehrPatientId,
               bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
-              bundle: createBundleFromResourceList(newMetriportResources),
+              bundle: createBundleFromResourceList(metriportResourcesXor),
               resourceType,
               jobId,
             })
@@ -101,17 +103,16 @@ async function getMetriportResourcesFromS3({
   cxId: string;
   patientId: string;
   resourceType: SupportedResourceType;
-}): Promise<FhirResource[]> {
+}): Promise<Resource[]> {
   const consolidated = await getConsolidated({ cxId, patientId });
-  const resources = consolidated?.bundle?.entry?.filter(
+  if (!consolidated?.bundle?.entry) return [];
+  const resources = consolidated.bundle.entry.filter(
     entry => entry.resource?.resourceType === resourceType
   );
-  if (!resources || resources.length < 1) return [];
+  if (resources.length < 1) return [];
   return resources.flatMap(entry => {
     if (!entry.resource) return [];
-    const parsedResourceSafe = fhirResourceSchema.safeParse(entry.resource);
-    if (!parsedResourceSafe.success) return [];
-    return [parsedResourceSafe.data];
+    return [entry.resource];
   });
 }
 
@@ -121,7 +122,7 @@ async function getEhrResourcesFromS3({
   metriportPatientId,
   ehrPatientId,
   resourceType,
-}: Omit<FetchBundleParams, "bundleType">): Promise<FhirResource[]> {
+}: Omit<FetchBundleParams, "bundleType">): Promise<Resource[]> {
   const bundle = await fetchBundle({
     ehr,
     cxId,
@@ -130,6 +131,10 @@ async function getEhrResourcesFromS3({
     resourceType,
     bundleType: BundleType.EHR,
   });
-  if (!bundle) return [];
-  return bundle.bundle.entry.map(entry => entry.resource);
+  if (!bundle?.bundle.entry) return [];
+  if (bundle.bundle.entry.length < 1) return [];
+  return bundle.bundle.entry.flatMap(entry => {
+    if (!entry.resource) return [];
+    return [entry.resource];
+  });
 }
