@@ -751,6 +751,9 @@ export class LambdasNestedStack extends NestedStack {
 
         // config.hl7Notification.secrets
         const hl7ScramblerSeedSecretKey = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
+        console.log("hl7ScramblerSeedSecretKey IS:", hl7ScramblerSeedSecretKey);
+        console.log("AND AVAILABLE", Object.keys(secrets));
+
         const hl7ScramblerSeedSecret = secrets[hl7ScramblerSeedSecretKey];
         if (!hl7ScramblerSeedSecret) {
           throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
