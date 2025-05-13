@@ -1,13 +1,13 @@
-import { Patient } from "../../../domain/patient";
-import { OnBulkItemError } from "../../../external/opensearch/bulk";
+import { Patient } from "../../../../domain/patient";
 import {
-  OpenSearchLexicalSearcherDirect,
-  OpenSearchLexicalSearcherDirectConfig,
-} from "../../../external/opensearch/lexical/lexical-searcher-direct";
-import { OpenSearchTextIngestorDirect } from "../../../external/opensearch/text-ingestor-direct";
-import { out } from "../../../util";
-import { Config } from "../../../util/config";
-import { getConsolidatedAsText } from "../consolidated-get";
+  OpenSearchLexicalSearcher,
+  OpenSearchLexicalSearcherConfig,
+} from "../../../../external/opensearch/lexical/lexical-searcher";
+import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
+import { OpenSearchTextIngestor } from "../../../../external/opensearch/text-ingestor";
+import { capture, out } from "../../../../util";
+import { Config } from "../../../../util/config";
+import { getConsolidatedAsText } from "../../consolidated-get";
 
 /**
  * Ingest a patient's consolidated resources into OpenSearch for lexical search.
@@ -23,7 +23,7 @@ export async function ingestLexical({
 }) {
   const { log } = out(`ingestLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
-  const ingestor = new OpenSearchTextIngestorDirect({
+  const ingestor = new OpenSearchTextIngestor({
     ...getConfigs(),
     settings: { logLevel: "info" },
   });
@@ -39,13 +39,15 @@ export async function ingestLexical({
     resourceId: resource.id,
     content: resource.text,
   }));
-  await ingestor.ingestBulk({
+  const errors = await ingestor.ingestBulk({
     cxId: patient.cxId,
     patientId: patient.id,
     resources,
     onItemError,
   });
   const elapsedTime = Date.now() - startedAt;
+
+  if (errors.size > 0) captureErrors({ cxId: patient.cxId, patientId: patient.id, errors, log });
 
   log(`Ingested ${convertedResources.length} resources in ${elapsedTime} ms`);
 }
@@ -54,11 +56,11 @@ export async function ingestLexical({
  * Initialize the lexical index in OpenSearch.
  */
 export async function initializeLexicalIndex() {
-  const searchService = new OpenSearchLexicalSearcherDirect(getConfigs());
+  const searchService = new OpenSearchLexicalSearcher(getConfigs());
   await searchService.createIndexIfNotExists();
 }
 
-function getConfigs(): OpenSearchLexicalSearcherDirectConfig {
+function getConfigs(): OpenSearchLexicalSearcherConfig {
   return {
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
@@ -66,4 +68,22 @@ function getConfigs(): OpenSearchLexicalSearcherDirectConfig {
     username: Config.getSearchUsername(),
     password: Config.getSearchPassword(),
   };
+}
+
+function captureErrors({
+  cxId,
+  patientId,
+  errors,
+  log,
+}: {
+  cxId: string;
+  patientId: string;
+  errors: Map<string, number>;
+  log: typeof console.log;
+}) {
+  const errorMapToObj = Object.fromEntries(errors.entries());
+  log(`Errors: `, () => JSON.stringify(errorMapToObj));
+  capture.error("Errors ingesting resources into OpenSearch", {
+    extra: { cxId, patientId, countPerErrorType: JSON.stringify(errorMapToObj, null, 2) },
+  });
 }

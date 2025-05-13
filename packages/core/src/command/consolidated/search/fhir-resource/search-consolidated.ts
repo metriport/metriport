@@ -1,7 +1,7 @@
 import { SearchSetBundle } from "@metriport/shared/medical";
-import { Patient } from "../../../domain/patient";
+import { Patient } from "../../../../domain/patient";
+import { getConsolidatedPatientData } from "../../consolidated-get";
 import { searchLexical } from "./search-lexical";
-import { getConsolidatedPatientData } from "../consolidated-get";
 
 export async function searchConsolidated({
   patient,

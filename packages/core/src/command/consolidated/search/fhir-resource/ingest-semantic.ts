@@ -1,9 +1,9 @@
-import { Patient } from "../../../domain/patient";
-import { OnBulkItemError } from "../../../external/opensearch/bulk";
-import { OpenSearchTextIngestorDirect } from "../../../external/opensearch/text-ingestor-direct";
-import { out } from "../../../util";
-import { Config } from "../../../util/config";
-import { getConsolidatedAsText } from "../consolidated-get";
+import { Patient } from "../../../../domain/patient";
+import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
+import { OpenSearchTextIngestor } from "../../../../external/opensearch/text-ingestor";
+import { out } from "../../../../util";
+import { Config } from "../../../../util/config";
+import { getConsolidatedAsText } from "../../consolidated-get";
 
 /**
  * Ingest a patient's consolidated resources into OpenSearch for semantic search.
@@ -21,7 +21,7 @@ export async function ingestSemantic({
 
   const convertedResources = await getConsolidatedAsText({ patient });
 
-  const ingestor = new OpenSearchTextIngestorDirect({
+  const ingestor = new OpenSearchTextIngestor({
     region: Config.getAWSRegion(),
     endpoint: Config.getSemanticSearchEndpoint(),
     indexName: Config.getSemanticSearchIndexName(),

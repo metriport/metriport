@@ -1,14 +1,14 @@
 import { SearchSetBundle } from "@metriport/shared/medical";
-import { Patient } from "../../../domain/patient";
-import { DocumentReferenceWithId } from "../../../external/fhir/document/document-reference";
-import { toFHIR as patientToFhir } from "../../../external/fhir/patient/conversion";
-import { buildBundleEntry } from "../../../external/fhir/shared/bundle";
-import { SearchResult } from "../../../external/opensearch/index-based-on-resource";
-import { OpenSearchLexicalSearcherDirect } from "../../../external/opensearch/lexical/lexical-searcher-direct";
-import { searchDocuments } from "../../../external/opensearch/search-documents";
-import { out } from "../../../util";
-import { Config } from "../../../util/config";
-import { getConsolidatedPatientData } from "../consolidated-get";
+import { Patient } from "../../../../domain/patient";
+import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
+import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
+import { buildBundleEntry } from "../../../../external/fhir/shared/bundle";
+import { SearchResult } from "../../../../external/opensearch/index-based-on-resource";
+import { OpenSearchLexicalSearcher } from "../../../../external/opensearch/lexical/lexical-searcher";
+import { searchDocuments } from "../document-reference/search";
+import { out } from "../../../../util";
+import { Config } from "../../../../util/config";
+import { getConsolidatedPatientData } from "../../consolidated-get";
 
 /**
  * Performs a lexical search on a patient's consolidated resources in OpenSearch
@@ -100,7 +100,7 @@ async function searchOpenSearch({
   maxNumberOfResults?: number | undefined;
 }) {
   // TODO eng-41 make this a factory so we can delegate the processing to a lambda
-  const searchService = new OpenSearchLexicalSearcherDirect({
+  const searchService = new OpenSearchLexicalSearcher({
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
     indexName: Config.getLexicalSearchIndexName(),
