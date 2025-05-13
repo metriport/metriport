@@ -183,7 +183,7 @@ export const config: EnvConfigNonSandbox = {
         cron: "cron(0 0 ? * SAT *)",
         states: [USState.TX],
         subscriptions: ["adt"],
-        schema: {
+        mapping: {
           scrambledId: "ID",
           firstName: "FIRST NAME",
           lastName: "LAST NAME",
