@@ -6,6 +6,7 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
 import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
+import { deduplicateResources } from "../../../../../../../fhir-deduplication/dedup-resources";
 import { out } from "../../../../../../../util/log";
 import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../../api/job/create-resource-diff-bundles/set-entry-status";
 import { BundleType } from "../../../../bundle-shared";
@@ -80,12 +81,13 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
           `computeResourceDiffBundles - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
         ).log(`Error creating metriport and ehr bundles. Cause: ${errorToString(error)}`);
       }
+      const dedupedEhrResources = deduplicateResources<Resource>({ resources: ehrResources });
       const {
         computedXorTargetResources: metriportResourcesXor,
         computedXorSourceResources: ehrResourcesXor,
       } = computeResourcesXorAlongResourceType({
         targetResources: metriportResources,
-        sourceResources: ehrResources,
+        sourceResources: dedupedEhrResources,
       });
       await Promise.all([
         ehrResourcesXor.length > 0
