@@ -45,7 +45,6 @@ import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 dayjs.extend(duration);
 
-// const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
 const qualifyingBundleTypesForRequest = ["batch", "transaction", "history"];
 
 export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T> &
@@ -173,10 +172,7 @@ export function deepSearchObjectForString<R extends object>(
   return results;
 }
 
-export function deepSearchArrayForString<R extends unknown[]>(
-  array: R,
-  searchKey: string
-): string[] {
+export function deepSearchArrayForString(array: unknown[], searchKey: string): string[] {
   return array.flatMap(item => {
     if (item != null && typeof item === "object") {
       return deepSearchObjectForString(item, searchKey);
