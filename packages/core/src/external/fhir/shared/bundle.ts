@@ -45,7 +45,7 @@ import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 dayjs.extend(duration);
 
-const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
+// const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
 const qualifyingBundleTypesForRequest = ["batch", "transaction", "history"];
 
 export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T> &
@@ -116,12 +116,9 @@ export function getReferences({
   referencesToExclude?: ResourceType[] | undefined;
 }): ReferenceWithIdAndType[] {
   if (!resources || resources.length <= 0) return [];
-  const rawContents = JSON.stringify(resources);
-  const matches = rawContents.matchAll(referenceRegex);
   const references: string[] = [];
-  for (const match of matches) {
-    const ref = match[1];
-    if (ref) references.push(ref);
+  for (const resource of resources) {
+    references.push(...deepSearchObjectForString(resource, "reference"));
   }
   const uniqueRefs = uniq(references);
 
@@ -138,6 +135,54 @@ export function getReferences({
     : includedRefs.filter(r => !referencesToExclude.includes(r.type));
 
   return remainingRefs;
+}
+
+export function deepSearchObjectForString<R extends object>(
+  resource: R,
+  searchKey: string
+): string[] {
+  const results: string[] = [];
+
+  // Not sure if this would break if not pure JS objects or created with Object.create(null)
+  // if (resource.constructor !== Object) return results;
+
+  // Basic object sanity checks
+  if (
+    resource == null ||
+    typeof resource !== "object" ||
+    resource instanceof Date ||
+    resource instanceof Set ||
+    resource instanceof Map
+  )
+    return results;
+
+  // Recursively search object key-value pairs
+  const keys = Object.keys(resource) as Array<keyof R>;
+  for (const key of keys) {
+    const value = resource[key];
+
+    if (key === searchKey && typeof value === "string") {
+      results.push(value);
+    } else if (Array.isArray(value)) {
+      results.push(...deepSearchArrayForString(value, searchKey));
+    } else if (typeof value === "object" && value !== null) {
+      results.push(...deepSearchObjectForString(value, searchKey));
+    }
+  }
+
+  return results;
+}
+
+export function deepSearchArrayForString<R extends unknown[]>(
+  array: R,
+  searchKey: string
+): string[] {
+  return array.flatMap(item => {
+    if (item != null && typeof item === "object") {
+      return deepSearchObjectForString(item, searchKey);
+    }
+    return [];
+  });
 }
 
 export function buildReferenceFromStringRelative(
