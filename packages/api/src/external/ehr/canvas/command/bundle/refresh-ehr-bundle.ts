@@ -1,7 +1,7 @@
 import { RefreshEhrBundleParamsForClient } from "../../../shared/utils/bundle/types";
 import { createCanvasClient } from "../../shared";
 
-export async function refreshEhrBundles({
+export async function refreshEhrBundle({
   cxId,
   practiceId,
   ehrPatientId,
