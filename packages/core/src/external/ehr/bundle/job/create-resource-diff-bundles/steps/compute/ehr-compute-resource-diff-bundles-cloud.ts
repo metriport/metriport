@@ -8,6 +8,12 @@ import {
   EhrComputeResourceDiffBundlesHandler,
 } from "./ehr-compute-resource-diff-bundles";
 
+/**
+ * This class is used to compute resource diff bundles in the cloud.
+ * It sends messages to the resource diff bundle queue for each resource type.
+ * The queue is configured to deduplicate messages based on the payload.
+ *
+ */
 export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDiffBundlesHandler {
   private readonly sqsClient: SQSClient;
 

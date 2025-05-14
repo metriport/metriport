@@ -5,6 +5,12 @@ import { SQSClient } from "../../../../../../aws/sqs";
 import { createSqsGroupId } from "../../create-resource-diff-bundle-shared";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
+/**
+ * This class is used to refresh EHR bundles in the cloud.
+ * It sends messages to the EHR refresh queue for each resource type.
+ * The queue is configured to deduplicate messages based on the payload.
+ *
+ */
 export class EhrRefreshEhrBundlesCloud implements EhrRefreshEhrBundlesHandler {
   private readonly sqsClient: SQSClient;
 
