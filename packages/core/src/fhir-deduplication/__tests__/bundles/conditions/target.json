@@ -1,0 +1,379 @@
+{
+  "resourceType": "Bundle",
+  "entry": [
+    {
+      "resource": {
+        "id": "b9b78ee6-118f-4414-b748-eede96359f02",
+        "resourceType": "Condition",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Post COVID-19 condition, unspecified</div>"
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/dd16c46f-1e8e-42b6-92a6-4fdec9a32216"
+            }
+          }
+        ],
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "resolved",
+              "display": "Resolved"
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ],
+          "text": "Active"
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "provisional",
+              "display": "Provisional"
+            }
+          ],
+          "text": "Provisional"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ],
+            "text": "Encounter Diagnosis"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "U099",
+              "display": "Post COVID-19 condition, unspecified"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "404684003",
+              "display": "Post COVID-19 condition, unspecified"
+            }
+          ],
+          "text": "Post COVID-19 condition, unspecified"
+        },
+        "subject": {
+          "reference": "Patient/test1",
+          "type": "Patient",
+          "display": "Smith, Chris"
+        },
+        "encounter": {
+          "reference": "Encounter/test1",
+          "type": "Encounter"
+        },
+        "abatementDateTime": "2025-05-06",
+        "recordedDate": "2025-03-31T18:27:20.860183+00:00",
+        "recorder": {
+          "reference": "Practitioner/test2",
+          "type": "Practitioner"
+        }
+      }
+    },
+    {
+      "resource": {
+        "id": "ba187039-1672-4040-bc8b-05d9ec199f2f",
+        "resourceType": "Condition",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Hypomagnesemia</div>"
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/4cd10a70-6890-45b8-99ff-ef47015a831d"
+            }
+          }
+        ],
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "resolved",
+              "display": "Resolved"
+            }
+          ],
+          "text": "Resolved"
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ],
+          "text": "Confirmed"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ],
+            "text": "Encounter Diagnosis"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E8342",
+              "display": "Hypomagnesemia"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "10629009",
+              "display": "Hypomagnesemia"
+            }
+          ],
+          "text": "Hypomagnesemia"
+        },
+        "subject": {
+          "reference": "Patient/test1",
+          "type": "Patient",
+          "display": "Smith, Chris"
+        },
+        "abatementDateTime": "2025-05-06",
+        "recordedDate": "2025-04-16T17:42:49.507359+00:00",
+        "recorder": {
+          "reference": "Practitioner/test2",
+          "type": "Practitioner"
+        }
+      }
+    },
+    {
+      "resource": {
+        "id": "a0850f7e-43f2-4688-a1e0-758286caf728",
+        "resourceType": "Condition",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Anemia, unspecified</div>"
+        },
+        "extension": [],
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "resolved",
+              "display": "Resolved"
+            }
+          ],
+          "text": "Resolved"
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ],
+          "text": "Confirmed"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ],
+            "text": "Encounter Diagnosis"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "D649",
+              "display": "Anemia, unspecified"
+            }
+          ],
+          "text": "Anemia, unspecified"
+        },
+        "subject": {
+          "reference": "Patient/test1",
+          "type": "Patient",
+          "display": "Smith, Chris"
+        },
+        "onsetDateTime": "2024-07-06",
+        "abatementDateTime": "2025-05-12",
+        "recordedDate": "2025-05-09T23:42:24.124248+00:00",
+        "recorder": {
+          "reference": "Practitioner/test4",
+          "type": "Practitioner"
+        }
+      }
+    },
+    {
+      "resource": {
+        "id": "8835e10a-74f3-4878-ba48-d42461e72588",
+        "resourceType": "Condition",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Acute systolic congestive heart failure (CMS/HCC)</div>"
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/206a75d7-73e7-4eac-9414-37ef53e7341b"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/5176059f-d66f-464f-be60-d0d61db97144"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/9ab977f0-3029-458e-b42d-c7270cd7a56b"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/8c9a9534-067d-4fe2-ad07-5df00173b576"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/82401dd4-efd7-4a64-abd8-791ccd323c21"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/160add58-143e-483e-92a1-4b353e164996"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/c0b9edc2-4663-4324-b647-499647f8545c"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/522844e3-e01d-49a4-9bb0-b439c5e1ea45"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/4fe7dc17-f652-40d1-be6c-99a7c32b814e"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+            "valueRelatedArtifact": {
+              "type": "derived-from",
+              "display": "Condition/e9f34127-b15c-4738-80aa-7f0b17fcd70a"
+            }
+          }
+        ],
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "resolved",
+              "display": "Resolved"
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ],
+          "text": "Active"
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ],
+          "text": "Confirmed"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ],
+            "text": "Encounter Diagnosis"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "I5021",
+              "display": "Acute systolic congestive heart failure (CMS/HCC)"
+            }
+          ],
+          "text": "Acute systolic congestive heart failure (CMS/HCC)"
+        },
+        "subject": {
+          "reference": "Patient/test1",
+          "type": "Patient",
+          "display": "Smith, Chris"
+        },
+        "onsetDateTime": "2024-07-06",
+        "abatementDateTime": "2025-05-12",
+        "recordedDate": "2025-05-13T20:37:50.916680+00:00",
+        "recorder": {
+          "reference": "Practitioner/test3",
+          "type": "Practitioner"
+        }
+      }
+    }
+  ]
+}
