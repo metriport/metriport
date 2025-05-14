@@ -36,7 +36,7 @@
           "end": "2024-08-28T00:55:00.000Z"
         },
         "recorder": {
-          "reference": "Practitioner/897668c5-532e-47bc-94d6-39d92c44bd9a"
+          "reference": "Practitioner/test4"
         },
         "clinicalStatus": {
           "coding": [
@@ -83,7 +83,7 @@
           "end": "2024-07-09T19:47:00.000Z"
         },
         "recorder": {
-          "reference": "Practitioner/897668c5-532e-47bc-94d6-39d92c44bd9a"
+          "reference": "Practitioner/test4"
         },
         "clinicalStatus": {
           "coding": [
@@ -130,7 +130,7 @@
           "end": "2024-07-09T19:47:00.000Z"
         },
         "recorder": {
-          "reference": "Practitioner/897668c5-532e-47bc-94d6-39d92c44bd9a"
+          "reference": "Practitioner/test4"
         },
         "clinicalStatus": {
           "coding": [
@@ -231,7 +231,7 @@
           "end": "2022-06-14T12:50:13-05:00"
         },
         "recorder": {
-          "reference": "Practitioner/897668c5-532e-47bc-94d6-39d92c44bd9a"
+          "reference": "Practitioner/test4"
         }
       }
     },
@@ -343,7 +343,7 @@
           "end": "2021-04-27T16:53:58-05:00"
         },
         "recorder": {
-          "reference": "Practitioner/897668c5-532e-47bc-94d6-39d92c44bd9a"
+          "reference": "Practitioner/test4"
         }
       }
     }
