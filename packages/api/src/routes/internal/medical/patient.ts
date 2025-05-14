@@ -1,10 +1,9 @@
-import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { consolidationConversionType, genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "@metriport/core/command/feature-flags/domain-ffs";
-import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
 import {
   hl7v2SubscriptionRequestSchema,
