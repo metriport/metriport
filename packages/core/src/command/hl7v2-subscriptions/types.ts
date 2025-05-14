@@ -1,5 +1,6 @@
 import { USState } from "@metriport/shared";
-import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
+import { Patient } from "../../domain/patient";
+import { Hl7v2Subscription } from "../../domain/patient-settings";
 
 export type SftpConfig = {
   host: string;
@@ -9,16 +10,32 @@ export type SftpConfig = {
   remotePath: string;
 };
 
-export type HieConfig = {
-  name: string;
-  sftpConfig?: SftpConfig;
-  schema: Record<string, string>;
+export const addressFields = ["addressLine1", "addressLine2", "city", "state", "zip"] as const;
+export type AddressField = (typeof addressFields)[number];
+export type HieAddressFieldMapping = {
+  [K in AddressField]: string;
 };
 
-export type Hl7v2RosterConfig = {
-  hieConfig: HieConfig;
+export type MetriportToHieFieldMapping = {
+  scrambledId: string;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  genderAtBirth: string;
+  ssn?: string;
+  phone?: string;
+  email?: string;
+  driversLicense?: string;
+  address: HieAddressFieldMapping[];
+};
+
+export type HieConfig = {
+  name: string;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
+  cron: string;
+  sftpConfig?: SftpConfig;
+  mapping: MetriportToHieFieldMapping;
 };
 
 export type Hl7v2SubscriberParams = {
@@ -33,7 +50,7 @@ export type Hl7v2RosterUploadDetails = {
 };
 
 export type Hl7v2SubscriberApiResponse = {
-  patients: Hl7v2Subscriber[];
+  patients: Patient[];
   meta: {
     nextPage?: string;
   };

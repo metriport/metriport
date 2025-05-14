@@ -9,7 +9,7 @@ import {
 } from "@metriport/core/command/consolidated/consolidated-create";
 import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/conversion";
 import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
-import { deduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
+import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents, getFileNames, makeDir } from "@metriport/core/util/fs";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -62,22 +62,23 @@ async function main() {
     console.log(`Processing ${index + 1}/${filteredBundleFileNames.length}. Filepath: ${filePath}`);
 
     const stringBundle = getFileContents(filePath);
-    const initialBundle: Bundle = JSON.parse(stringBundle);
+    const bundle: Bundle = JSON.parse(stringBundle);
+    const initialSize = bundle.entry?.length;
 
     const startedAt = new Date();
 
     const cxId = uuidv4();
     const patientId = existingPatientId ?? uuidv4();
-    const resultingBundle = deduplicateFhir(initialBundle, cxId, patientId);
+    dangerouslyDeduplicateFhir(bundle, cxId, patientId);
 
     console.log(
-      `Went from ${initialBundle.entry?.length} to ${
-        resultingBundle.entry?.length
-      } resources in ${elapsedTimeFromNow(startedAt)} ms.`
+      `Went from ${initialSize} to ${bundle.entry?.length} resources in ${elapsedTimeFromNow(
+        startedAt
+      )} ms.`
     );
 
     const resources =
-      resultingBundle.entry?.map(entry => entry.resource).filter((r): r is Resource => !!r) ?? [];
+      bundle.entry?.map(entry => entry.resource).filter((r): r is Resource => !!r) ?? [];
     const isValid = validateReferences(resources, logsFolderName);
     console.log(`Reference validation result: ${isValid ? "Valid" : "Invalid"}`);
 
@@ -85,7 +86,7 @@ async function main() {
     const fileName = filePath.slice(lastSlash + 1).split(".json")[0];
     const fileNameWithExtension = `${fileName}${suffix}.json`;
 
-    const output = JSON.stringify(resultingBundle);
+    const output = JSON.stringify(bundle);
     fs.writeFileSync(`./${logsFolderName}/${fileNameWithExtension}`, output);
     fs.writeFileSync(`${samplesFolderPath}/${fileNameWithExtension}`, output);
   });
