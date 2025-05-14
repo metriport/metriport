@@ -11,8 +11,8 @@ const testCondition2: Bundle = JSON.parse(
   fs.readFileSync(`${path.dirname(__dirname)}/__tests__/bundles/conditions/target.json`, "utf8")
 );
 
-describe("combineTwoResources", () => {
-  it("keeps the id of the first condition", () => {
+describe("computeResourcesXorAlongResourceType", () => {
+  it("correctly splits target and source resources", () => {
     const resources1 =
       testCondition1.entry?.flatMap(entry => {
         if (!entry.resource) {
