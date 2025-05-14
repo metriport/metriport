@@ -27,9 +27,9 @@ import {
 } from "@metriport/shared/interface/external/ehr/canvas/index";
 import {
   createBundleFromResourceList,
-  FhirResource,
-  FhirResourceBundle,
-  fhirResourceBundleSchema,
+  EhrFhirResource,
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
@@ -760,33 +760,33 @@ class CanvasApi {
     async function paginateFhirResources(
       api: CanvasApi,
       url: string | undefined,
-      acc: FhirResource[] | undefined = []
-    ): Promise<FhirResource[]> {
+      acc: EhrFhirResource[] | undefined = []
+    ): Promise<EhrFhirResource[]> {
       if (!url) return acc;
-      const fhirResourceBundle = await api.makeRequest<FhirResourceBundle>({
+      const ehrFhirResourceBundle = await api.makeRequest<EhrFhirResourceBundle>({
         cxId,
         patientId: canvasPatientId,
         s3Path: `fhir-resources-${resourceType}`,
         method: "GET",
         url,
-        schema: fhirResourceBundleSchema,
+        schema: ehrFhirResourceBundleSchema,
         additionalInfo,
         debug,
         useFhir: true,
       });
-      acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
-      const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
+      acc.push(...(ehrFhirResourceBundle.entry ?? []).map(e => e.resource));
+      const nextUrl = ehrFhirResourceBundle.link?.find(l => l.relation === "next")?.url;
       return paginateFhirResources(api, nextUrl, acc);
     }
-    const fhirResources = await paginateFhirResources(this, resourceTypeUrl);
-    const invalidEntry = fhirResources.find(r => r.resourceType !== resourceType);
+    const ehrFhirResources = await paginateFhirResources(this, resourceTypeUrl);
+    const invalidEntry = ehrFhirResources.find(r => r.resourceType !== resourceType);
     if (invalidEntry) {
-      throw new BadRequestError("Invalid bundle", undefined, {
+      throw new BadRequestError("Invalid resource in bundle", undefined, {
         resourceType,
         resourceTypeInBundle: invalidEntry.resourceType,
       });
     }
-    const bundle = createBundleFromResourceList(fhirResources as Resource[]);
+    const bundle = createBundleFromResourceList(ehrFhirResources as Resource[]);
     await this.updateCachedBundle({
       cxId,
       metriportPatientId,

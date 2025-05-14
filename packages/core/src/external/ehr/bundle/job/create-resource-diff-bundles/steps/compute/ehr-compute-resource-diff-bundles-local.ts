@@ -1,11 +1,12 @@
 import { Resource } from "@medplum/fhirtypes";
-import { sleep } from "@metriport/shared";
+import { errorToString, sleep } from "@metriport/shared";
 import {
   createBundleFromResourceList,
   SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
 import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
+import { out } from "../../../../../../../util/log";
 import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../../api/job/create-resource-diff-bundles/set-entry-status";
 import { BundleType } from "../../../../bundle-shared";
 import { createOrReplaceBundle } from "../../../../command/create-or-replace-bundle";
@@ -51,9 +52,37 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
           resourceType,
         }),
       ]);
+      try {
+        await Promise.all([
+          createOrReplaceBundle({
+            ehr,
+            cxId,
+            metriportPatientId,
+            ehrPatientId,
+            bundleType: BundleType.METRIPORT,
+            bundle: createBundleFromResourceList(metriportResources),
+            resourceType,
+            jobId,
+          }),
+          createOrReplaceBundle({
+            ehr,
+            cxId,
+            metriportPatientId,
+            ehrPatientId,
+            bundleType: BundleType.EHR,
+            bundle: createBundleFromResourceList(ehrResources),
+            resourceType,
+            jobId,
+          }),
+        ]);
+      } catch (error) {
+        out(
+          `computeResourceDiffBundles - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
+        ).log(`Error creating metriport and ehr bundles. Cause: ${errorToString(error)}`);
+      }
       const {
-        computedXorTargetResources: ehrResourcesXor,
-        computedXorSourceResources: metriportResourcesXor,
+        computedXorTargetResources: metriportResourcesXor,
+        computedXorSourceResources: ehrResourcesXor,
       } = computeResourcesXorAlongResourceType({
         targetResources: metriportResources,
         sourceResources: ehrResources,

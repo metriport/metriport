@@ -33,6 +33,10 @@ export function createFileKeyEhr(params: CreateBundlePrefixParams): string {
   return `${createBundlePrefix(params)}/ehr.json`;
 }
 
+export function createFileKeyMetriport(params: CreateBundlePrefixParams): string {
+  return `${createBundlePrefix(params)}/metriport.json`;
+}
+
 export function createFileKeyEhrOnly(params: CreateBundlePrefixParams): string {
   return `${createBundlePrefix(params)}/ehr-only.json`;
 }
@@ -60,6 +64,7 @@ export function getS3UtilsInstance(): S3Utils {
 
 export enum BundleType {
   EHR = "Ehr",
+  METRIPORT = "Metriport",
   RESOURCE_DIFF_EHR_ONLY = "ResourceDiffEhrOnly",
   RESOURCE_DIFF_METRIPORT_ONLY = "ResourceDiffMetriportOnly",
 }
@@ -81,6 +86,7 @@ export function isResourceDiffBundleType(
 
 export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams) => string> = {
   [BundleType.EHR]: createFileKeyEhr,
+  [BundleType.METRIPORT]: createFileKeyMetriport,
   [BundleType.RESOURCE_DIFF_EHR_ONLY]: createFileKeyEhrOnly,
   [BundleType.RESOURCE_DIFF_METRIPORT_ONLY]: createFileKeyMetriportOnly,
 };

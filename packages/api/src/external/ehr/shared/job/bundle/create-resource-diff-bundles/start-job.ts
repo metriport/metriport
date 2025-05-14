@@ -3,6 +3,7 @@ import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/b
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { completePatientJob } from "../../../../../../command/job/patient/complete";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
+import { initializePatientJob } from "../../../../../../command/job/patient/initialize";
 import { updatePatientJobTotal } from "../../../../../../command/job/patient/update-total";
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
@@ -50,6 +51,7 @@ export async function startCreateResourceDiffBundlesJob({
   const jobId = job.id;
   const resourceTypes = getSupportedResourcesByEhr(ehr);
   if (resourceTypes.length < 1) {
+    await initializePatientJob({ cxId, jobId });
     await completePatientJob({ cxId, jobId });
     return jobId;
   }
