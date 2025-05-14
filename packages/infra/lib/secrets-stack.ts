@@ -63,6 +63,7 @@ export class SecretsStack extends Stack {
       ...props.config.ehrIntegration?.elation.secrets,
       ...props.config.ehrIntegration?.canvas.secrets,
       ...props.config.ehrIntegration?.healthie.secrets,
+      ...props.config.ehrIntegration?.eclinicalworks.secrets,
     };
 
     if (Object.keys(ehrSecrets).length) {
