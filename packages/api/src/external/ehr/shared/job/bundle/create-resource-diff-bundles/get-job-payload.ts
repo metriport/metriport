@@ -1,3 +1,4 @@
+import { PatientJob } from "../../../../../../../../shared/dist";
 import {
   createPatientJobPayload,
   getLatestPatientJob,
@@ -23,27 +24,12 @@ import {
  * @returns resource diff bundles job payload with data if completed
  * @throws NotFoundError if no job is found
  */
-export async function getResourceDiffBundlesJobPayload({
-  ehr,
-  cxId,
-  practiceId,
-  ehrPatientId,
-  jobId,
-  bundleType,
-}: GetResourceDiffBundlesJobPayloadParams): Promise<ResourceDiffBundlesJobPayload> {
+export async function getResourceDiffBundlesJobPayload(
+  params: GetResourceDiffBundlesJobPayloadParams
+): Promise<ResourceDiffBundlesJobPayload> {
+  const { cxId, jobId } = params;
   const job = await getPatientJobByIdOrFail({ cxId, jobId });
-  if (job.status === "completed") {
-    const data = await fetchBundlePreSignedUrls({
-      ehr,
-      cxId,
-      ehrPatientId,
-      practiceId,
-      bundleType,
-      jobId,
-    });
-    return createPatientJobPayload({ job, data });
-  }
-  return createPatientJobPayload({ job });
+  return getResourceDiffBundlesJobPayloadInternal({ ...params, job });
 }
 
 /**
@@ -78,12 +64,32 @@ export async function getLatestResourceDiffBundlesJobPayload({
     jobGroupId: ehrPatientId,
   });
   if (!job) return undefined;
+  return getResourceDiffBundlesJobPayloadInternal({
+    ehr,
+    cxId,
+    practiceId,
+    ehrPatientId,
+    bundleType,
+    job,
+  });
+}
+
+async function getResourceDiffBundlesJobPayloadInternal({
+  ehr,
+  cxId,
+  ehrPatientId,
+  practiceId,
+  bundleType,
+  job,
+}: Omit<GetResourceDiffBundlesJobPayloadParams, "jobId"> & {
+  job: PatientJob;
+}): Promise<ResourceDiffBundlesJobPayload> {
   if (job.status === "completed") {
     const data = await fetchBundlePreSignedUrls({
       ehr,
       cxId,
-      practiceId,
       ehrPatientId,
+      practiceId,
       bundleType,
       jobId: job.id,
     });
