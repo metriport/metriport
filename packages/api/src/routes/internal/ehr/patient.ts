@@ -20,12 +20,12 @@ const router = Router();
 /**
  * POST /internal/ehr/:ehrId/patient/:id/resource/diff
  *
- * Starts the resource diff job to generate the Metriport only bundle, or EHR only bundle.
- * The job is started asynchronously.
- * @param req.query.ehrId - The EHR to refresh the bundles for.
+ * Starts the resource diff job to generate the resource diff bundles.
+ *
+ * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
- * @param req.params.id - The ID of EHR Patient.
- * @param req.query.practiceId - The ID of EHR Practice.
+ * @param req.params.id - The patient id of the EHR patient.
+ * @param req.query.practiceId - The practice id of the EHR patient.
  * @returns The job ID of the resource diff job
  */
 router.post(
@@ -51,10 +51,11 @@ router.post(
  * GET /internal/ehr/:ehrId/patient/:id/resource/diff/latest
  *
  * Retrieves the latest resource diff job and pre-signed URLs for the resource diff bundles if completed
- * @param req.query.ehrId - The EHR to fetch the resource diff job for.
+ *
+ * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
- * @param req.params.id - The ID of EHR Patient.
- * @param req.query.practiceId - The ID of EHR Practice.
+ * @param req.params.id - The patient id of the EHR patient.
+ * @param req.query.practiceId - The practice id of the EHR patient.
  * @param req.query.bundleType - The type of bundle to fetch.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
@@ -87,11 +88,12 @@ router.get(
 /**
  * GET /internal/ehr/:ehrId/patient/:id/resource/diff/:jobId
  *
- * Retrieves the resource diff job by jobId and pre-signed URLs for the resource diff bundles if completed
- * @param req.query.cxId The cxId of the patient.
- * @param req.params.ehrId - The EHR to fetch the resource diff job for.
- * @param req.params.id - The ID of EHR Patient.
- * @param req.query.practiceId - The ID of EHR Practice.
+ * Retrieves the resource diff job by job id and pre-signed URLs for the resource diff bundles if completed
+ *
+ * @param req.query.ehrId - The EHR source.
+ * @param req.query.cxId - The CX ID of the patient.
+ * @param req.params.id - The patient id of the EHR patient.
+ * @param req.query.practiceId - The practice id of the EHR patient.
  * @param req.query.bundleType - The type of bundle to fetch.
  * @param req.params.jobId - The job ID of the resource diff job.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
@@ -128,9 +130,10 @@ router.get(
  * POST /internal/ehr/:ehrId/patient/:id/resource/diff/set-entry-status
  *
  * Sets the status of a resource diff job entry.
+ *
+ * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
- * @param req.params.ehrId - The EHR to fetch the resource diff job for.
- * @param req.params.id - The ID of EHR Patient.
+ * @param req.params.id - The patient id of the EHR patient.
  * @param req.query.jobId - The job ID.
  * @param req.query.entryStatus - The status of the entry.
  * @returns 200 OK
@@ -163,10 +166,10 @@ router.post(
  * POST /internal/ehr/:ehrId/patient/:id/resource/bundle/refresh
  *
  * Refreshes the EHR bundle.
+ * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
- * @param req.query.ehrId - The EHR to refresh the bundles for.
- * @param req.params.id - The ID of EHR Patient.
- * @param req.query.practiceId - The ID of EHR Practice.
+ * @param req.params.id - The patient id of the EHR patient.
+ * @param req.query.practiceId - The practice id of the EHR patient.
  * @param req.query.resourceType - The resource type to refresh.
  * @returns 200 OK
  */
