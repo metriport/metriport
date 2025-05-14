@@ -53,6 +53,7 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
           resourceType,
         }),
       ]);
+      const dedupedEhrResources = deduplicateResources<Resource>({ resources: ehrResources });
       try {
         await Promise.all([
           createOrReplaceBundle({
@@ -75,13 +76,22 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
             resourceType,
             jobId,
           }),
+          createOrReplaceBundle({
+            ehr,
+            cxId,
+            metriportPatientId,
+            ehrPatientId,
+            bundleType: BundleType.EHR_DEDUPED,
+            bundle: createBundleFromResourceList(dedupedEhrResources),
+            resourceType,
+            jobId,
+          }),
         ]);
       } catch (error) {
         out(
           `computeResourceDiffBundles - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
         ).log(`Error creating metriport and ehr bundles. Cause: ${errorToString(error)}`);
       }
-      const dedupedEhrResources = deduplicateResources<Resource>({ resources: ehrResources });
       const {
         computedXorTargetResources: metriportResourcesXor,
         computedXorSourceResources: ehrResourcesXor,
