@@ -16,7 +16,7 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
-import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
@@ -69,7 +69,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirToBundleCountLambda: lambda.Function;
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
-  readonly hl7v2RosterUploadLambda: Lambda | undefined;
+  readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
   readonly conversionResultNotifierLambda: lambda.Function;
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -213,9 +213,10 @@ export class LambdasNestedStack extends NestedStack {
         ],
       });
 
-      this.hl7v2RosterUploadLambda = this.setupRosterUploadLambda({
+      this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
         lambdaLayers: this.lambdaLayers,
         vpc: props.vpc,
+        secrets: props.secrets,
         hl7v2RosterBucket,
         config: props.config,
         alarmAction: props.alarmAction,
@@ -713,35 +714,55 @@ export class LambdasNestedStack extends NestedStack {
     return acmCertificateMonitorLambda;
   }
 
-  private setupRosterUploadLambda(ownProps: {
+  private setupRosterUploadLambdas(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
+    secrets: Secrets;
     hl7v2RosterBucket: s3.IBucket;
     config: EnvConfig;
     alarmAction: SnsAction | undefined;
-  }): Lambda {
-    const { lambdaLayers, vpc, hl7v2RosterBucket, config, alarmAction } = ownProps;
+  }): Lambda[] {
+    const { lambdaLayers, vpc, secrets, hl7v2RosterBucket, config, alarmAction } = ownProps;
     const sentryDsn = config.lambdasSentryDSN;
     const envType = config.environmentType;
 
-    const hl7v2RosterUploadLambda = createLambda({
-      stack: this,
-      name: "Hl7v2RosterUpload",
-      entry: "hl7v2-roster",
-      envType,
-      envVars: {
-        BUCKET_NAME: hl7v2RosterBucket.bucketName,
-        API_URL: config.loadBalancerDnsName,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      layers: [lambdaLayers.shared],
-      memory: 4096,
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
+    const rosterUploadLambdas: Lambda[] = [];
+    if (config.hl7Notification?.hieConfigs) {
+      const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
+      if (!hl7ScramblerSeedSecret) {
+        throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
+      }
 
-    hl7v2RosterBucket.grantReadWrite(hl7v2RosterUploadLambda);
+      const scramblerSeedSecret = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
+      const hieConfigs = config.hl7Notification.hieConfigs;
 
-    return hl7v2RosterUploadLambda;
+      Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
+        const lambda = createScheduledLambda({
+          stack: this,
+          name: `Hl7v2RosterUpload-${hieName}`,
+          entry: "hl7v2-roster",
+          scheduleExpression: hieConfig.cron,
+          eventInput: hieConfig,
+          envType,
+          envVars: {
+            HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
+            API_URL: config.loadBalancerDnsName,
+            HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecret,
+            ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+          },
+          layers: [lambdaLayers.shared],
+          memory: 4096,
+          vpc,
+          alarmSnsAction: alarmAction,
+        });
+
+        hl7ScramblerSeedSecret.grantRead(lambda);
+        hl7v2RosterBucket.grantReadWrite(lambda);
+
+        rosterUploadLambdas.push(lambda);
+      });
+    }
+
+    return rosterUploadLambdas;
   }
 }

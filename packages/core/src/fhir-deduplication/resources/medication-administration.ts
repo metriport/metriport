@@ -1,11 +1,11 @@
 import { MedicationAdministration } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
+  assignMostDescriptiveStatus,
   combineResources,
   createRef,
   deduplicateWithinMap,
   getDateFromResource,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const medicationAdministrationStatus = [
@@ -28,6 +28,10 @@ const statusRanking: Record<MedicationAdministrationStatus, number> = {
   stopped: 5,
   completed: 6,
 };
+
+function preprocessStatus(existing: MedicationAdministration, target: MedicationAdministration) {
+  return assignMostDescriptiveStatus(statusRanking, existing, target);
+}
 
 export function deduplicateMedAdmins(
   medications: MedicationAdministration[]
@@ -58,15 +62,6 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(
-    master: MedicationAdministration,
-    existing: MedicationAdministration,
-    target: MedicationAdministration
-  ): MedicationAdministration {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
-  }
-
   for (const medAdmin of medAdmins) {
     const medRef = medAdmin.medicationReference?.reference;
     const datetime = getDateFromResource(medAdmin, "datetime");
@@ -74,24 +69,22 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
 
     if (medRef && datetime && dosage) {
       const key = JSON.stringify({ medRef, datetime, dosage });
-      deduplicateWithinMap(
-        medAdminsMap,
-        key,
-        medAdmin,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medAdminsMap,
+        dedupKey: key,
+        candidateResource: medAdmin,
         refReplacementMap,
-        undefined,
-        assignMostDescriptiveStatus
-      );
+        onPremerge: preprocessStatus,
+      });
     } else if (medRef && datetime) {
       const key = JSON.stringify({ medRef, datetime });
-      deduplicateWithinMap(
-        medAdminsMap,
-        key,
-        medAdmin,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medAdminsMap,
+        dedupKey: key,
+        candidateResource: medAdmin,
         refReplacementMap,
-        undefined,
-        assignMostDescriptiveStatus
-      );
+        onPremerge: preprocessStatus,
+      });
     } else {
       danglingReferences.add(createRef(medAdmin));
     }

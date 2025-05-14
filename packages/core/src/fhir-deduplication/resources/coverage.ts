@@ -35,7 +35,12 @@ export function groupSameCoverages(coverages: Coverage[]): {
 
     if (payor) {
       const key = JSON.stringify({ payor, status, period });
-      deduplicateWithinMap(coveragesMap, key, coverage, refReplacementMap);
+      deduplicateWithinMap({
+        dedupedResourcesMap: coveragesMap,
+        dedupKey: key,
+        candidateResource: coverage,
+        refReplacementMap,
+      });
     } else {
       danglingReferences.add(createRef(coverage));
     }
