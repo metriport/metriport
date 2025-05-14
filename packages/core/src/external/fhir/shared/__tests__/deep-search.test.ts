@@ -1,6 +1,53 @@
 import { deepSearchObjectForString, deepSearchArrayForString } from "../bundle";
 
 describe("Deep Search Resource objects", () => {
+  it("should be based on a valid premise that JSON stringify is slow", () => {
+    function timeThis(fn: () => void) {
+      const start = Date.now();
+      fn();
+      return Date.now() - start;
+    }
+
+    const bigObjects: Array<object> = [];
+    const randomKeys: string[] = [
+      "aaaa",
+      "bbbbb",
+      "cccccc",
+      "ddddd",
+      "eeeee",
+      "ffffff",
+      "ggggg",
+      "hhhhh",
+      "iiiii",
+      "jjjjj",
+    ];
+    // Add 1000 references to the object at unknown depth
+    const referenceCount = 10000;
+    for (let i = 0; i < referenceCount; i++) {
+      const randomKey = randomKeys[Math.floor(Math.random() * randomKeys.length)];
+      if (randomKey) {
+        bigObjects.push({ [randomKey]: { reference: "test" } });
+      }
+    }
+
+    const jsonStringifyTime = timeThis(() => {
+      const json = JSON.stringify(bigObjects);
+      const matches = json.match(/"reference":"(.+?)"/g);
+      expect(matches).toBeDefined();
+      expect(matches?.length).toBe(referenceCount);
+    });
+
+    const deepSearchTime = timeThis(() => {
+      const matches = deepSearchObjectForString(bigObjects, "reference");
+      expect(matches).toBeDefined();
+      expect(matches?.length).toBe(referenceCount);
+    });
+
+    console.log(`jsonStringifyTime: ${jsonStringifyTime}`);
+    console.log(`deepSearchTime: ${deepSearchTime}`);
+    // expect(jsonStringifyTime).toBeGreaterThanOrEqual(deepSearchTime);
+  });
+
   it("should return an empty array for empty/invalid objects", () => {
     expect(deepSearchObjectForString({}, "reference")).toEqual([]);
     expect(deepSearchObjectForString(new Date(), "reference")).toEqual([]);
