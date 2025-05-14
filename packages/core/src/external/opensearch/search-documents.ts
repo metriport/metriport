@@ -1,7 +1,7 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
 import { isDocStatusReady } from ".";
-import { updateMetaDataForDocRef } from "../../command/consolidated/consolidated-create";
+import { insertSourceDocumentToDocRefMeta } from "../../command/consolidated/consolidated-create";
 import { Config } from "../../util/config";
 import { log as _log } from "../../util/log";
 import { capture } from "../../util/notifications";
@@ -45,7 +45,7 @@ export async function searchDocuments({
   }
 
   const unique = uniqBy(success, "id");
-  const ready = unique.filter(isDocStatusReady).map(updateMetaDataForDocRef);
+  const ready = unique.filter(isDocStatusReady).map(insertSourceDocumentToDocRefMeta);
   return ready;
 }
 
