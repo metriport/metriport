@@ -40,11 +40,14 @@ import { deduplicateRelatedPersons } from "./resources/related-person";
 import { artifactRelatedArtifactUrl } from "./shared";
 
 /**
- * Computes the XOR of two lists of resources.
+ * Computes the XOR of two lists of resources of the same resource type.
+ *
+ * Important! The input resources must all be of the same resource type and have no overlapping IDs.
+ *
  * @param targetResources - The target resources.
  * @param sourceResources - The source resources.
- * @param schema - The schema of the resources. Optional, default to casting the `Resource` type.
- * @returns The XOR of the target and source resources.
+ * @param schema - The schema to parse the returned Resource objects to the input type. Optional, defaults to casting the Resource type to the input type.
+ * @returns The XOR of the target and source resources. Only resources with IDs are returned.
  */
 export function computeResourcesXorAlongResourceType<T extends Resource>({
   targetResources,
@@ -81,7 +84,19 @@ export function computeResourcesXorAlongResourceType<T extends Resource>({
   const sourceResourceTypes: Set<string> = new Set();
   const sourceResourcesNoDerivedFromExtension: Resource[] = [];
   for (const resource of sourceResources) {
-    if (resource.id) sourceResourceIds.add(resource.id);
+    const resourceId = resource.id;
+    if (resourceId) {
+      if (targetResourceIds.has(resourceId)) {
+        throw new BadRequestError(
+          "Source and target resources must have no overlapping IDs",
+          undefined,
+          {
+            idIntersection: resourceId,
+          }
+        );
+      }
+      sourceResourceIds.add(resourceId);
+    }
     sourceResourceTypes.add(resource.resourceType);
     sourceResourcesNoDerivedFromExtension.push(removeDerivedFromExtension(resource));
   }

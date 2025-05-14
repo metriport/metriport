@@ -7,15 +7,16 @@ import {
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
+import { validateAndLogResponse } from "../api-shared";
+import { JobBaseParams } from "./shared";
 
-export type SetJobEntryStatusParams = Pick<ApiBaseParams, "cxId"> & {
-  jobId: string;
+export type SetJobEntryStatusParams = JobBaseParams & {
   entryStatus: JobEntryStatus;
 };
 
 /**
  * Sends a request to the API to set the status of a patient job entry.
+ *
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
  * @param entryStatus - The status of the job entry.

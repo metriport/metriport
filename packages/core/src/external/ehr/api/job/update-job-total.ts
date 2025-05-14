@@ -2,15 +2,16 @@ import { errorToString, executeWithNetworkRetries, MetriportError } from "@metri
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
+import { validateAndLogResponse } from "../api-shared";
+import { JobBaseParams } from "./shared";
 
-export type UpdateJobTotalParams = Pick<ApiBaseParams, "cxId"> & {
-  jobId: string;
+export type UpdateJobTotalParams = JobBaseParams & {
   total: number;
 };
 
 /**
  * Sends a request to the API to update the job total.
+ *
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
  * @param total - The total number of entries to process.

@@ -2,18 +2,16 @@ import { errorToString, executeWithNetworkRetries, MetriportError } from "@metri
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
-
-export type InitializeJobParams = Pick<ApiBaseParams, "cxId"> & {
-  jobId: string;
-};
+import { validateAndLogResponse } from "../api-shared";
+import { JobBaseParams } from "./shared";
 
 /**
  * Sends a request to the API to initialize the job.
+ *
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
  */
-export async function initializeJob({ jobId, cxId }: InitializeJobParams): Promise<void> {
+export async function initializeJob({ jobId, cxId }: JobBaseParams): Promise<void> {
   const { log, debug } = out(`Ehr initializeJob - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });

@@ -42,7 +42,7 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
 }
 
 export function getSupportedResourcesByEhr(ehr: EhrSource): SupportedResourceType[] {
-  if (ehr === EhrSources.canvas) return supportedCanvasResources as SupportedResourceType[];
+  if (ehr === EhrSources.canvas) return supportedCanvasResources;
   return [];
 }
 
@@ -50,7 +50,8 @@ export function isSupportedResourceTypeByEhr(
   ehr: EhrSource,
   resourceType: string
 ): resourceType is SupportedResourceType {
-  return getSupportedResourcesByEhr(ehr).includes(resourceType as SupportedResourceType);
+  const supportedResources = getSupportedResourcesByEhr(ehr) as string[];
+  return supportedResources.includes(resourceType);
 }
 
 export function getS3UtilsInstance(): S3Utils {

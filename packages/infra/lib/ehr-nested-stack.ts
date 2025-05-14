@@ -99,7 +99,7 @@ function settings(): {
       timeout: computeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      alarmMaxAgeOfOldestMessage: Duration.hours(1),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
@@ -123,7 +123,7 @@ function settings(): {
       timeout: refreshEhrBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      alarmMaxAgeOfOldestMessage: Duration.hours(1),
       maxMessageCountAlarmThreshold: 1_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
@@ -434,7 +434,7 @@ export class EhrNestedStack extends NestedStack {
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     // Grant read to medical document bucket set on the api-stack
-    ownProps.ehrBundleBucket.grantWrite(lambda);
+    ownProps.ehrBundleBucket.grantReadWrite(lambda);
 
     return { lambda, queue };
   }
@@ -478,6 +478,7 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],

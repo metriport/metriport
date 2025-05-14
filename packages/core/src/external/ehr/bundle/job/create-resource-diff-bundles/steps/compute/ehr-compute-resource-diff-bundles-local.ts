@@ -6,7 +6,7 @@ import {
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
 import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
-import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
+import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../../api/job/create-resource-diff-bundles/set-entry-status";
 import { BundleType } from "../../../../bundle-shared";
 import { createOrReplaceBundle } from "../../../../command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../command/fetch-bundle";
@@ -84,10 +84,16 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
             })
           : undefined,
       ]);
-      await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "successful" });
+      await setCreateResourceDiffBundlesJobEntryStatus({
+        ...entryStatusParams,
+        entryStatus: "successful",
+      });
     } catch (error) {
       if (reportError) {
-        await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
+        await setCreateResourceDiffBundlesJobEntryStatus({
+          ...entryStatusParams,
+          entryStatus: "failed",
+        });
       }
       throw error;
     }

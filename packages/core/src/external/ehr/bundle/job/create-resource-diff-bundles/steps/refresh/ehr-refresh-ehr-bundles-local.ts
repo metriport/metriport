@@ -2,7 +2,7 @@ import { sleep } from "@metriport/shared";
 import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { refreshEhrBundle } from "../../../../../api/bundle/refresh-ehr-bundle";
 import { initializeJob } from "../../../../../api/job/initialize-job";
-import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
+import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../../api/job/create-resource-diff-bundles/set-entry-status";
 import { BundleType } from "../../../../bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../../command/create-or-replace-bundle";
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
@@ -58,7 +58,10 @@ export class EhrRefreshEhrBundlesLocal implements EhrRefreshEhrBundlesHandler {
       await this.next.computeResourceDiffBundles({ ...payload, resourceType });
     } catch (error) {
       if (reportError) {
-        await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
+        await setCreateResourceDiffBundlesJobEntryStatus({
+          ...entryStatusParams,
+          entryStatus: "failed",
+        });
       }
       throw error;
     }
