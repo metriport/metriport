@@ -149,10 +149,9 @@ type DataPoint = {
 };
 
 export const supportedAthenaHealthResources = [
-  //"AllergyIntolerance",
-  //"CarePlan",
+  "AllergyIntolerance",
+  "CarePlan",
   "Condition",
-  /*
   "DiagnosticReport",
   "Goal",
   "Immunization",
@@ -173,7 +172,6 @@ export const supportedAthenaHealthResources = [
   "CareTeam",
   //"Practitioner",
   "Provenance",
-  */
 ];
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
@@ -209,9 +207,12 @@ class AthenaHealthApi {
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
     const url = `${this.baseUrl}/oauth2/v1/token`;
+    const fhirScoprs = supportedAthenaHealthResources
+      .map(resource => `system/${resource}.read`)
+      .join(" ");
     const data = {
       grant_type: "client_credentials",
-      scope: "athena/service/Athenanet.MDP.* system/Patient.read",
+      scope: `athena/service/Athenanet.MDP.* ${fhirScoprs}`,
     };
 
     try {
@@ -735,7 +736,7 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
     );
-    const params = { patient: `Patient/${this.stripPatientId(athenaPatientId)}`, _count: "1000" };
+    const params = { patient: `${this.createPatientId(athenaPatientId)}`, _count: "1000" };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
