@@ -7,8 +7,8 @@ import { syncAthenaPatientIntoMetriport } from "../../../external/ehr/athenaheal
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
-} from "../../../external/ehr/shared/job/create-resource-diff-bundles/get-job-payload";
-import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/create-resource-diff-bundles/start-job";
+} from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/get-job-payload";
+import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-job";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
@@ -93,7 +93,7 @@ router.post(
       ehr: EhrSources.athena,
       cxId,
       practiceId: athenaPracticeId,
-      patientId: athenaPatientId,
+      ehrPatientId: athenaPatientId,
     });
     return res.status(httpStatus.OK).json(jobId);
   })
@@ -119,7 +119,7 @@ router.get(
     const bundle = await getLatestResourceDiffBundlesJobPayload({
       ehr: EhrSources.athena,
       cxId,
-      patientId: athenaPatientId,
+      ehrPatientId: athenaPatientId,
       practiceId: athenaPracticeId,
       bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
     });
@@ -149,7 +149,7 @@ router.get(
     const bundle = await getResourceDiffBundlesJobPayload({
       ehr: EhrSources.athena,
       cxId,
-      patientId: athenaPatientId,
+      ehrPatientId: athenaPatientId,
       practiceId: athenaPracticeId,
       jobId,
       bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
