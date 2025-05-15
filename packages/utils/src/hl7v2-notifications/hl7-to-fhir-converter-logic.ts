@@ -42,7 +42,8 @@ import fs from "fs";
  * 3. Run the script using ts-node
  */
 const apiUrl = getEnvVarOrFail("API_URL");
-const bucketName = getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
+const oldBucketName = getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME_OLD");
+const bucketName = getEnvVarOrFail("HL7_CONVERSIONS_BUCKET_NAME");
 
 const filePath = "";
 const fileName = "";
@@ -58,7 +59,7 @@ function invokeLambdaLogic() {
 
     try {
       const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
-      new Hl7NotificationWebhookSenderDirect(apiUrl, bucketName).execute({
+      new Hl7NotificationWebhookSenderDirect(apiUrl, oldBucketName, bucketName).execute({
         cxId,
         patientId,
         message,
