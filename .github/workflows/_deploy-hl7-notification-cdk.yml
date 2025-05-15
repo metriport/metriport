@@ -21,6 +21,7 @@ on:
         description: "the name of the HL7 Notification Routing CDK stack we're deploying"
       is_branch_to_staging:
         required: false
+        default: false
         type: boolean
         description: "whether this workflow should checkout internal's develop/master or a feature branch"
       AWS_REGION:
