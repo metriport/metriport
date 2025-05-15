@@ -95,6 +95,17 @@ jobs:
           echo "Internal branch for checkout: $INTERNAL_BRANCH"
           echo "INTERNAL_BRANCH=$INTERNAL_BRANCH" >> $GITHUB_ENV
 
+      - name: Checkout internal feature branch
+        uses: actions/checkout@v3
+        if: ${{ inputs.is-branch-to-staging == true }}
+        with:
+          repository: metriport/metriport-internal
+          ref: ${{ env.INTERNAL_BRANCH }}
+          token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
+          path: metriport-internal
+          sparse-checkout: |
+            config-oss/api-infra
+
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
