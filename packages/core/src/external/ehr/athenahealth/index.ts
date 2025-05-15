@@ -1,4 +1,5 @@
 import {
+  Bundle,
   Condition,
   Medication,
   MedicationAdministration,
@@ -52,6 +53,10 @@ import {
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import {
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import {
   Patient,
   patientSchema,
   PatientSearch,
@@ -68,6 +73,8 @@ import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
   createDataParams,
+  fetchEhrBundleUsingCache,
+  fetchEhrFhirResourcesWithPagination,
   formatDate,
   getConditionSnomedCode,
   getConditionStartDate,
@@ -141,6 +148,38 @@ type DataPoint = {
   bp?: BloodPressure | undefined;
 };
 
+export const supportedAthenaHealthResources = [
+  "AllergyIntolerance",
+  "CarePlan",
+  "Condition",
+  "DiagnosticReport",
+  "Goal",
+  "Immunization",
+  "Media",
+  "MedicationDispense",
+  "MedicationRequest",
+  "Observation",
+  "Procedure",
+  "Specimen",
+  "Binary",
+  "Device",
+  "Encounter",
+  "Coverage",
+  "Group",
+  "RelatedPerson",
+  //"Location",
+  //"Organization",
+  "CareTeam",
+  //"Practitioner",
+  "Provenance",
+];
+export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
+export function isSupportedAthenaHealthResource(
+  resourceType: string
+): resourceType is SupportedAthenaHealthResource {
+  return supportedAthenaHealthResources.includes(resourceType);
+}
+
 class AthenaHealthApi {
   private axiosInstanceFhir: AxiosInstance;
   private axiosInstanceProprietary: AxiosInstance;
@@ -168,9 +207,12 @@ class AthenaHealthApi {
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
     const url = `${this.baseUrl}/oauth2/v1/token`;
+    const fhirScoprs = supportedAthenaHealthResources
+      .map(resource => `system/${resource}.read`)
+      .join(" ");
     const data = {
       grant_type: "client_credentials",
-      scope: "athena/service/Athenanet.MDP.* system/Patient.read",
+      scope: `athena/service/Athenanet.MDP.* ${fhirScoprs}`,
     };
 
     try {
@@ -676,6 +718,59 @@ class AthenaHealthApi {
       });
     }
     return allMedicationReferences;
+  }
+
+  async getBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    resourceType,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    resourceType: SupportedAthenaHealthResource;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+    );
+    const params = { patient: `${this.createPatientId(athenaPatientId)}`, _count: "1000" };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: athenaPatientId,
+      resourceType,
+    };
+    const fetchResourcesFromEhr = () =>
+      fetchEhrFhirResourcesWithPagination({
+        makeRequest: (url: string) =>
+          this.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: athenaPatientId,
+            s3Path: `fhir-resources-${resourceType}`,
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          }),
+        url: resourceTypeUrl,
+      });
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.athena,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: athenaPatientId,
+      resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    return bundle;
   }
 
   async subscribeToEvent({

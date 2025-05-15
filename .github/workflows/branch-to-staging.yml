@@ -62,6 +62,7 @@ jobs:
     uses: ./.github/workflows/_deploy-hl7-notification-cdk.yml
     with:
       deploy_env: "staging"
+      is_branch_to_staging: true
       secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_STAGING }}
       hl7_notification_stack: ${{ vars.HL7_NOTIFICATION_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}

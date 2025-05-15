@@ -1,7 +1,7 @@
 import { Condition } from "@medplum/fhirtypes";
-import { createCanvasClient } from "../shared";
+import { createCanvasClient } from "../../shared";
 
-export async function createCondition({
+export async function writeConditionToFhir({
   cxId,
   canvasPatientId,
   canvasPracticeId,

@@ -1,6 +1,6 @@
 import { Condition } from "@medplum/fhirtypes";
 import { CreatedProblem } from "@metriport/shared/interface/external/ehr/elation/problem";
-import { createElationClient } from "../shared";
+import { createElationClient } from "../../shared";
 
 export async function writeConditionToChart({
   cxId,
