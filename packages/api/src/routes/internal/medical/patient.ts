@@ -1160,7 +1160,7 @@ router.delete(
 );
 
 /**
- * POST /internal/patient/:id/recreate-consolidated
+ * POST /internal/patient/:id/consolidated/recreate
  *
  * Forcefully recreates the consolidated bundle for a patient.
  *
@@ -1168,13 +1168,13 @@ router.delete(
  * @param req.params.id The patient ID.
  */
 router.post(
-  "/:id/recreate-consolidated",
+  "/:id/consolidated/recreate",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
-    const { log } = out(`recreate-consolidated, cx - ${cxId}, pt - ${id} `);
+    const { log } = out(`consolidated/recreate, cx - ${cxId}, pt - ${id} `);
 
     const patient = await getPatientOrFail({ id, cxId });
     const requestId = uuidv7();
