@@ -52,13 +52,19 @@ const patientsWithErrors: string[] = [];
 const program = new Command();
 program
   .name("recreate-consolidated")
-  .description("CLI to get coverage/density data multiple patients.")
+  .description("CLI to recreate consolidated data for multiple patients.")
+
   .showHelpAfterError();
 
 async function main() {
   initRunsFolder();
   program.parse();
   const { log } = out("");
+
+  if (patientIds.length === 0) {
+    log(">>> No patient IDs provided. Please add patient IDs to the patientIds array.");
+    process.exit(1);
+  }
 
   const startedAt = Date.now();
   log(`>>> Starting with ${patientIds.length} patient IDs...`);
