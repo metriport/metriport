@@ -101,7 +101,7 @@ async function displayWarningAndConfirmation(
   orgName: string,
   log: typeof console.log
 ) {
-  const msg = `You are about to get the coverage info of ${patientCount} patients of the org/cx ${orgName}.`;
+  const msg = `You are about to recreate consolidated data for ${patientCount} patients of the org/cx ${orgName}.`;
   log(msg);
   log("Cancel this now if you're not sure.");
   await sleep(confirmationTime.asMilliseconds());
@@ -119,7 +119,7 @@ async function recreateConsolidatedForPatient(
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error) {
     const msg = `ERROR processing patient ${patientId}: `;
-    log(msg, errorToString(error));
+    log(`${msg}${errorToString(error)}`);
     patientsWithErrors.push(patientId);
     logErrorToFile(errorFileName, msg, error as Error);
   }
