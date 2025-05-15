@@ -118,9 +118,11 @@ export function addMissingReferences(
 
   const resourcesToAdd = getResourcesFromBundle(missingReferences, originalBundle);
 
+  const newEntries = [...(filteredBundle.entry ?? []), ...resourcesToAdd.map(buildBundleEntry)];
   const resultBundle = {
     ...filteredBundle,
-    entry: [...(filteredBundle.entry ?? []), ...resourcesToAdd.map(buildBundleEntry)],
+    total: newEntries.length,
+    entry: newEntries,
   };
 
   const { missingReferences: missingRefsFromAddedResources } = getReferencesFromResources({

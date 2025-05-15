@@ -2,13 +2,14 @@ import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../../domain/patient";
 import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
-import { buildBundleEntry } from "../../../../external/fhir/shared/bundle";
+import { buildBundleEntry, buildSearchSetBundle } from "../../../../external/fhir/shared/bundle";
 import { SearchResult } from "../../../../external/opensearch/index-based-on-resource";
 import { OpenSearchLexicalSearcher } from "../../../../external/opensearch/lexical/lexical-searcher";
-import { searchDocuments } from "../document-reference/search";
 import { out } from "../../../../util";
 import { Config } from "../../../../util/config";
+import { addMissingReferences } from "../../consolidated-filter";
 import { getConsolidatedPatientData } from "../../consolidated-get";
+import { searchDocuments } from "../document-reference/search";
 
 /**
  * Performs a lexical search on a patient's consolidated resources in OpenSearch
@@ -61,14 +62,12 @@ export async function searchLexical({
   const patientEntry = buildBundleEntry(patientToFhir(patient));
   sliced.push(patientEntry);
 
-  log(`Done, returning ${sliced.length} filtered resources...`);
+  const filteredBundle = buildSearchSetBundle({ entries: sliced });
+  const hydrated = addMissingReferences(filteredBundle, consolidated);
 
-  return {
-    resourceType: "Bundle",
-    type: "searchset",
-    total: sliced.length,
-    entry: sliced,
-  };
+  log(`Done, returning ${hydrated.entry?.length} filtered resources...`);
+
+  return hydrated as SearchSetBundle;
 }
 
 function isInLexicalResults(
