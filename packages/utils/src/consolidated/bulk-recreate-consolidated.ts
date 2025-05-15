@@ -120,7 +120,7 @@ async function recreateConsolidatedForPatient(
   log: typeof console.log
 ) {
   try {
-    await api.post(`/internal/patient/${patientId}/consolidated/recreate?cxId=${cxId}`);
+    await api.post(`/internal/patient/${patientId}/consolidated/refresh?cxId=${cxId}`);
     log(`>>> Done recreate consolidated for patient ${patientId}...`);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error) {
