@@ -118,6 +118,7 @@ export function getDomainFromDTO(dto: PatientDTO, cxId = ""): Patient {
     updatedAt: dto.dateCreated ?? new Date(),
     facilityIds: dto.facilityIds,
     externalId: dto.externalId ?? "",
+    hieOptOut: dto.hieOptOut ?? false,
     data: {
       firstName: dto.firstName,
       lastName: dto.lastName,
