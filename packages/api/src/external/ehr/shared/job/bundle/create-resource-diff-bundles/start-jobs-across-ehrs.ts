@@ -36,7 +36,13 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
         requestId,
       }).catch(processAsyncError(`${EhrSources.canvas} startCreateResourceDiffBundlesJobAtEhr`));
     } else if (patientMapping.source === EhrSources.athena) {
-      const athenaPracticeId = `a-1.Practice-${patientMapping.externalId.split("|")[0]}`;
+      const patientPrefix = patientMapping.externalId.split(".")[0];
+      if (!patientPrefix) {
+        throw new MetriportError("Invalid patient ID", undefined, {
+          ehrPatientId: patientMapping.externalId,
+        });
+      }
+      const athenaPracticeId = `a-1.${patientPrefix}`;
       startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.athena,
         cxId,
