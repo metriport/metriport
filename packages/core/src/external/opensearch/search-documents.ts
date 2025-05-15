@@ -1,14 +1,15 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { log as _log } from "../../util/log";
 import { uniqBy } from "lodash";
 import { isDocStatusReady } from ".";
 import { Config } from "../../util/config";
+import { log as _log } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { isCarequalityExtension } from "../carequality/extension";
 import { isCommonwellExtension } from "../commonwell/extension";
 import { DocumentReferenceWithId } from "../fhir/document/document-reference";
 import { getDocuments } from "../fhir/document/get-documents";
 import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
+import { insertSourceDocumentToDocRefMeta } from "../fhir/shared/meta";
 import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
 
 export async function searchDocuments({
@@ -44,7 +45,7 @@ export async function searchDocuments({
   }
 
   const unique = uniqBy(success, "id");
-  const ready = unique.filter(isDocStatusReady);
+  const ready = unique.filter(isDocStatusReady).map(insertSourceDocumentToDocRefMeta);
   return ready;
 }
 

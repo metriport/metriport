@@ -365,6 +365,9 @@ export function createAPIService({
             DASH_URL: props.config.dashUrl,
             EHR_DASH_URL: props.config.ehrDashUrl,
           }),
+          ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
+            CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),

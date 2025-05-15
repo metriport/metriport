@@ -13,6 +13,7 @@ capture.init();
 const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const apiUrl = getEnvOrFail("API_URL");
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const { log } = out(``);
   log(`Running with ${event.Records.length} records`);

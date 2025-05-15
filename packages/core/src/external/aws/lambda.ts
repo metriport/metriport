@@ -2,6 +2,7 @@ import { BadRequestError, MetriportError, NotFoundError } from "@metriport/share
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
+import { out } from "../../util/log";
 
 /**
  * Returns a new AWS Lambda client.
@@ -101,7 +102,7 @@ export function getLambdaResultPayload({
   lambdaName = "<unknown-name>",
   failGracefully = false,
   failOnEmptyResponse = true,
-  log = console.log,
+  log = out("getLambdaResultPayload").log,
 }: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;

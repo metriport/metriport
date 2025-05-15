@@ -60,24 +60,25 @@ const pdfOptions: WkOptions = {
   pageSize: "A4",
 };
 
-// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler({
-  fileName: fhirFileName,
-  patientId,
-  cxId,
-  dateFrom,
-  dateTo,
-  conversionType,
-}: Input): Promise<Output> {
-  const { log } = out(`cx ${cxId}, patient ${patientId}`);
-  const startedAt = Date.now();
-  const metrics: Metrics = {};
-  await cloudWatchUtils.reportMemoryUsage({ metricName: "memPreSetup" });
-  log(
-    `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
-      `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
-  );
-  try {
+export const handler = capture.wrapHandler(
+  async ({
+    fileName: fhirFileName,
+    patientId,
+    cxId,
+    dateFrom,
+    dateTo,
+    conversionType,
+  }: Input): Promise<Output> => {
+    const { log } = out(`cx ${cxId}, patient ${patientId}`);
+    capture.setUser({ id: cxId });
+    capture.setExtra({ lambdaName, cxId, patientId, dateFrom, dateTo, conversionType });
+    const startedAt = Date.now();
+    const metrics: Metrics = {};
+    await cloudWatchUtils.reportMemoryUsage({ metricName: "memPreSetup" });
+    log(
+      `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
+        `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
+    );
     const [
       isADHDFeatureFlagEnabled,
       isLogoEnabled,
@@ -164,22 +165,8 @@ export async function handler({
     await cloudWatchUtils.reportMetrics(metrics);
 
     return { url, hasContents };
-  } catch (error) {
-    const msg = `Error converting FHIR to MR Summary`;
-    log(`${msg} - error: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        patientId,
-        dateFrom,
-        dateTo,
-        conversionType,
-        context: lambdaName,
-        error,
-      },
-    });
-    throw error;
   }
-}
+);
 
 async function getSignedUrl(fileName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });

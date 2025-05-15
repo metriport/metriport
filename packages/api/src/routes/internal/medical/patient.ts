@@ -5,8 +5,8 @@ import {
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { Patient } from "@metriport/core/domain/patient";
 import {
-  Hl7v2Subscriber,
   hl7v2SubscriptionRequestSchema,
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
@@ -16,14 +16,16 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import {
   BadRequestError,
+  MetriportError,
+  PaginatedResponse,
   internalSendConsolidatedSchema,
   normalizeState,
-  PaginatedResponse,
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -32,6 +34,7 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
+import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
 import {
   ConsolidatedQueryParams,
@@ -39,18 +42,19 @@ import {
   getConsolidatedAndSendToCx,
   startConsolidatedQuery,
 } from "../../../command/medical/patient/consolidated-get";
+import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
-  getHl7v2Subscribers,
   GetHl7v2SubscribersParams,
+  getHl7v2Subscribers,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
+  getPatients,
 } from "../../../command/medical/patient/get-patient";
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import {
@@ -104,7 +108,6 @@ import {
 import patientImportRoutes from "./patient-import";
 import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
-import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 
 dayjs.extend(duration);
 
@@ -175,7 +178,7 @@ router.get(
       hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
-    const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {
+    const response: PaginatedResponse<Patient, "patients"> = {
       meta,
       patients: items,
     };
@@ -1153,6 +1156,38 @@ router.delete(
     });
 
     return res.sendStatus(status.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/:id/consolidated/refresh
+ *
+ * Forcefully recreates the consolidated bundle for a patient.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ */
+router.post(
+  "/:id/consolidated/refresh",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const { log } = out(`consolidated/refresh, cx - ${cxId}, pt - ${id} `);
+
+    const patient = await getPatientOrFail({ id, cxId });
+    const requestId = uuidv7();
+
+    try {
+      await recreateConsolidated({ patient, context: "internal", requestId });
+      log(`Done recreating consolidated`);
+    } catch (err) {
+      const msg = `Error recreating consolidated`;
+      log(`${msg}, err - ${errorToString(err)}`);
+      throw new MetriportError(msg, { extra: { patientId: id, cxId } });
+    }
+    return res.status(status.OK).json({ requestId });
   })
 );
 

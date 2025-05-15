@@ -238,6 +238,7 @@ type EnvConfigBase = {
   };
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
   };
   ehrIntegration?: {
     athenaHealth: {
@@ -285,6 +286,7 @@ export type EnvConfigSandbox = EnvConfigBase & {
   connectWidgetUrl: string;
   sandboxSeedDataBucketName: string;
   engineeringCxId?: never;
+  hl7Notification?: never;
 };
 
 export type EnvConfig = EnvConfigSandbox | EnvConfigNonSandbox;

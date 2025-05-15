@@ -13,11 +13,12 @@ import {
 import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { Patient } from "@metriport/core/domain/patient";
+import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -97,7 +98,9 @@ export async function startConsolidatedQuery({
 
   if (currentConsolidatedProgress) {
     log(
-      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${currentConsolidatedProgress}, skipping...`
+      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${JSON.stringify(
+        currentConsolidatedProgress
+      )}, skipping...`
     );
     return currentConsolidatedProgress;
   }
@@ -148,7 +151,7 @@ export async function startConsolidatedQuery({
   return progress;
 }
 
-function appendProgressToProcessingQueries(
+export function appendProgressToProcessingQueries(
   currentConsolidatedQueries: ConsolidatedQuery[] | undefined,
   progress: ConsolidatedQuery
 ): ConsolidatedQuery[] {
@@ -250,7 +253,8 @@ export async function getConsolidated({
   conversionType,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
-  const { log } = out(`API getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { cxId, id: patientId } = patient;
+  const { log } = out(`API getConsolidated - cxId ${cxId}, patientId ${patientId}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
@@ -272,6 +276,24 @@ export async function getConsolidated({
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
 
+    const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+    const sendAnalytics = (
+      conversionTypeForAnalytics: string,
+      resourceCount: number | undefined
+    ) => {
+      analytics({
+        distinctId: cxId,
+        event: EventTypes.consolidatedQuery,
+        properties: {
+          patientId: patientId,
+          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+          conversionType: conversionTypeForAnalytics,
+          resourceCount,
+        },
+      });
+    };
+    sendAnalytics("bundle", bundle.entry?.length);
+
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
@@ -284,6 +306,7 @@ export async function getConsolidated({
         dateTo,
         conversionType,
       });
+      sendAnalytics(conversionType, bundle.entry?.length);
     }
 
     if (conversionType === "json" && hasResources) {
@@ -295,7 +318,7 @@ export async function getConsolidated({
     }
     return { bundle, filters };
   } catch (error) {
-    const msg = "Failed to get FHIR resources";
+    const msg = "Failed to get consolidated data";
     log(`${msg}: ${JSON.stringify(filters)}`);
     capture.error(msg, {
       extra: {

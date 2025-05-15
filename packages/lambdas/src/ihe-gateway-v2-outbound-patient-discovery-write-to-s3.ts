@@ -14,6 +14,7 @@ capture.init();
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const log = prefixedLog(`write-to-s3`);
   capture.setExtra({

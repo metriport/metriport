@@ -24,6 +24,7 @@ FeatureFlags.init(region, featureFlagsTableName);
  * Lambdas that get invoked directly by the API have the error handling code in the API, so we don't
  * wrap them in the Sentry's wrapHandler().
  */
+// TODO move to capture.wrapHandler()
 export async function handler(
   params: ConsolidatedCounterRequest
 ): Promise<ConsolidatedCounterResponse> {
