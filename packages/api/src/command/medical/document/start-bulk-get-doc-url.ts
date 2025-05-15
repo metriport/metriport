@@ -8,6 +8,7 @@ import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { BadRequestError } from "@metriport/shared";
 import { makeDocumentBulkSigner } from "../../../external/aws/document-bulk-signer-factory";
 import {
   appendBulkGetDocUrlProgress,
@@ -20,30 +21,38 @@ import { getPatientOrFail } from "../patient/get-patient";
  * returns the progress of the bulk signing.
  * @param cxId - cxId
  * @param patientId - patientId
- * @param retryExisting - if true, continue the bulk signing process from the last request
+ * @param continueProcessingRequest - if true, continue the bulk signing process from the last request
  * @returns a Promise that resolves to a BulkGetDocumentsUrlProgress object.
  */
 export async function startBulkGetDocumentUrls({
   cxId,
   patientId,
   cxDownloadRequestMetadata,
-  retryExisting = false,
+  continueProcessingRequest = false,
 }: {
   cxId: string;
   patientId: string;
   cxDownloadRequestMetadata: unknown;
-  retryExisting?: boolean;
+  continueProcessingRequest?: boolean;
 }): Promise<BulkGetDocumentsUrlProgress> {
   const { log } = out(`startBulkGetDocumentUrls - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;
 
-  if (!retryExisting && isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
+  if (!continueProcessingRequest && isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
     log(
       `Patient ${patientId}, Request ${bulkGetDocUrlProgress?.requestId}, bulkGetDocUrlProgress is already 'processing', skipping...`
     );
     return createBulkGetDocumentUrlQueryResponse("processing", patient);
+  } else if (
+    continueProcessingRequest &&
+    !isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)
+  ) {
+    throw new BadRequestError(`No processing request found for patient ${patientId}`, undefined, {
+      patientId,
+      cxId,
+    });
   }
 
   const requestId = getOrGenerateRequestId(bulkGetDocUrlProgress);

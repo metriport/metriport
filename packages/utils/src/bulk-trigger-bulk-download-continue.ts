@@ -10,14 +10,14 @@ import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 
 /**
- * This script triggers the bulk download retry for the indicated patients.
+ * This script triggers the bulk download continue for the indicated patients.
  *
  * To run:
  * 1. Set the env vars:
  *  - CX_ID
  *  - API_URL
  * 2. Set the patientIds and rerunPdOnNewDemographics
- * 3. Run the script with `ts-node src/bulk-trigger-bulk-download-wh.ts`
+ * 3. Run the script with `ts-node src/bulk-trigger-bulk-download-continue.ts`
  */
 
 dayjs.extend(duration);
@@ -51,9 +51,9 @@ async function main() {
 
       for (const { patientId, cxDownloadRequestMetadataAsString } of patients) {
         const log = out(
-          `Triggering bulk download retry: cxId - ${cxId}, patientId - ${patientId}`
+          `Triggering bulk download continue: cxId - ${cxId}, patientId - ${patientId}`
         ).log;
-        const endpointUrl = `${apiUrl}/internal/docs/download-url/bulk/retry`;
+        const endpointUrl = `${apiUrl}/internal/docs/download-url/bulk/continue`;
         const params = new URLSearchParams({
           cxId,
           patientId,
@@ -84,7 +84,7 @@ async function main() {
 async function displayInitialWarningAndConfirmation(numberPatients: number) {
   console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
   console.log(
-    `Triggering bulk download retry for ${numberPatients} patients. CX: ${cxId}. Sleeping ${confirmationTime.asMilliseconds()} ms before starting.`
+    `Triggering bulk download continue for ${numberPatients} patients. CX: ${cxId}. Sleeping ${confirmationTime.asMilliseconds()} ms before starting.`
   );
   await sleep(confirmationTime.asMilliseconds());
 }

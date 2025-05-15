@@ -396,16 +396,17 @@ router.post(
 );
 
 /**
- * POST /internal/docs/download-url/bulk/retry
+ * POST /internal/docs/download-url/bulk/continue
  *
- * Retries the existing bulk download request.
+ * Continues the existing bulk download request.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient's ID.
  * @param req.body The metadata for the bulk download request.
  * @returns The status of the bulk signing process.
+ * @throws 400 if no processing request is found for the patient.
  */
 router.post(
-  "/download-url/bulk/retry",
+  "/download-url/bulk/continue",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
@@ -416,7 +417,7 @@ router.post(
       cxId,
       patientId,
       cxDownloadRequestMetadata: cxDownloadRequestMetadata?.metadata,
-      retryExisting: true,
+      continueProcessingRequest: true,
     });
 
     return res.status(httpStatus.OK).json(BulkGetDocumentsUrlProgress);
