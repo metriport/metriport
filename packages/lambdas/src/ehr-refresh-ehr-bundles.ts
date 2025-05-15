@@ -1,7 +1,6 @@
 import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles";
 import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-local";
 import { MetriportError } from "@metriport/shared";
-import { supportedResourceTypes } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -56,7 +55,7 @@ const ehrRefreshEhrBundlesSchema = z.object({
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
-  resourceType: z.enum(supportedResourceTypes),
+  resourceType: z.string(),
   jobId: z.string(),
 });
 
