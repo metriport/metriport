@@ -49,9 +49,9 @@ export async function startCreateResourceDiffBundlesJob({
     limitedToOneRunningJob: true,
   });
   const jobId = job.id;
+  await initializePatientJob({ cxId, jobId });
   const resourceTypes = getSupportedResourcesByEhr(ehr);
   if (resourceTypes.length < 1) {
-    await initializePatientJob({ cxId, jobId });
     await completePatientJob({ cxId, jobId });
     return jobId;
   }
