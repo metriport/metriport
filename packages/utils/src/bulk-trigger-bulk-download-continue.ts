@@ -16,7 +16,7 @@ import { chunk } from "lodash";
  * 1. Set the env vars:
  *  - CX_ID
  *  - API_URL
- * 2. Set the patientIds and rerunPdOnNewDemographics
+ * 2. Set the patientIds and cxDownloadRequestMetadata
  * 3. Run the script with `ts-node src/bulk-trigger-bulk-download-continue.ts`
  */
 
