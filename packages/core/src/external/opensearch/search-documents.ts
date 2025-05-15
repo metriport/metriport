@@ -1,7 +1,7 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
 import { isDocStatusReady } from ".";
-import { insertSourceDocumentToDocRefMeta } from "../../command/consolidated/consolidated-create";
+import { insertSourceDocumentToDocRefMeta } from "../../domain/consolidated/utils";
 import { Config } from "../../util/config";
 import { log as _log } from "../../util/log";
 import { capture } from "../../util/notifications";
