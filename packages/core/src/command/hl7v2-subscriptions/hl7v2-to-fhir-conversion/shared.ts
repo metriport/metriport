@@ -170,3 +170,14 @@ export function formatDateToHl7(date: Date): string {
 export function buildHl7MessageFhirBundleFileKey(params: Hl7FileKeyParams) {
   return `${buildHl7MessageFileKey(params)}.${JSON_FILE_EXTENSION}`;
 }
+
+export function buildHl7MessageConversionFileKey({
+  cxId,
+  patientId,
+  messageId,
+  timestamp,
+  messageCode,
+  triggerEvent,
+}: Hl7FileKeyParams) {
+  return `cxId=${cxId}/ptId=${patientId}/${messageCode.toUpperCase()}/${timestamp}_${messageId}_${messageCode}_${triggerEvent}.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
+}

@@ -15,7 +15,10 @@ import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { buildHl7MessageFhirBundleFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import {
+  buildHl7MessageConversionFileKey,
+  buildHl7MessageFhirBundleFileKey,
+} from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
 
 const supportedTypes = ["A01", "A03"];
@@ -28,6 +31,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
   constructor(
     private readonly apiUrl: string,
+    private readonly oldBucketName: string,
     private readonly bucketName: string,
     private readonly s3Utils = new S3Utils(Config.getAWSRegion())
   ) {}
@@ -64,7 +68,42 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
     log(`Conversion complete and patient entry added`);
 
-    const nonSpecificUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
+    // TODO(lucas|ENG-257|2025-05-15): Remove this once new bucket flow is working correctly
+    // Upload to old bucket
+    const oldNonSpecificUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
+      s3Utils: this.s3Utils,
+      bucketName: this.oldBucketName,
+      contentType: JSON_APP_MIME_TYPE,
+      log,
+      errorConfig: {
+        errorMessage: "Error uploading HL7 FHIR bundle to S3",
+        context: this.context,
+        captureParams: {
+          patientId,
+          cxId,
+          sourceTimestamp,
+        },
+        shouldCapture: true,
+      },
+    };
+
+    const oldBundleFilename = buildHl7MessageFhirBundleFileKey({
+      cxId,
+      patientId,
+      timestamp: sourceTimestamp,
+      messageId: getMessageUniqueIdentifier(message),
+      messageCode,
+      triggerEvent,
+    });
+    await storeInS3WithRetries({
+      ...oldNonSpecificUploadParams,
+      payload: JSON.stringify(bundle),
+      fileName: oldBundleFilename,
+    });
+    log(`Uploaded to S3 bucket: ${this.oldBucketName}. Filepath: ${oldBundleFilename}`);
+
+    // Upload to new bucket
+    const newNonSpecificUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
       s3Utils: this.s3Utils,
       bucketName: this.bucketName,
       contentType: JSON_APP_MIME_TYPE,
@@ -81,7 +120,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       },
     };
 
-    const newBundleFileName = buildHl7MessageFhirBundleFileKey({
+    const newBundleFilename = buildHl7MessageConversionFileKey({
       cxId,
       patientId,
       timestamp: sourceTimestamp,
@@ -91,15 +130,16 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     await storeInS3WithRetries({
-      ...nonSpecificUploadParams,
+      ...newNonSpecificUploadParams,
       payload: JSON.stringify(bundle),
-      fileName: newBundleFileName,
+      fileName: newBundleFilename,
     });
-    log(`Uploaded to S3. Filepath: ${newBundleFileName}`);
+    log(`Uploaded to S3 bucket: ${this.bucketName}. Filepath: ${newBundleFilename}`);
 
-    const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
-      bucketName: this.bucketName,
-      fileName: newBundleFileName,
+    // TODO(lucas|ENG-257|2025-05-15): Generate latest.hl7.json and use it for presigned url
+    const oldBundlePresignedUrl = await this.s3Utils.getSignedUrl({
+      bucketName: this.oldBucketName,
+      fileName: oldBundleFilename,
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
 
@@ -110,7 +150,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           params: {
             cxId,
             triggerEvent,
-            presignedUrl: bundlePresignedUrl,
+            presignedUrl: oldBundlePresignedUrl,
             ...(encounterPeriod?.start ? { admitTimestamp: encounterPeriod.start } : undefined),
             ...(encounterPeriod?.end ? { dischargeTimestamp: encounterPeriod.end } : undefined),
             whenSourceSent: messageReceivedTimestamp,
