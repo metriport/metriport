@@ -12,7 +12,7 @@ import { getConsolidatedQueryByRequestId } from "../../domain/patient";
 import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
-import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { isPatient } from "../../external/fhir/shared";
@@ -46,21 +46,40 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
     originalBundle.total = originalBundle.entry.length;
 
-    const originalBundleWithoutContainedPatients = removeContainedPatients(
-      originalBundle,
-      patientId
-    );
+    const processedBundle = removeContainedPatients(originalBundle, patientId);
 
-    const dedupedBundle = await deduplicate({
+    try {
+      await uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: processedBundle,
+        type: "original",
+      });
+    } catch (error) {
+      log(`Failed to store original bundle on S3 - ${errorToString(error)}`);
+    }
+
+    await dangerouslyDeduplicate({
       cxId,
       patientId,
-      bundle: originalBundleWithoutContainedPatients,
+      bundle: processedBundle,
     });
+
+    try {
+      uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: processedBundle,
+        type: "dedup",
+      });
+    } catch (error) {
+      log(`Failed to store dedup bundle on S3 - ${errorToString(error)}`);
+    }
 
     const normalizedBundle = await normalize({
       cxId,
       patientId,
-      bundle: dedupedBundle,
+      bundle: processedBundle,
     });
 
     const resultBundle = normalizedBundle;
@@ -86,28 +105,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       throw new MetriportError(msg, error, additionalInfo);
     }
 
-    const [, , resultS3Info] = await Promise.all([
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: originalBundleWithoutContainedPatients,
-        type: "original",
-      }),
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: dedupedBundle,
-        type: "dedup",
-      }),
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: resultBundle,
-        type: "normalized",
-      }),
-    ]);
+    const { bucket, key } = await uploadConsolidatedSnapshotToS3({
+      ...params,
+      s3BucketName: this.bucketName,
+      bundle: resultBundle,
+      type: "normalized",
+    });
 
-    const { bucket, key } = resultS3Info;
     const info = {
       bundleLocation: bucket,
       bundleFilename: key,
