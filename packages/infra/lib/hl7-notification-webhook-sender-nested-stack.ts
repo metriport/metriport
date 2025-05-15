@@ -48,6 +48,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
   outgoingHl7NotificationBucket: s3.IBucket;
+  hl7ConversionBucket: s3.IBucket;
   secrets: Secrets;
 }
 
@@ -71,6 +72,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       outgoingHl7NotificationBucket: props.outgoingHl7NotificationBucket,
+      hl7ConversionBucket: props.hl7ConversionBucket,
       analyticsSecret,
     });
 
@@ -84,6 +86,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     outgoingHl7NotificationBucket: s3.IBucket;
+    hl7ConversionBucket: s3.IBucket;
     analyticsSecret: ISecret;
   }): { lambda: Lambda } {
     const {
@@ -93,6 +96,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       envType,
       alarmAction,
       outgoingHl7NotificationBucket,
+      hl7ConversionBucket,
       analyticsSecret,
     } = ownProps;
     const {
@@ -126,11 +130,14 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
+        HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
 
     outgoingHl7NotificationBucket.grantReadWrite(lambda);
+    hl7ConversionBucket.grantReadWrite(lambda);
+
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     analyticsSecret.grantRead(lambda);
 

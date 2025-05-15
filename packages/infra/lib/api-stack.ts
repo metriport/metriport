@@ -124,6 +124,15 @@ export class APIStack extends Stack {
       );
     }
 
+    let hl7ConversionBucket: s3.IBucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
+      hl7ConversionBucket = s3.Bucket.fromBucketName(
+        this,
+        "Hl7ConversionBucket",
+        props.config.hl7Notification.hl7ConversionBucketName
+      );
+    }
+
     //-------------------------------------------
     // Security Setup
     //-------------------------------------------
@@ -383,7 +392,7 @@ export class APIStack extends Stack {
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+    if (!isSandbox(props.config) && outgoingHl7NotificationBucket && hl7ConversionBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
         "Hl7NotificationWebhookSenderNestedStack",
@@ -393,6 +402,7 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
           outgoingHl7NotificationBucket,
+          hl7ConversionBucket,
           secrets,
         }
       );
