@@ -1,47 +1,36 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { z } from "zod";
-import { resourceTypeForConsolidation } from "../../../medical/fhir/resources";
 
-export const supportedResourceTypes = [...resourceTypeForConsolidation, "Medication"] as const;
-
-export type SupportedResourceType = (typeof supportedResourceTypes)[number];
-
-export const fhirResourceSchema = z.intersection(
+export const ehrFhirResourceSchema = z.intersection(
   z.object({
     id: z.string(),
-    resourceType: z.enum(supportedResourceTypes),
+    resourceType: z.string(),
   }),
   z.record(z.string(), z.any())
 );
-export type FhirResource = z.infer<typeof fhirResourceSchema>;
+export type EhrFhirResource = z.infer<typeof ehrFhirResourceSchema>;
 
-export const fhirResourcesSchema = fhirResourceSchema.array();
-export type FhirResources = z.infer<typeof fhirResourcesSchema>;
+export const ehrFhirResourcesSchema = ehrFhirResourceSchema.array();
+export type EhrFhirResources = z.infer<typeof ehrFhirResourcesSchema>;
 
-export const fhirResourceWrapperSchema = z.object({
-  resource: fhirResourceSchema,
+export const ehrFhirResourceWrapperSchema = z.object({
+  resource: ehrFhirResourceSchema,
 });
-export type FhirResourceWrapper = z.infer<typeof fhirResourceWrapperSchema>;
+export type EhrFhirResourceWrapper = z.infer<typeof ehrFhirResourceWrapperSchema>;
 
-export const fhirResourceBundleSchema = z.object({
+export const ehrFhirResourceBundleSchema = z.object({
   resourceType: z.literal("Bundle"),
-  entry: fhirResourceWrapperSchema.array().optional(),
+  entry: ehrFhirResourceWrapperSchema.array().optional(),
   link: z.object({ relation: z.string(), url: z.string() }).array().optional(),
 });
-export type FhirResourceBundle = z.infer<typeof fhirResourceBundleSchema>;
+export type EhrFhirResourceBundle = z.infer<typeof ehrFhirResourceBundleSchema>;
 
 export type BundleWithLastModified = {
-  bundle: {
-    resourceType: "Bundle";
-    entry: {
-      resource: FhirResource;
-    }[];
-  };
+  bundle: Bundle;
   lastModified: Date | undefined;
 };
 
-export type Bundle = BundleWithLastModified["bundle"];
-
-export function createBundleFromResourceList(resourceList: FhirResource[]): Bundle {
+export function createBundleFromResourceList(resourceList: Resource[]): Bundle {
   return {
     resourceType: "Bundle",
     entry: resourceList.map(resource => ({ resource })),

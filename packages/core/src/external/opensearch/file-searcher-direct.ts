@@ -21,12 +21,12 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
   async search(req: SearchRequest): Promise<SearchResult[]> {
     const { indexName, endpoint, username, password } = this.config;
     const { cxId, patientId, query } = req;
-    const { log } = out(`OSFileSearcher.search - pt ${patientId}`);
+    const { debug } = out(`OSFileSearcher.search - pt ${patientId}`);
 
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
-    log(`Searching on index ${indexName}...`);
+    debug(`Searching on index ${indexName}...`);
     const queryPayload = {
       query: {
         bool: {
@@ -58,7 +58,7 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
         }
       )
     ).body as OpenSearchResponse;
-    log(`Successfully searched, response: ${JSON.stringify(response)}`);
+    debug(`Successfully searched, response: `, () => JSON.stringify(response));
 
     return this.mapResult(response);
   }

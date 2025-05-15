@@ -1,4 +1,4 @@
-import { IndexFields } from ".";
+import { IndexFields, OpenSearchIngestorConfig } from ".";
 
 export type IngestRequest = Omit<IndexFields, "content"> & {
   entryId: string;
@@ -6,10 +6,7 @@ export type IngestRequest = Omit<IndexFields, "content"> & {
   requestId?: string | undefined;
 };
 
-export type OpenSearchFileIngestorConfig = {
-  region: string;
-  indexName: string;
-};
+export type OpenSearchFileIngestorConfig = OpenSearchIngestorConfig;
 
 export abstract class OpenSearchFileIngestor {
   constructor(readonly config: OpenSearchFileIngestorConfig) {}

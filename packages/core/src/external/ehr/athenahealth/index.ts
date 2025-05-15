@@ -1,4 +1,5 @@
 import {
+  Bundle,
   Condition,
   Medication,
   MedicationAdministration,
@@ -52,10 +53,8 @@ import {
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import {
-  Bundle,
-  FhirResourceBundle,
-  fhirResourceBundleSchema,
-  SupportedResourceType,
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import {
   Patient,
@@ -175,12 +174,12 @@ export const supportedAthenaHealthResources = [
   "CareTeam",
   "Practitioner",
   "Provenance",
-] as SupportedResourceType[];
+];
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthResource {
-  return supportedAthenaHealthResources.includes(resourceType as SupportedAthenaHealthResource);
+  return supportedAthenaHealthResources.includes(resourceType);
 }
 
 class AthenaHealthApi {
@@ -748,13 +747,13 @@ class AthenaHealthApi {
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
         makeRequest: () =>
-          this.makeRequest<FhirResourceBundle>({
+          this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
             s3Path: `fhir-resources-${resourceType}`,
             method: "GET",
             url: resourceTypeUrl,
-            schema: fhirResourceBundleSchema,
+            schema: ehrFhirResourceBundleSchema,
             additionalInfo,
             debug,
             useFhir: true,

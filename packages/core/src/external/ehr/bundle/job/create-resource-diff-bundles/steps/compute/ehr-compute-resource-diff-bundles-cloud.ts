@@ -1,17 +1,19 @@
-import { sleep } from "@metriport/shared";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { chunk } from "lodash";
 import { Config } from "../../../../../../../util/config";
-import {
-  SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
-  SQS_MESSAGE_BATCH_SIZE_FIFO,
-} from "../../../../../../../util/sqs";
 import { SQSClient } from "../../../../../../aws/sqs";
+import { createSqsGroupId } from "../../create-resource-diff-bundle-shared";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
 } from "./ehr-compute-resource-diff-bundles";
 
+/**
+ * This class is used to compute resource diff bundles in the cloud.
+ * It sends messages to the resource diff bundle queue for each resource type.
+ * The queue is configured to deduplicate messages based on the payload.
+ *
+ */
 export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDiffBundlesHandler {
   private readonly sqsClient: SQSClient;
 
@@ -23,21 +25,15 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
     this.sqsClient = sqsClient ?? new SQSClient({ region });
   }
 
-  async computeResourceDiffBundles(params: ComputeResourceDiffBundlesRequest[]): Promise<void> {
-    const chunks = chunk(params, SQS_MESSAGE_BATCH_SIZE_FIFO);
-    for (const chunk of chunks) {
-      await Promise.all(
-        chunk.map(params => {
-          const { ehrPatientId } = params;
-          const payload = JSON.stringify(params);
-          return this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
-            fifo: true,
-            messageDeduplicationId: createUuidFromText(payload),
-            messageGroupId: ehrPatientId,
-          });
-        })
-      );
-      await sleep(SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP);
-    }
+  async computeResourceDiffBundles(params: ComputeResourceDiffBundlesRequest): Promise<void> {
+    const { metriportPatientId, resourceType } = params;
+    const payload = JSON.stringify(params);
+    await executeWithNetworkRetries(async () => {
+      await this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
+        fifo: true,
+        messageDeduplicationId: createUuidFromText(payload),
+        messageGroupId: createSqsGroupId(metriportPatientId, resourceType),
+      });
+    });
   }
 }

@@ -1,5 +1,10 @@
-import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
-import { Bundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { Bundle } from "@medplum/fhirtypes";
+import {
+  BadRequestError,
+  errorToString,
+  executeWithNetworkRetries,
+  MetriportError,
+} from "@metriport/shared";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
@@ -35,12 +40,13 @@ export async function createOrReplaceBundle({
   const { log } = out(
     `Ehr createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}`
   );
-  const invalidResource = bundle.entry.find(entry => entry.resource.resourceType !== resourceType);
+  if (!bundle.entry) return;
+  const invalidResource = bundle.entry.find(entry => entry.resource?.resourceType !== resourceType);
   if (invalidResource) {
     throw new BadRequestError("Invalid resource type in bundle", undefined, {
       bundleType,
       resourceType,
-      invalidResourceResourceType: invalidResource.resource.resourceType,
+      invalidResourceResourceType: invalidResource.resource?.resourceType,
     });
   }
   const s3Utils = getS3UtilsInstance();
@@ -48,11 +54,13 @@ export async function createOrReplaceBundle({
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
   const key = createKey({ ehr, cxId, metriportPatientId, ehrPatientId, resourceType, jobId });
   try {
-    await s3Utils.uploadFile({
-      bucket: s3BucketName,
-      key,
-      file: Buffer.from(JSON.stringify(bundle), "utf8"),
-      contentType: "application/json",
+    await executeWithNetworkRetries(async () => {
+      await s3Utils.uploadFile({
+        bucket: s3BucketName,
+        key,
+        file: Buffer.from(JSON.stringify(bundle), "utf8"),
+        contentType: "application/json",
+      });
     });
   } catch (error) {
     const msg = "Failure while creating or replacing bundle @ S3";

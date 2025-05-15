@@ -1,4 +1,3 @@
-import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
@@ -14,7 +13,7 @@ type CreateBundlePrefixParams = {
   cxId: string;
   metriportPatientId: string;
   ehrPatientId: string;
-  resourceType: SupportedResourceType;
+  resourceType: string;
   jobId?: string | undefined;
 };
 
@@ -35,6 +34,14 @@ export function createFileKeyEhr(params: CreateBundlePrefixParams): string {
   return `${createBundlePrefix(params)}/ehr.json`;
 }
 
+export function createFileKeyEhrDeduped(params: CreateBundlePrefixParams): string {
+  return `${createBundlePrefix(params)}/ehr-deduped.json`;
+}
+
+export function createFileKeyMetriport(params: CreateBundlePrefixParams): string {
+  return `${createBundlePrefix(params)}/metriport.json`;
+}
+
 export function createFileKeyEhrOnly(params: CreateBundlePrefixParams): string {
   return `${createBundlePrefix(params)}/ehr-only.json`;
 }
@@ -43,18 +50,16 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
   return `${createBundlePrefix(params)}/metriport-only.json`;
 }
 
-export function getSupportedResourcesByEhr(ehr: EhrSource): SupportedResourceType[] {
-  if (ehr === EhrSources.canvas) return supportedCanvasResources as SupportedResourceType[];
-  if (ehr === EhrSources.elation) return supportedElationResources as SupportedResourceType[];
-  if (ehr === EhrSources.athena) return supportedAthenaHealthResources as SupportedResourceType[];
+export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
+  if (ehr === EhrSources.canvas) return supportedCanvasResources;
+  if (ehr === EhrSources.elation) return supportedElationResources;
+  if (ehr === EhrSources.athena) return supportedAthenaHealthResources;
   return [];
 }
 
-export function isSupportedResourceTypeByEhr(
-  ehr: EhrSource,
-  resourceType: string
-): resourceType is SupportedResourceType {
-  return getSupportedResourcesByEhr(ehr).includes(resourceType as SupportedResourceType);
+export function isSupportedResourceTypeByEhr(ehr: EhrSource, resourceType: string): boolean {
+  const supportedResources = getSupportedResourcesByEhr(ehr);
+  return supportedResources.includes(resourceType);
 }
 
 export function getS3UtilsInstance(): S3Utils {
@@ -63,6 +68,8 @@ export function getS3UtilsInstance(): S3Utils {
 
 export enum BundleType {
   EHR = "Ehr",
+  EHR_DEDUPED = "EhrDeduped",
+  METRIPORT = "Metriport",
   RESOURCE_DIFF_EHR_ONLY = "ResourceDiffEhrOnly",
   RESOURCE_DIFF_METRIPORT_ONLY = "ResourceDiffMetriportOnly",
 }
@@ -84,6 +91,8 @@ export function isResourceDiffBundleType(
 
 export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams) => string> = {
   [BundleType.EHR]: createFileKeyEhr,
+  [BundleType.EHR_DEDUPED]: createFileKeyEhrDeduped,
+  [BundleType.METRIPORT]: createFileKeyMetriport,
   [BundleType.RESOURCE_DIFF_EHR_ONLY]: createFileKeyEhrOnly,
   [BundleType.RESOURCE_DIFF_METRIPORT_ONLY]: createFileKeyMetriportOnly,
 };
@@ -94,7 +103,7 @@ export type BundleKeyBaseParams = {
   metriportPatientId: string;
   ehrPatientId: string;
   bundleType: BundleType;
-  resourceType: SupportedResourceType;
+  resourceType: string;
   jobId?: string | undefined;
   getLastModified?: boolean;
   s3BucketName?: string;

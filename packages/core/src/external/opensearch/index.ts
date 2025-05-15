@@ -6,6 +6,7 @@ import { DocumentReference } from "@medplum/fhirtypes";
 
 export const contentFieldName = "content";
 
+// TODO ENG-41 this is "file" specific and should be moved to the file-ingestor.ts file
 export type IndexFields = {
   cxId: string;
   patientId: string;
@@ -28,3 +29,8 @@ export function isDocStatusPreliminary(doc: DocumentReference): boolean {
 export function isDocStatusEnteredInError(doc: DocumentReference): boolean {
   return doc.docStatus === "entered-in-error";
 }
+
+export type OpenSearchIngestorConfig = {
+  region: string;
+  indexName: string;
+};

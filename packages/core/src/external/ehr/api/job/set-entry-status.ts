@@ -1,16 +1,22 @@
-import { errorToString, JobEntryStatus, MetriportError } from "@metriport/shared";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  JobEntryStatus,
+  MetriportError,
+} from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { ApiBaseParams } from "../api-shared";
+import { validateAndLogResponse } from "../api-shared";
+import { JobBaseParams } from "./shared";
 
-export type SetJobEntryStatusParams = Pick<ApiBaseParams, "cxId"> & {
-  jobId: string;
+export type SetJobEntryStatusParams = JobBaseParams & {
   entryStatus: JobEntryStatus;
 };
 
 /**
  * Sends a request to the API to set the status of a patient job entry.
+ *
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
  * @param entryStatus - The status of the job entry.
@@ -25,9 +31,10 @@ export async function setJobEntryStatus({
   const queryParams = new URLSearchParams({ cxId, entryStatus });
   const updateJobUrl = `/internal/patient/job/${jobId}/set-entry-status?${queryParams.toString()}`;
   try {
-    const response = await api.post(updateJobUrl);
-    if (!response.data) throw new Error(`No body returned from ${updateJobUrl}`);
-    debug(`${updateJobUrl} resp: ${JSON.stringify(response.data)}`);
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(updateJobUrl);
+    });
+    validateAndLogResponse(updateJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while setting job entry status @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

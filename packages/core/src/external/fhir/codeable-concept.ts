@@ -37,6 +37,10 @@ export function isValidCoding(coding: Coding): boolean {
   return false;
 }
 
+export function getValidCodings(codings: Coding[]): Coding[] {
+  return codings.filter(isValidCoding);
+}
+
 export function isUsefulDisplay(text: string) {
   const normalizedText = text.toLowerCase().trim();
   return (

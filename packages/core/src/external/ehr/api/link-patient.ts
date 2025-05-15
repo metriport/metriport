@@ -1,8 +1,8 @@
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { ApiBaseParams } from "./api-shared";
+import { ApiBaseParams, validateAndLogResponse } from "./api-shared";
 
 export type LinkPatientParams = Omit<ApiBaseParams, "departmentId">;
 
@@ -29,9 +29,10 @@ export async function linkPatient({
   });
   const linkPatientUrl = `/internal/ehr/${ehr}/patient/link?${queryParams.toString()}`;
   try {
-    const response = await api.post(linkPatientUrl);
-    if (!response.data) throw new Error(`No body returned from ${linkPatientUrl}`);
-    debug(`${linkPatientUrl} resp: ${JSON.stringify(response.data)}`);
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(linkPatientUrl);
+    });
+    validateAndLogResponse(linkPatientUrl, response, debug);
   } catch (error) {
     const msg = "Failure while linking patient @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

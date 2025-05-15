@@ -1,19 +1,14 @@
-import { Bundle, MetriportError, sleep } from "@metriport/shared";
-import {
-  FhirResource,
-  SupportedResourceType,
-  fhirResourceSchema,
-} from "@metriport/shared/interface/external/ehr/fhir-resource";
-import axios from "axios";
+import { Resource } from "@medplum/fhirtypes";
+import { errorToString, sleep } from "@metriport/shared";
+import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
-import {
-  FetchEhrBundleParams,
-  fetchEhrBundlePreSignedUrls,
-} from "../../../../../api/bundle/fetch-ehr-bundle-presigned-url";
-import { setResourceDiffJobEntryStatus } from "../../../../../api/job/resource-diff-set-entry-status";
+import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
+import { deduplicateResources } from "../../../../../../../fhir-deduplication/dedup-resources";
+import { out } from "../../../../../../../util/log";
+import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../../api/job/create-resource-diff-bundles/set-entry-status";
 import { BundleType } from "../../../../bundle-shared";
-import { updateBundle as updateBundleOnS3 } from "../../../../command/update-bundle";
-import { computeNewResources } from "../../utils";
+import { createOrReplaceBundle } from "../../../../command/create-or-replace-bundle";
+import { fetchBundle, FetchBundleParams } from "../../../../command/fetch-bundle";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
@@ -22,79 +17,121 @@ import {
 export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
-  async computeResourceDiffBundles(payloads: ComputeResourceDiffBundlesRequest[]): Promise<void> {
-    for (const payload of payloads) {
-      const {
-        ehr,
-        cxId,
-        practiceId,
-        metriportPatientId,
-        ehrPatientId,
-        resourceType,
-        contribute = false,
-        jobId,
-        reportError = true,
-      } = payload;
-      const entryStatusParams = {
-        ehr,
-        cxId,
-        practiceId,
-        patientId: ehrPatientId,
-        contribute,
-        jobId,
-      };
+  async computeResourceDiffBundles(payload: ComputeResourceDiffBundlesRequest): Promise<void> {
+    const {
+      ehr,
+      cxId,
+      practiceId,
+      metriportPatientId,
+      ehrPatientId,
+      resourceType,
+      jobId,
+      reportError = true,
+    } = payload;
+    const entryStatusParams = {
+      ehr,
+      cxId,
+      practiceId,
+      patientId: ehrPatientId,
+      jobId,
+    };
+    try {
+      const [metriportResources, ehrResources] = await Promise.all([
+        getMetriportResourcesFromS3({
+          cxId,
+          patientId: metriportPatientId,
+          resourceType,
+        }),
+        getEhrResourcesFromS3({
+          ehr,
+          cxId,
+          metriportPatientId,
+          ehrPatientId,
+          resourceType,
+        }),
+      ]);
+      const dedupedEhrResources = deduplicateResources<Resource>({ resources: ehrResources });
       try {
-        const [metriportResources, ehrResources] = await Promise.all([
-          getMetriportResourcesFromS3({
-            cxId,
-            patientId: metriportPatientId,
-            resourceType,
-          }),
-          getEhrResourcesFromApi({
+        await Promise.all([
+          createOrReplaceBundle({
             ehr,
             cxId,
-            practiceId,
-            patientId: ehrPatientId,
+            metriportPatientId,
+            ehrPatientId,
+            bundleType: BundleType.METRIPORT,
+            bundle: createBundleFromResourceList(metriportResources),
             resourceType,
+            jobId,
+          }),
+          createOrReplaceBundle({
+            ehr,
+            cxId,
+            metriportPatientId,
+            ehrPatientId,
+            bundleType: BundleType.EHR,
+            bundle: createBundleFromResourceList(ehrResources),
+            resourceType,
+            jobId,
+          }),
+          createOrReplaceBundle({
+            ehr,
+            cxId,
+            metriportPatientId,
+            ehrPatientId,
+            bundleType: BundleType.EHR_DEDUPED,
+            bundle: createBundleFromResourceList(dedupedEhrResources),
+            resourceType,
+            jobId,
           }),
         ]);
-        const { newEhrResources, newMetriportResources } = computeNewResources({
-          ehrResources,
-          metriportResources,
-        });
-        await Promise.all([
-          newEhrResources.length > 0
-            ? updateBundleOnS3({
-                ehr,
-                cxId,
-                metriportPatientId,
-                ehrPatientId,
-                bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
-                resources: newEhrResources,
-                resourceType,
-                jobId,
-              })
-            : undefined,
-          newMetriportResources.length > 0
-            ? updateBundleOnS3({
-                ehr,
-                cxId,
-                metriportPatientId,
-                ehrPatientId,
-                bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
-                resources: newMetriportResources,
-                resourceType,
-                jobId,
-              })
-            : undefined,
-        ]);
-        await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "successful" });
       } catch (error) {
-        if (reportError) {
-          await setResourceDiffJobEntryStatus({ ...entryStatusParams, entryStatus: "failed" });
-        }
-        throw error;
+        out(
+          `computeResourceDiffBundles - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
+        ).log(`Error creating metriport and ehr bundles. Cause: ${errorToString(error)}`);
       }
+      const { targetOnly: metriportOnly, sourceOnly: ehrOnly } =
+        computeResourcesXorAlongResourceType({
+          targetResources: metriportResources,
+          sourceResources: dedupedEhrResources,
+        });
+      await Promise.all([
+        ehrOnly.length > 0
+          ? createOrReplaceBundle({
+              ehr,
+              cxId,
+              metriportPatientId,
+              ehrPatientId,
+              bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
+              bundle: createBundleFromResourceList(ehrOnly),
+              resourceType,
+              jobId,
+            })
+          : undefined,
+        metriportOnly.length > 0
+          ? createOrReplaceBundle({
+              ehr,
+              cxId,
+              metriportPatientId,
+              ehrPatientId,
+              bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+              bundle: createBundleFromResourceList(metriportOnly),
+              resourceType,
+              jobId,
+            })
+          : undefined,
+      ]);
+      await setCreateResourceDiffBundlesJobEntryStatus({
+        ...entryStatusParams,
+        entryStatus: "successful",
+      });
+    } catch (error) {
+      if (reportError) {
+        await setCreateResourceDiffBundlesJobEntryStatus({
+          ...entryStatusParams,
+          entryStatus: "failed",
+        });
+      }
+      throw error;
     }
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
@@ -107,47 +144,39 @@ async function getMetriportResourcesFromS3({
 }: {
   cxId: string;
   patientId: string;
-  resourceType: SupportedResourceType;
-}): Promise<FhirResource[]> {
+  resourceType: string;
+}): Promise<Resource[]> {
   const consolidated = await getConsolidated({ cxId, patientId });
-  const resources = consolidated?.bundle?.entry?.filter(
+  if (!consolidated?.bundle?.entry) return [];
+  const resources = consolidated.bundle.entry.filter(
     entry => entry.resource?.resourceType === resourceType
   );
-  if (!resources || resources.length < 1) return [];
+  if (resources.length < 1) return [];
   return resources.flatMap(entry => {
     if (!entry.resource) return [];
-    const parsedResourceSafe = fhirResourceSchema.safeParse(entry.resource);
-    if (!parsedResourceSafe.success) return [];
-    return [parsedResourceSafe.data];
+    return [entry.resource];
   });
 }
 
-async function getEhrResourcesFromApi({
+async function getEhrResourcesFromS3({
   ehr,
   cxId,
-  practiceId,
-  patientId,
+  metriportPatientId,
+  ehrPatientId,
   resourceType,
-}: Omit<FetchEhrBundleParams, "refresh">): Promise<FhirResource[]> {
-  const ehrResourcesBundle = await fetchEhrBundlePreSignedUrls({
+}: Omit<FetchBundleParams, "bundleType">): Promise<Resource[]> {
+  const bundle = await fetchBundle({
     ehr,
     cxId,
-    practiceId,
-    patientId,
+    metriportPatientId,
+    ehrPatientId,
     resourceType,
+    bundleType: BundleType.EHR,
   });
-  const fetchedResourceType = ehrResourcesBundle.resourceTypes[0];
-  const fetchedPreSignedUrls = ehrResourcesBundle.preSignedUrls[0];
-  if (!fetchedResourceType || !fetchedPreSignedUrls) {
-    throw new MetriportError("No resource type found in the EHR bundle", undefined, {
-      ehr,
-      cxId,
-      practiceId,
-      patientId,
-      resourceType,
-    });
-  }
-  const ehrResource = await axios.get(fetchedPreSignedUrls);
-  const bundle: Bundle = ehrResource.data;
-  return bundle.entry.map(entry => entry.resource);
+  if (!bundle?.bundle.entry) return [];
+  if (bundle.bundle.entry.length < 1) return [];
+  return bundle.bundle.entry.flatMap(entry => {
+    if (!entry.resource) return [];
+    return [entry.resource];
+  });
 }

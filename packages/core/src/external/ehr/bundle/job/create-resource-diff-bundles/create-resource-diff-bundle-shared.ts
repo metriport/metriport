@@ -6,6 +6,11 @@ export type CreateResourceDiffBundlesBaseRequest = {
   practiceId: string;
   metriportPatientId: string;
   ehrPatientId: string;
-  contribute?: boolean;
+  resourceType: string;
   jobId: string;
+  reportError?: boolean;
 };
+
+export function createSqsGroupId(metriportPatientId: string, resourceType: string): string {
+  return `${metriportPatientId}-${resourceType}`;
+}

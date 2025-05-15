@@ -1,11 +1,11 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -50,10 +50,10 @@ import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
@@ -353,7 +353,7 @@ export class APIStack extends Stack {
         lambda: fhirConverterLambda,
         bucket: fhirConverterBucket,
       },
-      hl7v2RosterUploadLambda,
+      hl7v2RosterUploadLambdas,
       conversionResultNotifierLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
@@ -415,8 +415,6 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       healthieLinkPatientQueue,
       healthieLinkPatientLambda,
-      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
-      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
       computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
       refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
       refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
@@ -543,7 +541,6 @@ export class APIStack extends Stack {
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
-      ehrStartResourceDiffBundlesQueue,
       ehrRefreshEhrBundlesQueue,
       ehrBundleBucket,
       generalBucket,
@@ -559,6 +556,15 @@ export class APIStack extends Stack {
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
       searchIndexName: ccdaSearchIndexName,
+      semanticSearchEndpoint: props.config.semanticOpenSearch?.endpoint,
+      semanticSearchIndexName: props.config.semanticOpenSearch?.indexName,
+      semanticSearchModelId: props.config.semanticOpenSearch?.modelId,
+      semanticSearchAuth: props.config.semanticOpenSearch
+        ? {
+            userName: props.config.semanticOpenSearch.userName,
+            secret: props.config.semanticOpenSearch.password,
+          }
+        : undefined,
       featureFlagsTable,
       cookieStore,
     });
@@ -629,7 +635,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
       fhirToBundleCountLambda,
-      hl7v2RosterUploadLambda,
+      ...(hl7v2RosterUploadLambdas ?? []),
       hl7NotificationWebhookSenderLambda,
       patientImportCreateLambda,
       patientImportParseLambda,
@@ -638,7 +644,6 @@ export class APIStack extends Stack {
       ehrSyncPatientLambda,
       elationLinkPatientLambda,
       healthieLinkPatientLambda,
-      ehrStartResourceDiffBundlesLambda,
       ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
       fhirConverterLambda,
@@ -655,7 +660,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
+    medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,

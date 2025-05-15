@@ -1,4 +1,4 @@
-import { Condition } from "@medplum/fhirtypes";
+import { Bundle, Condition, Resource } from "@medplum/fhirtypes";
 import {
   BadRequestError,
   errorToString,
@@ -27,11 +27,6 @@ import {
   Subscriptions,
   subscriptionsSchema,
 } from "@metriport/shared/interface/external/ehr/elation/index";
-import {
-  Bundle,
-  FhirResource,
-  SupportedResourceType,
-} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
@@ -86,12 +81,12 @@ export const supportedElationResources = [
   "MedicationRequest",
   "Observation",
   "Procedure",
-] as SupportedResourceType[];
+];
 export type SupportedElationResource = (typeof supportedElationResources)[number];
 export function isSupportedElationResource(
   resourceType: string
 ): resourceType is SupportedElationResource {
-  return supportedElationResources.includes(resourceType as SupportedElationResource);
+  return supportedElationResources.includes(resourceType);
 }
 
 const elationResourceTypeToSectionNameMap = new Map<string, string>();
@@ -226,7 +221,7 @@ class ElationApi {
       patientId: elationPatientId,
       resourceType,
     };
-    const fetchResourcesFromEhr = async (): Promise<FhirResource[]> => {
+    const fetchResourcesFromEhr = async (): Promise<Resource[]> => {
       const patientCcda = await this.makeRequest<PatientCcda>({
         cxId,
         patientId: elationPatientId,
@@ -240,10 +235,12 @@ class ElationApi {
       const ccdaB64 = patientCcda.base64_ccda;
       const ccdaXmlAsString = base64ToString(ccdaB64);
       const fhirResources = await ccdaToFhirConverter(ccdaXmlAsString);
-      const fhirResourcesOfTargetResourceType = fhirResources.entry.filter(
-        e => e.resource.resourceType === resourceType
+      return (
+        fhirResources.entry?.flatMap(e => {
+          if (!e.resource || e.resource.resourceType !== resourceType) return [];
+          return [e.resource];
+        }) ?? []
       );
-      return fhirResourcesOfTargetResourceType.map(e => e.resource);
     };
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.elation,
@@ -451,6 +448,7 @@ class ElationApi {
       schema: z.undefined(),
       additionalInfo,
       debug,
+      emptyResponse: true,
     });
   }
 
@@ -514,6 +512,7 @@ class ElationApi {
     schema,
     additionalInfo,
     debug,
+    emptyResponse = false,
   }: MakeRequestParamsInEhr<T>): Promise<T> {
     return await makeRequest<T>({
       ehr: EhrSources.elation,
@@ -529,6 +528,7 @@ class ElationApi {
       schema,
       additionalInfo,
       debug,
+      emptyResponse,
     });
   }
 
