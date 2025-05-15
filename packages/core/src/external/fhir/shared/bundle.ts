@@ -147,51 +147,6 @@ export function getReferences({
   return remainingRefs;
 }
 
-export function deepSearchObjectForString<R extends object>(
-  resource: R,
-  searchKey: string
-): string[] {
-  const results: string[] = [];
-
-  // Not sure if this would break if not pure JS objects or created with Object.create(null)
-  // if (resource.constructor !== Object) return results;
-
-  // Basic object sanity checks
-  if (
-    resource == null ||
-    typeof resource !== "object" ||
-    resource instanceof Date ||
-    resource instanceof Set ||
-    resource instanceof Map
-  )
-    return results;
-
-  // Recursively search object key-value pairs
-  const keys = Object.keys(resource) as Array<keyof R>;
-  for (const key of keys) {
-    const value = resource[key];
-
-    if (key === searchKey && typeof value === "string") {
-      results.push(value);
-    } else if (Array.isArray(value)) {
-      results.push(...deepSearchArrayForString(value, searchKey));
-    } else if (typeof value === "object" && value !== null) {
-      results.push(...deepSearchObjectForString(value, searchKey));
-    }
-  }
-
-  return results;
-}
-
-export function deepSearchArrayForString(array: unknown[], searchKey: string): string[] {
-  return array.flatMap(item => {
-    if (item != null && typeof item === "object") {
-      return deepSearchObjectForString(item, searchKey);
-    }
-    return [];
-  });
-}
-
 export function buildReferenceFromStringRelative(
   reference: string
 ): ReferenceWithIdAndType | undefined {
