@@ -47,6 +47,7 @@ export async function processInboundXcpd(
   try {
     const patient = validateFHIRAndExtractPatient(payload);
     const matchingPatient = await mpi.findMatchingPatient(patient);
+    console.log("ORTA TEST: matchingPatient", matchingPatient);
     if (!matchingPatient) {
       return constructPDNoMatchResponse(payload);
     }

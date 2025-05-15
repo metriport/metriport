@@ -28,6 +28,8 @@ export async function handler(event: APIGatewayProxyEventV2) {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
 
+    console.log("event", event);
+
     try {
       const body = event.isBase64Encoded
         ? Buffer.from(event.body, "base64").toString()
