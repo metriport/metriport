@@ -427,9 +427,9 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
+        EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
-        EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -483,6 +483,9 @@ export class EhrNestedStack extends NestedStack {
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
+        EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
+        EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
+          ownProps.computeResourceDiffBundlesQueue.queueUrl,
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
