@@ -17,7 +17,7 @@ dayjs.extend(duration);
  * Script to count the number of resources and references, including missing ones, in FHIR bundles.
  */
 
-const folderName: string = `/Users/keshav/metriport/metriport/packages/utils/runs/bulk-test-dedupe/unprocessed`; // eslint-disable-line @typescript-eslint/no-inferrable-types
+const folderName: string = ``; // eslint-disable-line @typescript-eslint/no-inferrable-types
 
 // keep empty to include all references
 const resourceTypesToInclude: ResourceType[] | undefined = undefined;
