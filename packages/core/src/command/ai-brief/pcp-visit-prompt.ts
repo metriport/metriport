@@ -9,12 +9,11 @@ Instructions:
 1. Review the patient medical records and format the output EXACTLY as follows:
     Most recent Primary Care Provider (PCP) visit (Date: [date]):
     PCP Name: [name], [credentials] [specialty]
+      Note: Include all office visits, outpatient visits, and established patient visits where the provider is an MD, DO, NP, or PA in the specialty of Family Medicine, Internal Medicine, or OB/GYN.
+      If you find a PCP visit, also check for any other visits from the same provider - use the most recent one.
+      If PCP visit isn't available, use History of Present Illness (HPI) visit instead
 
-    Medical / Problem List: [comma separated list of conditions]
-    Medication List: [comma separated list of medications]
-    Note: Include all office visits, outpatient visits, and established patient visits where the provider is an MD, DO, NP, or PA in the specialty of Family Medicine, Internal Medicine, or OB/GYN.
-    If you find a PCP visit, also check for any other visits from the same provider - use the most recent one.
-    If PCP visit isn't available, use History of Present Illness (HPI) visit instead
+    Medical / Problem List (Has Conditions: Y/N)
 
     Most recent height (Date: [date]): [value] in
     Most recent weight (Date: [date]): [value] lbs
