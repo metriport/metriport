@@ -21,7 +21,7 @@ import { getPatientOrFail } from "../patient/get-patient";
  * returns the progress of the bulk signing.
  * @param cxId - cxId
  * @param patientId - patientId
- * @param continueProcessingRequest - if true, continue the bulk signing process from the last request
+ * @param continueProcessingRequest - if true, continue an existing processing request
  * @returns a Promise that resolves to a BulkGetDocumentsUrlProgress object.
  */
 export async function startBulkGetDocumentUrls({
