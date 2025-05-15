@@ -1,9 +1,9 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { getMetriportContent } from "../../external/fhir/shared/extensions/metriport";
 
-export function insertSourceDocumentToAllDocRefMeta(
-  docRefs: DocumentReference[]
-): DocumentReference[] {
+export function insertSourceDocumentToAllDocRefMeta<T extends DocumentReference>(
+  docRefs: T[]
+): T[] {
   return docRefs.map(insertSourceDocumentToDocRefMeta);
 }
 
@@ -18,7 +18,7 @@ export function insertSourceDocumentToDocRefMeta<T extends DocumentReference>(do
   return {
     ...docRef,
     meta: {
-      ...docRef.meta,
+      ...(docRef.meta ?? {}),
       source: sourceFile,
     },
   };
