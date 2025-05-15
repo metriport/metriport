@@ -1,4 +1,4 @@
-import { Coding, Condition } from "@medplum/fhirtypes";
+import { Bundle, Coding, Condition, Resource } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
@@ -10,10 +10,9 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  Bundle,
   BundleWithLastModified,
-  FhirResource,
-  FhirResourceBundle,
+  EhrFhirResource,
+  EhrFhirResourceBundle,
   createBundleFromResourceList,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
@@ -347,7 +346,7 @@ export async function fetchEhrBundleUsingCache({
   useCachedBundle = true,
   ...params
 }: FetchEhrBundleParams & {
-  fetchResourcesFromEhr: () => Promise<FhirResource[]>;
+  fetchResourcesFromEhr: () => Promise<EhrFhirResource[]>;
   useCachedBundle?: boolean;
 }): Promise<Bundle> {
   if (useCachedBundle) {
@@ -362,7 +361,7 @@ export async function fetchEhrBundleUsingCache({
       resourceTypeInBundle: invalidEntry.resourceType,
     });
   }
-  const bundle = createBundleFromResourceList(fhirResources);
+  const bundle = createBundleFromResourceList(fhirResources as Resource[]);
   await createOrReplaceBundle({
     ...params,
     bundleType: BundleType.EHR,
@@ -385,10 +384,10 @@ export async function fetchEhrFhirResourcesWithPagination({
   url,
   acc = [],
 }: {
-  makeRequest: () => Promise<FhirResourceBundle>;
+  makeRequest: () => Promise<EhrFhirResourceBundle>;
   url: string | undefined;
-  acc?: FhirResource[] | undefined;
-}): Promise<FhirResource[]> {
+  acc?: EhrFhirResource[] | undefined;
+}): Promise<EhrFhirResource[]> {
   if (!url) return acc;
   const fhirResourceBundle = await makeRequest();
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
