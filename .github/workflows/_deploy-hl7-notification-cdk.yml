@@ -22,7 +22,7 @@ on:
       is_branch_to_staging:
         required: false
         type: boolean
-        description: "whether we're deploying to staging or not"
+        description: "whether this workflow should checkout internal's develop/master or a feature branch"
       AWS_REGION:
         required: true
         type: string
