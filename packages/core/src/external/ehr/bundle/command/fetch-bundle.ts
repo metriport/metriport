@@ -3,14 +3,18 @@ import {
   errorToString,
   executeWithNetworkRetries,
   MetriportError,
-  NotFoundError,
 } from "@metriport/shared";
 import { BundleWithLastModified } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Config } from "../../../../util/config";
 import { log, out } from "../../../../util/log";
-import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle-shared";
+import {
+  BundleKeyBaseParams,
+  createKeyMap,
+  getS3UtilsInstance,
+  isResourceDiffBundleType,
+} from "../bundle-shared";
 
 dayjs.extend(duration);
 
@@ -45,6 +49,13 @@ export async function fetchBundle({
   getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
+  if (isResourceDiffBundleType(bundleType) && !jobId) {
+    throw new BadRequestError(
+      "Job ID must be provided when fetching resource diff bundles",
+      undefined,
+      { metriportPatientId, ehrPatientId, bundleType, jobId }
+    );
+  }
   const { log } = out(
     `Ehr fetchBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}  `
   );
@@ -82,62 +93,10 @@ export async function fetchBundle({
   }
 }
 
-/**
- * Fetches a bundle from S3 for the given bundle type and resource type
- * If the bundle is not found, it throws a NotFoundError.
- *
- * @param ehr - The EHR source.
- * @param cxId - The CX ID.
- * @param metriportPatientId - The Metriport ID.
- * @param ehrPatientId - The EHR patient ID.
- * @param bundleType - The bundle type.
- * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
- * @param getLastModified - Whether to fetch the last modified date. (optional, defaults to false)
- * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
- * @returns The bundle with the last modified date.
- * @throws NotFoundError if the bundle is not found.
- */
-export async function fetchBundleOrFail({
-  ehr,
-  cxId,
-  metriportPatientId,
-  ehrPatientId,
-  bundleType,
-  resourceType,
-  jobId,
-  getLastModified = false,
-  s3BucketName = Config.getEhrBundleBucketName(),
-}: FetchBundleParams): Promise<BundleWithLastModified> {
-  const bundle = await fetchBundle({
-    ehr,
-    cxId,
-    metriportPatientId,
-    ehrPatientId,
-    bundleType,
-    resourceType,
-    jobId,
-    getLastModified,
-    s3BucketName,
-  });
-  if (!bundle) {
-    throw new NotFoundError("Bundle not found @ Ehr", {
-      ehr,
-      cxId,
-      metriportPatientId,
-      ehrPatientId,
-      bundleType,
-      resourceType,
-      jobId,
-      s3BucketName,
-      context: "ehr-resource-diff.fetchBundleOrFail",
-    });
-  }
-  return bundle;
-}
+export type FetchBundlePreSignedUrlParams = Omit<FetchBundleParams, "getLastModified">;
 
 /**
- * Fetches a pre-signed URL for a bundle from S3 for the given bundle type and resource type
+ * Fetches a pre-signed URL for a bundle from S3 for the given bundle type and resource type.
  * If the bundle is not found, it returns undefined.
  *
  * @param ehr - The EHR source.
@@ -159,7 +118,14 @@ export async function fetchBundlePreSignedUrl({
   resourceType,
   jobId,
   s3BucketName = Config.getEhrBundleBucketName(),
-}: Omit<FetchBundleParams, "getLastModified">): Promise<string | undefined> {
+}: FetchBundlePreSignedUrlParams): Promise<string | undefined> {
+  if (isResourceDiffBundleType(bundleType) && !jobId) {
+    throw new BadRequestError(
+      "Job ID must be provided when fetching resource diff bundles",
+      undefined,
+      { metriportPatientId, ehrPatientId, bundleType, jobId }
+    );
+  }
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });

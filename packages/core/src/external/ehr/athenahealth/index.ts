@@ -70,11 +70,9 @@ import { uniqBy } from "lodash";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { BundleType } from "../bundle/bundle-shared";
 import {
   ApiConfig,
   createDataParams,
-  fetchBundlePreSignedUrlWithValidation,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
   formatDate,
@@ -770,32 +768,6 @@ class AthenaHealthApi {
       useCachedBundle,
     });
     return bundle;
-  }
-
-  async getBundleByResourceTypePreSignedUrl({
-    cxId,
-    metriportPatientId,
-    athenaPatientId,
-    resourceType,
-    bundleType,
-    jobId,
-  }: {
-    cxId: string;
-    metriportPatientId: string;
-    athenaPatientId: string;
-    resourceType: SupportedAthenaHealthResource;
-    bundleType?: BundleType;
-    jobId?: string;
-  }): Promise<string | undefined> {
-    return fetchBundlePreSignedUrlWithValidation({
-      ehr: EhrSources.athena,
-      cxId,
-      metriportPatientId,
-      ehrPatientId: athenaPatientId,
-      resourceType,
-      bundleType: bundleType ?? BundleType.EHR,
-      jobId,
-    });
   }
 
   async subscribeToEvent({

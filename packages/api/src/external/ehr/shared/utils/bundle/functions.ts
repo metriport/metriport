@@ -5,13 +5,10 @@ import {
 import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { fetchBundlePreSignedUrl as fetchBundlePreSignedUrlAthena } from "../../../athenahealth/command/bundle/fetch-bundle-presigned-url";
 import { refreshEhrBundle as refreshEhrBundleAthena } from "../../../athenahealth/command/bundle/refresh-ehr-bundle";
-import { fetchBundlePreSignedUrl as fetchBundlePreSignedUrlCanvas } from "../../../canvas/command/bundle/fetch-bundle-presigned-url";
 import { refreshEhrBundle as refreshEhrBundleCanvas } from "../../../canvas/command/bundle/refresh-ehr-bundle";
 import {
   FetchBundleParams,
-  FetchBundleParamsForClient,
   FetchedBundlePreSignedUrls,
   RefreshEhrBundleParamsForClient,
 } from "./types";
@@ -39,28 +36,25 @@ export async function validateAndPrepareBundleFetchOrRefresh({
   return { resourceTypes, metriportPatientId };
 }
 
-export type BundleFunctions = {
-  fetchBundlePreSignedUrl: (params: FetchBundleParamsForClient) => Promise<string | undefined>;
+export type BundleClientFunctions = {
   refreshEhrBundle: (params: RefreshEhrBundleParamsForClient) => Promise<void>;
 };
 
-const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
+const bundleClientFunctionsByEhr: Record<EhrSources, BundleClientFunctions | undefined> = {
   [EhrSources.canvas]: {
-    fetchBundlePreSignedUrl: fetchBundlePreSignedUrlCanvas,
     refreshEhrBundle: refreshEhrBundleCanvas,
   },
   [EhrSources.athena]: {
-    fetchBundlePreSignedUrl: fetchBundlePreSignedUrlAthena,
     refreshEhrBundle: refreshEhrBundleAthena,
   },
   [EhrSources.elation]: undefined,
   [EhrSources.healthie]: undefined,
 };
 
-export function getBundleFunctions(ehr: EhrSources): BundleFunctions {
-  const bundleFunctions = bundleFunctionsByEhr[ehr];
-  if (!bundleFunctions) {
-    throw new BadRequestError("No bundle functions found @ Ehr", undefined, { ehr });
+export function getBundleClientFunctions(ehr: EhrSources): BundleClientFunctions {
+  const bundleClientFunctions = bundleClientFunctionsByEhr[ehr];
+  if (!bundleClientFunctions) {
+    throw new BadRequestError("No bundle client functions found @ Ehr", undefined, { ehr });
   }
-  return bundleFunctions;
+  return bundleClientFunctions;
 }

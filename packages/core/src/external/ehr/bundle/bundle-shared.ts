@@ -3,7 +3,6 @@ import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
 import { supportedAthenaHealthResources } from "../athenahealth";
 import { supportedCanvasResources } from "../canvas";
-import { supportedElationResources } from "../elation";
 
 const globalPrefix = "bundle";
 const region = Config.getAWSRegion();
@@ -52,7 +51,6 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
 
 export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
   if (ehr === EhrSources.canvas) return supportedCanvasResources;
-  if (ehr === EhrSources.elation) return supportedElationResources;
   if (ehr === EhrSources.athena) return supportedAthenaHealthResources;
   return [];
 }

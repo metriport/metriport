@@ -1,5 +1,5 @@
 import {
-  getBundleFunctions,
+  getBundleClientFunctions,
   validateAndPrepareBundleFetchOrRefresh,
 } from "../../utils/bundle/functions";
 import { RefreshEhrBundleParams, RefreshEhrBundleParamsForClient } from "../../utils/bundle/types";
@@ -11,7 +11,7 @@ import { RefreshEhrBundleParams, RefreshEhrBundleParamsForClient } from "../../u
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The patient id of the EHR patient.
- * @param resourceType - The resource type to refresh. Optional, all supported resource types will be refreshed if not provided.
+ * @param resourceType - The resource type to fetch. Optional, all supported resource types will be fetched if not provided.
  */
 export async function refreshEhrBundles({
   ehr,
@@ -20,7 +20,7 @@ export async function refreshEhrBundles({
   ehrPatientId,
   resourceType,
 }: RefreshEhrBundleParams): Promise<void> {
-  const { refreshEhrBundle } = getBundleFunctions(ehr);
+  const { refreshEhrBundle } = getBundleClientFunctions(ehr);
   const { metriportPatientId, resourceTypes } = await validateAndPrepareBundleFetchOrRefresh({
     ehr,
     cxId,

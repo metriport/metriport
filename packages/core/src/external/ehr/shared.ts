@@ -10,7 +10,6 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  BundleWithLastModified,
   EhrFhirResource,
   EhrFhirResourceBundle,
   createBundleFromResourceList,
@@ -28,13 +27,9 @@ import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
-import { BundleType, isResourceDiffBundleType } from "./bundle/bundle-shared";
+import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
-import {
-  FetchBundleParams,
-  fetchBundle,
-  fetchBundlePreSignedUrl,
-} from "./bundle/command/fetch-bundle";
+import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
 
 dayjs.extend(duration);
 
@@ -283,14 +278,11 @@ export function getConditionStatus(condition: Condition): string | undefined {
   return undefined;
 }
 
-type FetchEhrBundleParams = Omit<
-  FetchBundleParams,
-  "bundleType" | "jobId" | "getLastModified" | "s3BucketName"
->;
+type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
 
-async function fetchEhrBundleUsingTtl(
-  params: FetchEhrBundleParams
-): Promise<BundleWithLastModified | undefined> {
+async function fetchEhrBundleIfYoungerThanMaxAge(
+  params: Omit<FetchEhrBundleParams, "getLastModified">
+): Promise<Bundle | undefined> {
   const bundle = await fetchBundle({
     ...params,
     bundleType: BundleType.EHR,
@@ -299,38 +291,13 @@ async function fetchEhrBundleUsingTtl(
   if (!bundle || !bundle.lastModified) return undefined;
   const age = dayjs.duration(buildDayjs().diff(bundle.lastModified));
   if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) return undefined;
-  return bundle;
-}
-
-/**
- * Fetches a pre-signed URL for a bundle from S3 for the given bundle type and resource type.
- * Validates that the job ID is provided when fetching resource diff bundles.
- *
- * @param ehr - The EHR source.
- * @param cxId - The CX ID.
- * @param metriportPatientId - The Metriport ID.
- * @param ehrPatientId - The EHR patient ID.
- * @param bundleType - The bundle type.
- * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID. Optional, required for resource diff bundles only.
- * @returns The pre-signed URL for the bundle.
- */
-export async function fetchBundlePreSignedUrlWithValidation(
-  params: Omit<FetchBundleParams, "getLastModified" | "s3BucketName">
-): Promise<string | undefined> {
-  if (isResourceDiffBundleType(params.bundleType as string) && !params.jobId) {
-    throw new BadRequestError(
-      "Job ID must be provided when fetching resource diff bundles",
-      undefined,
-      { ...params }
-    );
-  }
-  return await fetchBundlePreSignedUrl(params);
+  return bundle.bundle;
 }
 
 /**
  * Fetches a bundle from the EHR for the given bundle type and resource type.
- * Uses cached EHR bundle if available and requested.
+ * Uses cached EHR bundle if available and requested. Refreshes the cache if the bundle
+ * is fetched from the EHR.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -350,8 +317,8 @@ export async function fetchEhrBundleUsingCache({
   useCachedBundle?: boolean;
 }): Promise<Bundle> {
   if (useCachedBundle) {
-    const cachedBundle = await fetchEhrBundleUsingTtl({ ...params });
-    if (cachedBundle) return cachedBundle.bundle;
+    const cachedBundle = await fetchEhrBundleIfYoungerThanMaxAge({ ...params });
+    if (cachedBundle) return cachedBundle;
   }
   const fhirResources = await fetchResourcesFromEhr();
   const invalidEntry = fhirResources.find(r => r.resourceType !== params.resourceType);

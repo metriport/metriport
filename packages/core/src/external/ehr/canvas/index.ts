@@ -43,10 +43,8 @@ import duration from "dayjs/plugin/duration";
 import { z } from "zod";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
-import { BundleType } from "../bundle/bundle-shared";
 import {
   ApiConfig,
-  fetchBundlePreSignedUrlWithValidation,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
   formatDate,
@@ -785,32 +783,6 @@ class CanvasApi {
       useCachedBundle,
     });
     return bundle;
-  }
-
-  async getBundleByResourceTypePreSignedUrl({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    resourceType,
-    bundleType,
-    jobId,
-  }: {
-    cxId: string;
-    metriportPatientId: string;
-    canvasPatientId: string;
-    resourceType: string;
-    bundleType?: BundleType;
-    jobId?: string;
-  }): Promise<string | undefined> {
-    return fetchBundlePreSignedUrlWithValidation({
-      ehr: EhrSources.canvas,
-      cxId,
-      metriportPatientId,
-      ehrPatientId: canvasPatientId,
-      resourceType,
-      bundleType: bundleType ?? BundleType.EHR,
-      jobId,
-    });
   }
 
   async getAppointments({
