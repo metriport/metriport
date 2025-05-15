@@ -16,6 +16,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import {
   BadRequestError,
+  MetriportError,
   PaginatedResponse,
   internalSendConsolidatedSchema,
   normalizeState,
@@ -24,6 +25,7 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -40,6 +42,7 @@ import {
   getConsolidatedAndSendToCx,
   startConsolidatedQuery,
 } from "../../../command/medical/patient/consolidated-get";
+import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
 import { PatientCreateCmd, createPatient } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
@@ -1153,6 +1156,38 @@ router.delete(
     });
 
     return res.sendStatus(status.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/:id/consolidated/refresh
+ *
+ * Forcefully recreates the consolidated bundle for a patient.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ */
+router.post(
+  "/:id/consolidated/refresh",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const { log } = out(`consolidated/refresh, cx - ${cxId}, pt - ${id} `);
+
+    const patient = await getPatientOrFail({ id, cxId });
+    const requestId = uuidv7();
+
+    try {
+      await recreateConsolidated({ patient, context: "internal", requestId });
+      log(`Done recreating consolidated`);
+    } catch (err) {
+      const msg = `Error recreating consolidated`;
+      log(`${msg}, err - ${errorToString(err)}`);
+      throw new MetriportError(msg, { extra: { patientId: id, cxId } });
+    }
+    return res.status(status.OK).json({ requestId });
   })
 );
 
