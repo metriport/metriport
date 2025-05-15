@@ -1,12 +1,11 @@
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
-import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
 
 export type RefreshEhrBundleParams = Omit<ApiBaseParams, "departmentId"> & {
-  resourceType: SupportedResourceType;
+  resourceType: string;
 };
 
 /**
