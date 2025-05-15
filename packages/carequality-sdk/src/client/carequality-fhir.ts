@@ -15,7 +15,7 @@ dayjs.extend(duration);
 const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds");
 const DEFAULT_MAXIMUM_BACKOFF = dayjs.duration(30, "seconds");
 const BASE_DELAY = dayjs.duration(1, "seconds");
-const MAX_COUNT = 5_000;
+const MAX_COUNT = 10_000;
 const DEFAULT_MAX_RETRIES = 3;
 const JSON_FORMAT = "json";
 

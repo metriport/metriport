@@ -23,7 +23,7 @@ import {
 
 dayjs.extend(duration);
 
-const BATCH_SIZE = 5_000;
+const BATCH_SIZE = 10_000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 const heartbeatUrl = Config.getCqDirRebuildHeartbeatUrl();
