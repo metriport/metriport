@@ -22,11 +22,8 @@ export class InboundMpiMetriportApi implements MPI {
         genderAtBirth: normalizedPatientDemo.genderAtBirth,
       },
     });
-    console.log("ORTA TEST: foundPatients", foundPatients);
 
     const patientsThatAreOptedIn = foundPatients.filter(patient => !patient.hieOptOut);
-
-    console.log("ORTA TEST: patientsThatAreOptedIn", patientsThatAreOptedIn);
 
     const matchingPatients = matchPatients(
       epicMatchingAlgorithm,
@@ -36,7 +33,6 @@ export class InboundMpiMetriportApi implements MPI {
       this.SIMILARITY_THRESHOLD
     );
 
-    console.log("ORTA TEST: matchingPatients", matchingPatients);
     return useFirstMatchingPatient(matchingPatients);
   }
 }
