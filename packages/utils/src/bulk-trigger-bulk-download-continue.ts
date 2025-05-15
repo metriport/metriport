@@ -24,7 +24,7 @@ dayjs.extend(duration);
 
 const patientAndRequestId: {
   patientId: string;
-  cxDownloadRequestMetadataAsString: string | undefined;
+  cxDownloadRequestMetadata: object | undefined;
 }[] = [];
 
 const confirmationTime = dayjs.duration(10, "seconds");
@@ -49,7 +49,7 @@ async function main() {
       console.log(`Chunk ${i + 1} of ${patientChunks.length}`);
       console.log(`# of patients ${patients.length}`);
 
-      for (const { patientId, cxDownloadRequestMetadataAsString } of patients) {
+      for (const { patientId, cxDownloadRequestMetadata } of patients) {
         const log = out(
           `Triggering bulk download continue: cxId - ${cxId}, patientId - ${patientId}`
         ).log;
@@ -59,8 +59,8 @@ async function main() {
           patientId,
         });
         const body = {
-          ...(cxDownloadRequestMetadataAsString && {
-            metadata: JSON.parse(cxDownloadRequestMetadataAsString),
+          ...(cxDownloadRequestMetadata && {
+            metadata: cxDownloadRequestMetadata,
           }),
         };
         const resp = (await axios.post(
