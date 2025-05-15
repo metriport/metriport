@@ -17,7 +17,7 @@ const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeHealthieLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeComputeResourceDiff = Duration.millis(0); // No limit
-const waitTimeRefreshBundle = Duration.seconds(10); // 6 patients/min
+const waitTimeRefreshBundle = Duration.seconds(0); // No limit
 
 function settings(): {
   syncPatient: QueueAndLambdaSettings;
@@ -95,7 +95,7 @@ function settings(): {
     name: "EhrComputeResourceDiffBundles",
     entry: "ehr-compute-resource-diff-bundles",
     lambda: {
-      memory: 1024,
+      memory: 4096,
       timeout: computeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
@@ -110,21 +110,22 @@ function settings(): {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 10,
+      maxConcurrency: 4,
     },
     waitTime: waitTimeComputeResourceDiff,
   };
-  const refreshEhrBundlesLambdaTimeout = waitTimeRefreshBundle.plus(Duration.minutes(10));
+  // Skip adding the wait time to the lambda timeout because it's already sub 1 second
+  const refreshEhrBundlesLambdaTimeout = Duration.minutes(12);
   const refreshEhrBundles: QueueAndLambdaSettings = {
     name: "EhrRefreshEhrBundles",
     entry: "ehr-refresh-ehr-bundles",
     lambda: {
-      memory: 1024,
+      memory: 512,
       timeout: refreshEhrBundlesLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(1),
-      maxMessageCountAlarmThreshold: 1_000,
+      maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -132,6 +133,7 @@ function settings(): {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 4,
     },
     waitTime: waitTimeRefreshBundle,
   };
