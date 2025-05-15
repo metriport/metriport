@@ -36,10 +36,3 @@ const metadata = z.object({
 });
 
 export type Metadata = z.infer<typeof metadata>;
-
-export const patientCcdaSchema = z.object({
-  id: z.string(),
-  base64_ccda: z.string(),
-});
-
-export type PatientCcda = z.infer<typeof patientCcdaSchema>;
