@@ -20,19 +20,26 @@ import { getPatientOrFail } from "../patient/get-patient";
  * returns the progress of the bulk signing.
  * @param cxId - cxId
  * @param patientId - patientId
+ * @param retryExisting - if true, continue the bulk signing process from the last request
  * @returns a Promise that resolves to a BulkGetDocumentsUrlProgress object.
  */
-export const startBulkGetDocumentUrls = async (
-  cxId: string,
-  patientId: string,
-  cxDownloadRequestMetadata: unknown
-): Promise<BulkGetDocumentsUrlProgress> => {
+export async function startBulkGetDocumentUrls({
+  cxId,
+  patientId,
+  cxDownloadRequestMetadata,
+  retryExisting = false,
+}: {
+  cxId: string;
+  patientId: string;
+  cxDownloadRequestMetadata: unknown;
+  retryExisting?: boolean;
+}): Promise<BulkGetDocumentsUrlProgress> {
   const { log } = out(`startBulkGetDocumentUrls - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;
 
-  if (isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
+  if (!retryExisting && isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
     log(
       `Patient ${patientId}, Request ${bulkGetDocUrlProgress?.requestId}, bulkGetDocUrlProgress is already 'processing', skipping...`
     );
@@ -72,7 +79,7 @@ export const startBulkGetDocumentUrls = async (
   }
 
   return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
-};
+}
 
 /**
  * The function `getOrGenerateRequestId` returns the request ID from `bulkGetDocumentsUrlProgress` if it
@@ -102,12 +109,12 @@ const generateRequestId = (): string => uuidv7();
  * @param patient - The patient for whom the `BulkGetDocumentsUrlProgress` is being created.
  * @returns a BulkGetDocumentsUrlProgress object.
  */
-export const createBulkGetDocumentUrlQueryResponse = (
+export function createBulkGetDocumentUrlQueryResponse(
   status: BulkGetDocUrlStatus,
   patient?: Patient
-): BulkGetDocumentsUrlProgress => {
+): BulkGetDocumentsUrlProgress {
   return {
     status,
     requestId: patient?.data.bulkGetDocumentsUrlProgress?.requestId,
   };
-};
+}

@@ -25,6 +25,7 @@ import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
+import { startBulkGetDocumentUrls } from "../../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../../command/medical/patient/bulk-get-doc-url-progress";
@@ -391,6 +392,34 @@ router.post(
     });
 
     return res.status(httpStatus.OK).json(docQueryProgress);
+  })
+);
+
+/**
+ * POST /internal/docs/download-url/bulk/retry
+ *
+ * Retries the existing bulk download request.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The patient's ID.
+ * @param req.body The metadata for the bulk download request.
+ * @returns The status of the bulk signing process.
+ */
+router.post(
+  "/download-url/bulk/retry",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const cxDownloadRequestMetadata = cxRequestMetadataSchema.parse(req.body);
+
+    const BulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls({
+      cxId,
+      patientId,
+      cxDownloadRequestMetadata: cxDownloadRequestMetadata?.metadata,
+      retryExisting: true,
+    });
+
+    return res.status(httpStatus.OK).json(BulkGetDocumentsUrlProgress);
   })
 );
 
