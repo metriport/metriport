@@ -94,15 +94,6 @@ export async function createConsolidatedFromConversions({
   await dangerouslyDeduplicate({ cxId, patientId, bundle });
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
-  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
-  log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
-  await s3Utils.uploadFile({
-    bucket: destinationBucketName,
-    key: dedupDestFileName,
-    file: Buffer.from(JSON.stringify(bundle)),
-    contentType: "application/json",
-  });
-
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
 
   if (isAiBriefFeatureFlagEnabled && bundle.entry && bundle.entry.length > 0) {
@@ -121,6 +112,15 @@ export async function createConsolidatedFromConversions({
       bundle.entry?.push(binaryBundleEntry);
     }
   }
+
+  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
+  log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
+  await s3Utils.uploadFile({
+    bucket: destinationBucketName,
+    key: dedupDestFileName,
+    file: Buffer.from(JSON.stringify(bundle)),
+    contentType: "application/json",
+  });
 
   log(`Done`);
   return bundle;
