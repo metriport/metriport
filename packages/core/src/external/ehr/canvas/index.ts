@@ -86,8 +86,8 @@ export const supportedCanvasResources = [
   "MedicationStatement",
   "MedicationRequest",
   "Observation",
-  "Organization",
-  "Practitioner",
+  //"Organization",
+  //"Practitioner",
   "Procedure",
   "Immunization",
 ];
@@ -748,7 +748,7 @@ class CanvasApi {
         resourceType,
       });
     }
-    const params = { patient: `Patient/${canvasPatientId}` };
+    const params = { patient: `Patient/${canvasPatientId}`, _count: "1000" };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
@@ -759,13 +759,13 @@ class CanvasApi {
     };
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
-        makeRequest: () =>
+        makeRequest: (url: string) =>
           this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: canvasPatientId,
             s3Path: `fhir-resources-${resourceType}`,
             method: "GET",
-            url: resourceTypeUrl,
+            url,
             schema: ehrFhirResourceBundleSchema,
             additionalInfo,
             debug,

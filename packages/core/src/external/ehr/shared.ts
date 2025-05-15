@@ -351,12 +351,12 @@ export async function fetchEhrFhirResourcesWithPagination({
   url,
   acc = [],
 }: {
-  makeRequest: () => Promise<EhrFhirResourceBundle>;
+  makeRequest: (url: string) => Promise<EhrFhirResourceBundle>;
   url: string | undefined;
   acc?: EhrFhirResource[] | undefined;
 }): Promise<EhrFhirResource[]> {
   if (!url) return acc;
-  const fhirResourceBundle = await makeRequest();
+  const fhirResourceBundle = await makeRequest(url);
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
   const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
   return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });

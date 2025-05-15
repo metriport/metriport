@@ -149,9 +149,10 @@ type DataPoint = {
 };
 
 export const supportedAthenaHealthResources = [
-  "AllergyIntolerance",
-  "CarePlan",
+  //"AllergyIntolerance",
+  //"CarePlan",
   "Condition",
+  /*
   "DiagnosticReport",
   "Goal",
   "Immunization",
@@ -167,11 +168,12 @@ export const supportedAthenaHealthResources = [
   "Coverage",
   "Group",
   "RelatedPerson",
-  "Location",
-  "Organization",
+  //"Location",
+  //"Organization",
   "CareTeam",
-  "Practitioner",
+  //"Practitioner",
   "Provenance",
+  */
 ];
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
@@ -733,7 +735,7 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
     );
-    const params = { patient: `Patient/${athenaPatientId}` };
+    const params = { patient: `Patient/${this.stripPatientId(athenaPatientId)}`, _count: "1000" };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
@@ -744,13 +746,13 @@ class AthenaHealthApi {
     };
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
-        makeRequest: () =>
+        makeRequest: (url: string) =>
           this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
             s3Path: `fhir-resources-${resourceType}`,
             method: "GET",
-            url: resourceTypeUrl,
+            url,
             schema: ehrFhirResourceBundleSchema,
             additionalInfo,
             debug,
