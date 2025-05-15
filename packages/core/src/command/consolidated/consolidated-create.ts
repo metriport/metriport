@@ -5,7 +5,6 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
-import { insertSourceDocumentToAllDocRefMeta } from "../../domain/consolidated/utils";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
@@ -13,6 +12,7 @@ import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/dedupli
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { controlDuration } from "../../util/race-control";

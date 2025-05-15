@@ -1,5 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { getMetriportContent } from "../../external/fhir/shared/extensions/metriport";
+import { getMetriportContent } from "./extensions/metriport";
 
 export function insertSourceDocumentToAllDocRefMeta<T extends DocumentReference>(
   docRefs: T[]
