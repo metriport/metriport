@@ -13,7 +13,6 @@ export class BucketsStack extends Stack {
   public readonly hl7NotificationBucket?: s3.Bucket;
   public readonly incomingHl7NotificationBucket?: s3.Bucket;
   public readonly outgoingHl7NotificationBucket?: s3.Bucket;
-  public readonly hl7ConversionBucket?: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: BucketsStackProps) {
     super(scope, id, props);
@@ -29,10 +28,6 @@ export class BucketsStack extends Stack {
       });
       this.outgoingHl7NotificationBucket = createBucket(this, {
         bucketName: props.config.hl7Notification.outgoingMessageBucketName,
-      });
-      this.hl7ConversionBucket = createBucket(this, {
-        bucketName: props.config.hl7Notification.hl7ConversionBucketName,
-        versioned: true,
       });
     }
   }
