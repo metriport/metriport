@@ -240,13 +240,13 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const cxDownloadRequestMetadata = cxRequestMetadataSchema.parse(req.body);
-    const BulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls(
+    const bulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls({
       cxId,
       patientId,
-      cxDownloadRequestMetadata?.metadata
-    );
+      cxDownloadRequestMetadata: cxDownloadRequestMetadata?.metadata,
+    });
 
-    return res.status(OK).json(BulkGetDocumentsUrlProgress);
+    return res.status(OK).json(bulkGetDocumentsUrlProgress);
   })
 );
 

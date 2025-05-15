@@ -151,7 +151,7 @@ export async function startConsolidatedQuery({
   return progress;
 }
 
-function appendProgressToProcessingQueries(
+export function appendProgressToProcessingQueries(
   currentConsolidatedQueries: ConsolidatedQuery[] | undefined,
   progress: ConsolidatedQuery
 ): ConsolidatedQuery[] {
