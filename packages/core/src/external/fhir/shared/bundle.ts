@@ -116,20 +116,14 @@ export function getReferences({
   referencesToExclude?: ResourceType[] | undefined;
 }): ReferenceWithIdAndType[] {
   if (!resources || resources.length <= 0) return [];
-  const references: string[] = [];
-
   const rawContents = JSON.stringify(resources);
   const matches = rawContents.matchAll(referenceRegex);
+  const references: string[] = [];
   for (const match of matches) {
     const ref = match[1];
     if (ref) references.push(ref);
   }
 
-  // Alternative to JSON.stringify that produces the same output and was tested on a few bundles,
-  // but the performance hit was coming another section in the getReferencesFromResources function above
-  // for (const resource of resources) {
-  //   references.push(...deepSearchObjectForString(resource, "reference"));
-  // }
   const uniqueRefs = uniq(references);
 
   const preResult: ReferenceWithIdAndType[] = uniqueRefs
