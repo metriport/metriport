@@ -17,5 +17,8 @@
     "production",
     "env*"
   ],
-  "cursor.chat.defaultNoContext": true
+  "cursor.chat.defaultNoContext": true,
+  "material-icon-theme.files.associations": {
+        "*.e2e.ts": "Test-ts"
+  }
 }
