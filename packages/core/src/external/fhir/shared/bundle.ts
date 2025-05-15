@@ -74,7 +74,7 @@ export function getReferencesFromResources({
   referencesToExclude?: ResourceType[];
 }): { references: Reference[]; missingReferences: ReferenceWithIdAndType[] } {
   if (resources.length <= 0) return { references: [], missingReferences: [] };
-  const resourceIds = resources.flatMap(r => r.id ?? []);
+  const resourceIds = new Set(resources.flatMap(r => r.id ?? []));
   const references = getReferences({
     resources,
     referencesToInclude,
@@ -83,7 +83,7 @@ export function getReferencesFromResources({
   const missingReferences: ReferenceWithIdAndType[] = [];
   for (const ref of references) {
     if (!ref.id) continue;
-    if (!resourceIds.includes(ref.id)) missingReferences.push(ref);
+    if (!resourceIds.has(ref.id)) missingReferences.push(ref);
   }
   return { references, missingReferences };
 }
