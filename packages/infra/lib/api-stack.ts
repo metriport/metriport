@@ -124,15 +124,6 @@ export class APIStack extends Stack {
       );
     }
 
-    let hl7ConversionBucket: s3.IBucket | undefined;
-    if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
-      hl7ConversionBucket = s3.Bucket.fromBucketName(
-        this,
-        "Hl7ConversionBucket",
-        props.config.hl7Notification.hl7ConversionBucketName
-      );
-    }
-
     //-------------------------------------------
     // Security Setup
     //-------------------------------------------
