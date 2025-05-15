@@ -1,5 +1,4 @@
 import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 
 type BaseBundleParams = {
@@ -19,7 +18,7 @@ export type ContributeEhrOnlyBundleParams = Omit<BaseBundleParams, "resourceType
 };
 
 type BaseBundleParamsForClient = Omit<BaseBundleParams, "ehr" | "resourceType"> & {
-  resourceType: SupportedResourceType;
+  resourceType: string;
   metriportPatientId: string;
 };
 
@@ -29,5 +28,5 @@ export type RefreshEhrBundleParamsForClient = RefreshEhrBundleParams & BaseBundl
 
 export type FetchedBundlePreSignedUrls = {
   preSignedUrls: string[];
-  resourceTypes: SupportedResourceType[];
+  resourceTypes: string[];
 };

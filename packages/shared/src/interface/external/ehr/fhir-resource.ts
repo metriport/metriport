@@ -1,15 +1,10 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { z } from "zod";
-import { resourceTypeForConsolidation } from "../../../medical/fhir/resources";
-
-export const supportedResourceTypes = [...resourceTypeForConsolidation] as const;
-
-export type SupportedResourceType = (typeof supportedResourceTypes)[number];
 
 export const ehrFhirResourceSchema = z.intersection(
   z.object({
     id: z.string(),
-    resourceType: z.enum(supportedResourceTypes),
+    resourceType: z.string(),
   }),
   z.record(z.string(), z.any())
 );

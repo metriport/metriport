@@ -1,4 +1,3 @@
-import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
@@ -12,7 +11,7 @@ type CreateBundlePrefixParams = {
   cxId: string;
   metriportPatientId: string;
   ehrPatientId: string;
-  resourceType: SupportedResourceType;
+  resourceType: string;
   jobId?: string | undefined;
 };
 
@@ -49,16 +48,13 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
   return `${createBundlePrefix(params)}/metriport-only.json`;
 }
 
-export function getSupportedResourcesByEhr(ehr: EhrSource): SupportedResourceType[] {
+export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
   if (ehr === EhrSources.canvas) return supportedCanvasResources;
   return [];
 }
 
-export function isSupportedResourceTypeByEhr(
-  ehr: EhrSource,
-  resourceType: string
-): resourceType is SupportedResourceType {
-  const supportedResources = getSupportedResourcesByEhr(ehr) as string[];
+export function isSupportedResourceTypeByEhr(ehr: EhrSource, resourceType: string): boolean {
+  const supportedResources = getSupportedResourcesByEhr(ehr);
   return supportedResources.includes(resourceType);
 }
 
@@ -103,7 +99,7 @@ export type BundleKeyBaseParams = {
   metriportPatientId: string;
   ehrPatientId: string;
   bundleType: BundleType;
-  resourceType: SupportedResourceType;
+  resourceType: string;
   jobId?: string | undefined;
   getLastModified?: boolean;
   s3BucketName?: string;

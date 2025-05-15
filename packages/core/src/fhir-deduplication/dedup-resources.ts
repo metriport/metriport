@@ -19,7 +19,6 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
-import { z } from "zod";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
 import { deduplicateCompositions } from "./resources/composition";
 import { deduplicateConditions } from "./resources/condition";
@@ -41,19 +40,12 @@ import { deduplicateRelatedPersons } from "./resources/related-person";
 /**
  * Deduplicates resources of the same resource type.
  *
- * Important! The input resources must all be of the same resource type and have no overlapping IDs.
+ * Important! The input resources must all be of the same resource type.
  *
  * @param resources - The resources to deduplicate.
- * @param schema - The schema to parse the returned Resource objects to the input type. Optional, defaults to casting the Resource type to the input type.
  * @returns The deduplicated resources list.
  */
-export function deduplicateResources<T extends Resource>({
-  resources,
-  schema,
-}: {
-  resources: T[];
-  schema?: z.ZodSchema<T> | undefined;
-}): T[] {
+export function deduplicateResources<T extends Resource>({ resources }: { resources: T[] }): T[] {
   if (resources.length < 1) return [];
   const resourceTypes: Set<string> = new Set([...resources.map(r => r.resourceType)]);
   if (resourceTypes.size > 1) {
@@ -140,6 +132,5 @@ export function deduplicateResources<T extends Resource>({
         resourceType,
       });
   }
-  if (schema) return deduplicatedResources.map(r => schema.parse(r));
   return deduplicatedResources as T[];
 }

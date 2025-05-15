@@ -30,7 +30,6 @@ import {
   EhrFhirResource,
   EhrFhirResourceBundle,
   ehrFhirResourceBundleSchema,
-  SupportedResourceType,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import {
@@ -85,12 +84,12 @@ export const supportedCanvasResources = [
   "Observation",
   "Procedure",
   "Immunization",
-] as SupportedResourceType[];
+];
 export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
 export function isSupportedCanvasResource(
   resourceType: string
 ): resourceType is SupportedCanvasResource {
-  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
+  return supportedCanvasResources.includes(resourceType);
 }
 
 const problemStatusesMap = new Map<string, string>();
@@ -732,12 +731,17 @@ class CanvasApi {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasResource;
+    resourceType: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
       `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
+    if (!isSupportedCanvasResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
     const params = { patient: `Patient/${canvasPatientId}` };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
@@ -809,10 +813,15 @@ class CanvasApi {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasResource;
+    resourceType: string;
     bundleType?: BundleType;
     jobId?: string;
   }): Promise<string | undefined> {
+    if (!isSupportedCanvasResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
     if (isResourceDiffBundleType(bundleType as string) && !jobId) {
       throw new BadRequestError(
         "Job ID must be provided when fetching resource diff bundles",

@@ -3,7 +3,6 @@ import {
   isSupportedResourceTypeByEhr,
 } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { BadRequestError } from "@metriport/shared";
-import { SupportedResourceType } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { fetchBundlePreSignedUrl as fetchBundlePreSignedUrlCanvas } from "../../../canvas/command/bundle/fetch-bundle-presigned-url";
@@ -34,9 +33,7 @@ export async function validateAndPrepareBundleFetchOrRefresh({
       resourceType,
     });
   }
-  const resourceTypes = resourceType
-    ? [resourceType as SupportedResourceType]
-    : getSupportedResourcesByEhr(ehr);
+  const resourceTypes = resourceType ? [resourceType] : getSupportedResourcesByEhr(ehr);
   return { resourceTypes, metriportPatientId };
 }
 
@@ -47,8 +44,8 @@ export type BundleFunctions = {
 
 const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
   [EhrSources.canvas]: {
-    fetchBundlePreSignedUrl: async params => fetchBundlePreSignedUrlCanvas(params),
-    refreshEhrBundle: async params => refreshEhrBundleCanvas(params),
+    fetchBundlePreSignedUrl: fetchBundlePreSignedUrlCanvas,
+    refreshEhrBundle: refreshEhrBundleCanvas,
   },
   [EhrSources.athena]: undefined,
   [EhrSources.elation]: undefined,
