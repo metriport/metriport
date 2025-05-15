@@ -1,11 +1,10 @@
 import { ComputeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles";
 import { EhrComputeResourceDiffBundlesLocal } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-local";
 import { MetriportError } from "@metriport/shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
-import { z } from "zod";
 import { capture } from "./shared/capture";
+import { ehrCreateResourceDiffBundlesSchema } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -49,16 +48,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
-const ehrComputeResourceDiffBundlesSchema = z.object({
-  ehr: z.nativeEnum(EhrSources),
-  cxId: z.string(),
-  practiceId: z.string(),
-  metriportPatientId: z.string(),
-  ehrPatientId: z.string(),
-  resourceType: z.string(),
-  jobId: z.string(),
-});
-
 function parseBody(body?: unknown): ComputeResourceDiffBundlesRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
@@ -67,5 +56,5 @@ function parseBody(body?: unknown): ComputeResourceDiffBundlesRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return ehrComputeResourceDiffBundlesSchema.parse(bodyAsJson);
+  return ehrCreateResourceDiffBundlesSchema.parse(bodyAsJson);
 }
