@@ -3,7 +3,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
-import { S3Utils, StoreInS3Params, storeInS3WithRetries } from "../../external/aws/s3";
+import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { out } from "../../util";
@@ -68,11 +68,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
     log(`Conversion complete and patient entry added`);
 
-    // TODO(lucas|ENG-257|2025-05-15): Remove this once new bucket flow is working correctly
-    // Upload to old bucket
-    const oldNonSpecificUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
+    const nonSpecificUploadParams = {
       s3Utils: this.s3Utils,
-      bucketName: this.oldBucketName,
       contentType: JSON_APP_MIME_TYPE,
       log,
       errorConfig: {
@@ -87,6 +84,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       },
     };
 
+    // TODO(lucas|ENG-257|2025-05-15): Remove this once new bucket flow is working correctly
+    // Upload to old bucket
     const oldBundleFilename = buildHl7MessageFhirBundleFileKey({
       cxId,
       patientId,
@@ -96,30 +95,14 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       triggerEvent,
     });
     await storeInS3WithRetries({
-      ...oldNonSpecificUploadParams,
+      ...nonSpecificUploadParams,
+      bucketName: this.oldBucketName,
       payload: JSON.stringify(bundle),
       fileName: oldBundleFilename,
     });
     log(`Uploaded to S3 bucket: ${this.oldBucketName}. Filepath: ${oldBundleFilename}`);
 
     // Upload to new bucket
-    const newNonSpecificUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
-      s3Utils: this.s3Utils,
-      bucketName: this.bucketName,
-      contentType: JSON_APP_MIME_TYPE,
-      log,
-      errorConfig: {
-        errorMessage: "Error uploading HL7 FHIR bundle to S3",
-        context: this.context,
-        captureParams: {
-          patientId,
-          cxId,
-          sourceTimestamp,
-        },
-        shouldCapture: true,
-      },
-    };
-
     const newBundleFilename = buildHl7MessageConversionFileKey({
       cxId,
       patientId,
@@ -130,7 +113,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     await storeInS3WithRetries({
-      ...newNonSpecificUploadParams,
+      ...nonSpecificUploadParams,
+      bucketName: this.bucketName,
       payload: JSON.stringify(bundle),
       fileName: newBundleFilename,
     });
