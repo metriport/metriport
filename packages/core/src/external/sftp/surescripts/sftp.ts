@@ -1,7 +1,7 @@
 import Client from "ssh2-sftp-client";
 import { Config } from "../../../util/config";
 import { createWritableBuffer, SftpConfig } from "../shared";
-import { IdGenerator, createIdGenerator } from "../shared";
+import { IdGenerator, createIdGenerator } from "../id-generator";
 
 export interface SurescriptsSftpConfig extends Partial<SftpConfig>, TransmissionConfig {
   usage?: "test" | "production";
