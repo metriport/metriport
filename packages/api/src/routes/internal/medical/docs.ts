@@ -413,14 +413,14 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const cxDownloadRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    const BulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls({
+    const bulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls({
       cxId,
       patientId,
       cxDownloadRequestMetadata: cxDownloadRequestMetadata?.metadata,
       continueProcessingRequest: true,
     });
 
-    return res.status(httpStatus.OK).json(BulkGetDocumentsUrlProgress);
+    return res.status(httpStatus.OK).json(bulkGetDocumentsUrlProgress);
   })
 );
 
