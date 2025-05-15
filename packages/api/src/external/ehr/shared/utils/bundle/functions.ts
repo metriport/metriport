@@ -5,6 +5,8 @@ import {
 import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
+import { fetchBundlePreSignedUrl as fetchBundlePreSignedUrlAthena } from "../../../athenahealth/command/bundle/fetch-bundle-presigned-url";
+import { refreshEhrBundle as refreshEhrBundleAthena } from "../../../athenahealth/command/bundle/refresh-ehr-bundle";
 import { fetchBundlePreSignedUrl as fetchBundlePreSignedUrlCanvas } from "../../../canvas/command/bundle/fetch-bundle-presigned-url";
 import { refreshEhrBundle as refreshEhrBundleCanvas } from "../../../canvas/command/bundle/refresh-ehr-bundle";
 import {
@@ -47,7 +49,10 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
     fetchBundlePreSignedUrl: fetchBundlePreSignedUrlCanvas,
     refreshEhrBundle: refreshEhrBundleCanvas,
   },
-  [EhrSources.athena]: undefined,
+  [EhrSources.athena]: {
+    fetchBundlePreSignedUrl: fetchBundlePreSignedUrlAthena,
+    refreshEhrBundle: refreshEhrBundleAthena,
+  },
   [EhrSources.elation]: undefined,
   [EhrSources.healthie]: undefined,
 };
