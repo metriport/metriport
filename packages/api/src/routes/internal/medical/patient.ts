@@ -1,4 +1,4 @@
-import { ConsolidatedQuery, genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import {
   getCxsWithCQDirectFeatureFlagValue,
@@ -16,6 +16,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import {
   BadRequestError,
+  MetriportError,
   PaginatedResponse,
   internalSendConsolidatedSchema,
   normalizeState,
@@ -35,10 +36,8 @@ import { chunk } from "lodash";
 import { z } from "zod";
 import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
-import { updateConsolidatedQueryProgress } from "../../../command/medical/patient/append-consolidated-query-progress";
 import {
   ConsolidatedQueryParams,
-  appendProgressToProcessingQueries,
   getConsolidated,
   getConsolidatedAndSendToCx,
   startConsolidatedQuery,
@@ -58,7 +57,6 @@ import {
   getPatients,
 } from "../../../command/medical/patient/get-patient";
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
-import { storeQueryInit } from "../../../command/medical/patient/query-init";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
@@ -1176,43 +1174,18 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
+    const { log } = out(`recreate-consolidated, cx - ${cxId}, pt - ${id} `);
 
     const patient = await getPatientOrFail({ id, cxId });
-
     const requestId = uuidv7();
-    const startedAt = new Date();
-
-    const progress: ConsolidatedQuery = {
-      requestId,
-      status: "processing",
-      startedAt,
-    };
-
-    await storeQueryInit({
-      id: patient.id,
-      cxId: patient.cxId,
-      cmd: {
-        consolidatedQueries: appendProgressToProcessingQueries(
-          patient.data.consolidatedQueries,
-          progress
-        ),
-        cxConsolidatedRequestMetadata: undefined,
-      },
-    });
 
     try {
       await recreateConsolidated({ patient, context: "internal", requestId });
-      await updateConsolidatedQueryProgress({
-        patient,
-        requestId,
-        progress: { status: "completed" },
-      });
+      log(`Done recreating consolidated`);
     } catch (err) {
-      await updateConsolidatedQueryProgress({
-        patient,
-        requestId,
-        progress: { status: "failed" },
-      });
+      const msg = `Error recreating consolidated`;
+      log(`${msg}, err - ${errorToString(err)}`);
+      throw new MetriportError(msg, { extra: { patientId: id } });
     }
     return res.status(status.OK).json({ requestId });
   })
