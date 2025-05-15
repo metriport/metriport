@@ -6,14 +6,15 @@ import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
+import { Config } from "@metriport/core/util/config";
 
 // Keep this as early on the file as possible
 capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
-const oldBucketName = getEnvOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
-const bucketName = getEnvOrFail("HL7_CONVERSION_BUCKET_NAME");
+const oldBucketName = Config.getHl7OutgoingMessageBucketName();
+const bucketName = Config.getHl7ConversionBucketName();
 const apiUrl = getEnvOrFail("API_URL");
 
 // TODO move to capture.wrapHandler()
