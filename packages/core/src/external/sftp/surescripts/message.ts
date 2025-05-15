@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { Patient } from "@metriport/core/domain/patient";
+import { Patient, patientSchema } from "@metriport/api-sdk/medical/models/patient";
+import { Facility, facilitySchema } from "@metriport/api-sdk/medical/models/facility";
+
 import {
   patientLoadHeaderSchema,
   patientLoadHeaderOrder,
@@ -12,9 +14,18 @@ import {
 import { FileFieldSchema } from "./schema/shared";
 import { SurescriptsSftpClient } from "./sftp";
 
+export function canGenerateSurescriptsMessage(facility: Facility, patients: Patient[]): boolean {
+  patients = patients.filter(patient => patientSchema.safeParse(patient).success);
+  if (patients.length === 0) return false;
+
+  if (!facilitySchema.safeParse(facility).success) return false;
+  return true;
+}
+
 export function toSurescriptsMessage(
   client: SurescriptsSftpClient,
   cxId: string,
+  facility: Facility,
   patients: Patient[]
 ): Buffer {
   const header = generateSurescriptsRow(
@@ -37,36 +48,46 @@ export function toSurescriptsMessage(
     patientLoadHeaderOrder
   );
 
-  const details = patients.map(patient =>
-    generateSurescriptsRow(
-      {
-        recordType: "PAT",
-        recordSequenceNumber: 1,
-        assigningAuthority: "",
-        patientId: "",
-        lastName: patient.data.lastName,
-        firstName: patient.data.firstName,
-        middleName: "",
-        prefix: "",
-        suffix: "",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        zip: "",
-        dateOfBirth: "",
-        genderAtBirth: "M",
-        npiNumber: "",
-        endMonitoringDate: new Date(),
-        requestedNotifications: [],
-        birthDate: "",
-        deathDate: "",
-        data: [],
-      },
-      patientLoadDetailSchema,
-      patientLoadDetailOrder
-    )
-  );
+  const details = patients
+    .map(patient => {
+      const [firstName, ...middleNames] = patient.firstName.split(" ");
+      const middleName = middleNames?.join(" ") ?? "";
+      const gender = patient.genderAtBirth ?? "U";
+      const genderAtBirth = gender === "O" ? "U" : gender;
+
+      const address = Array.isArray(patient.address) ? patient.address[0] : patient.address;
+      if (!address) return null;
+
+      return generateSurescriptsRow(
+        {
+          recordType: "PAT",
+          recordSequenceNumber: 1,
+          assigningAuthority: "",
+          patientId: "",
+          lastName: patient.lastName ?? "",
+          firstName: firstName ?? "",
+          middleName,
+          prefix: "",
+          suffix: "",
+          addressLine1: address.addressLine1 ?? "",
+          addressLine2: address.addressLine2 ?? "",
+          city: address.city ?? "",
+          state: address.state ?? "",
+          zip: address.zip ?? "",
+          dateOfBirth: patient.dob ?? "", // TODO: convert
+          genderAtBirth: genderAtBirth,
+          npiNumber: facility.npi,
+          endMonitoringDate: new Date(), // TODO
+          requestedNotifications: [],
+          birthDate: "",
+          deathDate: "",
+          data: [],
+        },
+        patientLoadDetailSchema,
+        patientLoadDetailOrder
+      );
+    })
+    .filter(Boolean) as Buffer[];
 
   // const footer = generateSurescriptsRow({
   //     recordType: "TRL",
