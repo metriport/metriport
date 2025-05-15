@@ -1,9 +1,6 @@
 import { Resource } from "@medplum/fhirtypes";
 import { errorToString, sleep } from "@metriport/shared";
-import {
-  createBundleFromResourceList,
-  SupportedResourceType,
-} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
 import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
 import { deduplicateResources } from "../../../../../../../fhir-deduplication/dedup-resources";
@@ -92,34 +89,32 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
           `computeResourceDiffBundles - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
         ).log(`Error creating metriport and ehr bundles. Cause: ${errorToString(error)}`);
       }
-      const {
-        computedXorTargetResources: metriportResourcesXor,
-        computedXorSourceResources: ehrResourcesXor,
-      } = computeResourcesXorAlongResourceType({
-        targetResources: metriportResources,
-        sourceResources: dedupedEhrResources,
-      });
+      const { targetOnly: metriportOnly, sourceOnly: ehrOnly } =
+        computeResourcesXorAlongResourceType({
+          targetResources: metriportResources,
+          sourceResources: dedupedEhrResources,
+        });
       await Promise.all([
-        ehrResourcesXor.length > 0
+        ehrOnly.length > 0
           ? createOrReplaceBundle({
               ehr,
               cxId,
               metriportPatientId,
               ehrPatientId,
               bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
-              bundle: createBundleFromResourceList(ehrResourcesXor),
+              bundle: createBundleFromResourceList(ehrOnly),
               resourceType,
               jobId,
             })
           : undefined,
-        metriportResourcesXor.length > 0
+        metriportOnly.length > 0
           ? createOrReplaceBundle({
               ehr,
               cxId,
               metriportPatientId,
               ehrPatientId,
               bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
-              bundle: createBundleFromResourceList(metriportResourcesXor),
+              bundle: createBundleFromResourceList(metriportOnly),
               resourceType,
               jobId,
             })
@@ -149,7 +144,7 @@ async function getMetriportResourcesFromS3({
 }: {
   cxId: string;
   patientId: string;
-  resourceType: SupportedResourceType;
+  resourceType: string;
 }): Promise<Resource[]> {
   const consolidated = await getConsolidated({ cxId, patientId });
   if (!consolidated?.bundle?.entry) return [];
