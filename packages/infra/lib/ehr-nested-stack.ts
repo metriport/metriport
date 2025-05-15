@@ -151,6 +151,7 @@ interface EhrNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
+  medicalDocumentsBucket: s3.Bucket;
 }
 
 export class EhrNestedStack extends NestedStack {
@@ -221,6 +222,7 @@ export class EhrNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      medicalDocumentsBucket: props.medicalDocumentsBucket,
       ehrBundleBucket: this.ehrBundleBucket,
     });
     this.computeResourceDiffBundlesLambda = computeResourceDiffBundles.lambda;
@@ -392,6 +394,7 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    medicalDocumentsBucket: s3.Bucket;
     ehrBundleBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
@@ -423,6 +426,7 @@ export class EhrNestedStack extends NestedStack {
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
+        MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
