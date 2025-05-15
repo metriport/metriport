@@ -33,7 +33,6 @@ export class BucketsStack extends Stack {
       this.hl7ConversionBucket = createBucket(this, {
         bucketName: props.config.hl7Notification.hl7ConversionBucketName,
         versioned: true,
-        objectLockEnabled: true,
       });
     }
   }
