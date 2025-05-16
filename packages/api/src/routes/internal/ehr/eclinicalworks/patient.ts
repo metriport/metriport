@@ -35,7 +35,11 @@ router.post(
       eclinicalworksPatientId,
       eclinicalworksTokenId,
       triggerDq,
-    }).catch(processAsyncError("Eclinicalworks syncEclinicalworksPatientIntoMetriport"));
+    })
+      .then(() =>
+        console.log(`Completed Eclinicalworks sync for patient ${eclinicalworksPatientId}`)
+      )
+      .catch(processAsyncError("Eclinicalworks syncEclinicalworksPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
   })
 );
