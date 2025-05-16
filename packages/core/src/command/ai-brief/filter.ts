@@ -4,6 +4,7 @@ import { ISO_DATE, buildDayjs } from "@metriport/shared/common/date";
 import {
   SlimCondition,
   SlimDiagnosticReport,
+  SlimObservation,
   SlimOrganization,
   SlimResource,
   applyResourceSpecificFilters,
@@ -19,7 +20,13 @@ import { sizeInBytes } from "../../util/string";
 const NUM_HISTORICAL_YEARS = 1;
 const MAX_REPORTS_PER_GROUP = 3;
 
-const referenceResources = ["Practitioner", "Organization", "Observation", "Location"];
+/**
+ * List of resource types that are referenced by other resources but not directly relevant
+ * for AI summarization. These resources will be filtered out from the bundle before
+ * sending it to the AI model to reduce payload size while preserving the essential
+ * clinical information.
+ */
+const referenceResources = ["Practitioner", "Organization", "Location"];
 
 const relevantResources = [
   "AllergyIntolerance",
@@ -95,6 +102,7 @@ function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
   });
 
   const withFilteredReports = filterOutDiagnosticReports(processedEntries);
+  const withLatestObservations = filterLatestObservationsByCode(withFilteredReports);
 
   const containedResourceIds = Array.from(containedResourceIdsSet).flatMap(id => {
     const uuid = id.split("/").pop();
@@ -103,7 +111,7 @@ function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
   });
 
   const slimBundle = removeReferencesAndLeftOverResources(
-    withFilteredReports,
+    withLatestObservations,
     containedResourceIds,
     patient
   );
@@ -490,6 +498,61 @@ function filterOutDuplicateReports(reports: SlimDiagnosticReport[]): SlimDiagnos
     }
     return true;
   });
+}
+
+/**
+ * Filters observations to keep only the latest value per code.
+ * Groups observations by their reading and keeps only the most recent one based on effectiveDateTime or effectivePeriod.
+ */
+function filterLatestObservationsByCode(entries: SlimResource[]): SlimResource[] {
+  const observations: SlimObservation[] = [];
+  const otherEntries = entries.filter(entry => {
+    if (entry.resourceType === "Observation") {
+      observations.push(entry as SlimObservation);
+      return false;
+    }
+    return true;
+  });
+
+  const observationsByReading = new Map<string, SlimObservation[]>();
+  observations.forEach(obs => {
+    const reading = obs.reading;
+    if (!reading) return;
+
+    if (!observationsByReading.has(reading)) {
+      observationsByReading.set(reading, []);
+    }
+    observationsByReading.get(reading)?.push(obs);
+  });
+
+  const latestObservations: SlimObservation[] = [];
+  for (const obsGroup of observationsByReading.values()) {
+    const latest = obsGroup.sort((a, b) => {
+      const aDate = getObservationDate(a);
+      const bDate = getObservationDate(b);
+
+      if (aDate && bDate) {
+        return bDate.localeCompare(aDate);
+      }
+
+      if (aDate && !bDate) return -1;
+      if (!aDate && bDate) return 1;
+
+      return 0;
+    })[0];
+
+    if (latest) latestObservations.push(latest);
+  }
+
+  return [...latestObservations, ...otherEntries];
+}
+
+/**
+ * Gets the most relevant date from an observation, using effectiveDateTime,
+ * effectivePeriod.end, or effectivePeriod.start.
+ */
+function getObservationDate(obs: SlimObservation): string | undefined {
+  return obs.effectiveDateTime ?? obs.effectivePeriod?.end ?? obs.effectivePeriod?.start;
 }
 
 /**
