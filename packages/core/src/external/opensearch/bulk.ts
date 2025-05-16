@@ -30,15 +30,15 @@ export type OnBulkItemError = (error: BulkResponseErrorItem) => void;
  * @param onItemError - The function to call for each item error, optional. Defaults to `bulkResponseErrorToString`.
  * @returns The errors from the bulk response.
  */
-export function getCountErrorsFromBulkResponse(
+export function processErrorsFromBulkResponse(
   response: ApiResponse<Record<string, any>, unknown>, // eslint-disable-line @typescript-eslint/no-explicit-any
   operation: BulkOperation,
   onItemError?: OnBulkItemError
 ): number {
   const body = response.body as RawBulkResponseErrorBody;
-  if (!body.errors) return 0;
+  if (!body?.errors) return 0;
   let errorCount = 0;
-  body.items.forEach(item => {
+  body.items?.forEach(item => {
     const itemOp = item[operation];
     if (itemOp && itemOp.status > 299) {
       errorCount++;

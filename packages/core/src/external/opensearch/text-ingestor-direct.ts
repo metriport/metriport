@@ -8,7 +8,7 @@ import { capture } from "../../util/notifications";
 import {
   BulkOperation,
   BulkResponseErrorItem,
-  getCountErrorsFromBulkResponse,
+  processErrorsFromBulkResponse,
   OnBulkItemError,
 } from "./bulk";
 import { contentFieldName, OpenSearchIngestorConfig } from "./index";
@@ -188,7 +188,7 @@ export class OpenSearchTextIngestorDirect {
     );
     const time = Date.now() - startedAt;
 
-    const errorCount = getCountErrorsFromBulkResponse(response, operation, onItemError);
+    const errorCount = processErrorsFromBulkResponse(response, operation, onItemError);
     debug(`${operation}ed ${resources.length} resources in ${time} ms, ${errorCount} errors`);
 
     return errorCount;
