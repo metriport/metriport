@@ -10,9 +10,9 @@ function getEclinicalworksEnv(): {
   environment: EclinicalworksEnv;
 } {
   const environment = Config.getEclinicalworksEnv();
-  if (!environment) throw new MetriportError("Eclinicalworks environment not set");
+  if (!environment) throw new MetriportError("EClinicalWorks environment not set");
   if (!isEclinicalworksEnv(environment)) {
-    throw new MetriportError("Invalid Eclinicalworks environment", undefined, { environment });
+    throw new MetriportError("Invalid EClinicalWorks environment", undefined, { environment });
   }
   return {
     environment,

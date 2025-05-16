@@ -1,6 +1,6 @@
 import EclinicalworksApi from "@metriport/core/external/ehr/eclinicalworks/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import { eclinicalworksDashSource } from "@metriport/shared/interface/external/ehr/eclinicalworks/jwt-token";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getJwtTokenByIdOrFail } from "../../../../command/jwt-token";
