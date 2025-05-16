@@ -11,6 +11,7 @@ interface SyncPatientPayload {
   practiceId: unknown;
   patientId: unknown;
   departmentId?: unknown;
+  tokenId?: unknown;
   triggerDq: unknown;
 }
 
@@ -34,7 +35,11 @@ export function parseSyncPatient(bodyAsJson: SyncPatientPayload): ProcessSyncPat
 
   const departmentIdRaw = bodyAsJson.departmentId;
   const isValidDeparmentId = departmentIdRaw === undefined || typeof departmentIdRaw === "string";
-  if (!isValidDeparmentId) throw new MetriportError("Invalid patientId");
+  if (!isValidDeparmentId) throw new MetriportError("Invalid departmentId");
+
+  const tokenIdRaw = bodyAsJson.tokenId;
+  const isValidTokenId = tokenIdRaw === undefined || typeof tokenIdRaw === "string";
+  if (!isValidTokenId) throw new MetriportError("Invalid tokenId");
 
   const triggerDqRaw = bodyAsJson.triggerDq;
   if (triggerDqRaw === undefined) throw new MetriportError("Missing triggerDq");
@@ -46,6 +51,7 @@ export function parseSyncPatient(bodyAsJson: SyncPatientPayload): ProcessSyncPat
     practiceId: practiceIdRaw,
     patientId: patientIdRaw,
     departmentId: departmentIdRaw,
+    tokenId: tokenIdRaw,
     triggerDq: triggerDqRaw,
   };
 }
