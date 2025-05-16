@@ -6,12 +6,12 @@ import { ApiConfig, makeRequest, MakeRequestParamsInEhr } from "../shared";
 
 interface EclinicalworksApiConfig
   extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret"> {
-  authToken: string;
   environment: EclinicalworksEnv;
-  aud: string;
+  authToken: string;
+  fhirUrl: string;
 }
 
-const eclinicalworksEnv = ["fhir", "staging-fhir"] as const;
+const eclinicalworksEnv = ["production", "staging"] as const;
 
 export type EclinicalworksEnv = (typeof eclinicalworksEnv)[number];
 export function isEclinicalworksEnv(env: string): env is EclinicalworksEnv {
@@ -26,7 +26,7 @@ class EclinicalworksApi {
 
   private constructor(config: EclinicalworksApiConfig) {
     this.practiceId = config.practiceId;
-    this.fhirUrl = config.aud;
+    this.fhirUrl = config.fhirUrl;
     this.axiosFhirInstance = axios.create({});
     this.token = config.authToken;
   }

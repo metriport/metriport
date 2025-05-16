@@ -104,7 +104,7 @@ async function createEclinicalworksClientFromTokenid({
     cxId,
     practiceId,
     authToken: token.token,
-    aud: token.data.aud,
+    fhirUrl: token.data.fhirUrl,
   });
   return api;
 }

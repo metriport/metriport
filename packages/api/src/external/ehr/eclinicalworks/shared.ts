@@ -3,12 +3,13 @@ import EclinicalworksApi, {
   isEclinicalworksEnv,
 } from "@metriport/core/external/ehr/eclinicalworks/index";
 import { MetriportError } from "@metriport/shared";
+import { Config } from "../../../shared/config";
 import { EhrPerPracticeParams } from "../shared";
 
 function getEclinicalworksEnv(): {
   environment: EclinicalworksEnv;
 } {
-  const environment = "staging-fhir";
+  const environment = Config.getEclinicalworksEnv();
   if (!environment) throw new MetriportError("Eclinicalworks environment not set");
   if (!isEclinicalworksEnv(environment)) {
     throw new MetriportError("Invalid Eclinicalworks environment", undefined, { environment });
@@ -21,7 +22,7 @@ function getEclinicalworksEnv(): {
 export async function createEclinicalworksClient(
   perPracticeParams: EhrPerPracticeParams & {
     authToken: string;
-    aud: string;
+    fhirUrl: string;
   }
 ): Promise<EclinicalworksApi> {
   const { environment } = getEclinicalworksEnv();
@@ -29,6 +30,6 @@ export async function createEclinicalworksClient(
     practiceId: perPracticeParams.practiceId,
     environment,
     authToken: perPracticeParams.authToken,
-    aud: perPracticeParams.aud,
+    fhirUrl: perPracticeParams.fhirUrl,
   });
 }
