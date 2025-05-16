@@ -51,8 +51,13 @@ class EclinicalworksApi {
     const { debug } = out(
       `Eclinicalworks getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
-    const patientUrl = `/patients/${patientId}/`;
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const patientUrl = `/Patient/${patientId}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      fhirUrl: this.fhirUrl,
+    };
     const patient = await this.makeRequest<Patient>({
       cxId,
       patientId,
