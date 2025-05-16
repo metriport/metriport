@@ -1,4 +1,5 @@
 import { BadRequestError } from "@metriport/shared";
+import { isValidISODate } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 
 export const ISO_DATE = "YYYY-MM-DD";
@@ -38,11 +39,4 @@ export function parseISODate(date?: string): string | undefined {
     throw new BadRequestError(`Date must be in format ${ISO_DATE} - got ${date}`);
   }
   return date;
-}
-
-/**
- * @deprecated Use @metriport/shared instead
- */
-export function isValidISODate(date: string): boolean {
-  return dayjs(date, ISO_DATE, true).isValid();
 }
