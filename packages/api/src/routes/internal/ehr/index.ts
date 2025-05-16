@@ -1,9 +1,9 @@
 import Router from "express-promise-router";
 import athena from "./athenahealth";
 import canvas from "./canvas";
+import eclinicalworks from "./eclinicalworks";
 import elation from "./elation";
 import healthie from "./healthie";
-import eclinicalworks from "./eclinicalworks";
 
 const routes = Router();
 
