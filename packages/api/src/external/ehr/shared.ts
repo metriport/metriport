@@ -39,6 +39,10 @@ import {
   HealthieDashJwtTokenData,
   healthieDashSource,
 } from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
+import {
+  EclinicalworksDashJwtTokenData,
+  eclinicalworksDashSource,
+} from "@metriport/shared/interface/external/ehr/eclinicalworks/jwt-token";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
@@ -76,6 +80,7 @@ export const ehrDashJwtTokenSources = [
   canvasDashSource,
   elationDashSource,
   healthieDashSource,
+  eclinicalworksDashSource,
 ] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
@@ -86,7 +91,8 @@ export type EhrDashJwtTokenData =
   | AthenaDashJwtTokenData
   | CanvasDashJwtTokenData
   | ElationDashJwtTokenData
-  | HealthieDashJwtTokenData;
+  | HealthieDashJwtTokenData
+  | EclinicalworksDashJwtTokenData;
 
 export const ehrClientJwtTokenSources = [
   athenaClientSource,
@@ -122,6 +128,7 @@ export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: undefined,
   [EhrSources.healthie]: healthieSecondaryMappingsSchema,
+  [EhrSources.eclinicalworks]: undefined,
 };
 
 export type Appointment = {
