@@ -9,8 +9,8 @@ import { normalize } from "@metriport/core/external/fhir/consolidated/normalize"
 import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
-import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
-import { uuidv7 } from "../shared/uuid-v7";
+import { getFileContents, makeDirIfNeeded, writeFileContents } from "../../shared/fs";
+import { uuidv7 } from "../../shared/uuid-v7";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
 

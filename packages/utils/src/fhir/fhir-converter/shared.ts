@@ -1,7 +1,7 @@
 import { Bundle, Resource, ResourceType } from "@medplum/fhirtypes";
 import { parseFilePath } from "@metriport/core/domain/filename";
-import { getFileContentsAsync, getFileNames } from "../shared/fs";
-import { uuidv7 } from "../shared/uuid-v7";
+import { getFileContentsAsync, getFileNames } from "../../shared/fs";
+import { uuidv7 } from "../../shared/uuid-v7";
 import { promises as fs } from "fs";
 
 export function countResourcesPerType(bundle: Bundle<Resource>) {
