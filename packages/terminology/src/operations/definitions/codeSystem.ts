@@ -1363,3 +1363,22 @@ export const icd10cm: CodeSystem = {
     },
   ],
 };
+
+export const ndcCodeSystem: CodeSystem = {
+  resourceType: "CodeSystem",
+  url: "http://hl7.org/fhir/sid/ndc",
+  identifier: [
+    {
+      system: "urn:ietf:rfc:3986",
+      value: "urn:oid:2.16.840.1.113883.6.69",
+    },
+  ],
+  version: "11/14/2024",
+  name: "NDC",
+  title: "National drug codes",
+  status: "active",
+  experimental: false,
+  date: "2019-03-20T00:00:00-04:00",
+  publisher: "U.S. Food and Drug Administration (FDA)",
+  content: "not-present",
+};

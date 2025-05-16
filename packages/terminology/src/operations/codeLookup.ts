@@ -9,6 +9,7 @@ import {
 } from "@medplum/fhirtypes";
 import { getTermServerClient } from "../init-term-server";
 import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
+import { ndcCodeSystem } from "./definitions/codeSystem";
 import { findCodeSystemResource } from "./utils/codeSystemLookup";
 import {
   isValidParametersResource,
@@ -25,6 +26,16 @@ export type CodeSystemLookupOutput = {
   code: string;
   property?: { code: string; description: string; value: TypedValue }[];
 };
+
+/**
+ * Normalizes an NDC code by removing dashes
+ */
+function normalizeNdcCode(code: string, system?: string): string {
+  if (system === ndcCodeSystem.url) {
+    return code.replace(/-/g, "");
+  }
+  return code;
+}
 
 export const codeSystemLookupHandler = async (
   request: FhirRequest,
@@ -132,11 +143,15 @@ export async function lookupPartialCoding(
   codeSystem: CodeSystem,
   coding: Coding
 ): Promise<CodeSystemLookupOutput[] | FhirResponse> {
+  const code = coding.code;
+  if (!code) return [notFound];
+
   if (coding.system && coding.system !== codeSystem.url) {
     return [notFound];
   }
 
   const dbClient = getTermServerClient();
+  const normalizedCode = normalizeNdcCode(code, coding.system);
 
   const query = `
     SELECT 
@@ -153,7 +168,7 @@ export async function lookupPartialCoding(
     WHERE cs.id = ? AND c.code LIKE ?
   `;
 
-  const params = [codeSystem.id, `${coding.code}%`];
+  const params = [codeSystem.id, `${normalizedCode}%`];
   const result = await dbClient.select(query, params);
 
   if (result.length === 0) {
@@ -199,9 +214,13 @@ export async function lookupCoding(
   codeSystem: CodeSystem,
   coding: Coding
 ): Promise<CodeSystemLookupOutput[] | FhirResponse> {
+  const code = coding.code;
+  if (!code) return [notFound];
+
   if (coding.system && coding.system !== codeSystem.url) {
     return [notFound];
   }
+  const normalizedCode = normalizeNdcCode(code, coding.system);
 
   const dbClient = getTermServerClient();
 
@@ -219,7 +238,7 @@ export async function lookupCoding(
       WHERE cs.id = ? AND c.code = ?
     `;
 
-  const params = [codeSystem.id, coding.code];
+  const params = [codeSystem.id, normalizedCode];
   const result = await dbClient.select(query, params);
 
   if (result.length === 0) return [notFound];

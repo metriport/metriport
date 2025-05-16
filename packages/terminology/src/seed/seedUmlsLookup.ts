@@ -1,19 +1,20 @@
 // Licensed under Apache. See LICENSE-APACHE in the repo root for license information.
 import { CodeSystem, Coding, Parameters } from "@medplum/fhirtypes";
 import { WriteStream, createReadStream } from "node:fs";
+import { argv, env } from "node:process";
 import { createInterface } from "node:readline";
+import { Readable, Transform, TransformCallback } from "node:stream";
+import * as unzip from "unzip-stream";
 import {
   cpt,
   cvx,
   icd10cm,
   icd10pcs,
   loinc,
+  ndcCodeSystem,
   rxnorm,
   snomed,
 } from "../operations/definitions/codeSystem";
-import { argv, env } from "node:process";
-import { Readable, Transform, TransformCallback } from "node:stream";
-import * as unzip from "unzip-stream";
 
 import { TerminologyClient } from "../client";
 
@@ -67,6 +68,11 @@ export const umlsSources: Record<string, UmlsSource> = {
   CVX: { system: "http://hl7.org/fhir/sid/cvx", tty: ["PT"], resource: cvx },
   ICD10PCS: { system: "http://hl7.org/fhir/sid/icd-10-pcs", tty: ["PT", "HT"], resource: icd10pcs },
   ICD10CM: { system: "http://hl7.org/fhir/sid/icd-10-cm", tty: ["PT", "HT"], resource: icd10cm },
+  NDC: {
+    system: "http://hl7.org/fhir/sid/ndc",
+    tty: [], // Add these when RxNorm > NDC crosswalks are in place
+    resource: ndcCodeSystem,
+  },
 };
 
 class EOF extends Error {
