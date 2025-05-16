@@ -1,6 +1,6 @@
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
 import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient";
 import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/healthie/link-patient/healthie-link-patient";
+import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
 import { MetriportError } from "@metriport/shared";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 
@@ -10,6 +10,7 @@ interface SyncPatientPayload {
   practiceId: unknown;
   patientId: unknown;
   departmentId?: unknown;
+  tokenId?: unknown;
   triggerDq: unknown;
 }
 
@@ -33,7 +34,11 @@ export function parseSyncPatient(bodyAsJson: SyncPatientPayload): ProcessSyncPat
 
   const departmentIdRaw = bodyAsJson.departmentId;
   const isValidDeparmentId = departmentIdRaw === undefined || typeof departmentIdRaw === "string";
-  if (!isValidDeparmentId) throw new MetriportError("Invalid patientId");
+  if (!isValidDeparmentId) throw new MetriportError("Invalid departmentId");
+
+  const tokenIdRaw = bodyAsJson.tokenId;
+  const isValidTokenId = tokenIdRaw === undefined || typeof tokenIdRaw === "string";
+  if (!isValidTokenId) throw new MetriportError("Invalid tokenId");
 
   const triggerDqRaw = bodyAsJson.triggerDq;
   if (triggerDqRaw === undefined) throw new MetriportError("Missing triggerDq");
@@ -45,6 +50,7 @@ export function parseSyncPatient(bodyAsJson: SyncPatientPayload): ProcessSyncPat
     practiceId: practiceIdRaw,
     patientId: patientIdRaw,
     departmentId: departmentIdRaw,
+    tokenId: tokenIdRaw,
     triggerDq: triggerDqRaw,
   };
 }

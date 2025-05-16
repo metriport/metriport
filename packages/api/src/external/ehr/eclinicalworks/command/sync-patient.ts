@@ -1,6 +1,9 @@
 import EclinicalworksApi from "@metriport/core/external/ehr/eclinicalworks/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+import { eclinicalworksDashSource } from "@metriport/shared/interface/external/ehr/eclinicalworks/jwt-token";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { getJwtTokenByIdOrFail } from "../../../../command/jwt-token";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
@@ -14,8 +17,7 @@ export type SyncEclinicalworksPatientIntoMetriportParams = {
   cxId: string;
   eclinicalworksPracticeId: string;
   eclinicalworksPatientId: string;
-  eclinicalworksAuthToken: string;
-  eclinicalworksAud: string;
+  eclinicalworksTokenId: string;
   api?: EclinicalworksApi;
   triggerDq?: boolean;
 };
@@ -24,8 +26,7 @@ export async function syncEclinicalworksPatientIntoMetriport({
   cxId,
   eclinicalworksPracticeId,
   eclinicalworksPatientId,
-  eclinicalworksAuthToken,
-  eclinicalworksAud,
+  eclinicalworksTokenId,
   api,
   triggerDq = false,
 }: SyncEclinicalworksPatientIntoMetriportParams): Promise<string> {
@@ -45,11 +46,10 @@ export async function syncEclinicalworksPatientIntoMetriport({
 
   const eclinicalworksApi =
     api ??
-    (await createEclinicalworksClient({
+    (await createEclinicalworksClientFromTokenid({
       cxId,
       practiceId: eclinicalworksPracticeId,
-      authToken: eclinicalworksAuthToken,
-      aud: eclinicalworksAud,
+      tokenId: eclinicalworksTokenId,
     }));
   const eclinicalworksPatient = await eclinicalworksApi.getPatient({
     cxId,
@@ -76,4 +76,35 @@ export async function syncEclinicalworksPatientIntoMetriport({
     source: EhrSources.eclinicalworks,
   });
   return metriportPatient.id;
+}
+
+async function createEclinicalworksClientFromTokenid({
+  cxId,
+  practiceId,
+  tokenId,
+}: {
+  cxId: string;
+  practiceId: string;
+  tokenId: string;
+}): Promise<EclinicalworksApi> {
+  const token = await getJwtTokenByIdOrFail(tokenId);
+  if (token.data.source !== eclinicalworksDashSource) {
+    throw new MetriportError("Invalid token source", undefined, { tokenId, source: token.source });
+  }
+  const tokenPracticeId = token.data.practiceId;
+  if (tokenPracticeId !== practiceId) {
+    throw new MetriportError("Invalid token practiceId", undefined, {
+      tokenId,
+      source: token.source,
+      tokenPracticeId,
+      practiceId,
+    });
+  }
+  const api = createEclinicalworksClient({
+    cxId,
+    practiceId,
+    authToken: token.token,
+    aud: token.data.aud,
+  });
+  return api;
 }

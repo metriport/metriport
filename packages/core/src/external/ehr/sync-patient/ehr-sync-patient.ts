@@ -6,6 +6,7 @@ export type ProcessSyncPatientRequest = {
   practiceId: string;
   departmentId?: string;
   patientId: string;
+  tokenId?: string;
   triggerDq: boolean;
 };
 

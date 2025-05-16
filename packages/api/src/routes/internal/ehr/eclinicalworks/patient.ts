@@ -16,8 +16,7 @@ const router = Router();
  * @param req.query.cxId The ID of Metriport Customer.
  * @param req.query.patientId The ID of Eclinicalworks Patient.
  * @param req.query.practiceId The ID of Eclinicalworks Practice.
- * @param req.query.authToken The Eclinicalworks Auth Token.
- * @param req.query.aud The Eclinicalworks Audience.
+ * @param req.query.tokenId The ID of Eclinicalworks Token.
  * @param req.query.triggerDq Whether to trigger a data quality check.
  * @returns 200 OK
  */
@@ -28,15 +27,13 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const eclinicalworksPatientId = getFromQueryOrFail("patientId", req);
     const eclinicalworksPracticeId = getFromQueryOrFail("practiceId", req);
-    const eclinicalworksAuthToken = getFromQueryOrFail("authToken", req);
-    const eclinicalworksAud = getFromQueryOrFail("aud", req);
+    const eclinicalworksTokenId = getFromQueryOrFail("tokenId", req);
     const triggerDq = getFromQueryAsBoolean("triggerDq", req);
     syncEclinicalworksPatientIntoMetriport({
       cxId,
       eclinicalworksPracticeId,
       eclinicalworksPatientId,
-      eclinicalworksAuthToken,
-      eclinicalworksAud,
+      eclinicalworksTokenId,
       triggerDq,
     }).catch(processAsyncError("Eclinicalworks syncEclinicalworksPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
