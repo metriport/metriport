@@ -46,7 +46,7 @@ export async function syncEclinicalworksPatientIntoMetriport({
 
   const eclinicalworksApi =
     api ??
-    (await createEclinicalworksClientFromTokenid({
+    (await createEclinicalworksClientFromTokenId({
       cxId,
       practiceId: eclinicalworksPracticeId,
       tokenId: eclinicalworksTokenId,
@@ -78,7 +78,7 @@ export async function syncEclinicalworksPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-async function createEclinicalworksClientFromTokenid({
+async function createEclinicalworksClientFromTokenId({
   cxId,
   practiceId,
   tokenId,
