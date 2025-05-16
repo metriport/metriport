@@ -42,7 +42,9 @@ export function formatCodeableConcept(concept: CodeableConcept | undefined): str
     }, {} as Record<string, string>) ?? {};
 
   let codingStr = "";
-  for (const coding of Object.values(codingMap)) {
+  const values = Object.values(codingMap);
+  const sortedValues = values.sort();
+  for (const coding of sortedValues) {
     const separator = codingStr.length > 0 ? ` ${SEP_BETWEEN_CODING} ` : "";
     codingStr = codingStr + separator + coding;
   }
