@@ -20,6 +20,12 @@ import { sizeInBytes } from "../../util/string";
 const NUM_HISTORICAL_YEARS = 1;
 const MAX_REPORTS_PER_GROUP = 3;
 
+/**
+ * List of resource types that are referenced by other resources but not directly relevant
+ * for AI summarization. These resources will be filtered out from the bundle before
+ * sending it to the AI model to reduce payload size while preserving the essential
+ * clinical information.
+ */
 const referenceResources = ["Practitioner", "Organization", "Location"];
 
 const relevantResources = [
