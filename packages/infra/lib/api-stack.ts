@@ -116,7 +116,7 @@ export class APIStack extends Stack {
     // Buckets
     //-------------------------------------------
     let outgoingHl7NotificationBucket: s3.IBucket | undefined;
-    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+    if (props.config.hl7Notification) {
       outgoingHl7NotificationBucket = s3.Bucket.fromBucketName(
         this,
         "OutgoingHl7MessageBucket",
@@ -383,7 +383,7 @@ export class APIStack extends Stack {
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    if (!isSandbox(props.config) && outgoingHl7NotificationBucket && hl7ConversionBucket) {
+    if (props.config.hl7Notification && outgoingHl7NotificationBucket && hl7ConversionBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
         "Hl7NotificationWebhookSenderNestedStack",
