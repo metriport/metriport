@@ -7,6 +7,7 @@ import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import { chunk } from "lodash";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 
@@ -42,6 +43,7 @@ export async function downloadCQDirectory(
   let currentPosition = 0;
   let isDone = false;
 
+  console.log(`Downloading organizations in batches of ${BATCH_SIZE}...`);
   while (!isDone) {
     const maxPosition = currentPosition + BATCH_SIZE;
     const orgs = await cq.listOrganizations({
@@ -50,9 +52,9 @@ export async function downloadCQDirectory(
       active: true,
       sortKey: "_id",
     });
-    console.log(`Downloaded ${orgs.length} organizations (total: ${allOrgs.length})`);
 
     allOrgs.push(...orgs);
+    console.log(`Downloaded ${orgs.length} organizations (total: ${allOrgs.length})`);
 
     if (orgs.length < BATCH_SIZE) {
       isDone = true;
@@ -70,13 +72,24 @@ async function main() {
   const startedAt = Date.now();
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
   initRunsFolder(dirName);
+  const outputFilename = getFolderName() + ".json";
 
   const orgs = await downloadCQDirectory(apiKey, apiMode);
+  console.log(`Downloaded ${orgs.length} organizations, storing them on file ${outputFilename}`);
 
-  const outputFilename = getFolderName() + ".json";
-  fs.writeFileSync(outputFilename, JSON.stringify(orgs, null, 2));
+  const chunks = chunk(orgs, 1_000);
+  let idx = 0;
+  fs.appendFileSync(outputFilename, "{");
+  for (const chunk of chunks) {
+    const chunkProp = { [`chunk-${++idx}`]: chunk };
+    const chunkString = JSON.stringify(chunkProp, null, 2);
+    const chunkContents = chunkString.slice(1, -1);
+    if (idx > 1) fs.appendFileSync(outputFilename, ",");
+    fs.appendFileSync(outputFilename, chunkContents);
+  }
+  fs.appendFileSync(outputFilename, "}");
 
-  console.log(`Downloaded ${orgs.length} organizations`);
+  console.log(`Stored ${orgs.length} organizations on file ${outputFilename}`);
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
 }
