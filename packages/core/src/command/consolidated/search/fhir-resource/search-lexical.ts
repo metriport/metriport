@@ -31,14 +31,23 @@ export async function searchLexical({
   const startedAt = Date.now();
 
   const [consolidated, searchResults, docRefResults] = await Promise.all([
-    getConsolidatedPatientData({ patient }),
-    searchOpenSearch({
-      cxId: patient.cxId,
-      patientId: patient.id,
-      query,
-      maxNumberOfResults,
-    }),
-    searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query }),
+    timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
+    timed(
+      () =>
+        searchOpenSearch({
+          cxId: patient.cxId,
+          patientId: patient.id,
+          query,
+          maxNumberOfResults,
+        }),
+      "searchOpenSearch",
+      log
+    ),
+    timed(
+      () => searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query }),
+      "searchDocuments",
+      log
+    ),
   ]);
   const elapsedTime = Date.now() - startedAt;
   log(
@@ -112,4 +121,12 @@ async function searchOpenSearch({
     patientId,
     maxNumberOfResults,
   });
+}
+
+async function timed<T>(fn: () => Promise<T>, name: string, log: typeof console.log) {
+  const startedAt = Date.now();
+  const res = await fn();
+  const elapsedTime = Date.now() - startedAt;
+  log(`Done ${name} in ${elapsedTime} ms`);
+  return res;
 }
