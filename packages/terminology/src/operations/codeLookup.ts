@@ -28,9 +28,12 @@ export type CodeSystemLookupOutput = {
 };
 
 /**
- * Normalizes an NDC code by removing dashes
+ * Normalize codes prior to lookup
+ *
+ * For NDC, remove dashes
+ * For other systems, return the code as is
  */
-function normalizeNdcCode(code: string, system?: string): string {
+function normalizeCode(code: string, system: string): string {
   if (system === ndcCodeSystem.url) {
     return code.replace(/-/g, "");
   }
@@ -143,15 +146,15 @@ export async function lookupPartialCoding(
   codeSystem: CodeSystem,
   coding: Coding
 ): Promise<CodeSystemLookupOutput[] | FhirResponse> {
-  const code = coding.code;
-  if (!code) return [notFound];
+  const { code, system } = coding;
+  if (!code || !system) return [notFound];
 
-  if (coding.system && coding.system !== codeSystem.url) {
+  if (system !== codeSystem.url) {
     return [notFound];
   }
 
   const dbClient = getTermServerClient();
-  const normalizedCode = normalizeNdcCode(code, coding.system);
+  const normalizedCode = normalizeCode(code, system);
 
   const query = `
     SELECT 
@@ -214,13 +217,13 @@ export async function lookupCoding(
   codeSystem: CodeSystem,
   coding: Coding
 ): Promise<CodeSystemLookupOutput[] | FhirResponse> {
-  const code = coding.code;
-  if (!code) return [notFound];
+  const { code, system } = coding;
+  if (!code || !system) return [notFound];
 
-  if (coding.system && coding.system !== codeSystem.url) {
+  if (system !== codeSystem.url) {
     return [notFound];
   }
-  const normalizedCode = normalizeNdcCode(code, coding.system);
+  const normalizedCode = normalizeCode(code, system);
 
   const dbClient = getTermServerClient();
 
