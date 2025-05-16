@@ -168,7 +168,7 @@ export async function lookupPartialCoding(
     WHERE cs.id = ? AND c.code LIKE ?
   `;
 
-  const params = [codeSystem.id, `${normalizedCode}%`];
+  const params = [codeSystem.id, normalizedCode];
   const result = await dbClient.select(query, params);
 
   if (result.length === 0) {
