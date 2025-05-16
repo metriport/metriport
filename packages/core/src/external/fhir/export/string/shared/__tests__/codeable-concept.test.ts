@@ -65,7 +65,10 @@ describe("codeable-concept", () => {
         ],
       };
       const formatted = formatCodeableConcept(concept);
-      expect(formatted).toEqual(`${code1} (${display1}) / ${code2} (${display2})`);
+      const codeDisplay1 = `${code1} (${display1})`;
+      const codeDisplay2 = `${code2} (${display2})`;
+      const expected = [codeDisplay1, codeDisplay2].sort().join(" / ");
+      expect(formatted).toEqual(expected);
     });
 
     it("returns text with remaining data", () => {
@@ -80,7 +83,10 @@ describe("codeable-concept", () => {
         ],
       };
       const formatted = formatCodeableConcept(concept);
-      expect(formatted).toEqual(`${text}: ${code1} (${display1}) / ${code2} (${display2})`);
+      const codeDisplay1 = `${code1} (${display1})`;
+      const codeDisplay2 = `${code2} (${display2})`;
+      const expected = [codeDisplay1, codeDisplay2].sort().join(" / ");
+      expect(formatted).toEqual(`${text}: ${expected}`);
     });
 
     it("returns text when no remaining data", () => {
