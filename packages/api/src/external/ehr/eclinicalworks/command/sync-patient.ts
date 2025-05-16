@@ -1,4 +1,4 @@
-import EclinicalworksApi from "@metriport/core/external/ehr/eclinicalworks/index";
+import EClinicalWorksApi from "@metriport/core/external/ehr/eclinicalworks/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { MetriportError } from "@metriport/shared";
 import { eclinicalworksDashSource } from "@metriport/shared/interface/external/ehr/eclinicalworks/jwt-token";
@@ -11,14 +11,14 @@ import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,
 } from "../../shared-fhir";
-import { createEclinicalworksClient } from "../shared";
+import { createEClinicalWorksClient } from "../shared";
 
 export type SyncEclinicalworksPatientIntoMetriportParams = {
   cxId: string;
   eclinicalworksPracticeId: string;
   eclinicalworksPatientId: string;
   eclinicalworksTokenId: string;
-  api?: EclinicalworksApi;
+  api?: EClinicalWorksApi;
   triggerDq?: boolean;
 };
 
@@ -46,7 +46,7 @@ export async function syncEclinicalworksPatientIntoMetriport({
 
   const eclinicalworksApi =
     api ??
-    (await createEclinicalworksClientFromTokenId({
+    (await createEClinicalWorksClientFromTokenId({
       cxId,
       practiceId: eclinicalworksPracticeId,
       tokenId: eclinicalworksTokenId,
@@ -78,7 +78,7 @@ export async function syncEclinicalworksPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-async function createEclinicalworksClientFromTokenId({
+async function createEClinicalWorksClientFromTokenId({
   cxId,
   practiceId,
   tokenId,
@@ -86,7 +86,7 @@ async function createEclinicalworksClientFromTokenId({
   cxId: string;
   practiceId: string;
   tokenId: string;
-}): Promise<EclinicalworksApi> {
+}): Promise<EClinicalWorksApi> {
   const token = await getJwtTokenByIdOrFail(tokenId);
   if (token.data.source !== eclinicalworksDashSource) {
     throw new MetriportError("Invalid token source", undefined, { tokenId, source: token.source });
@@ -100,11 +100,10 @@ async function createEclinicalworksClientFromTokenId({
       practiceId,
     });
   }
-  const api = createEclinicalworksClient({
+  const api = createEClinicalWorksClient({
     cxId,
     practiceId,
     authToken: token.token,
-    fhirUrl: token.data.fhirUrl,
   });
   return api;
 }

@@ -1,17 +1,17 @@
-import EclinicalworksApi, {
-  EclinicalworksEnv,
-  isEclinicalworksEnv,
+import EClinicalWorksApi, {
+  EClinicalWorksEnv,
+  isEClinicalWorksEnv,
 } from "@metriport/core/external/ehr/eclinicalworks/index";
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
 import { EhrPerPracticeParams } from "../shared";
 
-function getEclinicalworksEnv(): {
-  environment: EclinicalworksEnv;
+function getEClinicalWorksEnv(): {
+  environment: EClinicalWorksEnv;
 } {
-  const environment = Config.getEclinicalworksEnv();
+  const environment = Config.getEClinicalWorksEnv();
   if (!environment) throw new MetriportError("EClinicalWorks environment not set");
-  if (!isEclinicalworksEnv(environment)) {
+  if (!isEClinicalWorksEnv(environment)) {
     throw new MetriportError("Invalid EClinicalWorks environment", undefined, { environment });
   }
   return {
@@ -19,17 +19,17 @@ function getEclinicalworksEnv(): {
   };
 }
 
-export async function createEclinicalworksClient(
-  perPracticeParams: EhrPerPracticeParams & {
-    authToken: string;
-    fhirUrl: string;
-  }
-): Promise<EclinicalworksApi> {
-  const { environment } = getEclinicalworksEnv();
-  return await EclinicalworksApi.create({
+type EClinicalWorksPerPracticeParams = EhrPerPracticeParams & {
+  authToken: string;
+};
+
+export async function createEClinicalWorksClient(
+  perPracticeParams: EClinicalWorksPerPracticeParams
+): Promise<EClinicalWorksApi> {
+  const { environment } = getEClinicalWorksEnv();
+  return await EClinicalWorksApi.create({
     practiceId: perPracticeParams.practiceId,
     environment,
     authToken: perPracticeParams.authToken,
-    fhirUrl: perPracticeParams.fhirUrl,
   });
 }

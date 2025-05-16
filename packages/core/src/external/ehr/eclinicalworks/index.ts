@@ -4,42 +4,43 @@ import axios, { AxiosInstance } from "axios";
 import { out } from "../../../util/log";
 import { ApiConfig, makeRequest, MakeRequestParamsInEhr } from "../shared";
 
-interface EclinicalworksApiConfig
+interface EClinicalWorksApiConfig
   extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret"> {
-  environment: EclinicalworksEnv;
+  environment: EClinicalWorksEnv;
   authToken: string;
-  fhirUrl: string;
 }
 
 const eclinicalworksEnv = ["production", "staging"] as const;
 
-export type EclinicalworksEnv = (typeof eclinicalworksEnv)[number];
-export function isEclinicalworksEnv(env: string): env is EclinicalworksEnv {
-  return eclinicalworksEnv.includes(env as EclinicalworksEnv);
+export type EClinicalWorksEnv = (typeof eclinicalworksEnv)[number];
+export function isEClinicalWorksEnv(env: string): env is EClinicalWorksEnv {
+  return eclinicalworksEnv.includes(env as EClinicalWorksEnv);
 }
 
-class EclinicalworksApi {
+class EClinicalWorksApi {
   private axiosFhirInstance: AxiosInstance;
-  private fhirUrl: string;
+  private baseFhirUrl: string;
   private practiceId: string;
   private token: string;
 
-  private constructor(config: EclinicalworksApiConfig) {
+  private constructor(config: EClinicalWorksApiConfig) {
     this.practiceId = config.practiceId;
-    this.fhirUrl = config.fhirUrl;
+    this.baseFhirUrl = `https://${
+      config.environment === "production" ? "" : "staging-"
+    }fhir.ecwcloud.com`;
     this.axiosFhirInstance = axios.create({});
     this.token = config.authToken;
   }
 
-  public static async create(config: EclinicalworksApiConfig): Promise<EclinicalworksApi> {
-    const instance = new EclinicalworksApi(config);
+  public static async create(config: EClinicalWorksApiConfig): Promise<EClinicalWorksApi> {
+    const instance = new EClinicalWorksApi(config);
     await instance.initialize();
     return instance;
   }
 
   async initialize(): Promise<void> {
     this.axiosFhirInstance = axios.create({
-      baseURL: this.fhirUrl,
+      baseURL: `${this.baseFhirUrl}/fhir/r4/${this.practiceId}`,
       headers: {
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/x-www-form-urlencoded",
@@ -49,15 +50,10 @@ class EclinicalworksApi {
 
   async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
-      `Eclinicalworks getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `EClinicalWorks getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/Patient/${patientId}`;
-    const additionalInfo = {
-      cxId,
-      practiceId: this.practiceId,
-      patientId,
-      fhirUrl: this.fhirUrl,
-    };
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
     const patient = await this.makeRequest<Patient>({
       cxId,
       patientId,
@@ -103,4 +99,4 @@ class EclinicalworksApi {
   }
 }
 
-export default EclinicalworksApi;
+export default EClinicalWorksApi;

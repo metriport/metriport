@@ -348,7 +348,7 @@ export class Config {
     return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
   }
 
-  static getEclinicalworksEnv(): string | undefined {
+  static getEClinicalWorksEnv(): string | undefined {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 

@@ -16,7 +16,6 @@ export type SyncPatientParams = ApiBaseParams & {
  * @param practiceId - The practice ID.
  * @param patientId - The patient ID.
  * @param departmentId - The department ID.
- * @param tokenId - The token ID.
  * @param triggerDq - Whether to trigger DQ.
  */
 export async function syncPatient({
@@ -25,7 +24,6 @@ export async function syncPatient({
   practiceId,
   departmentId,
   patientId,
-  tokenId,
   triggerDq,
 }: SyncPatientParams): Promise<void> {
   const { log, debug } = out(`Ehr syncPatient - cxId ${cxId}`);
@@ -36,7 +34,6 @@ export async function syncPatient({
     patientId,
     triggerDq: triggerDq.toString(),
     ...(departmentId ? { departmentId } : {}),
-    ...(tokenId ? { tokenId } : {}),
   });
   const syncPatientUrl = `/internal/ehr/${ehr}/patient?${queryParams.toString()}`;
   try {
