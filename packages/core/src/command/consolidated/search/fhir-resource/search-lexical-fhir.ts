@@ -1,4 +1,5 @@
 import { Resource } from "@medplum/fhirtypes";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../../domain/patient";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
@@ -33,7 +34,7 @@ export async function searchLexicalFhir({
   const { log } = out(`searchLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
   log(`Getting consolidated and searching OS...`);
-  const startedAt = Date.now();
+  const startedAt = new Date();
 
   const [fhirResourcesResults, docRefResults] = await Promise.all([
     timed(
@@ -43,7 +44,7 @@ export async function searchLexicalFhir({
           patientId: patient.id,
           query,
         }),
-      "searchOpenSearch",
+      "searchLexicalFhir",
       log
     ),
     timed(
@@ -52,26 +53,34 @@ export async function searchLexicalFhir({
       log
     ),
   ]);
-  const elapsedTime = Date.now() - startedAt;
   log(
-    `Got ${fhirResourcesResults.length} Resources and ${docRefResults.length} DocRefs in ${elapsedTime} ms, hydrating search results...`
+    `Got ${fhirResourcesResults.length} Resources and ${
+      docRefResults.length
+    } DocRefs in ${elapsedTimeFromNow(startedAt)} ms, hydrating search results...`
   );
 
+  let subStartedAt = new Date();
   const resourcesMutable = fhirResourcesResults.flatMap(r => {
     const resourceAsString = r[rawContentFieldName];
     if (!resourceAsString) return [];
     return JSON.parse(resourceAsString) as Resource;
   });
-
   resourcesMutable.push(...docRefResults);
+  log(
+    `Loaded/converted ${resourcesMutable.length} resources in ${elapsedTimeFromNow(
+      subStartedAt
+    )} ms.`
+  );
 
+  subStartedAt = new Date();
   const hydratedMutable = await hydrateMissingReferences({
     cxId: patient.cxId,
     patientId: patient.id,
     resources: resourcesMutable,
   });
-
-  log(`Hydrated to ${hydratedMutable.length} resources in ${elapsedTime} ms.`);
+  log(
+    `Hydrated to ${hydratedMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)}} ms.`
+  );
 
   const patientResource = patientToFhir(patient);
   hydratedMutable.push(patientResource);
@@ -79,7 +88,11 @@ export async function searchLexicalFhir({
   const entries = hydratedMutable.map(buildBundleEntry);
   const resultBundle = buildSearchSetBundle({ entries });
 
-  log(`Done, returning ${resultBundle.entry?.length} resources...`);
+  log(
+    `Done in ${elapsedTimeFromNow(startedAt)} ms, returning ${
+      resultBundle.entry?.length
+    } resources...`
+  );
 
   return resultBundle;
 }

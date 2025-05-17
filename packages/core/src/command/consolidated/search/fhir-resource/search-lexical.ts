@@ -1,3 +1,4 @@
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../../domain/patient";
 import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
@@ -25,7 +26,7 @@ export async function searchLexical({
   const { log } = out(`searchLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
   log(`Getting consolidated and searching OS...`);
-  const startedAt = Date.now();
+  const startedAt = new Date();
 
   const [consolidated, searchResults, docRefResults] = await Promise.all([
     timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
@@ -36,7 +37,7 @@ export async function searchLexical({
           patientId: patient.id,
           query,
         }),
-      "searchOpenSearch",
+      "searchLexical",
       log
     ),
     timed(
@@ -45,12 +46,12 @@ export async function searchLexical({
       log
     ),
   ]);
-  const elapsedTime = Date.now() - startedAt;
   log(
-    `Done, got ${searchResults.length} search results and ${consolidated.entry?.length} consolidated ` +
-      `resources in ${elapsedTime} ms, filtering consolidated based on search results...`
+    `Done, got ${searchResults.length} search results and ${consolidated.entry?.length} consolidated resources ` +
+      `in ${elapsedTimeFromNow(startedAt)} ms, filtering consolidated based on search results...`
   );
 
+  let subStartedAt = new Date();
   const filteredMutable =
     consolidated.entry?.filter(entry => {
       const resourceId = entry.resource?.id;
@@ -62,14 +63,20 @@ export async function searchLexical({
           isInDocRefResults(docRefResults, resourceId, resourceType))
       );
     }) ?? [];
+  log(`Filtered to ${filteredMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
 
   const patientEntry = buildBundleEntry(patientToFhir(patient));
   filteredMutable.push(patientEntry);
 
   const filteredBundle = buildSearchSetBundle({ entries: filteredMutable });
-  const hydrated = addMissingReferences(filteredBundle, consolidated);
 
-  log(`Done, returning ${hydrated.entry?.length} resources...`);
+  subStartedAt = new Date();
+  const hydrated = addMissingReferences(filteredBundle, consolidated);
+  log(`Hydrated to ${hydrated.total} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
+
+  log(
+    `Done in ${elapsedTimeFromNow(startedAt)} ms, returning ${hydrated.entry?.length} resources...`
+  );
 
   return hydrated as SearchSetBundle;
 }
