@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { mergeBundles } from "../../external/fhir/shared/utils";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_APP_MIME_TYPE } from "../../util/mime";
@@ -19,12 +20,11 @@ import {
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
-  buildAdtLatestFileKey,
-  buildHl7MessageConversionFileKey,
+  createFileKeyAdtEncounter,
+  createFileKeyAdtLatest,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { getAdtSourcedEncounter, putAdtSourcedEncounter } from "./adt-encounters";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
-import { mergeBundles } from "../../external/fhir/shared/utils";
 
 const supportedTypes = ["A01", "A03"];
 const INTERNAL_HL7_ENDPOINT = `notification`;
@@ -90,9 +90,10 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     };
 
     // Turn this into a command -
-    const newMessageBundleFileKey = buildHl7MessageConversionFileKey({
+    const newMessageBundleFileKey = createFileKeyAdtEncounter({
       cxId,
       patientId,
+      encounterId,
       timestamp: sourceTimestamp,
       messageId: getMessageUniqueIdentifier(message),
       messageCode,
@@ -131,7 +132,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
       bucketName: this.bucketName,
-      fileName: buildAdtLatestFileKey({ cxId, patientId, encounterId }),
+      fileName: createFileKeyAdtLatest({ cxId, patientId, encounterId }),
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
       versionId: response.VersionId,
     });

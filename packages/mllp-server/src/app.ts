@@ -10,7 +10,7 @@ import {
   getOrCreateMessageDatetime,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
-  buildHl7MessageFileKey,
+  createFileKeyHl7Message,
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -71,7 +71,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         log("Init S3 upload");
         s3Utils.uploadFile({
           bucket: bucketName,
-          key: buildHl7MessageFileKey({
+          key: createFileKeyHl7Message({
             cxId,
             patientId,
             timestamp,

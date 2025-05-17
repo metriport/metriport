@@ -2,7 +2,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { S3Utils } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
-import { buildAdtLatestFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { createFileKeyAdtLatest } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getHl7ConversionBucketName();
@@ -27,7 +27,7 @@ export async function getAdtSourcedEncounter({
     `getAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
 
-  const fileKey = buildAdtLatestFileKey({
+  const fileKey = createFileKeyAdtLatest({
     cxId,
     patientId,
     encounterId,
@@ -63,7 +63,7 @@ export async function putAdtSourcedEncounter({
     `putAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
 
-  const fileKey = buildAdtLatestFileKey({
+  const fileKey = createFileKeyAdtLatest({
     cxId,
     patientId,
     encounterId,
