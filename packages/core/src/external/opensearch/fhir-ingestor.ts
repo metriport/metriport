@@ -1,10 +1,13 @@
+import { Resource } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { out } from "../../util/log";
+import { resourceToString } from "../fhir/export/string/bundle-to-string";
 import { OpenSearchConfigDirectAccess } from "./index";
-import { IndexFields } from "./index-based-on-resource";
+import { FhirIndexFields } from "./index-based-on-fhir";
 import {
   BulkOperation,
   BulkResponseErrorItem,
@@ -31,37 +34,40 @@ const MAX_BULK_RETRIES = 3;
 // on each bulk request (~5MB)
 const bulkChunkSize = 500;
 
-export type IngestRequest = IndexFields;
-export type IngestRequestResource = Omit<IndexFields, "cxId" | "patientId">;
+export type IngestRequest = {
+  cxId: string;
+  patientId: string;
+  resource: Resource;
+};
 
 export type IngestBulkRequest = {
   cxId: string;
   patientId: string;
-  resources: IngestRequestResource[];
+  resources: Resource[];
   onItemError?: OnBulkItemError | undefined;
 };
 
-export type DeleteRequest = Pick<IngestRequest, "cxId" | "patientId">;
+export type DeleteRequest = Pick<FhirIndexFields, "cxId" | "patientId">;
 
-export type OpenSearchTextIngestorSettings = {
+export type OpenSearchFhirIngestorSettings = {
   logLevel?: OpenSearchLogLevel;
 };
 
-export type OpenSearchTextIngestorConfig = OpenSearchConfigDirectAccess & {
-  settings?: OpenSearchTextIngestorSettings;
+export type OpenSearchFhirIngestorConfig = OpenSearchConfigDirectAccess & {
+  settings?: OpenSearchFhirIngestorSettings;
 };
 
 /**
  * Ingests text documents/entries in OpenSearch.
  */
-export class OpenSearchTextIngestor {
+export class OpenSearchFhirIngestor {
   private readonly endpoint: string;
   private readonly username: string;
   private readonly password: string;
   private readonly indexName: string;
-  private readonly settings: OpenSearchTextIngestorSettings;
+  private readonly settings: OpenSearchFhirIngestorSettings;
 
-  constructor(config: OpenSearchTextIngestorConfig) {
+  constructor(config: OpenSearchFhirIngestorConfig) {
     this.endpoint = config.endpoint;
     this.username = config.username;
     this.password = config.password;
@@ -139,14 +145,15 @@ export class OpenSearchTextIngestor {
 
     debug(`Ingesting ${resources.length} resources into index ${indexName}...`);
 
-    const bulkRequest = resources.flatMap(resource =>
-      resourceToBulkRequest({
-        cxId,
-        patientId,
-        resource,
-        operation,
-        getEntryId,
-      })
+    const bulkRequest = resources.flatMap(
+      resource =>
+        resourceToBulkRequest({
+          cxId,
+          patientId,
+          resource,
+          operation,
+          getEntryId,
+        }) ?? []
     );
 
     const startedAt = Date.now();
@@ -207,18 +214,47 @@ function resourceToBulkRequest({
 }: {
   cxId: string;
   patientId: string;
-  resource: IngestRequestResource;
+  resource: Resource;
   operation: BulkOperation;
   getEntryId: (cxId: string, patientId: string, resourceId: string) => string;
 }) {
-  const entryId = getEntryId(cxId, patientId, resource.resourceId);
-  const document: IngestRequest = {
-    cxId,
-    patientId,
-    resourceType: resource.resourceType,
-    resourceId: resource.resourceId,
-    content: resource.content,
-  };
+  const { id: resourceId } = resource;
+  if (!resourceId) throw new MetriportError("Resource id is required");
+  const entryId = getEntryId(cxId, patientId, resourceId);
+  const document = resourceToIndexField({ cxId, patientId, resource });
+  if (!document) return undefined;
   const cmd = { [operation]: { _id: entryId } };
   return [cmd, document];
+}
+
+function resourceToIndexField({
+  cxId,
+  patientId,
+  resource,
+}: {
+  cxId: string;
+  patientId: string;
+  resource: Resource;
+}): FhirIndexFields | undefined {
+  const { resourceType, id: resourceId } = resource;
+  if (!resourceType || !resourceId) {
+    throw new MetriportError("Resource type and id are required", undefined, {
+      resourceType,
+      resourceId,
+    });
+  }
+  const content = resourceToString(resource);
+  if (!content) {
+    out(`WARNING`).log(`Resource ${resourceId} of type ${resourceType} could not be converted`);
+    return undefined;
+  }
+  const document: FhirIndexFields = {
+    cxId,
+    patientId,
+    resourceType,
+    resourceId,
+    content: content,
+    rawContent: JSON.stringify(resource),
+  };
+  return document;
 }

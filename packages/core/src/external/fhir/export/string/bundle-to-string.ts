@@ -144,7 +144,7 @@ export function bundleToString(bundle: Bundle, isDebug = false): FhirResourceToT
   });
 }
 
-function resourceToString(resource: Resource, isDebug?: boolean): string | undefined {
+export function resourceToString(resource: Resource, isDebug?: boolean): string | undefined {
   if (!isSupportedResource(resource)) return undefined;
   const converter = resourceToStringMap[resource.resourceType as ResourceType];
   if (!converter) return undefined;

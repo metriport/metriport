@@ -2,6 +2,10 @@ import {
   ingestLexical,
   initializeLexicalIndex,
 } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical";
+import {
+  ingestLexicalFhir,
+  initializeFhirIndex,
+} from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical-fhir";
 import { out } from "@metriport/core/util/log";
 import { BadRequestError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -156,7 +160,8 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
 
-    await initializeLexicalIndex();
+    // TODO eng-268 temporary while we don't choose one approach
+    await Promise.all([initializeLexicalIndex(), initializeFhirIndex()]);
 
     if (patientIds.length < 1) {
       out(`cx ${cxId}`).log(`no patientIds provided, getting all patients for this customer`);
@@ -166,7 +171,8 @@ router.post(
 
     for (const patientId of patientIds) {
       const patient = await getPatientOrFail({ cxId, id: patientId });
-      await ingestLexical({ patient });
+      // TODO eng-268 temporary while we don't choose one approach
+      await Promise.all([ingestLexical({ patient }), ingestLexicalFhir({ patient })]);
     }
 
     return res.sendStatus(status.OK);

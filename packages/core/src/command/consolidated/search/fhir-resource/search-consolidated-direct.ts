@@ -17,6 +17,7 @@ import {
   SearchConsolidatedResult,
 } from "./search-consolidated";
 import { searchLexical } from "./search-lexical";
+import { searchLexicalFhir } from "./search-lexical-fhir";
 
 dayjs.extend(duration);
 
@@ -29,9 +30,15 @@ const searchFolderName = "searches";
  * Still relies on external services to get the consolidated data.
  */
 export class SearchConsolidatedDirect implements SearchConsolidated {
-  async search({ patient, query }: SearchConsolidatedParams): Promise<SearchConsolidatedResult> {
+  async search({
+    patient,
+    query,
+    useFhir = true,
+  }: SearchConsolidatedParams): Promise<SearchConsolidatedResult> {
     const searchResult = query
-      ? await searchLexical({ patient, query })
+      ? useFhir
+        ? await searchLexicalFhir({ patient, query })
+        : await searchLexical({ patient, query })
       : await getConsolidatedPatientData({ patient });
 
     if (!searchResult || !searchResult.entry || searchResult.entry.length < 1) {
