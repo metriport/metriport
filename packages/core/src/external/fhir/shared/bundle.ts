@@ -176,6 +176,10 @@ export function buildBundleFromResources({
   };
 }
 
+export function buildCollectionBundle(entries: BundleEntry[] = []): Bundle {
+  return buildBundle({ type: "collection", entries });
+}
+
 export function buildSearchSetBundle<T extends Resource = Resource>({
   entries = [],
 }: {

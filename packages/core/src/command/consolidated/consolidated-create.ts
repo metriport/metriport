@@ -11,7 +11,7 @@ import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
-import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/shared/bundle";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
@@ -63,7 +63,7 @@ export async function createConsolidatedFromConversions({
   ]);
   log(`Got ${conversions.length} resources from conversions`);
 
-  const bundle = buildConsolidatedBundle();
+  const bundle = buildCollectionBundle();
   const docRefsWithUpdatedMeta = insertSourceDocumentToAllDocRefMeta(docRefs);
   bundle.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
   bundle.total = bundle.entry.length;
@@ -126,10 +126,6 @@ export async function createConsolidatedFromConversions({
   return bundle;
 }
 
-export function buildConsolidatedBundle(entries: BundleEntry[] = []): Bundle {
-  return buildBundle({ type: "collection", entries });
-}
-
 async function getConversions({
   cxId,
   patient,
@@ -149,7 +145,7 @@ async function getConversions({
     return [];
   }
 
-  const mergedBundle = buildConsolidatedBundle();
+  const mergedBundle = buildCollectionBundle();
   await executeAsynchronously(
     conversionBundles,
     async inputBundle => {

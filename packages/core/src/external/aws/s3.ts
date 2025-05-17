@@ -36,10 +36,12 @@ export type GetSignedUrlWithBucketAndKey = {
   bucketName: string;
   fileName: string;
   durationSeconds?: number;
+  versionId?: string;
 };
 export type GetSignedUrlWithLocation = {
   location: string;
   durationSeconds?: number;
+  versionId?: string;
 };
 
 export type UploadParams = {
@@ -270,6 +272,7 @@ export class S3Utils {
       return this.getSignedUrlInternal({
         bucketName,
         fileName: key,
+        ...(params.versionId ? { versionId: params.versionId } : {}),
         ...(params.durationSeconds ? { durationSeconds: params.durationSeconds } : undefined),
       });
     } else {
@@ -281,16 +284,19 @@ export class S3Utils {
     bucketName,
     fileName,
     durationSeconds,
+    versionId,
   }: {
     bucketName: string;
     fileName: string;
     durationSeconds?: number;
+    versionId?: string;
   }): Promise<string> {
     return executeWithRetriesS3(() =>
       this.s3.getSignedUrlPromise("getObject", {
         Bucket: bucketName,
         Key: fileName,
         Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
+        ...(versionId ? { VersionId: versionId } : {}),
       })
     );
   }

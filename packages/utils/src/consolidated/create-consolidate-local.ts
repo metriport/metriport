@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import {
-  buildConsolidatedBundle,
+  buildCollectionBundle,
   merge,
 } from "@metriport/core/command/consolidated/consolidated-create";
 import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
@@ -64,7 +64,7 @@ export async function createConsolidatedFromLocal(
   });
   console.log(`Found ${jsonFileNames.length} JSON files.`);
 
-  const bundle = buildConsolidatedBundle();
+  const bundle = buildCollectionBundle();
   await executeAsynchronously(
     jsonFileNames,
     async filePath => {
