@@ -5,13 +5,14 @@ import {
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { BadRequestError, NotFoundError } from "@metriport/shared";
-import dayjs from "dayjs";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 
-const URL_EXPIRATION_TIME = dayjs.duration(5, "minutes");
+/** @deprecated Use S3Utils instead */
 const s3client = makeS3Client();
+const s3Utils = new S3Utils(Config.getAWSRegion());
 const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
@@ -70,6 +71,7 @@ export const convertDoc = async ({
   return parsedResult.url;
 };
 
+/** @deprecated Use S3Utils.getFileInfoFromS3 */
 const doesObjExist = async ({
   fileName,
 }: {
@@ -120,14 +122,13 @@ const doesObjExist = async ({
   }
 };
 
-export const getSignedURL = async ({
+export async function getSignedURL({
   fileName,
   bucketName,
 }: {
   fileName: string;
   bucketName?: string;
-}): Promise<string> => {
-  const urlExpirationSeconds = URL_EXPIRATION_TIME.asSeconds();
+}): Promise<string> {
   const bucket =
     bucketName ??
     (Config.isSandbox()
@@ -135,12 +136,5 @@ export const getSignedURL = async ({
         Config.getSandboxSeedBucketName()!
       : Config.getMedicalDocumentsBucketName());
 
-  const url = await s3client.getSignedUrlPromise("getObject", {
-    Bucket: bucket,
-    Key: fileName,
-    Expires: urlExpirationSeconds,
-  });
-
-  // TODO try to remove this, moved here b/c this was being done upstream
-  return url.replace(/['"]+/g, "");
-};
+  return s3Utils.getSignedUrl({ bucketName: bucket, fileName });
+}
