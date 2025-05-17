@@ -1,11 +1,19 @@
 import {
   AllergyIntolerance,
   Bundle,
+  Communication,
+  Composition,
   Condition,
+  Consent,
+  Coverage,
   DiagnosticReport,
+  DocumentReference,
   Encounter,
+  FamilyMemberHistory,
   Immunization,
+  Location,
   Medication,
+  MedicationAdministration,
   MedicationDispense,
   MedicationRequest,
   MedicationStatement,
@@ -14,14 +22,24 @@ import {
   Patient,
   Practitioner,
   Procedure,
+  RelatedPerson,
   Resource,
 } from "@medplum/fhirtypes";
+import { FHIRResourceToString } from "./fhir-resource-to-string";
 import { AllergyIntoleranceToString } from "./resources/allergy-intolerance";
+import { CommunicationToString } from "./resources/communication";
+import { CompositionToString } from "./resources/composition";
 import { ConditionToString } from "./resources/condition";
+import { ConsentToString } from "./resources/consent";
+import { CoverageToString } from "./resources/coverage";
 import { DiagnosticReportToString } from "./resources/diagnostic-report";
+import { DocumentReferenceToString } from "./resources/document-reference";
 import { EncounterToString } from "./resources/encounter";
+import { FamilyMemberHistoryToString } from "./resources/family-member-history";
 import { ImmunizationToString } from "./resources/immunization";
+import { LocationToString } from "./resources/location";
 import { MedicationToString } from "./resources/medication";
+import { MedicationAdministrationToString } from "./resources/medication-administration";
 import { MedicationDispenseToString } from "./resources/medication-dispense";
 import { MedicationRequestToString } from "./resources/medication-request";
 import { MedicationStatementToString } from "./resources/medication-statement";
@@ -30,25 +48,35 @@ import { OrganizationToString } from "./resources/organization";
 import { PatientToString } from "./resources/patient";
 import { PractitionerToString } from "./resources/practitioner";
 import { ProcedureToString } from "./resources/procedure";
-import { FHIRResourceToString } from "./types";
+import { RelatedPersonToString } from "./resources/related-person";
 
-const resourceTypesToSkip = ["Patient", "Organization", "Practitioner"];
+const resourceTypesToSkip: string[] = ["Patient"];
 
 type ResourceTypeMap = {
   AllergyIntolerance: AllergyIntolerance;
   Condition: Condition;
+  Consent: Consent;
+  Composition: Composition;
+  Communication: Communication;
+  Coverage: Coverage;
   DiagnosticReport: DiagnosticReport;
+  DocumentReference: DocumentReference;
   Encounter: Encounter;
+  FamilyMemberHistory: FamilyMemberHistory;
   Immunization: Immunization;
+  Location: Location;
   Medication: Medication;
+  MedicationAdministration: MedicationAdministration;
   MedicationDispense: MedicationDispense;
   MedicationRequest: MedicationRequest;
   MedicationStatement: MedicationStatement;
   Observation: Observation;
   Organization: Organization;
-  Patient: Patient;
   Practitioner: Practitioner;
   Procedure: Procedure;
+  RelatedPerson: RelatedPerson;
+  // TODO REMOVE THIS
+  Patient: Patient;
 };
 
 type ResourceType = keyof ResourceTypeMap;
@@ -60,26 +88,29 @@ const resourceToStringMap: Record<
   ResourceType,
   FHIRResourceToString<ResourceTypeMap[ResourceType]>
 > = {
-  // TODO ENG-268 add remaining resources
-  // TODO ENG-268 add remaining resources
-  // TODO ENG-268 add remaining resources
-  // TODO ENG-268 add remaining resources
-  // TODO ENG-268 add remaining resources
-  // Composition
   AllergyIntolerance: new AllergyIntoleranceToString(),
   Condition: new ConditionToString(),
+  Consent: new ConsentToString(),
+  Composition: new CompositionToString(),
+  Communication: new CommunicationToString(),
+  Coverage: new CoverageToString(),
+  DocumentReference: new DocumentReferenceToString(),
   DiagnosticReport: new DiagnosticReportToString(),
   Encounter: new EncounterToString(),
+  FamilyMemberHistory: new FamilyMemberHistoryToString(),
   Immunization: new ImmunizationToString(),
+  Location: new LocationToString(),
   Medication: new MedicationToString(),
+  MedicationAdministration: new MedicationAdministrationToString(),
   MedicationDispense: new MedicationDispenseToString(),
   MedicationRequest: new MedicationRequestToString(),
   MedicationStatement: new MedicationStatementToString(),
   Observation: new ObservationToString(),
   Organization: new OrganizationToString(),
-  Patient: new PatientToString(),
   Practitioner: new PractitionerToString(),
   Procedure: new ProcedureToString(),
+  RelatedPerson: new RelatedPersonToString(),
+  Patient: new PatientToString(),
 } as const;
 
 export type FhirResourceToText = {
@@ -89,7 +120,10 @@ export type FhirResourceToText = {
 };
 
 /**
- * Converts a FHIR Bundle to a list of string representations of its resources
+ * Converts a FHIR Bundle to a list of string representations of its resources.
+ *
+ * Skips unsupported resources - @see isSupportedResource
+ *
  * @param bundle - FHIR Bundle to convert
  * @returns List of string representations of the resources in the bundle
  */
@@ -109,11 +143,6 @@ export function bundleToString(bundle: Bundle): FhirResourceToText[] {
   });
 }
 
-function isSupportedResource(resource: Resource): resource is ResourceTypeMap[ResourceType] {
-  if (resourceTypesToSkip.includes(resource.resourceType)) return false;
-  return resource.resourceType in resourceToStringMap;
-}
-
 export function resourceToString(resource: Resource): string | undefined {
   if (!isSupportedResource(resource)) return undefined;
   const converter = resourceToStringMap[resource.resourceType as ResourceType];
@@ -121,4 +150,9 @@ export function resourceToString(resource: Resource): string | undefined {
   const text = converter.toString(resource);
   if (!text) return undefined;
   return text;
+}
+
+function isSupportedResource(resource: Resource): resource is ResourceTypeMap[ResourceType] {
+  if (resourceTypesToSkip.includes(resource.resourceType)) return false;
+  return resource.resourceType in resourceToStringMap;
 }

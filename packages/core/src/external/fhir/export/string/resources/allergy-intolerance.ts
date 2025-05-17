@@ -1,9 +1,10 @@
 import { AllergyIntolerance } from "@medplum/fhirtypes";
+import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAnnotations } from "../shared/annotation";
 import { formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
 import { formatReferences } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
-import { FHIRResourceToString } from "../types";
 
 /**
  * Converts a FHIR AllergyIntolerance resource to a string representation
@@ -11,15 +12,13 @@ import { FHIRResourceToString } from "../types";
 export class AllergyIntoleranceToString implements FHIRResourceToString<AllergyIntolerance> {
   toString(allergy: AllergyIntolerance): string | undefined {
     const parts: string[] = [];
-    let hasRelevantData = false;
+    let hasMinimumData = defaultHasMinimumData;
 
-    // Add identifier
     const identifierStr = formatIdentifiers(allergy.identifier);
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add clinical status
     if (allergy.clinicalStatus) {
       const statusStr = formatCodeableConcepts([allergy.clinicalStatus], "Clinical Status");
       if (statusStr) {
@@ -27,7 +26,6 @@ export class AllergyIntoleranceToString implements FHIRResourceToString<AllergyI
       }
     }
 
-    // Add verification status
     if (allergy.verificationStatus) {
       const statusStr = formatCodeableConcepts([allergy.verificationStatus], "Verification Status");
       if (statusStr) {
@@ -35,43 +33,36 @@ export class AllergyIntoleranceToString implements FHIRResourceToString<AllergyI
       }
     }
 
-    // Add type
     if (allergy.type) {
       parts.push(`Type: ${allergy.type}`);
-      hasRelevantData = true;
+      hasMinimumData = true;
     }
 
-    // Add category
     if (allergy.category) {
-      parts.push(`Category: ${allergy.category.join(", ")}`);
-      hasRelevantData = true;
+      parts.push(`Category: ${allergy.category.join(FIELD_SEPARATOR)}`);
+      hasMinimumData = true;
     }
 
-    // Add criticality
     if (allergy.criticality) {
       parts.push(`Criticality: ${allergy.criticality}`);
     }
 
-    // Add code
     if (allergy.code) {
       const codeStr = formatCodeableConcepts([allergy.code], "Code");
       if (codeStr) {
         parts.push(codeStr);
-        hasRelevantData = true;
+        hasMinimumData = true;
       }
     }
 
-    // Add onset
     if (allergy.onsetDateTime) {
       parts.push(`Onset: ${allergy.onsetDateTime}`);
     }
 
-    // Add recorded date
     if (allergy.recordedDate) {
       parts.push(`Recorded: ${allergy.recordedDate}`);
     }
 
-    // Add recorder
     if (allergy.recorder) {
       const recorderStr = formatReferences([allergy.recorder], "Recorder");
       if (recorderStr) {
@@ -79,7 +70,6 @@ export class AllergyIntoleranceToString implements FHIRResourceToString<AllergyI
       }
     }
 
-    // Add asserter
     if (allergy.asserter) {
       const asserterStr = formatReferences([allergy.asserter], "Asserter");
       if (asserterStr) {
@@ -87,24 +77,17 @@ export class AllergyIntoleranceToString implements FHIRResourceToString<AllergyI
       }
     }
 
-    // Add last occurrence
     if (allergy.lastOccurrence) {
       parts.push(`Last Occurrence: ${allergy.lastOccurrence}`);
     }
 
-    // Add note
-    if (allergy.note) {
-      const notes = allergy.note
-        .map(note => note.text)
-        .filter(Boolean)
-        .join(FIELD_SEPARATOR);
-      if (notes) {
-        parts.push(`Note: ${notes}`);
-        hasRelevantData = true;
-      }
+    const notes = formatAnnotations(allergy.note, "Note");
+    if (notes) {
+      parts.push(notes);
+      hasMinimumData = true;
     }
 
-    if (!hasRelevantData) return undefined;
+    if (!hasMinimumData) return undefined;
 
     return parts.join(FIELD_SEPARATOR);
   }

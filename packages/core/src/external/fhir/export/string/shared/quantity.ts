@@ -6,8 +6,9 @@ import { Quantity } from "@medplum/fhirtypes";
  * @param label - Label to prefix the formatted string with
  * @returns Formatted string of quantity
  */
-export function formatQuantity(quantity: Quantity | undefined, label: string): string {
-  if (!quantity?.value) return "";
-
-  return `${label}: ${quantity.value} ${quantity.unit ?? ""}`;
+export function formatQuantity(quantity: Quantity | undefined, label?: string): string | undefined {
+  const { value, unit } = quantity ?? {};
+  if (!value) return undefined;
+  const qttyString = `${value.toString()}${unit ? ` ${unit}` : ""}`;
+  return label ? `${label}: ${qttyString}` : qttyString;
 }

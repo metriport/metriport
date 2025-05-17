@@ -1,23 +1,24 @@
 import { Reference } from "@medplum/fhirtypes";
+import { FIELD_SEPARATOR } from "./separator";
 
 /**
  * Formats a FHIR reference into a string representation
- * @param references - List of FHIR references to format
- * @param label - Label to prefix the formatted string with
- * @returns Formatted string of references
  */
 export function formatReferences(
-  references: Reference[] | undefined, // eslint-disable-line @typescript-eslint/no-unused-vars
-  label: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  references: Reference[] | undefined,
+  label?: string
 ): string | undefined {
-  // TODO Prob need to provide the whole bundle so we can get a short text description of the reference
-  return undefined;
+  if (!references?.length) return "";
 
-  // if (!references?.length) return "";
+  const formattedRefs = references.map(ref => formatReference(ref)).filter(Boolean);
+  if (formattedRefs.length < 1) return undefined;
 
-  // const formattedRefs = references
-  //   .map(ref => ref.display ?? ref.reference)
-  //   .join(FIELD_SEPARATOR);
+  const formatted = formattedRefs.join(FIELD_SEPARATOR);
+  return label ? `${label}: ${formatted}` : formatted;
+}
 
-  // return `${label}: ${formattedRefs}`;
+export function formatReference(ref: Reference | undefined, label?: string): string | undefined {
+  if (!ref?.display) return undefined;
+  const formattedRef = ref.display.trim();
+  return label ? `${label}: ${formattedRef}` : formattedRef;
 }
