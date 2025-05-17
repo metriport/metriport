@@ -1,17 +1,29 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
-import { isDocStatusReady } from ".";
-import { Config } from "../../util/config";
-import { log as _log } from "../../util/log";
-import { capture } from "../../util/notifications";
-import { isCarequalityExtension } from "../carequality/extension";
-import { isCommonwellExtension } from "../commonwell/extension";
-import { DocumentReferenceWithId } from "../fhir/document/document-reference";
-import { getDocuments } from "../fhir/document/get-documents";
-import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
-import { insertSourceDocumentToDocRefMeta } from "../fhir/shared/meta";
-import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
+import { isCarequalityExtension } from "../../../../external/carequality/extension";
+import { isCommonwellExtension } from "../../../../external/commonwell/extension";
+import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
+import { getDocuments } from "../../../../external/fhir/document/get-documents";
+import { isMetriportExtension } from "../../../../external/fhir/shared/extensions/metriport";
+import { insertSourceDocumentToDocRefMeta } from "../../../../external/fhir/shared/meta";
+import { makeSearchServiceQuery } from "../../../../external/opensearch/file/file-search-connector-factory";
+import { Config } from "../../../../util/config";
+import { log as _log } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
 
+/**
+ * Search for DocumentReference in the FHIR server and OpenSearch.
+ *
+ * The content filter is applied to:
+ * - CCDA file content
+ * - DocumentReference's content
+ *
+ * @param cxId - The customer ID
+ * @param patientId - The patient ID
+ * @param dateRange - The date range to search/filter on
+ * @param contentFilter - The content filter to apply
+ * @returns The list of DocumentReference resources
+ */
 export async function searchDocuments({
   cxId,
   patientId,
@@ -85,4 +97,16 @@ async function searchOnCCDAFiles(
   // only return documents that match both the search result and the documents we got from the FHIR server (using date filter)
   const result = docs.filter(d => searchResultIds.includes(d.id));
   return result;
+}
+
+function isDocStatusReady(doc: DocumentReference): boolean {
+  return !isDocStatusPreliminary(doc) && !isDocStatusEnteredInError(doc);
+}
+
+function isDocStatusPreliminary(doc: DocumentReference): boolean {
+  return doc.docStatus === "preliminary";
+}
+
+function isDocStatusEnteredInError(doc: DocumentReference): boolean {
+  return doc.docStatus === "entered-in-error";
 }

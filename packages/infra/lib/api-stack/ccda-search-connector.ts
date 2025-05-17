@@ -109,7 +109,7 @@ export function setup({
     envType: config.environmentType,
     envVars: {
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      SEARCH_HOST: openSearch.domain.domainEndpoint,
+      SEARCH_HOST: "https://" + openSearch.domain.domainEndpoint,
       SEARCH_USER: openSearch.creds.username,
       SEARCH_SECRET_NAME: openSearch.creds.secret.secretName,
       SEARCH_INDEX_NAME: openSearchConfig.indexName,

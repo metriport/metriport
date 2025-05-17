@@ -1,11 +1,11 @@
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { out } from "../../util/log";
-import { uuidv4 } from "../../util/uuid-v7";
-import * as xml from "../../util/xml";
-import { makeS3Client } from "../aws/s3";
-import { SQSClient } from "../aws/sqs";
+import { out } from "../../../util/log";
+import { uuidv4 } from "../../../util/uuid-v7";
+import * as xml from "../../../util/xml";
+import { makeS3Client } from "../../aws/s3";
+import { SQSClient } from "../../aws/sqs";
 import {
   IngestRequest,
   OpenSearchFileIngestor,

@@ -1,4 +1,5 @@
 import { DiagnosticReport } from "@medplum/fhirtypes";
+import { presentedFormsToText } from "../../../resources/diagnostic-report";
 import { formatCodeableConcepts } from "../shared/codeable-concept";
 import { checkDeny } from "../shared/deny";
 import { formatIdentifiers } from "../shared/identifier";
@@ -11,31 +12,20 @@ import { FHIRResourceToString } from "../types";
  */
 export class DiagnosticReportToString implements FHIRResourceToString<DiagnosticReport> {
   toString(report: DiagnosticReport): string | undefined {
-    const parts: string[] = [];
     let hasRelevantData = false;
+    const parts: string[] = [];
 
-    // Add identifier
     const identifierStr = formatIdentifiers(report.identifier);
-    if (identifierStr) {
-      parts.push(identifierStr);
-    }
+    if (identifierStr) parts.push(identifierStr);
 
-    // Add status
     if (report.status) {
       const status = checkDeny(report.status);
-      if (status) {
-        parts.push(`Status: ${status}`);
-      }
+      if (status) parts.push(`Status: ${status}`);
     }
 
-    // Add category
     const categoryStr = formatCodeableConcepts(report.category, "Category");
-    if (categoryStr) {
-      parts.push(categoryStr);
-      hasRelevantData = true;
-    }
+    if (categoryStr) parts.push(categoryStr);
 
-    // Add code
     if (report.code) {
       const codeStr = formatCodeableConcepts([report.code], "Code");
       if (codeStr) {
@@ -44,7 +34,6 @@ export class DiagnosticReportToString implements FHIRResourceToString<Diagnostic
       }
     }
 
-    // Add effective time
     if (report.effectiveDateTime) {
       parts.push(`Effective: ${report.effectiveDateTime}`);
     } else if (report.effectivePeriod) {
@@ -53,37 +42,40 @@ export class DiagnosticReportToString implements FHIRResourceToString<Diagnostic
       parts.push(`Effective: ${start} to ${end}`);
     }
 
-    // Add issued
-    if (report.issued) {
-      parts.push(`Issued: ${report.issued}`);
+    if (report.issued) parts.push(`Issued: ${report.issued}`);
+
+    const presentedFormsAsText = presentedFormsToText(report);
+    if (presentedFormsAsText.length > 0) {
+      let idx = 0;
+      for (const text of presentedFormsAsText) {
+        parts.push(`Presented Form ${++idx}: ${singleLine(text)}`);
+        hasRelevantData = true;
+      }
     }
 
-    // Add performer
+    if (report.conclusion) {
+      parts.push(`Conclusion: ${report.conclusion}`);
+      hasRelevantData = true;
+    }
+
     const performerStr = formatReferences(report.performer, "Performer");
-    if (performerStr) {
-      parts.push(performerStr);
-    }
+    if (performerStr) parts.push(performerStr);
 
-    // Add results interpreter
     const interpreterStr = formatReferences(report.resultsInterpreter, "Interpreter");
-    if (interpreterStr) {
-      parts.push(interpreterStr);
-    }
+    if (interpreterStr) parts.push(interpreterStr);
 
-    // Add specimen
     const specimenStr = formatReferences(report.specimen, "Specimen");
-    if (specimenStr) {
-      parts.push(specimenStr);
-    }
+    if (specimenStr) parts.push(specimenStr);
 
-    // Add result
     const resultStr = formatReferences(report.result, "Result");
-    if (resultStr) {
-      parts.push(resultStr);
-    }
+    if (resultStr) parts.push(resultStr);
 
     if (!hasRelevantData) return undefined;
 
     return parts.join(FIELD_SEPARATOR);
   }
+}
+
+function singleLine(text: string): string {
+  return text.replace(/\n/g, " ").trim();
 }

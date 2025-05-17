@@ -19,7 +19,12 @@ export function makeBundle<T extends Resource>({
   return {
     resourceType: "Bundle",
     type: type ?? "transaction",
-    ...(entry ? { entry } : {}),
+    ...(entry
+      ? {
+          total: entry.length,
+          entry,
+        }
+      : {}),
   };
 }
 

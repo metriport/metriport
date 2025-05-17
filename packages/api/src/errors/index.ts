@@ -7,6 +7,9 @@ export function getErrorMessage(error: unknown) {
   return errorToString(error);
 }
 
+/**
+ * @deprecated Use @metriport/core/util/error/shared instead
+ */
 export function processAsyncError(msg: string, useMsgAsTitle = false) {
   const { log } = out("processAsyncError");
   return (error: unknown) => {

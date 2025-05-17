@@ -53,6 +53,7 @@ const REMOVE_FROM_NOTE = [
   "Minor syntax, contextual, and spelling errors may be related to the use of this software and were not intentional. If corrections are necessary, please contact provider.",
   "<content>",
   "</content>",
+  "<content/>",
   "<root>",
   "</root>",
   "&lt;",
@@ -587,7 +588,7 @@ function getSlimLocation(res: Location): SlimLocation {
   };
 }
 
-function cleanUpNote(note: string): string {
+export function cleanUpNote(note: string): string {
   return note
     .trim()
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")

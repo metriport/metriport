@@ -1,17 +1,14 @@
 import { BadRequestError } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import { out } from "../../../util";
-import { OpenSearchFileSearcherConfig } from "../file-searcher";
-import { IngestRequest } from "../text-ingestor-direct";
+import { OpenSearchConfigDirectAccess, OpenSearchResponse, OpenSearchResponseHit } from "../index";
+import { SearchResult } from "../index-based-on-resource";
 import { createHybridSearchQuery } from "./hybrid-search";
 
 const defaultSimilarityThreshold = 0.2;
 const defaultNumberOfResults = 100;
 
-export type OpenSearchSemanticSearcherDirectConfig = OpenSearchFileSearcherConfig & {
-  endpoint: string;
-  username: string;
-  password: string;
+export type OpenSearchSemanticSearcherConfig = OpenSearchConfigDirectAccess & {
   modelId: string;
 };
 
@@ -26,24 +23,8 @@ export type SearchRequest = {
   similarityThreshold?: number | undefined;
 };
 
-export type SearchResult = Omit<IngestRequest, "content">;
-
-// https://github.com/opensearch-project/opensearch-js/issues/269
-export type OpenSearchResponseHit = {
-  _index: string;
-  _id: string;
-  _score: number;
-  _source: SearchResult;
-};
-// https://github.com/opensearch-project/opensearch-js/issues/269
-export type OpenSearchResponse = {
-  hits: {
-    hits?: OpenSearchResponseHit[];
-  };
-};
-
-export class OpenSearchSemanticSearcherDirect {
-  constructor(readonly config: OpenSearchSemanticSearcherDirectConfig) {}
+export class OpenSearchSemanticSearcher {
+  constructor(readonly config: OpenSearchSemanticSearcherConfig) {}
 
   async search({
     cxId,
@@ -53,7 +34,7 @@ export class OpenSearchSemanticSearcherDirect {
     similarityThreshold = defaultSimilarityThreshold,
   }: SearchRequest): Promise<SearchResult[]> {
     const { indexName, endpoint, username, password, modelId } = this.config;
-    const { log, debug } = out(`OpenSearchSemanticSearcherDirect - cx ${cxId}, pt ${patientId}`);
+    const { log, debug } = out(`${this.constructor.name}.search - cx ${cxId}, pt ${patientId}`);
 
     this.validateMaxNumberOfResults(maxNumberOfResults);
     this.validateSimilarityThreshold(similarityThreshold);
@@ -75,7 +56,7 @@ export class OpenSearchSemanticSearcherDirect {
         index: indexName,
         body: queryPayload,
       })
-    ).body as OpenSearchResponse;
+    ).body as OpenSearchResponse<SearchResult>;
     // TODO eng-41 Remove this
     debug(`Response: `, () => JSON.stringify(response));
 
@@ -112,7 +93,7 @@ export class OpenSearchSemanticSearcherDirect {
     }
   }
 
-  private mapResult(input: OpenSearchResponseHit[]): SearchResult[] {
+  private mapResult(input: OpenSearchResponseHit<SearchResult>[]): SearchResult[] {
     if (!input) return [];
     return input.map(hit => {
       return {

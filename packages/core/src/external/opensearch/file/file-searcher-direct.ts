@@ -1,19 +1,10 @@
 import { Client } from "@opensearch-project/opensearch";
-import { contentFieldName } from ".";
-import { out } from "../../util";
-import {
-  OpenSearchFileSearcher,
-  OpenSearchFileSearcherConfig,
-  OpenSearchResponse,
-  SearchRequest,
-  SearchResult,
-} from "./file-searcher";
+import { contentFieldName, OpenSearchConfigDirectAccess, OpenSearchResponse } from "..";
+import { out } from "../../../util";
+import { OpenSearchFileSearcher, SearchRequest } from "./file-searcher";
+import { SearchResult } from "../index-based-on-file";
 
-export type OpenSearchFileSearcherDirectConfig = OpenSearchFileSearcherConfig & {
-  endpoint: string;
-  username: string;
-  password: string;
-};
+export type OpenSearchFileSearcherDirectConfig = OpenSearchConfigDirectAccess;
 
 export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
   constructor(readonly config: OpenSearchFileSearcherDirectConfig) {}
@@ -57,13 +48,13 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
           },
         }
       )
-    ).body as OpenSearchResponse;
+    ).body as OpenSearchResponse<SearchResult>;
     debug(`Successfully searched, response: `, () => JSON.stringify(response));
 
     return this.mapResult(response);
   }
 
-  private mapResult(input: OpenSearchResponse): SearchResult[] {
+  private mapResult(input: OpenSearchResponse<SearchResult>): SearchResult[] {
     if (!input.hits || !input.hits.hits) return [];
     return input.hits.hits.map(hit => {
       return {
