@@ -1,25 +1,23 @@
 import { Medication } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
-import { FIELD_SEPARATOR } from "../shared/separator";
-import { formatIdentifiers } from "../shared/identifier";
+import { FHIRResourceToString } from "../fhir-resource-to-string";
 import { formatCodeableConcepts } from "../shared/codeable-concept";
-import { formatReferences } from "../shared/reference";
+import { formatIdentifiers } from "../shared/identifier";
 import { formatQuantity } from "../shared/quantity";
+import { formatReferences } from "../shared/reference";
+import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR Medication resource to a string representation
  */
 export class MedicationToString implements FHIRResourceToString<Medication> {
-  toString(medication: Medication): string {
+  toString(medication: Medication): string | undefined {
     const parts: string[] = [];
 
-    // Add identifier
     const identifierStr = formatIdentifiers(medication.identifier);
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add code
     if (medication.code) {
       const codeStr = formatCodeableConcepts([medication.code], "Code");
       if (codeStr) {
@@ -27,12 +25,10 @@ export class MedicationToString implements FHIRResourceToString<Medication> {
       }
     }
 
-    // Add status
     if (medication.status) {
       parts.push(`Status: ${medication.status}`);
     }
 
-    // Add manufacturer
     if (medication.manufacturer) {
       const manufacturerStr = formatReferences([medication.manufacturer], "Manufacturer");
       if (manufacturerStr) {
@@ -40,7 +36,6 @@ export class MedicationToString implements FHIRResourceToString<Medication> {
       }
     }
 
-    // Add form
     if (medication.form) {
       const formStr = formatCodeableConcepts([medication.form], "Form");
       if (formStr) {
@@ -48,7 +43,6 @@ export class MedicationToString implements FHIRResourceToString<Medication> {
       }
     }
 
-    // Add amount
     if (medication.amount) {
       const amountStr = formatQuantity(medication.amount, "Amount");
       if (amountStr) {
@@ -56,7 +50,6 @@ export class MedicationToString implements FHIRResourceToString<Medication> {
       }
     }
 
-    // Add ingredient
     if (medication.ingredient) {
       const ingredients = medication.ingredient
         .map(ingredient => {
@@ -68,7 +61,7 @@ export class MedicationToString implements FHIRResourceToString<Medication> {
           const strength = ingredient.strength
             ? formatQuantity(ingredient.strength, "Strength")
             : "";
-          return [item, strength].filter(Boolean).join(" ");
+          return [item, strength].filter(Boolean).join(FIELD_SEPARATOR);
         })
         .filter(Boolean)
         .join(FIELD_SEPARATOR);
@@ -77,7 +70,6 @@ export class MedicationToString implements FHIRResourceToString<Medication> {
       }
     }
 
-    // Add batch
     if (medication.batch) {
       const batch = medication.batch;
       const batchParts = [];
@@ -88,7 +80,7 @@ export class MedicationToString implements FHIRResourceToString<Medication> {
         batchParts.push(`Expires: ${batch.expirationDate}`);
       }
       if (batchParts.length > 0) {
-        parts.push(`Batch: ${batchParts.join(", ")}`);
+        parts.push(`Batch: ${batchParts.join(FIELD_SEPARATOR)}`);
       }
     }
 

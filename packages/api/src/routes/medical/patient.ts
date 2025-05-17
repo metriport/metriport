@@ -191,6 +191,7 @@ router.get(
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.query The query to search for.
+ * @param req.query.useFhir Whether to use the FHIR index for the search.
  */
 router.get(
   "/consolidated/search",
@@ -200,9 +201,12 @@ router.get(
     const queryParam = getFrom("query").optional("query", req);
     const query = queryParam ? queryParam.trim() : undefined;
 
-    const result = await makeSearchConsolidated().search({ patient, query });
+    // TODO ENG-268 temporary while we don't choose one approach
+    const useFhir = getFromQueryAsBoolean("useFhir", req);
 
-    if (Config.isDev()) {
+    const result = await makeSearchConsolidated().search({ patient, query, useFhir });
+
+    if (Config.isDev() || Config.isStaging()) {
       // TODO ENG-268 remove this - for debugging purposes only
       const returnFhirBundle = getFromQueryAsBoolean("returnFhirBundle", req);
       if (returnFhirBundle && result.url) {

@@ -1,30 +1,29 @@
 import { MedicationDispense } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
-import { FIELD_SEPARATOR } from "../shared/separator";
-import { formatIdentifiers } from "../shared/identifier";
+import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAnnotations } from "../shared/annotation";
 import { formatCodeableConcepts } from "../shared/codeable-concept";
-import { formatReferences } from "../shared/reference";
+import { formatIdentifiers } from "../shared/identifier";
 import { formatQuantity } from "../shared/quantity";
+import { formatReferences } from "../shared/reference";
+import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR MedicationDispense resource to a string representation
  */
 export class MedicationDispenseToString implements FHIRResourceToString<MedicationDispense> {
-  toString(dispense: MedicationDispense): string {
+  toString(dispense: MedicationDispense): string | undefined {
     const parts: string[] = [];
+    let hasMinimumData = defaultHasMinimumData;
 
-    // Add identifier
     const identifierStr = formatIdentifiers(dispense.identifier);
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add status
     if (dispense.status) {
       parts.push(`Status: ${dispense.status}`);
     }
 
-    // Add category
     const categoryStr = formatCodeableConcepts(
       dispense.category ? [dispense.category] : undefined,
       "Category"
@@ -33,7 +32,6 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
       parts.push(categoryStr);
     }
 
-    // Add medication
     if (dispense.medicationCodeableConcept) {
       const medicationStr = formatCodeableConcepts(
         [dispense.medicationCodeableConcept],
@@ -41,6 +39,7 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
       );
       if (medicationStr) {
         parts.push(medicationStr);
+        hasMinimumData = true;
       }
     } else if (dispense.medicationReference) {
       const medicationStr = formatReferences([dispense.medicationReference], "Medication");
@@ -49,15 +48,13 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
       }
     }
 
-    // Add subject
-    if (dispense.subject) {
-      const subjectStr = formatReferences([dispense.subject], "Subject");
-      if (subjectStr) {
-        parts.push(subjectStr);
-      }
-    }
+    // if (dispense.subject) {
+    //   const subjectStr = formatReferences([dispense.subject], "Subject");
+    //   if (subjectStr) {
+    //     parts.push(subjectStr);
+    //   }
+    // }
 
-    // Add context
     if (dispense.context) {
       const contextStr = formatReferences([dispense.context], "Context");
       if (contextStr) {
@@ -65,19 +62,16 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
       }
     }
 
-    // Add supporting information
     const supportingInfoStr = formatReferences(dispense.supportingInformation, "Supporting Info");
     if (supportingInfoStr) {
       parts.push(supportingInfoStr);
     }
 
-    // Add performer
     const performerStr = formatReferences(dispense.performer, "Performer");
     if (performerStr) {
       parts.push(performerStr);
     }
 
-    // Add location
     if (dispense.location) {
       const locationStr = formatReferences([dispense.location], "Location");
       if (locationStr) {
@@ -85,13 +79,11 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
       }
     }
 
-    // Add authorizing prescription
     const prescriptionStr = formatReferences(dispense.authorizingPrescription, "Prescription");
     if (prescriptionStr) {
       parts.push(prescriptionStr);
     }
 
-    // Add type
     if (dispense.type) {
       const typeStr = formatCodeableConcepts([dispense.type], "Type");
       if (typeStr) {
@@ -99,7 +91,6 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
       }
     }
 
-    // Add quantity
     if (dispense.quantity) {
       const quantityStr = formatQuantity(dispense.quantity, "Quantity");
       if (quantityStr) {
@@ -107,25 +98,21 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
       }
     }
 
-    // Add days supply
-    if (dispense.daysSupply) {
-      const daysSupplyStr = formatQuantity(dispense.daysSupply, "Days Supply");
-      if (daysSupplyStr) {
-        parts.push(daysSupplyStr);
-      }
-    }
+    // if (dispense.daysSupply) {
+    //   const daysSupplyStr = formatQuantity(dispense.daysSupply, "Days Supply");
+    //   if (daysSupplyStr) {
+    //     parts.push(daysSupplyStr);
+    //   }
+    // }
 
-    // Add when prepared
     if (dispense.whenPrepared) {
       parts.push(`Prepared: ${dispense.whenPrepared}`);
     }
 
-    // Add when handed over
     if (dispense.whenHandedOver) {
       parts.push(`Handed Over: ${dispense.whenHandedOver}`);
     }
 
-    // Add destination
     if (dispense.destination) {
       const destinationStr = formatReferences([dispense.destination], "Destination");
       if (destinationStr) {
@@ -133,22 +120,18 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
       }
     }
 
-    // Add receiver
     const receiverStr = formatReferences(dispense.receiver, "Receiver");
     if (receiverStr) {
       parts.push(receiverStr);
     }
 
-    // Add note
-    if (dispense.note) {
-      const notes = dispense.note
-        .map(note => note.text)
-        .filter(Boolean)
-        .join(FIELD_SEPARATOR);
-      if (notes) {
-        parts.push(`Note: ${notes}`);
-      }
+    const notes = formatAnnotations(dispense.note, "Note");
+    if (notes) {
+      parts.push(notes);
+      hasMinimumData = true;
     }
+
+    if (!hasMinimumData) return undefined;
 
     return parts.join(FIELD_SEPARATOR);
   }
