@@ -10,16 +10,21 @@ import { out } from "../../util";
 import { Config } from "../../util/config";
 import { JSON_APP_MIME_TYPE } from "../../util/mime";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
-import { getEncounterPeriod } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/utils";
+import {
+  createEncounterId,
+  getEncounterPeriod,
+} from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/utils";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
+  buildAdtLatestFileKey,
   buildHl7MessageConversionFileKey,
-  buildHl7MessageFhirBundleFileKey,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { getAdtSourcedEncounter, putAdtSourcedEncounter } from "./adt-encounters";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
+import { mergeBundles } from "../../external/fhir/shared/utils";
 
 const supportedTypes = ["A01", "A03"];
 const INTERNAL_HL7_ENDPOINT = `notification`;
@@ -31,7 +36,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
   constructor(
     private readonly apiUrl: string,
-    private readonly oldBucketName: string,
     private readonly bucketName: string,
     private readonly s3Utils = new S3Utils(Config.getAWSRegion())
   ) {}
@@ -39,7 +43,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   async execute(params: Hl7Notification): Promise<void> {
     const message = Hl7Message.parse(params.message);
     const { cxId, patientId, sourceTimestamp, messageReceivedTimestamp } = params;
-    const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}`);
+    const encounterId = createEncounterId(message, patientId);
+    const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`);
 
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
     if (!supportedTypes.includes(triggerEvent)) {
@@ -62,7 +67,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       timestampString: sourceTimestamp,
     });
 
-    const bundle = prependPatientToBundle({
+    const newEncounterData = prependPatientToBundle({
       bundle: conversionResult,
       fhirPatient,
     });
@@ -84,26 +89,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       },
     };
 
-    // TODO(lucas|ENG-257|2025-05-15): Remove this once new bucket flow is working correctly
-    // Upload to old bucket
-    const oldBundleFilename = buildHl7MessageFhirBundleFileKey({
-      cxId,
-      patientId,
-      timestamp: sourceTimestamp,
-      messageId: getMessageUniqueIdentifier(message),
-      messageCode,
-      triggerEvent,
-    });
-    await storeInS3WithRetries({
-      ...nonSpecificUploadParams,
-      bucketName: this.oldBucketName,
-      payload: JSON.stringify(bundle),
-      fileName: oldBundleFilename,
-    });
-    log(`Uploaded to S3 bucket: ${this.oldBucketName}. Filepath: ${oldBundleFilename}`);
-
-    // Upload to new bucket
-    const newBundleFilename = buildHl7MessageConversionFileKey({
+    // Turn this into a command -
+    const newMessageBundleFileKey = buildHl7MessageConversionFileKey({
       cxId,
       patientId,
       timestamp: sourceTimestamp,
@@ -115,17 +102,41 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     await storeInS3WithRetries({
       ...nonSpecificUploadParams,
       bucketName: this.bucketName,
-      payload: JSON.stringify(bundle),
-      fileName: newBundleFilename,
+      payload: JSON.stringify(newEncounterData),
+      fileName: newMessageBundleFileKey,
     });
-    log(`Uploaded to S3 bucket: ${this.bucketName}. Filepath: ${newBundleFilename}`);
+    log(`Uploaded to S3 bucket: ${this.bucketName}. Filepath: ${newMessageBundleFileKey}`);
 
-    // TODO(lucas|ENG-257|2025-05-15): Generate latest.hl7.json and use it for presigned url
-    const oldBundlePresignedUrl = await this.s3Utils.getSignedUrl({
-      bucketName: this.oldBucketName,
-      fileName: oldBundleFilename,
-      durationSeconds: SIGNED_URL_DURATION_SECONDS,
+    const existingEncounterData = await getAdtSourcedEncounter({
+      cxId,
+      patientId,
+      encounterId,
     });
+
+    const currentEncounter = !existingEncounterData
+      ? newEncounterData
+      : mergeBundles({
+          cxId,
+          patientId,
+          existing: existingEncounterData,
+          current: newEncounterData,
+        });
+
+    const response = await putAdtSourcedEncounter({
+      cxId,
+      patientId,
+      encounterId,
+      bundle: currentEncounter,
+    });
+
+    const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
+      bucketName: this.bucketName,
+      fileName: buildAdtLatestFileKey({ cxId, patientId, encounterId }),
+      durationSeconds: SIGNED_URL_DURATION_SECONDS,
+      versionId: response.VersionId,
+    });
+
+    console.log(`bundlePresignedUrl: ${bundlePresignedUrl}`);
 
     const encounterPeriod = getEncounterPeriod(message);
     await executeWithNetworkRetries(
@@ -134,7 +145,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           params: {
             cxId,
             triggerEvent,
-            presignedUrl: oldBundlePresignedUrl,
+            presignedUrl: bundlePresignedUrl,
             ...(encounterPeriod?.start ? { admitTimestamp: encounterPeriod.start } : undefined),
             ...(encounterPeriod?.end ? { dischargeTimestamp: encounterPeriod.end } : undefined),
             whenSourceSent: messageReceivedTimestamp,

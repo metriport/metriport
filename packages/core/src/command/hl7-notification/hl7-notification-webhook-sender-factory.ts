@@ -7,7 +7,6 @@ export function buildHl7NotificationWebhookSender(): Hl7NotificationWebhookSende
   if (Config.isDev()) {
     return new Hl7NotificationWebhookSenderDirect(
       Config.getApiLoadBalancerAddress(),
-      Config.getHl7OutgoingMessageBucketName(),
       Config.getHl7ConversionBucketName()
     );
   }

@@ -30,6 +30,10 @@ PV1|1|O|^^^^||||1872009999^CLAUS^SANTA^^^^^^^^^^NPI|||||||2|||||2101206259999|||
 PV2|1|^^L||||||20250502130000||||PRE-ADMISSION TESTING VISIT||||||||||N|Houston Methodist West Hospital|||||||||N
 DG1|1|I10|I65.21^Occlusion and stenosis of right carotid artery^I10|Occlusion and stenosis of right carotid |20250101121500
 DG1|2|I10|Z01.818^Encounter for other preprocedural examination^I10|Encounter for other preprocedural examin
+DG1|2|I10|E11.9^Type 2 diabetes mellitus without complications^I10|Type 2 diabetes mellitus without complications
+DG1|3|I10|I10.9^Essential (primary) hypertension^I10|Essential (primary) hypertension
+DG1|4|I10|E78.5^Dyslipidemia^I10|Dyslipidemia
+DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
 `;
 
 async function sendAdtToMllpServer() {

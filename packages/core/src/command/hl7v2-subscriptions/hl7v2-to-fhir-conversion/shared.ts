@@ -13,6 +13,7 @@ type Hl7FileKeyParams = {
   messageId: string;
   cxId: string;
   patientId: string;
+  encounterId?: string;
   timestamp: string;
   messageCode: string;
   triggerEvent: string;
@@ -165,6 +166,57 @@ export function buildHl7MessageFileKey({
 
 export function formatDateToHl7(date: Date): string {
   return buildDayjs(date).format("YYYYMMDDHHmmss");
+}
+
+export function buildAdtEncounterPrefix({
+  cxId,
+  patientId,
+  encounterId,
+}: {
+  cxId: string;
+  patientId: string;
+  encounterId: string;
+}) {
+  return `cxId=${cxId}/ptId=${patientId}/ADT/${encounterId}`;
+}
+
+export function buildAdtLatestFileKey({
+  cxId,
+  patientId,
+  encounterId,
+}: {
+  cxId: string;
+  patientId: string;
+  encounterId: string;
+}) {
+  return `${buildAdtEncounterPrefix({
+    cxId,
+    patientId,
+    encounterId,
+  })}/latest.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
+}
+
+export function buildAdtEncounterFileKey({
+  cxId,
+  patientId,
+  encounterId,
+  timestamp,
+  messageId,
+  triggerEvent,
+}: {
+  cxId: string;
+  patientId: string;
+  encounterId: string;
+  timestamp: string;
+  messageId: string;
+  messageCode: string;
+  triggerEvent: string;
+}) {
+  return `${buildAdtEncounterPrefix({
+    cxId,
+    patientId,
+    encounterId,
+  })}/${timestamp}_${messageId}_ADT_${triggerEvent}.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
 }
 
 export function buildHl7MessageFhirBundleFileKey(params: Hl7FileKeyParams) {
