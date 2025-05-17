@@ -12,7 +12,7 @@ import {
   patientLoadDetailOrder,
   patientLoadFooterSchema,
   patientLoadFooterOrder,
-} from "./schema/load";
+} from "./schema/plf";
 // import { , patientLoadOrder } from "./schema/verification";
 import { FileFieldSchema } from "./schema/shared";
 import { SurescriptsSftpClient } from "./sftp";

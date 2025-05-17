@@ -139,6 +139,7 @@ export const patientLoadDetailSchema = z.object({
     .optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
+  primaryPhone: z.string().max(10).optional(),
 });
 
 export const patientLoadDetailOrder: FileFieldSchema<PatientLoadDetail> = [
@@ -219,6 +220,10 @@ export const patientLoadDetailOrder: FileFieldSchema<PatientLoadDetail> = [
   {
     field: 18,
     key: "requestedNotifications",
+  },
+  {
+    field: 19,
+    key: "primaryPhone",
   },
 ];
 
