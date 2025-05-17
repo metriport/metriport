@@ -19,7 +19,6 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
         // removes these from the response
         exclude: ["content_embedding", contentFieldName],
       },
-      // size: k,
       query: {
         bool: {
           must: [
@@ -42,7 +41,6 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
       // removes these from the response
       exclude: ["content_embedding", contentFieldName],
     },
-    // size: k,
     query: {
       bool: {
         must: [

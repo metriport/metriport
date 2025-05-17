@@ -60,6 +60,12 @@ const resourceToStringMap: Record<
   ResourceType,
   FHIRResourceToString<ResourceTypeMap[ResourceType]>
 > = {
+  // TODO ENG-268 add remaining resources
+  // TODO ENG-268 add remaining resources
+  // TODO ENG-268 add remaining resources
+  // TODO ENG-268 add remaining resources
+  // TODO ENG-268 add remaining resources
+  // Composition
   AllergyIntolerance: new AllergyIntoleranceToString(),
   Condition: new ConditionToString(),
   DiagnosticReport: new DiagnosticReportToString(),
@@ -93,9 +99,7 @@ export function bundleToString(bundle: Bundle): FhirResourceToText[] {
   return bundle.entry.flatMap(entry => {
     const resource = entry.resource;
     if (!resource || !resource.id || !isSupportedResource(resource)) return [];
-    const converter = resourceToStringMap[resource.resourceType as ResourceType];
-    if (!converter) return [];
-    const text = converter.toString(resource);
+    const text = resourceToString(resource);
     if (!text) return [];
     return {
       id: resource.id,
@@ -108,4 +112,13 @@ export function bundleToString(bundle: Bundle): FhirResourceToText[] {
 function isSupportedResource(resource: Resource): resource is ResourceTypeMap[ResourceType] {
   if (resourceTypesToSkip.includes(resource.resourceType)) return false;
   return resource.resourceType in resourceToStringMap;
+}
+
+export function resourceToString(resource: Resource): string | undefined {
+  if (!isSupportedResource(resource)) return undefined;
+  const converter = resourceToStringMap[resource.resourceType as ResourceType];
+  if (!converter) return undefined;
+  const text = converter.toString(resource);
+  if (!text) return undefined;
+  return text;
 }

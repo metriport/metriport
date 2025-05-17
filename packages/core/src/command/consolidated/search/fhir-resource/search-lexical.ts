@@ -18,12 +18,9 @@ import { searchDocuments } from "../document-reference/search";
 export async function searchLexical({
   patient,
   query,
-  maxNumberOfResults = 10_000,
 }: {
   patient: Patient;
   query: string;
-  /** From 0 to 10_000, optional, defaults to 10_000 */
-  maxNumberOfResults?: number | undefined;
 }): Promise<SearchSetBundle> {
   const { log } = out(`searchLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
@@ -38,7 +35,6 @@ export async function searchLexical({
           cxId: patient.cxId,
           patientId: patient.id,
           query,
-          maxNumberOfResults,
         }),
       "searchOpenSearch",
       log
@@ -55,7 +51,7 @@ export async function searchLexical({
       `resources in ${elapsedTime} ms, filtering consolidated based on search results...`
   );
 
-  const filteredResources =
+  const filteredMutable =
     consolidated.entry?.filter(entry => {
       const resourceId = entry.resource?.id;
       const resourceType = entry.resource?.resourceType;
@@ -67,14 +63,13 @@ export async function searchLexical({
       );
     }) ?? [];
 
-  const sliced = filteredResources.slice(0, maxNumberOfResults - 1);
   const patientEntry = buildBundleEntry(patientToFhir(patient));
-  sliced.push(patientEntry);
+  filteredMutable.push(patientEntry);
 
-  const filteredBundle = buildSearchSetBundle({ entries: sliced });
+  const filteredBundle = buildSearchSetBundle({ entries: filteredMutable });
   const hydrated = addMissingReferences(filteredBundle, consolidated);
 
-  log(`Done, returning ${hydrated.entry?.length} filtered resources...`);
+  log(`Done, returning ${hydrated.entry?.length} resources...`);
 
   return hydrated as SearchSetBundle;
 }
@@ -100,14 +95,12 @@ async function searchOpenSearch({
   query,
   cxId,
   patientId,
-  maxNumberOfResults,
 }: {
   query: string;
   cxId: string;
   patientId: string;
-  maxNumberOfResults?: number | undefined;
 }) {
-  // TODO eng-41 make this a factory so we can delegate the processing to a lambda
+  // TODO eng-268 make this a factory so we can delegate the processing to a lambda
   const searchService = new OpenSearchLexicalSearcher({
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
@@ -119,7 +112,6 @@ async function searchOpenSearch({
     query,
     cxId,
     patientId,
-    maxNumberOfResults,
   });
 }
 
