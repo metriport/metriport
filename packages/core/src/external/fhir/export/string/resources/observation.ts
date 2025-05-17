@@ -1,10 +1,10 @@
-import { Observation } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
-import { FIELD_SEPARATOR } from "../shared/separator";
+import { Observation, ObservationReferenceRange } from "@medplum/fhirtypes";
+import { FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatQuantity } from "../shared/quantity";
 import { formatReferences } from "../shared/reference";
+import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR Observation resource to a string representation
@@ -13,55 +13,56 @@ export class ObservationToString implements FHIRResourceToString<Observation> {
   toString(observation: Observation): string {
     const parts: string[] = [];
 
-    // Add identifier
     const identifierStr = formatIdentifiers(observation.identifier);
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add status
-    if (observation.status) {
-      parts.push(`Status: ${observation.status}`);
-    }
+    if (observation.status) parts.push(`Status: ${observation.status}`);
 
-    // Add category
     const categoryStr = formatCodeableConcepts(observation.category, "Category");
     if (categoryStr) {
       parts.push(categoryStr);
     }
 
-    // Add code
-    if (observation.code) {
-      const codeStr = formatCodeableConcepts([observation.code], "Code");
-      if (codeStr) {
-        parts.push(codeStr);
-      }
+    const codeStr = formatCodeableConcept(observation.code, "Code");
+    if (codeStr) {
+      parts.push(codeStr);
     }
 
-    // Add value
-    if (observation.valueQuantity) {
-      const valueStr = formatQuantity(observation.valueQuantity, "Value");
-      if (valueStr) {
-        parts.push(valueStr);
-      }
-    } else if (observation.valueCodeableConcept) {
-      const valueStr = formatCodeableConcepts([observation.valueCodeableConcept], "Value");
-      if (valueStr) {
-        parts.push(valueStr);
-      }
+    const valueStr = formatQuantity(observation.valueQuantity, "Value");
+    if (valueStr) {
+      parts.push(valueStr);
     }
 
-    // Add effective time
-    if (observation.effectiveDateTime) {
-      parts.push(`Effective: ${observation.effectiveDateTime}`);
+    const referenceRangeStr = observation.referenceRange
+      ?.map((rr: ObservationReferenceRange) => {
+        const lowStr = formatQuantity(rr.low, "Low");
+        const highStr = formatQuantity(rr.high, "High");
+        return [lowStr, highStr].filter(Boolean).join(FIELD_SEPARATOR);
+      })
+      .join(FIELD_SEPARATOR);
+    if (referenceRangeStr) {
+      parts.push(`Reference Range: ${referenceRangeStr}`);
     }
 
-    // Add issued
-    if (observation.issued) {
-      parts.push(`Issued: ${observation.issued}`);
+    const valueCodeableConceptStr = formatCodeableConcept(
+      observation.valueCodeableConcept,
+      "Value"
+    );
+    if (valueCodeableConceptStr) {
+      parts.push(valueCodeableConceptStr);
     }
 
-    // Add performer
+    const interpretationStr = formatCodeableConcepts(observation.interpretation, "Interpretation");
+    if (interpretationStr) {
+      parts.push(interpretationStr);
+    }
+
+    if (observation.effectiveDateTime) parts.push(`Effective: ${observation.effectiveDateTime}`);
+
+    if (observation.issued) parts.push(`Issued: ${observation.issued}`);
+
     const performerStr = formatReferences(observation.performer, "Performer");
     if (performerStr) {
       parts.push(performerStr);

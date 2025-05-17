@@ -1,187 +1,192 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
-import { FIELD_SEPARATOR } from "../shared/separator";
-import { formatIdentifiers } from "../shared/identifier";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
-import { formatReferences } from "../shared/reference";
+import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAnnotations } from "../shared/annotation";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatDosages } from "../shared/dosage";
+import { formatDuration } from "../shared/duration";
+import { formatIdentifier, formatIdentifiers } from "../shared/identifier";
+import { formatNarrative } from "../shared/narrative";
 import { formatPeriod } from "../shared/period";
 import { formatQuantity } from "../shared/quantity";
+import { formatReference, formatReferences } from "../shared/reference";
+import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR MedicationRequest resource to a string representation
  */
 export class MedicationRequestToString implements FHIRResourceToString<MedicationRequest> {
-  toString(request: MedicationRequest): string {
+  toString(request: MedicationRequest): string | undefined {
+    let hasMinimumData = defaultHasMinimumData;
     const parts: string[] = [];
 
-    // Add identifier
     const identifierStr = formatIdentifiers(request.identifier);
-    if (identifierStr) {
-      parts.push(identifierStr);
+    if (identifierStr) parts.push(identifierStr);
+
+    if (request.status) parts.push(`Status: ${request.status}`);
+
+    if (request.statusReason) {
+      const reasonStr = formatCodeableConcepts([request.statusReason], "Status Reason");
+      if (reasonStr) parts.push(reasonStr);
     }
 
-    // Add status
-    if (request.status) {
-      parts.push(`Status: ${request.status}`);
-    }
+    if (request.intent) parts.push(`Intent: ${request.intent}`);
 
-    // Add intent
-    if (request.intent) {
-      parts.push(`Intent: ${request.intent}`);
-    }
-
-    // Add category
     const categoryStr = formatCodeableConcepts(request.category, "Category");
     if (categoryStr) {
       parts.push(categoryStr);
+      hasMinimumData = true;
     }
 
-    // Add priority
-    if (request.priority) {
-      parts.push(`Priority: ${request.priority}`);
+    if (request.priority) parts.push(`Priority: ${request.priority}`);
+
+    if (request.doNotPerform) parts.push(`Do Not Perform`);
+
+    if (request.reportedBoolean) parts.push(`Reported`);
+
+    const reportedStr = formatReference(request.reportedReference, "Reported By");
+    if (reportedStr) parts.push(reportedStr);
+
+    const medicationStr = formatCodeableConcept(request.medicationCodeableConcept, "Medication");
+    if (medicationStr) {
+      parts.push(medicationStr);
+      hasMinimumData = true;
     }
 
-    // Add medication
-    if (request.medicationCodeableConcept) {
-      const medicationStr = formatCodeableConcepts(
-        [request.medicationCodeableConcept],
-        "Medication"
-      );
-      if (medicationStr) {
-        parts.push(medicationStr);
-      }
-    } else if (request.medicationReference) {
-      const medicationStr = formatReferences([request.medicationReference], "Medication");
-      if (medicationStr) {
-        parts.push(medicationStr);
-      }
-    }
+    const medicationRefStr = formatReference(request.medicationReference, "Medication");
+    if (medicationRefStr) parts.push(medicationRefStr);
 
-    // Add subject
-    if (request.subject) {
-      const subjectStr = formatReferences([request.subject], "Subject");
-      if (subjectStr) {
-        parts.push(subjectStr);
-      }
-    }
+    // const subjectStr = formatReference(request.subject, "Subject");
+    // if (subjectStr) parts.push(subjectStr);
 
-    // Add encounter
-    if (request.encounter) {
-      const encounterStr = formatReferences([request.encounter], "Encounter");
-      if (encounterStr) {
-        parts.push(encounterStr);
-      }
-    }
+    const encounterStr = formatReference(request.encounter, "Encounter");
+    if (encounterStr) parts.push(encounterStr);
 
-    // Add authored on
-    if (request.authoredOn) {
-      parts.push(`Authored: ${request.authoredOn}`);
-    }
+    const infoStr = formatReferences(request.supportingInformation, "Supporting Information");
+    if (infoStr) parts.push(infoStr);
 
-    // Add requester
-    if (request.requester) {
-      const requesterStr = formatReferences([request.requester], "Requester");
-      if (requesterStr) {
-        parts.push(requesterStr);
-      }
-    }
+    if (request.authoredOn) parts.push(`Authored On: ${request.authoredOn}`);
 
-    // Add reason
+    const requesterStr = formatReference(request.requester, "Requester");
+    if (requesterStr) parts.push(requesterStr);
+
+    const performerStr = formatReference(request.performer, "Performer");
+    if (performerStr) parts.push(performerStr);
+
+    const typeStr = formatCodeableConcept(request.performerType, "Performer Type");
+    if (typeStr) parts.push(typeStr);
+
+    const recorderStr = formatReference(request.recorder, "Recorder");
+    if (recorderStr) parts.push(recorderStr);
+
     const reasonStr = formatCodeableConcepts(request.reasonCode, "Reason");
-    if (reasonStr) {
-      parts.push(reasonStr);
+    if (reasonStr) parts.push(reasonStr);
+
+    const reasonRefStr = formatReferences(request.reasonReference, "Reason Reference");
+    if (reasonRefStr) parts.push(reasonRefStr);
+
+    if (request.instantiatesCanonical) {
+      parts.push(`Instantiates Canonical: ${request.instantiatesCanonical.join(FIELD_SEPARATOR)}`);
     }
 
-    // Add course of therapy
-    if (request.courseOfTherapyType) {
-      const courseStr = formatCodeableConcepts([request.courseOfTherapyType], "Course");
-      if (courseStr) {
-        parts.push(courseStr);
-      }
+    if (request.instantiatesUri) {
+      parts.push(`Instantiates URI: ${request.instantiatesUri.join(FIELD_SEPARATOR)}`);
     }
 
-    // Add dosage instruction
+    const basedOnStr = formatReferences(request.basedOn, "Based On");
+    if (basedOnStr) parts.push(basedOnStr);
+
+    const groupStr = formatIdentifier(request.groupIdentifier);
+    if (groupStr) parts.push(`Group Identifier: ${groupStr}`);
+
+    const courseStr = formatCodeableConcept(request.courseOfTherapyType, "Course of Therapy");
+    if (courseStr) parts.push(courseStr);
+
+    const insuranceStr = formatReferences(request.insurance, "Insurance");
+    if (insuranceStr) parts.push(insuranceStr);
+
+    const notes = formatAnnotations(request.note, "Notes");
+    if (notes) parts.push(notes);
+
     if (request.dosageInstruction) {
-      const dosages = request.dosageInstruction
-        .map(dosage => {
-          const parts = [];
-          if (dosage.text) {
-            parts.push(dosage.text);
-          }
-          if (dosage.timing?.code?.coding?.[0]) {
-            const timing = dosage.timing.code.coding[0];
-            parts.push(`Timing: ${timing.display ?? timing.code ?? ""}`);
-          }
-          if (dosage.route) {
-            const routeStr = formatCodeableConcepts([dosage.route], "Route");
-            if (routeStr) {
-              parts.push(routeStr);
-            }
-          }
-          if (dosage.doseAndRate?.[0]) {
-            const dose = dosage.doseAndRate[0];
-            if (dose.doseRange) {
-              const low = dose.doseRange.low?.value ?? "";
-              const high = dose.doseRange.high?.value ?? "";
-              const unit = dose.doseRange.high?.unit ?? "";
-              parts.push(`Dose Range: ${low} - ${high} ${unit}`);
-            } else if (dose.doseQuantity) {
-              const doseStr = formatQuantity(dose.doseQuantity, "Dose");
-              if (doseStr) {
-                parts.push(doseStr);
-              }
-            }
-          }
-          return parts.filter(Boolean).join(", ");
-        })
-        .filter(Boolean)
-        .join(FIELD_SEPARATOR);
-      if (dosages) {
-        parts.push(`Dosage: ${dosages}`);
-      }
+      const dosages = formatDosages(request.dosageInstruction, "Dosage Instructions");
+      if (dosages) parts.push(dosages);
     }
 
-    // Add dispense request
     if (request.dispenseRequest) {
       const dispense = request.dispenseRequest;
-      const dispenseParts = [];
-      if (dispense.validityPeriod) {
-        const validityStr = formatPeriod(dispense.validityPeriod, "Valid");
-        if (validityStr) {
-          dispenseParts.push(validityStr);
+      const dispenseParts: string[] = [];
+
+      if (dispense.initialFill) {
+        const initialFillParts = [];
+        const quantityStr = formatQuantity(dispense.initialFill.quantity, "Quantity");
+        if (quantityStr) initialFillParts.push(quantityStr);
+
+        const durationStr = formatDuration(dispense.initialFill.duration);
+        if (durationStr) initialFillParts.push(`Duration: ${durationStr}`);
+
+        if (initialFillParts.length > 0) {
+          dispenseParts.push(`Initial Fill: ${initialFillParts.join(FIELD_SEPARATOR)}`);
         }
       }
-      if (dispense.numberOfRepeatsAllowed) {
-        dispenseParts.push(`Repeats: ${dispense.numberOfRepeatsAllowed}`);
+
+      const intervalStr = formatDuration(dispense.dispenseInterval, "Dispense Interval");
+      if (intervalStr) dispenseParts.push(intervalStr);
+
+      const periodStr = formatPeriod(dispense.validityPeriod, "Validity Period");
+      if (periodStr) dispenseParts.push(periodStr);
+
+      if (dispense.numberOfRepeatsAllowed !== undefined) {
+        dispenseParts.push(`Repeats Allowed: ${dispense.numberOfRepeatsAllowed}`);
       }
-      if (dispense.quantity) {
-        const quantityStr = formatQuantity(dispense.quantity, "Quantity");
-        if (quantityStr) {
-          dispenseParts.push(quantityStr);
-        }
-      }
+
+      const quantityStr = formatQuantity(dispense.quantity, "Quantity");
+      if (quantityStr) dispenseParts.push(quantityStr);
+
+      const durationStr = formatDuration(
+        dispense.expectedSupplyDuration,
+        "Expected Supply Duration"
+      );
+      if (durationStr) dispenseParts.push(durationStr);
+
+      const performerStr = formatReference(dispense.performer, "Dispense Performer");
+      if (performerStr) dispenseParts.push(performerStr);
+
       if (dispenseParts.length > 0) {
-        parts.push(`Dispense: ${dispenseParts.join(", ")}`);
+        parts.push(`Dispense Request: ${dispenseParts.join(FIELD_SEPARATOR)}`);
+        hasMinimumData = true;
       }
     }
 
-    // Add substitution
     if (request.substitution) {
       const substitution = request.substitution;
       const substitutionParts = [];
-      if (substitution.allowedBoolean !== undefined) {
-        substitutionParts.push(`Allowed: ${substitution.allowedBoolean}`);
-      }
-      if (substitution.reason) {
-        const reasonStr = formatCodeableConcepts([substitution.reason], "Reason");
-        if (reasonStr) {
-          substitutionParts.push(reasonStr);
-        }
-      }
+
+      if (substitution.allowedBoolean) substitutionParts.push(`Substitution Allowed`);
+
+      const allowedStr = formatCodeableConcept(substitution.allowedCodeableConcept, "Allowed");
+      if (allowedStr) substitutionParts.push(allowedStr);
+
+      const reasonStr = formatCodeableConcept(substitution.reason, "Reason");
+      if (reasonStr) substitutionParts.push(reasonStr);
+
       if (substitutionParts.length > 0) {
-        parts.push(`Substitution: ${substitutionParts.join(", ")}`);
+        parts.push(`Substitution: ${substitutionParts.join(FIELD_SEPARATOR)}`);
       }
     }
+
+    const priorStr = formatReference(request.priorPrescription, "Prior Prescription");
+    if (priorStr) parts.push(priorStr);
+
+    const issuesStr = formatReferences(request.detectedIssue, "Detected Issues");
+    if (issuesStr) parts.push(issuesStr);
+
+    const historyStr = formatReferences(request.eventHistory, "Event History");
+    if (historyStr) parts.push(historyStr);
+
+    const textStr = formatNarrative(request.text, "Text");
+    if (textStr) parts.push(textStr);
+
+    if (!hasMinimumData) return undefined;
 
     return parts.join(FIELD_SEPARATOR);
   }

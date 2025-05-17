@@ -1,32 +1,29 @@
 import { Organization } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
-import { FIELD_SEPARATOR } from "../shared/separator";
+import { FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAddresses } from "../shared/address";
 import { formatIdentifiers } from "../shared/identifier";
+import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR Organization resource to a string representation
  */
 export class OrganizationToString implements FHIRResourceToString<Organization> {
-  toString(organization: Organization): string {
+  toString(organization: Organization): string | undefined {
     const parts: string[] = [];
 
-    // Add identifier
     const identifierStr = formatIdentifiers(organization.identifier);
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add name
     if (organization.name) {
       parts.push(`Name: ${organization.name}`);
     }
 
-    // Add alias
     if (organization.alias) {
       parts.push(`Alias: ${organization.alias.join(FIELD_SEPARATOR)}`);
     }
 
-    // Add telecom
     if (organization.telecom) {
       const telecoms = organization.telecom
         .map(t => `${t.system ?? "unknown"}: ${t.value}`)
@@ -34,24 +31,11 @@ export class OrganizationToString implements FHIRResourceToString<Organization> 
       parts.push(`Contact: ${telecoms}`);
     }
 
-    // Add address
     if (organization.address) {
-      const addresses = organization.address
-        .map(addr => {
-          const components = [
-            addr.line?.join(", "),
-            addr.city,
-            addr.state,
-            addr.postalCode,
-            addr.country,
-          ].filter(Boolean);
-          return components.join(", ");
-        })
-        .join(FIELD_SEPARATOR);
-      parts.push(`Address: ${addresses}`);
+      const addresses = formatAddresses(organization.address, "Address");
+      if (addresses) parts.push(addresses);
     }
 
-    // Add type
     if (organization.type) {
       const types = organization.type
         .map(t => t.coding?.map(c => c.display ?? c.code).join(FIELD_SEPARATOR) ?? "")

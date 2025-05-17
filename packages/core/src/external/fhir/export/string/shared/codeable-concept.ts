@@ -1,5 +1,7 @@
 import { CodeableConcept } from "@medplum/fhirtypes";
-import { checkDeny, isAllowedSystem } from "./deny";
+import { codeAndDisplayToString } from "./code-display";
+import { formatCoding, getCode } from "./coding";
+import { emptyIfDenied, isAllowedSystem } from "./deny";
 import { FIELD_SEPARATOR } from "./separator";
 
 const SEP_BETWEEN_CODING = "/";
@@ -10,10 +12,13 @@ const SEP_BETWEEN_TEXT_AND_CODING = ":";
  * @param concept - FHIR codeable concept to format
  * @returns Formatted string of codeable concept
  */
-export function formatCodeableConcept(concept: CodeableConcept | undefined): string | undefined {
+export function formatCodeableConcept(
+  concept: CodeableConcept | undefined,
+  label?: string
+): string | undefined {
   if (!concept) return undefined;
 
-  const textPre = checkDeny(concept.text);
+  const textPre = emptyIfDenied(concept.text);
   const text = textPre ? textPre.trim() : undefined;
 
   const emptyCode = "<!empty!>";
@@ -21,23 +26,19 @@ export function formatCodeableConcept(concept: CodeableConcept | undefined): str
     concept.coding?.reduce((acc, cur) => {
       const system = isAllowedSystem(cur.system);
       if (!system) return acc;
-      const codePre = checkDeny(cur.code);
-      const code = codePre ? codePre.trim() : undefined;
-      const displayPre = checkDeny(cur.display);
-      const display = displayPre ? displayPre.trim() : undefined;
+      const code = getCode(cur);
+      const codeAndDisplay = formatCoding(cur);
       if (code) {
         if (acc[code]) return acc;
-        acc[code] = codeAndDisplayToString(code, display);
-        return acc;
+        if (codeAndDisplay) {
+          acc[code] = codeAndDisplay;
+          return acc;
+        }
       }
-      const altCode = "";
-      const codeAndDisplay = codeAndDisplayToString(altCode, cur.display);
-      if (!codeAndDisplay) return acc;
-      if (acc[emptyCode]) {
-        acc[emptyCode] = acc[emptyCode] + "; " + codeAndDisplay;
-      } else {
-        acc[emptyCode] = codeAndDisplay;
-      }
+      const altCodeAndDisplay = codeAndDisplayToString(undefined, cur.display);
+      if (!altCodeAndDisplay) return acc;
+      if (acc[emptyCode]) acc[emptyCode] = acc[emptyCode] + "; " + altCodeAndDisplay;
+      else acc[emptyCode] = altCodeAndDisplay;
       return acc;
     }, {} as Record<string, string>) ?? {};
 
@@ -51,11 +52,9 @@ export function formatCodeableConcept(concept: CodeableConcept | undefined): str
 
   if (!codingStr && !text) return undefined;
   if (!codingStr && text) return text;
-  return `${text ?? ""}${text ? `${SEP_BETWEEN_TEXT_AND_CODING} ` : ""}${codingStr}`;
-}
-
-function codeAndDisplayToString(code: string, display: string | undefined): string {
-  return code + (display ? `${code ? " " : ""}(${display})` : "");
+  const labelStr = label ? `${label}: ` : "";
+  const textStr = text && !codingStr.includes(text) ? `${text}${SEP_BETWEEN_TEXT_AND_CODING} ` : "";
+  return `${labelStr}${textStr}${codingStr}`;
 }
 
 /**
@@ -70,8 +69,8 @@ export function formatCodeableConcepts(
 ): string | undefined {
   if (!concepts?.length) return undefined;
 
-  const formattedConcepts = concepts.map(formatCodeableConcept).filter(Boolean);
-  if (!formattedConcepts.length) return undefined;
+  const formattedConcepts = concepts.map(c => formatCodeableConcept(c)).filter(Boolean);
+  if (formattedConcepts.length < 1) return undefined;
 
   const converted = formattedConcepts.join(FIELD_SEPARATOR);
   return `${label}: ${converted}`;

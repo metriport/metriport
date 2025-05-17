@@ -1,69 +1,34 @@
-import { Practitioner, HumanName } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
-import { FIELD_SEPARATOR } from "../shared/separator";
+import { Practitioner } from "@medplum/fhirtypes";
+import { FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAddresses } from "../shared/address";
+import { formatHumanNames } from "../shared/human-name";
 import { formatIdentifiers } from "../shared/identifier";
+import { FIELD_SEPARATOR } from "../shared/separator";
+import { formatTelecoms } from "../shared/telecom";
 
 /**
  * Converts a FHIR Practitioner resource to a string representation
  */
 export class PractitionerToString implements FHIRResourceToString<Practitioner> {
-  toString(practitioner: Practitioner): string {
+  toString(practitioner: Practitioner): string | undefined {
     const parts: string[] = [];
 
-    // Add identifier
     const identifierStr = formatIdentifiers(practitioner.identifier);
-    if (identifierStr) {
-      parts.push(identifierStr);
-    }
+    if (identifierStr) parts.push(identifierStr);
 
-    // Add name
-    if (practitioner.name) {
-      const names = practitioner.name
-        .map((name: HumanName) => {
-          const given = name.given?.join(" ") ?? "";
-          const family = name.family ?? "";
-          return `${given} ${family}`.trim();
-        })
-        .join(FIELD_SEPARATOR);
-      parts.push(`Name: ${names}`);
-    }
+    const names = formatHumanNames(practitioner.name);
+    if (names) parts.push(names);
 
-    // Add telecom
-    if (practitioner.telecom) {
-      const telecoms = practitioner.telecom
-        .map(t => `${t.system ?? "unknown"}: ${t.value}`)
-        .join(FIELD_SEPARATOR);
-      parts.push(`Contact: ${telecoms}`);
-    }
+    const telecoms = formatTelecoms(practitioner.telecom, "Contact");
+    if (telecoms) parts.push(telecoms);
 
-    // Add address
-    if (practitioner.address) {
-      const addresses = practitioner.address
-        .map(addr => {
-          const components = [
-            addr.line?.join(", "),
-            addr.city,
-            addr.state,
-            addr.postalCode,
-            addr.country,
-          ].filter(Boolean);
-          return components.join(", ");
-        })
-        .join(FIELD_SEPARATOR);
-      parts.push(`Address: ${addresses}`);
-    }
+    const addresses = formatAddresses(practitioner.address, "Address");
+    if (addresses) parts.push(addresses);
 
-    // Add gender
-    if (practitioner.gender) {
-      parts.push(`Gender: ${practitioner.gender}`);
-    }
+    if (practitioner.gender) parts.push(`Gender: ${practitioner.gender}`);
 
-    // Add birth date
-    if (practitioner.birthDate) {
-      parts.push(`DOB: ${practitioner.birthDate}`);
-    }
+    if (practitioner.birthDate) parts.push(`DOB: ${practitioner.birthDate}`);
 
-    // Add qualification
     if (practitioner.qualification) {
       const qualifications = practitioner.qualification
         .map(q => {

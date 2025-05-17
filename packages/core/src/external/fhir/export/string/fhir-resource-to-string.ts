@@ -1,5 +1,7 @@
 import { Resource } from "@medplum/fhirtypes";
 
+export const defaultHasMinimumData = false;
+
 /**
  * Interface for converting FHIR resources to string representation
  */

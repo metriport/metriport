@@ -46,13 +46,13 @@ describe("codeable-concept", () => {
       expect(formatted).toEqual(`${code} (${display})`);
     });
 
-    it("return undefined when no valid system is present", () => {
+    it("accepts any system", () => {
       const [code, display] = makeCodeAndDisplay();
       const concept: CodeableConcept = {
         coding: [{ system: faker.lorem.word(), code, display }],
       };
       const formatted = formatCodeableConcept(concept);
-      expect(formatted).toBeUndefined();
+      expect(formatted).toEqual(`${code} (${display})`);
     });
 
     it("returns concatenated code and display when multiple codes and displays present", () => {

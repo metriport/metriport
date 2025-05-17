@@ -6,10 +6,10 @@ import { Period } from "@medplum/fhirtypes";
  * @param label - Label to prefix the formatted string with
  * @returns Formatted string of period
  */
-export function formatPeriod(period: Period | undefined, label: string): string {
-  if (!period) return "";
-
+export function formatPeriod(period: Period | undefined, label?: string): string | undefined {
+  if (!period) return undefined;
+  if (!period.start && !period.end) return undefined;
   const start = period.start ?? "unknown";
   const end = period.end ?? "ongoing";
-  return `${label}: ${start} to ${end}`;
+  return label ? `${label}: ${start} to ${end}` : `${start} to ${end}`;
 }
