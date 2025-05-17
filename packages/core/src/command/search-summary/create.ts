@@ -7,7 +7,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
 import { createPromptWithJsonOutput } from "./prompts";
-import { prepareBundleForAiSummarization } from "./filter";
+import { prepareBundleForAiSummarization } from "../ai-brief/filter";
 
 const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
 const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;

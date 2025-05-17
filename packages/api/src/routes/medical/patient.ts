@@ -3,6 +3,7 @@ import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
+import { generateSearchSummary } from "@metriport/core/command/search-summary/create";
 import { searchSemantic } from "@metriport/core/external/opensearch/semantic/search";
 import { Config } from "@metriport/core/util/config";
 import { getRequestId } from "@metriport/core/util/request";
@@ -216,6 +217,33 @@ router.get(
       : await getConsolidatedPatientData({ patient });
 
     return res.status(status.OK).json(result);
+  })
+);
+
+const searchSummarySchema = z.object({
+  question: z.string().min(3),
+});
+
+/**
+ * POST /patient/:id/search-summary
+ *
+ * Generates a search summary for a given question and FHIR bundle.
+ *
+ * @param req.query.question The question to generate a search summary for.
+ * @param req.body The FHIR bundle to generate a search summary for.
+ * @return The search summary.
+ */
+
+router.post(
+  "/search-summary",
+  requestLogger,
+  // TODO ENG-278 ADD RATE LIMITING
+  asyncHandler(async (req: Request, res: Response) => {
+    const { question } = searchSummarySchema.parse(req.query);
+    const bundle = bundleSchema.parse(req.body);
+
+    const summary = await generateSearchSummary(question, bundle);
+    return res.status(status.OK).json(summary);
   })
 );
 
