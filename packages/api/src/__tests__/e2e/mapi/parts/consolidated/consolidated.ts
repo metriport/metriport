@@ -8,7 +8,7 @@ import {
   Practitioner,
 } from "@medplum/fhirtypes";
 import {
-  buildConsolidatedBundle,
+  buildCollectionBundle,
   conversionBundleSuffix,
 } from "@metriport/core/command/consolidated/consolidated-create";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
@@ -226,7 +226,7 @@ async function storeConversionOnS3(
     e => !isDocumentReference(e.resource)
   );
   if (!consolidatedToStoreOnS3) return;
-  const bundle = buildConsolidatedBundle(consolidatedToStoreOnS3);
+  const bundle = buildCollectionBundle(consolidatedToStoreOnS3);
   await s3Utils.uploadFile({
     bucket: s3BucketName,
     key,
