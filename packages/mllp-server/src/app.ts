@@ -13,6 +13,7 @@ import {
   buildHl7MessageFileKey,
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
@@ -20,7 +21,6 @@ import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { initSentry } from "./sentry";
 import { withErrorHandling } from "./utils";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 
 initSentry();
 
