@@ -1,11 +1,10 @@
-import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles";
-import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/bundle/refresh-ehr-bundles/ehr-refresh-ehr-bundles-local";
+import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles";
+import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-local";
 import { MetriportError } from "@metriport/shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
-import { z } from "zod";
 import { capture } from "./shared/capture";
+import { ehrCreateResourceDiffBundlesSchema } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -18,6 +17,8 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
+const maxAttemptsRaw = getEnvOrFail("MAX_ATTEMPTS");
+const maxAttempts = parseInt(maxAttemptsRaw);
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
@@ -29,25 +30,22 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
   console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const { ehr, cxId, practiceId, patientId } = parsedBody;
+  const { metriportPatientId, ehrPatientId, jobId } = parsedBody;
 
   const log = prefixedLog(
-    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`
+    `metriportPatientId ${metriportPatientId}, ehrPatientId ${ehrPatientId}, jobId ${jobId}`
   );
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
+  const receiveCount = parseInt(message.attributes.ApproximateReceiveCount);
+  const reportError = receiveCount >= maxAttempts;
+  log(`Receive count: ${receiveCount}, max attempts: ${maxAttempts}, reportError: ${reportError}`);
+
   const ehrRefreshEhrBundlesHandler = new EhrRefreshEhrBundlesLocal(waitTimeInMillis);
-  await ehrRefreshEhrBundlesHandler.refreshEhrBundles(parsedBody);
+  await ehrRefreshEhrBundlesHandler.refreshEhrBundles({ ...parsedBody, reportError });
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
-});
-
-const ehrRefreshEhrBundlesSchema = z.object({
-  ehr: z.nativeEnum(EhrSources),
-  cxId: z.string(),
-  practiceId: z.string(),
-  patientId: z.string(),
 });
 
 function parseBody(body?: unknown): RefreshEhrBundlesRequest {
@@ -58,5 +56,5 @@ function parseBody(body?: unknown): RefreshEhrBundlesRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return ehrRefreshEhrBundlesSchema.parse(bodyAsJson);
+  return ehrCreateResourceDiffBundlesSchema.parse(bodyAsJson);
 }

@@ -23,7 +23,7 @@ import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
-import { FetchBundleParams, fetchBundle } from "./bundle/commands/fetch-bundle";
+import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
 
 dayjs.extend(duration);
 

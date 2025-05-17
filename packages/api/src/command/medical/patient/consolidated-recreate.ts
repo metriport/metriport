@@ -5,9 +5,8 @@ import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/cons
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
-import { createResourceDiffBundles } from "../../../external/ehr/create-resource-diff-bundles";
-import { getConsolidated } from "./consolidated-get";
+import { startCreateResourceDiffBundlesJobsAcrossEhrs } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-jobs-across-ehrs";
+import { getConsolidated } from "../patient/consolidated-get";
 
 /**
  * Recreates the consolidated bundle for a patient.
@@ -54,12 +53,11 @@ export async function recreateConsolidated({
       await connector.execute(payload);
     }
     if (isDq) {
-      createResourceDiffBundles({
+      startCreateResourceDiffBundlesJobsAcrossEhrs({
         cxId: patient.cxId,
         patientId: patient.id,
-        direction: ResourceDiffDirection.METRIPORT_ONLY,
         requestId,
-      }).catch(processAsyncError("Post-DQ createResourceDiffBundles"));
+      }).catch(processAsyncError("Post-DQ startCreateResourceDiffBundlesJobsAcrossEhrs"));
     }
   } catch (err) {
     processAsyncError(`Post-DQ getConsolidated`, log)(err);

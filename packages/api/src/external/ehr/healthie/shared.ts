@@ -24,7 +24,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
 import { Config } from "../../../shared/config";
-import { EhrEnvAndApiKey, EhrPerPracticeParams } from "../shared";
+import { EhrEnvAndApiKey, EhrPerPracticeParams } from "../shared/utils/client";
 
 export const healthieWebhookCreatedDateDiffSeconds = dayjs.duration(5, "seconds");
 

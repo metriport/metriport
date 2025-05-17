@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   EhrCxMappingSecondaryMappings,
   ehrCxMappingSecondaryMappingsSchemaMap,
-} from "../external/ehr/shared";
+} from "../external/ehr/shared/utils/mappings";
 
 const cxMappingSource = [...ehrSources] as const;
 export type CxMappingSource = (typeof cxMappingSource)[number];

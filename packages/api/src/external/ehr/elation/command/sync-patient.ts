@@ -22,7 +22,7 @@ import {
   PatientWithIdentifiers,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
-import { handleMetriportSync, HandleMetriportSyncParams } from "../../patient";
+import { handleMetriportSync, HandleMetriportSyncParams } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
 
 dayjs.extend(duration);

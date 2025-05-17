@@ -427,8 +427,6 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       healthieLinkPatientQueue,
       healthieLinkPatientLambda,
-      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
-      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
       computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
       refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
       refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
@@ -555,7 +553,6 @@ export class APIStack extends Stack {
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
-      ehrStartResourceDiffBundlesQueue,
       ehrRefreshEhrBundlesQueue,
       ehrBundleBucket,
       generalBucket,
@@ -659,7 +656,6 @@ export class APIStack extends Stack {
       ehrSyncPatientLambda,
       elationLinkPatientLambda,
       healthieLinkPatientLambda,
-      ehrStartResourceDiffBundlesLambda,
       ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
       fhirConverterLambda,
@@ -676,7 +672,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
+    medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,

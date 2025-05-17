@@ -6,7 +6,7 @@ import {
   ehrDashJwtTokenSources,
   EhrWebhookJwtTokenData,
   ehrWebhookJwtTokenSources,
-} from "../external/ehr/shared";
+} from "../external/ehr/shared/utils/jwt-token";
 
 const jwtTokenSource = [
   ...ehrClientJwtTokenSources,
