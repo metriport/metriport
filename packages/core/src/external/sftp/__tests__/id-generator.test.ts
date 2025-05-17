@@ -1,4 +1,4 @@
-import { createIdGenerator } from "../shared";
+import { createIdGenerator } from "../id-generator";
 
 describe("ID Generator", () => {
   it("can generate a deterministic ID", () => {

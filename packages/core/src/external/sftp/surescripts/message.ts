@@ -1,14 +1,17 @@
 import { z } from "zod";
-import { Patient, patientSchema } from "@metriport/api-sdk/medical/models/patient";
+import { Patient } from "@metriport/core/domain/patient";
+import { patientSchema } from "@metriport/api-sdk/medical/models/patient";
 import { Facility, facilitySchema } from "@metriport/api-sdk/medical/models/facility";
+
+import {} from "@metriport/shared/domain/patient/patient-import/types";
 
 import {
   patientLoadHeaderSchema,
   patientLoadHeaderOrder,
   patientLoadDetailSchema,
   patientLoadDetailOrder,
-  //   patientLoadFooterSchema,
-  //   patientLoadFooterOrder,
+  patientLoadFooterSchema,
+  patientLoadFooterOrder,
 } from "./schema/load";
 // import { , patientLoadOrder } from "./schema/verification";
 import { FileFieldSchema } from "./schema/shared";
@@ -49,22 +52,24 @@ export function toSurescriptsMessage(
   );
 
   const details = patients
-    .map(patient => {
-      const [firstName, ...middleNames] = patient.firstName.split(" ");
+    .map((patient, index) => {
+      const [firstName, ...middleNames] = patient.data.firstName.split(" ");
       const middleName = middleNames?.join(" ") ?? "";
-      const gender = patient.genderAtBirth ?? "U";
+      const gender = patient.data.genderAtBirth ?? "U";
       const genderAtBirth = gender === "O" ? "U" : gender;
 
-      const address = Array.isArray(patient.address) ? patient.address[0] : patient.address;
+      const address = Array.isArray(patient.data.address)
+        ? patient.data.address[0]
+        : patient.data.address;
       if (!address) return null;
 
       return generateSurescriptsRow(
         {
           recordType: "PAT",
-          recordSequenceNumber: 1,
+          recordSequenceNumber: index + 1,
           assigningAuthority: "",
-          patientId: "",
-          lastName: patient.lastName ?? "",
+          patientId: patient.id,
+          lastName: patient.data.lastName ?? "",
           firstName: firstName ?? "",
           middleName,
           prefix: "",
@@ -74,14 +79,10 @@ export function toSurescriptsMessage(
           city: address.city ?? "",
           state: address.state ?? "",
           zip: address.zip ?? "",
-          dateOfBirth: patient.dob ?? "", // TODO: convert
+          dateOfBirth: patient.data.dob ?? "", // TODO: convert
           genderAtBirth: genderAtBirth,
           npiNumber: facility.npi,
           endMonitoringDate: new Date(), // TODO
-          requestedNotifications: [],
-          birthDate: "",
-          deathDate: "",
-          data: [],
         },
         patientLoadDetailSchema,
         patientLoadDetailOrder
@@ -89,12 +90,16 @@ export function toSurescriptsMessage(
     })
     .filter(Boolean) as Buffer[];
 
-  // const footer = generateSurescriptsRow({
-  //     recordType: "TRL",
-  //     totalRecords: details.length,
-  // }, patientLoadFooterSchema, patientLoadFooterOrder);
+  const footer = generateSurescriptsRow(
+    {
+      recordType: "TRL",
+      totalRecords: details.length,
+    },
+    patientLoadFooterSchema,
+    patientLoadFooterOrder
+  );
 
-  return Buffer.concat([header, ...details]);
+  return Buffer.concat([header, ...details, footer]);
 }
 
 export function generateSurescriptsRow<T extends object>(

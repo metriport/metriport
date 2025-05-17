@@ -6,6 +6,11 @@ describe("Surescripts SFTP Client", () => {
     const client = new SurescriptsSftpClient({
       senderId: "TestSenderId",
       senderPassword: "TestSenderPassword",
+      host: "localhost",
+      port: 22,
+      username: "test",
+      password: "test",
+      privateKey: "test",
     });
 
     expect(client).toBeDefined();
@@ -15,6 +20,11 @@ describe("Surescripts SFTP Client", () => {
     const client = new SurescriptsSftpClient({
       senderId: "TestSenderId",
       senderPassword: "TestSenderPassword",
+      host: "localhost",
+      port: 22,
+      username: "test",
+      password: "test",
+      privateKey: "test",
     });
 
     const transmission = client.createTransmission(TransmissionType.Enroll, "TestPopulation");

@@ -1,7 +1,7 @@
 import SshSftpClient from "ssh2-sftp-client";
 import { Writable } from "stream";
 
-export interface SftpRemoteServer {
+export interface SftpConfig {
   host: string;
   port: number;
   username: string;
@@ -16,15 +16,15 @@ export interface SftpClientImpl {
 }
 
 export class SftpClient implements SftpClientImpl {
-  private client: SshSftpClient;
+  protected readonly client: SshSftpClient;
 
-  private host: string;
-  private port: number;
-  private username: string;
-  private password: string;
-  private privateKey: string;
+  protected readonly host: string;
+  protected readonly port: number;
+  protected readonly username: string;
+  protected readonly password: string;
+  protected readonly privateKey: string;
 
-  constructor({ host, port, username, password, privateKey }: SftpRemoteServer) {
+  constructor({ host, port, username, password, privateKey }: SftpConfig) {
     this.client = new SshSftpClient();
 
     this.host = host;

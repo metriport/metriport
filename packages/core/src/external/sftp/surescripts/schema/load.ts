@@ -137,10 +137,8 @@ export const patientLoadDetailSchema = z.object({
       ])
     )
     .optional(),
-  birthDate: z.string().min(1).max(8),
-  deathDate: z.string().min(1).max(8),
-
-  data: z.array(z.any()),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
 });
 
 export const patientLoadDetailOrder: FileFieldSchema<PatientLoadDetail> = [
@@ -258,7 +256,7 @@ export const patientUnloadOrder: FileFieldSchema<PatientUnload> = [
 ];
 
 export const patientLoadFooterSchema = z.object({
-  recordType: z.enum(["TRL"]),
+  recordType: z.string().length(3),
   totalRecords: z.number(),
 });
 export type PatientLoadFooter = z.infer<typeof patientLoadFooterSchema>;
