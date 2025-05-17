@@ -8,6 +8,8 @@ import {
 } from "./canvas/auth/middleware";
 import canvasDash from "./canvas/routes/dash";
 import canvasWebhooks from "./canvas/routes/webhook";
+import { processCxIdDash as processCxIdEclinicalworksDash } from "./eclinicalworks/auth/middleware";
+import eclinicalworksDash from "./eclinicalworks/routes/dash";
 import {
   processCxIdDash as processCxIdElationDash,
   processCxIdWebhooks as processCxIdElationWebhooks,
@@ -27,6 +29,7 @@ routes.use("/athenahealth", processCxIdDashAthena, checkMAPIAccess, athenaDash);
 routes.use("/canvas", processCxIdCanvasDash, checkMAPIAccess, canvasDash);
 routes.use("/elation", processCxIdElationDash, checkMAPIAccess, elationDash);
 routes.use("/healthie", processCxIdHealthieDash, checkMAPIAccess, healthieDash);
+routes.use("/eclinicalworks", processCxIdEclinicalworksDash, checkMAPIAccess, eclinicalworksDash);
 
 routes.use("/webhook/canvas", processCxIdCanvasWebhooks, checkMAPIAccess, canvasWebhooks);
 routes.use("/webhook/elation", processCxIdElationWebhooks, checkMAPIAccess, elationWebhooks);
