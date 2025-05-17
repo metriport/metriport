@@ -206,7 +206,7 @@ router.get(
 
     const result = await makeSearchConsolidated().search({ patient, query, useFhir });
 
-    if (Config.isDev()) {
+    if (Config.isDev() || Config.isStaging()) {
       // TODO ENG-268 remove this - for debugging purposes only
       const returnFhirBundle = getFromQueryAsBoolean("returnFhirBundle", req);
       if (returnFhirBundle && result.url) {
