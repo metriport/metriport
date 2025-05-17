@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { FileFieldSchema, dateToString } from "./shared";
+import { FileFieldSchema, dateToString, dateToTimeString } from "./shared";
 
 // PATIENT FILE LOAD
 // These are schemas for the first row (header) and subsequent rows (details) of a patient load operation.
 export const patientLoadHeaderSchema = z.object({
   recordType: z.literal("HDR"),
-  version: z.enum(["2.0"]),
+  version: z.enum(["2.0", "3.0"]),
   usage: z.enum(["test", "production"]),
 
   senderId: z.string().length(15),
@@ -62,13 +62,7 @@ export const patientLoadHeaderOrder: FileFieldSchema<PatientLoadHeader> = [
   {
     field: 7,
     toSurescripts({ transmissionDate }: PatientLoadHeader) {
-      const hour = transmissionDate.getHours().toString().padStart(2, "0");
-      const minute = transmissionDate.getMinutes().toString().padStart(2, "0");
-      const second = transmissionDate.getSeconds().toString().padStart(2, "0");
-      const centisecond = Math.round(transmissionDate.getMilliseconds() / 10)
-        .toString()
-        .padStart(2, "0");
-      return [hour, minute, second, centisecond].join("");
+      return dateToTimeString(transmissionDate, true);
     },
   },
   {

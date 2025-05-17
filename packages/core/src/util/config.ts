@@ -217,43 +217,37 @@ export class Config {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
 
-  static getSurescriptsSftpHost(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
+  static getSurescriptsHost(sandbox = true): string {
+    return sandbox
+      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_HOST")
+      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_HOST");
   }
 
-  static getSurescriptsSftpPort(): number {
-    return parseInt(getEnvVarOrFail("SURESCRIPTS_SFTP_PORT"));
+  static getSurescriptsSftpSenderId(sandbox = true): string {
+    return sandbox
+      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_SENDER_ID")
+      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_SENDER_ID");
   }
 
-  static getSurescriptsSftpUsername(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SFTP_USERNAME");
-  }
-
-  static getSurescriptsSftpPassword(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SFTP_PASSWORD");
-  }
-
-  static getSurescriptsSftpSenderId(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_ID");
-  }
-
-  static getSurescriptsSftpSenderPassword(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_PASSWORD");
+  static getSurescriptsSftpSenderPassword(sandbox = true): string {
+    return sandbox
+      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_SENDER_PASSWORD")
+      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_SENDER_PASSWORD");
   }
 
   static getSurescriptsSftpReceiverId(): string | undefined {
-    return getEnvVar("SURESCRIPTS_SFTP_RECEIVER_ID");
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_RECEIVER_ID");
   }
 
-  static getSurescriptsSftpVersion(): string {
-    return getEnvVar("SURESCRIPTS_SFTP_VERSION") ?? "2.0";
+  static getSurescriptsSftpPublicKey(sandbox = true): string | undefined {
+    return sandbox
+      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_PUBLIC_KEY")
+      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_PUBLIC_KEY");
   }
 
-  static getSurescriptsSftpAgent(): string {
-    return getEnvVar("SURESCRIPTS_SFTP_AGENT") ?? "Metriport";
-  }
-
-  static getSurescriptsSftpPrivateKey(): string | undefined {
-    return getEnvVar("SURESCRIPTS_SFTP_PRIVATE_KEY");
+  static getSurescriptsSftpPrivateKey(sandbox = true): string | undefined {
+    return sandbox
+      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_PRIVATE_KEY")
+      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_PRIVATE_KEY");
   }
 }

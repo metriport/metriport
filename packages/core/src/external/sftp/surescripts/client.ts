@@ -1,12 +1,12 @@
 import { Config } from "../../../util/config";
 import { IdGenerator, createIdGenerator } from "../id-generator";
 import { SftpClient, SftpConfig } from "../client";
+import { SURESCRIPTS_RECEIVER_ID } from "./constants";
 
-export interface SurescriptsSftpConfig extends SftpConfig {
+export interface SurescriptsSftpConfig extends Omit<SftpConfig, "host" | "port"> {
   senderId: string;
   senderPassword: string;
   receiverId?: string;
-  version?: "2.0";
   usage?: "test" | "production";
 }
 
@@ -23,28 +23,30 @@ export interface Transmission<T extends TransmissionType> {
   compression?: "gzip";
 }
 
-const surescriptsReceiverId = "S00000000000006";
-const surescriptsVersion = "2.0";
-
 export class SurescriptsSftpClient extends SftpClient {
   private idGenerator: IdGenerator;
 
   senderId: string;
   senderPassword: string;
   receiverId: string;
-  version: "2.0";
   usage: "test" | "production";
 
   constructor(config: SurescriptsSftpConfig) {
-    super(config);
+    super({
+      ...config,
+      host: Config.getSurescriptsHost(config.usage === "test"),
+      port: 22,
+      username: Config.getSurescriptsSftpSenderId(config.usage === "test") ?? "",
+      password: Config.getSurescriptsSftpPublicKey(config.usage === "test") ?? "",
+      privateKey: Config.getSurescriptsSftpPrivateKey(config.usage === "test") ?? "",
+    });
     this.idGenerator = createIdGenerator(10);
 
     this.senderId = config.senderId;
     this.senderPassword = config.senderPassword;
     this.usage = config.usage ?? "test";
     this.receiverId =
-      config.receiverId ?? Config.getSurescriptsSftpReceiverId() ?? surescriptsReceiverId;
-    this.version = config.version ?? surescriptsVersion;
+      config.receiverId ?? Config.getSurescriptsSftpReceiverId() ?? SURESCRIPTS_RECEIVER_ID;
   }
 
   createTransmission<T extends TransmissionType>(type: T, population: string): Transmission<T> {
@@ -56,6 +58,11 @@ export class SurescriptsSftpClient extends SftpClient {
       compression: "gzip",
     };
   }
+
+  // sendTransmission(transmission: Transmission<TransmissionType>): Promise<void> {
+  // const message = toSurescriptsMessage(this, transmission.population, transmission.type);
+  // return this.write(transmission.id, message);
+  // }
 }
 
 export default SurescriptsSftpClient;

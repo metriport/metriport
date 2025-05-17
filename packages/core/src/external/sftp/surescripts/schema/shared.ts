@@ -2,7 +2,6 @@
 export type FileFieldSchema<T extends object> = {
   [K in keyof T]: FileField<T, K>;
 }[keyof T][];
-// Array<FileField<T>>;
 
 // Describes a single field for a row in a generated file.
 export interface FileField<T extends object, K extends keyof T = keyof T> {

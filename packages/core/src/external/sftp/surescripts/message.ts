@@ -1,9 +1,8 @@
 import { z } from "zod";
-import { Patient } from "@metriport/core/domain/patient";
-import { patientSchema } from "@metriport/api-sdk/medical/models/patient";
+import { Patient } from "../../../domain/patient";
 import { Facility, facilitySchema } from "@metriport/api-sdk/medical/models/facility";
 
-import {} from "@metriport/shared/domain/patient/patient-import/types";
+import { SURESCRIPTS_RECEIVER_ID, SURESCRIPTS_VERSION } from "./constants";
 
 import {
   patientLoadHeaderSchema,
@@ -15,10 +14,10 @@ import {
 } from "./schema/plf";
 // import { , patientLoadOrder } from "./schema/verification";
 import { FileFieldSchema } from "./schema/shared";
-import { SurescriptsSftpClient } from "./sftp";
+import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 
 export function canGenerateSurescriptsMessage(facility: Facility, patients: Patient[]): boolean {
-  patients = patients.filter(patient => patientSchema.safeParse(patient).success);
+  // patients = patients.filter(patient => patientSchema.safeParse(patient).success);
   if (patients.length === 0) return false;
 
   if (!facilitySchema.safeParse(facility).success) return false;
@@ -27,6 +26,7 @@ export function canGenerateSurescriptsMessage(facility: Facility, patients: Pati
 
 export function toSurescriptsMessage(
   client: SurescriptsSftpClient,
+  transmission: Transmission<TransmissionType>,
   cxId: string,
   facility: Facility,
   patients: Patient[]
@@ -34,16 +34,16 @@ export function toSurescriptsMessage(
   const header = generateSurescriptsRow(
     {
       recordType: "HDR",
-      version: client.version,
+      version: SURESCRIPTS_VERSION,
       usage: client.usage,
       senderId: client.senderId,
       senderPassword: client.senderPassword,
-      receiverId: client.receiverId,
+      receiverId: SURESCRIPTS_RECEIVER_ID,
       patientPopulationId: cxId,
       lookBackInMonths: 12,
-      transmissionId: "transmissionId",
-      transmissionDate: new Date(),
-      transmissionFileType: "PAT",
+      transmissionId: transmission.id,
+      transmissionDate: transmission.date,
+      transmissionFileType: "PMA",
       transmissionAction: "U",
       fileSchedule: "ADHOC",
     },
@@ -65,7 +65,7 @@ export function toSurescriptsMessage(
 
       return generateSurescriptsRow(
         {
-          recordType: "PAT",
+          recordType: "PNM",
           recordSequenceNumber: index + 1,
           assigningAuthority: "",
           patientId: patient.id,
