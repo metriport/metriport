@@ -4,10 +4,11 @@ import {
   patientLoadDetailOrder,
   patientLoadFooterSchema,
   patientLoadFooterOrder,
-} from "../surescripts/schema/plf";
+} from "../surescripts/schema/load";
 
 import { METRIPORT_OID } from "../surescripts/constants";
 
+// Note: These are test patients that do not actually exist.
 describe("Patient load file testing", () => {
   it("should generate a simple patient row", () => {
     const patientId = "1a3c55d0-6681-4273-9524-2e1535c6b747";

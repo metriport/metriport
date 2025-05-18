@@ -2,7 +2,7 @@
 import path from "path";
 import dotenv from "dotenv";
 dotenv.config({
-  path: path.resolve(__dirname, "../../../../.env"),
+  path: path.resolve(__dirname, "../../../../../.env"),
 });
 
 import { Command } from "commander";
@@ -33,22 +33,21 @@ function metriportBanner(): string {
 const program = new Command();
 
 program
-  .command("generate-pfl")
   .description("Generate a PFL file and place into the outgoing S3 location")
   .addHelpText("before", metriportBanner())
   .showHelpAfterError()
   .version("1.0.0")
-  .option("-p, --production", "Generates a file for the production SFTP server")
+  // .option("-p, --production", "Generates a file for the production SFTP server")
   .action(async () => {
     console.log("Generating PFL file...");
   });
 
 async function main() {
-  console.log(metriportBanner());
+  // console.log(metriportBanner());
   program.parse();
 
   // const options = program.opts();
-  console.log(process.env.SURESCRIPTS_SFTP_SANDBOX_SENDER_PASSWORD);
+  console.log("password", process.env.SURESCRIPTS_SFTP_SANDBOX_SENDER_PASSWORD);
 
   // const client = new SurescriptsSftpClient({
   //   usage: 'test',

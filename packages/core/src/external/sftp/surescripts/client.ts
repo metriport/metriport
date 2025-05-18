@@ -6,7 +6,7 @@ export interface SurescriptsSftpConfig extends Omit<SftpConfig, "host" | "port">
   senderId?: string;
   senderPassword?: string;
   receiverId?: string;
-  usage?: "test" | "production"; // default to test
+  production?: boolean; // defaults to false
 }
 
 export enum TransmissionType {
@@ -33,23 +33,19 @@ export class SurescriptsSftpClient extends SftpClient {
   constructor(config: SurescriptsSftpConfig) {
     super({
       ...config,
-      host: Config.getSurescriptsHost(config.usage !== "production"),
+      host: Config.getSurescriptsHost(!config.production),
       port: 22,
-      username: Config.getSurescriptsSftpSenderId(config.usage !== "production") ?? "",
-      password: Config.getSurescriptsSftpPublicKey(config.usage !== "production") ?? "",
-      privateKey: Config.getSurescriptsSftpPrivateKey(config.usage !== "production") ?? "",
+      username: Config.getSurescriptsSftpSenderId(!config.production) ?? "",
+      password: Config.getSurescriptsSftpPublicKey(!config.production) ?? "",
+      privateKey: Config.getSurescriptsSftpPrivateKey(!config.production) ?? "",
     });
     this.idGenerator = createIdGenerator(10);
 
-    this.senderId =
-      config.senderId ?? Config.getSurescriptsSftpSenderId(config.usage !== "production") ?? "";
+    this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId(!config.production) ?? "";
     this.senderPassword =
-      config.senderPassword ??
-      Config.getSurescriptsSftpPublicKey(config.usage !== "production") ??
-      "";
-    this.usage = config.usage ?? "test";
-    this.receiverId =
-      config.receiverId ?? Config.getSurescriptsSftpReceiverId(config.usage !== "production");
+      config.senderPassword ?? Config.getSurescriptsSftpPublicKey(!config.production) ?? "";
+    this.usage = config.production ? "production" : "test";
+    this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId(!config.production);
   }
 
   createTransmission<T extends TransmissionType>(type: T, population: string): Transmission<T> {

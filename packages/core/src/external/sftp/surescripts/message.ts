@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Patient } from "../../../domain/patient";
 import { Facility, facilitySchema } from "@metriport/api-sdk/medical/models/facility";
 
-import { SURESCRIPTS_RECEIVER_ID, SURESCRIPTS_VERSION } from "./constants";
+import { SURESCRIPTS_VERSION } from "./constants";
 
 import {
   patientLoadHeaderSchema,
@@ -11,7 +11,7 @@ import {
   patientLoadDetailOrder,
   patientLoadFooterSchema,
   patientLoadFooterOrder,
-} from "./schema/plf";
+} from "./schema/load";
 // import { , patientLoadOrder } from "./schema/verification";
 import { FileFieldSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
@@ -38,7 +38,7 @@ export function toSurescriptsMessage(
       usage: client.usage,
       senderId: client.senderId,
       senderPassword: client.senderPassword,
-      receiverId: SURESCRIPTS_RECEIVER_ID,
+      receiverId: client.receiverId,
       patientPopulationId: cxId,
       lookBackInMonths: 12,
       transmissionId: transmission.id,
