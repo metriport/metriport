@@ -13,6 +13,8 @@ export interface SftpClientImpl {
   connect(): Promise<void>;
   read(remotePath: string): Promise<Buffer>;
   write(remotePath: string, content: Buffer): Promise<boolean>;
+  list(remotePath: string): Promise<string[]>;
+  exists(remotePath: string): Promise<boolean>;
 }
 
 export class SftpClient implements SftpClientImpl {
@@ -50,6 +52,20 @@ export class SftpClient implements SftpClientImpl {
     const { writable, getBuffer } = createWritableBuffer();
     await this.client.get(remotePath, writable);
     return getBuffer();
+  }
+
+  async list(remotePath: string): Promise<string[]> {
+    const files = await this.client.list(remotePath);
+    return files.map(file => file.name);
+  }
+
+  async exists(remotePath: string): Promise<boolean> {
+    try {
+      const info = await this.client.exists(remotePath);
+      return info !== false;
+    } catch (error) {
+      return false;
+    }
   }
 
   async write(remotePath: string, content: Buffer): Promise<boolean> {

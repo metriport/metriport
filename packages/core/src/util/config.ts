@@ -235,8 +235,10 @@ export class Config {
       : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_SENDER_PASSWORD");
   }
 
-  static getSurescriptsSftpReceiverId(): string | undefined {
-    return getEnvVarOrFail("SURESCRIPTS_SFTP_RECEIVER_ID");
+  static getSurescriptsSftpReceiverId(sandbox = true): string {
+    return sandbox
+      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_RECEIVER_ID")
+      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_RECEIVER_ID");
   }
 
   static getSurescriptsSftpPublicKey(sandbox = true): string | undefined {

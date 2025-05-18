@@ -1,13 +1,12 @@
 import { Config } from "../../../util/config";
 import { IdGenerator, createIdGenerator } from "../id-generator";
 import { SftpClient, SftpConfig } from "../client";
-import { SURESCRIPTS_RECEIVER_ID } from "./constants";
 
 export interface SurescriptsSftpConfig extends Omit<SftpConfig, "host" | "port"> {
-  senderId: string;
-  senderPassword: string;
+  senderId?: string;
+  senderPassword?: string;
   receiverId?: string;
-  usage?: "test" | "production";
+  usage?: "test" | "production"; // default to test
 }
 
 export enum TransmissionType {
@@ -34,19 +33,23 @@ export class SurescriptsSftpClient extends SftpClient {
   constructor(config: SurescriptsSftpConfig) {
     super({
       ...config,
-      host: Config.getSurescriptsHost(config.usage === "test"),
+      host: Config.getSurescriptsHost(config.usage !== "production"),
       port: 22,
-      username: Config.getSurescriptsSftpSenderId(config.usage === "test") ?? "",
-      password: Config.getSurescriptsSftpPublicKey(config.usage === "test") ?? "",
-      privateKey: Config.getSurescriptsSftpPrivateKey(config.usage === "test") ?? "",
+      username: Config.getSurescriptsSftpSenderId(config.usage !== "production") ?? "",
+      password: Config.getSurescriptsSftpPublicKey(config.usage !== "production") ?? "",
+      privateKey: Config.getSurescriptsSftpPrivateKey(config.usage !== "production") ?? "",
     });
     this.idGenerator = createIdGenerator(10);
 
-    this.senderId = config.senderId;
-    this.senderPassword = config.senderPassword;
+    this.senderId =
+      config.senderId ?? Config.getSurescriptsSftpSenderId(config.usage !== "production") ?? "";
+    this.senderPassword =
+      config.senderPassword ??
+      Config.getSurescriptsSftpPublicKey(config.usage !== "production") ??
+      "";
     this.usage = config.usage ?? "test";
     this.receiverId =
-      config.receiverId ?? Config.getSurescriptsSftpReceiverId() ?? SURESCRIPTS_RECEIVER_ID;
+      config.receiverId ?? Config.getSurescriptsSftpReceiverId(config.usage !== "production");
   }
 
   createTransmission<T extends TransmissionType>(type: T, population: string): Transmission<T> {

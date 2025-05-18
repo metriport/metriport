@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({
+  path: path.resolve(__dirname, "../../../../.env"),
+});
+
 import { Command } from "commander";
 // import { SurescriptsSftpClient, Transmission } from "../client";
 
@@ -41,8 +47,8 @@ async function main() {
   console.log(metriportBanner());
   program.parse();
 
-  const options = program.opts();
-  console.log(options);
+  // const options = program.opts();
+  console.log(process.env.SURESCRIPTS_SFTP_SANDBOX_SENDER_PASSWORD);
 
   // const client = new SurescriptsSftpClient({
   //   usage: 'test',
