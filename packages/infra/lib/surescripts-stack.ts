@@ -322,6 +322,7 @@ export class SurescriptsNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
     });
