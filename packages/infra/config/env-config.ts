@@ -269,8 +269,13 @@ type EnvConfigBase = {
   surescripts?: {
     surescriptsReplicaBucketName: string;
     surescriptsBundleBucketName: string;
+    surescriptsSenderId: string;
+    surescriptsReceiverId: string;
+    surescriptsHost: string;
     secrets: {
-      SURESCRIPTS_SECRET_MAP: string;
+      SURESCRIPTS_SFTP_SENDER_PASSWORD: string;
+      SURESCRIPTS_SFTP_PUBLIC_KEY: string;
+      SURESCRIPTS_SFTP_PRIVATE_KEY: string;
     };
   };
 };

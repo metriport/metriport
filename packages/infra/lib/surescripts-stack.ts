@@ -69,8 +69,8 @@ function settings(): {
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
   const generatePatientRequestLambdaTimeout = Duration.minutes(12);
   const generatePatientRequest: QueueAndLambdaSettings = {
-    name: "SurescriptsRequest",
-    entry: "surescripts-request",
+    name: "SurescriptsPatientRequest",
+    entry: "surescripts-patient-request",
     lambda: {
       memory: 1024,
       timeout: generatePatientRequestLambdaTimeout,
@@ -93,8 +93,8 @@ function settings(): {
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
   const receiveVerificationLambdaTimeout = Duration.minutes(1);
   const receiveVerificationResponse: QueueAndLambdaSettings = {
-    name: "SurescriptsVerification",
-    entry: "surescripts-verification",
+    name: "SurescriptsReceiveVerificationResponse",
+    entry: "surescripts-receive-verification-response",
     lambda: {
       memory: 1024,
       timeout: receiveVerificationLambdaTimeout,
@@ -117,8 +117,8 @@ function settings(): {
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
   const receiveFlatFileResponseLambdaTimeout = Duration.minutes(15);
   const receiveFlatFileResponse: QueueAndLambdaSettings = {
-    name: "SurescriptsResponse",
-    entry: "surescripts-response",
+    name: "SurescriptsReceiveFlatFileResponse",
+    entry: "surescripts-receive-flat-file-response",
     lambda: {
       memory: 1024,
       timeout: receiveFlatFileResponseLambdaTimeout,
@@ -144,6 +144,29 @@ function settings(): {
     generatePatientRequest,
     receiveVerificationResponse,
     receiveFlatFileResponse,
+  };
+}
+
+function surescriptsEnvironmentVariables(
+  surescripts: EnvConfig["surescripts"],
+  replica = true,
+  bundle = false
+): {
+  [key: string]: string;
+} {
+  return {
+    SURESCRIPTS_SFTP_HOST: surescripts?.surescriptsHost ?? "",
+    SURESCRIPTS_SFTP_SENDER_ID: surescripts?.surescriptsSenderId ?? "",
+    SURESCRIPTS_SFTP_SENDER_PASSWORD: surescripts?.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD ?? "",
+    SURESCRIPTS_SFTP_RECEIVER_ID: surescripts?.surescriptsReceiverId ?? "",
+    SURESCRIPTS_SFTP_PUBLIC_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY ?? "",
+    SURESCRIPTS_SFTP_PRIVATE_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY ?? "",
+    ...(replica
+      ? { SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts?.surescriptsReplicaBucketName ?? "" }
+      : {}),
+    ...(bundle
+      ? { SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts?.surescriptsBundleBucketName ?? "" }
+      : {}),
   };
 }
 
@@ -209,6 +232,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      surescripts: props.config.surescripts,
     });
     this.connectSftpLambda = connectSftp.lambda;
 
@@ -220,6 +244,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
+      surescripts: props.config.surescripts,
     });
     this.synchronizeSftpLambda = synchronizeSftp.lambda;
 
@@ -230,6 +255,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
+      surescripts: props.config.surescripts,
     });
     this.generatePatientRequestLambda = generatePatientRequest.lambda;
     this.generatePatientRequestQueue = generatePatientRequest.queue;
@@ -241,6 +267,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
+      surescripts: props.config.surescripts,
     });
     this.receiveVerificationResponseLambda = receiveVerificationResponse.lambda;
     this.receiveVerificationResponseQueue = receiveVerificationResponse.queue;
@@ -253,6 +280,7 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
       surescriptsBundleBucket: this.surescriptsBundleBucket,
+      surescripts: props.config.surescripts,
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
@@ -264,8 +292,9 @@ export class SurescriptsNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescripts } = ownProps;
     const { name, entry, lambda: lambdaSettings } = settings().connectSftp;
 
     const lambda = createLambda({
@@ -275,6 +304,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
+        ...surescriptsEnvironmentVariables(surescripts),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -292,9 +322,17 @@ export class SurescriptsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
+    surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescriptsReplicaBucket } =
-      ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      sentryDsn,
+      alarmAction,
+      surescriptsReplicaBucket,
+      surescripts,
+    } = ownProps;
     const { name, entry, lambda: lambdaSettings, waitTime } = settings().synchronizeSftp;
 
     const lambda = createLambda({
@@ -304,7 +342,9 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
+        ...surescriptsEnvironmentVariables(surescripts),
         SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
+
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -326,9 +366,17 @@ export class SurescriptsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
+    surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescriptsReplicaBucket } =
-      ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      sentryDsn,
+      alarmAction,
+      surescriptsReplicaBucket,
+      surescripts,
+    } = ownProps;
     const {
       name,
       entry,
@@ -355,7 +403,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
+        ...surescriptsEnvironmentVariables(surescripts, true, false),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -377,9 +425,17 @@ export class SurescriptsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
+    surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescriptsReplicaBucket } =
-      ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      sentryDsn,
+      alarmAction,
+      surescriptsReplicaBucket,
+      surescripts,
+    } = ownProps;
     const {
       name,
       entry,
@@ -406,7 +462,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
+        ...surescriptsEnvironmentVariables(surescripts, true, false),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -429,6 +485,7 @@ export class SurescriptsNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
     surescriptsBundleBucket: s3.Bucket;
+    surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda; queue: Queue } {
     const {
       lambdaLayers,
@@ -438,6 +495,7 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction,
       surescriptsReplicaBucket,
       surescriptsBundleBucket,
+      surescripts,
     } = ownProps;
     const {
       name,
@@ -465,9 +523,8 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        // API_URL set on the api-stack after the OSS API is created
-        SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
-        SURESCRIPTS_BUNDLE_BUCKET_NAME: surescriptsBundleBucket.bucketName,
+        // This is the only lambda that needs to read/write from the bundle bucket
+        ...surescriptsEnvironmentVariables(surescripts, true, true),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
