@@ -129,18 +129,16 @@ function surescriptsEnvironmentVariables(
   [key: string]: string;
 } {
   return {
-    SURESCRIPTS_SFTP_HOST: surescripts?.surescriptsHost ?? "",
-    SURESCRIPTS_SFTP_SENDER_ID: surescripts?.surescriptsSenderId ?? "",
-    SURESCRIPTS_SFTP_SENDER_PASSWORD: surescripts?.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD ?? "",
-    SURESCRIPTS_SFTP_RECEIVER_ID: surescripts?.surescriptsReceiverId ?? "",
-    SURESCRIPTS_SFTP_PUBLIC_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY ?? "",
-    SURESCRIPTS_SFTP_PRIVATE_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY ?? "",
+    SURESCRIPTS_SFTP_HOST: surescripts?.surescriptsHost,
+    SURESCRIPTS_SFTP_SENDER_ID: surescripts?.surescriptsSenderId,
+    SURESCRIPTS_SFTP_SENDER_PASSWORD: surescripts?.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD,
+    SURESCRIPTS_SFTP_RECEIVER_ID: surescripts?.surescriptsReceiverId,
+    SURESCRIPTS_SFTP_PUBLIC_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY,
+    SURESCRIPTS_SFTP_PRIVATE_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY,
     ...(replica
-      ? { SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts?.surescriptsReplicaBucketName ?? "" }
+      ? { SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts?.surescriptsReplicaBucketName }
       : {}),
-    ...(bundle
-      ? { SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts?.surescriptsBundleBucketName ?? "" }
-      : {}),
+    ...(bundle ? { SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts?.surescriptsBundleBucketName } : {}),
   };
 }
 
