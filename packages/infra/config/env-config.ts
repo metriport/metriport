@@ -266,7 +266,7 @@ type EnvConfigBase = {
       };
     };
   };
-  surescripts?: {
+  surescripts: {
     surescriptsReplicaBucketName: string;
     surescriptsBundleBucketName: string;
     surescriptsSenderId: string;
