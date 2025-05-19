@@ -124,6 +124,7 @@ type EnvConfigBase = {
   medicalDocumentsUploadBucketName: string;
   ehrResponsesBucketName?: string;
   ehrBundleBucketName: string;
+  surescriptsBundleBucketName: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
@@ -264,6 +265,12 @@ type EnvConfigBase = {
       secrets: {
         EHR_HEALTHIE_API_KEY_MAP: string;
       };
+    };
+  };
+  surescripts?: {
+    env: string;
+    secrets: {
+      SURESCRIPTS_SECRET_MAP: string;
     };
   };
 };
