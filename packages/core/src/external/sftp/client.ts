@@ -48,6 +48,10 @@ export class SftpClient implements SftpClientImpl {
     });
   }
 
+  async disconnect() {
+    await this.client.end();
+  }
+
   async read(remotePath: string): Promise<Buffer> {
     const { writable, getBuffer } = createWritableBuffer();
     await this.client.get(remotePath, writable);

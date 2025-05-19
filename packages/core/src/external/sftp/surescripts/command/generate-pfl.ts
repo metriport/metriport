@@ -6,7 +6,7 @@ dotenv.config({
 });
 
 import { Command } from "commander";
-// import { SurescriptsSftpClient, Transmission } from "../client";
+import { SurescriptsSftpClient } from "../client";
 
 function metriportBanner(): string {
   return `
@@ -47,16 +47,13 @@ async function main() {
   program.parse();
 
   // const options = program.opts();
-  console.log("password", process.env.SURESCRIPTS_SFTP_SANDBOX_SENDER_PASSWORD);
 
-  // const client = new SurescriptsSftpClient({
-  //   usage: 'test',
-  //   username: "test",
-  //   password: "test",
-  //   senderId: "test",
-  //   senderPassword: "test",
-  //   privateKey: "test",
-  // });
+  const client = new SurescriptsSftpClient({});
+
+  await client.connect();
+  console.log("connected");
+  await client.disconnect();
+  console.log("disconnected");
 
   // const transmission =
 }

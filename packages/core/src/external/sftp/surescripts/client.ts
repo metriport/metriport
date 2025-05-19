@@ -2,7 +2,7 @@ import { Config } from "../../../util/config";
 import { IdGenerator, createIdGenerator } from "../id-generator";
 import { SftpClient, SftpConfig } from "../client";
 
-export interface SurescriptsSftpConfig extends Omit<SftpConfig, "host" | "port"> {
+export interface SurescriptsSftpConfig extends Partial<SftpConfig> {
   senderId?: string;
   senderPassword?: string;
   receiverId?: string;
