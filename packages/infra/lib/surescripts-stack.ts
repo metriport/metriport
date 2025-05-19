@@ -19,9 +19,9 @@ const waitTimeRefreshBundle = Duration.seconds(0); // No limit
 function settings(): {
   connectSftp: QueueAndLambdaSettings;
   synchronizeSftp: QueueAndLambdaSettings;
-  generateRequest: QueueAndLambdaSettings;
-  parseVerification: QueueAndLambdaSettings;
-  parseResponse: QueueAndLambdaSettings;
+  generatePatientRequest: QueueAndLambdaSettings;
+  receiveVerificationResponse: QueueAndLambdaSettings;
+  receiveFlatFileResponse: QueueAndLambdaSettings;
 } {
   const connectSftp: QueueAndLambdaSettings = {
     name: "SurescriptsConnectSftp",
@@ -67,19 +67,19 @@ function settings(): {
   };
 
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const generateRequestLambdaTimeout = Duration.minutes(12);
-  const generateRequest: QueueAndLambdaSettings = {
+  const generatePatientRequestLambdaTimeout = Duration.minutes(12);
+  const generatePatientRequest: QueueAndLambdaSettings = {
     name: "SurescriptsRequest",
     entry: "surescripts-request",
     lambda: {
       memory: 1024,
-      timeout: generateRequestLambdaTimeout,
+      timeout: generatePatientRequestLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(3),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(generateRequestLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(generatePatientRequestLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
@@ -91,19 +91,19 @@ function settings(): {
   };
 
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const parseVerificationLambdaTimeout = Duration.minutes(1);
-  const parseVerification: QueueAndLambdaSettings = {
+  const receiveVerificationLambdaTimeout = Duration.minutes(1);
+  const receiveVerificationResponse: QueueAndLambdaSettings = {
     name: "SurescriptsVerification",
     entry: "surescripts-verification",
     lambda: {
       memory: 1024,
-      timeout: parseVerificationLambdaTimeout,
+      timeout: receiveVerificationLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(1),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(parseVerificationLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(receiveVerificationLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
@@ -115,19 +115,19 @@ function settings(): {
   };
 
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const parseResponseLambdaTimeout = Duration.minutes(15);
-  const parseResponse: QueueAndLambdaSettings = {
+  const receiveFlatFileResponseLambdaTimeout = Duration.minutes(15);
+  const receiveFlatFileResponse: QueueAndLambdaSettings = {
     name: "SurescriptsResponse",
     entry: "surescripts-response",
     lambda: {
       memory: 1024,
-      timeout: parseResponseLambdaTimeout,
+      timeout: receiveFlatFileResponseLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(1),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(parseResponseLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(receiveFlatFileResponseLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
@@ -141,9 +141,9 @@ function settings(): {
   return {
     connectSftp,
     synchronizeSftp,
-    generateRequest,
-    parseVerification,
-    parseResponse,
+    generatePatientRequest,
+    receiveVerificationResponse,
+    receiveFlatFileResponse,
   };
 }
 
@@ -159,12 +159,12 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 export class SurescriptsNestedStack extends NestedStack {
   readonly connectSftpLambda: Lambda;
   readonly synchronizeSftpLambda: Lambda;
-  readonly generateRequestLambda: Lambda;
-  readonly generateRequestQueue: Queue;
-  readonly parseVerificationLambda: Lambda;
-  readonly parseVerificationQueue: Queue;
-  readonly parseResponseLambda: Lambda;
-  readonly parseResponseQueue: Queue;
+  readonly generatePatientRequestLambda: Lambda;
+  readonly generatePatientRequestQueue: Queue;
+  readonly receiveVerificationResponseLambda: Lambda;
+  readonly receiveVerificationResponseQueue: Queue;
+  readonly receiveFlatFileResponseLambda: Lambda;
+  readonly receiveFlatFileResponseQueue: Queue;
 
   readonly surescriptsBundleBucket: s3.Bucket;
   readonly surescriptsReplicaBucket: s3.Bucket;
@@ -223,7 +223,7 @@ export class SurescriptsNestedStack extends NestedStack {
     });
     this.synchronizeSftpLambda = synchronizeSftp.lambda;
 
-    const generateRequest = this.setupGenerateRequest({
+    const generatePatientRequest = this.setupGeneratePatientRequest({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -231,10 +231,10 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
     });
-    this.generateRequestLambda = generateRequest.lambda;
-    this.generateRequestQueue = generateRequest.queue;
+    this.generatePatientRequestLambda = generatePatientRequest.lambda;
+    this.generatePatientRequestQueue = generatePatientRequest.queue;
 
-    const parseVerification = this.setupParseVerification({
+    const receiveVerificationResponse = this.setupReceiveVerificationResponse({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -242,10 +242,10 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
     });
-    this.parseVerificationLambda = parseVerification.lambda;
-    this.parseVerificationQueue = parseVerification.queue;
+    this.receiveVerificationResponseLambda = receiveVerificationResponse.lambda;
+    this.receiveVerificationResponseQueue = receiveVerificationResponse.queue;
 
-    const parseResponse = this.setupParseResponse({
+    const receiveFlatFileResponse = this.setupReceiveFlatFileResponse({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -254,8 +254,8 @@ export class SurescriptsNestedStack extends NestedStack {
       surescriptsReplicaBucket: surescriptsReplicaBucket,
       surescriptsBundleBucket: this.surescriptsBundleBucket,
     });
-    this.parseResponseLambda = parseResponse.lambda;
-    this.parseResponseQueue = parseResponse.queue;
+    this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
+    this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
   }
 
   private setupConnectSftp(ownProps: {
@@ -319,7 +319,7 @@ export class SurescriptsNestedStack extends NestedStack {
     return { lambda };
   }
 
-  private setupGenerateRequest(ownProps: {
+  private setupGeneratePatientRequest(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -335,7 +335,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-    } = settings().generateRequest;
+    } = settings().generatePatientRequest;
 
     const queue = createQueue({
       ...queueSettings,
@@ -370,7 +370,7 @@ export class SurescriptsNestedStack extends NestedStack {
     return { lambda, queue };
   }
 
-  private setupParseVerification(ownProps: {
+  private setupReceiveVerificationResponse(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -386,7 +386,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-    } = settings().parseVerification;
+    } = settings().receiveVerificationResponse;
 
     const queue = createQueue({
       ...queueSettings,
@@ -421,7 +421,7 @@ export class SurescriptsNestedStack extends NestedStack {
     return { lambda, queue };
   }
 
-  private setupParseResponse(ownProps: {
+  private setupReceiveFlatFileResponse(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -445,7 +445,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-    } = settings().parseResponse;
+    } = settings().receiveFlatFileResponse;
 
     const queue = createQueue({
       ...queueSettings,
