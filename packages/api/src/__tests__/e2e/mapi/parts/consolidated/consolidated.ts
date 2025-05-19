@@ -7,10 +7,8 @@ import {
   Location,
   Practitioner,
 } from "@medplum/fhirtypes";
-import {
-  buildCollectionBundle,
-  conversionBundleSuffix,
-} from "@metriport/core/command/consolidated/consolidated-create";
+import { conversionBundleSuffix } from "@metriport/core/command/consolidated/consolidated-create";
+import { buildCollectionBundle } from "@metriport/core/external/fhir/shared/bundle";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import { createFilePath } from "@metriport/core/domain/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
