@@ -10,65 +10,53 @@ import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { QueueAndLambdaSettings } from "./shared/settings";
+import { LambdaSettings, QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
-const waitTimeRefreshBundle = Duration.seconds(0); // No limit
+const connectSftpTimeout = Duration.seconds(30);
+const synchronizeSftpTimeout = Duration.minutes(15);
+const sendPatientRequestLambdaTimeout = Duration.minutes(12);
+const receiveVerificationLambdaTimeout = Duration.minutes(5);
+const receiveFlatFileResponseLambdaTimeout = Duration.minutes(15);
 
-function settings(): {
-  connectSftp: QueueAndLambdaSettings;
+interface SurescriptsSettings {
+  connectSftp: LambdaSettings;
   synchronizeSftp: QueueAndLambdaSettings;
   sendPatientRequest: QueueAndLambdaSettings;
   receiveVerificationResponse: QueueAndLambdaSettings;
   receiveFlatFileResponse: QueueAndLambdaSettings;
-} {
-  const connectSftp: QueueAndLambdaSettings = {
+}
+
+const settings: SurescriptsSettings = {
+  connectSftp: {
     name: "SurescriptsConnectSftp",
     entry: "surescripts-sftp-connect",
-    lambda: {
-      memory: 512,
-      timeout: Duration.seconds(30),
-    },
-    queue: {
-      alarmMaxAgeOfOldestMessage: Duration.minutes(10),
-      maxMessageCountAlarmThreshold: 100,
-      maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(10 * 2 + 1),
-      createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-    },
-    waitTime: waitTimePatientSync,
-  };
-
-  const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
-  const synchronizeSftp: QueueAndLambdaSettings = {
+    memory: 512,
+    timeout: connectSftpTimeout,
+  },
+  synchronizeSftp: {
     name: "SurescriptsSynchronizeSftp",
     entry: "surescripts-sftp-synchronize",
     lambda: {
-      memory: 1024,
-      timeout: syncPatientLambdaTimeout,
+      memory: 2048,
+      timeout: synchronizeSftpTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(6),
-      maxMessageCountAlarmThreshold: 5_000,
+      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      maxMessageCountAlarmThreshold: 1000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(syncPatientLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(synchronizeSftpTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 4,
     },
-    waitTime: waitTimePatientSync,
-  };
+    waitTime: Duration.seconds(1), // Max 60 syncs/minute
+  },
 
-  // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const sendPatientRequestLambdaTimeout = Duration.minutes(12);
-  const sendPatientRequest: QueueAndLambdaSettings = {
+  sendPatientRequest: {
     name: "SurescriptsSendPatientRequest",
     entry: "surescripts-send-patient-request",
     lambda: {
@@ -87,12 +75,9 @@ function settings(): {
       reportBatchItemFailures: true,
       maxConcurrency: 4,
     },
-    waitTime: waitTimeRefreshBundle,
-  };
-
-  // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const receiveVerificationLambdaTimeout = Duration.minutes(1);
-  const receiveVerificationResponse: QueueAndLambdaSettings = {
+    waitTime: Duration.seconds(0), // No limit
+  },
+  receiveVerificationResponse: {
     name: "SurescriptsReceiveVerificationResponse",
     entry: "surescripts-receive-verification-response",
     lambda: {
@@ -111,16 +96,13 @@ function settings(): {
       reportBatchItemFailures: true,
       maxConcurrency: 4,
     },
-    waitTime: waitTimeRefreshBundle,
-  };
-
-  // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const receiveFlatFileResponseLambdaTimeout = Duration.minutes(15);
-  const receiveFlatFileResponse: QueueAndLambdaSettings = {
+    waitTime: Duration.seconds(0), // No limit
+  },
+  receiveFlatFileResponse: {
     name: "SurescriptsReceiveFlatFileResponse",
     entry: "surescripts-receive-flat-file-response",
     lambda: {
-      memory: 1024,
+      memory: 2048,
       timeout: receiveFlatFileResponseLambdaTimeout,
     },
     queue: {
@@ -135,17 +117,9 @@ function settings(): {
       reportBatchItemFailures: true,
       maxConcurrency: 4,
     },
-    waitTime: waitTimeRefreshBundle,
-  };
-
-  return {
-    connectSftp,
-    synchronizeSftp,
-    sendPatientRequest,
-    receiveVerificationResponse,
-    receiveFlatFileResponse,
-  };
-}
+    waitTime: Duration.seconds(0), // No limit
+  },
+};
 
 function surescriptsEnvironmentVariables(
   surescripts: EnvConfig["surescripts"],
@@ -297,10 +271,12 @@ export class SurescriptsNestedStack extends NestedStack {
     surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescripts } = ownProps;
-    const { name, entry, lambda: lambdaSettings } = settings().connectSftp;
+    const { name, entry, memory, timeout, reservedConcurrentExecutions } = settings.connectSftp;
 
     const lambda = createLambda({
-      ...lambdaSettings,
+      memory,
+      timeout,
+      reservedConcurrentExecutions,
       stack: this,
       name,
       entry,
@@ -325,7 +301,7 @@ export class SurescriptsNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
     surescripts: EnvConfig["surescripts"];
-  }): { lambda: Lambda } {
+  }): { lambda: Lambda; queue: Queue } {
     const {
       lambdaLayers,
       vpc,
@@ -335,7 +311,13 @@ export class SurescriptsNestedStack extends NestedStack {
       surescriptsReplicaBucket,
       surescripts,
     } = ownProps;
-    const { name, entry, lambda: lambdaSettings, waitTime } = settings().synchronizeSftp;
+    const {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+    } = settings.synchronizeSftp;
 
     const lambda = createLambda({
       ...lambdaSettings,
@@ -345,9 +327,6 @@ export class SurescriptsNestedStack extends NestedStack {
       envType,
       envVars: {
         ...surescriptsEnvironmentVariables(surescripts, true),
-
-        // API_URL set on the api-stack after the OSS API is created
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -355,9 +334,20 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     surescriptsReplicaBucket.grantReadWrite(lambda);
 
-    return { lambda };
+    return { lambda, queue };
   }
 
   private setupSendPatientRequest(ownProps: {
@@ -384,7 +374,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-    } = settings().sendPatientRequest;
+    } = settings.sendPatientRequest;
 
     const queue = createQueue({
       ...queueSettings,
@@ -443,7 +433,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-    } = settings().receiveVerificationResponse;
+    } = settings.receiveVerificationResponse;
 
     const queue = createQueue({
       ...queueSettings,
@@ -504,7 +494,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-    } = settings().receiveFlatFileResponse;
+    } = settings.receiveFlatFileResponse;
 
     const queue = createQueue({
       ...queueSettings,

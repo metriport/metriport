@@ -31,3 +31,12 @@ export type QueueAndLambdaSettings = {
   };
   waitTime: Duration;
 };
+
+export interface LambdaSettings {
+  name: string;
+  entry: string;
+  memory: 512 | 1024 | 2048 | 4096;
+  /** How long can the lambda run for, max is 900 seconds (15 minutes)  */
+  timeout: Duration;
+  reservedConcurrentExecutions?: number;
+}
