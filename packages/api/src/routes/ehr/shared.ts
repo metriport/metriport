@@ -137,18 +137,53 @@ export function processEhrPatientId(
   context: "query" | "params" = "params",
   skipPaths: RegExp[] = []
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req, res, next) => {
     if (skipPaths.some(path => path.test(req.path))) {
-      next();
-      return;
+      return next();
     }
-    const tokenEhrPatientId = getFromQueryOrFail(tokenEhrPatientIdQueryParam, req);
-    const requestEhrPatientId =
-      context === "query"
-        ? getFromQueryOrFail("patientEhrId", req)
-        : getFrom("params").orFail("id", req);
-    if (requestEhrPatientId !== tokenEhrPatientId) throw new ForbiddenError();
 
-    next();
+    try {
+      const tokenEhrPatientId = getTokenPatientId(req, tokenEhrPatientIdQueryParam);
+      const requestEhrPatientId = getRequestPatientId(req, context);
+
+      if (tokenEhrPatientId !== requestEhrPatientId) {
+        throw new ForbiddenError(
+          `Patient ID mismatch: token patient ID (${tokenEhrPatientId}) ` +
+            `does not match request patient ID (${requestEhrPatientId})`
+        );
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
   };
+}
+
+function getTokenPatientId(req: Request, tokenParam: string): string {
+  try {
+    return getFromQueryOrFail(tokenParam, req);
+  } catch {
+    throw new ForbiddenError(`Missing required token patient ID: ${tokenParam}`);
+  }
+}
+
+function getRequestPatientId(req: Request, context: "query" | "params"): string {
+  if (context === "params") {
+    try {
+      return getFrom("params").orFail("id", req);
+    } catch {
+      throw new ForbiddenError(`Missing required request patient ID: id`);
+    }
+  }
+
+  try {
+    try {
+      return getFromQueryOrFail("patientEhrId", req);
+    } catch {
+      return getFrom("params").orFail("id", req);
+    }
+  } catch {
+    throw new ForbiddenError("Missing required request patient ID: patientEhrId or id");
+  }
 }
