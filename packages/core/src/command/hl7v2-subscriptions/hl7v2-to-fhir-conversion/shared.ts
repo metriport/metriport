@@ -13,7 +13,6 @@ type Hl7FileKeyParams = {
   messageId: string;
   cxId: string;
   patientId: string;
-  encounterId?: string;
   timestamp: string;
   messageCode: string;
   triggerEvent: string;
