@@ -3,6 +3,7 @@ import { out } from "../../util";
 import { Config } from "../../util/config";
 import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
+import { mergeBundles } from "./shared/utils";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getHl7ConversionBucketName();
@@ -71,7 +72,7 @@ export function createFileKeyAdtEncounter({
  * @param s3Utils S3 utils
  * @returns The encounter data as a parsed JSON object
  */
-export async function putAdtConversionBundle({
+export async function saveAdtConversionBundle({
   cxId,
   patientId,
   encounterId,
@@ -94,7 +95,7 @@ export async function putAdtConversionBundle({
   s3Utils: S3Utils;
 }) {
   const { log } = out(
-    `putAdtConversionBundle - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
+    `saveAdtConversionBundle - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
 
   const newMessageBundleFileKey = createFileKeyAdtEncounter({
@@ -107,12 +108,14 @@ export async function putAdtConversionBundle({
     triggerEvent,
   });
 
+  log(
+    `Uploading conversion result to S3 bucket: ${s3BucketName}. Filepath: ${newMessageBundleFileKey}`
+  );
   const result = (await s3Utils.uploadFile({
     bucket: s3BucketName,
     key: newMessageBundleFileKey,
     file: Buffer.from(JSON.stringify(bundle)),
   })) as AWS.S3.ManagedUpload.SendData & { VersionId: string };
-  log(`Uploaded to S3 bucket: ${s3BucketName}. Filepath: ${newMessageBundleFileKey}`);
 
   return result;
 }
@@ -156,6 +159,53 @@ export async function getAdtSourcedEncounter({
   log(`Found ADT encounter in S3 bucket: ${s3BucketName} at key: ${fileKey}`);
 
   return JSON.parse(fileData.toString());
+}
+
+/**
+ * If an existing encounter exists, merge the new bundle into it
+ * Otherwise, set the encounter to be the new bundle
+ *
+ * @param cxId Customer ID
+ * @param patientId Patient ID
+ * @param encounterId Encounter ID
+ * @param newEncounterData The new bundle to merge into the existing encounter
+ * @returns The encounter data as a parsed JSON object
+ */
+export async function mergeBundleIntoAdtSourcedEncounter({
+  cxId,
+  patientId,
+  encounterId,
+  newEncounterData,
+}: {
+  cxId: string;
+  patientId: string;
+  encounterId: string;
+  newEncounterData: Bundle<Resource>;
+}): Promise<AWS.S3.ManagedUpload.SendData & { VersionId: string }> {
+  const existingEncounterData = await getAdtSourcedEncounter({
+    cxId,
+    patientId,
+    encounterId,
+  });
+
+  const currentEncounter = !existingEncounterData
+    ? newEncounterData
+    : mergeBundles({
+        bundleType: "collection",
+        cxId,
+        patientId,
+        existing: existingEncounterData,
+        current: newEncounterData,
+      });
+
+  const response = await putAdtSourcedEncounter({
+    cxId,
+    patientId,
+    encounterId,
+    bundle: currentEncounter,
+  });
+
+  return response;
 }
 
 export async function putAdtSourcedEncounter({

@@ -6,13 +6,11 @@ import dayjs from "dayjs";
 import { S3Utils } from "../../external/aws/s3";
 import {
   createFileKeyAdtLatest,
-  getAdtSourcedEncounter,
-  putAdtConversionBundle,
-  putAdtSourcedEncounter,
+  mergeBundleIntoAdtSourcedEncounter,
+  saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { mergeBundles } from "../../external/fhir/shared/utils";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
@@ -83,41 +81,26 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
     log(`Conversion complete and patient entry added`);
 
-    await putAdtConversionBundle({
-      cxId,
-      patientId,
-      encounterId,
-      timestamp: sourceTimestamp,
-      messageId: getMessageUniqueIdentifier(message),
-      messageCode,
-      triggerEvent,
-      bundle: newEncounterData,
-      context: this.context,
-      s3Utils: this.s3Utils,
-    });
-
-    const existingEncounterData = await getAdtSourcedEncounter({
-      cxId,
-      patientId,
-      encounterId,
-    });
-
-    const currentEncounter = !existingEncounterData
-      ? newEncounterData
-      : mergeBundles({
-          bundleType: "collection",
-          cxId,
-          patientId,
-          existing: existingEncounterData,
-          current: newEncounterData,
-        });
-
-    const response = await putAdtSourcedEncounter({
-      cxId,
-      patientId,
-      encounterId,
-      bundle: currentEncounter,
-    });
+    const [, response] = await Promise.all([
+      saveAdtConversionBundle({
+        cxId,
+        patientId,
+        encounterId,
+        timestamp: sourceTimestamp,
+        messageId: getMessageUniqueIdentifier(message),
+        messageCode,
+        triggerEvent,
+        bundle: newEncounterData,
+        context: this.context,
+        s3Utils: this.s3Utils,
+      }),
+      mergeBundleIntoAdtSourcedEncounter({
+        cxId,
+        patientId,
+        encounterId,
+        newEncounterData,
+      }),
+    ]);
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
       bucketName: this.bucketName,
