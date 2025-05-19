@@ -35,7 +35,7 @@ import {
 } from "@medplum/fhirtypes";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { isBinary } from ".";
-import { SearchSetBundle } from "@metriport/shared/medical";
+import { SearchSetBundle, CollectionBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep, uniq } from "lodash";
@@ -176,8 +176,10 @@ export function buildBundleFromResources({
   };
 }
 
-export function buildCollectionBundle(entries: BundleEntry[] = []): Bundle {
-  return buildBundle({ type: "collection", entries });
+export function buildCollectionBundle<T extends Resource = Resource>(
+  entries: BundleEntry<T>[] = []
+): CollectionBundle<T> {
+  return buildBundle({ type: "collection", entries }) as CollectionBundle<T>;
 }
 
 export function buildSearchSetBundle<T extends Resource = Resource>({
