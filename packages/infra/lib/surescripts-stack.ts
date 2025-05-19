@@ -19,13 +19,13 @@ const waitTimeRefreshBundle = Duration.seconds(0); // No limit
 function settings(): {
   connectSftp: QueueAndLambdaSettings;
   synchronizeSftp: QueueAndLambdaSettings;
-  generatePatientRequest: QueueAndLambdaSettings;
+  sendPatientRequest: QueueAndLambdaSettings;
   receiveVerificationResponse: QueueAndLambdaSettings;
   receiveFlatFileResponse: QueueAndLambdaSettings;
 } {
   const connectSftp: QueueAndLambdaSettings = {
     name: "SurescriptsConnectSftp",
-    entry: "surescripts-connect-sftp",
+    entry: "surescripts-sftp-connect",
     lambda: {
       memory: 512,
       timeout: Duration.seconds(30),
@@ -47,7 +47,7 @@ function settings(): {
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
   const synchronizeSftp: QueueAndLambdaSettings = {
     name: "SurescriptsSynchronizeSftp",
-    entry: "surescripts-synchronize-sftp",
+    entry: "surescripts-sftp-synchronize",
     lambda: {
       memory: 1024,
       timeout: syncPatientLambdaTimeout,
@@ -67,19 +67,19 @@ function settings(): {
   };
 
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const generatePatientRequestLambdaTimeout = Duration.minutes(12);
-  const generatePatientRequest: QueueAndLambdaSettings = {
-    name: "SurescriptsPatientRequest",
-    entry: "surescripts-patient-request",
+  const sendPatientRequestLambdaTimeout = Duration.minutes(12);
+  const sendPatientRequest: QueueAndLambdaSettings = {
+    name: "SurescriptsSendPatientRequest",
+    entry: "surescripts-send-patient-request",
     lambda: {
       memory: 1024,
-      timeout: generatePatientRequestLambdaTimeout,
+      timeout: sendPatientRequestLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(3),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(generatePatientRequestLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(sendPatientRequestLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
@@ -141,7 +141,7 @@ function settings(): {
   return {
     connectSftp,
     synchronizeSftp,
-    generatePatientRequest,
+    sendPatientRequest,
     receiveVerificationResponse,
     receiveFlatFileResponse,
   };
@@ -180,15 +180,17 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 }
 
 export class SurescriptsNestedStack extends NestedStack {
+  // SFTP commands
   readonly connectSftpLambda: Lambda;
   readonly synchronizeSftpLambda: Lambda;
-  readonly generatePatientRequestLambda: Lambda;
-  readonly generatePatientRequestQueue: Queue;
+  // Data pipeline Lambdas
+  readonly sendPatientRequestLambda: Lambda;
+  readonly sendPatientRequestQueue: Queue;
   readonly receiveVerificationResponseLambda: Lambda;
   readonly receiveVerificationResponseQueue: Queue;
   readonly receiveFlatFileResponseLambda: Lambda;
   readonly receiveFlatFileResponseQueue: Queue;
-
+  // Pipeline storage locations
   readonly surescriptsBundleBucket: s3.Bucket;
   readonly surescriptsReplicaBucket: s3.Bucket;
 
@@ -248,7 +250,7 @@ export class SurescriptsNestedStack extends NestedStack {
     });
     this.synchronizeSftpLambda = synchronizeSftp.lambda;
 
-    const generatePatientRequest = this.setupGeneratePatientRequest({
+    const sendPatientRequest = this.setupSendPatientRequest({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -257,8 +259,8 @@ export class SurescriptsNestedStack extends NestedStack {
       surescriptsReplicaBucket: surescriptsReplicaBucket,
       surescripts: props.config.surescripts,
     });
-    this.generatePatientRequestLambda = generatePatientRequest.lambda;
-    this.generatePatientRequestQueue = generatePatientRequest.queue;
+    this.sendPatientRequestLambda = sendPatientRequest.lambda;
+    this.sendPatientRequestQueue = sendPatientRequest.queue;
 
     const receiveVerificationResponse = this.setupReceiveVerificationResponse({
       lambdaLayers: props.lambdaLayers,
@@ -304,7 +306,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables(surescripts),
+        ...surescriptsEnvironmentVariables(surescripts, false),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -342,8 +344,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables(surescripts),
-        SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
+        ...surescriptsEnvironmentVariables(surescripts, true),
 
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
@@ -359,7 +360,7 @@ export class SurescriptsNestedStack extends NestedStack {
     return { lambda };
   }
 
-  private setupGeneratePatientRequest(ownProps: {
+  private setupSendPatientRequest(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -383,7 +384,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-    } = settings().generatePatientRequest;
+    } = settings().sendPatientRequest;
 
     const queue = createQueue({
       ...queueSettings,
@@ -403,7 +404,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables(surescripts, true, false),
+        ...surescriptsEnvironmentVariables(surescripts, true),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
