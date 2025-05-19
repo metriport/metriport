@@ -201,62 +201,44 @@ export class SurescriptsNestedStack extends NestedStack {
     });
     this.surescriptsReplicaBucket = surescriptsReplicaBucket;
 
-    // Only scoped to read/write from the S3 bucket
-    const connectSftp = this.setupConnectSftp({
+    const commonConfig = {
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       surescripts: props.config.surescripts,
-    });
+    };
+
+    // Only scoped to read/write from the S3 bucket
+    const connectSftp = this.setupConnectSftp(commonConfig);
     this.connectSftpLambda = connectSftp.lambda;
 
     // Only scoped to read/write from the S3 bucket
     const synchronizeSftp = this.setupSynchronizeSftp({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      ...commonConfig,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
-      surescripts: props.config.surescripts,
     });
     this.synchronizeSftpLambda = synchronizeSftp.lambda;
 
     const sendPatientRequest = this.setupSendPatientRequest({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      ...commonConfig,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
-      surescripts: props.config.surescripts,
     });
     this.sendPatientRequestLambda = sendPatientRequest.lambda;
     this.sendPatientRequestQueue = sendPatientRequest.queue;
 
     const receiveVerificationResponse = this.setupReceiveVerificationResponse({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      ...commonConfig,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
-      surescripts: props.config.surescripts,
     });
     this.receiveVerificationResponseLambda = receiveVerificationResponse.lambda;
     this.receiveVerificationResponseQueue = receiveVerificationResponse.queue;
 
     const receiveFlatFileResponse = this.setupReceiveFlatFileResponse({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      ...commonConfig,
       surescriptsReplicaBucket: surescriptsReplicaBucket,
       surescriptsBundleBucket: this.surescriptsBundleBucket,
-      surescripts: props.config.surescripts,
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
