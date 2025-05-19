@@ -7,7 +7,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
-import { getHealthiePatientFromAppointment } from "../../../external/ehr/healthie/command/get-patient-from-appointment";
+import { getHealthiePatientsFromAppointment } from "../../../external/ehr/healthie/command/get-patients-from-appointment";
 import { updateHealthiePatientQuickNotes } from "../../../external/ehr/healthie/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
@@ -43,28 +43,30 @@ router.post(
     if (secondaryMappings.webhookAppointmentPatientLinkingDisabled) {
       return res.sendStatus(httpStatus.OK);
     }
-    const healthiePatientId = await getHealthiePatientFromAppointment({
+    const healthiePatientIds = await getHealthiePatientsFromAppointment({
       cxId,
       healthiePracticeId,
       healthieAppointmentId: event.resource_id,
     });
-    if (!healthiePatientId) return res.sendStatus(httpStatus.OK);
-    await updateHealthiePatientQuickNotes({
-      cxId,
-      healthiePracticeId,
-      healthiePatientId,
-    });
-    if (secondaryMappings.webhookAppointmentPatientProcessingDisabled) {
-      return res.sendStatus(httpStatus.OK);
+    if (healthiePatientIds.length < 1) return res.sendStatus(httpStatus.OK);
+    for (const healthiePatientId of healthiePatientIds) {
+      await updateHealthiePatientQuickNotes({
+        cxId,
+        healthiePracticeId,
+        healthiePatientId,
+      });
+      if (secondaryMappings.webhookAppointmentPatientProcessingDisabled) {
+        continue;
+      }
+      const handler = buildEhrSyncPatientHandler();
+      await handler.processSyncPatient({
+        ehr: EhrSources.healthie,
+        cxId,
+        practiceId: healthiePracticeId,
+        patientId: healthiePatientId,
+        triggerDq: true,
+      });
     }
-    const handler = buildEhrSyncPatientHandler();
-    await handler.processSyncPatient({
-      ehr: EhrSources.healthie,
-      cxId,
-      practiceId: healthiePracticeId,
-      patientId: healthiePatientId,
-      triggerDq: true,
-    });
     return res.sendStatus(httpStatus.OK);
   })
 );
