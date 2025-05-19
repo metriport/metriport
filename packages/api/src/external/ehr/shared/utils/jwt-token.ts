@@ -13,6 +13,10 @@ import {
   canvasWebhookSource,
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import {
+  EclinicalworksDashJwtTokenData,
+  eclinicalworksDashSource,
+} from "@metriport/shared/interface/external/ehr/eclinicalworks/jwt-token";
+import {
   ElationClientJwtTokenData,
   elationClientSource,
   ElationDashJwtTokenData,
@@ -28,6 +32,7 @@ import { JwtTokenData, JwtTokenSource } from "../../../../domain/jwt-token";
 export const ehrDashJwtTokenSources = [
   athenaDashSource,
   canvasDashSource,
+  eclinicalworksDashSource,
   elationDashSource,
   healthieDashSource,
 ] as const;
@@ -39,6 +44,7 @@ export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTok
 export type EhrDashJwtTokenData =
   | AthenaDashJwtTokenData
   | CanvasDashJwtTokenData
+  | EclinicalworksDashJwtTokenData
   | ElationDashJwtTokenData
   | HealthieDashJwtTokenData;
 
