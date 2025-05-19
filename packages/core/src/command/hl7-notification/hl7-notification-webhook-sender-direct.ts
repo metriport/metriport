@@ -125,8 +125,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       versionId: response.VersionId,
     });
 
-    console.log(`bundlePresignedUrl: ${bundlePresignedUrl}`);
-
     const encounterPeriod = getEncounterPeriod(message);
     await executeWithNetworkRetries(
       async () =>
