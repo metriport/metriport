@@ -116,7 +116,7 @@ export class APIStack extends Stack {
     // Buckets
     //-------------------------------------------
     let outgoingHl7NotificationBucket: s3.IBucket | undefined;
-    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+    if (props.config.hl7Notification) {
       outgoingHl7NotificationBucket = s3.Bucket.fromBucketName(
         this,
         "OutgoingHl7MessageBucket",
@@ -298,6 +298,17 @@ export class APIStack extends Stack {
       ],
     });
 
+    let hl7ConversionBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      hl7ConversionBucket = new s3.Bucket(this, "HL7ConversionBucket", {
+        bucketName: props.config.hl7Notification.hl7ConversionBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+      });
+    }
+
     let ehrResponsesBucket: s3.Bucket | undefined;
     if (!isSandbox(props.config)) {
       ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
@@ -372,7 +383,7 @@ export class APIStack extends Stack {
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+    if (props.config.hl7Notification && outgoingHl7NotificationBucket && hl7ConversionBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
         "Hl7NotificationWebhookSenderNestedStack",
@@ -382,6 +393,7 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
           outgoingHl7NotificationBucket,
+          hl7ConversionBucket,
           secrets,
         }
       );
