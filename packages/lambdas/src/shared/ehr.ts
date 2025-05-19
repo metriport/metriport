@@ -1,8 +1,9 @@
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
 import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient";
 import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/healthie/link-patient/healthie-link-patient";
+import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
 import { MetriportError } from "@metriport/shared";
-import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSources, isEhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { z } from "zod";
 
 interface SyncPatientPayload {
   cxId: unknown;
@@ -76,3 +77,13 @@ export function parseLinkPatient(
     patientId: patientIdRaw,
   };
 }
+
+export const ehrCreateResourceDiffBundlesSchema = z.object({
+  ehr: z.nativeEnum(EhrSources),
+  cxId: z.string(),
+  practiceId: z.string(),
+  metriportPatientId: z.string(),
+  ehrPatientId: z.string(),
+  resourceType: z.string(),
+  jobId: z.string(),
+});

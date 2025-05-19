@@ -15,7 +15,7 @@ import {
   getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
-} from "../../shared";
+} from "../../shared/utils/appointment";
 import { createCanvasClient } from "../shared";
 import { SyncCanvasPatientIntoMetriportParams } from "./sync-patient";
 
