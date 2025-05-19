@@ -37,7 +37,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.hl7Notification?.secrets
       ? buildSecrets(scope, config.hl7Notification?.secrets)
       : undefined),
-    ...(config.surescripts?.secrets ? buildSecrets(scope, config.surescripts.secrets) : undefined),
+    ...buildSecrets(scope, config.surescripts.secrets),
   };
   return secrets;
 }

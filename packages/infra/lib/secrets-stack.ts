@@ -73,8 +73,7 @@ export class SecretsStack extends Stack {
       }
     }
 
-    for (const secretName of Object.values<string | undefined>(props.config.surescripts.secrets)) {
-      if (!secretName || !secretName.trim().length) continue;
+    for (const secretName of Object.values(props.config.surescripts.secrets)) {
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
     }
