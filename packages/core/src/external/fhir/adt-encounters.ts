@@ -181,7 +181,7 @@ export async function mergeBundleIntoAdtSourcedEncounter({
   patientId: string;
   encounterId: string;
   newEncounterData: Bundle<Resource>;
-}): Promise<AWS.S3.ManagedUpload.SendData & { VersionId: string }> {
+}): Promise<{ Bucket: string; Key: string; VersionId: string }> {
   const existingEncounterData = await getAdtSourcedEncounter({
     cxId,
     patientId,
@@ -198,14 +198,12 @@ export async function mergeBundleIntoAdtSourcedEncounter({
         current: newEncounterData,
       });
 
-  const response = await putAdtSourcedEncounter({
+  return await putAdtSourcedEncounter({
     cxId,
     patientId,
     encounterId,
     bundle: currentEncounter,
   });
-
-  return response;
 }
 
 export async function putAdtSourcedEncounter({
@@ -218,7 +216,11 @@ export async function putAdtSourcedEncounter({
   patientId: string;
   encounterId: string;
   bundle: Bundle<Resource>;
-}): Promise<AWS.S3.ManagedUpload.SendData & { VersionId: string }> {
+}): Promise<{
+  Bucket: string;
+  Key: string;
+  VersionId: string;
+}> {
   const { log } = out(
     `putAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
@@ -230,9 +232,15 @@ export async function putAdtSourcedEncounter({
   });
 
   log(`Uploading ADT encounter to S3 bucket: ${s3BucketName} at key: ${fileKey}`);
-  return (await s3Utils.uploadFile({
+  const response = (await s3Utils.uploadFile({
     bucket: s3BucketName,
     key: fileKey,
     file: Buffer.from(JSON.stringify(bundle)),
   })) as AWS.S3.ManagedUpload.SendData & { VersionId: string };
+
+  return {
+    bucketName: s3BucketName,
+    fileKey,
+    response,
+  };
 }
