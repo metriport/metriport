@@ -5,7 +5,7 @@ import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
-import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../../util/mime";
+import { HL7_FILE_EXTENSION } from "../../../util/mime";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
 import { getMessageDatetime, getMessageUniqueIdentifier } from "./msh";
 
@@ -166,55 +166,4 @@ export function createFileKeyHl7Message({
 
 export function formatDateToHl7(date: Date): string {
   return buildDayjs(date).format("YYYYMMDDHHmmss");
-}
-
-export function createPrefixAdtEncounter({
-  cxId,
-  patientId,
-  encounterId,
-}: {
-  cxId: string;
-  patientId: string;
-  encounterId: string;
-}) {
-  return `cxId=${cxId}/ptId=${patientId}/ADT/${encounterId}`;
-}
-
-export function createFileKeyAdtLatest({
-  cxId,
-  patientId,
-  encounterId,
-}: {
-  cxId: string;
-  patientId: string;
-  encounterId: string;
-}) {
-  return `${createPrefixAdtEncounter({
-    cxId,
-    patientId,
-    encounterId,
-  })}/latest.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
-}
-
-export function createFileKeyAdtEncounter({
-  cxId,
-  patientId,
-  encounterId,
-  timestamp,
-  messageId,
-  triggerEvent,
-}: {
-  cxId: string;
-  patientId: string;
-  encounterId: string;
-  timestamp: string;
-  messageId: string;
-  messageCode: string;
-  triggerEvent: string;
-}) {
-  return `${createPrefixAdtEncounter({
-    cxId,
-    patientId,
-    encounterId,
-  })}/${timestamp}_${messageId}_ADT_${triggerEvent}.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
 }
