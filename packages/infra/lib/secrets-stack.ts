@@ -73,9 +73,9 @@ export class SecretsStack extends Stack {
       }
     }
 
-    if (props.config.surescripts && Object.keys(props.config.surescripts.secrets).length) {
+    if (props.config.surescripts) {
       for (const secretName of Object.values<string | undefined>(
-        props.config.surescripts.secrets
+        props.config.surescripts.secrets ?? {}
       )) {
         if (!secretName || !secretName.trim().length) continue;
         const secret = makeSecret(secretName);
