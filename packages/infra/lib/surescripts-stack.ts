@@ -17,11 +17,33 @@ const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeRefreshBundle = Duration.seconds(0); // No limit
 
 function settings(): {
+  connectSftp: QueueAndLambdaSettings;
   synchronizeSftp: QueueAndLambdaSettings;
   generateRequest: QueueAndLambdaSettings;
   parseVerification: QueueAndLambdaSettings;
   parseResponse: QueueAndLambdaSettings;
 } {
+  const connectSftp: QueueAndLambdaSettings = {
+    name: "SurescriptsConnectSftp",
+    entry: "surescripts-connect-sftp",
+    lambda: {
+      memory: 512,
+      timeout: Duration.seconds(30),
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.minutes(10),
+      maxMessageCountAlarmThreshold: 100,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(10 * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+    },
+    waitTime: waitTimePatientSync,
+  };
+
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
   const synchronizeSftp: QueueAndLambdaSettings = {
     name: "SurescriptsSynchronizeSftp",
@@ -117,6 +139,7 @@ function settings(): {
   };
 
   return {
+    connectSftp,
     synchronizeSftp,
     generateRequest,
     parseVerification,
@@ -134,6 +157,7 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 }
 
 export class SurescriptsNestedStack extends NestedStack {
+  readonly connectSftpLambda: Lambda;
   readonly synchronizeSftpLambda: Lambda;
   readonly generateRequestLambda: Lambda;
   readonly generateRequestQueue: Queue;
@@ -179,6 +203,16 @@ export class SurescriptsNestedStack extends NestedStack {
     this.surescriptsReplicaBucket = surescriptsReplicaBucket;
 
     // Only scoped to read/write from the S3 bucket
+    const connectSftp = this.setupConnectSftp({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+    this.connectSftpLambda = connectSftp.lambda;
+
+    // Only scoped to read/write from the S3 bucket
     const synchronizeSftp = this.setupSynchronizeSftp({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -222,6 +256,33 @@ export class SurescriptsNestedStack extends NestedStack {
     });
     this.parseResponseLambda = parseResponse.lambda;
     this.parseResponseQueue = parseResponse.queue;
+  }
+
+  private setupConnectSftp(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { name, entry, lambda: lambdaSettings } = settings().connectSftp;
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return { lambda };
   }
 
   private setupSynchronizeSftp(ownProps: {
