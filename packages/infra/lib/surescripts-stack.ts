@@ -27,7 +27,7 @@ function settings(): {
     name: "SurescriptsSynchronizeSftp",
     entry: "surescripts-synchronize-sftp",
     lambda: {
-      memory: 512,
+      memory: 1024,
       timeout: syncPatientLambdaTimeout,
     },
     queue: {
@@ -47,14 +47,14 @@ function settings(): {
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
   const generateRequestLambdaTimeout = Duration.minutes(12);
   const generateRequest: QueueAndLambdaSettings = {
-    name: "SurescriptsGenerateRequest",
-    entry: "surescripts-generate-request",
+    name: "SurescriptsRequest",
+    entry: "surescripts-request",
     lambda: {
       memory: 1024,
       timeout: generateRequestLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      alarmMaxAgeOfOldestMessage: Duration.hours(3),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(generateRequestLambdaTimeout.toSeconds() * 2 + 1),
@@ -71,8 +71,8 @@ function settings(): {
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
   const parseVerificationLambdaTimeout = Duration.minutes(1);
   const parseVerification: QueueAndLambdaSettings = {
-    name: "SurescriptsParseVerification",
-    entry: "surescripts-parse-verification",
+    name: "SurescriptsVerification",
+    entry: "surescripts-verification",
     lambda: {
       memory: 1024,
       timeout: parseVerificationLambdaTimeout,
@@ -95,8 +95,8 @@ function settings(): {
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
   const parseResponseLambdaTimeout = Duration.minutes(15);
   const parseResponse: QueueAndLambdaSettings = {
-    name: "SurescriptsParseResponse",
-    entry: "surescripts-parse-response",
+    name: "SurescriptsResponse",
+    entry: "surescripts-response",
     lambda: {
       memory: 1024,
       timeout: parseResponseLambdaTimeout,
@@ -129,19 +129,21 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
-  surescriptsBucket: s3.Bucket;
+  surescriptsReplicaBucket: s3.Bucket;
+  surescriptsBundleBucket: s3.Bucket;
 }
 
 export class SurescriptsNestedStack extends NestedStack {
   readonly synchronizeSftpLambda: Lambda;
-  readonly synchronizeSftpQueue: Queue;
   readonly generateRequestLambda: Lambda;
   readonly generateRequestQueue: Queue;
   readonly parseVerificationLambda: Lambda;
   readonly parseVerificationQueue: Queue;
   readonly parseResponseLambda: Lambda;
   readonly parseResponseQueue: Queue;
+
   readonly surescriptsBundleBucket: s3.Bucket;
+  readonly surescriptsReplicaBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: SurescriptsNestedStackProps) {
     super(scope, id, props);
@@ -149,7 +151,7 @@ export class SurescriptsNestedStack extends NestedStack {
     this.terminationProtection = true;
 
     const surescriptsBundleBucket = new s3.Bucket(this, "SurescriptsBundleBucket", {
-      bucketName: props.config.surescriptsBundleBucketName,
+      bucketName: props.config.surescripts?.surescriptsBundleBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
@@ -162,16 +164,30 @@ export class SurescriptsNestedStack extends NestedStack {
     });
     this.surescriptsBundleBucket = surescriptsBundleBucket;
 
+    const surescriptsReplicaBucket = new s3.Bucket(this, "SurescriptsReplicaBucket", {
+      bucketName: props.config.surescripts?.surescriptsReplicaBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedMethods: [s3.HttpMethods.GET],
+        },
+      ],
+    });
+    this.surescriptsReplicaBucket = surescriptsReplicaBucket;
+
+    // Only scoped to read/write from the S3 bucket
     const synchronizeSftp = this.setupSynchronizeSftp({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
-      surescriptsBucket: props.surescriptsBucket,
+      surescriptsReplicaBucket: surescriptsReplicaBucket,
     });
     this.synchronizeSftpLambda = synchronizeSftp.lambda;
-    this.synchronizeSftpQueue = synchronizeSftp.queue;
 
     const generateRequest = this.setupGenerateRequest({
       lambdaLayers: props.lambdaLayers,
@@ -179,7 +195,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
-      surescriptsBucket: props.surescriptsBucket,
+      surescriptsReplicaBucket: surescriptsReplicaBucket,
     });
     this.generateRequestLambda = generateRequest.lambda;
     this.generateRequestQueue = generateRequest.queue;
@@ -190,7 +206,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
-      surescriptsBucket: props.surescriptsBucket,
+      surescriptsReplicaBucket: surescriptsReplicaBucket,
     });
     this.parseVerificationLambda = parseVerification.lambda;
     this.parseVerificationQueue = parseVerification.queue;
@@ -201,7 +217,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
-      surescriptsBucket: props.surescriptsBucket,
+      surescriptsReplicaBucket: surescriptsReplicaBucket,
       surescriptsBundleBucket: this.surescriptsBundleBucket,
     });
     this.parseResponseLambda = parseResponse.lambda;
@@ -214,28 +230,11 @@ export class SurescriptsNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    surescriptsBucket: s3.Bucket;
-  }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
-    const {
-      name,
-      entry,
-      lambda: lambdaSettings,
-      queue: queueSettings,
-      eventSource: eventSourceSettings,
-      waitTime,
-    } = settings().synchronizeSftp;
-
-    const queue = createQueue({
-      ...queueSettings,
-      stack: this,
-      name,
-      fifo: true,
-      createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
-      envType,
-      alarmSnsAction: alarmAction,
-    });
+    surescriptsReplicaBucket: s3.Bucket;
+  }): { lambda: Lambda } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescriptsReplicaBucket } =
+      ownProps;
+    const { name, entry, lambda: lambdaSettings, waitTime } = settings().synchronizeSftp;
 
     const lambda = createLambda({
       ...lambdaSettings,
@@ -244,6 +243,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
+        SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -253,9 +253,9 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    surescriptsReplicaBucket.grantReadWrite(lambda);
 
-    return { lambda, queue };
+    return { lambda };
   }
 
   private setupGenerateRequest(ownProps: {
@@ -264,16 +264,16 @@ export class SurescriptsNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    surescriptsBucket: s3.Bucket;
+    surescriptsReplicaBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescriptsReplicaBucket } =
+      ownProps;
     const {
       name,
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-      waitTime,
     } = settings().generateRequest;
 
     const queue = createQueue({
@@ -294,14 +294,15 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        // API_URL set on the api-stack after the OSS API is created
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    surescriptsReplicaBucket.grantReadWrite(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
@@ -314,16 +315,16 @@ export class SurescriptsNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    surescriptsBucket: s3.Bucket;
+    surescriptsReplicaBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescriptsReplicaBucket } =
+      ownProps;
     const {
       name,
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-      waitTime,
     } = settings().parseVerification;
 
     const queue = createQueue({
@@ -344,14 +345,15 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        // API_URL set on the api-stack after the OSS API is created
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    surescriptsReplicaBucket.grantReadWrite(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
@@ -364,17 +366,24 @@ export class SurescriptsNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    surescriptsBucket: s3.Bucket;
+    surescriptsReplicaBucket: s3.Bucket;
     surescriptsBundleBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      sentryDsn,
+      alarmAction,
+      surescriptsReplicaBucket,
+      surescriptsBundleBucket,
+    } = ownProps;
     const {
       name,
       entry,
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-      waitTime,
     } = settings().parseResponse;
 
     const queue = createQueue({
@@ -396,10 +405,8 @@ export class SurescriptsNestedStack extends NestedStack {
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        SURESCRIPTS_BUCKET_NAME: ownProps.surescriptsBucket.bucketName,
-        SURESCRIPTS_BUNDLE_BUCKET_NAME: ownProps.surescriptsBundleBucket.bucketName,
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
-        MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
+        SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
+        SURESCRIPTS_BUNDLE_BUCKET_NAME: surescriptsBundleBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -410,7 +417,8 @@ export class SurescriptsNestedStack extends NestedStack {
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     // Grant read to medical document bucket set on the api-stack
-    ownProps.surescriptsBundleBucket.grantReadWrite(lambda);
+    surescriptsBundleBucket.grantReadWrite(lambda);
+    surescriptsReplicaBucket.grantReadWrite(lambda);
 
     return { lambda, queue };
   }
