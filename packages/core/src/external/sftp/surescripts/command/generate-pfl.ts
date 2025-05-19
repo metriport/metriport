@@ -1,61 +1,43 @@
 #!/usr/bin/env node
 import path from "path";
 import dotenv from "dotenv";
+// import { SurescriptsSftpClient, TransmissionType } from "../client";
+
 dotenv.config({
   path: path.resolve(__dirname, "../../../../../.env"),
 });
 
 import { Command } from "commander";
-import { SurescriptsSftpClient } from "../client";
-
-function metriportBanner(): string {
-  return `
-              ,▄,
-            ▄▓███▌
-        ▄▀╙   ▀▓▀    ²▄
-      ▄└               ╙▌
-    ,▀                   ╨▄
-    ▌                     ║
-                           ▌
-                           ▌
-  ,▓██▄                 ╔███▄
-  ╙███▌                 ▀███▀
-      ▀▄
-        ▀╗▄         ,▄
-           '╙▀▀▀▀▀╙''
-  
-          Metriport Inc.
-  
-    SureScripts SFTP Integration
-        `;
-}
-
+import { metriportBanner } from "./shared";
 const program = new Command();
 
+// import { getFacilities } from "@metriport/api/command/medical/facility/get-facility";
+
 program
+  .argument("<cxId>", "The cxId of the customer")
   .description("Generate a PFL file and place into the outgoing S3 location")
   .addHelpText("before", metriportBanner())
   .showHelpAfterError()
-  .version("1.0.0")
-  // .option("-p, --production", "Generates a file for the production SFTP server")
-  .action(async () => {
-    console.log("Generating PFL file...");
-  });
+  .version("1.0.0");
 
 async function main() {
-  // console.log(metriportBanner());
   program.parse();
 
-  // const options = program.opts();
+  const cxId = program.args[0];
+  if (!cxId) {
+    throw new Error("cxId is required");
+  }
 
-  const client = new SurescriptsSftpClient({});
+  // generate PFL file
+  // const client = new SurescriptsSftpClient({});
+  // const transmission = client.createTransmission(TransmissionType.Enroll, cxId);
 
-  await client.connect();
-  console.log("connected");
-  await client.disconnect();
-  console.log("disconnected");
+  // const facilities = await getFacilities({ cxId });
 
-  // const transmission =
+  // for (const facility of facilities) {
+  // const message = toSurescriptsMessage(client, transmission, cxId, Facility, Patient[]);
+  // await client.put(transmission.fileName, message);
+  // }
 }
 
 main();
