@@ -36,11 +36,24 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+export type GetSecretsParams = {
+  cxId: string;
+  practiceId: string;
+};
+
+export type GetSecretsParamsResult = {
+  clientKey: string;
+  clientSecret: string;
+};
+
+export type GetSecretsFunction = () => Promise<GetSecretsParamsResult>;
+
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
   practiceId: string;
-  clientKey: string;
-  clientSecret: string;
+  clientKey?: string;
+  clientSecret?: string;
+  getSecrets?: GetSecretsFunction;
 }
 
 export type RequestData = { [key: string]: string | boolean | object | undefined };

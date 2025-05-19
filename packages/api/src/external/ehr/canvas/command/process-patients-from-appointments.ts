@@ -1,8 +1,11 @@
+import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments";
+import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { BadRequestError, errorToString, NotFoundError } from "@metriport/shared";
+import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -16,7 +19,7 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createCanvasClient } from "../shared";
+import { createCanvasClientWithTokenIdAndEnvironment } from "../shared";
 import { SyncCanvasPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
@@ -93,16 +96,25 @@ async function getAppointments({
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const api = await createCanvasClient({ cxId, practiceId });
+  const { tokenId, environment } = await createCanvasClientWithTokenIdAndEnvironment({
+    cxId,
+    practiceId,
+  });
   const { startRange, endRange } = getLookForwardTimeRange({
     lookForward: appointmentsLookForward,
   });
   log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
-    const appointments = await api.getAppointments({
+    const handler = buildEhrGetAppointmentsHandler();
+    const appointments = await handler.getAppointments<SlimBookedAppointment>({
+      ehr: EhrSources.canvas,
+      environment,
+      tokenId,
       cxId,
+      practiceId,
       fromDate: startRange,
       toDate: endRange,
+      method: AppointmentMethods.canvasGetAppointments,
     });
     return {
       appointments: appointments.map(appointment => {

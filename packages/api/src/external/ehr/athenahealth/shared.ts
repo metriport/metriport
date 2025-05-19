@@ -28,15 +28,22 @@ function getAthenaEnv(): EhrEnvAndClientCredentials<AthenaEnv> {
   };
 }
 
-export async function createAthenaClient(
+export async function createAthenaClientWithTokenIdAndEnvironment(
   perPracticeParams: EhrPerPracticeParams
-): Promise<AthenaHealthApi> {
+): Promise<{ client: AthenaHealthApi; tokenId: string; environment: AthenaEnv }> {
   return await createEhrClient<AthenaEnv, AthenaHealthApi>({
     ...perPracticeParams,
     source: athenaClientJwtTokenSource,
     getEnv: { params: undefined, getEnv: getAthenaEnv },
     getClient: AthenaHealthApi.create,
   });
+}
+
+export async function createAthenaClient(
+  perPracticeParams: EhrPerPracticeParams
+): Promise<AthenaHealthApi> {
+  const { client } = await createAthenaClientWithTokenIdAndEnvironment(perPracticeParams);
+  return client;
 }
 
 export enum LookupModes {

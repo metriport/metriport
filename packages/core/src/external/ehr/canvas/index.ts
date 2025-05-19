@@ -56,6 +56,7 @@ import {
   getConditionIcd10Coding,
   getConditionStartDate,
   getConditionStatus,
+  GetSecretsFunction,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -104,6 +105,7 @@ class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceCustomApi: AxiosInstance;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  private getSecrets: GetSecretsFunction | undefined;
   private baseUrl: string;
   private practiceId: string;
 
@@ -113,6 +115,7 @@ class CanvasApi {
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceCustomApi = axios.create({});
     this.baseUrl = `${config.environment}${canvasDomainExtension}`;
+    this.getSecrets = config.getSecrets;
   }
 
   public static async create(config: CanvasApiConfig): Promise<CanvasApi> {
@@ -126,8 +129,20 @@ class CanvasApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
+    let secrets = {
+      clientKey: this.config.clientKey,
+      clientSecret: this.config.clientSecret,
+    };
+    if (!secrets.clientKey || !secrets.clientSecret) {
+      if (!this.getSecrets) {
+        throw new MetriportError(
+          "Client key and secret are required to fetch OAuth token @ Canvas"
+        );
+      }
+      secrets = await this.getSecrets();
+    }
     const url = `https://${this.baseUrl}/auth/token/`;
-    const payload = `grant_type=client_credentials&client_id=${this.config.clientKey}&client_secret=${this.config.clientSecret}`;
+    const payload = `grant_type=client_credentials&client_id=${secrets.clientKey}&client_secret=${secrets.clientSecret}`;
 
     try {
       const response = await axios.post(url, payload, {

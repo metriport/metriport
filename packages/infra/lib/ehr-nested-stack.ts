@@ -19,13 +19,25 @@ const waitTimeHealthieLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeComputeResourceDiff = Duration.millis(0); // No limit
 const waitTimeRefreshBundle = Duration.seconds(0); // No limit
 
+type LambdaSettings = Pick<QueueAndLambdaSettings, "name" | "entry" | "lambda">;
+
 function settings(): {
+  getAppointments: LambdaSettings;
   syncPatient: QueueAndLambdaSettings;
   elationLinkPatient: QueueAndLambdaSettings;
   healthieLinkPatient: QueueAndLambdaSettings;
   computeResourceDiffBundles: QueueAndLambdaSettings;
   refreshEhrBundles: QueueAndLambdaSettings;
 } {
+  const getAppointmentsLambdaTimeout = Duration.minutes(12);
+  const getAppointments: LambdaSettings = {
+    name: "EhrGetAppointments",
+    entry: "ehr-get-appointments",
+    lambda: {
+      memory: 4096,
+      timeout: getAppointmentsLambdaTimeout,
+    },
+  };
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
   const syncPatient: QueueAndLambdaSettings = {
     name: "EhrSyncPatient",
@@ -138,6 +150,7 @@ function settings(): {
     waitTime: waitTimeRefreshBundle,
   };
   return {
+    getAppointments,
     syncPatient,
     elationLinkPatient,
     healthieLinkPatient,
@@ -155,6 +168,7 @@ interface EhrNestedStackProps extends NestedStackProps {
 }
 
 export class EhrNestedStack extends NestedStack {
+  readonly getAppointmentsLambda: Lambda;
   readonly syncPatientLambda: Lambda;
   readonly syncPatientQueue: Queue;
   readonly elationLinkPatientLambda: Lambda;
@@ -171,6 +185,14 @@ export class EhrNestedStack extends NestedStack {
     super(scope, id, props);
 
     this.terminationProtection = true;
+
+    this.getAppointmentsLambda = this.setupGetAppointmentslambda({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
 
     const ehrBundleBucket = new s3.Bucket(this, "EhrBundleBucket", {
       bucketName: props.config.ehrBundleBucketName,
@@ -239,6 +261,34 @@ export class EhrNestedStack extends NestedStack {
     });
     this.refreshEhrBundlesLambda = refreshEhrBundles.lambda;
     this.refreshEhrBundlesQueue = refreshEhrBundles.queue;
+  }
+
+  private setupGetAppointmentslambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { name, entry, lambda: lambdaSettings } = settings().getAppointments;
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return lambda;
   }
 
   private setupSyncPatient(ownProps: {

@@ -33,7 +33,6 @@ import {
 dayjs.extend(duration);
 
 const appointmentsLookForward = dayjs.duration(1, "day");
-const appointmentsLookForward48hr = dayjs.duration(2, "day");
 const appointmentsLookForward48hrOffset = dayjs.duration(1, "day");
 
 type GetAppointmentsParams = {
@@ -220,7 +219,7 @@ async function getAppointmentsFromApi({
   }
   if (lookupMode === LookupModes.Appointments48hr) {
     const { startRange, endRange } = getLookForwardTimeRangeWithOffset({
-      lookForward: appointmentsLookForward48hr,
+      lookForward: appointmentsLookForward,
       offset: appointmentsLookForward48hrOffset,
     });
     log(`Getting appointments from ${startRange} to ${endRange}`);
