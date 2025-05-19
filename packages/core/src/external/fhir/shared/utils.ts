@@ -1,26 +1,38 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { normalizeFhir } from "../normalization/normalize-fhir";
-import { buildCollectionBundle } from "./bundle";
+import { buildBundle } from "./bundle";
+import { MetriportError } from "@metriport/shared";
+import { cloneDeep } from "lodash";
 
-export const mergeBundles = ({
+export function mergeBundles({
   cxId,
   patientId,
   existing,
   current,
+  bundleType,
 }: {
   cxId: string;
   patientId: string;
   existing: Bundle<Resource>;
   current: Bundle<Resource>;
-}) => {
+  bundleType: Bundle["type"];
+}): Bundle<Resource> {
   if (!existing.entry || !current.entry) {
-    throw new Error(
-      `Entry field on bundles must exist: existing: ${!!existing.entry} current: ${!!current.entry}`
+    throw new MetriportError(
+      `Entry field on bundles must exist: existing: ${!!existing.entry} current: ${!!current.entry}`,
+      undefined,
+      {
+        existingEntry: !!existing.entry,
+        currentEntry: !!current.entry,
+      }
     );
   }
 
-  const newBundle = buildCollectionBundle([...existing.entry, ...current.entry]);
+  const newBundle = buildBundle({
+    type: bundleType,
+    entries: cloneDeep([...existing.entry, ...current.entry]),
+  });
   dangerouslyDeduplicateFhir(newBundle, cxId, patientId);
   return normalizeFhir(newBundle);
-};
+}

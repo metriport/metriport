@@ -105,6 +105,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const currentEncounter = !existingEncounterData
       ? newEncounterData
       : mergeBundles({
+          bundleType: "collection",
           cxId,
           patientId,
           existing: existingEncounterData,

@@ -35,12 +35,28 @@ const protocolRegex = /^https?:\/\//;
 export type GetSignedUrlWithBucketAndKey = {
   bucketName: string;
   fileName: string;
+  /**
+   * Duration in seconds for which the signed URL will be valid
+   */
   durationSeconds?: number;
+  /**
+   * The version ID of the object the presigned URL is for, if applicable
+   */
   versionId?: string;
 };
+
 export type GetSignedUrlWithLocation = {
+  /**
+   * The S3 location string (typically in format s3://bucket-name/file-name)
+   */
   location: string;
+  /**
+   * Duration in seconds for which the signed URL will be valid
+   */
   durationSeconds?: number;
+  /**
+   * The version ID of the object the presigned URL is for, if applicable
+   */
   versionId?: string;
 };
 
@@ -260,6 +276,17 @@ export class S3Utils {
     return false;
   }
 
+  /**
+   * Returns a presigned URL for a file in an S3 bucket.
+   *
+   * @param params - Parameters for generating a signed URL
+   * @param params.bucketName - The name of the S3 bucket (when using bucket+key format)
+   * @param params.fileName - The key/filename of the object (when using bucket+key format)
+   * @param params.location - Full S3 location in the format 's3://bucket-name/key' (alternative to providing bucketName+fileName)
+   * @param params.versionId - Optional version ID of the object
+   * @param params.durationSeconds - Optional duration in seconds for URL validity
+   * @returns Promise<string> - The presigned URL for the file
+   */
   async getSignedUrl(params: GetSignedUrlWithBucketAndKey): Promise<string>;
   async getSignedUrl(params: GetSignedUrlWithLocation): Promise<string>;
   async getSignedUrl(
