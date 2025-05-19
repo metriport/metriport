@@ -5,10 +5,8 @@ import { makeSearchConsolidated } from "@metriport/core/command/consolidated/sea
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { Config } from "@metriport/core/util/config";
 import { getRequestId } from "@metriport/core/util/request";
 import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
-import axios from "axios";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -201,16 +199,6 @@ router.get(
     const query = queryParam ? queryParam.trim() : undefined;
 
     const result = await makeSearchConsolidated().search({ patient, query });
-
-    if (Config.isDev()) {
-      // TODO ENG-268 remove this - for debugging purposes only
-      const returnFhirBundle = getFromQueryAsBoolean("returnFhirBundle", req);
-      if (returnFhirBundle && result.url) {
-        const response = await axios.get(result.url);
-        if (!response.data) return undefined;
-        return res.status(status.OK).json(response.data);
-      }
-    }
 
     return res.status(status.OK).json(result);
   })

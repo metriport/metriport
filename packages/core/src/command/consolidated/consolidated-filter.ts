@@ -105,7 +105,6 @@ export async function filterConsolidated(
   return hydrated;
 }
 
-// TODO rewrite this https://linear.app/metriport/issue/ENG-279/rewrite-getreferences-too-slow
 export function addMissingReferences(
   filteredBundle: Bundle,
   originalBundle: Bundle,

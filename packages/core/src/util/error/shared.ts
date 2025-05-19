@@ -63,6 +63,6 @@ export function processAsyncError(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     log!(`${msg}: ${getErrorMessage(error)}`);
     if (error instanceof BadRequestError || error instanceof NotFoundError) return;
-    capture.error(useMsgAsTitle ? msg : error, { extra: { message: msg, err: error } });
+    capture.error(useMsgAsTitle ? msg : error, { extra: { message: msg, error } });
   };
 }

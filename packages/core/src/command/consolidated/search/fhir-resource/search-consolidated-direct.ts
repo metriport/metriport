@@ -20,14 +20,7 @@ import { searchLexical } from "./search-lexical";
 
 dayjs.extend(duration);
 
-// TODO eng-268 create lambda infra
-// TODO eng-268 consider code used by https://github.com/metriport/metriport/pull/3829
-
-// TODO eng-268 shorten this, maybe 10 minutes?
-// TODO eng-268 shorten this, maybe 10 minutes?
-// TODO eng-268 shorten this, maybe 10 minutes?
-// TODO eng-268 shorten this, maybe 10 minutes?
-const resultUrlDuration = dayjs.duration({ minutes: 120 });
+const resultUrlDuration = dayjs.duration({ minutes: 1 });
 
 const searchFolderName = "searches";
 
