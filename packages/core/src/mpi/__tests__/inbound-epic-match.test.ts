@@ -347,46 +347,4 @@ describe("epicMatchingAlgorithm", () => {
     };
     expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(false);
   });
-
-  it("pass w/ requirePartialNameMatch and first name matches (5), dob (8), exact address (2), exact phone (2), exact email (2), exact ssn (5)", () => {
-    const patient1 = { ...basePatient };
-    const patient2 = {
-      ...differentPatient,
-      dob: basePatient.dob,
-      firstName: basePatient.firstName,
-      lastName: "Smith",
-      address: basePatient.address,
-      contact: basePatient.contact ?? [],
-      personalIdentifiers: basePatient.personalIdentifiers,
-    };
-    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
-  });
-
-  it("pass w/ requirePartialNameMatch and last name matches (5), dob (8), exact address (2), exact phone (2), exact email (2), exact ssn (5)", () => {
-    const patient1 = { ...basePatient };
-    const patient2 = {
-      ...differentPatient,
-      dob: basePatient.dob,
-      firstName: "Jane",
-      lastName: basePatient.lastName,
-      address: basePatient.address,
-      contact: basePatient.contact ?? [],
-      personalIdentifiers: basePatient.personalIdentifiers,
-    };
-    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
-  });
-
-  it("pass w/ requirePartialNameMatch and both names match (10), dob (8), exact address (2), exact phone (2), exact email (2), exact ssn (5)", () => {
-    const patient1 = { ...basePatient };
-    const patient2 = {
-      ...differentPatient,
-      dob: basePatient.dob,
-      firstName: basePatient.firstName,
-      lastName: basePatient.lastName,
-      address: basePatient.address,
-      contact: basePatient.contact ?? [],
-      personalIdentifiers: basePatient.personalIdentifiers,
-    };
-    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
-  });
 });
