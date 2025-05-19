@@ -23,7 +23,7 @@ import {
   getLookForwardTimeRangeWithOffset,
   parallelPatients,
   parallelPractices,
-} from "../../shared";
+} from "../../shared/utils/appointment";
 import { createHealthieClient, LookupMode, LookupModes } from "../shared";
 import {
   SyncHealthiePatientIntoMetriportParams,
