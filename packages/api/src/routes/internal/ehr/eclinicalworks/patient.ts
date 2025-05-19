@@ -1,5 +1,6 @@
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Request, Response } from "express";
+import { out } from "@metriport/core/util/log";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { syncEclinicalworksPatientIntoMetriport } from "../../../../external/ehr/eclinicalworks/command/sync-patient";
@@ -36,9 +37,7 @@ router.post(
       eclinicalworksTokenId,
       triggerDq,
     })
-      .then(() =>
-        console.log(`Completed Eclinicalworks sync for patient ${eclinicalworksPatientId}`)
-      )
+      .then(() => out().log(`Completed Eclinicalworks sync for patient ${eclinicalworksPatientId}`))
       .catch(processAsyncError("Eclinicalworks syncEclinicalworksPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
   })
