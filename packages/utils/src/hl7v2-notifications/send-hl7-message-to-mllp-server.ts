@@ -6,7 +6,7 @@ dotenv.config();
 import { Hl7Message } from "@medplum/core";
 import { Hl7Client } from "@medplum/hl7";
 import { errorToString } from "@metriport/shared";
-
+import { MetriportError } from "@metriport/shared";
 /**
  * Sends an HL7v2 ADT message to a local MLLP server.
  *
@@ -47,7 +47,9 @@ async function sendAdtToMllpServer() {
   try {
     await client.send(hl7Message);
   } catch (error) {
-    throw new Error(`Failed to send HL7 message: ${errorToString(error)}`, { cause: error });
+    throw new MetriportError(`Failed to send HL7 message: ${errorToString(error)}`, {
+      cause: error,
+    });
   } finally {
     await client.close();
   }
