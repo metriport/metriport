@@ -20,8 +20,8 @@ describe("dob", () => {
       expect(normalizeDobSafe(input)).toBe(expectedOutput);
     });
 
-    it("should throw when gets invalid date", () => {
-      expect(() => normalizeDob("something thats not a date")).toThrow();
+    it("should return undefined when gets invalid date", () => {
+      expect(normalizeDobSafe("something thats not a date")).toBeUndefined();
     });
 
     describe("examples from the wild", () => {
