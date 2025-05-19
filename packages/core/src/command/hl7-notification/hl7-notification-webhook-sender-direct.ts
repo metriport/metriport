@@ -5,7 +5,6 @@ import axios from "axios";
 import dayjs from "dayjs";
 import { S3Utils } from "../../external/aws/s3";
 import {
-  createFileKeyAdtLatest,
   mergeBundleIntoAdtSourcedEncounter,
   saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
@@ -34,7 +33,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
   constructor(
     private readonly apiUrl: string,
-    private readonly bucketName: string,
     private readonly s3Utils = new S3Utils(Config.getAWSRegion())
   ) {}
 
@@ -81,7 +79,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
     log(`Conversion complete and patient entry added`);
 
-    const [, response] = await Promise.all([
+    const [, result] = await Promise.all([
       saveAdtConversionBundle({
         cxId,
         patientId,
@@ -103,10 +101,10 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     ]);
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
-      bucketName: this.bucketName,
-      fileName: createFileKeyAdtLatest({ cxId, patientId, encounterId }),
+      bucketName: result.Bucket,
+      fileName: result.Key,
+      versionId: result.VersionId,
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
-      versionId: response.VersionId,
     });
 
     const encounterPeriod = getEncounterPeriod(message);
