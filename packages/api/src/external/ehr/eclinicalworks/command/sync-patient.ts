@@ -10,7 +10,7 @@ import { getPatientOrFail } from "../../../../command/medical/patient/get-patien
 import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,
-} from "../../shared-fhir";
+} from "../../shared/utils/fhir";
 import { createEClinicalWorksClient } from "../shared";
 
 export type SyncEclinicalworksPatientIntoMetriportParams = {
