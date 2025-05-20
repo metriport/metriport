@@ -89,18 +89,21 @@ async function createEClinicalWorksClientFromTokenId({
 }): Promise<EClinicalWorksApi> {
   const token = await getJwtTokenByIdOrFail(tokenId);
   if (token.data.source !== eclinicalworksDashSource) {
-    throw new MetriportError("Invalid token source", undefined, { tokenId, source: token.source });
+    throw new MetriportError("Invalid token source", undefined, {
+      tokenId,
+      source: token.data.source,
+    });
   }
   const tokenPracticeId = token.data.practiceId;
   if (tokenPracticeId !== practiceId) {
     throw new MetriportError("Invalid token practiceId", undefined, {
       tokenId,
-      source: token.source,
+      source: token.data.source,
       tokenPracticeId,
       practiceId,
     });
   }
-  const api = createEClinicalWorksClient({
+  const api = await createEClinicalWorksClient({
     cxId,
     practiceId,
     authToken: token.token,
