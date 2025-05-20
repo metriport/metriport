@@ -21,7 +21,7 @@ export interface EhrGetAppointmentsHandler {
 export type GetAppointmentsClientRequest = Omit<GetAppointmentsRequest, "ehr" | "method">;
 
 export enum AppointmentMethods {
-  canvasGetAppointments = "canvasGetAppoinemtns",
+  canvasGetAppointments = "canvasGetAppointments",
 }
 
 export type GetAppointmentsMap = {

@@ -30,7 +30,7 @@ export class EhrGetAppointmentsCloud implements EhrGetAppointmentsHandler {
         .invoke({
           FunctionName: this.ehrGetAppointmentsLambdaName,
           InvocationType: "RequestResponse",
-          Payload: JSON.stringify(payload),
+          Payload: payload,
         })
         .promise()
         .then(
