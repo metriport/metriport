@@ -16,7 +16,7 @@ export function mergeBundles({
   patientId: string;
   existing: Bundle<Resource>;
   current: Bundle<Resource>;
-  bundleType: Bundle["type"];
+  bundleType: NonNullable<Bundle["type"]>;
 }): Bundle<Resource> {
   if (!existing.entry || !current.entry) {
     throw new MetriportError(

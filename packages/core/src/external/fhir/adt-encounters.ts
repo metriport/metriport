@@ -4,6 +4,7 @@ import { Config } from "../../util/config";
 import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
 import { mergeBundles } from "./shared/utils";
+import { MetriportError } from "@metriport/shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getHl7ConversionBucketName();
@@ -232,15 +233,25 @@ export async function putAdtSourcedEncounter({
   });
 
   log(`Uploading ADT encounter to S3 bucket: ${s3BucketName} at key: ${fileKey}`);
-  const response = (await s3Utils.uploadFile({
+  const { VersionId, ...result } = await s3Utils.uploadFile({
     bucket: s3BucketName,
     key: fileKey,
     file: Buffer.from(JSON.stringify(bundle)),
-  })) as AWS.S3.ManagedUpload.SendData & { VersionId: string };
+  });
+
+  if (!VersionId) {
+    throw new MetriportError(
+      "VersionId is required - you may be writing to the wrong bucket",
+      undefined,
+      {
+        bucket: s3BucketName,
+        key: fileKey,
+      }
+    );
+  }
 
   return {
-    bucketName: s3BucketName,
-    fileKey,
-    response,
+    ...result,
+    VersionId,
   };
 }

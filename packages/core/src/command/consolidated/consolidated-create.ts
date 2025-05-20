@@ -95,7 +95,6 @@ export async function createConsolidatedFromConversions({
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
-
   if (isAiBriefFeatureFlagEnabled && bundle.entry && bundle.entry.length > 0) {
     const binaryBundleEntry = await Promise.race([
       generateAiBriefBundleEntry(bundle, cxId, patientId, log),
