@@ -124,11 +124,11 @@ function surescriptsEnvironmentVariables(
     SURESCRIPTS_SFTP_HOST: surescripts.surescriptsHost,
     SURESCRIPTS_SFTP_SENDER_ID: surescripts.surescriptsSenderId,
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
+    SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts.surescriptsReplicaBucketName,
+    SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts.pharmacyBundleBucketName,
     SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN: surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN,
     SURESCRIPTS_SFTP_PUBLIC_KEY_ARN: surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY_ARN,
     SURESCRIPTS_SFTP_PRIVATE_KEY_ARN: surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY_ARN,
-    SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts.surescriptsReplicaBucketName,
-    SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts.pharmacyBundleBucketName,
   };
 }
 
@@ -202,7 +202,7 @@ export class SurescriptsNestedStack extends NestedStack {
     const receiveFlatFileResponse = this.setupReceiveFlatFileResponse({
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-      surescriptsBundleBucket: this.pharmacyBundleBucket,
+      pharmacyBundleBucket: this.pharmacyBundleBucket,
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
@@ -401,7 +401,7 @@ export class SurescriptsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
-    surescriptsBundleBucket: s3.Bucket;
+    pharmacyBundleBucket: s3.Bucket;
     surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda; queue: Queue } {
     const {
@@ -412,7 +412,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn,
       alarmAction,
       surescriptsReplicaBucket,
-      surescriptsBundleBucket,
+      pharmacyBundleBucket,
     } = ownProps;
     const {
       name,
@@ -452,7 +452,7 @@ export class SurescriptsNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
-    surescriptsBundleBucket.grantReadWrite(lambda);
+    pharmacyBundleBucket.grantReadWrite(lambda);
     surescriptsReplicaBucket.grantReadWrite(lambda);
 
     return { lambda, queue };
