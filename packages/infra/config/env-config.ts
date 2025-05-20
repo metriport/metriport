@@ -273,9 +273,9 @@ type EnvConfigBase = {
     surescriptsReceiverId: string;
     surescriptsHost: string;
     secrets: {
-      SURESCRIPTS_SFTP_SENDER_PASSWORD: string;
-      SURESCRIPTS_SFTP_PUBLIC_KEY: string;
-      SURESCRIPTS_SFTP_PRIVATE_KEY: string;
+      SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN: string;
+      SURESCRIPTS_SFTP_PUBLIC_KEY_ARN: string;
+      SURESCRIPTS_SFTP_PRIVATE_KEY_ARN: string;
     };
   };
 };

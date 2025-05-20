@@ -139,10 +139,10 @@ function surescriptsEnvironmentVariables({
   const env: Record<string, string> = {
     SURESCRIPTS_SFTP_HOST: surescripts?.surescriptsHost,
     SURESCRIPTS_SFTP_SENDER_ID: surescripts?.surescriptsSenderId,
-    SURESCRIPTS_SFTP_SENDER_PASSWORD: surescripts?.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD,
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts?.surescriptsReceiverId,
-    SURESCRIPTS_SFTP_PUBLIC_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY,
-    SURESCRIPTS_SFTP_PRIVATE_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY,
+    SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN: surescripts?.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN,
+    SURESCRIPTS_SFTP_PUBLIC_KEY_ARN: surescripts?.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY_ARN,
+    SURESCRIPTS_SFTP_PRIVATE_KEY_ARN: surescripts?.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY_ARN,
   };
 
   if (allowReplicaAccess) {
