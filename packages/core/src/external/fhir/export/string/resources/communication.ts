@@ -1,35 +1,35 @@
 import { Communication } from "@medplum/fhirtypes";
 import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
 import { formatAttachment } from "../shared/attachment";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
-import { formatReferences } from "../shared/reference";
+import { formatReference, formatReferences } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR Communication resource to a string representation
  */
 export class CommunicationToString implements FHIRResourceToString<Communication> {
-  toString(communication: Communication): string | undefined {
+  toString(communication: Communication, isDebug?: boolean): string | undefined {
     let hasMinimumData = defaultHasMinimumData;
     const parts: string[] = [];
 
-    if (communication.identifier) {
-      const identifierStr = formatIdentifiers(communication.identifier);
-      if (identifierStr) parts.push(identifierStr);
-    }
+    const identifierStr = formatIdentifiers({ identifiers: communication.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
     if (communication.status) {
-      parts.push(`Status: ${communication.status}`);
+      parts.push(isDebug ? `Status: ${communication.status}` : communication.status);
     }
 
-    if (communication.category) {
-      const categoryStr = formatCodeableConcepts(communication.category, "Category");
-      if (categoryStr) parts.push(categoryStr);
-    }
+    const categoryStr = formatCodeableConcepts({
+      concepts: communication.category,
+      label: "Category",
+      isDebug,
+    });
+    if (categoryStr) parts.push(categoryStr);
 
     if (communication.priority) {
-      parts.push(`Priority: ${communication.priority}`);
+      parts.push(isDebug ? `Priority: ${communication.priority}` : communication.priority);
     }
 
     // if (communication.subject) {
@@ -37,39 +37,53 @@ export class CommunicationToString implements FHIRResourceToString<Communication
     //   if (subjectStr) parts.push(subjectStr);
     // }
 
-    if (communication.sender) {
-      const senderStr = formatReferences([communication.sender], "Sender");
-      if (senderStr) parts.push(senderStr);
-    }
+    const senderStr = formatReference({
+      reference: communication.sender,
+      label: "Sender",
+      isDebug,
+    });
+    if (senderStr) parts.push(senderStr);
 
-    if (communication.recipient) {
-      const recipientStr = formatReferences(communication.recipient, "Recipient");
-      if (recipientStr) parts.push(recipientStr);
-    }
+    const recipientStr = formatReferences({
+      references: communication.recipient,
+      label: "Recipient",
+      isDebug,
+    });
+    if (recipientStr) parts.push(recipientStr);
 
-    if (communication.topic) {
-      const topicStr = formatCodeableConcepts([communication.topic], "Topic");
-      if (topicStr) {
-        parts.push(topicStr);
-        hasMinimumData = true;
-      }
+    const topicStr = formatCodeableConcept({
+      concept: communication.topic,
+      label: "Topic",
+      isDebug,
+    });
+    if (topicStr) {
+      parts.push(topicStr);
+      hasMinimumData = true;
     }
 
     if (communication.medium) {
-      const mediumStr = formatCodeableConcepts(communication.medium, "Medium");
+      const mediumStr = formatCodeableConcepts({
+        concepts: communication.medium,
+        label: "Medium",
+        isDebug,
+      });
       if (mediumStr) parts.push(mediumStr);
     }
 
     if (communication.sent) {
-      parts.push(`Sent: ${communication.sent}`);
+      parts.push(isDebug ? `Sent: ${communication.sent}` : communication.sent);
     }
 
     if (communication.received) {
-      parts.push(`Received: ${communication.received}`);
+      parts.push(isDebug ? `Received: ${communication.received}` : communication.received);
     }
 
     if (communication.reasonCode) {
-      const reasonStr = formatCodeableConcepts(communication.reasonCode, "Reason");
+      const reasonStr = formatCodeableConcepts({
+        concepts: communication.reasonCode,
+        label: "Reason",
+        isDebug,
+      });
       if (reasonStr) {
         parts.push(reasonStr);
         hasMinimumData = true;
@@ -79,18 +93,19 @@ export class CommunicationToString implements FHIRResourceToString<Communication
     if (communication.payload) {
       const payloads = communication.payload
         .map(payload => {
+          const { contentString, contentAttachment, contentReference } = payload;
           const components = [
-            payload.contentString && `Content: ${payload.contentString}`,
-            payload.contentAttachment &&
-              `Attachment: ${formatAttachment(payload.contentAttachment)}`,
-            payload.contentReference && formatReferences([payload.contentReference], "Content"),
+            contentString && (isDebug ? `Content: ${contentString}` : contentString),
+            formatAttachment({ attachment: contentAttachment, isDebug }),
+            formatReference({ reference: contentReference, label: "Content Ref", isDebug }),
           ].filter(Boolean);
           return components.join(FIELD_SEPARATOR);
         })
         .filter(Boolean);
 
       if (payloads.length > 0) {
-        parts.push(`Payloads: ${payloads.join(FIELD_SEPARATOR)}`);
+        const payloadStr = payloads.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Payloads: ${payloadStr}` : payloadStr);
         hasMinimumData = true;
       }
     }

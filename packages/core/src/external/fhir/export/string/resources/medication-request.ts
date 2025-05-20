@@ -15,102 +15,169 @@ import { FIELD_SEPARATOR } from "../shared/separator";
  * Converts a FHIR MedicationRequest resource to a string representation
  */
 export class MedicationRequestToString implements FHIRResourceToString<MedicationRequest> {
-  toString(request: MedicationRequest): string | undefined {
+  toString(request: MedicationRequest, isDebug?: boolean): string | undefined {
     let hasMinimumData = defaultHasMinimumData;
     const parts: string[] = [];
 
-    const identifierStr = formatIdentifiers(request.identifier);
+    const identifierStr = formatIdentifiers({ identifiers: request.identifier });
     if (identifierStr) parts.push(identifierStr);
 
-    if (request.status) parts.push(`Status: ${request.status}`);
+    if (request.status) parts.push(isDebug ? `Status: ${request.status}` : request.status);
 
-    if (request.statusReason) {
-      const reasonStr = formatCodeableConcepts([request.statusReason], "Status Reason");
-      if (reasonStr) parts.push(reasonStr);
-    }
+    const statusReasonStr = formatCodeableConcept({
+      concept: request.statusReason,
+      label: "Status Reason",
+      isDebug,
+    });
+    if (statusReasonStr) parts.push(statusReasonStr);
 
-    if (request.intent) parts.push(`Intent: ${request.intent}`);
+    if (request.intent) parts.push(isDebug ? `Intent: ${request.intent}` : request.intent);
 
-    const categoryStr = formatCodeableConcepts(request.category, "Category");
+    const categoryStr = formatCodeableConcepts({
+      concepts: request.category,
+      label: "Category",
+      isDebug,
+    });
     if (categoryStr) {
       parts.push(categoryStr);
       hasMinimumData = true;
     }
 
-    if (request.priority) parts.push(`Priority: ${request.priority}`);
+    if (request.priority) parts.push(isDebug ? `Priority: ${request.priority}` : request.priority);
 
-    if (request.doNotPerform) parts.push(`Do Not Perform`);
+    if (request.doNotPerform) parts.push("Do Not Perform");
 
-    if (request.reportedBoolean) parts.push(`Reported`);
+    if (request.reportedBoolean) parts.push("Reported");
 
-    const reportedStr = formatReference(request.reportedReference, "Reported By");
+    const reportedStr = formatReference({
+      reference: request.reportedReference,
+      label: "Reported By",
+      isDebug,
+    });
     if (reportedStr) parts.push(reportedStr);
 
-    const medicationStr = formatCodeableConcept(request.medicationCodeableConcept, "Medication");
+    const medicationStr = formatCodeableConcept({
+      concept: request.medicationCodeableConcept,
+      label: "Medication",
+      isDebug,
+    });
     if (medicationStr) {
       parts.push(medicationStr);
       hasMinimumData = true;
     }
 
-    const medicationRefStr = formatReference(request.medicationReference, "Medication");
+    const medicationRefStr = formatReference({
+      reference: request.medicationReference,
+      label: "Medication",
+      isDebug,
+    });
     if (medicationRefStr) parts.push(medicationRefStr);
 
-    // const subjectStr = formatReference(request.subject, "Subject");
+    // const subjectStr = formatReference({ reference: request.subject, label: "Subject", isDebug });
     // if (subjectStr) parts.push(subjectStr);
 
-    const encounterStr = formatReference(request.encounter, "Encounter");
+    const encounterStr = formatReference({
+      reference: request.encounter,
+      label: "Encounter",
+      isDebug,
+    });
     if (encounterStr) parts.push(encounterStr);
 
-    const infoStr = formatReferences(request.supportingInformation, "Supporting Information");
+    const infoStr = formatReferences({
+      references: request.supportingInformation,
+      label: "Supporting Information",
+      isDebug,
+    });
     if (infoStr) parts.push(infoStr);
 
-    if (request.authoredOn) parts.push(`Authored On: ${request.authoredOn}`);
+    if (request.authoredOn)
+      parts.push(isDebug ? `Authored On: ${request.authoredOn}` : request.authoredOn);
 
-    const requesterStr = formatReference(request.requester, "Requester");
+    const requesterStr = formatReference({
+      reference: request.requester,
+      label: "Requester",
+      isDebug,
+    });
     if (requesterStr) parts.push(requesterStr);
 
-    const performerStr = formatReference(request.performer, "Performer");
+    const performerStr = formatReference({
+      reference: request.performer,
+      label: "Performer",
+      isDebug,
+    });
     if (performerStr) parts.push(performerStr);
 
-    const typeStr = formatCodeableConcept(request.performerType, "Performer Type");
+    const typeStr = formatCodeableConcept({
+      concept: request.performerType,
+      label: "Performer Type",
+      isDebug,
+    });
     if (typeStr) parts.push(typeStr);
 
-    const recorderStr = formatReference(request.recorder, "Recorder");
+    const recorderStr = formatReference({
+      reference: request.recorder,
+      label: "Recorder",
+      isDebug,
+    });
     if (recorderStr) parts.push(recorderStr);
 
-    const reasonStr = formatCodeableConcepts(request.reasonCode, "Reason");
+    const reasonStr = formatCodeableConcepts({
+      concepts: request.reasonCode,
+      label: "Reason",
+      isDebug,
+    });
     if (reasonStr) parts.push(reasonStr);
 
-    const reasonRefStr = formatReferences(request.reasonReference, "Reason Reference");
+    const reasonRefStr = formatReferences({
+      references: request.reasonReference,
+      label: "Reason Reference",
+      isDebug,
+    });
     if (reasonRefStr) parts.push(reasonRefStr);
 
-    if (request.instantiatesCanonical) {
-      parts.push(`Instantiates Canonical: ${request.instantiatesCanonical.join(FIELD_SEPARATOR)}`);
-    }
+    // if (request.instantiatesCanonical) {
+    //   const instCanonical = request.instantiatesCanonical.join(FIELD_SEPARATOR);
+    //   parts.push(isDebug ? `Instantiates Canonical: ${instCanonical}` : instCanonical);
+    // }
 
-    if (request.instantiatesUri) {
-      parts.push(`Instantiates URI: ${request.instantiatesUri.join(FIELD_SEPARATOR)}`);
-    }
+    // if (request.instantiatesUri) {
+    //   const instUri = request.instantiatesUri.join(FIELD_SEPARATOR);
+    //   parts.push(isDebug ? `Instantiates URI: ${instUri}` : instUri);
+    // }
 
-    const basedOnStr = formatReferences(request.basedOn, "Based On");
+    const basedOnStr = formatReferences({
+      references: request.basedOn,
+      label: "Based On",
+      isDebug,
+    });
     if (basedOnStr) parts.push(basedOnStr);
 
-    const groupStr = formatIdentifier(request.groupIdentifier);
-    if (groupStr) parts.push(`Group Identifier: ${groupStr}`);
+    const groupStr = formatIdentifier({ identifier: request.groupIdentifier });
+    if (groupStr) parts.push(isDebug ? `Group Identifier: ${groupStr}` : groupStr);
 
-    const courseStr = formatCodeableConcept(request.courseOfTherapyType, "Course of Therapy");
+    const courseStr = formatCodeableConcept({
+      concept: request.courseOfTherapyType,
+      label: "Course of Therapy",
+      isDebug,
+    });
     if (courseStr) parts.push(courseStr);
 
-    const insuranceStr = formatReferences(request.insurance, "Insurance");
+    const insuranceStr = formatReferences({
+      references: request.insurance,
+      label: "Insurance",
+      isDebug,
+    });
     if (insuranceStr) parts.push(insuranceStr);
 
-    const notes = formatAnnotations(request.note, "Notes");
+    const notes = formatAnnotations({ annotations: request.note, label: "Notes", isDebug });
     if (notes) parts.push(notes);
 
-    if (request.dosageInstruction) {
-      const dosages = formatDosages(request.dosageInstruction, "Dosage Instructions");
-      if (dosages) parts.push(dosages);
-    }
+    const dosages = formatDosages({
+      dosages: request.dosageInstruction,
+      label: "Dosage Instructions",
+      isDebug,
+    });
+    if (dosages) parts.push(dosages);
 
     if (request.dispenseRequest) {
       const dispense = request.dispenseRequest;
@@ -118,41 +185,68 @@ export class MedicationRequestToString implements FHIRResourceToString<Medicatio
 
       if (dispense.initialFill) {
         const initialFillParts = [];
-        const quantityStr = formatQuantity(dispense.initialFill.quantity, "Quantity");
+        const quantityStr = formatQuantity({
+          quantity: dispense.initialFill.quantity,
+          label: "Quantity",
+          isDebug,
+        });
         if (quantityStr) initialFillParts.push(quantityStr);
 
-        const durationStr = formatDuration(dispense.initialFill.duration);
-        if (durationStr) initialFillParts.push(`Duration: ${durationStr}`);
+        const durationStr = formatDuration({ duration: dispense.initialFill.duration, isDebug });
+        if (durationStr) initialFillParts.push(isDebug ? `Duration: ${durationStr}` : durationStr);
 
         if (initialFillParts.length > 0) {
-          dispenseParts.push(`Initial Fill: ${initialFillParts.join(FIELD_SEPARATOR)}`);
+          const initialFillStr = initialFillParts.join(FIELD_SEPARATOR);
+          dispenseParts.push(isDebug ? `Initial Fill: ${initialFillStr}` : initialFillStr);
         }
       }
 
-      const intervalStr = formatDuration(dispense.dispenseInterval, "Dispense Interval");
+      const intervalStr = formatDuration({
+        duration: dispense.dispenseInterval,
+        label: "Dispense Interval",
+        isDebug,
+      });
       if (intervalStr) dispenseParts.push(intervalStr);
 
-      const periodStr = formatPeriod(dispense.validityPeriod, "Validity Period");
+      const periodStr = formatPeriod({
+        period: dispense.validityPeriod,
+        label: "Validity Period",
+        isDebug,
+      });
       if (periodStr) dispenseParts.push(periodStr);
 
       if (dispense.numberOfRepeatsAllowed !== undefined) {
-        dispenseParts.push(`Repeats Allowed: ${dispense.numberOfRepeatsAllowed}`);
+        dispenseParts.push(
+          isDebug
+            ? `Repeats Allowed: ${dispense.numberOfRepeatsAllowed}`
+            : String(dispense.numberOfRepeatsAllowed)
+        );
       }
 
-      const quantityStr = formatQuantity(dispense.quantity, "Quantity");
+      const quantityStr = formatQuantity({
+        quantity: dispense.quantity,
+        label: "Quantity",
+        isDebug,
+      });
       if (quantityStr) dispenseParts.push(quantityStr);
 
-      const durationStr = formatDuration(
-        dispense.expectedSupplyDuration,
-        "Expected Supply Duration"
-      );
+      const durationStr = formatDuration({
+        duration: dispense.expectedSupplyDuration,
+        label: "Expected Supply Duration",
+        isDebug,
+      });
       if (durationStr) dispenseParts.push(durationStr);
 
-      const performerStr = formatReference(dispense.performer, "Dispense Performer");
+      const performerStr = formatReference({
+        reference: dispense.performer,
+        label: "Dispense Performer",
+        isDebug,
+      });
       if (performerStr) dispenseParts.push(performerStr);
 
       if (dispenseParts.length > 0) {
-        parts.push(`Dispense Request: ${dispenseParts.join(FIELD_SEPARATOR)}`);
+        const dispenseStr = dispenseParts.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Dispense Request: ${dispenseStr}` : dispenseStr);
         hasMinimumData = true;
       }
     }
@@ -161,29 +255,50 @@ export class MedicationRequestToString implements FHIRResourceToString<Medicatio
       const substitution = request.substitution;
       const substitutionParts = [];
 
-      if (substitution.allowedBoolean) substitutionParts.push(`Substitution Allowed`);
+      if (substitution.allowedBoolean) substitutionParts.push("Substitution Allowed");
 
-      const allowedStr = formatCodeableConcept(substitution.allowedCodeableConcept, "Allowed");
+      const allowedStr = formatCodeableConcept({
+        concept: substitution.allowedCodeableConcept,
+        label: "Allowed",
+        isDebug,
+      });
       if (allowedStr) substitutionParts.push(allowedStr);
 
-      const reasonStr = formatCodeableConcept(substitution.reason, "Reason");
+      const reasonStr = formatCodeableConcept({
+        concept: substitution.reason,
+        label: "Reason",
+        isDebug,
+      });
       if (reasonStr) substitutionParts.push(reasonStr);
 
       if (substitutionParts.length > 0) {
-        parts.push(`Substitution: ${substitutionParts.join(FIELD_SEPARATOR)}`);
+        const substitutionStr = substitutionParts.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Substitution: ${substitutionStr}` : substitutionStr);
       }
     }
 
-    const priorStr = formatReference(request.priorPrescription, "Prior Prescription");
+    const priorStr = formatReference({
+      reference: request.priorPrescription,
+      label: "Prior Prescription",
+      isDebug,
+    });
     if (priorStr) parts.push(priorStr);
 
-    const issuesStr = formatReferences(request.detectedIssue, "Detected Issues");
+    const issuesStr = formatReferences({
+      references: request.detectedIssue,
+      label: "Detected Issues",
+      isDebug,
+    });
     if (issuesStr) parts.push(issuesStr);
 
-    const historyStr = formatReferences(request.eventHistory, "Event History");
+    const historyStr = formatReferences({
+      references: request.eventHistory,
+      label: "Event History",
+      isDebug,
+    });
     if (historyStr) parts.push(historyStr);
 
-    const textStr = formatNarrative(request.text, "Text");
+    const textStr = formatNarrative({ narrative: request.text, label: "Text", isDebug });
     if (textStr) parts.push(textStr);
 
     if (!hasMinimumData) return undefined;

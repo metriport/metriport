@@ -1,131 +1,133 @@
 import { MedicationDispense } from "@medplum/fhirtypes";
 import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
 import { formatAnnotations } from "../shared/annotation";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
 import { formatQuantity } from "../shared/quantity";
-import { formatReferences } from "../shared/reference";
+import { formatReference, formatReferences } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR MedicationDispense resource to a string representation
  */
 export class MedicationDispenseToString implements FHIRResourceToString<MedicationDispense> {
-  toString(dispense: MedicationDispense): string | undefined {
+  toString(dispense: MedicationDispense, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
     let hasMinimumData = defaultHasMinimumData;
 
-    const identifierStr = formatIdentifiers(dispense.identifier);
-    if (identifierStr) {
-      parts.push(identifierStr);
-    }
+    const identifierStr = formatIdentifiers({ identifiers: dispense.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
     if (dispense.status) {
-      parts.push(`Status: ${dispense.status}`);
+      parts.push(isDebug ? `Status: ${dispense.status}` : dispense.status);
     }
 
-    const categoryStr = formatCodeableConcepts(
-      dispense.category ? [dispense.category] : undefined,
-      "Category"
-    );
-    if (categoryStr) {
-      parts.push(categoryStr);
+    const categoryStr = formatCodeableConcepts({
+      concepts: dispense.category ? [dispense.category] : undefined,
+      label: "Category",
+      isDebug,
+    });
+    if (categoryStr) parts.push(categoryStr);
+
+    const medicationStr = formatCodeableConcept({
+      concept: dispense.medicationCodeableConcept,
+      label: "Medication",
+      isDebug,
+    });
+    if (medicationStr) {
+      parts.push(medicationStr);
+      hasMinimumData = true;
     }
 
-    if (dispense.medicationCodeableConcept) {
-      const medicationStr = formatCodeableConcepts(
-        [dispense.medicationCodeableConcept],
-        "Medication"
-      );
-      if (medicationStr) {
-        parts.push(medicationStr);
-        hasMinimumData = true;
-      }
-    } else if (dispense.medicationReference) {
-      const medicationStr = formatReferences([dispense.medicationReference], "Medication");
-      if (medicationStr) {
-        parts.push(medicationStr);
-      }
-    }
+    const medicationRefStr = formatReference({
+      reference: dispense.medicationReference,
+      label: "Medication",
+      isDebug,
+    });
+    if (medicationRefStr) parts.push(medicationRefStr);
 
     // if (dispense.subject) {
-    //   const subjectStr = formatReferences([dispense.subject], "Subject");
+    //   const subjectStr = formatReferences({ references: [dispense.subject], label: "Subject", isDebug });
     //   if (subjectStr) {
     //     parts.push(subjectStr);
     //   }
     // }
 
-    if (dispense.context) {
-      const contextStr = formatReferences([dispense.context], "Context");
-      if (contextStr) {
-        parts.push(contextStr);
-      }
-    }
+    const contextStr = formatReference({
+      reference: dispense.context,
+      label: "Context",
+      isDebug,
+    });
+    if (contextStr) parts.push(contextStr);
 
-    const supportingInfoStr = formatReferences(dispense.supportingInformation, "Supporting Info");
-    if (supportingInfoStr) {
-      parts.push(supportingInfoStr);
-    }
+    const supportingInfoStr = formatReferences({
+      references: dispense.supportingInformation,
+      label: "Supporting Info",
+      isDebug,
+    });
+    if (supportingInfoStr) parts.push(supportingInfoStr);
 
-    const performerStr = formatReferences(dispense.performer, "Performer");
-    if (performerStr) {
-      parts.push(performerStr);
-    }
+    const performerStr = formatReferences({
+      references: dispense.performer,
+      label: "Performer",
+      isDebug,
+    });
+    if (performerStr) parts.push(performerStr);
 
-    if (dispense.location) {
-      const locationStr = formatReferences([dispense.location], "Location");
-      if (locationStr) {
-        parts.push(locationStr);
-      }
-    }
+    const locationStr = formatReference({
+      reference: dispense.location,
+      label: "Location",
+      isDebug,
+    });
+    if (locationStr) parts.push(locationStr);
 
-    const prescriptionStr = formatReferences(dispense.authorizingPrescription, "Prescription");
-    if (prescriptionStr) {
-      parts.push(prescriptionStr);
-    }
+    const prescriptionStr = formatReferences({
+      references: dispense.authorizingPrescription,
+      label: "Prescription",
+      isDebug,
+    });
+    if (prescriptionStr) parts.push(prescriptionStr);
 
-    if (dispense.type) {
-      const typeStr = formatCodeableConcepts([dispense.type], "Type");
-      if (typeStr) {
-        parts.push(typeStr);
-      }
-    }
+    const typeStr = formatCodeableConcept({ concept: dispense.type, label: "Type", isDebug });
+    if (typeStr) parts.push(typeStr);
 
-    if (dispense.quantity) {
-      const quantityStr = formatQuantity(dispense.quantity, "Quantity");
-      if (quantityStr) {
-        parts.push(quantityStr);
-      }
-    }
+    const quantityStr = formatQuantity({
+      quantity: dispense.quantity,
+      label: "Quantity",
+      isDebug,
+    });
+    if (quantityStr) parts.push(quantityStr);
 
     // if (dispense.daysSupply) {
-    //   const daysSupplyStr = formatQuantity(dispense.daysSupply, "Days Supply");
+    //   const daysSupplyStr = formatQuantity({ quantity: dispense.daysSupply, label: "Days Supply", isDebug });
     //   if (daysSupplyStr) {
     //     parts.push(daysSupplyStr);
     //   }
     // }
 
     if (dispense.whenPrepared) {
-      parts.push(`Prepared: ${dispense.whenPrepared}`);
+      parts.push(isDebug ? `Prepared: ${dispense.whenPrepared}` : dispense.whenPrepared);
     }
 
     if (dispense.whenHandedOver) {
-      parts.push(`Handed Over: ${dispense.whenHandedOver}`);
+      parts.push(isDebug ? `Handed Over: ${dispense.whenHandedOver}` : dispense.whenHandedOver);
     }
 
-    if (dispense.destination) {
-      const destinationStr = formatReferences([dispense.destination], "Destination");
-      if (destinationStr) {
-        parts.push(destinationStr);
-      }
-    }
+    const destinationStr = formatReference({
+      reference: dispense.destination,
+      label: "Destination",
+      isDebug,
+    });
+    if (destinationStr) parts.push(destinationStr);
 
-    const receiverStr = formatReferences(dispense.receiver, "Receiver");
-    if (receiverStr) {
-      parts.push(receiverStr);
-    }
+    const receiverStr = formatReferences({
+      references: dispense.receiver,
+      label: "Receiver",
+      isDebug,
+    });
+    if (receiverStr) parts.push(receiverStr);
 
-    const notes = formatAnnotations(dispense.note, "Note");
+    const notes = formatAnnotations({ annotations: dispense.note, label: "Note", isDebug });
     if (notes) {
       parts.push(notes);
       hasMinimumData = true;

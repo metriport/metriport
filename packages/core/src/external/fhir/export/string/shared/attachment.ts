@@ -1,6 +1,7 @@
 import { Attachment } from "@medplum/fhirtypes";
 import { base64ToString } from "../../../../../util/base64";
 import { TXT_MIME_TYPE } from "../../../../../util/mime";
+import { defaultIsDebug } from "./debug";
 import { FIELD_SEPARATOR } from "./separator";
 
 // Consider expanding this to TXT_RTF_MIME_TYPE and HTML_MIME_TYPE, but we'd need a parser to
@@ -9,34 +10,52 @@ const conversibleContentTypes = [TXT_MIME_TYPE];
 
 /**
  * Formats a FHIR attachment into a string representation
- * @param attachment - FHIR attachment to format
- * @returns Formatted string of attachment
  */
-export function formatAttachment(attachment: Attachment): string | undefined {
+export function formatAttachment({
+  attachment,
+  label,
+  isDebug = defaultIsDebug,
+}: {
+  attachment: Attachment | undefined;
+  label?: string;
+  isDebug?: boolean | undefined;
+}): string | undefined {
+  if (!attachment) return undefined;
   if (!attachment.data || !attachment.contentType) return undefined;
   if (!conversibleContentTypes.includes(attachment.contentType)) return undefined;
+  const { data, contentType, title } = attachment;
   const components = [
-    `Data: ${base64ToString(attachment.data)}`,
-    `Content Type: ${attachment.contentType}`,
-    attachment.title && `Title: ${attachment.title}`,
+    isDebug ? `Data: ${base64ToString(data)}` : base64ToString(data),
+    isDebug ? `Content Type: ${contentType}` : contentType,
+    title && isDebug ? `Title: ${title}` : title,
     // attachment.language && `Language: ${attachment.language}`,
     // attachment.url && `URL: ${attachment.url}`,
     // attachment.size && `Size: ${attachment.size} bytes`,
     // attachment.hash && `Hash: ${attachment.hash}`,
     // attachment.creation && `Created: ${attachment.creation}`,
   ].filter(Boolean);
-  return components.join(FIELD_SEPARATOR);
+  if (components.length < 1) return undefined;
+  const formatted = components.join(FIELD_SEPARATOR);
+  return isDebug && label ? `${label}: ${formatted}` : formatted;
 }
 
 /**
  * Formats a list of FHIR attachments into a string representation
- * @param attachments - List of FHIR attachments to format
- * @returns Formatted string of attachments
  */
-export function formatAttachments(attachments: Attachment[] | undefined): string | undefined {
+export function formatAttachments({
+  attachments,
+  label,
+  isDebug = defaultIsDebug,
+}: {
+  attachments: Attachment[] | undefined;
+  label?: string;
+  isDebug?: boolean | undefined;
+}): string | undefined {
   if (!attachments?.length) return undefined;
-  return attachments
-    .map(a => formatAttachment(a))
-    .filter(Boolean)
-    .join(FIELD_SEPARATOR);
+  const formattedList = attachments
+    .map(attachment => formatAttachment({ attachment, isDebug }))
+    .filter(Boolean);
+  if (formattedList.length < 1) return undefined;
+  const formatted = formattedList.join(FIELD_SEPARATOR);
+  return isDebug && label ? `${label}: ${formatted}` : formatted;
 }

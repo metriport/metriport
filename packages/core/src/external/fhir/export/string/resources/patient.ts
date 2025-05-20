@@ -9,21 +9,21 @@ import { FIELD_SEPARATOR } from "../shared/separator";
  * Converts a FHIR Patient resource to a string representation
  */
 export class PatientToString implements FHIRResourceToString<Patient> {
-  toString(patient: Patient): string | undefined {
+  toString(patient: Patient, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
 
-    const identifierStr = formatIdentifiers(patient.identifier);
+    const identifierStr = formatIdentifiers({ identifiers: patient.identifier });
     if (identifierStr) parts.push(identifierStr);
 
-    const nameStr = formatHumanNames(patient.name);
+    const nameStr = formatHumanNames({ names: patient.name, isDebug });
     if (nameStr) parts.push(nameStr);
 
-    const addressStr = formatAddresses(patient.address, "Address");
+    const addressStr = formatAddresses({ addresses: patient.address, label: "Address", isDebug });
     if (addressStr) parts.push(addressStr);
 
-    if (patient.birthDate) parts.push(`DOB: ${patient.birthDate}`);
+    if (patient.birthDate) parts.push(isDebug ? `DOB: ${patient.birthDate}` : patient.birthDate);
 
-    if (patient.gender) parts.push(`Gender: ${patient.gender}`);
+    if (patient.gender) parts.push(isDebug ? `Gender: ${patient.gender}` : patient.gender);
 
     return parts.join(FIELD_SEPARATOR);
   }

@@ -1,47 +1,40 @@
 import { Organization } from "@medplum/fhirtypes";
 import { FHIRResourceToString } from "../fhir-resource-to-string";
 import { formatAddresses } from "../shared/address";
-import { formatIdentifiers } from "../shared/identifier";
+import { formatCodings } from "../shared/coding";
+import { formatNpiIdentifiers } from "../shared/identifier";
 import { FIELD_SEPARATOR } from "../shared/separator";
+import { formatTelecoms } from "../shared/telecom";
 
 /**
  * Converts a FHIR Organization resource to a string representation
  */
 export class OrganizationToString implements FHIRResourceToString<Organization> {
-  toString(organization: Organization): string | undefined {
+  toString(organization: Organization, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
 
-    const identifierStr = formatIdentifiers(organization.identifier);
-    if (identifierStr) {
-      parts.push(identifierStr);
-    }
+    const identifierStr = formatNpiIdentifiers({ identifiers: organization.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
-    if (organization.name) {
-      parts.push(`Name: ${organization.name}`);
-    }
+    if (organization.name) parts.push(isDebug ? `Name: ${organization.name}` : organization.name);
 
     if (organization.alias) {
-      parts.push(`Alias: ${organization.alias.join(FIELD_SEPARATOR)}`);
+      const aliasStr = organization.alias.join(FIELD_SEPARATOR);
+      parts.push(isDebug ? `Alias: ${aliasStr}` : aliasStr);
     }
 
-    if (organization.telecom) {
-      const telecoms = organization.telecom
-        .map(t => `${t.system ?? "unknown"}: ${t.value}`)
-        .join(FIELD_SEPARATOR);
-      parts.push(`Contact: ${telecoms}`);
-    }
+    const telecoms = formatTelecoms({ telecoms: organization.telecom, isDebug });
+    if (telecoms) parts.push(telecoms);
 
-    if (organization.address) {
-      const addresses = formatAddresses(organization.address, "Address");
-      if (addresses) parts.push(addresses);
-    }
+    const addresses = formatAddresses({
+      addresses: organization.address,
+      label: "Address",
+      isDebug,
+    });
+    if (addresses) parts.push(addresses);
 
-    if (organization.type) {
-      const types = organization.type
-        .map(t => t.coding?.map(c => c.display ?? c.code).join(FIELD_SEPARATOR) ?? "")
-        .join(FIELD_SEPARATOR);
-      parts.push(`Type: ${types}`);
-    }
+    const types = formatCodings({ codings: organization.type, label: "Type", isDebug });
+    if (types) parts.push(types);
 
     return parts.join(FIELD_SEPARATOR);
   }

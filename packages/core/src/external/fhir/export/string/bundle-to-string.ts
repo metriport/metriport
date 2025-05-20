@@ -125,17 +125,16 @@ export type FhirResourceToText = {
  * Skips unsupported resources - @see isSupportedResource
  *
  * @param bundle - FHIR Bundle to convert
+ * @param isDebug - Whether to include debug information in the output
  * @returns List of string representations of the resources in the bundle
  */
-export function bundleToString(bundle: Bundle): FhirResourceToText[] {
+export function bundleToString(bundle: Bundle, isDebug = false): FhirResourceToText[] {
   if (!bundle.entry?.length) return [];
 
   return bundle.entry.flatMap(entry => {
     const resource = entry.resource;
-    if (!resource || !resource.id || !isSupportedResource(resource)) return [];
-    const converter = resourceToStringMap[resource.resourceType as ResourceType];
-    if (!converter) return [];
-    const text = converter.toString(resource);
+    if (!resource || !resource.id) return [];
+    const text = resourceToString(resource, isDebug);
     if (!text) return [];
     return {
       id: resource.id,
@@ -145,11 +144,11 @@ export function bundleToString(bundle: Bundle): FhirResourceToText[] {
   });
 }
 
-export function resourceToString(resource: Resource): string | undefined {
+function resourceToString(resource: Resource, isDebug?: boolean): string | undefined {
   if (!isSupportedResource(resource)) return undefined;
   const converter = resourceToStringMap[resource.resourceType as ResourceType];
   if (!converter) return undefined;
-  const text = converter.toString(resource);
+  const text = converter.toString(resource, isDebug);
   if (!text) return undefined;
   return text;
 }

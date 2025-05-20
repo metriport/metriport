@@ -11,55 +11,60 @@ import { formatTelecoms } from "../shared/telecom";
  * Converts a FHIR Location resource to a string representation
  */
 export class LocationToString implements FHIRResourceToString<Location> {
-  toString(location: Location): string | undefined {
+  toString(location: Location, isDebug?: boolean): string | undefined {
     let hasMinimumData = defaultHasMinimumData;
     const parts: string[] = [];
 
-    if (location.identifier) {
-      const identifierStr = formatIdentifiers(location.identifier);
-      if (identifierStr) parts.push(identifierStr);
-    }
+    const identifierStr = formatIdentifiers({ identifiers: location.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
     if (location.status) {
-      parts.push(`Status: ${location.status}`);
+      parts.push(isDebug ? `Status: ${location.status}` : location.status);
     }
 
     if (location.name) {
-      parts.push(`Name: ${location.name}`);
+      parts.push(isDebug ? `Name: ${location.name}` : location.name);
       hasMinimumData = true;
     }
 
     if (location.alias) {
-      parts.push(`Aliases: ${location.alias.join(FIELD_SEPARATOR)}`);
+      parts.push(
+        isDebug
+          ? `Aliases: ${location.alias.join(FIELD_SEPARATOR)}`
+          : location.alias.join(FIELD_SEPARATOR)
+      );
       hasMinimumData = true;
     }
 
     if (location.description) {
-      parts.push(`Description: ${location.description}`);
+      parts.push(isDebug ? `Description: ${location.description}` : location.description);
       hasMinimumData = true;
     }
 
-    if (location.type) {
-      const typeStr = formatCodeableConcepts(location.type, "Type");
-      if (typeStr) parts.push(typeStr);
-    }
+    const typeStr = formatCodeableConcepts({ concepts: location.type, label: "Type", isDebug });
+    if (typeStr) parts.push(typeStr);
 
-    const telecoms = formatTelecoms(location.telecom, "Telecom");
-    if (telecoms) {
-      parts.push(telecoms);
-      // hasMinimumData = true;
-    }
+    const telecoms = formatTelecoms({ telecoms: location.telecom, label: "Telecom", isDebug });
+    if (telecoms) parts.push(telecoms);
 
-    const addresses = formatAddress(location.address);
+    const addresses = formatAddress({ address: location.address, isDebug });
     if (addresses) {
       parts.push(addresses);
       hasMinimumData = true;
     }
 
-    const physicalTypeStr = formatCodeableConcept(location.physicalType, "Physical Type");
+    const physicalTypeStr = formatCodeableConcept({
+      concept: location.physicalType,
+      label: "Physical Type",
+      isDebug,
+    });
     if (physicalTypeStr) parts.push(physicalTypeStr);
 
-    const orgStr = formatReference(location.managingOrganization, "Organization");
+    const orgStr = formatReference({
+      reference: location.managingOrganization,
+      label: "Organization",
+      isDebug,
+    });
     if (orgStr) parts.push(orgStr);
 
     if (!hasMinimumData) return undefined;

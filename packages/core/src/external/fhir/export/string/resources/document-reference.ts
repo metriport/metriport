@@ -11,88 +11,81 @@ import { FIELD_SEPARATOR } from "../shared/separator";
  * Converts a FHIR DocumentReference resource to a string representation
  */
 export class DocumentReferenceToString implements FHIRResourceToString<DocumentReference> {
-  toString(doc: DocumentReference): string | undefined {
+  toString(doc: DocumentReference, isDebug?: boolean): string | undefined {
     let hasMinimumData = defaultHasMinimumData;
     const parts: string[] = [];
 
-    const masterIdentifierStr = formatIdentifier(doc.masterIdentifier);
-    if (masterIdentifierStr) parts.push(`Master Identifier: ${masterIdentifierStr}`);
+    const masterIdentifierStr = formatIdentifier({ identifier: doc.masterIdentifier });
+    if (masterIdentifierStr)
+      parts.push(isDebug ? `Master Identifier: ${masterIdentifierStr}` : masterIdentifierStr);
 
-    if (doc.identifier) {
-      const identifierStr = formatIdentifiers(doc.identifier);
-      if (identifierStr) parts.push(identifierStr);
+    const identifierStr = formatIdentifiers({ identifiers: doc.identifier });
+    if (identifierStr) parts.push(identifierStr);
+
+    if (doc.status) parts.push(isDebug ? `Status: ${doc.status}` : doc.status);
+
+    if (doc.docStatus) parts.push(isDebug ? `Document Status: ${doc.docStatus}` : doc.docStatus);
+
+    const typeStr = formatCodeableConcept({ concept: doc.type, label: "Type", isDebug });
+    if (typeStr) {
+      parts.push(typeStr);
     }
 
-    if (doc.status) {
-      parts.push(`Status: ${doc.status}`);
-    }
-
-    if (doc.docStatus) parts.push(`Document Status: ${doc.docStatus}`);
-
-    if (doc.type) {
-      const typeStr = formatCodeableConcepts([doc.type], "Type");
-      if (typeStr) {
-        parts.push(typeStr);
-        // hasMinimumData = true;
-      }
-    }
-
-    if (doc.category) {
-      const categoryStr = formatCodeableConcepts(doc.category, "Category");
-      if (categoryStr) {
-        parts.push(categoryStr);
-        // hasMinimumData = true;
-      }
-    }
+    const categoryStr = formatCodeableConcepts({
+      concepts: doc.category,
+      label: "Category",
+      isDebug,
+    });
+    if (categoryStr) parts.push(categoryStr);
 
     // if (doc.subject) {
     //   const subjectStr = formatReferences([doc.subject], "Subject");
     //   if (subjectStr) parts.push(subjectStr);
     // }
 
-    if (doc.date) {
-      parts.push(`Date: ${doc.date}`);
-    }
+    if (doc.date) parts.push(isDebug ? `Date: ${doc.date}` : doc.date);
 
-    if (doc.author) {
-      const authorStr = formatReferences(doc.author, "Author");
-      if (authorStr) parts.push(authorStr);
-    }
+    const authorStr = formatReferences({ references: doc.author, label: "Author", isDebug });
+    if (authorStr) parts.push(authorStr);
 
     // if (doc.authenticator) {
-    //   const authenticatorStr = formatReferences([doc.authenticator], "Authenticator");
+    //   const authenticatorStr = formatReferences({ references: [doc.authenticator], label: "Authenticator", isDebug });
     //   if (authenticatorStr) parts.push(authenticatorStr);
     // }
 
     // if (doc.custodian) {
-    //   const custodianStr = formatReferences([doc.custodian], "Custodian");
+    //   const custodianStr = formatReferences({ references: [doc.custodian], label: "Custodian", isDebug });
     //   if (custodianStr) parts.push(custodianStr);
     // }
 
-    if (doc.relatesTo) {
-      const relations = doc.relatesTo
-        .map(rel => {
-          const code = rel.code ? `Code: ${rel.code}` : undefined;
-          const target = formatReference(rel.target, "Target");
-          return [code, target].filter(Boolean).join(FIELD_SEPARATOR);
-        })
-        .filter(Boolean);
-
-      if (relations.length > 0) {
-        parts.push(`Relations: ${relations.join(FIELD_SEPARATOR)}`);
-        // hasMinimumData = true;
-      }
-    }
-
-    if (doc.description) {
-      parts.push(`Description: ${doc.description}`);
+    const relations = doc.relatesTo
+      ?.map(rel => {
+        const code = rel.code ? (isDebug ? `Code: ${rel.code}` : rel.code) : undefined;
+        const target = formatReference({
+          reference: rel.target,
+          label: "Target",
+          isDebug,
+        });
+        return [code, target].filter(Boolean).join(FIELD_SEPARATOR);
+      })
+      .filter(Boolean);
+    if (relations && relations.length > 0) {
+      const relationsStr = relations.join(FIELD_SEPARATOR);
+      parts.push(isDebug ? `Relations: ${relationsStr}` : relationsStr);
       hasMinimumData = true;
     }
 
-    if (doc.securityLabel) {
-      const securityStr = formatCodeableConcepts(doc.securityLabel, "Security Label");
-      if (securityStr) parts.push(securityStr);
+    if (doc.description) {
+      parts.push(isDebug ? `Description: ${doc.description}` : doc.description);
+      hasMinimumData = true;
     }
+
+    const securityStr = formatCodeableConcepts({
+      concepts: doc.securityLabel,
+      label: "Security Label",
+      isDebug,
+    });
+    if (securityStr) parts.push(securityStr);
 
     // if (doc.content) {
     //   const contents = doc.content
@@ -115,37 +108,51 @@ export class DocumentReferenceToString implements FHIRResourceToString<DocumentR
       const context = doc.context;
       const contextParts = [];
 
-      if (context.encounter) {
-        const encounterStr = formatReferences(context.encounter, "Encounter");
-        if (encounterStr) contextParts.push(encounterStr);
-      }
+      const encounterStr = formatReferences({
+        references: context.encounter,
+        label: "Encounter",
+        isDebug,
+      });
+      if (encounterStr) contextParts.push(encounterStr);
 
-      const events = formatCodeableConcepts(context.event, "Events");
+      const events = formatCodeableConcepts({ concepts: context.event, label: "Events", isDebug });
       if (events) contextParts.push(events);
 
-      const periodStr = formatPeriod(context.period, "Period");
+      const periodStr = formatPeriod({ period: context.period, label: "Period", isDebug });
       if (periodStr) contextParts.push(periodStr);
 
-      const facilityStr = formatCodeableConcept(context.facilityType, "Facility Type");
+      const facilityStr = formatCodeableConcept({
+        concept: context.facilityType,
+        label: "Facility Type",
+        isDebug,
+      });
       if (facilityStr) contextParts.push(facilityStr);
 
-      const practiceStr = formatCodeableConcept(context.practiceSetting, "Practice Setting");
+      const practiceStr = formatCodeableConcept({
+        concept: context.practiceSetting,
+        label: "Practice Setting",
+        isDebug,
+      });
       if (practiceStr) contextParts.push(practiceStr);
 
-      // const patientStr = formatReference(context.sourcePatientInfo, "Source Patient");
+      // const patientStr = formatReference({ reference: context.sourcePatientInfo, label: "Source Patient", isDebug });
       // if (patientStr) contextParts.push(patientStr);
 
-      if (context.related) {
-        const related = formatReferences(context.related, "Related");
-        if (related) contextParts.push(related);
-      }
+      const related = formatReferences({
+        references: context.related,
+        label: "Related",
+        isDebug,
+      });
+      if (related) contextParts.push(related);
 
       if (contextParts.length > 0) {
-        parts.push(`Context: ${contextParts.join(FIELD_SEPARATOR)}`);
+        const contextStr = contextParts.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Context: ${contextStr}` : contextStr);
+        hasMinimumData = true;
       }
     }
 
-    const textStr = formatNarrative(doc.text, "Text");
+    const textStr = formatNarrative({ narrative: doc.text, label: "Text", isDebug });
     if (textStr) parts.push(textStr);
 
     if (!hasMinimumData) return undefined;

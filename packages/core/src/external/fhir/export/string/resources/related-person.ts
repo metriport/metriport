@@ -11,39 +11,44 @@ import { formatTelecoms } from "../shared/telecom";
  * Converts a FHIR RelatedPerson resource to a string representation
  */
 export class RelatedPersonToString implements FHIRResourceToString<RelatedPerson> {
-  toString(person: RelatedPerson): string | undefined {
+  toString(person: RelatedPerson, isDebug?: boolean): string | undefined {
     let hasMinimumData = defaultHasMinimumData;
     const parts: string[] = [];
 
-    const identifierStr = formatIdentifiers(person.identifier);
+    const identifierStr = formatIdentifiers({ identifiers: person.identifier });
     if (identifierStr) parts.push(identifierStr);
 
-    if (person.active) parts.push(`Active: ${person.active}`);
+    if (person.active) parts.push(isDebug ? `Active: ${person.active}` : String(person.active));
 
     // if (person.patient) {
     //   const patientStr = formatReferences([person.patient], "Patient");
     //   if (patientStr) parts.push(patientStr);
     // }
 
-    const relationshipStr = formatCodeableConcepts(person.relationship, "Relationship");
+    const relationshipStr = formatCodeableConcepts({
+      concepts: person.relationship,
+      label: "Relationship",
+      isDebug,
+    });
     if (relationshipStr) {
       parts.push(relationshipStr);
       hasMinimumData = true;
     }
 
     if (person.name) {
-      const names = formatHumanNames(person.name);
+      const names = formatHumanNames({ names: person.name, isDebug });
       if (names) parts.push(names);
     }
 
-    const telecoms = formatTelecoms(person.telecom, "Telecom");
+    const telecoms = formatTelecoms({ telecoms: person.telecom, label: "Telecom", isDebug });
     if (telecoms) parts.push(telecoms);
 
-    if (person.gender) parts.push(`Gender: ${person.gender}`);
+    if (person.gender) parts.push(isDebug ? `Gender: ${person.gender}` : person.gender);
 
-    if (person.birthDate) parts.push(`Birth Date: ${person.birthDate}`);
+    if (person.birthDate)
+      parts.push(isDebug ? `Birth Date: ${person.birthDate}` : person.birthDate);
 
-    const addresses = formatAddresses(person.address, "Address");
+    const addresses = formatAddresses({ addresses: person.address, label: "Address", isDebug });
     if (addresses) parts.push(addresses);
 
     // if (person.photo) {

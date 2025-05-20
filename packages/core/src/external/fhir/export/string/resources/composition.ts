@@ -1,41 +1,43 @@
 import { Composition, CompositionSection } from "@medplum/fhirtypes";
 import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
-import { formatIdentifiers } from "../shared/identifier";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatIdentifier } from "../shared/identifier";
 import { formatNarrative } from "../shared/narrative";
 import { formatPeriod } from "../shared/period";
-import { formatReferences } from "../shared/reference";
+import { formatReference, formatReferences } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR Composition resource to a string representation
  */
 export class CompositionToString implements FHIRResourceToString<Composition> {
-  toString(composition: Composition): string | undefined {
+  toString(composition: Composition, isDebug?: boolean): string | undefined {
     let hasMinimumData = defaultHasMinimumData;
     const parts: string[] = [];
 
-    if (composition.identifier) {
-      const identifierStr = formatIdentifiers([composition.identifier]);
-      if (identifierStr) parts.push(identifierStr);
-    }
+    const identifierStr = formatIdentifier({ identifier: composition.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
     if (composition.status) {
-      parts.push(`Status: ${composition.status}`);
+      parts.push(isDebug ? `Status: ${composition.status}` : composition.status);
     }
 
-    if (composition.type) {
-      const typeStr = formatCodeableConcepts([composition.type], "Type");
-      if (typeStr) {
-        parts.push(typeStr);
-        hasMinimumData = true;
-      }
+    const typeStr = formatCodeableConcept({
+      concept: composition.type,
+      label: "Type",
+      isDebug,
+    });
+    if (typeStr) {
+      parts.push(typeStr);
+      hasMinimumData = true;
     }
 
-    if (composition.category) {
-      const categoryStr = formatCodeableConcepts(composition.category, "Category");
-      if (categoryStr) parts.push(categoryStr);
-    }
+    const categoryStr = formatCodeableConcepts({
+      concepts: composition.category,
+      label: "Category",
+      isDebug,
+    });
+    if (categoryStr) parts.push(categoryStr);
 
     // if (composition.subject) {
     //   const subjectStr = formatReferences([composition.subject], "Subject");
@@ -43,37 +45,54 @@ export class CompositionToString implements FHIRResourceToString<Composition> {
     // }
 
     if (composition.date) {
-      parts.push(`Date: ${composition.date}`);
+      parts.push(isDebug ? `Date: ${composition.date}` : composition.date);
     }
 
     if (composition.author) {
-      const authorStr = formatReferences(composition.author, "Author");
+      const authorStr = formatReferences({
+        references: composition.author,
+        label: "Author",
+        isDebug,
+      });
       if (authorStr) parts.push(authorStr);
     }
 
     if (composition.attester) {
       const attestations = composition.attester
         .map(attester => {
-          const mode = attester.mode ? `Mode: ${attester.mode}` : undefined;
-          const time = attester.time ? `Time: ${attester.time}` : undefined;
-          const party = attester.party ? formatReferences([attester.party], "Party") : undefined;
+          const mode = attester.mode
+            ? isDebug
+              ? `Mode: ${attester.mode}`
+              : attester.mode
+            : undefined;
+          const time = attester.time
+            ? isDebug
+              ? `Time: ${attester.time}`
+              : attester.time
+            : undefined;
+          const party = attester.party
+            ? formatReferences({ references: [attester.party], label: "Party", isDebug })
+            : undefined;
           return [mode, time, party].filter(Boolean).join(FIELD_SEPARATOR);
         })
         .filter(Boolean);
 
       if (attestations.length > 0) {
-        parts.push(`Attestations: ${attestations.join(FIELD_SEPARATOR)}`);
+        const attestationsStr = attestations.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Attestations: ${attestationsStr}` : attestationsStr);
         // hasMinimumData = true;
       }
     }
 
-    if (composition.custodian) {
-      const custodianStr = formatReferences([composition.custodian], "Custodian");
-      if (custodianStr) parts.push(custodianStr);
-    }
+    const custodianStr = formatReference({
+      reference: composition.custodian,
+      label: "Custodian",
+      isDebug,
+    });
+    if (custodianStr) parts.push(custodianStr);
 
     if (composition.title) {
-      parts.push(`Title: ${composition.title}`);
+      parts.push(isDebug ? `Title: ${composition.title}` : composition.title);
       hasMinimumData = true;
     }
 
@@ -81,28 +100,33 @@ export class CompositionToString implements FHIRResourceToString<Composition> {
     //   parts.push(`Confidentiality: ${composition.confidentiality}`);
     // }
 
-    if (composition.event) {
-      const eventStr = composition.event
-        .map(event => {
-          const code = event.code ? `Code: ${event.code}` : undefined;
-          const period = formatPeriod(event.period);
-          return [code, period].filter(Boolean).join(FIELD_SEPARATOR);
-        })
-        .filter(Boolean);
-      if (eventStr) parts.push(`Service: ${eventStr.join(FIELD_SEPARATOR)}`);
+    const eventStr = composition.event
+      ?.map(event => {
+        const code = event.code ? (isDebug ? `Code: ${event.code}` : event.code) : undefined;
+        const period = formatPeriod({ period: event.period, isDebug });
+        return [code, period].filter(Boolean).join(FIELD_SEPARATOR);
+      })
+      .filter(Boolean);
+    if (eventStr) {
+      const eventStrs = eventStr.join(FIELD_SEPARATOR);
+      parts.push(isDebug ? `Service: ${eventStrs}` : eventStrs);
     }
 
-    if (composition.section) {
-      const sections = composition.section
-        .map((section: CompositionSection) => {
-          const title = section.title ? `Title: ${section.title}` : undefined;
-          const text = formatNarrative(section.text, "Text");
-          return [title, text].filter(Boolean).join(FIELD_SEPARATOR);
-        })
-        .filter(Boolean);
-      if (sections.length > 0) {
-        parts.push(`Sections: ${sections.join(FIELD_SEPARATOR)}`);
-      }
+    const sections = composition.section
+      ?.map((section: CompositionSection) => {
+        const title = section.title && isDebug ? `Title: ${section.title}` : section.title;
+        const text = formatNarrative({ narrative: section.text, label: "Text", isDebug });
+        const code = formatCodeableConcept({
+          concept: section.code,
+          label: "Code",
+          isDebug,
+        });
+        return [title, text, code].filter(Boolean);
+      })
+      .filter(Boolean);
+    if (sections && sections.length > 0) {
+      const sectionsStr = sections.join(FIELD_SEPARATOR);
+      parts.push(isDebug ? `Sections: ${sectionsStr}` : sectionsStr);
     }
 
     if (!hasMinimumData) return undefined;

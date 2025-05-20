@@ -11,30 +11,37 @@ import { FIELD_SEPARATOR } from "../shared/separator";
  * Converts a FHIR MedicationStatement resource to a string representation
  */
 export class MedicationStatementToString implements FHIRResourceToString<MedicationStatement> {
-  toString(statement: MedicationStatement): string | undefined {
+  toString(statement: MedicationStatement, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
     let hasMinimumData = defaultHasMinimumData;
 
-    const identifierStr = formatIdentifiers(statement.identifier);
+    const identifierStr = formatIdentifiers({ identifiers: statement.identifier });
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
     if (statement.status) {
-      parts.push(`Status: ${statement.status}`);
+      parts.push(isDebug ? `Status: ${statement.status}` : statement.status);
     }
 
     if (statement.medicationCodeableConcept) {
-      const medicationStr = formatCodeableConcepts(
-        [statement.medicationCodeableConcept],
-        "Medication"
-      );
+      const medicationStr = formatCodeableConcepts({
+        concepts: [statement.medicationCodeableConcept],
+        label: "Medication",
+        isDebug,
+      });
       if (medicationStr) {
         parts.push(medicationStr);
         hasMinimumData = true;
       }
-    } else if (statement.medicationReference) {
-      const medicationStr = formatReferences([statement.medicationReference], "Medication");
+    }
+
+    if (statement.medicationReference) {
+      const medicationStr = formatReferences({
+        references: [statement.medicationReference],
+        label: "Medication",
+        isDebug,
+      });
       if (medicationStr) {
         parts.push(medicationStr);
       }
@@ -48,36 +55,48 @@ export class MedicationStatementToString implements FHIRResourceToString<Medicat
     // }
 
     if (statement.effectiveDateTime) {
-      parts.push(`Effective: ${statement.effectiveDateTime}`);
-    } else if (statement.effectivePeriod) {
-      const effectiveStr = formatPeriod(statement.effectivePeriod, "Effective");
-      if (effectiveStr) {
-        parts.push(effectiveStr);
-      }
+      parts.push(
+        isDebug ? `Effective: ${statement.effectiveDateTime}` : statement.effectiveDateTime
+      );
+    }
+
+    if (statement.effectivePeriod) {
+      const effectiveStr = formatPeriod({
+        period: statement.effectivePeriod,
+        label: "Effective",
+        isDebug,
+      });
+      if (effectiveStr) parts.push(effectiveStr);
     }
 
     if (statement.dateAsserted) {
-      parts.push(`Asserted: ${statement.dateAsserted}`);
+      parts.push(isDebug ? `Asserted: ${statement.dateAsserted}` : statement.dateAsserted);
     }
 
     if (statement.informationSource) {
-      const sourceStr = formatReferences([statement.informationSource], "Source");
-      if (sourceStr) {
-        parts.push(sourceStr);
-      }
+      const sourceStr = formatReferences({
+        references: [statement.informationSource],
+        label: "Source",
+        isDebug,
+      });
+      if (sourceStr) parts.push(sourceStr);
     }
 
-    const derivedFromStr = formatReferences(statement.derivedFrom, "Derived From");
-    if (derivedFromStr) {
-      parts.push(derivedFromStr);
-    }
+    const derivedFromStr = formatReferences({
+      references: statement.derivedFrom,
+      label: "Derived From",
+      isDebug,
+    });
+    if (derivedFromStr) parts.push(derivedFromStr);
 
-    const reasonStr = formatCodeableConcepts(statement.reasonCode, "Reason");
-    if (reasonStr) {
-      parts.push(reasonStr);
-    }
+    const reasonStr = formatCodeableConcepts({
+      concepts: statement.reasonCode,
+      label: "Reason",
+      isDebug,
+    });
+    if (reasonStr) parts.push(reasonStr);
 
-    const notes = formatAnnotations(statement.note, "Note");
+    const notes = formatAnnotations({ annotations: statement.note, label: "Note", isDebug });
     if (notes) {
       parts.push(notes);
       hasMinimumData = true;

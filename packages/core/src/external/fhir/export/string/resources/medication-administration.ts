@@ -1,9 +1,10 @@
 import { MedicationAdministration } from "@medplum/fhirtypes";
 import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
 import { formatPeriod } from "../shared/period";
-import { formatReferences } from "../shared/reference";
+import { formatQuantity } from "../shared/quantity";
+import { formatReference, formatReferences } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
@@ -12,41 +13,46 @@ import { FIELD_SEPARATOR } from "../shared/separator";
 export class MedicationAdministrationToString
   implements FHIRResourceToString<MedicationAdministration>
 {
-  toString(administration: MedicationAdministration): string | undefined {
+  toString(administration: MedicationAdministration, isDebug?: boolean): string | undefined {
     let hasMinimumData = defaultHasMinimumData;
     const parts: string[] = [];
 
-    if (administration.identifier) {
-      const identifierStr = formatIdentifiers(administration.identifier);
-      if (identifierStr) parts.push(identifierStr);
-    }
+    const identifierStr = formatIdentifiers({ identifiers: administration.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
     if (administration.status) {
-      parts.push(`Status: ${administration.status}`);
+      parts.push(isDebug ? `Status: ${administration.status}` : administration.status);
       hasMinimumData = true;
     }
 
-    const effectivePeriodStr = formatPeriod(administration.effectivePeriod, "Effective Period");
+    const effectivePeriodStr = formatPeriod({
+      period: administration.effectivePeriod,
+      label: "Effective Period",
+      isDebug,
+    });
     if (effectivePeriodStr) {
       parts.push(effectivePeriodStr);
       hasMinimumData = true;
     }
 
-    if (administration.medicationCodeableConcept) {
-      const medicationStr = formatCodeableConcepts(
-        [administration.medicationCodeableConcept],
-        "Medication"
-      );
-      if (medicationStr) {
-        parts.push(medicationStr);
-        hasMinimumData = true;
-      }
-    } else if (administration.medicationReference) {
-      const medicationStr = formatReferences([administration.medicationReference], "Medication");
-      if (medicationStr) {
-        parts.push(medicationStr);
-        hasMinimumData = true;
-      }
+    const medicationStr = formatCodeableConcept({
+      concept: administration.medicationCodeableConcept,
+      label: "Medication",
+      isDebug,
+    });
+    if (medicationStr) {
+      parts.push(medicationStr);
+      hasMinimumData = true;
+    }
+
+    const medicationRefStr = formatReference({
+      reference: administration.medicationReference,
+      label: "Medication",
+      isDebug,
+    });
+    if (medicationRefStr) {
+      parts.push(medicationRefStr);
+      hasMinimumData = true;
     }
 
     // if (administration.subject) {
@@ -54,52 +60,57 @@ export class MedicationAdministrationToString
     //   if (subjectStr) parts.push(subjectStr);
     // }
 
-    if (administration.context) {
-      const contextStr = formatReferences([administration.context], "Context");
-      if (contextStr) parts.push(contextStr);
-    }
+    const contextStr = formatReference({
+      reference: administration.context,
+      label: "Context",
+      isDebug,
+    });
+    if (contextStr) parts.push(contextStr);
 
     if (administration.effectiveDateTime) {
-      parts.push(`Effective Date: ${administration.effectiveDateTime}`);
+      parts.push(
+        isDebug
+          ? `Effective Date: ${administration.effectiveDateTime}`
+          : administration.effectiveDateTime
+      );
       // hasMinimumData = true;
     }
 
-    if (administration.performer) {
-      const performers = administration.performer
-        .map(performer => {
-          const actor = performer.actor
-            ? formatReferences([performer.actor], "Performer")
-            : undefined;
-          return actor;
-        })
-        .filter(Boolean);
-
-      if (performers.length > 0) {
-        parts.push(performers.join(FIELD_SEPARATOR));
-        // hasMinimumData = true;
-      }
+    const performers = administration.performer
+      ?.map(performer => {
+        const actor = performer.actor
+          ? formatReferences({ references: [performer.actor], label: "Performer", isDebug })
+          : undefined;
+        return actor;
+      })
+      .filter(Boolean);
+    if (performers && performers.length > 0) {
+      parts.push(performers.join(FIELD_SEPARATOR));
+      // hasMinimumData = true;
     }
 
-    if (administration.reasonCode) {
-      const reasonStr = formatCodeableConcepts(administration.reasonCode, "Reason");
-      if (reasonStr) {
-        parts.push(reasonStr);
-        hasMinimumData = true;
-      }
+    const reasonStr = formatCodeableConcepts({
+      concepts: administration.reasonCode,
+      label: "Reason",
+      isDebug,
+    });
+    if (reasonStr) {
+      parts.push(reasonStr);
+      hasMinimumData = true;
     }
 
     if (administration.dosage) {
       const dosage = administration.dosage;
       const components = [
-        dosage.route && formatCodeableConcepts([dosage.route], "Route"),
-        dosage.method && formatCodeableConcepts([dosage.method], "Method"),
-        dosage.dose && `Dose: ${dosage.dose.value} ${dosage.dose.unit}`,
-        dosage.rateQuantity && `Rate: ${dosage.rateQuantity.value} ${dosage.rateQuantity.unit}`,
-        dosage.text && `Text: ${dosage.text}`,
+        formatCodeableConcept({ concept: dosage.route, label: "Route", isDebug }),
+        formatCodeableConcept({ concept: dosage.method, label: "Method", isDebug }),
+        formatQuantity({ quantity: dosage.dose, label: "Dose", isDebug }),
+        formatQuantity({ quantity: dosage.rateQuantity, label: "Rate", isDebug }),
+        dosage.text && (isDebug ? `Text: ${dosage.text}` : dosage.text),
       ].filter(Boolean);
-
       if (components.length > 0) {
-        parts.push(`Dosage: ${components.join(FIELD_SEPARATOR)}`);
+        const componentsStr = components.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Dosage: ${componentsStr}` : componentsStr);
         hasMinimumData = true;
       }
     }

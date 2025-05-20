@@ -1,40 +1,67 @@
 import { Dosage, DosageDoseAndRate } from "@medplum/fhirtypes";
-import { formatCodeableConcept, formatCodeableConcepts } from "./codeable-concept";
+import { formatCodeableConcept } from "./codeable-concept";
+import { defaultIsDebug } from "./debug";
 import { formatQuantity } from "./quantity";
 import { FIELD_SEPARATOR } from "./separator";
 
-export function formatDosages(dosages: Dosage[] | undefined, label: string): string | undefined {
+export function formatDosages({
+  dosages,
+  label,
+  isDebug = defaultIsDebug,
+}: {
+  dosages: Dosage[] | undefined;
+  label: string;
+  isDebug?: boolean | undefined;
+}): string | undefined {
   if (!dosages?.length) return undefined;
-  const dosagesStr = dosages.map(dosage => formatDosage(dosage)).filter(Boolean);
+  const dosagesStr = dosages.map(dosage => formatDosage({ dosage })).filter(Boolean);
   if (dosagesStr.length < 1) return undefined;
   const formattedDosages = dosagesStr.join(FIELD_SEPARATOR);
-  return label ? `${label}: ${formattedDosages}` : formattedDosages;
+  return isDebug && label ? `${label}: ${formattedDosages}` : formattedDosages;
 }
 
-export function formatDosage(dosage: Dosage | undefined, label?: string): string | undefined {
+export function formatDosage({
+  dosage,
+  label,
+  isDebug = defaultIsDebug,
+}: {
+  dosage: Dosage | undefined;
+  label?: string;
+  isDebug?: boolean | undefined;
+}): string | undefined {
   if (!dosage) return undefined;
+  const { text, timing, route, method, doseAndRate } = dosage;
+  const doseAndRateStr = doseAndRate
+    ?.map(dosageAndRate => formatDosageDoseAndRate({ dosageAndRate, isDebug }))
+    .filter(Boolean);
   const components = [
-    dosage.text && `Text: ${dosage.text}`,
-    dosage.timing && `Timing: ${dosage.timing}`,
-    dosage.route && formatCodeableConcepts([dosage.route], "Route"),
-    dosage.method && formatCodeableConcepts([dosage.method], "Method"),
-    dosage.doseAndRate &&
-      dosage.doseAndRate.map(formatDosageDoseAndRate).filter(Boolean).join(FIELD_SEPARATOR),
+    text && isDebug ? `Text: ${text}` : text,
+    timing && isDebug ? `Timing: ${timing}` : timing,
+    route && formatCodeableConcept({ concept: route, label: "Route", isDebug }),
+    method && formatCodeableConcept({ concept: method, label: "Method", isDebug }),
+    doseAndRateStr && doseAndRateStr.join(FIELD_SEPARATOR),
   ].filter(Boolean);
   if (components.length < 1) return undefined;
   const formattedDosage = components.join(FIELD_SEPARATOR);
-  return label ? `${label}: ${formattedDosage}` : formattedDosage;
+  return isDebug && label ? `${label}: ${formattedDosage}` : formattedDosage;
 }
 
-export function formatDosageDoseAndRate(dr: DosageDoseAndRate | undefined): string | undefined {
-  if (!dr) return undefined;
+export function formatDosageDoseAndRate({
+  dosageAndRate,
+  isDebug = defaultIsDebug,
+}: {
+  dosageAndRate: DosageDoseAndRate | undefined;
+  isDebug?: boolean | undefined;
+}): string | undefined {
+  if (!dosageAndRate) return undefined;
+  const { type, doseRange, doseQuantity, rateRatio, rateRange, rateQuantity } = dosageAndRate;
   const drComponents = [
-    formatCodeableConcept(dr.type, "Type"),
-    dr.doseRange && `Dose Range: ${dr.doseRange}`,
-    formatQuantity(dr.doseQuantity, "Dose"),
-    dr.rateRatio && `Rate Ratio: ${dr.rateRatio}`,
-    dr.rateRange && `Rate Range: ${dr.rateRange}`,
-    formatQuantity(dr.rateQuantity, "Rate"),
+    formatCodeableConcept({ concept: type, label: "Type", isDebug }),
+    doseRange && isDebug ? `Dose Range: ${doseRange}` : doseRange,
+    doseQuantity && formatQuantity({ quantity: doseQuantity, label: "Dose", isDebug }),
+    rateRatio && isDebug ? `Rate Ratio: ${rateRatio}` : rateRatio,
+    rateRange && isDebug ? `Rate Range: ${rateRange}` : rateRange,
+    rateQuantity && formatQuantity({ quantity: rateQuantity, label: "Rate", isDebug }),
   ].filter(Boolean);
   if (drComponents.length < 1) return undefined;
   const formattedDosage = drComponents.join(FIELD_SEPARATOR);

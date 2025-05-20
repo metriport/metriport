@@ -16,7 +16,7 @@ describe("codeable-concept", () => {
   describe("formatCodeableConcept", () => {
     it("returns empty string if no concept", () => {
       const concept: CodeableConcept = { coding: [] };
-      const res = formatCodeableConcept(concept);
+      const res = formatCodeableConcept({ concept });
       expect(res).toBeUndefined();
     });
 
@@ -24,7 +24,7 @@ describe("codeable-concept", () => {
       const concept: CodeableConcept = {
         coding: [{ system: getSystem() }, { system: faker.lorem.word() }],
       };
-      const res = formatCodeableConcept(concept);
+      const res = formatCodeableConcept({ concept });
       expect(res).toBeUndefined();
     });
 
@@ -33,7 +33,7 @@ describe("codeable-concept", () => {
       const concept: CodeableConcept = {
         coding: [{ system: SNOMED_CODE, code, display }],
       };
-      const formatted = formatCodeableConcept(concept);
+      const formatted = formatCodeableConcept({ concept });
       expect(formatted).toEqual(`${code} (${display})`);
     });
 
@@ -42,7 +42,7 @@ describe("codeable-concept", () => {
       const concept: CodeableConcept = {
         coding: [{ code, display }],
       };
-      const formatted = formatCodeableConcept(concept);
+      const formatted = formatCodeableConcept({ concept });
       expect(formatted).toEqual(`${code} (${display})`);
     });
 
@@ -51,7 +51,7 @@ describe("codeable-concept", () => {
       const concept: CodeableConcept = {
         coding: [{ system: faker.lorem.word(), code, display }],
       };
-      const formatted = formatCodeableConcept(concept);
+      const formatted = formatCodeableConcept({ concept });
       expect(formatted).toEqual(`${code} (${display})`);
     });
 
@@ -64,7 +64,7 @@ describe("codeable-concept", () => {
           { code: code2, display: display2 },
         ],
       };
-      const formatted = formatCodeableConcept(concept);
+      const formatted = formatCodeableConcept({ concept });
       const codeDisplay1 = `${code1} (${display1})`;
       const codeDisplay2 = `${code2} (${display2})`;
       const expected = [codeDisplay1, codeDisplay2].sort().join(" / ");
@@ -82,7 +82,7 @@ describe("codeable-concept", () => {
           { system: getSystem(), code: code2, display: display2 },
         ],
       };
-      const formatted = formatCodeableConcept(concept);
+      const formatted = formatCodeableConcept({ concept });
       const codeDisplay1 = `${code1} (${display1})`;
       const codeDisplay2 = `${code2} (${display2})`;
       const expected = [codeDisplay1, codeDisplay2].sort().join(" / ");
@@ -95,7 +95,7 @@ describe("codeable-concept", () => {
         text,
         coding: [],
       };
-      const formatted = formatCodeableConcept(concept);
+      const formatted = formatCodeableConcept({ concept });
       expect(formatted).toEqual(`${text}`);
     });
   });
