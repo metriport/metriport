@@ -57,6 +57,7 @@ import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { SurescriptsNestedStack } from "./surescripts-stack";
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
@@ -440,8 +441,30 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Surescripts
+    //-------------------------------------------
+    const {
+      connectSftpLambda,
+      synchronizeSftpLambda,
+      receiveFlatFileResponseLambda,
+      receiveVerificationResponseLambda,
+      sendPatientRequestLambda,
+      sendPatientRequestQueue,
+      receiveFlatFileResponseQueue,
+      receiveVerificationResponseQueue,
+      pharmacyBundleBucket,
+      surescriptsReplicaBucket,
+    } = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+      config: props.config,
+      vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+      lambdaLayers,
+    });
+
+    //-------------------------------------------
     // Rate Limiting
     //-------------------------------------------
+
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
       config: props.config,
       alarmAction: slackNotification?.alarmAction,
@@ -554,6 +577,11 @@ export class APIStack extends Stack {
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
       ehrRefreshEhrBundlesQueue,
+      surescriptsReplicaBucket,
+      pharmacyBundleBucket,
+      sendPatientRequestQueue,
+      receiveVerificationResponseQueue,
+      receiveFlatFileResponseQueue,
       ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -660,6 +688,11 @@ export class APIStack extends Stack {
       ehrRefreshEhrBundlesLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
+      receiveFlatFileResponseLambda,
+      receiveVerificationResponseLambda,
+      sendPatientRequestLambda,
+      connectSftpLambda,
+      synchronizeSftpLambda,
     ];
     lambdasToGetApiUrl.forEach(lambda =>
       lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)

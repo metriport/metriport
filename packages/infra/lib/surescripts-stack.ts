@@ -157,8 +157,6 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
-  surescriptsReplicaBucket: s3.Bucket;
-  surescriptsBundleBucket: s3.Bucket;
 }
 
 export class SurescriptsNestedStack extends NestedStack {
@@ -173,7 +171,7 @@ export class SurescriptsNestedStack extends NestedStack {
   readonly receiveFlatFileResponseLambda: Lambda;
   readonly receiveFlatFileResponseQueue: Queue;
   // Pipeline storage locations
-  readonly surescriptsBundleBucket: s3.Bucket;
+  readonly pharmacyBundleBucket: s3.Bucket;
   readonly surescriptsReplicaBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: SurescriptsNestedStackProps) {
@@ -181,21 +179,19 @@ export class SurescriptsNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
-    const surescriptsBundleBucket = new s3.Bucket(this, "SurescriptsBundleBucket", {
+    this.pharmacyBundleBucket = new s3.Bucket(this, "PharmacyBundleBucket", {
       bucketName: props.config.surescripts?.pharmacyBundleBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
     });
-    this.surescriptsBundleBucket = surescriptsBundleBucket;
 
-    const surescriptsReplicaBucket = new s3.Bucket(this, "SurescriptsReplicaBucket", {
+    this.surescriptsReplicaBucket = new s3.Bucket(this, "SurescriptsReplicaBucket", {
       bucketName: props.config.surescripts?.surescriptsReplicaBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
     });
-    this.surescriptsReplicaBucket = surescriptsReplicaBucket;
 
     const commonConfig = {
       lambdaLayers: props.lambdaLayers,
@@ -213,28 +209,28 @@ export class SurescriptsNestedStack extends NestedStack {
     // Only scoped to read/write from the S3 bucket
     const synchronizeSftp = this.setupSynchronizeSftp({
       ...commonConfig,
-      surescriptsReplicaBucket: surescriptsReplicaBucket,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
     this.synchronizeSftpLambda = synchronizeSftp.lambda;
 
     const sendPatientRequest = this.setupSendPatientRequest({
       ...commonConfig,
-      surescriptsReplicaBucket: surescriptsReplicaBucket,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
     this.sendPatientRequestLambda = sendPatientRequest.lambda;
     this.sendPatientRequestQueue = sendPatientRequest.queue;
 
     const receiveVerificationResponse = this.setupReceiveVerificationResponse({
       ...commonConfig,
-      surescriptsReplicaBucket: surescriptsReplicaBucket,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
     this.receiveVerificationResponseLambda = receiveVerificationResponse.lambda;
     this.receiveVerificationResponseQueue = receiveVerificationResponse.queue;
 
     const receiveFlatFileResponse = this.setupReceiveFlatFileResponse({
       ...commonConfig,
-      surescriptsReplicaBucket: surescriptsReplicaBucket,
-      surescriptsBundleBucket: this.surescriptsBundleBucket,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+      surescriptsBundleBucket: this.pharmacyBundleBucket,
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;

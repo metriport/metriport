@@ -113,6 +113,11 @@ export function createAPIService({
   healthieLinkPatientQueue,
   ehrRefreshEhrBundlesQueue,
   ehrBundleBucket,
+  surescriptsReplicaBucket,
+  pharmacyBundleBucket,
+  sendPatientRequestQueue,
+  receiveVerificationResponseQueue,
+  receiveFlatFileResponseQueue,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
@@ -158,6 +163,11 @@ export function createAPIService({
   healthieLinkPatientQueue: IQueue;
   ehrRefreshEhrBundlesQueue: IQueue;
   ehrBundleBucket: s3.IBucket;
+  surescriptsReplicaBucket: s3.IBucket;
+  pharmacyBundleBucket: s3.IBucket;
+  sendPatientRequestQueue: IQueue;
+  receiveVerificationResponseQueue: IQueue;
+  receiveFlatFileResponseQueue: IQueue;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -364,6 +374,14 @@ export function createAPIService({
           }),
           ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
+          }),
+          ...(props.config.surescripts && {
+            PHARMACY_BUNDLE_BUCKET_NAME: pharmacyBundleBucket.bucketName,
+            SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
+            SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL: sendPatientRequestQueue.queueUrl,
+            SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
+              receiveVerificationResponseQueue.queueUrl,
+            SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL: receiveFlatFileResponseQueue.queueUrl,
           }),
         },
       },
