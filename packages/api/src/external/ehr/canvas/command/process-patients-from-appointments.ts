@@ -1,6 +1,6 @@
 import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments";
 import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments-factory";
-import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";

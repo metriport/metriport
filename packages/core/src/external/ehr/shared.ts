@@ -80,7 +80,7 @@ export interface ApiConfig {
   practiceId: string;
   clientKey?: string;
   clientSecret?: string;
-  getSecrets: GetSecretsOauthFunction;
+  getSecrets?: GetSecretsOauthFunction;
 }
 
 export type RequestData = { [key: string]: string | boolean | object | undefined };
