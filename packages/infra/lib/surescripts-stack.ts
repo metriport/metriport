@@ -10,17 +10,15 @@ import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { LambdaSettings, QueueAndLambdaSettings } from "./shared/settings";
+import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const connectSftpTimeout = Duration.seconds(30);
 const synchronizeSftpTimeout = Duration.minutes(15);
 const sendPatientRequestLambdaTimeout = Duration.minutes(12);
 const receiveVerificationLambdaTimeout = Duration.minutes(5);
 const receiveFlatFileResponseLambdaTimeout = Duration.minutes(15);
 
 interface SurescriptsSettings {
-  connectSftp: LambdaSettings;
   synchronizeSftp: QueueAndLambdaSettings;
   sendPatientRequest: QueueAndLambdaSettings;
   receiveVerificationResponse: QueueAndLambdaSettings;
@@ -28,14 +26,6 @@ interface SurescriptsSettings {
 }
 
 const settings: SurescriptsSettings = {
-  connectSftp: {
-    name: "SurescriptsConnectSftp",
-    entry: "surescripts-sftp-connect",
-    lambda: {
-      memory: 512,
-      timeout: connectSftpTimeout,
-    },
-  },
   synchronizeSftp: {
     name: "SurescriptsSynchronizeSftp",
     entry: "surescripts-sftp-synchronize",
@@ -255,6 +245,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
+      waitTime,
     } = settings.synchronizeSftp;
 
     const lambda = createLambda({
@@ -270,6 +261,7 @@ export class SurescriptsNestedStack extends NestedStack {
           allowBundleAccess: false,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
       layers: [lambdaLayers.shared],
       vpc,
@@ -317,6 +309,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
+      waitTime,
     } = settings.sendPatientRequest;
 
     const queue = createQueue({
@@ -343,6 +336,7 @@ export class SurescriptsNestedStack extends NestedStack {
           allowBundleAccess: false,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
       layers: [lambdaLayers.shared],
       vpc,
@@ -380,6 +374,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
+      waitTime,
     } = settings.receiveVerificationResponse;
 
     const queue = createQueue({
@@ -406,6 +401,7 @@ export class SurescriptsNestedStack extends NestedStack {
           allowBundleAccess: false,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
       layers: [lambdaLayers.shared],
       vpc,
@@ -445,6 +441,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
+      waitTime,
     } = settings.receiveFlatFileResponse;
 
     const queue = createQueue({
@@ -471,6 +468,7 @@ export class SurescriptsNestedStack extends NestedStack {
           allowBundleAccess: true,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
       layers: [lambdaLayers.shared],
       vpc,
