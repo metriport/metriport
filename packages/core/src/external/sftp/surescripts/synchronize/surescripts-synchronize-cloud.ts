@@ -1,28 +1,34 @@
-import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Config } from "../../../../util/config";
-import { SQSClient } from "../../../aws/sqs";
+import * as AWS from "aws-sdk";
+import { makeLambdaClient } from "../../../aws/lambda";
 import {
   SurescriptsSynchronizeHandler,
   ProcessSynchronizeRequest,
 } from "./surescripts-synchronize";
 
 export class SurescriptsSynchronizeCloud implements SurescriptsSynchronizeHandler {
-  private readonly sqsClient: SQSClient;
+  private readonly lambdaClient: AWS.Lambda;
 
   constructor(
-    private readonly surescriptsSynchronizeQueueUrl: string,
+    private readonly surescriptsSynchronizeLambdaName: string,
     region?: string,
-    sqsClient?: SQSClient
+    lambdaClient?: AWS.Lambda
   ) {
-    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
+    this.lambdaClient = lambdaClient ?? makeLambdaClient(region ?? Config.getAWSRegion());
   }
 
   async processSynchronize(params: ProcessSynchronizeRequest): Promise<void> {
     const payload = JSON.stringify(params);
-    await this.sqsClient.sendMessageToQueue(this.surescriptsSynchronizeQueueUrl, payload, {
-      fifo: true,
-      messageDeduplicationId: createUuidFromText(payload),
-      messageGroupId: "surescripts-synchronize",
+    await this.lambdaClient.invoke({
+      FunctionName: this.surescriptsSynchronizeLambdaName,
+      InvocationType: "Event",
+      Payload: payload,
     });
+    // getLambdaResultPayload({
+    //   result,
+    //   lambdaName: this.surescriptsSynchronizeLambdaName,
+    //   failGracefully: true,
+    //   failOnEmptyResponse: true,
+    // });
   }
 }
