@@ -32,5 +32,4 @@ export type QueueAndLambdaSettings = {
   waitTime: Duration;
 };
 
-export type LambdaSettings = Pick<QueueAndLambdaSettings, "name" | "entry"> &
-  QueueAndLambdaSettings["lambda"];
+export type LambdaSettings = Pick<QueueAndLambdaSettings, "name" | "entry" | "lambda">;

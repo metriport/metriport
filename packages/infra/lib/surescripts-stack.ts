@@ -31,8 +31,10 @@ const settings: SurescriptsSettings = {
   connectSftp: {
     name: "SurescriptsConnectSftp",
     entry: "surescripts-sftp-connect",
-    memory: 512,
-    timeout: connectSftpTimeout,
+    lambda: {
+      memory: 512,
+      timeout: connectSftpTimeout,
+    },
   },
   synchronizeSftp: {
     name: "SurescriptsSynchronizeSftp",
@@ -243,12 +245,10 @@ export class SurescriptsNestedStack extends NestedStack {
     surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescripts } = ownProps;
-    const { name, entry, memory, timeout, reservedConcurrentExecutions } = settings.connectSftp;
+    const { name, entry, lambda: lambdaSettings } = settings.connectSftp;
 
     const lambda = createLambda({
-      memory,
-      timeout,
-      reservedConcurrentExecutions,
+      ...lambdaSettings,
       stack: this,
       name,
       entry,
