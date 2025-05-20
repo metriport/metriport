@@ -23,6 +23,7 @@ import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import { getSecrets } from "./api/get-client-key-and-secret";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
 
 dayjs.extend(duration);
@@ -49,6 +50,27 @@ export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
 
 export type GetSecretsOauthFunction = () => Promise<GetSecretsOauthResult>;
 export type GetSecretsApiKeyFunction = () => Promise<GetSecretsApiKeyResult>;
+
+export async function getOauthSecrets({
+  ehr,
+  cxId,
+  practiceId,
+}: {
+  ehr: EhrSource;
+  cxId: string;
+  practiceId: string;
+}) {
+  const secrets = await getSecrets<GetSecretsOauthResult>({
+    ehr,
+    cxId,
+    practiceId,
+    schema: getSecretsOauthSchema,
+  });
+  return {
+    clientKey: secrets.clientKey,
+    clientSecret: secrets.clientSecret,
+  };
+}
 
 export async function processOauthSecrets({
   ehr,
