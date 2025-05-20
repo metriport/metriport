@@ -30,7 +30,7 @@ const settings: SurescriptsSettings = {
     name: "SurescriptsSynchronizeSftp",
     entry: "surescripts-sftp-synchronize",
     lambda: {
-      memory: 2048,
+      memory: 1024,
       timeout: synchronizeSftpTimeout,
     },
     queue: {
@@ -94,7 +94,7 @@ const settings: SurescriptsSettings = {
     name: "SurescriptsReceiveFlatFileResponse",
     entry: "surescripts-receive-flat-file-response",
     lambda: {
-      memory: 2048,
+      memory: 1024,
       timeout: receiveFlatFileResponseLambdaTimeout,
     },
     queue: {
