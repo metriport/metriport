@@ -14,7 +14,7 @@ def test_start_consolidated_query():
     metriport = Metriport(api_key=api_key, base_url=base_url)
 
     print("Calling get_consolidated_query_status...")
-    query_status = metriport.medical.fhir.get_consolidated_query_status(id=patient_id)
+    query_status = metriport.medical.fhir.get_consolidated_query_status(patient_id=patient_id)
     print(f"queryStatus: {query_status}")
 
     print("Calling start_consolidated_query...")
@@ -27,14 +27,14 @@ def test_start_consolidated_query():
     print(f"response: {json.dumps(response.dict(), indent=2)}")
 
     print("Now, calling get_consolidated_query_status...")
-    query_status = metriport.medical.fhir.get_consolidated_query_status(id=patient_id)
+    query_status = metriport.medical.fhir.get_consolidated_query_status(patient_id=patient_id)
     print(f"queryStatus: {json.dumps(query_status.dict(), indent=2)}")
 
     print("Sleeping...")
     time.sleep(5)
 
     print("Calling get_consolidated_query_status again...")
-    query_status = metriport.medical.fhir.get_consolidated_query_status(id=patient_id)
+    query_status = metriport.medical.fhir.get_consolidated_query_status(patient_id=patient_id)
     print(f"queryStatus: {json.dumps(query_status.dict(), indent=2)}")
 
     print("Counting...")
