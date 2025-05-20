@@ -2,7 +2,21 @@
 
 ## Overview
 
-This project provides a term server for lookups in SNOMED, ICD, LOINC, and RXNORM, CPT, and CVX and crosswalks between SNOMED and ICD.
+This project provides a term server for lookups in the following code systems:
+
+- SNOMED
+- ICD10CM
+- ICD10PCS
+- LOINC
+- RXNORM
+- CPT
+- CVX
+- NDC
+  as well as these crosswalks:
+- SNOMED >> ICD10CM
+- ICD10CM >> SNOMED
+- NDC >> RXNORM.
+
 Currently, this is mostly intended for internal use.
 
 For a quick walkthrough on setting up and using the Metriport Terminology Server, watch [this video](https://www.loom.com/share/4004e6d5b5c3461e91ed4f72c0143eb1?sid=39df3baa-fd88-4e85-8ecd-dd2591554539).
@@ -33,13 +47,30 @@ TERMINOLOGY_BUCKET=<umls-bucket>
 
 ### Seeding the Database
 
-If you're setting up from the raw Metathesaurus file, you'll need to seed the database. We currently support crosswalks for ICD-10 to SNOMED and SNOMED to ICD-10.
+For the terminology server to work, we need to seed the database with the UMLS Metathesaurus.
+You can find this file on NLM's [UMLS Knowledge Sources](https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html) page.
 
-Run these commands:
+Once you have the file, start the server and run the following commands:
 
 ```bash
-npm run seed-lookup <path-to-metathesauruszip>
-npm run seed-crosswalk <path-to-metathesauruszip>
+npm run seed-lookup <path-to-metathesaurus-zip>
+npm run seed-crosswalk <path-to-metathesaurus-zip>
+```
+
+Once that's done, you'll have everything besides NDC and its crosswalk to RxNorm.
+
+To get those, you'll need to get the NLM's [RxNorm package](https://www.nlm.nih.gov/research/umls/rxnorm/docs/rxnormfiles.html).
+Once you have it, run this command:
+
+```bash
+npm run seed-ndc-lookup <path-to-rxnorm-zip>
+```
+
+This package, however, does not provide display names for NDC codes. Instead, it gets the RxNorm descriptions from the crosswalks.
+If you want your NDC descriptions to include packaging data, you'll need to download the FDA's NDC database files - Excel version from [this page](https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory), convert them to CSV, and run this command:
+
+```bash
+npm run seed-fda-descriptions <path-to-products-file.csv> <path-to-packages-file.csv>
 ```
 
 ### Running the Server
