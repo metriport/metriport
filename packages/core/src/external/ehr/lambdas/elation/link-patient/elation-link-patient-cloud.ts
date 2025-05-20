@@ -1,7 +1,7 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { Config } from "../../../../util/config";
-import { SQSClient } from "../../../aws/sqs";
+import { SQSClient } from "../../../../../external/aws/sqs";
+import { Config } from "../../../../../util/config";
 import { ElationLinkPatientHandler, ProcessLinkPatientRequest } from "./elation-link-patient";
 
 export class ElationLinkPatientCloud implements ElationLinkPatientHandler {

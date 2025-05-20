@@ -1,6 +1,6 @@
 import { sleep } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { linkPatient } from "../../api/link-patient";
+import { linkPatient } from "../../../api/link-patient";
 import { HealthieLinkPatientHandler, ProcessLinkPatientRequest } from "./healthie-link-patient";
 
 export class HealthieLinkPatientLocal implements HealthieLinkPatientHandler {

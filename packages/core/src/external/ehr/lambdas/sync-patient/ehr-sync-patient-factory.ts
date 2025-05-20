@@ -1,4 +1,4 @@
-import { Config } from "../../../util/config";
+import { Config } from "../../../../util/config";
 import { EhrSyncPatientHandler } from "./ehr-sync-patient";
 import { EhrSyncPatientCloud } from "./ehr-sync-patient-cloud";
 import { EhrSyncPatientLocal } from "./ehr-sync-patient-local";

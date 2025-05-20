@@ -1,6 +1,6 @@
 import { sleep } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { linkPatient } from "../../api/link-patient";
+import { linkPatient } from "../../../api/link-patient";
 import { ElationLinkPatientHandler, ProcessLinkPatientRequest } from "./elation-link-patient";
 
 export class ElationLinkPatientLocal implements ElationLinkPatientHandler {

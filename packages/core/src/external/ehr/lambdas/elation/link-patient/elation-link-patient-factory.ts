@@ -1,4 +1,4 @@
-import { Config } from "../../../../util/config";
+import { Config } from "../../../../../util/config";
 import { ElationLinkPatientHandler } from "./elation-link-patient";
 import { ElationLinkPatientCloud } from "./elation-link-patient-cloud";
 import { ElationLinkPatientLocal } from "./elation-link-patient-local";

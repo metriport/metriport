@@ -1,5 +1,5 @@
 import { sleep } from "@metriport/shared";
-import { syncPatient } from "../api/sync-patient";
+import { syncPatient } from "../../api/sync-patient";
 import { EhrSyncPatientHandler, ProcessSyncPatientRequest } from "./ehr-sync-patient";
 
 export class EhrSyncPatientLocal implements EhrSyncPatientHandler {
