@@ -4,7 +4,6 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { searchDocuments } from "@metriport/core/external/opensearch/search-documents";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
-import { generateSearchSummary } from "@metriport/core/command/search-summary/create";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
@@ -30,7 +29,6 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { bundleSchema } from "./schemas/fhir";
 
 const router = Router();
 const region = Config.getAWSRegion();
@@ -43,23 +41,6 @@ const getDocSchema = z.object({
   content: z.string().min(3).nullish(),
   output: z.enum(["fhir", "dto"]).nullish(),
 });
-
-const searchSummarySchema = z.object({
-  question: z.string().min(3),
-});
-
-router.post(
-  "/search-summary",
-  requestLogger,
-  patientAuthorization("query"),
-  asyncHandler(async (req: Request, res: Response) => {
-    const { question } = searchSummarySchema.parse(req.query);
-    const bundle = bundleSchema.parse(req.body);
-
-    const summary = await generateSearchSummary(question, bundle);
-    return res.status(OK).json(summary);
-  })
-);
 
 /** ---------------------------------------------------------------------------
  * GET /document

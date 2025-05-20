@@ -231,7 +231,7 @@ const searchSummarySchema = z.object({
  *
  * @param req.query.question The question to generate a search summary for.
  * @param req.body The FHIR bundle to generate a search summary for.
- * @return The search summary.
+ * @return The SearchSummaryOutput object.
  */
 
 router.post(

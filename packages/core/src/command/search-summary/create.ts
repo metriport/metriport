@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { errorToString } from "@metriport/shared";
+import { MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { BedrockChat } from "../../external/langchain/bedrock";
@@ -79,10 +80,10 @@ export async function generateSearchSummary(
     if (!result.text) return undefined;
 
     // Parse the LLM output to extract the summary and citations
-    const outputWithCitations = parseSummaryWithCitations(result.text);
+    const outputWithCitations = parseSummaryWithCitations(result.text, log);
     return outputWithCitations;
   } catch (err) {
-    const msg = `AI brief generation failure`;
+    const msg = `Search summary generation failure`;
     log(`${msg} - ${errorToString(err)}`);
     throw err;
   }
@@ -92,7 +93,10 @@ export async function generateSearchSummary(
  * Parse LLM response to extract citations
  * This parses a summary with citation markers in [DOC X] format
  */
-async function parseSummaryWithCitations(llmResponse: string): Promise<SearchSummaryOutput> {
+async function parseSummaryWithCitations(
+  llmResponse: string,
+  log = console.log
+): Promise<SearchSummaryOutput> {
   try {
     // Parse JSON response
     const parsedResponse = JSON.parse(llmResponse);
@@ -108,8 +112,8 @@ async function parseSummaryWithCitations(llmResponse: string): Promise<SearchSum
       relevantResources: parsedResponse.relevantResources,
     };
   } catch (error) {
-    console.error("Error parsing LLM response:", error);
-    throw new Error("Failed to process summary");
+    log(`Error parsing LLM response: ${errorToString(error)}`);
+    throw new MetriportError("Failed to process summary", error);
   }
 }
 
