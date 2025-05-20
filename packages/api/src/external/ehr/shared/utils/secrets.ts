@@ -11,12 +11,12 @@ import {
   EhrPerPracticeParams,
 } from "./client";
 
-type OuathSecretsFunction<T extends EhrEnv> = (
+type OauthSecretsFunction<T extends EhrEnv> = (
   params: EhrPerPracticeParams
 ) => EhrEnvAndClientCredentials<T>;
 type ApiKeySecretsFunction<T extends EhrEnv> = (params: EhrPerPracticeParams) => EhrEnvAndApiKey<T>;
 
-export type SecretsFunction<T extends EhrEnv> = OuathSecretsFunction<T> | ApiKeySecretsFunction<T>;
+export type SecretsFunction<T extends EhrEnv> = OauthSecretsFunction<T> | ApiKeySecretsFunction<T>;
 
 const secretsFunctionsBy: Record<EhrSource, SecretsFunction<EhrEnv>> = {
   [EhrSources.canvas]: getCanvasEnv,
