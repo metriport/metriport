@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { syncEclinicalworksPatientIntoMetriport } from "../../../external/ehr/eclinicalworks/command/sync-patient";
+import { syncEClinicalWorksPatientIntoMetriport } from "../../../external/ehr/eclinicalworks/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
@@ -26,7 +26,7 @@ router.get(
     const eclinicalworksPatientId = getFrom("params").orFail("id", req);
     const eclinicalworksPracticeId = getFromQueryOrFail("practiceId", req);
     const eclinicalworksTokenId = getFromQueryOrFail("tokenId", req);
-    const patientId = await syncEclinicalworksPatientIntoMetriport({
+    const patientId = await syncEClinicalWorksPatientIntoMetriport({
       cxId,
       eclinicalworksPracticeId,
       eclinicalworksPatientId,
@@ -54,7 +54,7 @@ router.post(
     const eclinicalworksPatientId = getFrom("params").orFail("id", req);
     const eclinicalworksPracticeId = getFromQueryOrFail("practiceId", req);
     const eclinicalworksTokenId = getFromQueryOrFail("tokenId", req);
-    const patientId = await syncEclinicalworksPatientIntoMetriport({
+    const patientId = await syncEClinicalWorksPatientIntoMetriport({
       cxId,
       eclinicalworksPracticeId,
       eclinicalworksPatientId,
