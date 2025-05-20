@@ -132,20 +132,24 @@ function surescriptsEnvironmentVariables({
   allowReplicaAccess?: boolean;
   allowBundleAccess?: boolean;
 }): Record<string, string> {
-  return {
+  const env: Record<string, string> = {
     SURESCRIPTS_SFTP_HOST: surescripts?.surescriptsHost,
     SURESCRIPTS_SFTP_SENDER_ID: surescripts?.surescriptsSenderId,
     SURESCRIPTS_SFTP_SENDER_PASSWORD: surescripts?.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD,
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts?.surescriptsReceiverId,
     SURESCRIPTS_SFTP_PUBLIC_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY,
     SURESCRIPTS_SFTP_PRIVATE_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY,
-    ...(allowReplicaAccess
-      ? { SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts?.surescriptsReplicaBucketName }
-      : {}),
-    ...(allowBundleAccess
-      ? { SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts?.pharmacyBundleBucketName }
-      : {}),
   };
+
+  if (allowReplicaAccess) {
+    env.SURESCRIPTS_REPLICA_BUCKET_NAME = surescripts?.surescriptsReplicaBucketName;
+  }
+
+  if (allowBundleAccess) {
+    env.SURESCRIPTS_BUNDLE_BUCKET_NAME = surescripts?.pharmacyBundleBucketName;
+  }
+
+  return env;
 }
 
 interface SurescriptsNestedStackProps extends NestedStackProps {
