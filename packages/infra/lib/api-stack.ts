@@ -444,7 +444,6 @@ export class APIStack extends Stack {
     // Surescripts
     //-------------------------------------------
     const {
-      connectSftpLambda,
       synchronizeSftpLambda,
       receiveFlatFileResponseLambda,
       receiveVerificationResponseLambda,
@@ -691,7 +690,6 @@ export class APIStack extends Stack {
       receiveFlatFileResponseLambda,
       receiveVerificationResponseLambda,
       sendPatientRequestLambda,
-      connectSftpLambda,
       synchronizeSftpLambda,
     ];
     lambdasToGetApiUrl.forEach(lambda =>
