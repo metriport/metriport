@@ -113,9 +113,13 @@ const settings: SurescriptsSettings = {
   },
 };
 
-function surescriptsEnvironmentVariables(
-  surescripts: EnvConfig["surescripts"]
-): Record<string, string> {
+function surescriptsEnvironmentVariables({
+  surescripts,
+  medicationBundleBucket,
+}: {
+  surescripts: EnvConfig["surescripts"];
+  medicationBundleBucket: s3.Bucket;
+}): Record<string, string> {
   if (!surescripts) {
     return {};
   }
@@ -125,7 +129,7 @@ function surescriptsEnvironmentVariables(
     SURESCRIPTS_SFTP_SENDER_ID: surescripts.surescriptsSenderId,
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
     SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts.surescriptsReplicaBucketName,
-    SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts.pharmacyBundleBucketName,
+    MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
     SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN: surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN,
     SURESCRIPTS_SFTP_PUBLIC_KEY_ARN: surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY_ARN,
     SURESCRIPTS_SFTP_PRIVATE_KEY_ARN: surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY_ARN,
@@ -137,6 +141,7 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
+  medicationBundleBucket: s3.Bucket;
 }
 
 export class SurescriptsNestedStack extends NestedStack {
@@ -147,20 +152,12 @@ export class SurescriptsNestedStack extends NestedStack {
   readonly receiveVerificationResponseQueue: Queue;
   readonly receiveFlatFileResponseLambda: Lambda;
   readonly receiveFlatFileResponseQueue: Queue;
-  readonly pharmacyBundleBucket: s3.Bucket;
   readonly surescriptsReplicaBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: SurescriptsNestedStackProps) {
     super(scope, id, props);
 
     this.terminationProtection = true;
-
-    this.pharmacyBundleBucket = new s3.Bucket(this, "PharmacyBundleBucket", {
-      bucketName: props.config.surescripts?.pharmacyBundleBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
 
     this.surescriptsReplicaBucket = new s3.Bucket(this, "SurescriptsReplicaBucket", {
       bucketName: props.config.surescripts?.surescriptsReplicaBucketName,
@@ -176,7 +173,10 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       surescripts: props.config.surescripts,
-      envVars: surescriptsEnvironmentVariables(props.config.surescripts),
+      envVars: surescriptsEnvironmentVariables({
+        surescripts: props.config.surescripts,
+        medicationBundleBucket: props.medicationBundleBucket,
+      }),
     };
 
     const synchronizeSftp = this.setupSynchronizeSftp({
@@ -202,7 +202,7 @@ export class SurescriptsNestedStack extends NestedStack {
     const receiveFlatFileResponse = this.setupReceiveFlatFileResponse({
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-      pharmacyBundleBucket: this.pharmacyBundleBucket,
+      medicationBundleBucket: props.medicationBundleBucket,
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
@@ -401,7 +401,7 @@ export class SurescriptsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
-    pharmacyBundleBucket: s3.Bucket;
+    medicationBundleBucket: s3.Bucket;
     surescripts: EnvConfig["surescripts"];
   }): { lambda: Lambda; queue: Queue } {
     const {
@@ -412,7 +412,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn,
       alarmAction,
       surescriptsReplicaBucket,
-      pharmacyBundleBucket,
+      medicationBundleBucket,
     } = ownProps;
     const {
       name,
@@ -451,8 +451,7 @@ export class SurescriptsNestedStack extends NestedStack {
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-
-    pharmacyBundleBucket.grantReadWrite(lambda);
+    medicationBundleBucket.grantReadWrite(lambda);
     surescriptsReplicaBucket.grantReadWrite(lambda);
 
     return { lambda, queue };

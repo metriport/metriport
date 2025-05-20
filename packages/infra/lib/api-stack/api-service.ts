@@ -114,7 +114,7 @@ export function createAPIService({
   ehrRefreshEhrBundlesQueue,
   ehrBundleBucket,
   surescriptsReplicaBucket,
-  pharmacyBundleBucket,
+  medicationBundleBucket,
   sendPatientRequestQueue,
   receiveVerificationResponseQueue,
   receiveFlatFileResponseQueue,
@@ -164,7 +164,7 @@ export function createAPIService({
   ehrRefreshEhrBundlesQueue: IQueue;
   ehrBundleBucket: s3.IBucket;
   surescriptsReplicaBucket: s3.IBucket;
-  pharmacyBundleBucket: s3.IBucket;
+  medicationBundleBucket: s3.IBucket;
   sendPatientRequestQueue: IQueue;
   receiveVerificationResponseQueue: IQueue;
   receiveFlatFileResponseQueue: IQueue;
@@ -376,7 +376,7 @@ export function createAPIService({
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
           ...(props.config.surescripts && {
-            PHARMACY_BUNDLE_BUCKET_NAME: pharmacyBundleBucket.bucketName,
+            MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
             SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL: sendPatientRequestQueue.queueUrl,
             SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:

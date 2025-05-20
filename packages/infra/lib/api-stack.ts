@@ -299,6 +299,13 @@ export class APIStack extends Stack {
       ],
     });
 
+    const medicationBundleBucket = new s3.Bucket(this, "MedicationBucket", {
+      bucketName: props.config.medicationBundleBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+    });
+
     let hl7ConversionBucket: s3.Bucket | undefined;
     if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -451,13 +458,13 @@ export class APIStack extends Stack {
       sendPatientRequestQueue,
       receiveFlatFileResponseQueue,
       receiveVerificationResponseQueue,
-      pharmacyBundleBucket,
       surescriptsReplicaBucket,
     } = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
       config: props.config,
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
       lambdaLayers,
+      medicationBundleBucket,
     });
 
     //-------------------------------------------
@@ -577,7 +584,7 @@ export class APIStack extends Stack {
       healthieLinkPatientQueue,
       ehrRefreshEhrBundlesQueue,
       surescriptsReplicaBucket,
-      pharmacyBundleBucket,
+      medicationBundleBucket,
       sendPatientRequestQueue,
       receiveVerificationResponseQueue,
       receiveFlatFileResponseQueue,
