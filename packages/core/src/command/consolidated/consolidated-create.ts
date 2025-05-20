@@ -90,6 +90,8 @@ export async function createConsolidatedFromConversions({
     log(errorToString(e));
   }
 
+  // TODO(2025-05-20|ENG-328): Before continuing to make changes to this command and duplicative operations,
+  // I recommend you write a unit test to verify the sequencing of these mutative operations
   log(`Deduplicating consolidated bundle...`);
   await dangerouslyDeduplicate({ cxId, patientId, bundle });
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
