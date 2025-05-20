@@ -1,3 +1,4 @@
+import { Config } from "../../../util/config";
 import { S3Client, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { SurescriptsSftpClient } from "./client";
 
@@ -8,13 +9,13 @@ export class SurescriptsReplica {
   private readonly bucket: string;
   private readonly sftp: SurescriptsSftpClient;
 
-  constructor(bucket: string) {
+  constructor(bucket?: string) {
     this.s3 = new S3Client({ region: process.env.AWS_REGION ?? "us-east-2" });
     this.sftp = new SurescriptsSftpClient({});
-    this.bucket = bucket;
+    this.bucket = bucket ?? Config.getSurescriptsReplicaBucketName();
   }
 
-  async synchronize(directory: SurescriptsDirectory) {
+  async synchronize(directory: SurescriptsDirectory, dryRun = false) {
     await this.sftp.connect();
     const files = await this.sftp.list("/" + directory);
     for (const file of files) {
@@ -22,11 +23,14 @@ export class SurescriptsReplica {
       const exists = await this.existsInS3(key);
 
       if (exists) {
-        console.log(`File ${key} exists in S3`);
+        // console.log(`File ${key} exists in S3`);
+      } else if (dryRun) {
+        console.log(`Will copy:    SFTP /${directory}/${file} --> S3 ${key}`);
       } else {
-        console.log(`File ${key} does not exist in S3`);
         const content = await this.sftp.read(`/${directory}/${file}`);
+        console.log("Read " + content.length + " bytes from SFTP");
         await this.writeToS3(key, content);
+        // Depends on CDK deployment
       }
     }
   }
@@ -37,8 +41,8 @@ export class SurescriptsReplica {
 
   private async existsInS3(key: string) {
     try {
-      await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
-      return true;
+      const result = await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+      return result.ContentLength != null && result.ContentLength > 0;
     } catch (error) {
       return false;
     }

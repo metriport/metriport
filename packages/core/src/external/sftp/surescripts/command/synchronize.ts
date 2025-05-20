@@ -6,14 +6,16 @@ dotenv.config({
 });
 
 import { Command } from "commander";
-import { SurescriptsSftpClient } from "../client";
+import { SurescriptsReplica } from "../replica";
 import { metriportBanner } from "./shared";
 const program = new Command();
 
 program
-  .argument("<key>", "The S3 bucket key after the to_surescripts prefix")
+  .option("-d, --dry-run", "Dry run the synchronization")
+  .option("-a, --all", "Synchronize all files")
+  .option("-f, --file <file>", "Synchronize a specific file")
   .description(
-    "Ensure all files are synchronized between the Surescripts SFTP server and the S3 bucket"
+    "Ensure one or all files are synchronized between the Surescripts SFTP server and the S3 bucket"
   )
   .addHelpText("before", metriportBanner())
   .showHelpAfterError()
@@ -23,11 +25,11 @@ async function main() {
   console.log(metriportBanner());
   program.parse();
 
-  const client = new SurescriptsSftpClient({});
+  const { dryRun } = program.opts();
 
-  await client.connect();
-
-  await client.disconnect();
+  const replica = new SurescriptsReplica();
+  await replica.synchronize("from_surescripts", dryRun);
+  await replica.synchronize("to_surescripts", dryRun);
 }
 
 main();

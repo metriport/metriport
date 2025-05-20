@@ -234,4 +234,10 @@ export class Config {
   static getSurescriptsSftpPrivateKey(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_PRIVATE_KEY");
   }
+  static getSurescriptsReplicaBucketName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_REPLICA_BUCKET_NAME");
+  }
+  static getSurescriptsBundleBucketName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_BUNDLE_BUCKET_NAME");
+  }
 }
