@@ -39,7 +39,8 @@ export class SearchConsolidatedDirect implements SearchConsolidated {
       ? useFhir
         ? await searchLexicalFhir({ patient, query })
         : await searchLexical({ patient, query })
-      : await getConsolidatedPatientData({ patient });
+      : // TODO eng-268 Consider always getting data from OpenSearch, if no query then only filter by cxId and patientId
+        await getConsolidatedPatientData({ patient });
 
     if (!searchResult || !searchResult.entry || searchResult.entry.length < 1) {
       return { resourceCount: 0 };

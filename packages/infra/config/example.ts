@@ -141,6 +141,7 @@ export const config: EnvConfigNonSandbox = {
       },
       encryptionAtRest: true,
       indexName: "test-index-name",
+      lexicalIndexName: "test-lexical-index-name",
     },
     lambda: {
       memory: 512,

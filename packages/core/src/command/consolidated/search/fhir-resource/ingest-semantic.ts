@@ -5,6 +5,7 @@ import { out } from "../../../../util";
 import { Config } from "../../../../util/config";
 import { getConsolidatedAsText } from "../../consolidated-get";
 
+// TODO eng-268 remove this and everything related to semantic, unless we're keeping it for eng-41
 /**
  * Ingest a patient's consolidated resources into OpenSearch for semantic search.
  *

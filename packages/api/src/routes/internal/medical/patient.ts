@@ -1074,7 +1074,7 @@ router.post(
     } catch (err) {
       const msg = `Error recreating consolidated`;
       log(`${msg}, err - ${errorToString(err)}`);
-      throw new MetriportError(msg, { extra: { patientId: id, cxId } });
+      throw new MetriportError(msg, undefined, { patientId: id, cxId });
     }
     return res.status(status.OK).json({ requestId });
   })

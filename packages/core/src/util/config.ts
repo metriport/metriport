@@ -65,7 +65,11 @@ export class Config {
   static getLexicalSearchIndexName(): string {
     return getEnvVarOrFail("LEXICAL_SEARCH_INDEX");
   }
+  static getConsolidatedSearchLambdaName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_LAMBDA_NAME");
+  }
 
+  // TODO eng-268 remove these and everything related to semantic, unless we're keeping it for eng-41
   static getSemanticSearchEndpoint(): string {
     return getEnvVarOrFail("SEMANTIC_SEARCH_ENDPOINT");
   }

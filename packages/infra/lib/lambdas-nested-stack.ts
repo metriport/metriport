@@ -9,6 +9,7 @@ import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -16,8 +17,8 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
-import { MAXIMUM_LAMBDA_TIMEOUT, createLambda } from "./shared/lambda";
-import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { Secrets } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
@@ -27,9 +28,17 @@ export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 const pollingBuffer = Duration.seconds(30);
 
+export type OpenSearchConfigForLambdas = {
+  endpoint: string;
+  auth: { userName: string; secret: ISecret };
+  consolidatedIndexName: string;
+  documentIndexName: string;
+};
+
 interface LambdasNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
+  lambdaLayers: LambdaLayers;
   secrets: Secrets;
   dbCluster: rds.IDatabaseCluster;
   dbCredsSecret: secret.ISecret;
@@ -38,6 +47,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   alarmAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
+  openSearch: OpenSearchConfigForLambdas;
 }
 
 type GenericConsolidatedLambdaProps = {
@@ -58,7 +68,6 @@ type GenericConsolidatedLambdaProps = {
 type ConsolidatedLambdaProps = Omit<GenericConsolidatedLambdaProps, "name" | "entry" | "memory">;
 
 export class LambdasNestedStack extends NestedStack {
-  readonly lambdaLayers: LambdaLayers;
   readonly cdaToVisualizationLambda: Lambda;
   readonly documentDownloaderLambda: lambda.Function;
   readonly fhirToCdaConverterLambda: lambda.Function;
@@ -67,19 +76,20 @@ export class LambdasNestedStack extends NestedStack {
   readonly outboundDocumentRetrievalLambda: lambda.Function;
   readonly fhirToBundleLambda: lambda.Function;
   readonly fhirToBundleCountLambda: lambda.Function;
+  readonly consolidatedSearchLambda: lambda.Function;
+  // TODO eng-268 add consolidatedIngestion QUEUE AND Lambda
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
   readonly conversionResultNotifierLambda: lambda.Function;
+
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
 
     this.terminationProtection = true;
 
-    this.lambdaLayers = setupLambdasLayers(this);
-
     this.cdaToVisualizationLambda = this.setupCdaToVisualization({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
@@ -89,7 +99,7 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     this.documentDownloaderLambda = this.setupDocumentDownloader({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       secrets: props.secrets,
       cwOrgCertificate: props.config.cwSecretNames.CW_ORG_CERTIFICATE,
@@ -100,7 +110,7 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     this.fhirToCdaConverterLambda = this.setupFhirToCdaConverterLambda({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
       envType: props.config.environmentType,
@@ -109,7 +119,7 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     this.outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -121,7 +131,7 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -133,7 +143,7 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     this.outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -148,6 +158,7 @@ export class LambdasNestedStack extends NestedStack {
       vpc: props.vpc,
       config: props.config,
       alarmAction: props.alarmAction,
+      lambdaLayers: props.lambdaLayers,
     });
     const conversionResultNotifierQueue = resultNotifierConnector.queue;
     this.conversionResultNotifierLambda = resultNotifierConnector.lambda;
@@ -155,7 +166,7 @@ export class LambdasNestedStack extends NestedStack {
     this.fhirConverterConnector = fhirConverterConnector.create({
       stack: this,
       vpc: props.vpc,
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       envType: props.config.environmentType,
       config: props.config,
       featureFlagsTable: props.featureFlagsTable,
@@ -165,7 +176,7 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     this.fhirToBundleLambda = this.setupFhirBundleLambda({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
@@ -177,7 +188,7 @@ export class LambdasNestedStack extends NestedStack {
       bedrock: props.config.bedrock,
     });
     this.fhirToBundleCountLambda = this.setupFhirBundleCountLambda({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
@@ -189,8 +200,24 @@ export class LambdasNestedStack extends NestedStack {
       bedrock: props.config.bedrock,
     });
 
+    this.consolidatedSearchLambda = this.setupConsolidatedSearchLambda({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      fhirToBundleLambda: this.fhirToBundleLambda,
+      fhirServerUrl: props.config.fhirServerUrl,
+      bundleBucket: props.medicalDocumentsBucket,
+      openSearchEndpoint: props.openSearch.endpoint,
+      openSearchAuth: props.openSearch.auth,
+      openSearchConsolidatedIndexName: props.openSearch.consolidatedIndexName,
+      openSearchDocumentsIndexName: props.openSearch.documentIndexName,
+      featureFlagsTable: props.featureFlagsTable,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+
     this.acmCertificateMonitorLambda = this.setupAcmCertificateMonitor({
-      lambdaLayers: this.lambdaLayers,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -214,7 +241,7 @@ export class LambdasNestedStack extends NestedStack {
       });
 
       this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
-        lambdaLayers: this.lambdaLayers,
+        lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
         secrets: props.secrets,
         hl7v2RosterBucket,
@@ -511,10 +538,12 @@ export class LambdasNestedStack extends NestedStack {
     vpc,
     alarmAction,
     config,
+    lambdaLayers,
   }: {
     vpc: ec2.IVpc;
     alarmAction: SnsAction | undefined;
     config: EnvConfig;
+    lambdaLayers: LambdaLayers;
   }): { queue: Queue; lambda: Lambda } {
     const name = "ConversionResultNotifier";
     const { environmentType: envType, sentryDSN } = config;
@@ -559,7 +588,7 @@ export class LambdasNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         ...(sentryDSN ? { SENTRY_DSN: sentryDSN } : {}),
       },
-      layers: [this.lambdaLayers.shared],
+      layers: [lambdaLayers.shared],
       vpc,
       alarmSnsAction: alarmAction,
       ...settings.lambda,
@@ -639,6 +668,79 @@ export class LambdasNestedStack extends NestedStack {
 
     // Always add the bedrock policy to the lambda, regardless of whether bedrock is defined or not
     addBedrockPolicyToLambda(theLambda);
+
+    return theLambda;
+  }
+
+  private setupConsolidatedSearchLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    fhirToBundleLambda: lambda.Function;
+    fhirServerUrl: string;
+    bundleBucket: s3.IBucket;
+    featureFlagsTable: dynamodb.Table;
+    openSearchEndpoint: string;
+    openSearchAuth: { userName: string; secret: ISecret };
+    openSearchDocumentsIndexName: string;
+    openSearchConsolidatedIndexName: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const name = "ConsolidatedSearch";
+    const entry = "consolidated-search";
+
+    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
+
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      fhirToBundleLambda,
+      fhirServerUrl,
+      bundleBucket,
+      featureFlagsTable,
+      openSearchEndpoint,
+      openSearchAuth,
+      openSearchConsolidatedIndexName,
+      openSearchDocumentsIndexName,
+      sentryDsn,
+      alarmAction,
+    } = ownProps;
+
+    const theLambda = createLambda({
+      stack: this,
+      name,
+      runtime: lambda.Runtime.NODEJS_20_X,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
+        FHIR_SERVER_URL: fhirServerUrl,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+
+        SEARCH_ENDPOINT: openSearchEndpoint,
+        SEARCH_USERNAME: openSearchAuth.userName,
+        SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
+        SEARCH_INDEX: openSearchDocumentsIndexName,
+        LEXICAL_SEARCH_INDEX: openSearchConsolidatedIndexName,
+
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
+      memory: 4096, // TODO eng-268 consider increasing to 6144
+      timeout: lambdaTimeout,
+      isEnableInsights: true,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    bundleBucket.grantReadWrite(theLambda);
+    fhirToBundleLambda.grantInvoke(theLambda);
+    openSearchAuth.secret.grantRead(theLambda);
+    featureFlagsTable.grantReadData(theLambda);
 
     return theLambda;
   }
@@ -733,7 +835,7 @@ export class LambdasNestedStack extends NestedStack {
         throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
       }
 
-      const scramblerSeedSecret = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
+      const scramblerSeedSecretName = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
@@ -747,7 +849,7 @@ export class LambdasNestedStack extends NestedStack {
           envVars: {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
-            HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecret,
+            HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecretName,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
           layers: [lambdaLayers.shared],

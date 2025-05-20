@@ -18,6 +18,7 @@ import { executeAsynchronously, out } from "../../../../util";
 import { searchDocuments } from "../document-reference/search";
 import { getConfigs } from "./fhir-config";
 
+const numberOfParallelHydrationQueries = 10;
 const maxHydrationAttempts = 5;
 
 /**
@@ -31,7 +32,7 @@ export async function searchLexicalFhir({
   patient: Patient;
   query: string;
 }): Promise<SearchSetBundle> {
-  const { log } = out(`searchLexical - cx ${patient.cxId}, pt ${patient.id}`);
+  const { log } = out(`searchLexicalFhir - cx ${patient.cxId}, pt ${patient.id}`);
 
   log(`Getting consolidated and searching OS...`);
   const startedAt = new Date();
@@ -137,7 +138,7 @@ async function hydrateMissingReferences({
       const hydratedResource = await getResource(cxId, patientId, referenceId);
       if (hydratedResource) resourcesToAdd.push(hydratedResource);
     },
-    { numberOfParallelExecutions: 10 }
+    { numberOfParallelExecutions: numberOfParallelHydrationQueries }
   );
 
   const hydratedResourcesToAdd = await hydrateMissingReferences({
