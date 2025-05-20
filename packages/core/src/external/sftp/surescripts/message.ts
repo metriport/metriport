@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { Patient } from "../../../domain/patient";
-import { Facility, facilitySchema } from "@metriport/api-sdk/medical/models/facility";
 
-import { SURESCRIPTS_VERSION } from "./constants";
+import { SURESCRIPTS_VERSION, METRIPORT_OID } from "./constants";
 
 import {
   patientLoadHeaderSchema,
@@ -16,11 +15,10 @@ import {
 import { FileFieldSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 
-export function canGenerateSurescriptsMessage(facility: Facility, patients: Patient[]): boolean {
+export function canGenerateSurescriptsMessage(npiNumber: string, patients: Patient[]): boolean {
   // patients = patients.filter(patient => patientSchema.safeParse(patient).success);
   if (patients.length === 0) return false;
-
-  if (!facilitySchema.safeParse(facility).success) return false;
+  if (npiNumber == null || npiNumber.trim().length === 0) return false;
   return true;
 }
 
@@ -28,7 +26,7 @@ export function toSurescriptsMessage(
   client: SurescriptsSftpClient,
   transmission: Transmission<TransmissionType>,
   cxId: string,
-  facility: Facility,
+  npiNumber: string,
   patients: Patient[]
 ): Buffer {
   const header = generateSurescriptsRow(
@@ -67,7 +65,7 @@ export function toSurescriptsMessage(
         {
           recordType: "PNM",
           recordSequenceNumber: index + 1,
-          assigningAuthority: "",
+          assigningAuthority: METRIPORT_OID,
           patientId: patient.id,
           lastName: patient.data.lastName ?? "",
           firstName: firstName ?? "",
@@ -81,7 +79,7 @@ export function toSurescriptsMessage(
           zip: address.zip ?? "",
           dateOfBirth: patient.data.dob ?? "", // TODO: convert
           genderAtBirth: genderAtBirth,
-          npiNumber: facility.npi,
+          npiNumber,
           endMonitoringDate: new Date(), // TODO
         },
         patientLoadDetailSchema,
@@ -130,4 +128,40 @@ function valueToSurescriptsString<T extends object>(data: T, key: keyof T): stri
     return "date";
   }
   return "";
+}
+
+// TODO: test implementation
+export function splitName(
+  firstName: string,
+  lastName: string
+): {
+  firstName: string;
+  middleName?: string | undefined;
+  lastName: string;
+  prefix?: string | undefined;
+  suffix?: string | undefined;
+} {
+  let prefix: string | undefined;
+  let suffix: string | undefined;
+  let middleName: string | undefined;
+  const [firstNameFirstPart, ...firstNameRest] = firstName.split(" ");
+  const [lastNameFirstPart, ...lastNameRest] = lastName.split(" ");
+
+  // Simple name like John Doe or Jane Smith
+  if (firstNameRest.length === 0 && lastNameRest.length === 0) {
+    return { firstName: firstNameFirstPart ?? "", lastName: lastNameFirstPart ?? "" };
+  }
+
+  // Check for prefixes and suffixes
+  if (firstNameFirstPart?.match(/^(Mr|Mrs|)\./)) {
+    prefix = firstNameFirstPart;
+    firstName = firstNameRest.shift() ?? "";
+  }
+  if (lastNameRest.length > 0 && lastNameRest[lastNameRest.length - 1]?.match(/^(Mr|Mrs|)\./)) {
+    suffix = lastNameRest.pop() ?? "";
+  }
+
+  firstName = firstNameFirstPart ?? "";
+  lastName = lastNameFirstPart ?? "";
+  return { firstName, middleName, lastName, prefix, suffix };
 }

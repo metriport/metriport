@@ -212,44 +212,26 @@ export class Config {
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }
-
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
 
-  static getSurescriptsHost(sandbox = true): string {
-    return sandbox
-      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_HOST")
-      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_HOST");
+  static getSurescriptsHost(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
   }
-
-  static getSurescriptsSftpSenderId(sandbox = true): string {
-    return sandbox
-      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_SENDER_ID")
-      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_SENDER_ID");
+  static getSurescriptsSftpSenderId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_ID");
   }
-
-  static getSurescriptsSftpSenderPassword(sandbox = true): string {
-    return sandbox
-      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_SENDER_PASSWORD")
-      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_SENDER_PASSWORD");
+  static getSurescriptsSftpSenderPassword(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_PASSWORD");
   }
-
-  static getSurescriptsSftpReceiverId(sandbox = true): string {
-    return sandbox
-      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_RECEIVER_ID")
-      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_RECEIVER_ID");
+  static getSurescriptsSftpReceiverId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_RECEIVER_ID");
   }
-
-  static getSurescriptsSftpPublicKey(sandbox = true): string | undefined {
-    return sandbox
-      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_PUBLIC_KEY")
-      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_PUBLIC_KEY");
+  static getSurescriptsSftpPublicKey(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PUBLIC_KEY");
   }
-
-  static getSurescriptsSftpPrivateKey(sandbox = true): string | undefined {
-    return sandbox
-      ? getEnvVarOrFail("SURESCRIPTS_SFTP_SANDBOX_PRIVATE_KEY")
-      : getEnvVarOrFail("SURESCRIPTS_SFTP_PRODUCTION_PRIVATE_KEY");
+  static getSurescriptsSftpPrivateKey(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PRIVATE_KEY");
   }
 }

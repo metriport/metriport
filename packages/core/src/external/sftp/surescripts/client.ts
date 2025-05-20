@@ -33,19 +33,18 @@ export class SurescriptsSftpClient extends SftpClient {
   constructor(config: SurescriptsSftpConfig) {
     super({
       ...config,
-      host: Config.getSurescriptsHost(!config.production),
+      host: Config.getSurescriptsHost(),
       port: 22,
-      username: Config.getSurescriptsSftpSenderId(!config.production) ?? "",
-      password: Config.getSurescriptsSftpPublicKey(!config.production) ?? "",
-      privateKey: Config.getSurescriptsSftpPrivateKey(!config.production) ?? "",
+      username: Config.getSurescriptsSftpSenderId(),
+      password: Config.getSurescriptsSftpPublicKey(),
+      privateKey: Config.getSurescriptsSftpPrivateKey(),
     });
     this.idGenerator = createIdGenerator(10);
 
-    this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId(!config.production) ?? "";
-    this.senderPassword =
-      config.senderPassword ?? Config.getSurescriptsSftpPublicKey(!config.production) ?? "";
+    this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId();
+    this.senderPassword = config.senderPassword ?? Config.getSurescriptsSftpPublicKey();
     this.usage = config.production ? "production" : "test";
-    this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId(!config.production);
+    this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
   createTransmission<T extends TransmissionType>(type: T, population: string): Transmission<T> {
