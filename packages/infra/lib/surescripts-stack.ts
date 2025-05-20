@@ -143,7 +143,7 @@ function surescriptsEnvironmentVariables({
       ? { SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts?.surescriptsReplicaBucketName }
       : {}),
     ...(allowBundleAccess
-      ? { SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts?.surescriptsBundleBucketName }
+      ? { SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts?.pharmacyBundleBucketName }
       : {}),
   };
 }
@@ -178,7 +178,7 @@ export class SurescriptsNestedStack extends NestedStack {
     this.terminationProtection = true;
 
     const surescriptsBundleBucket = new s3.Bucket(this, "SurescriptsBundleBucket", {
-      bucketName: props.config.surescripts?.surescriptsBundleBucketName,
+      bucketName: props.config.surescripts?.pharmacyBundleBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,

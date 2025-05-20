@@ -268,7 +268,7 @@ type EnvConfigBase = {
   };
   surescripts: {
     surescriptsReplicaBucketName: string;
-    surescriptsBundleBucketName: string;
+    pharmacyBundleBucketName: string;
     surescriptsSenderId: string;
     surescriptsReceiverId: string;
     surescriptsHost: string;
