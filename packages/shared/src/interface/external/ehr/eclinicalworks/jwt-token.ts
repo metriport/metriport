@@ -7,4 +7,4 @@ export const eclinicalworksDashJwtTokenDataSchema = z.object({
   patientId: z.string(),
   source: z.literal(`${eclinicalworksDashSource}`),
 });
-export type EclinicalworksDashJwtTokenData = z.infer<typeof eclinicalworksDashJwtTokenDataSchema>;
+export type EClinicalWorksDashJwtTokenData = z.infer<typeof eclinicalworksDashJwtTokenDataSchema>;

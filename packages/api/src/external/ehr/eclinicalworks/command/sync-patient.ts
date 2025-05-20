@@ -13,7 +13,7 @@ import {
 } from "../../shared/utils/fhir";
 import { createEClinicalWorksClient } from "../shared";
 
-export type SyncEclinicalworksPatientIntoMetriportParams = {
+export type SyncEClinicalWorksPatientIntoMetriportParams = {
   cxId: string;
   eclinicalworksPracticeId: string;
   eclinicalworksPatientId: string;
@@ -22,14 +22,14 @@ export type SyncEclinicalworksPatientIntoMetriportParams = {
   triggerDq?: boolean;
 };
 
-export async function syncEclinicalworksPatientIntoMetriport({
+export async function syncEClinicalWorksPatientIntoMetriport({
   cxId,
   eclinicalworksPracticeId,
   eclinicalworksPatientId,
   eclinicalworksTokenId,
   api,
   triggerDq = false,
-}: SyncEclinicalworksPatientIntoMetriportParams): Promise<string> {
+}: SyncEClinicalWorksPatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: eclinicalworksPatientId,
@@ -67,7 +67,7 @@ export async function syncEclinicalworksPatientIntoMetriport({
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatient.id,
-    }).catch(processAsyncError(`Eclinicalworks queryDocumentsAcrossHIEs`));
+    }).catch(processAsyncError(`EClinicalWorks queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({
     cxId,
