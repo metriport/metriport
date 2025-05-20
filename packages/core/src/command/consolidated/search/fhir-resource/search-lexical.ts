@@ -111,7 +111,7 @@ async function searchOpenSearch({
   const searchService = new OpenSearchLexicalSearcher({
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
-    indexName: Config.getLexicalSearchIndexName(),
+    indexName: Config.getConsolidatedSearchIndexName(),
     username: Config.getSearchUsername(),
     password: Config.getSearchPassword(),
   });

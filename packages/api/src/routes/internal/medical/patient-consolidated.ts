@@ -1,11 +1,6 @@
-import {
-  ingestLexical,
-  initializeLexicalIndex,
-} from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical";
-import {
-  ingestLexicalFhir,
-  initializeFhirIndex,
-} from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical-fhir";
+import { makeIngestConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-consolidated-factory";
+import { initializeLexicalIndex } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical";
+import { initializeFhirIndex } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical-fhir";
 import { out } from "@metriport/core/util/log";
 import { BadRequestError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -18,7 +13,6 @@ import {
   ConsolidatedQueryParams,
   startConsolidatedQuery,
 } from "../../../command/medical/patient/consolidated-get";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getPatientIds } from "../../../command/medical/patient/get-patient-read-only";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
@@ -148,11 +142,13 @@ router.post(
  *
  * Ingest patients' consolidated resources into OpenSearch for lexical search.
  *
- * To process a small amount of patients. If we need a larger amount of patients, we should
- * move this to a queue-based design, one pt per message.
+ * WARNING: if no patient IDs are provided, ALL PATIENTS of the given customer will be ingested!
+ * To stop this process, all you can do is to throttle the ingestion lambda.
+ *
+ * Initializes the indexes (if needed).
  *
  * @param req.query.cxId The customer ID.
- * @param req.query.patientIds The patient IDs.
+ * @param req.query.patientIds The patient IDs to ingest, if not provided, ALL PATIENTS will be ingested!
  */
 router.post(
   "/search/ingest",
@@ -161,20 +157,24 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
 
+    const { log } = out(`internal ingest - cx ${cxId}`);
+
     // TODO eng-268 temporary while we don't choose one approach
     await Promise.all([initializeLexicalIndex(), initializeFhirIndex()]);
 
+    log(`Initialized indexes (if needed), patient IDs count: ${patientIds.length}`);
+
     if (patientIds.length < 1) {
-      out(`cx ${cxId}`).log(`no patientIds provided, getting all patients for this customer`);
+      log(`No patientIds provided, getting all patients for this customer`);
       const allPatientIds = await getPatientIds({ cxId });
       patientIds.push(...allPatientIds);
     }
 
+    log(`Requesting ingestion of ${patientIds.length} patients (asynchronously)...`);
     for (const patientId of patientIds) {
-      const patient = await getPatientOrFail({ cxId, id: patientId });
-      // TODO eng-268 temporary while we don't choose one approach
-      await Promise.all([ingestLexical({ patient }), ingestLexicalFhir({ patient })]);
+      await makeIngestConsolidated().ingest({ cxId, patientId });
     }
+    log(`Done`);
 
     return res.sendStatus(status.OK);
   })

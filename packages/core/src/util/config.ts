@@ -62,11 +62,14 @@ export class Config {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
 
-  static getLexicalSearchIndexName(): string {
-    return getEnvVarOrFail("LEXICAL_SEARCH_INDEX");
+  static getConsolidatedSearchIndexName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_INDEX");
   }
   static getConsolidatedSearchLambdaName(): string {
     return getEnvVarOrFail("CONSOLIDATED_SEARCH_LAMBDA_NAME");
+  }
+  static getConsolidatedIngestionQueueUrl(): string {
+    return getEnvVarOrFail("CONSOLIDATED_INGESTION_QUEUE_URL");
   }
 
   // TODO eng-268 remove these and everything related to semantic, unless we're keeping it for eng-41

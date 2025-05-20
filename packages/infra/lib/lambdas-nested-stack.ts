@@ -10,7 +10,7 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
-import { Queue } from "aws-cdk-lib/aws-sqs";
+import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
@@ -69,19 +69,20 @@ type ConsolidatedLambdaProps = Omit<GenericConsolidatedLambdaProps, "name" | "en
 
 export class LambdasNestedStack extends NestedStack {
   readonly cdaToVisualizationLambda: Lambda;
-  readonly documentDownloaderLambda: lambda.Function;
-  readonly fhirToCdaConverterLambda: lambda.Function;
-  readonly outboundPatientDiscoveryLambda: lambda.Function;
-  readonly outboundDocumentQueryLambda: lambda.Function;
-  readonly outboundDocumentRetrievalLambda: lambda.Function;
-  readonly fhirToBundleLambda: lambda.Function;
-  readonly fhirToBundleCountLambda: lambda.Function;
-  readonly consolidatedSearchLambda: lambda.Function;
-  // TODO eng-268 add consolidatedIngestion QUEUE AND Lambda
+  readonly documentDownloaderLambda: Lambda;
+  readonly fhirToCdaConverterLambda: Lambda;
+  readonly outboundPatientDiscoveryLambda: Lambda;
+  readonly outboundDocumentQueryLambda: Lambda;
+  readonly outboundDocumentRetrievalLambda: Lambda;
+  readonly fhirToBundleLambda: Lambda;
+  readonly fhirToBundleCountLambda: Lambda;
+  readonly consolidatedSearchLambda: Lambda;
+  readonly consolidatedIngestionLambda: Lambda;
+  readonly consolidatedIngestionQueue: IQueue;
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
-  readonly conversionResultNotifierLambda: lambda.Function;
+  readonly conversionResultNotifierLambda: Lambda;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -215,6 +216,24 @@ export class LambdasNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     });
+
+    const consolidatedIngestionConnector = this.setupConsolidatedIngestionConnector({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      fhirToBundleLambda: this.fhirToBundleLambda,
+      fhirServerUrl: props.config.fhirServerUrl,
+      bundleBucket: props.medicalDocumentsBucket,
+      openSearchEndpoint: props.openSearch.endpoint,
+      openSearchAuth: props.openSearch.auth,
+      openSearchConsolidatedIndexName: props.openSearch.consolidatedIndexName,
+      openSearchDocumentsIndexName: props.openSearch.documentIndexName,
+      featureFlagsTable: props.featureFlagsTable,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+    this.consolidatedIngestionQueue = consolidatedIngestionConnector.queue;
+    this.consolidatedIngestionLambda = consolidatedIngestionConnector.lambda;
 
     this.acmCertificateMonitorLambda = this.setupAcmCertificateMonitor({
       lambdaLayers: props.lambdaLayers,
@@ -689,9 +708,7 @@ export class LambdasNestedStack extends NestedStack {
   }): Lambda {
     const name = "ConsolidatedSearch";
     const entry = "consolidated-search";
-
-    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
-
+    const lambdaTimeout = Duration.minutes(3);
     const {
       lambdaLayers,
       vpc,
@@ -720,13 +737,12 @@ export class LambdasNestedStack extends NestedStack {
         FHIR_SERVER_URL: fhirServerUrl,
         MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-
         SEARCH_ENDPOINT: openSearchEndpoint,
         SEARCH_USERNAME: openSearchAuth.userName,
         SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
+        // TODO eng-268 temporary while we don't choose one approach - REMOVE THE ONE NOT BEING USED
         SEARCH_INDEX: openSearchDocumentsIndexName,
-        LEXICAL_SEARCH_INDEX: openSearchConsolidatedIndexName,
-
+        CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
@@ -743,6 +759,102 @@ export class LambdasNestedStack extends NestedStack {
     featureFlagsTable.grantReadData(theLambda);
 
     return theLambda;
+  }
+
+  private setupConsolidatedIngestionConnector(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    fhirToBundleLambda: lambda.Function;
+    fhirServerUrl: string;
+    bundleBucket: s3.IBucket;
+    featureFlagsTable: dynamodb.Table;
+    openSearchEndpoint: string;
+    openSearchAuth: { userName: string; secret: ISecret };
+    openSearchDocumentsIndexName: string;
+    openSearchConsolidatedIndexName: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: IQueue } {
+    const name = "ConsolidatedIngestion";
+    const lambdaEntry = "consolidated-ingestion";
+    const lambdaTimeout = Duration.minutes(3);
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      fhirToBundleLambda,
+      featureFlagsTable,
+      openSearchEndpoint,
+      openSearchAuth,
+      openSearchConsolidatedIndexName,
+      openSearchDocumentsIndexName,
+      sentryDsn,
+      alarmAction,
+    } = ownProps;
+
+    const settings = {
+      queue: {
+        fifo: false,
+        createRetryLambda: false,
+        maxReceiveCount: 2,
+        alarmMaxAgeOfOldestMessage: Duration.seconds(lambdaTimeout.toSeconds() * 3),
+        maxMessageCountAlarmThreshold: 5_000,
+        visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+        receiveMessageWaitTime: Duration.seconds(2),
+      },
+      lambda: {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        memory: 1024,
+        timeout: lambdaTimeout,
+      },
+      eventSource: {
+        batchSize: 1,
+        maxBatchingWindow: Duration.seconds(0),
+        maxConcurrency: 5, // how many lambdas can hit the OpenSearch service at once
+        // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
+        reportBatchItemFailures: false,
+      },
+    };
+
+    const theQuue = createQueue({
+      stack: this,
+      name,
+      envType,
+      alarmSnsAction: alarmAction,
+      ...settings.queue,
+    });
+
+    const theLambda = createLambda({
+      stack: this,
+      name,
+      entry: lambdaEntry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        SEARCH_ENDPOINT: openSearchEndpoint,
+        SEARCH_USERNAME: openSearchAuth.userName,
+        SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
+        // TODO eng-268 temporary while we don't choose one approach - REMOVE THE ONE NOT BEING USED
+        SEARCH_INDEX: openSearchDocumentsIndexName,
+        CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
+      isEnableInsights: true,
+      vpc,
+      alarmSnsAction: alarmAction,
+      ...settings.lambda,
+    });
+
+    theLambda.addEventSource(new SqsEventSource(theQuue, settings.eventSource));
+
+    fhirToBundleLambda.grantInvoke(theLambda);
+    openSearchAuth.secret.grantRead(theLambda);
+    featureFlagsTable.grantReadData(theLambda);
+
+    return { lambda: theLambda, queue: theQuue };
   }
 
   /**

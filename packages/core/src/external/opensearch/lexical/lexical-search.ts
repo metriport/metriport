@@ -23,6 +23,7 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
         bool: {
           must: [
             {
+              // https://docs.opensearch.org/docs/latest/query-dsl/full-text/match/
               match: {
                 content: {
                   query: actualQuery,
@@ -45,6 +46,7 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
       bool: {
         must: [
           {
+            // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
             simple_query_string: {
               query: actualQuery,
               fields: [contentFieldName],

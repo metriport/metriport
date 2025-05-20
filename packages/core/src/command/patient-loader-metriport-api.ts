@@ -26,7 +26,6 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
     return resp.data.states;
   }
 
-  // TODO: Response is DTO not domain object
   async getOneOrFail({ id, cxId }: GetOne): Promise<Patient> {
     const response = await executeWithNetworkRetries(
       () => axios.get(`${this.apiUrl}/internal/patient/${id}?cxId=${cxId}`),
@@ -37,7 +36,6 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
     return patient;
   }
 
-  // TODO: Response is DTO not domain object
   async findBySimilarity({ cxId, data }: FindBySimilarity): Promise<Patient[]> {
     const response = await executeWithNetworkRetries(
       () =>

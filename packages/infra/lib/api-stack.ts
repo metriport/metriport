@@ -393,6 +393,8 @@ export class APIStack extends Stack {
       hl7v2RosterUploadLambdas,
       conversionResultNotifierLambda,
       consolidatedSearchLambda,
+      consolidatedIngestionLambda,
+      consolidatedIngestionQueue,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -595,6 +597,8 @@ export class APIStack extends Stack {
       fhirToBundleLambda,
       fhirToBundleCountLambda,
       consolidatedSearchLambda,
+      consolidatedIngestionQueue,
+      consolidatedSearchIndexName: props.config.openSearch.openSearch.lexicalIndexName,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchIngestionQueue,
       searchEndpoint: searchDomainEndpoint,
@@ -694,6 +698,7 @@ export class APIStack extends Stack {
       fhirConverterLambda,
       conversionResultNotifierLambda,
       consolidatedSearchLambda,
+      consolidatedIngestionLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));

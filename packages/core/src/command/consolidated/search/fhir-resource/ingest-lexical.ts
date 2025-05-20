@@ -64,7 +64,7 @@ function getConfigs(): OpenSearchLexicalSearcherConfig {
   return {
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
-    indexName: Config.getLexicalSearchIndexName(),
+    indexName: Config.getConsolidatedSearchIndexName(),
     username: Config.getSearchUsername(),
     password: Config.getSearchPassword(),
   };

@@ -5,7 +5,7 @@ export function getConfigs(): OpenSearchLexicalSearcherConfig {
   return {
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
-    indexName: getFhirIndexName(Config.getLexicalSearchIndexName()),
+    indexName: getFhirIndexName(Config.getConsolidatedSearchIndexName()),
     username: Config.getSearchUsername(),
     password: Config.getSearchPassword(),
   };
