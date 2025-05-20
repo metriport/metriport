@@ -23,13 +23,9 @@ export async function getAppointments(
       practiceId: params.practiceId,
     });
   }
-  const tokenInfo = await getTokenInfo({
-    ehr: EhrSources.canvas,
-    cxId: params.cxId,
-    practiceId: params.practiceId,
-  });
+  const twoLeggedAuthTokenInfo = await getTokenInfo(params.tokenId);
   const client = await CavasApi.create({
-    twoLeggedAuthTokenInfo: tokenInfo,
+    twoLeggedAuthTokenInfo,
     practiceId: params.practiceId,
     environment: params.environment,
     getSecrets: async () => {

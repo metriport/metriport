@@ -5,13 +5,13 @@ import { getAppointments as getAppointmentsCanvas } from "../../../canvas/comman
 
 export type GetAppointmentsRequest = {
   ehr: EhrSource;
+  environment: string;
+  method: AppointmentMethods;
+  tokenId: string;
   cxId: string;
   practiceId: string;
-  environment: string;
   fromDate?: Date;
   toDate?: Date;
-  tokenId?: string;
-  method: AppointmentMethods;
 };
 
 export interface EhrGetAppointmentsHandler {

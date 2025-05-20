@@ -109,12 +109,12 @@ async function getAppointments({
     const appointments = await handler.getAppointments<SlimBookedAppointment>({
       ehr: EhrSources.canvas,
       environment,
+      method: AppointmentMethods.canvasGetAppointments,
       tokenId,
       cxId,
       practiceId,
       fromDate: startRange,
       toDate: endRange,
-      method: AppointmentMethods.canvasGetAppointments,
     });
     return {
       appointments: appointments.map(appointment => {
