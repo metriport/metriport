@@ -160,7 +160,6 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 }
 
 export class SurescriptsNestedStack extends NestedStack {
-  readonly connectSftpLambda: Lambda;
   readonly synchronizeSftpLambda: Lambda;
   readonly sendPatientRequestLambda: Lambda;
   readonly sendPatientRequestQueue: Queue;
@@ -199,9 +198,6 @@ export class SurescriptsNestedStack extends NestedStack {
       surescripts: props.config.surescripts,
     };
 
-    const connectSftp = this.setupConnectSftp(commonConfig);
-    this.connectSftpLambda = connectSftp.lambda;
-
     const synchronizeSftp = this.setupSynchronizeSftp({
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
@@ -229,39 +225,6 @@ export class SurescriptsNestedStack extends NestedStack {
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
-  }
-
-  private setupConnectSftp(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    surescripts: EnvConfig["surescripts"];
-  }): { lambda: Lambda } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, surescripts } = ownProps;
-    const { name, entry, lambda: lambdaSettings } = settings.connectSftp;
-
-    const lambda = createLambda({
-      ...lambdaSettings,
-      stack: this,
-      name,
-      entry,
-      envType,
-      envVars: {
-        ...surescriptsEnvironmentVariables({
-          surescripts,
-          allowReplicaAccess: false,
-          allowBundleAccess: false,
-        }),
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      layers: [lambdaLayers.shared],
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    return { lambda };
   }
 
   private setupSynchronizeSftp(ownProps: {
