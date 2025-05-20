@@ -4,7 +4,7 @@ import EClinicalWorksApi, {
 } from "@metriport/core/external/ehr/eclinicalworks/index";
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
-import { EhrPerPracticeParams } from "../shared";
+import { EhrPerPracticeParams } from "../shared/utils/client";
 
 function getEClinicalWorksEnv(): {
   environment: EClinicalWorksEnv;
