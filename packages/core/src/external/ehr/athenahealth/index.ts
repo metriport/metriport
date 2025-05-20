@@ -72,10 +72,10 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
-  GetSecretsFunction,
-  GetSecretsParamsResult,
+  GetSecretsOauthFunction,
   makeRequest,
   MakeRequestParamsInEhr,
+  processOauthSecrets,
 } from "../shared";
 
 const parallelRequests = 5;
@@ -148,7 +148,7 @@ class AthenaHealthApi {
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
-  private getSecrets: GetSecretsFunction | undefined;
+  private getSecrets: GetSecretsOauthFunction | undefined;
   private practiceId: string;
 
   private constructor(private config: AthenaHealthApiConfig) {
@@ -171,23 +171,14 @@ class AthenaHealthApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
-    let secrets: GetSecretsParamsResult = {
-      clientKey: this.config.clientKey,
-      clientSecret: this.config.clientSecret,
-    };
-    if (!secrets.clientKey || !secrets.clientSecret) {
-      if (!this.getSecrets) {
-        throw new MetriportError(
-          "getSecrets function is required if clientKey and clientSecret are not provided @ AthenaHealth"
-        );
-      }
-      secrets = await this.getSecrets();
-      if (!secrets.clientKey || !secrets.clientSecret) {
-        throw new MetriportError(
-          "Client key and secret are required to fetch OAuth token @ AthenaHealth"
-        );
-      }
-    }
+    const secrets = await processOauthSecrets({
+      ehr: EhrSources.athena,
+      secrets: {
+        ...(this.config.clientKey && { clientKey: this.config.clientKey }),
+        ...(this.config.clientSecret && { clientSecret: this.config.clientSecret }),
+      },
+      getSecrets: this.getSecrets,
+    });
     const url = `${this.baseUrl}/oauth2/v1/token`;
     const data = {
       grant_type: "client_credentials",

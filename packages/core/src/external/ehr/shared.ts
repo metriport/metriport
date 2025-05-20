@@ -36,25 +36,51 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export type GetSecretsParams = {
-  cxId: string;
-  practiceId: string;
-};
+export const getSecretsOauthSchema = z.object({
+  clientKey: z.string(),
+  clientSecret: z.string(),
+});
+export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
 
-export type GetSecretsParamsResult = {
-  clientKey?: string | undefined;
-  clientSecret?: string | undefined;
-  apiKey?: string | undefined;
-};
+export const getSecretsApiKeySchema = z.object({
+  apiKey: z.string(),
+});
+export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
 
-export type GetSecretsFunction = () => Promise<GetSecretsParamsResult>;
+export type GetSecretsOauthFunction = () => Promise<GetSecretsOauthResult>;
+export type GetSecretsApiKeyFunction = () => Promise<GetSecretsApiKeyResult>;
+
+export async function processOauthSecrets({
+  ehr,
+  secrets,
+  getSecrets,
+}: {
+  ehr: EhrSource;
+  secrets: Partial<GetSecretsOauthResult>;
+  getSecrets: GetSecretsOauthFunction | undefined;
+}): Promise<GetSecretsOauthResult> {
+  if (secrets.clientKey && secrets.clientSecret) {
+    return {
+      clientKey: secrets.clientKey,
+      clientSecret: secrets.clientSecret,
+    };
+  }
+  if (!getSecrets) {
+    throw new MetriportError(
+      "getSecrets function is required if clientKey and clientSecret are not provided",
+      undefined,
+      { ehr }
+    );
+  }
+  return await getSecrets();
+}
 
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
   practiceId: string;
   clientKey?: string;
   clientSecret?: string;
-  getSecrets?: GetSecretsFunction;
+  getSecrets: GetSecretsOauthFunction;
 }
 
 export type RequestData = { [key: string]: string | boolean | object | undefined };

@@ -56,10 +56,10 @@ import {
   getConditionIcd10Coding,
   getConditionStartDate,
   getConditionStatus,
-  GetSecretsFunction,
-  GetSecretsParamsResult,
+  GetSecretsOauthFunction,
   makeRequest,
   MakeRequestParamsInEhr,
+  processOauthSecrets,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -106,7 +106,7 @@ class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceCustomApi: AxiosInstance;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
-  private getSecrets: GetSecretsFunction | undefined;
+  private getSecrets: GetSecretsOauthFunction | undefined;
   private baseUrl: string;
   private practiceId: string;
 
@@ -130,23 +130,14 @@ class CanvasApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
-    let secrets: GetSecretsParamsResult = {
-      clientKey: this.config.clientKey,
-      clientSecret: this.config.clientSecret,
-    };
-    if (!secrets.clientKey || !secrets.clientSecret) {
-      if (!this.getSecrets) {
-        throw new MetriportError(
-          "getSecrets function is required if clientKey and clientSecret are not provided @ Canvas"
-        );
-      }
-      secrets = await this.getSecrets();
-      if (!secrets.clientKey || !secrets.clientSecret) {
-        throw new MetriportError(
-          "Client key and secret are required to fetch OAuth token @ Canvas"
-        );
-      }
-    }
+    const secrets = await processOauthSecrets({
+      ehr: EhrSources.canvas,
+      secrets: {
+        ...(this.config.clientKey && { clientKey: this.config.clientKey }),
+        ...(this.config.clientSecret && { clientSecret: this.config.clientSecret }),
+      },
+      getSecrets: this.getSecrets,
+    });
     const url = `https://${this.baseUrl}/auth/token/`;
     const payload = `grant_type=client_credentials&client_id=${secrets.clientKey}&client_secret=${secrets.clientSecret}`;
 

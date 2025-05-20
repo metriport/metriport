@@ -4,6 +4,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getSecrets } from "../../api/get-client-key-and-secret";
 import { getTokenInfo } from "../../api/get-token-info";
 import { GetAppointmentsClientRequest } from "../../lambdas/appoinment/get-appoinemtns/ehr-get-appointments";
+import { GetSecretsOauthResult, getSecretsOauthSchema } from "../../shared";
 import CavasApi from "../index";
 
 export async function getAppointments(
@@ -29,11 +30,16 @@ export async function getAppointments(
     practiceId: params.practiceId,
     environment: params.environment,
     getSecrets: async () => {
-      return getSecrets({
+      const secrets = await getSecrets<GetSecretsOauthResult>({
         ehr: EhrSources.canvas,
         cxId: params.cxId,
         practiceId: params.practiceId,
+        schema: getSecretsOauthSchema,
       });
+      return {
+        clientKey: secrets.clientKey,
+        clientSecret: secrets.clientSecret,
+      };
     },
   });
   const appointments = await client.getAppointments({

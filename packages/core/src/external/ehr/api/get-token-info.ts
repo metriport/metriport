@@ -7,12 +7,10 @@ import {
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { ApiBaseParams, validateAndLogResponse } from "./api-shared";
-
-export type GetTokenInfoParams = Omit<ApiBaseParams, "departmentId" | "patientId">;
+import { validateAndLogResponse } from "./api-shared";
 
 /**
- * Sends a request to the API to get the token info for a client.
+ * Sends a request to the API to get the token info by token id.
  *
  * @param tokenId - The token ID.
  */
