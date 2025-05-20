@@ -5,7 +5,6 @@ import { Hl7Message } from "@medplum/core";
 import { Hl7NotificationWebhookSenderDirect } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-direct";
 import { getOrCreateMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { Config } from "@metriport/core/util/config";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import fs from "fs";
 
@@ -43,7 +42,6 @@ import fs from "fs";
  * 3. Run the script using ts-node
  */
 const apiUrl = getEnvVarOrFail("API_URL");
-const bucketName = Config.getHl7ConversionBucketName();
 
 const filePath = "";
 const fileName = "";
@@ -59,7 +57,7 @@ function invokeLambdaLogic() {
 
     try {
       const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
-      new Hl7NotificationWebhookSenderDirect(apiUrl, bucketName).execute({
+      new Hl7NotificationWebhookSenderDirect(apiUrl).execute({
         cxId,
         patientId,
         message,

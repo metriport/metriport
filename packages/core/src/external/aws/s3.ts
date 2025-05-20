@@ -60,6 +60,10 @@ export type GetSignedUrlWithLocation = {
   versionId?: string;
 };
 
+export type UploadFileResult = AWS.S3.ManagedUpload.SendData & {
+  VersionId?: string;
+};
+
 export type UploadParams = {
   bucket: string;
   key: string;
@@ -454,7 +458,7 @@ export class S3Utils {
     file,
     contentType,
     metadata,
-  }: UploadParams): Promise<AWS.S3.ManagedUpload.SendData> {
+  }: UploadParams): Promise<UploadFileResult> {
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
@@ -465,7 +469,9 @@ export class S3Utils {
       uploadParams.ContentType = contentType;
     }
     try {
-      const resp = await executeWithRetriesS3(() => this._s3.upload(uploadParams).promise());
+      const resp = (await executeWithRetriesS3(() =>
+        this._s3.upload(uploadParams).promise()
+      )) as UploadFileResult;
       return resp;
     } catch (error) {
       const { log } = out("uploadFile");
