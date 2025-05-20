@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getSecrets } from "../../api/get-client-key-and-secret";
