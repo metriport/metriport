@@ -3,18 +3,18 @@ import { Config } from "../../../../../util/config";
 import { out } from "../../../../../util/log";
 import {
   defaultLambdaInvocationResponseHandler,
-  LambaClient,
+  LambdaClient,
   makeLambdaClient,
 } from "../../../../aws/lambda";
 import { EhrGetAppointmentsHandler, GetAppointmentsRequest } from "./ehr-get-appointments";
 
 export class EhrGetAppointmentsCloud implements EhrGetAppointmentsHandler {
-  private readonly lambdaClient: LambaClient;
+  private readonly lambdaClient: LambdaClient;
 
   constructor(
     private readonly ehrGetAppointmentsLambdaName: string,
     region?: string,
-    lambdaClient?: LambaClient
+    lambdaClient?: LambdaClient
   ) {
     this.lambdaClient = lambdaClient ?? makeLambdaClient(region ?? Config.getAWSRegion());
   }

@@ -8,7 +8,7 @@ import { asyncHandler, getFrom } from "../../util";
 const router = Router();
 
 /**
- * POST /internal/token/:id
+ * GET /internal/token/:id
  *
  * Get the JWT token by id
  *

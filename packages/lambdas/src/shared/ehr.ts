@@ -1,4 +1,4 @@
-import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments";
+import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/appointment/get-appointments/ehr-get-appointments";
 import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/elation/link-patient/elation-link-patient";
 import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/healthie/link-patient/healthie-link-patient";
 import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient";

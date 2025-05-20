@@ -1,5 +1,5 @@
-import { GetAppointmentsRequest } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments";
-import { EhrGetAppointmentsLocal } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments-local";
+import { GetAppointmentsRequest } from "@metriport/core/external/ehr/lambdas/appointment/get-appointments/ehr-get-appointments";
+import { EhrGetAppointmentsLocal } from "@metriport/core/external/ehr/lambdas/appointment/get-appointments/ehr-get-appointments-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";

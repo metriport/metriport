@@ -3,9 +3,9 @@ import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getSecrets } from "../../api/get-client-key-and-secret";
 import { getTokenInfo } from "../../api/get-token-info";
-import { GetAppointmentsClientRequest } from "../../lambdas/appoinment/get-appoinemtns/ehr-get-appointments";
+import { GetAppointmentsClientRequest } from "../../lambdas/appointment/get-appointments/ehr-get-appointments";
 import { GetSecretsOauthResult, getSecretsOauthSchema } from "../../shared";
-import CavasApi from "../index";
+import CanvasApi from "../index";
 
 export async function getAppointments(
   params: GetAppointmentsClientRequest
@@ -25,7 +25,7 @@ export async function getAppointments(
     });
   }
   const twoLeggedAuthTokenInfo = await getTokenInfo(params.tokenId);
-  const client = await CavasApi.create({
+  const client = await CanvasApi.create({
     twoLeggedAuthTokenInfo,
     practiceId: params.practiceId,
     environment: params.environment,
