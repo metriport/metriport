@@ -100,16 +100,16 @@ export class CompositionToString implements FHIRResourceToString<Composition> {
     //   parts.push(`Confidentiality: ${composition.confidentiality}`);
     // }
 
-    const eventStr = composition.event
+    const eventList = composition.event
       ?.map(event => {
         const code = event.code ? (isDebug ? `Code: ${event.code}` : event.code) : undefined;
         const period = formatPeriod({ period: event.period, isDebug });
         return [code, period].filter(Boolean).join(FIELD_SEPARATOR);
       })
       .filter(Boolean);
-    if (eventStr) {
-      const eventStrs = eventStr.join(FIELD_SEPARATOR);
-      parts.push(isDebug ? `Service: ${eventStrs}` : eventStrs);
+    if (eventList && eventList.length > 0) {
+      const eventStr = eventList.join(FIELD_SEPARATOR);
+      parts.push(isDebug ? `Service: ${eventStr}` : eventStr);
     }
 
     const sections = composition.section
