@@ -93,7 +93,7 @@ export const ehrGetAppointmentsSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   environment: z.string(),
   method: z.nativeEnum(AppointmentMethods),
-  tokenId: z.string(),
+  tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),
   fromDate: z.coerce.date().optional(),
