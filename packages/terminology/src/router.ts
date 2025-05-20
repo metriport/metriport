@@ -62,7 +62,6 @@ fhirRouter.post(
 fhirRouter.post(
   "/concept-map/import",
   asyncHandler(async (req: Request, res: Response) => {
-    // Validate query param type
     if (req.query.isReversible !== undefined && typeof req.query.isReversible !== "string") {
       throw new Error("isReversible query param must be a string");
     }
