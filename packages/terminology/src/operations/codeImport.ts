@@ -77,7 +77,8 @@ export async function importCodeSystemSqlite(
     const query = `
       INSERT INTO coding (system, code, display)
       VALUES ${rows.map(() => "(?, ?, ?)").join(", ")}
-      ON CONFLICT(system, code) DO NOTHING
+      ON CONFLICT(system, code) DO UPDATE SET
+        display = excluded.display
     `;
     await db.run(query, params);
   }

@@ -50,11 +50,12 @@ function generateReverseConceptMaps(conceptMap: ConceptMap): ConceptMap[] {
 }
 
 export async function conceptMapImportHandler(
-  req: FhirRequest
+  req: FhirRequest,
+  isReversible: boolean
 ): Promise<FhirResponse | ConceptMap[]> {
   try {
     const conceptMap = req.body as ConceptMap;
-    const reverseMaps = generateReverseConceptMaps(conceptMap);
+    const reverseMaps = isReversible ? generateReverseConceptMaps(conceptMap) : [];
     const allMaps = [conceptMap, ...reverseMaps];
 
     const dbClient = getTermServerClient();

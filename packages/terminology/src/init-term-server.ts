@@ -17,7 +17,7 @@ async function initTables(dbClient: DbClient): Promise<void> {
 }
 
 export async function initTermServer(): Promise<void> {
-  const key = "terminology_v2.db";
+  const key = "terminology_v2.1.db";
 
   const dbPath = join(process.cwd(), key);
 

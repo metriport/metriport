@@ -39,12 +39,22 @@ export class TerminologyClient {
     return response.data;
   }
 
-  async importConceptMap(conceptMap: ConceptMap): Promise<ConceptMap[] | OperationOutcome[]> {
-    const response = await axios.post(`${this.baseUrl}/concept-map/import`, conceptMap, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  async importConceptMap(
+    conceptMap: ConceptMap,
+    isReversible: boolean
+  ): Promise<ConceptMap[] | OperationOutcome[]> {
+    const queryParams = new URLSearchParams();
+    queryParams.set("isReversible", isReversible.toString());
+
+    const response = await axios.post(
+      `${this.baseUrl}/concept-map/import?${queryParams.toString()}`,
+      conceptMap,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
     return response.data;
   }
 
