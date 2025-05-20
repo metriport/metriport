@@ -7,7 +7,7 @@ export type GetAppointmentsRequest = {
   ehr: EhrSource;
   environment: string;
   method: AppointmentMethods;
-  tokenId: string;
+  tokenId?: string;
   cxId: string;
   practiceId: string;
   fromDate?: Date;
