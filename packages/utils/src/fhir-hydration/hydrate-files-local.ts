@@ -8,6 +8,9 @@ import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { getFileContents, getFileNames } from "../shared/fs";
+import { getEnvVarOrFail } from "@metriport/shared";
+
+const termServerUrl = getEnvVarOrFail("TERM_SERVER_URL");
 
 /**
  * Takes all the JSON files from the specified folder, and hydrates them, storing the result in the same folder, with the `_hydrated` suffix.
@@ -19,11 +22,14 @@ const samplesFolderPath = "";
 const suffix = "_hydrated";
 
 async function main() {
+  if (!termServerUrl) throw new Error("TERM_SERVER_URL has not been set.");
+
   const bundleFileNames = getFileNames({
     folder: samplesFolderPath,
     recursive: true,
     extension: "json",
   });
+
   const filteredBundleFileNames = bundleFileNames.filter(f => !f.includes(suffix));
 
   await executeAsynchronously(filteredBundleFileNames, async (filePath, index) => {

@@ -81,7 +81,7 @@ function hasEncounterType(encounter: Encounter): boolean {
 }
 
 function isDisplayUseful(display: string | undefined) {
-  return display !== undefined && display !== "unknown";
+  return display != undefined && display.trim() !== "unknown";
 }
 
 function normalizeDisplay(str: string): string {

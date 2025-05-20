@@ -19,7 +19,11 @@ import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/e
 import dayjs from "dayjs";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
 import { Config } from "../../../shared/config";
-import { createEhrClient, EhrEnvAndClientCredentials, EhrPerPracticeParams } from "../shared";
+import {
+  createEhrClient,
+  EhrEnvAndClientCredentials,
+  EhrPerPracticeParams,
+} from "../shared/utils/client";
 
 export const elationClientJwtTokenSource = "elation-client";
 export const elationWebhookJwtTokenSource = "elation-webhook";
