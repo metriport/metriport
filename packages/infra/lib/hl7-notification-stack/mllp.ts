@@ -195,6 +195,11 @@ export class MllpStack extends cdk.NestedStack {
       description: "DNS name of the Network Load Balancer for MLLP",
     });
 
+    new cdk.CfnOutput(this, "MllpNlbDnsNameB", {
+      value: nlbB.loadBalancerDnsName,
+      description: "DNS name of the Network Load Balancer for MLLP B",
+    });
+
     new cdk.CfnOutput(this, "MllpNlbInternalIpA", {
       value: MLLP_SERVER_NLB_INTERNAL_IP_A,
       description: "Internal IP address of the MLLP Network Load Balancer A",
