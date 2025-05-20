@@ -83,7 +83,7 @@ export function createNames(patient: ElationPatient): { firstName: string; lastN
   };
 }
 
-function getElationEnv({
+export function getElationEnv({
   cxId,
   practiceId,
 }: EhrPerPracticeParams): EhrEnvAndClientCredentials<ElationEnv> {

@@ -52,6 +52,26 @@ export async function getJwtTokenOrFail({
 /**
  * DOES NOT CHECK EXPIRATION
  */
+export async function getJwtTokenById(id: string): Promise<JwtToken | undefined> {
+  const existing = await JwtTokenModel.findOne({
+    where: { id },
+  });
+  if (!existing) return undefined;
+  return existing.dataValues;
+}
+
+/**
+ * DOES NOT CHECK EXPIRATION
+ */
+export async function getJwtTokenByIdOrFail(id: string): Promise<JwtToken> {
+  const existing = await getJwtTokenById(id);
+  if (!existing) throw new NotFoundError("JwtToken not found", undefined, { id });
+  return existing;
+}
+
+/**
+ * DOES NOT CHECK EXPIRATION
+ */
 export async function getLatestExpiringJwtTokenBySourceAndData({
   source,
   data,

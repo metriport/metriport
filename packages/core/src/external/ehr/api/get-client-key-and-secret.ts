@@ -21,11 +21,8 @@ export async function getSecrets({
 }: GetTokenInfoParams): Promise<GetSecretsParamsResult> {
   const { log, debug } = out(`Ehr getSecrets - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const queryParams = new URLSearchParams({
-    cxId,
-    practiceId,
-  });
-  const getSecretsUrl = `/internal/ehr/${ehr}/secrets?${queryParams.toString()}`;
+  const queryParams = new URLSearchParams({ cxId });
+  const getSecretsUrl = `/internal/ehr/${ehr}/practice/${practiceId}/secrets?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
       return api.post(getSecretsUrl);

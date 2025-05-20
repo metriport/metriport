@@ -1,6 +1,7 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
+import { HealthieEnv } from "@metriport/core/external/ehr/healthie/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import {
   findOrCreateJwtToken,
@@ -8,7 +9,7 @@ import {
 } from "../../../../command/jwt-token";
 import { EhrClientJwtTokenSource } from "./jwt-token";
 
-type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv;
+export type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv;
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   environment: Env;
   clientKey: string;
@@ -20,7 +21,7 @@ export type EhrEnvAndApiKey<Env extends EhrEnv> = {
   apiKey: string;
 };
 
-type EhrClient = AthenaHealthApi | ElationApi | CanvasApi;
+type EhrOauthClient = AthenaHealthApi | ElationApi | CanvasApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   practiceId: string;
@@ -53,7 +54,7 @@ export type GetEnvParams<Env extends EhrEnv, EnvArgs> = {
 
 export async function createEhrClient<
   Env extends EhrEnv,
-  Client extends EhrClient,
+  Client extends EhrOauthClient,
   EnvArgs = undefined
 >({
   cxId,

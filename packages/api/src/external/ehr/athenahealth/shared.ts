@@ -12,7 +12,7 @@ import {
 
 export const athenaClientJwtTokenSource = "athenahealth-client";
 
-function getAthenaEnv(): EhrEnvAndClientCredentials<AthenaEnv> {
+export function getAthenaEnv(): EhrEnvAndClientCredentials<AthenaEnv> {
   const environment = Config.getAthenaHealthEnv();
   if (!environment) throw new MetriportError("AthenaHealth environment not set");
   if (!isAthenaEnv(environment)) {
