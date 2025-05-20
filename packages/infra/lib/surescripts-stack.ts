@@ -113,37 +113,23 @@ const settings: SurescriptsSettings = {
   },
 };
 
-function surescriptsEnvironmentVariables({
-  surescripts,
-  allowReplicaAccess = true,
-  allowBundleAccess = false,
-}: {
-  surescripts: EnvConfig["surescripts"];
-  allowReplicaAccess?: boolean;
-  allowBundleAccess?: boolean;
-}): Record<string, string> {
+function surescriptsEnvironmentVariables(
+  surescripts: EnvConfig["surescripts"]
+): Record<string, string> {
   if (!surescripts) {
     return {};
   }
 
-  const env: Record<string, string> = {
-    SURESCRIPTS_SFTP_HOST: surescripts?.surescriptsHost,
-    SURESCRIPTS_SFTP_SENDER_ID: surescripts?.surescriptsSenderId,
-    SURESCRIPTS_SFTP_RECEIVER_ID: surescripts?.surescriptsReceiverId,
-    SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN: surescripts?.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN,
-    SURESCRIPTS_SFTP_PUBLIC_KEY_ARN: surescripts?.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY_ARN,
-    SURESCRIPTS_SFTP_PRIVATE_KEY_ARN: surescripts?.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY_ARN,
+  return {
+    SURESCRIPTS_SFTP_HOST: surescripts.surescriptsHost,
+    SURESCRIPTS_SFTP_SENDER_ID: surescripts.surescriptsSenderId,
+    SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
+    SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN: surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN,
+    SURESCRIPTS_SFTP_PUBLIC_KEY_ARN: surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY_ARN,
+    SURESCRIPTS_SFTP_PRIVATE_KEY_ARN: surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY_ARN,
+    SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts.surescriptsReplicaBucketName,
+    SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts.pharmacyBundleBucketName,
   };
-
-  if (allowReplicaAccess) {
-    env.SURESCRIPTS_REPLICA_BUCKET_NAME = surescripts?.surescriptsReplicaBucketName;
-  }
-
-  if (allowBundleAccess) {
-    env.SURESCRIPTS_BUNDLE_BUCKET_NAME = surescripts?.pharmacyBundleBucketName;
-  }
-
-  return env;
 }
 
 interface SurescriptsNestedStackProps extends NestedStackProps {
@@ -190,6 +176,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       surescripts: props.config.surescripts,
+      envVars: surescriptsEnvironmentVariables(props.config.surescripts),
     };
 
     const synchronizeSftp = this.setupSynchronizeSftp({
@@ -225,6 +212,7 @@ export class SurescriptsNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
+    envVars: Record<string, string>;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
@@ -234,10 +222,10 @@ export class SurescriptsNestedStack extends NestedStack {
       lambdaLayers,
       vpc,
       envType,
+      envVars,
       sentryDsn,
       alarmAction,
       surescriptsReplicaBucket,
-      surescripts,
     } = ownProps;
     const {
       name,
@@ -255,11 +243,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables({
-          surescripts,
-          allowReplicaAccess: true,
-          allowBundleAccess: false,
-        }),
+        ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
@@ -289,6 +273,7 @@ export class SurescriptsNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
+    envVars: Record<string, string>;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
@@ -298,10 +283,10 @@ export class SurescriptsNestedStack extends NestedStack {
       lambdaLayers,
       vpc,
       envType,
+      envVars,
       sentryDsn,
       alarmAction,
       surescriptsReplicaBucket,
-      surescripts,
     } = ownProps;
     const {
       name,
@@ -330,11 +315,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables({
-          surescripts,
-          allowReplicaAccess: true,
-          allowBundleAccess: false,
-        }),
+        ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
@@ -354,6 +335,7 @@ export class SurescriptsNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
+    envVars: Record<string, string>;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
@@ -363,10 +345,10 @@ export class SurescriptsNestedStack extends NestedStack {
       lambdaLayers,
       vpc,
       envType,
+      envVars,
       sentryDsn,
       alarmAction,
       surescriptsReplicaBucket,
-      surescripts,
     } = ownProps;
     const {
       name,
@@ -395,11 +377,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables({
-          surescripts,
-          allowReplicaAccess: true,
-          allowBundleAccess: false,
-        }),
+        ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
@@ -419,6 +397,7 @@ export class SurescriptsNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
+    envVars: Record<string, string>;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     surescriptsReplicaBucket: s3.Bucket;
@@ -429,11 +408,11 @@ export class SurescriptsNestedStack extends NestedStack {
       lambdaLayers,
       vpc,
       envType,
+      envVars,
       sentryDsn,
       alarmAction,
       surescriptsReplicaBucket,
       surescriptsBundleBucket,
-      surescripts,
     } = ownProps;
     const {
       name,
@@ -462,11 +441,7 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables({
-          surescripts,
-          allowReplicaAccess: true,
-          allowBundleAccess: true,
-        }),
+        ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
