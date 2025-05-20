@@ -160,17 +160,14 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 }
 
 export class SurescriptsNestedStack extends NestedStack {
-  // SFTP commands
   readonly connectSftpLambda: Lambda;
   readonly synchronizeSftpLambda: Lambda;
-  // Data pipeline Lambdas
   readonly sendPatientRequestLambda: Lambda;
   readonly sendPatientRequestQueue: Queue;
   readonly receiveVerificationResponseLambda: Lambda;
   readonly receiveVerificationResponseQueue: Queue;
   readonly receiveFlatFileResponseLambda: Lambda;
   readonly receiveFlatFileResponseQueue: Queue;
-  // Pipeline storage locations
   readonly pharmacyBundleBucket: s3.Bucket;
   readonly surescriptsReplicaBucket: s3.Bucket;
 
@@ -202,11 +199,9 @@ export class SurescriptsNestedStack extends NestedStack {
       surescripts: props.config.surescripts,
     };
 
-    // Only scoped to read/write from the S3 bucket
     const connectSftp = this.setupConnectSftp(commonConfig);
     this.connectSftpLambda = connectSftp.lambda;
 
-    // Only scoped to read/write from the S3 bucket
     const synchronizeSftp = this.setupSynchronizeSftp({
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
@@ -503,7 +498,6 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        // This is the only lambda that needs to read/write from the bundle bucket
         ...surescriptsEnvironmentVariables({
           surescripts,
           allowReplicaAccess: true,
@@ -518,7 +512,6 @@ export class SurescriptsNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
-    // Grant read to medical document bucket set on the api-stack
     surescriptsBundleBucket.grantReadWrite(lambda);
     surescriptsReplicaBucket.grantReadWrite(lambda);
 
