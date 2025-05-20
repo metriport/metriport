@@ -72,6 +72,8 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  GetSecretsFunction,
+  GetSecretsParamsResult,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -146,6 +148,7 @@ class AthenaHealthApi {
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  private getSecrets: GetSecretsFunction | undefined;
   private practiceId: string;
 
   private constructor(private config: AthenaHealthApiConfig) {
@@ -154,6 +157,7 @@ class AthenaHealthApi {
     this.axiosInstanceFhir = axios.create({});
     this.axiosInstanceProprietary = axios.create({});
     this.baseUrl = `https://${config.environment}.platform.athenahealth.com`;
+    this.getSecrets = config.getSecrets;
   }
 
   public static async create(config: AthenaHealthApiConfig): Promise<AthenaHealthApi> {
@@ -167,6 +171,23 @@ class AthenaHealthApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
+    let secrets: GetSecretsParamsResult = {
+      clientKey: this.config.clientKey,
+      clientSecret: this.config.clientSecret,
+    };
+    if (!secrets.clientKey || !secrets.clientSecret) {
+      if (!this.getSecrets) {
+        throw new MetriportError(
+          "getSecrets function is required if clientKey and clientSecret are not provided @ AthenaHealth"
+        );
+      }
+      secrets = await this.getSecrets();
+      if (!secrets.clientKey || !secrets.clientSecret) {
+        throw new MetriportError(
+          "Client key and secret are required to fetch OAuth token @ AthenaHealth"
+        );
+      }
+    }
     const url = `${this.baseUrl}/oauth2/v1/token`;
     const data = {
       grant_type: "client_credentials",
@@ -177,8 +198,8 @@ class AthenaHealthApi {
       const response = await axios.post(url, createDataParams(data), {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         auth: {
-          username: this.config.clientKey,
-          password: this.config.clientSecret,
+          username: secrets.clientKey,
+          password: secrets.clientSecret,
         },
       });
       if (!response.data) throw new MetriportError("No body returned from token endpoint");

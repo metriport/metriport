@@ -37,6 +37,8 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  GetSecretsFunction,
+  GetSecretsParamsResult,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -68,6 +70,7 @@ class ElationApi {
   private axiosInstance: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  private getSecrets: GetSecretsFunction | undefined;
   private practiceId: string;
 
   private constructor(private config: ElationApiConfig) {
@@ -75,6 +78,7 @@ class ElationApi {
     this.practiceId = config.practiceId;
     this.axiosInstance = axios.create({});
     this.baseUrl = `https://${config.environment}.elationemr.com/api/2.0`;
+    this.getSecrets = config.getSecrets;
   }
 
   public static async create(config: ElationApiConfig): Promise<ElationApi> {
@@ -88,11 +92,28 @@ class ElationApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
+    let secrets: GetSecretsParamsResult = {
+      clientKey: this.config.clientKey,
+      clientSecret: this.config.clientSecret,
+    };
+    if (!secrets.clientKey || !secrets.clientSecret) {
+      if (!this.getSecrets) {
+        throw new MetriportError(
+          "getSecrets function is required if clientKey and clientSecret are not provided @ AthenaHealth"
+        );
+      }
+      secrets = await this.getSecrets();
+      if (!secrets.clientKey || !secrets.clientSecret) {
+        throw new MetriportError(
+          "Client key and secret are required to fetch OAuth token @ AthenaHealth"
+        );
+      }
+    }
     const url = `${this.baseUrl}/oauth2/token/`;
     const data = {
       grant_type: "client_credentials",
-      client_id: this.config.clientKey,
-      client_secret: this.config.clientSecret,
+      client_id: secrets.clientKey,
+      client_secret: secrets.clientSecret,
     };
 
     try {

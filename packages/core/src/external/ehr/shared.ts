@@ -42,8 +42,9 @@ export type GetSecretsParams = {
 };
 
 export type GetSecretsParamsResult = {
-  clientKey: string;
-  clientSecret: string;
+  clientKey?: string | undefined;
+  clientSecret?: string | undefined;
+  apiKey?: string | undefined;
 };
 
 export type GetSecretsFunction = () => Promise<GetSecretsParamsResult>;

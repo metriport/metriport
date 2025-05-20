@@ -57,6 +57,7 @@ import {
   getConditionStartDate,
   getConditionStatus,
   GetSecretsFunction,
+  GetSecretsParamsResult,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -129,17 +130,22 @@ class CanvasApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
-    let secrets = {
+    let secrets: GetSecretsParamsResult = {
       clientKey: this.config.clientKey,
       clientSecret: this.config.clientSecret,
     };
     if (!secrets.clientKey || !secrets.clientSecret) {
       if (!this.getSecrets) {
         throw new MetriportError(
-          "Client key and secret are required to fetch OAuth token @ Canvas"
+          "getSecrets function is required if clientKey and clientSecret are not provided @ Canvas"
         );
       }
       secrets = await this.getSecrets();
+      if (!secrets.clientKey || !secrets.clientSecret) {
+        throw new MetriportError(
+          "Client key and secret are required to fetch OAuth token @ Canvas"
+        );
+      }
     }
     const url = `https://${this.baseUrl}/auth/token/`;
     const payload = `grant_type=client_credentials&client_id=${secrets.clientKey}&client_secret=${secrets.clientSecret}`;
