@@ -13,7 +13,7 @@ routes.use("/canvas", canvas);
 routes.use("/elation", elation);
 routes.use("/healthie", healthie);
 
-// JWT tokens
+// Shared
 routes.use("/", token);
 
 export default routes;

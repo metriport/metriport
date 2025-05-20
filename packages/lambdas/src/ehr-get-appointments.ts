@@ -1,10 +1,10 @@
-import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/healthie/link-patient/healthie-link-patient";
-import { HealthieLinkPatientLocal } from "@metriport/core/external/ehr/lambdas/healthie/link-patient/healthie-link-patient-local";
+import { GetAppointmentsRequest } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments";
+import { EhrGetAppointmentsLocal } from "@metriport/core/external/ehr/lambdas/appoinment/get-appoinemtns/ehr-get-appointments-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
-import { parseLinkPatient } from "./shared/ehr";
+import { ehrGetAppointmentsSchema } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -14,9 +14,6 @@ capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
-// Set by us
-const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
-const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
@@ -28,19 +25,20 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
   console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const { cxId, practiceId, patientId } = parsedBody;
+  const { ehr, cxId, practiceId } = parsedBody;
 
-  const log = prefixedLog(`cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`);
-  log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
+  const log = prefixedLog(`ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}`);
+  log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-  const healthieLinkPatientHandler = new HealthieLinkPatientLocal(waitTimeInMillis);
-  await healthieLinkPatientHandler.processLinkPatient(parsedBody);
+  const ehrGetAppointmentsHandler = new EhrGetAppointmentsLocal();
+  const appointments = await ehrGetAppointmentsHandler.getAppointments(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
+  return appointments;
 });
 
-function parseBody(body?: unknown): ProcessLinkPatientRequest {
+function parseBody(body?: unknown): GetAppointmentsRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -48,5 +46,5 @@ function parseBody(body?: unknown): ProcessLinkPatientRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return parseLinkPatient(bodyAsJson);
+  return ehrGetAppointmentsSchema.parse(bodyAsJson);
 }
