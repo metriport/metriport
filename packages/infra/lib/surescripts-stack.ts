@@ -121,13 +121,15 @@ const settings: SurescriptsSettings = {
   },
 };
 
-function surescriptsEnvironmentVariables(
-  surescripts: EnvConfig["surescripts"],
-  replica = true,
-  bundle = false
-): {
-  [key: string]: string;
-} {
+function surescriptsEnvironmentVariables({
+  surescripts,
+  allowReplicaAccess = true,
+  allowBundleAccess = false,
+}: {
+  surescripts: EnvConfig["surescripts"];
+  allowReplicaAccess?: boolean;
+  allowBundleAccess?: boolean;
+}): Record<string, string> {
   return {
     SURESCRIPTS_SFTP_HOST: surescripts?.surescriptsHost,
     SURESCRIPTS_SFTP_SENDER_ID: surescripts?.surescriptsSenderId,
@@ -135,10 +137,12 @@ function surescriptsEnvironmentVariables(
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts?.surescriptsReceiverId,
     SURESCRIPTS_SFTP_PUBLIC_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY,
     SURESCRIPTS_SFTP_PRIVATE_KEY: surescripts?.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY,
-    ...(replica
+    ...(allowReplicaAccess
       ? { SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts?.surescriptsReplicaBucketName }
       : {}),
-    ...(bundle ? { SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts?.surescriptsBundleBucketName } : {}),
+    ...(allowBundleAccess
+      ? { SURESCRIPTS_BUNDLE_BUCKET_NAME: surescripts?.surescriptsBundleBucketName }
+      : {}),
   };
 }
 
@@ -176,12 +180,6 @@ export class SurescriptsNestedStack extends NestedStack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.GET],
-        },
-      ],
     });
     this.surescriptsBundleBucket = surescriptsBundleBucket;
 
@@ -190,12 +188,6 @@ export class SurescriptsNestedStack extends NestedStack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.GET],
-        },
-      ],
     });
     this.surescriptsReplicaBucket = surescriptsReplicaBucket;
 
@@ -262,7 +254,11 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables(surescripts, false),
+        ...surescriptsEnvironmentVariables({
+          surescripts,
+          allowReplicaAccess: false,
+          allowBundleAccess: false,
+        }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -306,7 +302,11 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables(surescripts, true),
+        ...surescriptsEnvironmentVariables({
+          surescripts,
+          allowReplicaAccess: true,
+          allowBundleAccess: false,
+        }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -375,7 +375,11 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables(surescripts, true),
+        ...surescriptsEnvironmentVariables({
+          surescripts,
+          allowReplicaAccess: true,
+          allowBundleAccess: false,
+        }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -434,7 +438,11 @@ export class SurescriptsNestedStack extends NestedStack {
       entry,
       envType,
       envVars: {
-        ...surescriptsEnvironmentVariables(surescripts, true, false),
+        ...surescriptsEnvironmentVariables({
+          surescripts,
+          allowReplicaAccess: true,
+          allowBundleAccess: false,
+        }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -496,7 +504,11 @@ export class SurescriptsNestedStack extends NestedStack {
       envType,
       envVars: {
         // This is the only lambda that needs to read/write from the bundle bucket
-        ...surescriptsEnvironmentVariables(surescripts, true, true),
+        ...surescriptsEnvironmentVariables({
+          surescripts,
+          allowReplicaAccess: true,
+          allowBundleAccess: true,
+        }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
