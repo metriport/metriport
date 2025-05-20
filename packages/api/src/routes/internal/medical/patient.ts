@@ -48,11 +48,14 @@ import {
   GetHl7v2SubscribersParams,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
-  getPatientIds,
   getPatientOrFail,
   getPatients,
   getPatientStates,
 } from "../../../command/medical/patient/get-patient";
+import {
+  getPatientIds,
+  getPatientReadOnlyOrFail,
+} from "../../../command/medical/patient/get-patient-read-only";
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import {
   PatientUpdateCmd,
@@ -788,11 +791,11 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/:id
  *
- * return a patient given a specific customer id and patient id
+ * Returns a patient given a specific customer and patient IDs
+ *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @return A patient.
- *
  */
 router.get(
   "/:id",
@@ -802,7 +805,7 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
 
-    const patient = await getPatientOrFail({ cxId, id });
+    const patient = await getPatientReadOnlyOrFail({ cxId, patientId: id });
 
     return res.status(status.OK).json(dtoFromModel(patient));
   })

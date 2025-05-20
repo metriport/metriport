@@ -18,7 +18,8 @@ import {
   ConsolidatedQueryParams,
   startConsolidatedQuery,
 } from "../../../command/medical/patient/consolidated-get";
-import { getPatientIds, getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientIds } from "../../../command/medical/patient/get-patient-read-only";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { requestLogger } from "../../helpers/request-logger";
