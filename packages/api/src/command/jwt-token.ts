@@ -64,9 +64,9 @@ export async function getJwtTokenById(id: string): Promise<JwtToken | undefined>
  * DOES NOT CHECK EXPIRATION
  */
 export async function getJwtTokenByIdOrFail(id: string): Promise<JwtToken> {
-  const existing = await getJwtTokenById(id);
-  if (!existing) throw new NotFoundError("JwtToken not found", undefined, { id });
-  return existing;
+  const jwtToken = await getJwtTokenById(id);
+  if (!jwtToken) throw new NotFoundError("JwtToken not found", undefined, { id });
+  return jwtToken;
 }
 
 /**
