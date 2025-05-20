@@ -132,6 +132,10 @@ function surescriptsEnvironmentVariables({
   allowReplicaAccess?: boolean;
   allowBundleAccess?: boolean;
 }): Record<string, string> {
+  if (!surescripts) {
+    return {};
+  }
+
   const env: Record<string, string> = {
     SURESCRIPTS_SFTP_HOST: surescripts?.surescriptsHost,
     SURESCRIPTS_SFTP_SENDER_ID: surescripts?.surescriptsSenderId,
