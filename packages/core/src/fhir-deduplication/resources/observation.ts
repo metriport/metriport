@@ -12,10 +12,9 @@ import {
   getDateFromResource,
   hasBlacklistedText,
   isUnknownCoding,
-  pickMostDescriptiveStatus,
   unknownCoding,
 } from "../shared";
-import { extractCodes, extractValueFromObservation, statusRanking } from "./observation-shared";
+import { extractCodes, extractValueFromObservation, preprocessStatus } from "./observation-shared";
 
 export function deduplicateObservations(
   observations: Observation[]
@@ -114,7 +113,8 @@ export function groupSameObservations(observations: Observation[]): {
         identifierKeys,
         incomingResource: observation,
         refReplacementMap,
-        customMergeLogic: postProcess,
+        onPremerge: preprocessStatus,
+        onPostmerge: postProcessCodes,
       });
     } else {
       danglingReferences.add(createRef(observation));
@@ -145,7 +145,7 @@ function filterOutUnknownCodings(observation: Observation): {
   return { observation: newObservation, code };
 }
 
-function postProcess(master: Observation, existing: Observation, target: Observation): Observation {
+function postProcessCodes(master: Observation): Observation {
   const code = master.code;
   const filtered = code?.coding?.filter(coding => {
     const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
@@ -158,6 +158,5 @@ function postProcess(master: Observation, existing: Observation, target: Observa
       coding: filtered,
     };
   }
-  master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
   return master;
 }

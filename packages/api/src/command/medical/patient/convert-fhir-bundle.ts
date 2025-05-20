@@ -64,7 +64,6 @@ export async function handleBundleToMedicalRecord({
     const url = await s3Utils.getSignedUrl({
       bucketName,
       fileName,
-      durationSeconds: 60,
     });
     return buildDocRefBundleWithAttachment(patient.id, url, conversionType);
   }

@@ -1,11 +1,11 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -50,10 +50,10 @@ import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
@@ -116,7 +116,7 @@ export class APIStack extends Stack {
     // Buckets
     //-------------------------------------------
     let outgoingHl7NotificationBucket: s3.IBucket | undefined;
-    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+    if (props.config.hl7Notification) {
       outgoingHl7NotificationBucket = s3.Bucket.fromBucketName(
         this,
         "OutgoingHl7MessageBucket",
@@ -298,6 +298,17 @@ export class APIStack extends Stack {
       ],
     });
 
+    let hl7ConversionBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      hl7ConversionBucket = new s3.Bucket(this, "HL7ConversionBucket", {
+        bucketName: props.config.hl7Notification.hl7ConversionBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+      });
+    }
+
     let ehrResponsesBucket: s3.Bucket | undefined;
     if (!isSandbox(props.config)) {
       ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
@@ -353,7 +364,7 @@ export class APIStack extends Stack {
         lambda: fhirConverterLambda,
         bucket: fhirConverterBucket,
       },
-      hl7v2RosterUploadLambda,
+      hl7v2RosterUploadLambdas,
       conversionResultNotifierLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
@@ -372,7 +383,7 @@ export class APIStack extends Stack {
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+    if (props.config.hl7Notification && outgoingHl7NotificationBucket && hl7ConversionBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
         "Hl7NotificationWebhookSenderNestedStack",
@@ -382,6 +393,7 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
           outgoingHl7NotificationBucket,
+          hl7ConversionBucket,
           secrets,
         }
       );
@@ -415,8 +427,6 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       healthieLinkPatientQueue,
       healthieLinkPatientLambda,
-      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
-      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
       computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
       refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
       refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
@@ -543,7 +553,6 @@ export class APIStack extends Stack {
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
-      ehrStartResourceDiffBundlesQueue,
       ehrRefreshEhrBundlesQueue,
       ehrBundleBucket,
       generalBucket,
@@ -638,7 +647,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
       fhirToBundleCountLambda,
-      hl7v2RosterUploadLambda,
+      ...(hl7v2RosterUploadLambdas ?? []),
       hl7NotificationWebhookSenderLambda,
       patientImportCreateLambda,
       patientImportParseLambda,
@@ -647,7 +656,6 @@ export class APIStack extends Stack {
       ehrSyncPatientLambda,
       elationLinkPatientLambda,
       healthieLinkPatientLambda,
-      ehrStartResourceDiffBundlesLambda,
       ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
       fhirConverterLambda,
@@ -664,7 +672,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
+    medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,

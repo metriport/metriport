@@ -138,6 +138,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     try {
       log(`Body: ${message.body}`);
       const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
+      capture.setExtra({ s3FileName });
       const metrics: Metrics = {};
 
       log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);

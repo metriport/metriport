@@ -1,8 +1,9 @@
+import { USState } from "@metriport/shared";
 import { Duration } from "aws-cdk-lib";
 import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
-import { EnvConfigNonSandbox } from "./env-config";
 import { vCPU } from "../lib/shared/fargate";
+import { EnvConfigNonSandbox } from "./env-config";
 
 export const config: EnvConfigNonSandbox = {
   stackName: "MetriportInfraStack",
@@ -153,6 +154,7 @@ export const config: EnvConfigNonSandbox = {
     deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
     incomingMessageBucketName: "test-incoming-message-bucket-name",
     outgoingMessageBucketName: "test-outgoing-message-bucket-name",
+    hl7ConversionBucketName: "test-hl7-conversion-bucket-name",
     notificationWebhookSenderQueue: {
       arn: "arn:aws:sqs:us-west-1:000000000000:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       url: "https://sqs.us-west-1.amazonaws.com/000000000000/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -175,6 +177,32 @@ export const config: EnvConfigNonSandbox = {
     },
     hl7v2RosterUploadLambda: {
       bucketName: "your-roster-bucket",
+    },
+    hieConfigs: {
+      YOUR_HIE_NAME: {
+        name: "YOUR_HIE_NAME",
+        cron: "cron(0 0 ? * SAT *)",
+        states: [USState.TX],
+        subscriptions: ["adt"],
+        mapping: {
+          scrambledId: "ID",
+          firstName: "FIRST NAME",
+          lastName: "LAST NAME",
+          dob: "DOB",
+          genderAtBirth: "GENDER",
+          ssn: "SSN",
+          phone: "PHONE",
+          address: [
+            {
+              addressLine1: "STREET ADDRESS",
+              addressLine2: "STREET NUMBER",
+              city: "CITY",
+              state: "STATE",
+              zip: "ZIP",
+            },
+          ],
+        },
+      },
     },
   },
   acmCertMonitor: {

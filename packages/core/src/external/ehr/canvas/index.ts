@@ -1,7 +1,7 @@
 import {
   AllergyIntolerance,
   Appointment as AppointmentFhir,
-  Bundle as BundleFhir,
+  Bundle,
   Condition,
   Encounter,
   Location,
@@ -9,6 +9,7 @@ import {
   MedicationStatement,
   Patient as PatientFhir,
   Practitioner as PractitionerFhir,
+  Resource,
 } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -25,19 +26,16 @@ import {
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
 import {
-  Bundle,
   createBundleFromResourceList,
-  FhirResource,
-  FhirResourceBundle,
-  fhirResourceBundleSchema,
-  SupportedResourceType,
+  EhrFhirResource,
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import {
   Practitioner,
   practitionerSchema,
 } from "@metriport/shared/interface/external/ehr/practitioner";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
@@ -45,12 +43,12 @@ import duration from "dayjs/plugin/duration";
 import { z } from "zod";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
-import { BundleType } from "../bundle/bundle-shared";
+import { BundleType, isResourceDiffBundleType } from "../bundle/bundle-shared";
 import {
   createOrReplaceBundle,
   CreateOrReplaceBundleParams,
-} from "../bundle/commands/create-or-replace-bundle";
-import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/commands/fetch-bundle";
+} from "../bundle/command/create-or-replace-bundle";
+import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/command/fetch-bundle";
 import {
   ApiConfig,
   fetchBundleUsingTtl,
@@ -76,7 +74,7 @@ const canvasNoteStatusForWriting = "NEW";
 const utcToEstOffset = dayjs.duration(-5, "hours");
 export type CanvasEnv = string;
 
-export const supportedCanvasDiffResources = [
+export const supportedCanvasResources = [
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
@@ -86,13 +84,13 @@ export const supportedCanvasDiffResources = [
   "Observation",
   "Procedure",
   "Immunization",
-] as SupportedResourceType[];
-export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
-export const isSupportedCanvasDiffResource = (
+];
+export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
+export function isSupportedCanvasResource(
   resourceType: string
-): resourceType is SupportedCanvasDiffResource => {
-  return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
-};
+): resourceType is SupportedCanvasResource {
+  return supportedCanvasResources.includes(resourceType);
+}
 
 const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("active", "active");
@@ -356,7 +354,7 @@ class CanvasApi {
   }: {
     rxNormCode?: string;
     medicationName?: string;
-  }): Promise<BundleFhir> {
+  }): Promise<Bundle> {
     if (!rxNormCode && !medicationName) {
       throw new Error("At least one of rxNormCode or medicationName must be provided");
     }
@@ -733,12 +731,17 @@ class CanvasApi {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasDiffResource;
+    resourceType: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
       `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
+    if (!isSupportedCanvasResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
     const params = { patient: `Patient/${canvasPatientId}` };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
@@ -761,33 +764,33 @@ class CanvasApi {
     async function paginateFhirResources(
       api: CanvasApi,
       url: string | undefined,
-      acc: FhirResource[] | undefined = []
-    ): Promise<FhirResource[]> {
+      acc: EhrFhirResource[] | undefined = []
+    ): Promise<EhrFhirResource[]> {
       if (!url) return acc;
-      const fhirResourceBundle = await api.makeRequest<FhirResourceBundle>({
+      const ehrFhirResourceBundle = await api.makeRequest<EhrFhirResourceBundle>({
         cxId,
         patientId: canvasPatientId,
         s3Path: `fhir-resources-${resourceType}`,
         method: "GET",
         url,
-        schema: fhirResourceBundleSchema,
+        schema: ehrFhirResourceBundleSchema,
         additionalInfo,
         debug,
         useFhir: true,
       });
-      acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
-      const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
+      acc.push(...(ehrFhirResourceBundle.entry ?? []).map(e => e.resource));
+      const nextUrl = ehrFhirResourceBundle.link?.find(l => l.relation === "next")?.url;
       return paginateFhirResources(api, nextUrl, acc);
     }
-    const fhirResources = await paginateFhirResources(this, resourceTypeUrl);
-    const invalidEntry = fhirResources.find(r => r.resourceType !== resourceType);
+    const ehrFhirResources = await paginateFhirResources(this, resourceTypeUrl);
+    const invalidEntry = ehrFhirResources.find(r => r.resourceType !== resourceType);
     if (invalidEntry) {
-      throw new BadRequestError("Invalid bundle", undefined, {
+      throw new BadRequestError("Invalid resource in bundle", undefined, {
         resourceType,
         resourceTypeInBundle: invalidEntry.resourceType,
       });
     }
-    const bundle = createBundleFromResourceList(fhirResources);
+    const bundle = createBundleFromResourceList(ehrFhirResources as Resource[]);
     await this.updateCachedBundle({
       cxId,
       metriportPatientId,
@@ -799,29 +802,44 @@ class CanvasApi {
     return bundle;
   }
 
-  async getResourceDiffBundlePreSignedUrlByResourceType({
+  async getBundleByResourceTypePreSignedUrl({
     cxId,
     metriportPatientId,
     canvasPatientId,
     resourceType,
-    direction,
+    bundleType,
     jobId,
   }: {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasDiffResource;
-    direction: ResourceDiffDirection;
-    jobId: string;
+    resourceType: string;
+    bundleType?: BundleType;
+    jobId?: string;
   }): Promise<string | undefined> {
+    if (!isSupportedCanvasResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
+    if (isResourceDiffBundleType(bundleType as string) && !jobId) {
+      throw new BadRequestError(
+        "Job ID must be provided when fetching resource diff bundles",
+        undefined,
+        {
+          cxId,
+          metriportPatientId,
+          canvasPatientId,
+          resourceType,
+          bundleType,
+        }
+      );
+    }
     return this.getBundlePreSignedUrl({
       cxId,
       metriportPatientId,
       canvasPatientId,
-      bundleType:
-        direction === ResourceDiffDirection.METRIPORT_ONLY
-          ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
-          : BundleType.RESOURCE_DIFF_EHR_ONLY,
+      bundleType: bundleType ?? BundleType.EHR,
       resourceType,
       jobId,
     });
