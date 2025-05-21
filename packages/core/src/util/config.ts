@@ -98,6 +98,9 @@ export class Config {
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
   }
+  static getHl7ConversionBucketName(): string {
+    return getEnvVarOrFail("HL7_CONVERSION_BUCKET_NAME");
+  }
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
@@ -208,6 +211,12 @@ export class Config {
   }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
+  }
+  static getEhrGetAppointmentsLambdaName(): string {
+    return getEnvVarOrFail("EHR_GET_APPOINTMENTS_LAMBDA_NAME");
+  }
+  static getEhrGetBundleByResourceTypeLambdaName(): string {
+    return getEnvVarOrFail("EHR_GET_BUNDLE_BY_RESOURCE_TYPE_LAMBDA_NAME");
   }
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");

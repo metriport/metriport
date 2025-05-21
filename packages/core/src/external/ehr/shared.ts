@@ -23,12 +23,12 @@ import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
 import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
-import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
+import { getSecrets } from "./api/get-client-key-and-secret";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
 
 dayjs.extend(duration);
@@ -42,11 +42,72 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+export const getSecretsOauthSchema = z.object({
+  clientKey: z.string(),
+  clientSecret: z.string(),
+});
+export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
+
+export const getSecretsApiKeySchema = z.object({
+  apiKey: z.string(),
+});
+export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
+
+export type GetSecretsOauthFunction = () => Promise<GetSecretsOauthResult>;
+export type GetSecretsApiKeyFunction = () => Promise<GetSecretsApiKeyResult>;
+
+export async function getOauthSecrets({
+  ehr,
+  cxId,
+  practiceId,
+}: {
+  ehr: EhrSource;
+  cxId: string;
+  practiceId: string;
+}) {
+  const secrets = await getSecrets<GetSecretsOauthResult>({
+    ehr,
+    cxId,
+    practiceId,
+    schema: getSecretsOauthSchema,
+  });
+  return {
+    clientKey: secrets.clientKey,
+    clientSecret: secrets.clientSecret,
+  };
+}
+
+export async function processOauthSecrets({
+  ehr,
+  secrets,
+  getSecrets,
+}: {
+  ehr: EhrSource;
+  secrets: Partial<GetSecretsOauthResult>;
+  getSecrets: GetSecretsOauthFunction | undefined;
+}): Promise<GetSecretsOauthResult> {
+  if (secrets.clientKey && secrets.clientSecret) {
+    return {
+      clientKey: secrets.clientKey,
+      clientSecret: secrets.clientSecret,
+    };
+  }
+  if (!getSecrets) {
+    throw new MetriportError(
+      "getSecrets function is required if clientKey and clientSecret are not provided",
+      undefined,
+      { ehr }
+    );
+  }
+  return await getSecrets();
+}
+
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
   practiceId: string;
-  clientKey: string;
-  clientSecret: string;
+  clientKey?: string;
+  clientSecret?: string;
+  getSecrets?: GetSecretsOauthFunction;
 }
 
 export type RequestData = { [key: string]: string | boolean | object | undefined };
@@ -155,14 +216,16 @@ export async function makeRequest<T>({
         });
         const key = buildS3Path(ehr, s3Path, `${filePath}/error`);
         const s3Utils = getS3UtilsInstance();
-        s3Utils
-          .uploadFile({
+        try {
+          await s3Utils.uploadFile({
             bucket: responsesBucket,
             key,
             file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
             contentType: "application/json",
-          })
-          .catch(processAsyncError(`Error saving error to s3 @ ${ehr} - ${method} ${url}`));
+          });
+        } catch (e) {
+          log(`Error saving error to s3 @ ${ehr} - ${method} ${url}`, () => JSON.stringify(e));
+        }
       }
       const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
       switch (error.response?.status) {
@@ -200,14 +263,16 @@ export async function makeRequest<T>({
     });
     const key = buildS3Path(ehr, s3Path, `${filePath}/response`);
     const s3Utils = getS3UtilsInstance();
-    s3Utils
-      .uploadFile({
+    try {
+      await s3Utils.uploadFile({
         bucket: responsesBucket,
         key,
         file: Buffer.from(JSON.stringify(response.data), "utf8"),
         contentType: "application/json",
-      })
-      .catch(processAsyncError(`Error saving to s3 @ ${ehr} - ${method} ${url}`));
+      });
+    } catch (e) {
+      log(`Error saving response to s3 @ ${ehr} - ${method} ${url}`, () => JSON.stringify(e));
+    }
   }
   const outcome = schema.safeParse(body);
   if (!outcome.success) {

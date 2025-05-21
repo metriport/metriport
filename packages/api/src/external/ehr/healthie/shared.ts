@@ -81,7 +81,10 @@ export function createNames(patient: HealthiePatient): { firstName: string; last
   };
 }
 
-function getHealthieEnv({ cxId, practiceId }: EhrPerPracticeParams): EhrEnvAndApiKey<HealthieEnv> {
+export function getHealthieEnv({
+  cxId,
+  practiceId,
+}: EhrPerPracticeParams): EhrEnvAndApiKey<HealthieEnv> {
   const environment = Config.getHealthieEnv();
   if (!environment) throw new MetriportError("Healthie environment not set");
   if (!isHealthieEnv(environment)) {
@@ -97,15 +100,23 @@ function getHealthieEnv({ cxId, practiceId }: EhrPerPracticeParams): EhrEnvAndAp
   };
 }
 
-export async function createHealthieClient(
+export async function createHealthieClientWithEnvironment(
   perPracticeParams: EhrPerPracticeParams
-): Promise<HealthieApi> {
+): Promise<{ client: HealthieApi; environment: HealthieEnv }> {
   const { environment, apiKey } = getHealthieEnv(perPracticeParams);
-  return await HealthieApi.create({
+  const client = await HealthieApi.create({
     practiceId: perPracticeParams.practiceId,
     environment,
     apiKey,
   });
+  return { client, environment };
+}
+
+export async function createHealthieClient(
+  perPracticeParams: EhrPerPracticeParams
+): Promise<HealthieApi> {
+  const { client } = await createHealthieClientWithEnvironment(perPracticeParams);
+  return client;
 }
 
 export async function getHealthieSecretKeyInfo(
