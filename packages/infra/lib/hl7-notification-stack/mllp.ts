@@ -103,8 +103,12 @@ export class MllpStack extends cdk.NestedStack {
       internetFacing: false,
     });
 
-    const targetGroupA = setupNlb("NlbA", vpc, nlbA, MLLP_SERVER_NLB_INTERNAL_IP_A);
-    const targetGroupB = setupNlb("NlbB", vpc, nlbB, MLLP_SERVER_NLB_INTERNAL_IP_B);
+    /**
+     * We're using an empty string for the first setupNlb call to maintain identifiers and
+     * avoid having to recreate a new listener and target group for the existing NLB.
+     */
+    const targetGroupA = setupNlb("", vpc, nlbA, MLLP_SERVER_NLB_INTERNAL_IP_A);
+    const targetGroupB = setupNlb("B", vpc, nlbB, MLLP_SERVER_NLB_INTERNAL_IP_B);
 
     const taskRole = new iam.Role(this, "MllpServerTaskRole", {
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
