@@ -14,7 +14,7 @@ export type ConsolidatedSnapshotRequest = {
 export type ConsolidatedSnapshotRequestAsync = ConsolidatedSnapshotRequest & {
   isAsync: true;
   requestId: string;
-  conversionType?: ConsolidationConversionType | undefined;
+  conversionType: ConsolidationConversionType;
   fromDashboard?: boolean | undefined;
   sendAnalytics?: never;
 };

@@ -496,7 +496,7 @@ export class MetriportMedicalApi {
     resources?: readonly ResourceTypeForConsolidation[],
     dateFrom?: string,
     dateTo?: string,
-    conversionType?: string,
+    conversionType = "json",
     fromDashboard?: boolean,
     metadata?: Record<string, string>
   ): Promise<StartConsolidatedQueryProgressResponse> {

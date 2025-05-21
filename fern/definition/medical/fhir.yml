@@ -33,6 +33,10 @@ service:
       request:
         name: GetPatientConsolidatedData
         query-parameters:
+          conversionType:
+            docs: |
+              The doc type to convert to. Either `json`, `html`, or `pdf`.
+            type: string
           resources:
             docs: |
               A comma separated, case sensitive list of resources to be returned. If none are provided all
@@ -50,10 +54,6 @@ service:
               The end date (inclusive) for which to filter returned resources -
               formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
                no end date filter will be applied.
-            type: optional<string>
-          conversionType:
-            docs: |
-              The doc type to convert to. Either `html` or `pdf`.
             type: optional<string>
         body:
           docs: |
