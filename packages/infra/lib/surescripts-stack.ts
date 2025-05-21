@@ -306,7 +306,6 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
       },
       layers: [lambdaLayers.shared],
       vpc,
