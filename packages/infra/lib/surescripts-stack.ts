@@ -4,6 +4,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -113,29 +114,52 @@ const settings: SurescriptsSettings = {
   },
 };
 
-function surescriptsEnvironmentVariables({
+function surescriptsEnvironmentVariablesAndSecrets({
+  nestedStack,
   surescripts,
   medicationBundleBucket,
 }: {
+  nestedStack: SurescriptsNestedStack;
   surescripts: EnvConfig["surescripts"];
   medicationBundleBucket: s3.Bucket;
-}): Record<string, string> {
+}): { envVars: Record<string, string>; secrets: secret.ISecret[] } {
   if (!surescripts) {
-    return {};
+    return { envVars: {}, secrets: [] };
   }
 
-  return {
+  const envVars: Record<string, string> = {
     SURESCRIPTS_SFTP_HOST: surescripts.surescriptsHost,
     SURESCRIPTS_SFTP_SENDER_ID: surescripts.surescriptsSenderId,
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
     SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts.surescriptsReplicaBucketName,
     MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
-    SURESCRIPTS_SFTP_SENDER_PASSWORD: surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD,
-    SURESCRIPTS_SFTP_PUBLIC_KEY: surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY,
-    SURESCRIPTS_SFTP_PRIVATE_KEY: surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY,
   };
+
+  const secrets: secret.ISecret[] = [];
+  const senderPasswordSecret = buildSecret(
+    nestedStack,
+    surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD
+  );
+  envVars.SURESCRIPTS_SFTP_SENDER_PASSWORD = senderPasswordSecret.secretArn;
+  secrets.push(senderPasswordSecret);
+
+  const publicKeySecret = buildSecret(nestedStack, surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY);
+  envVars.SURESCRIPTS_SFTP_PUBLIC_KEY = publicKeySecret.secretArn;
+  secrets.push(publicKeySecret);
+
+  const privateKeySecret = buildSecret(
+    nestedStack,
+    surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY
+  );
+  envVars.SURESCRIPTS_SFTP_PRIVATE_KEY = privateKeySecret.secretArn;
+  secrets.push(privateKeySecret);
+
+  return { envVars, secrets };
 }
 
+function buildSecret(nestedStack: SurescriptsNestedStack, name: string): secret.ISecret {
+  return secret.Secret.fromSecretNameV2(nestedStack, name, name);
+}
 interface SurescriptsNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
@@ -174,7 +198,8 @@ export class SurescriptsNestedStack extends NestedStack {
       versioned: true,
     });
 
-    const envVars = surescriptsEnvironmentVariables({
+    const { envVars, secrets } = surescriptsEnvironmentVariablesAndSecrets({
+      nestedStack: this,
       surescripts: props.config.surescripts,
       medicationBundleBucket: this.medicationBundleBucket,
     });
@@ -217,6 +242,13 @@ export class SurescriptsNestedStack extends NestedStack {
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
+
+    for (const secret of secrets) {
+      secret.grantRead(this.synchronizeSftpLambda);
+      secret.grantRead(this.sendPatientRequestLambda);
+      secret.grantRead(this.receiveVerificationResponseLambda);
+      secret.grantRead(this.receiveFlatFileResponseLambda);
+    }
   }
 
   private setupLambdaAndQueue<T extends keyof SurescriptsSettings>(
