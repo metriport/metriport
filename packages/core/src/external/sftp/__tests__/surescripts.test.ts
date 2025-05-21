@@ -23,7 +23,10 @@ describe("Surescripts SFTP Client", () => {
       privateKey: "test",
     });
 
-    const transmission = client.createTransmission(TransmissionType.Enroll, "CustomerId");
+    const transmission = client.createTransmission(TransmissionType.Enroll, {
+      npiNumber: "1234567890",
+      cxId: "CustomerId",
+    });
     expect(transmission).toBeDefined();
   });
 });

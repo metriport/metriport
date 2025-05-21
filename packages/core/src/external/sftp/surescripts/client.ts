@@ -18,7 +18,8 @@ export enum TransmissionType {
 
 export interface Transmission<T extends TransmissionType> {
   type: T;
-  population: string; // unique population identifier
+  npiNumber: string;
+  cxId: string;
   id: string;
   date: Date;
   compression?: "gzip";
@@ -51,10 +52,14 @@ export class SurescriptsSftpClient extends SftpClient {
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
-  createTransmission<T extends TransmissionType>(type: T, cxId: string): Transmission<T> {
+  createTransmission<T extends TransmissionType>(
+    type: T,
+    { npiNumber, cxId }: { npiNumber: string; cxId: string }
+  ): Transmission<T> {
     return {
       type,
-      population: cxId,
+      npiNumber,
+      cxId,
       id: this.idGenerator().toString("ascii"),
       date: new Date(),
       compression: "gzip",

@@ -1,4 +1,4 @@
-import { generateSurescriptsRow } from "../surescripts/message";
+import { toSurescriptsPatientLoadRow } from "../surescripts/message";
 import {
   patientLoadDetailSchema,
   patientLoadDetailOrder,
@@ -13,7 +13,7 @@ describe("Patient load file testing", () => {
   it("should generate a simple patient row", () => {
     const patientId = "1a3c55d0-6681-4273-9524-2e1535c6b747";
     const expected = `PNM|1|${METRIPORT_OID}|${patientId}|Abingdon|Perseus||||98 Bayview Ave||New Rochelle|NY|10805|20120901|M|1234567893|||`;
-    const testRow = generateSurescriptsRow(
+    const testRow = toSurescriptsPatientLoadRow(
       {
         firstName: "Perseus",
         middleName: "",
@@ -43,7 +43,7 @@ describe("Patient load file testing", () => {
     const patientId = "1a3c55d0-6681-4273-9524-2e1535c6b747";
     const outputRow = `PNM|1|${METRIPORT_OID}|${patientId}|Devereaux|Margaret Adelia|Beryl|||27-B Heald St||Pepperell|MA|01463|19971101|F|1234567890|||`;
 
-    const testRow = generateSurescriptsRow(
+    const testRow = toSurescriptsPatientLoadRow(
       {
         firstName: "Margaret Adelia",
         middleName: "Beryl",
@@ -75,7 +75,7 @@ describe("Patient load file testing", () => {
   it("should generate a simple trailer row", () => {
     expect(
       Buffer.compare(
-        generateSurescriptsRow(
+        toSurescriptsPatientLoadRow(
           {
             recordType: "TRL",
             totalRecords: 3,
