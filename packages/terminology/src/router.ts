@@ -1,5 +1,5 @@
 import { FhirRequest, HttpMethod } from "@medplum/fhir-router";
-import { stringToBoolean } from "@metriport/shared";
+import { BadRequestError, stringToBoolean } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import { codeSystemImportHandler } from "./operations/codeImport";
 import { bulkCodeSystemLookupHandler, codeSystemLookupHandler } from "./operations/codeLookup";
@@ -23,8 +23,14 @@ function parseIntoFhirRequest(req: Request): FhirRequest {
 fhirRouter.post(
   "/code-system/import",
   asyncHandler(async (req: Request, res: Response) => {
+    if (req.query.isOverwrite !== undefined && typeof req.query.isOverwrite !== "string") {
+      throw new BadRequestError("isOverwrite query param must be a string", undefined, {
+        isOverwrite: req.query.isOverwrite.toString(),
+      });
+    }
+    const isOverwrite = stringToBoolean(req.query.isOverwrite) ?? false;
     const fhirRequest = parseIntoFhirRequest(req);
-    const response = await codeSystemImportHandler(fhirRequest);
+    const response = await codeSystemImportHandler(fhirRequest, isOverwrite);
     res.status(200).json(response);
     return;
   })
@@ -63,7 +69,9 @@ fhirRouter.post(
   "/concept-map/import",
   asyncHandler(async (req: Request, res: Response) => {
     if (req.query.isReversible !== undefined && typeof req.query.isReversible !== "string") {
-      throw new Error("isReversible query param must be a string");
+      throw new BadRequestError("isReversible query param must be a string", undefined, {
+        isReversible: req.query.isReversible.toString(),
+      });
     }
     const fhirRequest = parseIntoFhirRequest(req);
     const isReversible = stringToBoolean(req.query.isReversible) ?? false;

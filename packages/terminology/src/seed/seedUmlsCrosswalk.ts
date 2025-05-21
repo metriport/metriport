@@ -1,10 +1,11 @@
-import { ConceptMap, Parameters } from "@medplum/fhirtypes";
+import { ConceptMap } from "@medplum/fhirtypes";
 import { createReadStream } from "node:fs";
-import { createInterface } from "node:readline";
 import { argv } from "node:process";
+import { createInterface } from "node:readline";
 import { Readable, Transform, TransformCallback } from "node:stream";
 import * as unzip from "unzip-stream";
 import { TerminologyClient } from "../client";
+import { lookupDisplay } from "./shared";
 
 const IFA_RULE_REGEX = /^IFA \d+ &#x7C;/;
 
@@ -155,16 +156,6 @@ class UmlsConceptMap {
   }
 }
 
-function createLookupParameters(system: string, code: string): Parameters {
-  return {
-    resourceType: "Parameters",
-    parameter: [
-      { name: "system", valueUri: system },
-      { name: "code", valueCode: code },
-    ],
-  };
-}
-
 async function createConceptMap({
   concept,
   config,
@@ -236,21 +227,6 @@ function updateConceptMap({
         ),
       })) ?? [],
   };
-}
-
-async function lookupDisplay(
-  client: TerminologyClient,
-  system: string,
-  code: string
-): Promise<string | undefined> {
-  try {
-    const parameters = createLookupParameters(system, code);
-    const lookup = await client.lookupCode(parameters);
-    return lookup[0]?.display;
-  } catch (error) {
-    console.warn(`Could not lookup display for ${system}|${code}: ${error}`);
-    return undefined;
-  }
 }
 
 async function processConceptMap(inStream: Readable): Promise<void> {
