@@ -5,6 +5,18 @@ export type FileFieldSchema<T extends object> = {
 
 export type FileRowValidator<T extends object> = (row: object) => row is T;
 
+export interface FileSchema<H extends object, D extends object, F extends object> {
+  header: FileFieldSchema<H>;
+  detail: FileFieldSchema<D>;
+  footer: FileFieldSchema<F>;
+}
+
+export interface FileValidator<H extends object, D extends object, F extends object> {
+  header: FileRowValidator<H>;
+  detail: FileRowValidator<D>;
+  footer: FileRowValidator<F>;
+}
+
 // Describes a single field for a row in a generated file.
 export interface FileField<T extends object, K extends keyof T = keyof T> {
   field: number;

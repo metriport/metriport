@@ -12,7 +12,13 @@ import {
   patientLoadFooterOrder,
 } from "./schema/load";
 
-import { dateToString, FileFieldSchema } from "./schema/shared";
+import {
+  dateToString,
+  FileFieldSchema,
+  // FileRowValidator,
+  // FileSchema,
+  // FileValidator,
+} from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 
 export function canGenerateSurescriptsMessage(npiNumber: string, patients: Patient[]): boolean {
@@ -172,16 +178,8 @@ export function splitName(
 //   Footer extends object,
 // >(
 //   message: Buffer,
-//   schema: {
-//     header: FileFieldSchema<Header>;
-//     detail: FileFieldSchema<Detail>;
-//     footer: FileFieldSchema<Footer>;
-//   },
-//   validator: {
-//     header: FileRowValidator<Header>;
-//     detail: FileRowValidator<Detail>;
-//     footer: FileRowValidator<Footer>;
-//   }
+//   schema: FileSchema<Header, Detail, Footer>,
+//   validator: FileValidator<Header, Detail, Footer>
 // ) {
 //   // Split Surescripts message into a 2D array of strings with resolved pipe escape sequence
 //   const rows = message.toString("ascii").split("\n");
