@@ -146,6 +146,7 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 
 export class SurescriptsNestedStack extends NestedStack {
   readonly synchronizeSftpLambda: Lambda;
+  readonly synchronizeSftpQueue: Queue;
   readonly sendPatientRequestLambda: Lambda;
   readonly sendPatientRequestQueue: Queue;
   readonly receiveVerificationResponseLambda: Lambda;
@@ -166,6 +167,11 @@ export class SurescriptsNestedStack extends NestedStack {
       versioned: true,
     });
 
+    const envVars = surescriptsEnvironmentVariables({
+      surescripts: props.config.surescripts,
+      medicationBundleBucket: props.medicationBundleBucket,
+    });
+
     const commonConfig = {
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -173,33 +179,31 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       surescripts: props.config.surescripts,
-      envVars: surescriptsEnvironmentVariables({
-        surescripts: props.config.surescripts,
-        medicationBundleBucket: props.medicationBundleBucket,
-      }),
+      envVars,
     };
 
-    const synchronizeSftp = this.setupSynchronizeSftp({
+    const synchronizeSftp = this.setupLambdaAndQueue("synchronizeSftp", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
     this.synchronizeSftpLambda = synchronizeSftp.lambda;
+    this.synchronizeSftpQueue = synchronizeSftp.queue;
 
-    const sendPatientRequest = this.setupSendPatientRequest({
+    const sendPatientRequest = this.setupLambdaAndQueue("sendPatientRequest", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
     this.sendPatientRequestLambda = sendPatientRequest.lambda;
     this.sendPatientRequestQueue = sendPatientRequest.queue;
 
-    const receiveVerificationResponse = this.setupReceiveVerificationResponse({
+    const receiveVerificationResponse = this.setupLambdaAndQueue("receiveVerificationResponse", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
     this.receiveVerificationResponseLambda = receiveVerificationResponse.lambda;
     this.receiveVerificationResponseQueue = receiveVerificationResponse.queue;
 
-    const receiveFlatFileResponse = this.setupReceiveFlatFileResponse({
+    const receiveFlatFileResponse = this.setupLambdaAndQueue("receiveFlatFileResponse", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       medicationBundleBucket: props.medicationBundleBucket,
@@ -208,202 +212,19 @@ export class SurescriptsNestedStack extends NestedStack {
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
   }
 
-  private setupSynchronizeSftp(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    envType: EnvType;
-    envVars: Record<string, string>;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    surescriptsReplicaBucket: s3.Bucket;
-    surescripts: EnvConfig["surescripts"];
-  }): { lambda: Lambda; queue: Queue } {
-    const {
-      lambdaLayers,
-      vpc,
-      envType,
-      envVars,
-      sentryDsn,
-      alarmAction,
-      surescriptsReplicaBucket,
-    } = ownProps;
-    const {
-      name,
-      entry,
-      lambda: lambdaSettings,
-      queue: queueSettings,
-      eventSource: eventSourceSettings,
-      waitTime,
-    } = settings.synchronizeSftp;
-
-    const lambda = createLambda({
-      ...lambdaSettings,
-      stack: this,
-      name,
-      entry,
-      envType,
-      envVars: {
-        ...envVars,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
-      },
-      layers: [lambdaLayers.shared],
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    const queue = createQueue({
-      ...queueSettings,
-      stack: this,
-      name,
-      fifo: true,
-      createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
-      envType,
-      alarmSnsAction: alarmAction,
-    });
-
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-    surescriptsReplicaBucket.grantReadWrite(lambda);
-
-    return { lambda, queue };
-  }
-
-  private setupSendPatientRequest(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    envType: EnvType;
-    envVars: Record<string, string>;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    surescriptsReplicaBucket: s3.Bucket;
-    surescripts: EnvConfig["surescripts"];
-  }): { lambda: Lambda; queue: Queue } {
-    const {
-      lambdaLayers,
-      vpc,
-      envType,
-      envVars,
-      sentryDsn,
-      alarmAction,
-      surescriptsReplicaBucket,
-    } = ownProps;
-    const {
-      name,
-      entry,
-      lambda: lambdaSettings,
-      queue: queueSettings,
-      eventSource: eventSourceSettings,
-      waitTime,
-    } = settings.sendPatientRequest;
-
-    const queue = createQueue({
-      ...queueSettings,
-      stack: this,
-      name,
-      fifo: true,
-      createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
-      envType,
-      alarmSnsAction: alarmAction,
-    });
-
-    const lambda = createLambda({
-      ...lambdaSettings,
-      stack: this,
-      name,
-      entry,
-      envType,
-      envVars: {
-        ...envVars,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
-      },
-      layers: [lambdaLayers.shared],
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    surescriptsReplicaBucket.grantReadWrite(lambda);
-
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-
-    return { lambda, queue };
-  }
-
-  private setupReceiveVerificationResponse(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    envType: EnvType;
-    envVars: Record<string, string>;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    surescriptsReplicaBucket: s3.Bucket;
-    surescripts: EnvConfig["surescripts"];
-  }): { lambda: Lambda; queue: Queue } {
-    const {
-      lambdaLayers,
-      vpc,
-      envType,
-      envVars,
-      sentryDsn,
-      alarmAction,
-      surescriptsReplicaBucket,
-    } = ownProps;
-    const {
-      name,
-      entry,
-      lambda: lambdaSettings,
-      queue: queueSettings,
-      eventSource: eventSourceSettings,
-      waitTime,
-    } = settings.receiveVerificationResponse;
-
-    const queue = createQueue({
-      ...queueSettings,
-      stack: this,
-      name,
-      fifo: true,
-      createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
-      envType,
-      alarmSnsAction: alarmAction,
-    });
-
-    const lambda = createLambda({
-      ...lambdaSettings,
-      stack: this,
-      name,
-      entry,
-      envType,
-      envVars: {
-        ...envVars,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
-      },
-      layers: [lambdaLayers.shared],
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    surescriptsReplicaBucket.grantReadWrite(lambda);
-
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-
-    return { lambda, queue };
-  }
-
-  private setupReceiveFlatFileResponse(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    envType: EnvType;
-    envVars: Record<string, string>;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    surescriptsReplicaBucket: s3.Bucket;
-    medicationBundleBucket: s3.Bucket;
-    surescripts: EnvConfig["surescripts"];
-  }): { lambda: Lambda; queue: Queue } {
+  private setupLambdaAndQueue<T extends keyof SurescriptsSettings>(
+    job: T,
+    props: {
+      lambdaLayers: LambdaLayers;
+      vpc: ec2.IVpc;
+      envType: EnvType;
+      envVars: Record<string, string>;
+      sentryDsn: string | undefined;
+      alarmAction: SnsAction | undefined;
+      surescriptsReplicaBucket: s3.Bucket;
+      medicationBundleBucket?: s3.Bucket;
+    }
+  ): { lambda: Lambda; queue: Queue } {
     const {
       lambdaLayers,
       vpc,
@@ -413,7 +234,8 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction,
       surescriptsReplicaBucket,
       medicationBundleBucket,
-    } = ownProps;
+    } = props;
+
     const {
       name,
       entry,
@@ -421,7 +243,7 @@ export class SurescriptsNestedStack extends NestedStack {
       queue: queueSettings,
       eventSource: eventSourceSettings,
       waitTime,
-    } = settings.receiveFlatFileResponse;
+    } = settings[job];
 
     const queue = createQueue({
       ...queueSettings,
@@ -432,6 +254,7 @@ export class SurescriptsNestedStack extends NestedStack {
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
+      receiveMessageWaitTime: waitTime,
     });
 
     const lambda = createLambda({
@@ -450,10 +273,17 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-
-    medicationBundleBucket.grantReadWrite(lambda);
     surescriptsReplicaBucket.grantReadWrite(lambda);
+    if (medicationBundleBucket && job === "receiveFlatFileResponse") {
+      medicationBundleBucket.grantReadWrite(lambda);
+    }
+
+    lambda.addEventSource(
+      new SqsEventSource(queue, {
+        ...eventSourceSettings,
+        maxBatchingWindow: waitTime,
+      })
+    );
 
     return { lambda, queue };
   }
