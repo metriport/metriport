@@ -1,6 +1,6 @@
+import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/elation/link-patient/elation-link-patient";
 import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments";
 import { GetBundleByResourceTypeMethods } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type";
-import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/elation/link-patient/elation-link-patient";
 import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/healthie/link-patient/healthie-link-patient";
 import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient";
 import { MetriportError } from "@metriport/shared";
@@ -111,4 +111,5 @@ export const ehrGetBundleByResourceTypeSchema = z.object({
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
   resourceType: z.string(),
+  useCachedBundle: z.boolean(),
 });
