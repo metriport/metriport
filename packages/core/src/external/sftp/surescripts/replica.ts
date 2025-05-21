@@ -1,50 +1,43 @@
 import { Config } from "../../../util/config";
-import { S3Client, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Utils } from "../../../external/aws/s3";
+
 import { SurescriptsSftpClient } from "./client";
 
 type SurescriptsDirectory = "from_surescripts" | "to_surescripts";
 
 export class SurescriptsReplica {
-  private readonly s3: S3Client;
+  private readonly s3: S3Utils;
   private readonly bucket: string;
-  private readonly sftp: SurescriptsSftpClient;
+  private readonly sftpClient: SurescriptsSftpClient;
 
-  constructor(bucket?: string) {
-    this.s3 = new S3Client({ region: process.env.AWS_REGION ?? "us-east-2" });
-    this.sftp = new SurescriptsSftpClient({});
+  constructor({ sftpClient, bucket }: { sftpClient: SurescriptsSftpClient; bucket?: string }) {
+    this.sftpClient = sftpClient;
+    this.s3 = new S3Utils(process.env.AWS_REGION ?? "us-east-2");
     this.bucket = bucket ?? Config.getSurescriptsReplicaBucketName();
   }
 
   async synchronize(directory: SurescriptsDirectory, dryRun = false) {
-    await this.sftp.connect();
-    const files = await this.sftp.list("/" + directory);
-    for (const file of files) {
-      const key = directory + "/" + file;
-      const exists = await this.existsInS3(key);
+    await this.sftpClient.connect();
+    const sftpFiles = await this.sftpClient.list("/" + directory);
+    const s3Files = await this.s3.listObjects(this.bucket, directory + "/");
+    const s3FileSet = new Set(s3Files.map(file => file.Key));
 
-      if (exists) {
-        // console.log(`File ${key} exists in S3`);
+    for (const file of sftpFiles) {
+      const key = directory + "/" + file;
+
+      if (s3FileSet.has(key)) {
+        console.log(`File ${key} exists in S3`);
       } else if (dryRun) {
         console.log(`Will copy:    SFTP /${directory}/${file} --> S3 ${key}`);
       } else {
-        const content = await this.sftp.read(`/${directory}/${file}`);
+        const content = await this.sftpClient.read(`/${directory}/${file}`);
         console.log("Read " + content.length + " bytes from SFTP");
-        await this.writeToS3(key, content);
-        // Depends on CDK deployment
+        await this.s3.uploadFile({
+          bucket: this.bucket,
+          key,
+          file: content,
+        });
       }
-    }
-  }
-
-  private async writeToS3(key: string, content: Buffer) {
-    await this.s3.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: content }));
-  }
-
-  private async existsInS3(key: string) {
-    try {
-      const result = await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
-      return result.ContentLength != null && result.ContentLength > 0;
-    } catch (error) {
-      return false;
     }
   }
 }
