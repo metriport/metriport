@@ -118,10 +118,12 @@ const settings: SurescriptsSettings = {
 function surescriptsEnvironmentVariablesAndSecrets({
   nestedStack,
   surescripts,
+  surescriptsReplicaBucketName,
   medicationBundleBucket,
 }: {
   nestedStack: SurescriptsNestedStack;
   surescripts: EnvConfig["surescripts"];
+  surescriptsReplicaBucketName: string;
   medicationBundleBucket: s3.Bucket;
 }): { envVars: Record<string, string>; secrets: secret.ISecret[] } {
   if (!surescripts) {
@@ -132,7 +134,7 @@ function surescriptsEnvironmentVariablesAndSecrets({
     SURESCRIPTS_SFTP_HOST: surescripts.surescriptsHost,
     SURESCRIPTS_SFTP_SENDER_ID: surescripts.surescriptsSenderId,
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
-    SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts.surescriptsReplicaBucketName,
+    SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucketName,
     MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
   };
 
@@ -186,7 +188,7 @@ export class SurescriptsNestedStack extends NestedStack {
     this.terminationProtection = true;
 
     this.surescriptsReplicaBucket = new s3.Bucket(this, "SurescriptsReplicaBucket", {
-      bucketName: props.config.surescripts?.surescriptsReplicaBucketName,
+      bucketName: props.config.surescriptsReplicaBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
@@ -202,6 +204,7 @@ export class SurescriptsNestedStack extends NestedStack {
     const { envVars, secrets } = surescriptsEnvironmentVariablesAndSecrets({
       nestedStack: this,
       surescripts: props.config.surescripts,
+      surescriptsReplicaBucketName: props.config.surescriptsReplicaBucketName,
       medicationBundleBucket: this.medicationBundleBucket,
     });
 

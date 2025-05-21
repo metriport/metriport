@@ -123,6 +123,7 @@ type EnvConfigBase = {
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   medicationBundleBucketName: string;
+  surescriptsReplicaBucketName: string;
   ehrResponsesBucketName?: string;
   ehrBundleBucketName: string;
   iheResponsesBucketName: string;
@@ -268,7 +269,6 @@ type EnvConfigBase = {
     };
   };
   surescripts?: {
-    surescriptsReplicaBucketName: string;
     surescriptsSenderId: string;
     surescriptsReceiverId: string;
     surescriptsHost: string;
