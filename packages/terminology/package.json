@@ -30,7 +30,7 @@
     "@medplum/core": "^3.2.5",
     "@medplum/fhir-router": "^3.2.5",
     "@medplum/fhirtypes": "^3.2.5",
-    "@metriport/shared": "^0.13.0",
+    "@metriport/shared": "^0.23.3",
     "aws-sdk": "^2.1243.0",
     "axios": "^1.8.2",
     "csv-parser": "^3.2.0",

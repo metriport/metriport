@@ -179,12 +179,10 @@ function getProprietaryName(drug: ProductWithPackages) {
 
 async function seedNdcDescriptionsToTermServer(drugRows: DrugRow[]) {
   const batchSize = 500;
-  const entries = Object.entries(drugRows);
   const batches = [];
 
-  // Split into batches
-  for (let i = 0; i < entries.length; i += batchSize) {
-    batches.push(entries.slice(i, i + batchSize));
+  for (let i = 0; i < drugRows.length; i += batchSize) {
+    batches.push(drugRows.slice(i, i + batchSize));
   }
 
   console.log(`Sending ${batches.length} batches of NDC codes...`);
@@ -194,7 +192,7 @@ async function seedNdcDescriptionsToTermServer(drugRows: DrugRow[]) {
       resourceType: "Parameters",
       parameter: [
         { name: "system", valueUri: "http://hl7.org/fhir/sid/ndc" },
-        ...batch.flatMap(([, coding]) => {
+        ...batch.flatMap(coding => {
           if (!coding.code || !coding.display) {
             return [];
           }
@@ -210,8 +208,14 @@ async function seedNdcDescriptionsToTermServer(drugRows: DrugRow[]) {
       ],
     };
 
-    await sendParameters(parameters, client, true);
-    console.log(`Done with batch ${index + 1}/${batches.length}`);
+    try {
+      await sendParameters(parameters, client, true);
+      console.log(`Done with batch ${index + 1}/${batches.length}`);
+    } catch (error) {
+      console.error(`Failed to send batch ${index + 1}/${batches.length}:`, error);
+      // If this happens, we need to restart the script. This might require a safer approach with retries.
+      throw error;
+    }
   }
 }
 

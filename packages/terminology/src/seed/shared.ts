@@ -16,15 +16,22 @@ export async function sendParameters(
   });
 }
 
+const displayCache = new Map<string, string | undefined>();
 export async function lookupDisplay(
   client: TerminologyClient,
   system: string,
   code: string
 ): Promise<string | undefined> {
+  const cacheKey = `${system}|${code}`;
+  if (displayCache.has(cacheKey)) {
+    return displayCache.get(cacheKey);
+  }
   try {
     const parameters = createLookupParameters(system, code);
     const lookup = await client.lookupCode(parameters);
-    return lookup[0]?.display;
+    const display = lookup[0]?.display;
+    displayCache.set(cacheKey, display);
+    return display;
   } catch (error) {
     console.warn(`Could not lookup display for ${system}|${code}: ${error}`);
     return undefined;
