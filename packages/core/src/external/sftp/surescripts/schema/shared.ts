@@ -3,12 +3,20 @@ export type FileFieldSchema<T extends object> = {
   [K in keyof T]: FileField<T, K>;
 }[keyof T][];
 
+export type OutgoingFileRowSchema<T extends object> = {
+  [K in keyof T]: OutgoingFileField<T, K>;
+}[keyof T][];
+
+export type IncomingFileFieldSchema<T extends object> = {
+  [K in keyof T]: IncomingFileField<T, K>;
+}[keyof T][];
+
 export type FileRowValidator<T extends object> = (row: object) => row is T;
 
-export interface FileSchema<H extends object, D extends object, F extends object> {
-  header: FileFieldSchema<H>;
-  detail: FileFieldSchema<D>;
-  footer: FileFieldSchema<F>;
+export interface OutgoingFileSchema<H extends object, D extends object, F extends object> {
+  header: OutgoingFileRowSchema<H>;
+  detail: OutgoingFileRowSchema<D>;
+  footer: OutgoingFileRowSchema<F>;
 }
 
 export interface FileValidator<H extends object, D extends object, F extends object> {
@@ -25,6 +33,15 @@ export interface FileField<T extends object, K extends keyof T = keyof T> {
   fromSurescripts?: (value: string) => T[K];
   description?: string;
   leaveEmpty?: boolean;
+}
+
+export interface OutgoingFileField<T extends object, K extends keyof T = keyof T>
+  extends FileField<T, K> {
+  toSurescripts: (row: T) => string;
+}
+export interface IncomingFileField<T extends object, K extends keyof T = keyof T>
+  extends FileField<T, K> {
+  fromSurescripts: (value: string) => T[K];
 }
 
 export function dateToString(date: Date) {
@@ -94,6 +111,23 @@ export function toSurescriptsString<T extends object>(
 export function fromSurescriptsString() {
   return function (value: string): string {
     return value.replace(/\\F\\/g, "|");
+  };
+}
+
+export function toSurescriptsArray<T extends object>(
+  key: keyof T,
+  enumerated: string[],
+  { optional = false }: { optional?: boolean } = {}
+) {
+  return function (sourceObject: T): string {
+    const value = sourceObject[key];
+    if (Array.isArray(value)) {
+      return value.filter(item => enumerated.includes(item)).join(",");
+    } else if (optional && value == null) {
+      return "";
+    } else {
+      throw new Error(`Invalid value: ${value}`);
+    }
   };
 }
 

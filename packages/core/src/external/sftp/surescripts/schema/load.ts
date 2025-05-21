@@ -1,12 +1,12 @@
 import { z } from "zod";
 import {
-  FileFieldSchema,
-  dateToString,
+  OutgoingFileRowSchema,
   toSurescriptsInteger,
   toSurescriptsEnum,
   toSurescriptsString,
   toSurescriptsDate,
   toSurescriptsTime,
+  toSurescriptsArray,
 } from "./shared";
 
 // PATIENT FILE LOAD
@@ -36,7 +36,7 @@ export const patientLoadHeaderSchema = z.object({
 export type PatientLoadHeader = z.infer<typeof patientLoadHeaderSchema>;
 
 // Describes the order of fields for the first row (header) of a patient load operation.
-export const patientLoadHeaderOrder: FileFieldSchema<PatientLoadHeader> = [
+export const patientLoadHeaderOrder: OutgoingFileRowSchema<PatientLoadHeader> = [
   {
     field: 0,
     key: "recordType",
@@ -153,88 +153,118 @@ export const patientLoadDetailSchema = z.object({
   primaryPhone: z.string().max(10).optional(),
 });
 
-export const patientLoadDetailOrder: FileFieldSchema<PatientLoadDetail> = [
+export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = [
   {
     field: 0,
     key: "recordType",
+    toSurescripts: toSurescriptsEnum("recordType", ["PAT", "PNM", "PMA"]),
   },
   {
     field: 1,
     key: "recordSequenceNumber",
+    toSurescripts: toSurescriptsInteger("recordSequenceNumber"),
   },
   {
     field: 2,
     key: "assigningAuthority",
+    toSurescripts: toSurescriptsString("assigningAuthority"),
   },
   {
     field: 3,
     key: "patientId",
+    toSurescripts: toSurescriptsString("patientId"),
   },
   {
     field: 4,
     key: "lastName",
+    toSurescripts: toSurescriptsString("lastName"),
   },
   {
     field: 5,
     key: "firstName",
+    toSurescripts: toSurescriptsString("firstName"),
   },
   {
     field: 6,
     key: "middleName",
+    toSurescripts: toSurescriptsString("middleName", { optional: true }),
   },
   {
     field: 7,
     key: "prefix",
+    toSurescripts: toSurescriptsString("prefix", { optional: true }),
   },
   {
     field: 8,
     key: "suffix",
+    toSurescripts: toSurescriptsString("suffix", { optional: true }),
   },
   {
     field: 9,
     key: "addressLine1",
+    toSurescripts: toSurescriptsString("addressLine1", { optional: true }),
   },
   {
     field: 10,
     key: "addressLine2",
+    toSurescripts: toSurescriptsString("addressLine2", { optional: true }),
   },
   {
     field: 11,
     key: "city",
+    toSurescripts: toSurescriptsString("city", { optional: true }),
   },
   {
     field: 12,
     key: "state",
+    toSurescripts: toSurescriptsString("state", { optional: true }),
   },
   {
     field: 13,
     key: "zip",
+    toSurescripts: toSurescriptsString("zip"),
   },
   {
     field: 14,
     key: "dateOfBirth",
+    toSurescripts: toSurescriptsDate("dateOfBirth"),
   },
   {
     field: 15,
     key: "genderAtBirth",
+    toSurescripts: toSurescriptsEnum("genderAtBirth", ["M", "F", "U"]),
   },
   {
     field: 16,
     key: "npiNumber",
-    description:
-      "Requester NPI number requesting the MH data, which is validated against the National Provider Identification file to verify that it exists.",
+    toSurescripts: toSurescriptsString("npiNumber"),
   },
   {
     field: 17,
     key: "endMonitoringDate",
+    toSurescripts: toSurescriptsDate("endMonitoringDate", { optional: true }),
   },
   {
     field: 18,
     key: "requestedNotifications",
+    toSurescripts: toSurescriptsArray(
+      "requestedNotifications",
+      [
+        "PMANewRx",
+        "PMARefill",
+        "PMANewSubscriber",
+        "PMAControlledSubstance",
+        "PMANoRefillsRemaining",
+        "PMARefillNotPickedUp",
+        "PMAInfo",
+      ],
+      { optional: true }
+    ),
   },
   {
     field: 19,
     key: "primaryPhone",
+    toSurescripts: toSurescriptsString("primaryPhone", { optional: true }),
   },
 ];
 
@@ -249,25 +279,26 @@ const patientUnloadSchema = z.object({
 });
 export type PatientUnload = z.infer<typeof patientUnloadSchema>;
 
-export const patientUnloadOrder: FileFieldSchema<PatientUnload> = [
+export const patientUnloadOrder: OutgoingFileRowSchema<PatientUnload> = [
   {
     field: 0,
     key: "recordType",
+    toSurescripts: toSurescriptsEnum("recordType", ["UNR"]),
   },
   {
     field: 1,
     key: "recordSequenceNumber",
+    toSurescripts: toSurescriptsInteger("recordSequenceNumber"),
   },
   {
     field: 2,
     key: "product",
+    toSurescripts: toSurescriptsEnum("product", ["PMA"]),
   },
   {
     field: 3,
     key: "endMonitoringDate",
-    toSurescripts({ endMonitoringDate }: PatientUnload) {
-      return dateToString(endMonitoringDate);
-    },
+    toSurescripts: toSurescriptsDate("endMonitoringDate"),
   },
 ];
 
@@ -277,13 +308,15 @@ export const patientLoadFooterSchema = z.object({
 });
 export type PatientLoadFooter = z.infer<typeof patientLoadFooterSchema>;
 
-export const patientLoadFooterOrder: FileFieldSchema<PatientLoadFooter> = [
+export const patientLoadFooterOrder: OutgoingFileRowSchema<PatientLoadFooter> = [
   {
     field: 0,
     key: "recordType",
+    toSurescripts: toSurescriptsEnum("recordType", ["TRL"]),
   },
   {
     field: 1,
     key: "totalRecords",
+    toSurescripts: toSurescriptsInteger("totalRecords"),
   },
 ];
