@@ -1,5 +1,5 @@
 import { Parameters } from "@medplum/fhirtypes";
-import { toTitleCase } from "@metriport/shared/common/title-case";
+import { toTitleCase } from "@metriport/shared";
 import csv from "csv-parser";
 import fs from "fs";
 import { argv } from "node:process";
@@ -70,8 +70,12 @@ type DrugRow = {
 };
 
 async function main() {
-  const [productsFilePath] = argv.slice(2);
-  const [packagesFilePath] = argv.slice(3);
+  const [productsFilePath, packagesFilePath] = argv.slice(2);
+  if (!productsFilePath || !packagesFilePath) {
+    console.error("Missing arguments: specify path to products and packages CSVs");
+    process.exit(1);
+  }
+
   try {
     const products = await parseCsv<Product>(productsFilePath, PRODUCT_HEADERS);
     const packages = await parseCsv<Package>(packagesFilePath, PACKAGE_HEADERS);
@@ -206,7 +210,7 @@ async function seedNdcDescriptionsToTermServer(drugRows: DrugRow[]) {
       ],
     };
 
-    await sendParameters(parameters, client);
+    await sendParameters(parameters, client, true);
     console.log(`Done with batch ${index + 1}/${batches.length}`);
   }
 }

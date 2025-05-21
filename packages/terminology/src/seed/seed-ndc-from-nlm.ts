@@ -1,13 +1,14 @@
-import { CodeSystem, ConceptMap, Parameters } from "@medplum/fhirtypes";
+import { ConceptMap, Parameters } from "@medplum/fhirtypes";
+import { sleep } from "@metriport/shared";
 import { createReadStream } from "node:fs";
 import { argv } from "node:process";
 import { createInterface } from "node:readline";
 import { Readable, Transform, TransformCallback } from "node:stream";
 import * as unzip from "unzip-stream";
-import { ndcCodeSystem } from "../operations/definitions/codeSystem";
 import { TerminologyClient } from "../client";
-import { UmlsAttribute, UmlsConcept } from "./classes";
-import { sendParameters } from "./shared";
+import { rxnorm } from "../operations/definitions/codeSystem";
+import { UmlsAttribute, UmlsConcept, umlsSources } from "./classes";
+import { lookupDisplay, sendParameters } from "./shared";
 
 /**
  * Script to process UMLS NDC data through the RxNorm mapping, and create crosswalks between RxNorm and NDC codes.
@@ -21,66 +22,19 @@ import { sendParameters } from "./shared";
  *
  * @usage npm run seed-ndc-lookup <rxnorm-archive-path>
  */
-
-type UmlsSource = { name: "NDC"; system: string; tty: string[]; resource: CodeSystem };
-
-export const ndcSource: UmlsSource = {
-  name: "NDC",
-  system: "http://hl7.org/fhir/sid/ndc",
-  tty: ["SCD", "SBD", "GPCK", "BPCK"],
-  resource: ndcCodeSystem,
-};
-
 class EOF extends Error {
   message = "<EOF>";
 }
 
-type RxNormToNdcAttributes = {
-  description: string;
+type RxNormToNdcMapping = {
+  display: string;
   rxNormCode: string;
-  ndcCodes: string[];
+  ndcCodings: {
+    code: string;
+    display?: string;
+  }[];
   tty: string;
 };
-
-async function sendRxNormToNdcMappings(
-  mappings: Record<string, RxNormToNdcAttributes>,
-  client: TerminologyClient
-): Promise<void> {
-  const batchSize = 500;
-  const entries = Object.entries(mappings);
-  const batches = [];
-
-  for (let i = 0; i < entries.length; i += batchSize) {
-    batches.push(entries.slice(i, i + batchSize));
-  }
-
-  console.log(`Sending ${batches.length} batches of RxNorm to NDC mappings...`);
-
-  for (const [index, batch] of batches.entries()) {
-    const parameters = {
-      resourceType: "Parameters",
-      parameter: [
-        { name: "system", valueUri: "http://hl7.org/fhir/sid/ndc" },
-        ...batch.flatMap(([, attributes]) => {
-          if (!attributes.ndcCodes.length) {
-            return [];
-          }
-
-          return attributes.ndcCodes.map(ndcCode => ({
-            name: "concept",
-            valueCoding: {
-              code: ndcCode,
-              display: attributes.description,
-            },
-          }));
-        }),
-      ],
-    } as Parameters;
-
-    await sendParameters(parameters, client);
-    console.log(`Processed batch ${index + 1}/${batches.length}`);
-  }
-}
 
 const ndcToRxNormTemplateMap: ConceptMap = {
   resourceType: "ConceptMap",
@@ -93,64 +47,6 @@ const ndcToRxNormTemplateMap: ConceptMap = {
     },
   ],
 };
-
-async function createRxNormNdcCrosswalks(
-  mappings: Record<string, RxNormToNdcAttributes>,
-  client: TerminologyClient
-): Promise<void> {
-  const entries = Object.entries(mappings);
-  const totalMappings = entries.reduce((acc, [, mapping]) => acc + mapping.ndcCodes.length, 0);
-  let processedMappings = 0;
-
-  for (const [key, mapping] of entries) {
-    if (!mapping.ndcCodes.length) {
-      continue;
-    }
-
-    for (const ndcCode of mapping.ndcCodes) {
-      const ndcToRxNormMap = {
-        ...ndcToRxNormTemplateMap,
-        ...(ndcToRxNormTemplateMap.group?.[0]
-          ? {
-              group: [
-                {
-                  ...ndcToRxNormTemplateMap.group[0],
-                  element: [
-                    {
-                      code: ndcCode,
-                      target: [
-                        {
-                          code: mapping.rxNormCode,
-                          equivalence: "equivalent" as const,
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            }
-          : {}),
-      };
-      try {
-        await client.importConceptMap(ndcToRxNormMap, false);
-        processedMappings++;
-
-        // Update progress every 100 mappings
-        if (processedMappings % 100 === 0 || processedMappings === totalMappings) {
-          const percent = Math.round((processedMappings / totalMappings) * 100);
-          const progressBar = "=".repeat(percent / 2) + "-".repeat(50 - percent / 2);
-          process.stdout.write(
-            `\rProgress: [${progressBar}] ${percent}% (${processedMappings}/${totalMappings})`
-          );
-        }
-      } catch (error) {
-        console.error(`Error importing concept map for ${key}: ${error}`);
-      }
-    }
-  }
-
-  console.log("");
-}
 
 async function main(): Promise<void> {
   const [archivePath] = argv.slice(2);
@@ -169,7 +65,7 @@ async function main(): Promise<void> {
 
   const client = new TerminologyClient();
 
-  let rxNormCodeToStringMap: Record<string, RxNormToNdcAttributes>;
+  const rxNormCodeToStringMap: Record<string, RxNormToNdcMapping> = Object.create(null);
   let remainingParts = 2;
   createReadStream(archivePath)
     .pipe(unzip.Parse())
@@ -184,10 +80,7 @@ async function main(): Promise<void> {
 
           const filePath = entry.path as string;
           if (filePath.endsWith("/RXNCONSO.RRF")) {
-            console.log("Generating the concepts map...");
-            rxNormCodeToStringMap = await processConcepts(entry);
-            console.log("Finished... Let's look at what we got");
-            console.log("\n");
+            await fillMapWithRxNormAttributes(entry, rxNormCodeToStringMap);
             remainingParts--;
           } else if (filePath.endsWith("/RXNSAT.RRF")) {
             if (!rxNormCodeToStringMap) {
@@ -195,9 +88,7 @@ async function main(): Promise<void> {
                 new Error("Expected to read concepts (MRCONSO.RRF) before properties (MRSAT.RRF)")
               );
             }
-            console.log("Importing concept properties...");
-            await processProperties(entry, rxNormCodeToStringMap);
-            console.log("\n");
+            await fillMapWithNdcMappings(entry, rxNormCodeToStringMap);
             remainingParts--;
           } else {
             console.log(`Skipping file ${filePath}`);
@@ -213,14 +104,8 @@ async function main(): Promise<void> {
       })
         .on("finish", async () => {
           try {
-            console.log("Uploading RxNorm to NDC mappings to database...");
             await sendRxNormToNdcMappings(rxNormCodeToStringMap, client);
-            console.log("Successfully uploaded all mappings");
-
-            console.log("Creating RxNorm-NDC crosswalks...");
             await createRxNormNdcCrosswalks(rxNormCodeToStringMap, client);
-            console.log("Successfully created all crosswalks");
-
             resolve();
           } catch (error: unknown) {
             reject(error instanceof Error ? error : new Error(String(error)));
@@ -233,20 +118,23 @@ async function main(): Promise<void> {
   return result;
 }
 
-async function processConcepts(inStream: Readable): Promise<Record<string, RxNormToNdcAttributes>> {
+async function fillMapWithRxNormAttributes(
+  inStream: Readable,
+  conceptsMap: Record<string, RxNormToNdcMapping>
+): Promise<Record<string, RxNormToNdcMapping>> {
+  console.log("Generating the concepts map...");
   const rl = createInterface(inStream);
-  const mappedConcepts: Record<string, RxNormToNdcAttributes> = Object.create(null);
 
   for await (const line of rl) {
     const concept = new UmlsConcept(line);
-    const source = concept.SAB;
-    if (source !== ndcSource.name) {
-      // Ignore unknown code system
+    const source = umlsSources[concept.SAB];
+    if (!source || source.system !== rxnorm.url) {
+      // Ignore non-RxNorm concepts
       continue;
     } else if (concept.LAT !== "ENG") {
       // Ignore non-English
       continue;
-    } else if (!ndcSource.tty.includes(concept.TTY)) {
+    } else if (!source.tty.includes(concept.TTY)) {
       // Use only preferred term types for the display string
       continue;
     } else if (concept.SUPPRESS !== "N") {
@@ -254,34 +142,147 @@ async function processConcepts(inStream: Readable): Promise<Record<string, RxNor
       continue;
     }
 
-    const existingConcept = mappedConcepts[concept.AUI];
+    const existingConcept = conceptsMap[concept.CODE];
     if (existingConcept) {
-      const priority = ndcSource.tty.indexOf(concept.TTY);
-      const existingPriority = ndcSource.tty.indexOf(existingConcept.tty);
+      const priority = umlsSources["NDC"].tty.indexOf(concept.TTY);
+      const existingPriority = umlsSources["NDC"].tty.indexOf(existingConcept.tty);
       if (priority <= existingPriority) {
         // Skip if new concept has lower or equal priority
         continue;
       }
     }
 
-    // Only create/update the concept if it doesn't exist or has higher priority
-    mappedConcepts[concept.AUI] = {
-      description: concept.STR,
-      rxNormCode: concept.AUI,
-      ndcCodes: [],
+    conceptsMap[concept.CODE] = {
+      display: concept.STR,
+      rxNormCode: concept.CODE,
       tty: concept.TTY,
+      ndcCodings: [], // There are no NDC codes in this file
     };
   }
 
   console.log(`==============================`);
-  return mappedConcepts;
+  console.log(`Finished... We've got ${Object.keys(conceptsMap).length} RxNorm concepts.\n`);
+  return conceptsMap;
 }
 
-async function processProperties(
-  inStream: Readable,
-  rxNormCodeToStringMap: Record<string, RxNormToNdcAttributes>
+async function sendRxNormToNdcMappings(
+  mappings: Record<string, RxNormToNdcMapping>,
+  client: TerminologyClient
 ): Promise<void> {
-  console.log("\n");
+  console.log("Uploading NDC codes to the database...");
+
+  const batchSize = 500;
+  const entries = Object.entries(mappings);
+  const batches = [];
+
+  for (let i = 0; i < entries.length; i += batchSize) {
+    batches.push(entries.slice(i, i + batchSize));
+  }
+
+  console.log(`Sending ${batches.length} batches of RxNorm to NDC mappings...`);
+
+  for (const [index, batch] of batches.entries()) {
+    const parameters = {
+      resourceType: "Parameters",
+      parameter: [
+        { name: "system", valueUri: "http://hl7.org/fhir/sid/ndc" },
+        ...batch.flatMap(([, attributes]) => {
+          if (!attributes.ndcCodings.length) {
+            return [];
+          }
+
+          return attributes.ndcCodings.map(ndcCode => ({
+            name: "concept",
+            valueCoding: {
+              code: ndcCode.code,
+              // Use the RxNorm display as the NDC display. The NDC displays for all existing codes should already be in the database from the previous seeding step
+              display: attributes.display,
+            },
+          }));
+        }),
+      ],
+    } as Parameters;
+
+    await sendParameters(parameters, client, false);
+    console.log(`Processed batch ${index + 1}/${batches.length}`);
+  }
+
+  console.log("Successfully uploaded all mappings");
+}
+
+async function createRxNormNdcCrosswalks(
+  rxNormCodeToStringMap: Record<string, RxNormToNdcMapping>,
+  client: TerminologyClient
+): Promise<void> {
+  console.log("Creating RxNorm-NDC crosswalks...");
+
+  const rxNormToNdcEntries = Object.entries(rxNormCodeToStringMap);
+  const totalMappings = rxNormToNdcEntries.reduce(
+    (acc, [, mapping]) => acc + mapping.ndcCodings.length,
+    0
+  );
+  let processedMappings = 0;
+
+  for (const [key, mapping] of rxNormToNdcEntries) {
+    if (!mapping.ndcCodings.length) {
+      continue;
+    }
+
+    for (const ndcCode of mapping.ndcCodings) {
+      const ndcToRxNormMap = {
+        ...ndcToRxNormTemplateMap,
+        ...(ndcToRxNormTemplateMap.group?.[0]
+          ? {
+              group: [
+                {
+                  ...ndcToRxNormTemplateMap.group[0],
+                  element: [
+                    {
+                      code: ndcCode.code,
+                      display: ndcCode.display,
+                      target: [
+                        {
+                          code: mapping.rxNormCode,
+                          display: mapping.display,
+                          equivalence: "equivalent" as const,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            }
+          : {}),
+      };
+
+      try {
+        await client.importConceptMap(ndcToRxNormMap, false);
+        processedMappings++;
+
+        if (processedMappings % 100 === 0 || processedMappings === totalMappings) {
+          const percent = Math.round((processedMappings / totalMappings) * 100);
+          const progressBar = "=".repeat(percent / 2) + "-".repeat(50 - percent / 2);
+          process.stdout.write(
+            `\rProgress: [${progressBar}] ${percent}% (${processedMappings}/${totalMappings})`
+          );
+        }
+      } catch (error) {
+        console.error(`Error importing concept map for ${key}: ${error}`);
+      }
+    }
+  }
+
+  console.log("Successfully created all crosswalks.\n");
+}
+
+async function fillMapWithNdcMappings(
+  inStream: Readable,
+  rxNormCodeToStringMap: Record<string, RxNormToNdcMapping>
+): Promise<void> {
+  console.log("Adding the NDC mappings from crosswalks...");
+  const client = new TerminologyClient();
+
+  // Convert stream to array of lines first
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -289,27 +290,43 @@ async function processProperties(
 
   for await (const line of rl) {
     const attr = new UmlsAttribute(line);
+    // ATN is target system name (i.e. NDC)
     const targetSystem = attr.ATN;
     if (targetSystem !== "NDC") {
+      skipped++;
       continue;
     }
 
-    const source = attr.SAB;
-    if (source !== ndcSource.name) {
-      // Ignore unknown code system
+    const source = umlsSources[attr.SAB];
+    if (!source || source.system !== rxnorm.url) {
+      // Ignore non-RxNorm concepts
+      skipped++;
       continue;
     } else if (attr.SUPPRESS !== "N") {
       // Skip suppressible terms
+      skipped++;
       continue;
     }
 
-    const existing = rxNormCodeToStringMap[attr.AUI];
+    const existing = rxNormCodeToStringMap[attr.CODE];
     if (existing) {
-      rxNormCodeToStringMap[attr.AUI] = {
+      const ndcDisplay = await lookupDisplay(client, umlsSources["NDC"].system, attr.ATV);
+      rxNormCodeToStringMap[attr.CODE] = {
         ...existing,
-        ndcCodes: [...existing.ndcCodes, attr.ATV],
+        // ATV is target system code (i.e. NDC code)
+        ndcCodings: [
+          ...existing.ndcCodings,
+          {
+            code: attr.ATV,
+            ...(ndcDisplay ? { display: ndcDisplay } : {}),
+          },
+        ],
       };
       processed++;
+      if (processed % 1000 === 0) {
+        await sleep(100);
+        console.log(`Processed ${fmtNum(processed)} properties`);
+      }
     } else {
       skipped++;
     }
