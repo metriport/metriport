@@ -41,6 +41,7 @@ router.put(
       cxId,
       type: orgDetails.businessType,
       data: {
+        shortcode: orgDetails.shortcode,
         name: orgDetails.nameInMetriport,
         type: orgDetails.type,
         location: {
