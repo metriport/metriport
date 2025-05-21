@@ -299,13 +299,6 @@ export class APIStack extends Stack {
       ],
     });
 
-    const medicationBundleBucket = new s3.Bucket(this, "MedicationBucket", {
-      bucketName: props.config.medicationBundleBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
-
     let hl7ConversionBucket: s3.Bucket | undefined;
     if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -460,12 +453,12 @@ export class APIStack extends Stack {
       receiveFlatFileResponseQueue: surescriptsReceiveFlatFileResponseQueue,
       receiveVerificationResponseQueue: surescriptsReceiveVerificationResponseQueue,
       surescriptsReplicaBucket,
+      medicationBundleBucket,
     } = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
       config: props.config,
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
       lambdaLayers,
-      medicationBundleBucket,
     });
 
     //-------------------------------------------
@@ -704,15 +697,6 @@ export class APIStack extends Stack {
     lambdasToGetApiUrl.forEach(lambda =>
       lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
     );
-
-    // Grant API invocation for Surescripts workflow steps
-    const lambdasToGrantInvoke = [
-      surescriptsSynchronizeSftpLambda,
-      surescriptsReceiveFlatFileResponseLambda,
-      surescriptsReceiveVerificationResponseLambda,
-      surescriptsSendPatientRequestLambda,
-    ];
-    lambdasToGrantInvoke.forEach(lambda => lambda?.grantInvoke(apiService.taskDefinition.taskRole));
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket

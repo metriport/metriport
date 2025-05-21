@@ -130,9 +130,9 @@ function surescriptsEnvironmentVariables({
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
     SURESCRIPTS_REPLICA_BUCKET_NAME: surescripts.surescriptsReplicaBucketName,
     MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
-    SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN: surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN,
-    SURESCRIPTS_SFTP_PUBLIC_KEY_ARN: surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY_ARN,
-    SURESCRIPTS_SFTP_PRIVATE_KEY_ARN: surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY_ARN,
+    SURESCRIPTS_SFTP_SENDER_PASSWORD: surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD,
+    SURESCRIPTS_SFTP_PUBLIC_KEY: surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY,
+    SURESCRIPTS_SFTP_PRIVATE_KEY: surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY,
   };
 }
 
@@ -141,7 +141,6 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
-  medicationBundleBucket: s3.Bucket;
 }
 
 export class SurescriptsNestedStack extends NestedStack {
@@ -154,6 +153,7 @@ export class SurescriptsNestedStack extends NestedStack {
   readonly receiveFlatFileResponseLambda: Lambda;
   readonly receiveFlatFileResponseQueue: Queue;
   readonly surescriptsReplicaBucket: s3.Bucket;
+  readonly medicationBundleBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: SurescriptsNestedStackProps) {
     super(scope, id, props);
@@ -167,9 +167,16 @@ export class SurescriptsNestedStack extends NestedStack {
       versioned: true,
     });
 
+    this.medicationBundleBucket = new s3.Bucket(this, "MedicationBundleBucket", {
+      bucketName: props.config.medicationBundleBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+    });
+
     const envVars = surescriptsEnvironmentVariables({
       surescripts: props.config.surescripts,
-      medicationBundleBucket: props.medicationBundleBucket,
+      medicationBundleBucket: this.medicationBundleBucket,
     });
 
     const commonConfig = {
@@ -206,7 +213,7 @@ export class SurescriptsNestedStack extends NestedStack {
     const receiveFlatFileResponse = this.setupLambdaAndQueue("receiveFlatFileResponse", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-      medicationBundleBucket: props.medicationBundleBucket,
+      medicationBundleBucket: this.medicationBundleBucket,
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
