@@ -115,9 +115,10 @@ export function createAPIService({
   ehrBundleBucket,
   surescriptsReplicaBucket,
   medicationBundleBucket,
-  sendPatientRequestQueue,
-  receiveVerificationResponseQueue,
-  receiveFlatFileResponseQueue,
+  surescriptsSynchronizeSftpQueue,
+  surescriptsSendPatientRequestQueue,
+  surescriptsReceiveVerificationResponseQueue,
+  surescriptsReceiveFlatFileResponseQueue,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
@@ -165,9 +166,10 @@ export function createAPIService({
   ehrBundleBucket: s3.IBucket;
   surescriptsReplicaBucket: s3.IBucket;
   medicationBundleBucket: s3.IBucket;
-  sendPatientRequestQueue: IQueue;
-  receiveVerificationResponseQueue: IQueue;
-  receiveFlatFileResponseQueue: IQueue;
+  surescriptsSynchronizeSftpQueue: IQueue;
+  surescriptsSendPatientRequestQueue: IQueue;
+  surescriptsReceiveVerificationResponseQueue: IQueue;
+  surescriptsReceiveFlatFileResponseQueue: IQueue;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -378,10 +380,12 @@ export function createAPIService({
           ...(props.config.surescripts && {
             MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
-            SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL: sendPatientRequestQueue.queueUrl,
+            SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsSynchronizeSftpQueue.queueUrl,
+            SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL: surescriptsSendPatientRequestQueue.queueUrl,
             SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
-              receiveVerificationResponseQueue.queueUrl,
-            SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL: receiveFlatFileResponseQueue.queueUrl,
+              surescriptsReceiveVerificationResponseQueue.queueUrl,
+            SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
+              surescriptsReceiveFlatFileResponseQueue.queueUrl,
           }),
         },
       },

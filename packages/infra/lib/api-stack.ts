@@ -451,13 +451,14 @@ export class APIStack extends Stack {
     // Surescripts
     //-------------------------------------------
     const {
-      synchronizeSftpLambda,
-      receiveFlatFileResponseLambda,
-      receiveVerificationResponseLambda,
-      sendPatientRequestLambda,
-      sendPatientRequestQueue,
-      receiveFlatFileResponseQueue,
-      receiveVerificationResponseQueue,
+      synchronizeSftpLambda: surescriptsSynchronizeSftpLambda,
+      synchronizeSftpQueue: surescriptsSynchronizeSftpQueue,
+      receiveFlatFileResponseLambda: surescriptsReceiveFlatFileResponseLambda,
+      receiveVerificationResponseLambda: surescriptsReceiveVerificationResponseLambda,
+      sendPatientRequestLambda: surescriptsSendPatientRequestLambda,
+      sendPatientRequestQueue: surescriptsSendPatientRequestQueue,
+      receiveFlatFileResponseQueue: surescriptsReceiveFlatFileResponseQueue,
+      receiveVerificationResponseQueue: surescriptsReceiveVerificationResponseQueue,
       surescriptsReplicaBucket,
     } = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
       config: props.config,
@@ -585,9 +586,10 @@ export class APIStack extends Stack {
       ehrRefreshEhrBundlesQueue,
       surescriptsReplicaBucket,
       medicationBundleBucket,
-      sendPatientRequestQueue,
-      receiveVerificationResponseQueue,
-      receiveFlatFileResponseQueue,
+      surescriptsSynchronizeSftpQueue,
+      surescriptsSendPatientRequestQueue,
+      surescriptsReceiveVerificationResponseQueue,
+      surescriptsReceiveFlatFileResponseQueue,
       ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -694,10 +696,10 @@ export class APIStack extends Stack {
       ehrRefreshEhrBundlesLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
-      receiveFlatFileResponseLambda,
-      receiveVerificationResponseLambda,
-      sendPatientRequestLambda,
-      synchronizeSftpLambda,
+      surescriptsReceiveFlatFileResponseLambda,
+      surescriptsReceiveVerificationResponseLambda,
+      surescriptsSendPatientRequestLambda,
+      surescriptsSynchronizeSftpLambda,
     ];
     lambdasToGetApiUrl.forEach(lambda =>
       lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
@@ -705,10 +707,10 @@ export class APIStack extends Stack {
 
     // Grant API invocation for Surescripts workflow steps
     const lambdasToGrantInvoke = [
-      synchronizeSftpLambda,
-      receiveFlatFileResponseLambda,
-      receiveVerificationResponseLambda,
-      sendPatientRequestLambda,
+      surescriptsSynchronizeSftpLambda,
+      surescriptsReceiveFlatFileResponseLambda,
+      surescriptsReceiveVerificationResponseLambda,
+      surescriptsSendPatientRequestLambda,
     ];
     lambdasToGrantInvoke.forEach(lambda => lambda?.grantInvoke(apiService.taskDefinition.taskRole));
 
