@@ -1,24 +1,23 @@
-import { BadRequestError } from "@metriport/shared";
-import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { BadRequestError, EhrSources } from "@metriport/shared";
+import { BookedAppointment } from "@metriport/shared/interface/external/ehr/elation/appointment";
 import { GetAppointmentsClientRequest } from "../../lambdas/get-appointments/ehr-get-appointments";
-import { createCanvasClient } from "../shared";
+import { createElationHealthClient } from "../shared";
 
 export async function getAppointments(
   params: GetAppointmentsClientRequest
-): Promise<SlimBookedAppointment[]> {
+): Promise<BookedAppointment[]> {
   const { cxId, practiceId, fromDate, toDate, environment, tokenId } = params;
   if (!fromDate || !toDate) {
     throw new BadRequestError("fromDate and toDate are required", undefined, {
       method: "getAppointments",
-      ehr: EhrSources.canvas,
+      ehr: EhrSources.elation,
       cxId,
       practiceId,
       fromDate: fromDate?.toISOString(),
       toDate: toDate?.toISOString(),
     });
   }
-  const client = await createCanvasClient({
+  const client = await createElationHealthClient({
     environment,
     cxId,
     practiceId,

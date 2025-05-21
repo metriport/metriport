@@ -1,10 +1,10 @@
-import { GetAppointmentsRequest } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments";
-import { EhrGetAppointmentsLocal } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments-local";
+import { GetBundleByResourceTypeRequest } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type";
+import { EhrGetBundleByResourceTypeLocal } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
-import { ehrGetAppointmentsSchema } from "./shared/ehr";
+import { ehrGetBundleByResourceTypeSchema } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -30,15 +30,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const log = prefixedLog(`ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-  const ehrGetAppointmentsHandler = new EhrGetAppointmentsLocal();
-  const appointments = await ehrGetAppointmentsHandler.getAppointments(parsedBody);
+  const ehrGetBundleByResourceTypeHandler = new EhrGetBundleByResourceTypeLocal();
+  const bundle = await ehrGetBundleByResourceTypeHandler.getBundleByResourceType(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
-  return appointments;
+  return bundle;
 });
 
-function parseBody(body?: unknown): GetAppointmentsRequest {
+function parseBody(body?: unknown): GetBundleByResourceTypeRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -46,5 +46,5 @@ function parseBody(body?: unknown): GetAppointmentsRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return ehrGetAppointmentsSchema.parse(bodyAsJson);
+  return ehrGetBundleByResourceTypeSchema.parse(bodyAsJson);
 }

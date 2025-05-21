@@ -1,11 +1,11 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
-import { Config } from "../../../../../util/config";
-import { out } from "../../../../../util/log";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
 import {
   defaultLambdaInvocationResponseHandler,
   LambdaClient,
   makeLambdaClient,
-} from "../../../../aws/lambda";
+} from "../../../aws/lambda";
 import { EhrGetAppointmentsHandler, GetAppointmentsRequest } from "./ehr-get-appointments";
 
 export class EhrGetAppointmentsCloud implements EhrGetAppointmentsHandler {

@@ -1,5 +1,5 @@
-import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles";
-import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-local";
+import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/jobs/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles";
+import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/jobs/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";

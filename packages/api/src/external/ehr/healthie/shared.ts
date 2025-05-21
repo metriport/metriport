@@ -100,15 +100,23 @@ export function getHealthieEnv({
   };
 }
 
-export async function createHealthieClient(
+export async function createHealthieClientWithEnvironment(
   perPracticeParams: EhrPerPracticeParams
-): Promise<HealthieApi> {
+): Promise<{ client: HealthieApi; environment: HealthieEnv }> {
   const { environment, apiKey } = getHealthieEnv(perPracticeParams);
-  return await HealthieApi.create({
+  const client = await HealthieApi.create({
     practiceId: perPracticeParams.practiceId,
     environment,
     apiKey,
   });
+  return { client, environment };
+}
+
+export async function createHealthieClient(
+  perPracticeParams: EhrPerPracticeParams
+): Promise<HealthieApi> {
+  const { client } = await createHealthieClientWithEnvironment(perPracticeParams);
+  return client;
 }
 
 export async function getHealthieSecretKeyInfo(
