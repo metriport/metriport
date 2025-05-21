@@ -19,7 +19,6 @@ export interface SftpClientImpl {
 
 export class SftpClient implements SftpClientImpl {
   protected readonly client: SshSftpClient;
-
   protected readonly host: string;
   protected readonly port: number;
   protected readonly username: string;
@@ -37,15 +36,17 @@ export class SftpClient implements SftpClientImpl {
   }
 
   async connect() {
-    await this.client.connect({
-      host: this.host,
-      port: this.port,
-      username: this.username,
-      password: this.password,
-      privateKey: this.privateKey,
-      tryKeyboard: false,
-      agentForward: false,
-    });
+    executeWithSshListeners(this.client, () =>
+      this.client.connect({
+        host: this.host,
+        port: this.port,
+        username: this.username,
+        password: this.password,
+        privateKey: this.privateKey,
+        tryKeyboard: false,
+        agentForward: false,
+      })
+    );
   }
 
   async disconnect() {
@@ -91,4 +92,38 @@ export function createWritableBuffer() {
 
   const getBuffer = () => Buffer.concat(chunks);
   return { writable, getBuffer };
+}
+
+async function executeWithSshListeners<F extends (...args: unknown[]) => Promise<T | void>, T>(
+  client: SshSftpClient,
+  fn: F
+): Promise<T | void> {
+  let executionError: Error | undefined;
+  function errorHandler(error: Error) {
+    executionError = error;
+  }
+  client.on("error", errorHandler);
+  client.on("end", errorHandler);
+  client.on("close", errorHandler);
+
+  let result: T | undefined | void = undefined;
+  try {
+    result = await fn(client);
+  } catch (error) {
+    if (error instanceof Error) {
+      executionError = error;
+    } else {
+      executionError = new Error(String(error));
+    }
+  }
+
+  client.removeListener("error", errorHandler);
+  client.removeListener("end", errorHandler);
+  client.removeListener("close", errorHandler);
+
+  if (executionError) {
+    throw executionError;
+  } else if (result) {
+    return result;
+  }
 }
