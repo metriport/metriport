@@ -15,9 +15,9 @@ import {
 import {
   dateToString,
   FileFieldSchema,
-  // FileRowValidator,
-  // FileSchema,
-  // FileValidator,
+  FileRowValidator,
+  FileSchema,
+  FileValidator,
 } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 
@@ -172,50 +172,46 @@ export function splitName(
   return { firstName, middleName, lastName, prefix, suffix };
 }
 
-// export function parseSurescriptsFile<
-//   Header extends object,
-//   Detail extends object,
-//   Footer extends object,
-// >(
-//   message: Buffer,
-//   schema: FileSchema<Header, Detail, Footer>,
-//   validator: FileValidator<Header, Detail, Footer>
-// ) {
-//   // Split Surescripts message into a 2D array of strings with resolved pipe escape sequence
-//   const rows = message.toString("ascii").split("\n");
+export function parseSurescriptsFile<H extends object, D extends object, F extends object>(
+  message: Buffer,
+  schema: FileSchema<H, D, F>,
+  validator: FileValidator<H, D, F>
+) {
+  // Split Surescripts message into a 2D array of strings with resolved pipe escape sequence
+  const rows = message.toString("ascii").split("\n");
 
-//   const table = rows.map(row => row.split("|").map(cell => cell.trim().replace(/\\F\\/g, "|")));
-//   const header = table.shift();
-//   const details = table.slice(0, -1);
-//   const footer = table.pop();
+  const table = rows.map(row => row.split("|").map(cell => cell.trim().replace(/\\F\\/g, "|")));
+  const header = table.shift();
+  const details = table.slice(0, -1);
+  const footer = table.pop();
 
-//   if (!header) throw new Error("Header is required");
-//   if (!details) throw new Error("Details are required");
-//   if (!footer) throw new Error("Footer is required");
+  if (!header) throw new Error("Header is required");
+  if (!details) throw new Error("Details are required");
+  if (!footer) throw new Error("Footer is required");
 
-//   const headerData = parseSurescriptsRow(header, schema.header, validator.header);
-//   const detailsData = details.map(detail =>
-//     parseSurescriptsRow(detail, schema.detail, validator.detail)
-//   );
-//   const footerData = parseSurescriptsRow(footer, schema.footer, validator.footer);
+  const headerData = parseSurescriptsRow(header, schema.header, validator.header);
+  const detailsData = details.map(detail =>
+    parseSurescriptsRow(detail, schema.detail, validator.detail)
+  );
+  const footerData = parseSurescriptsRow(footer, schema.footer, validator.footer);
 
-//   return { header: headerData, details: detailsData, footer: footerData };
-// }
+  return { header: headerData, details: detailsData, footer: footerData };
+}
 
-// function parseSurescriptsRow<T extends object>(
-//   row: string[],
-//   fieldSchema: FileFieldSchema<T>,
-//   validator: FileRowValidator<T>
-// ): T {
-//   const data: Partial<T> = {};
-//   for (const field of fieldSchema) {
-//     if (field.key) {
-//       if (field.fromSurescripts) {
-//         data[field.key] = field.fromSurescripts(row[field.field] ?? "");
-//       }
-//     }
-//   }
-//   if (validator(data)) {
-//     return data;
-//   } else throw new Error("Invalid row");
-// }
+function parseSurescriptsRow<T extends object>(
+  row: string[],
+  fieldSchema: FileFieldSchema<T>,
+  validator: FileRowValidator<T>
+): T {
+  const data: Partial<T> = {};
+  for (const field of fieldSchema) {
+    if (field.key) {
+      if (field.fromSurescripts) {
+        data[field.key] = field.fromSurescripts(row[field.field] ?? "");
+      }
+    }
+  }
+  if (validator(data)) {
+    return data;
+  } else throw new Error("Invalid row");
+}
