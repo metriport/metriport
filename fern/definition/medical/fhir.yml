@@ -68,6 +68,7 @@ service:
         - name: Example1
           path-parameters:
             id: "00000000-0000-0000-0000-000000000000"
+          query-parameters:
             conversionType: "json"
           response:
             body: $StartConsolidatedQueryResponse.Example0
