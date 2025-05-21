@@ -15,6 +15,7 @@ import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
 const synchronizeSftpTimeout = Duration.minutes(15);
+const synchronizeSftpWaitTime = Duration.seconds(1);
 const sendPatientRequestLambdaTimeout = Duration.minutes(5);
 const receiveVerificationLambdaTimeout = Duration.minutes(1);
 const receiveFlatFileResponseLambdaTimeout = Duration.minutes(15);
@@ -46,7 +47,7 @@ const settings: SurescriptsSettings = {
       reportBatchItemFailures: true,
       maxConcurrency: 4,
     },
-    waitTime: Duration.seconds(1), // Max 60 syncs/minute
+    waitTime: synchronizeSftpWaitTime,
   },
 
   sendPatientRequest: {
@@ -68,7 +69,7 @@ const settings: SurescriptsSettings = {
       reportBatchItemFailures: true,
       maxConcurrency: 4,
     },
-    waitTime: Duration.seconds(0), // No limit
+    waitTime: Duration.seconds(0),
   },
   receiveVerificationResponse: {
     name: "SurescriptsReceiveVerificationResponse",
@@ -89,7 +90,7 @@ const settings: SurescriptsSettings = {
       reportBatchItemFailures: true,
       maxConcurrency: 4,
     },
-    waitTime: Duration.seconds(0), // No limit
+    waitTime: Duration.seconds(0),
   },
   receiveFlatFileResponse: {
     name: "SurescriptsReceiveFlatFileResponse",
@@ -110,7 +111,7 @@ const settings: SurescriptsSettings = {
       reportBatchItemFailures: true,
       maxConcurrency: 4,
     },
-    waitTime: Duration.seconds(0), // No limit
+    waitTime: Duration.seconds(0),
   },
 };
 
