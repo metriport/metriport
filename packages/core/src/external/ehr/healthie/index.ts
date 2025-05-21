@@ -37,7 +37,7 @@ const apiUrl = Config.getApiUrl();
 interface HealthieApiConfig
   extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret" | "getSecrets"> {
   getSecrets?: GetSecretsApiKeyFunction;
-  apiKey?: string | undefined;
+  apiKey?: string;
   environment: HealthieEnv;
 }
 

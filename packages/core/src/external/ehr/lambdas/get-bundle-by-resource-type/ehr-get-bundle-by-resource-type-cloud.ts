@@ -1,5 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
+import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import {
@@ -42,7 +43,7 @@ export class EhrGetBundleByResourceTypeCloud implements EhrGetBundleByResourceTy
             lambdaName: this.ehrGetBundleByResourceTypeLambdaName,
           })
         );
-      if (!result) return [];
+      if (!result) return getDefaultBundle();
       return JSON.parse(result);
     });
   }
