@@ -14,14 +14,14 @@ export const handler = capture.wrapHandler(async () => {
   const bundleBucketName = process.env.SURESCRIPTS_BUNDLE_BUCKET_NAME;
   if (!replicaBucketName || !bundleBucketName) throw new Error("Missing bucket names");
 
-  s3Utils.uploadFile({
+  await s3Utils.uploadFile({
     bucket: bundleBucketName,
     key: "mock_customer/mock_patient/bundle.json.gz",
     file: Buffer.from("test bundle"),
     contentType: "application/json",
   });
 
-  s3Utils.uploadFile({
+  await s3Utils.uploadFile({
     bucket: replicaBucketName,
     key: "mock_surescripts/ffm.txt",
     file: Buffer.from("test FFM"),

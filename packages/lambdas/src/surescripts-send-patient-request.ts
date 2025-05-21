@@ -13,7 +13,7 @@ export const handler = capture.wrapHandler(async () => {
   const bucketName = process.env.SURESCRIPTS_REPLICA_BUCKET_NAME;
   if (!bucketName) throw new Error("Missing bucket name");
 
-  s3Utils.uploadFile({
+  await s3Utils.uploadFile({
     bucket: bucketName,
     key: "mock_surescripts/plf.txt",
     file: Buffer.from("test PLF"),
