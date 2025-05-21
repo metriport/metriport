@@ -471,6 +471,8 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  surescriptsReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }

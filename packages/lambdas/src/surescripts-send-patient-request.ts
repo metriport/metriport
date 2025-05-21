@@ -7,5 +7,5 @@ const log = prefixedLog("surescripts");
 
 // Stub which will be integrated with Surescripts commands
 export const handler = capture.wrapHandler(async () => {
-  log(`This is a stub for the Surescripts SFTP integration`);
+  log(`This is a stub for the Surescripts Send Patient Request integration`);
 });
