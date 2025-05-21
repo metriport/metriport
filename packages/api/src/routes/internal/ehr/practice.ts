@@ -11,7 +11,7 @@ import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";
 const router = Router();
 
 /**
- * POST /internal/ehr/:ehrId/practice/:id/secrets
+ * GET /internal/ehr/:ehrId/practice/:id/secrets
  *
  * Get the secrets for the practice
  *
