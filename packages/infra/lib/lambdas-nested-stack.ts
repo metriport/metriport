@@ -222,7 +222,6 @@ export class LambdasNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       fhirToBundleLambda: this.fhirToBundleLambda,
-      fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
       openSearchEndpoint: props.openSearch.endpoint,
       openSearchAuth: props.openSearch.auth,
@@ -733,13 +732,14 @@ export class LambdasNestedStack extends NestedStack {
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
         FHIR_SERVER_URL: fhirServerUrl,
         MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         SEARCH_ENDPOINT: openSearchEndpoint,
         SEARCH_USERNAME: openSearchAuth.userName,
         SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
+        // TODO eng-268 temporary while we don't choose one approach - not used by the "fhir" approach
+        FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
         // TODO eng-268 temporary while we don't choose one approach - REMOVE THE ONE NOT BEING USED
         SEARCH_INDEX: openSearchDocumentsIndexName,
         CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
@@ -766,7 +766,6 @@ export class LambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     fhirToBundleLambda: lambda.Function;
-    fhirServerUrl: string;
     bundleBucket: s3.IBucket;
     featureFlagsTable: dynamodb.Table;
     openSearchEndpoint: string;
@@ -784,6 +783,7 @@ export class LambdasNestedStack extends NestedStack {
       vpc,
       envType,
       fhirToBundleLambda,
+      bundleBucket,
       featureFlagsTable,
       openSearchEndpoint,
       openSearchAuth,
@@ -836,6 +836,8 @@ export class LambdasNestedStack extends NestedStack {
         SEARCH_ENDPOINT: openSearchEndpoint,
         SEARCH_USERNAME: openSearchAuth.userName,
         SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
+        // TODO eng-268 temporary while we don't choose one approach - not used by the "fhir" approach
+        FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
         // TODO eng-268 temporary while we don't choose one approach - REMOVE THE ONE NOT BEING USED
         SEARCH_INDEX: openSearchDocumentsIndexName,
         CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
@@ -850,6 +852,7 @@ export class LambdasNestedStack extends NestedStack {
 
     theLambda.addEventSource(new SqsEventSource(theQuue, settings.eventSource));
 
+    bundleBucket.grantReadWrite(theLambda);
     fhirToBundleLambda.grantInvoke(theLambda);
     openSearchAuth.secret.grantRead(theLambda);
     featureFlagsTable.grantReadData(theLambda);

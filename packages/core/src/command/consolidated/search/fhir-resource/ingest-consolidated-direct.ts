@@ -21,12 +21,12 @@ export class IngestConsolidatedDirect implements IngestConsolidated {
     cxId,
     patientId,
   }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
-    const { log } = out(`cx ${cxId}`);
+    const { log } = out(`cx ${cxId}, pt ${patientId}`);
 
     const patientLoader = new PatientLoaderMetriportAPI(this.apiUrl);
     const patient = await patientLoader.getOneOrFail({ cxId, id: patientId });
 
-    log(`Retrieved patient ${patientId}, indexing its consolidated data...`);
+    log(`Retrieved patient, indexing its consolidated data...`);
     // TODO eng-268 temporary while we don't choose one approach - REMOVE THE ONE NOT BEING USED
     await Promise.all([ingestLexical({ patient }), ingestLexicalFhir({ patient })]);
 
