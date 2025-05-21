@@ -140,18 +140,18 @@ function surescriptsEnvironmentVariablesAndSecrets({
     nestedStack,
     surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD
   );
-  envVars.SURESCRIPTS_SFTP_SENDER_PASSWORD = senderPasswordSecret.secretArn;
+  envVars.SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN = senderPasswordSecret.secretArn;
   secrets.push(senderPasswordSecret);
 
   const publicKeySecret = buildSecret(nestedStack, surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY);
-  envVars.SURESCRIPTS_SFTP_PUBLIC_KEY = publicKeySecret.secretArn;
+  envVars.SURESCRIPTS_SFTP_PUBLIC_KEY_ARN = publicKeySecret.secretArn;
   secrets.push(publicKeySecret);
 
   const privateKeySecret = buildSecret(
     nestedStack,
     surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY
   );
-  envVars.SURESCRIPTS_SFTP_PRIVATE_KEY = privateKeySecret.secretArn;
+  envVars.SURESCRIPTS_SFTP_PRIVATE_KEY_ARN = privateKeySecret.secretArn;
   secrets.push(privateKeySecret);
 
   return { envVars, secrets };
