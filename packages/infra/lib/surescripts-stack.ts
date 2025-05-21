@@ -15,8 +15,8 @@ import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
 const synchronizeSftpTimeout = Duration.minutes(15);
-const sendPatientRequestLambdaTimeout = Duration.minutes(12);
-const receiveVerificationLambdaTimeout = Duration.minutes(5);
+const sendPatientRequestLambdaTimeout = Duration.minutes(5);
+const receiveVerificationLambdaTimeout = Duration.minutes(1);
 const receiveFlatFileResponseLambdaTimeout = Duration.minutes(15);
 
 interface SurescriptsSettings {
@@ -140,18 +140,18 @@ function surescriptsEnvironmentVariablesAndSecrets({
     nestedStack,
     surescripts.secrets.SURESCRIPTS_SFTP_SENDER_PASSWORD
   );
-  envVars.SURESCRIPTS_SFTP_SENDER_PASSWORD_ARN = senderPasswordSecret.secretArn;
+  envVars.SURESCRIPTS_SFTP_SENDER_PASSWORD_NAME = senderPasswordSecret.secretName;
   secrets.push(senderPasswordSecret);
 
   const publicKeySecret = buildSecret(nestedStack, surescripts.secrets.SURESCRIPTS_SFTP_PUBLIC_KEY);
-  envVars.SURESCRIPTS_SFTP_PUBLIC_KEY_ARN = publicKeySecret.secretArn;
+  envVars.SURESCRIPTS_SFTP_PUBLIC_KEY_NAME = publicKeySecret.secretName;
   secrets.push(publicKeySecret);
 
   const privateKeySecret = buildSecret(
     nestedStack,
     surescripts.secrets.SURESCRIPTS_SFTP_PRIVATE_KEY
   );
-  envVars.SURESCRIPTS_SFTP_PRIVATE_KEY_ARN = privateKeySecret.secretArn;
+  envVars.SURESCRIPTS_SFTP_PRIVATE_KEY_NAME = privateKeySecret.secretName;
   secrets.push(privateKeySecret);
 
   return { envVars, secrets };
