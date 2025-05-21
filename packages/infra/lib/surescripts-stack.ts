@@ -14,11 +14,11 @@ import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const synchronizeSftpTimeout = Duration.minutes(15);
+const synchronizeSftpTimeout = Duration.minutes(5);
 const synchronizeSftpWaitTime = Duration.seconds(1);
-const sendPatientRequestLambdaTimeout = Duration.minutes(5);
-const receiveVerificationLambdaTimeout = Duration.minutes(1);
-const receiveFlatFileResponseLambdaTimeout = Duration.minutes(15);
+const sendPatientRequestLambdaTimeout = Duration.seconds(30);
+const receiveVerificationLambdaTimeout = Duration.seconds(30);
+const receiveFlatFileResponseLambdaTimeout = Duration.seconds(30);
 
 interface SurescriptsSettings {
   synchronizeSftp: QueueAndLambdaSettings;
