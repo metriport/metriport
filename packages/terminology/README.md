@@ -59,18 +59,17 @@ npm run seed-crosswalk <path-to-metathesaurus-zip>
 
 Once that's done, you'll have everything besides NDC and its crosswalk to RxNorm.
 
-To get those, you'll need to get the NLM's [RxNorm package](https://www.nlm.nih.gov/research/umls/rxnorm/docs/rxnormfiles.html).
-Once you have it, run this command:
-
-```bash
-npm run seed-ndc-lookup <path-to-rxnorm-zip>
-```
-
-This package, however, does not provide display names for NDC codes. Instead, it gets the RxNorm descriptions from the crosswalks.
-If you want your NDC descriptions to include packaging data, you'll need to download the FDA's NDC database files - Excel version from [this page](https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory), convert them to CSV, and run this command:
+To seed the NDC codes with descriptions (including packaging data), you'll need to download the FDA's NDC database files - Excel version from [this page](https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory), convert them to CSV, and run this command:
 
 ```bash
 npm run seed-fda-descriptions <path-to-products-file.csv> <path-to-packages-file.csv>
+```
+
+Lastly, let's seed the NDC crosswalks from RxNorm.
+To do that, download the NLM's [RxNorm package](https://www.nlm.nih.gov/research/umls/rxnorm/docs/rxnormfiles.html) and run this command:
+
+```bash
+npm run seed-ndc-lookup <path-to-rxnorm-zip>
 ```
 
 ### Running the Server
