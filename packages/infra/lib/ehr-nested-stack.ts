@@ -164,6 +164,7 @@ interface EhrNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
+  ehrResponsesBucket: s3.Bucket | undefined;
   medicalDocumentsBucket: s3.Bucket;
 }
 
@@ -192,6 +193,7 @@ export class EhrNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      ehrResponsesBucket: props.ehrResponsesBucket,
     });
 
     const ehrBundleBucket = new s3.Bucket(this, "EhrBundleBucket", {
@@ -269,8 +271,9 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    ehrResponsesBucket: s3.Bucket | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, ehrResponsesBucket } = ownProps;
     const { name, entry, lambda: lambdaSettings } = settings().getAppointments;
 
     const lambda = createLambda({
@@ -282,11 +285,14 @@ export class EhrNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(ehrResponsesBucket ? { EHR_RESPONSES_BUCKET_NAME: ehrResponsesBucket.bucketName } : {}),
       },
       layers: [lambdaLayers.shared],
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    if (ehrResponsesBucket) ehrResponsesBucket.grantWrite(lambda);
 
     return lambda;
   }

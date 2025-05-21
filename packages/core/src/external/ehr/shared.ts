@@ -19,7 +19,6 @@ import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
 import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
-import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
@@ -211,14 +210,16 @@ export async function makeRequest<T>({
         });
         const key = buildS3Path(ehr, s3Path, `${filePath}/error`);
         const s3Utils = getS3UtilsInstance();
-        s3Utils
-          .uploadFile({
+        try {
+          await s3Utils.uploadFile({
             bucket: responsesBucket,
             key,
             file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
             contentType: "application/json",
-          })
-          .catch(processAsyncError(`Error saving error to s3 @ ${ehr} - ${method} ${url}`));
+          });
+        } catch (e) {
+          log(`Error saving error to s3 @ ${ehr} - ${method} ${url}`, () => JSON.stringify(e));
+        }
       }
       const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
       switch (error.response?.status) {
@@ -256,14 +257,16 @@ export async function makeRequest<T>({
     });
     const key = buildS3Path(ehr, s3Path, `${filePath}/response`);
     const s3Utils = getS3UtilsInstance();
-    s3Utils
-      .uploadFile({
+    try {
+      await s3Utils.uploadFile({
         bucket: responsesBucket,
         key,
         file: Buffer.from(JSON.stringify(response.data), "utf8"),
         contentType: "application/json",
-      })
-      .catch(processAsyncError(`Error saving to s3 @ ${ehr} - ${method} ${url}`));
+      });
+    } catch (e) {
+      log(`Error saving response to s3 @ ${ehr} - ${method} ${url}`, () => JSON.stringify(e));
+    }
   }
   const outcome = schema.safeParse(body);
   if (!outcome.success) {
