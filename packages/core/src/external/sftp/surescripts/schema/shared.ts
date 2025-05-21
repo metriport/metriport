@@ -49,6 +49,86 @@ export function dateToTimeString(date: Date, includeCentisecond = false) {
   }
 }
 
+export function fromSurescriptsEnum<T extends string>(enumerated: T[]) {
+  return function (value: string): T {
+    if (enumerated.includes(value as T)) {
+      return value as T;
+    } else {
+      throw new Error(`Invalid value: ${value}`);
+    }
+  };
+}
+
+export function toSurescriptsEnum<T extends object>(
+  key: keyof T,
+  enumerated: string[],
+  { optional = false }: { optional?: boolean } = {}
+) {
+  return function (sourceObject: T): string {
+    const value = sourceObject[key];
+    if (typeof value === "string" && enumerated.includes(value)) {
+      return value;
+    } else if (optional && value == null) {
+      return "";
+    } else {
+      throw new Error(`Invalid value: ${value}`);
+    }
+  };
+}
+
+export function toSurescriptsString<T extends object>(
+  key: keyof T,
+  { optional = false }: { optional?: boolean } = {}
+) {
+  return function (sourceObject: T): string {
+    const value = sourceObject[key];
+    if (typeof value === "string") {
+      return value.replace(/\|/g, "\\F\\");
+    } else if (optional && value == null) {
+      return "";
+    } else {
+      throw new Error(`Invalid value: ${value}`);
+    }
+  };
+}
+export function fromSurescriptsString() {
+  return function (value: string): string {
+    return value.replace(/\\F\\/g, "|");
+  };
+}
+
+export function toSurescriptsDate<T extends object>(
+  key: keyof T,
+  { optional = false }: { optional?: boolean } = {}
+) {
+  return function (sourceObject: T): string {
+    const value = sourceObject[key];
+    if (value instanceof Date) {
+      return dateToString(value);
+    } else if (optional && value == null) {
+      return "";
+    } else {
+      throw new Error(`Invalid value: ${value}`);
+    }
+  };
+}
+
+export function toSurescriptsTime<T extends object>(
+  key: keyof T,
+  { centisecond = false, optional = false }: { centisecond?: boolean; optional?: boolean } = {}
+) {
+  return function (sourceObject: T): string {
+    const value = sourceObject[key];
+    if (value instanceof Date) {
+      return dateToTimeString(value, centisecond);
+    } else if (optional && value == null) {
+      return "";
+    } else {
+      throw new Error(`Invalid value: ${value}`);
+    }
+  };
+}
+
 export function fromSurescriptsInteger(value: string): number | undefined {
   if (value.trim() === "") return undefined;
 
@@ -60,6 +140,18 @@ export function fromSurescriptsInteger(value: string): number | undefined {
   }
 }
 
-export function toSurescriptsInteger(value: number) {
-  return value.toFixed(0);
+export function toSurescriptsInteger<T extends object>(
+  key: keyof T,
+  { optional = false }: { optional?: boolean } = {}
+) {
+  return function (sourceObject: T): string {
+    const value = sourceObject[key];
+    if (typeof value === "number" && isFinite(value)) {
+      return value.toFixed(0);
+    } else if (optional && value == null) {
+      return "";
+    } else {
+      throw new Error(`Invalid value: ${value}`);
+    }
+  };
 }

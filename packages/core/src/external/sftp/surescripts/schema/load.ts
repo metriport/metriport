@@ -1,5 +1,13 @@
 import { z } from "zod";
-import { FileFieldSchema, dateToString, dateToTimeString } from "./shared";
+import {
+  FileFieldSchema,
+  dateToString,
+  toSurescriptsInteger,
+  toSurescriptsEnum,
+  toSurescriptsString,
+  toSurescriptsDate,
+  toSurescriptsTime,
+} from "./shared";
 
 // PATIENT FILE LOAD
 // These are schemas for the first row (header) and subsequent rows (details) of a patient load operation.
@@ -32,66 +40,75 @@ export const patientLoadHeaderOrder: FileFieldSchema<PatientLoadHeader> = [
   {
     field: 0,
     key: "recordType",
+    toSurescripts: toSurescriptsEnum("recordType", ["HDR"]),
   },
   {
     field: 1,
     key: "version",
+    toSurescripts: toSurescriptsEnum("version", ["2.0", "3.0"]),
   },
   {
     field: 2,
     key: "senderId",
+    toSurescripts: toSurescriptsString("senderId"),
   },
   {
     field: 3,
     key: "senderPassword",
+    toSurescripts: toSurescriptsString("senderPassword"),
   },
   {
     field: 4,
     key: "receiverId",
+    toSurescripts: toSurescriptsString("receiverId"),
   },
   {
     field: 5,
     key: "transmissionId",
+    toSurescripts: toSurescriptsString("transmissionId"),
   },
   {
     field: 6,
-    toSurescripts({ transmissionDate }: PatientLoadHeader) {
-      return dateToString(transmissionDate);
-    },
+    toSurescripts: toSurescriptsDate("transmissionDate"),
   },
   {
     field: 7,
-    toSurescripts({ transmissionDate }: PatientLoadHeader) {
-      return dateToTimeString(transmissionDate, true);
-    },
+    toSurescripts: toSurescriptsTime("transmissionDate", { centisecond: true }),
   },
   {
     field: 8,
     key: "transmissionFileType",
+    toSurescripts: toSurescriptsEnum("transmissionFileType", ["PAT", "PNM", "PMA"]),
   },
   {
     field: 9,
     key: "transmissionAction",
+    toSurescripts: toSurescriptsEnum("transmissionAction", ["U"], { optional: true }),
   },
   {
     field: 10,
     key: "extractDate",
+    toSurescripts: toSurescriptsDate("extractDate", { optional: true }),
   },
   {
     field: 11,
     key: "usage",
+    toSurescripts: toSurescriptsEnum("usage", ["test", "production"]),
   },
   {
     field: 12,
     key: "patientPopulationId",
+    toSurescripts: toSurescriptsString("patientPopulationId"),
   },
   {
     field: 13,
     key: "fileSchedule",
+    toSurescripts: toSurescriptsEnum("fileSchedule", ["ADHOC"]),
   },
   {
     field: 14,
     key: "lookBackInMonths",
+    toSurescripts: toSurescriptsInteger("lookBackInMonths", { optional: true }),
   },
 ];
 
