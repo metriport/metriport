@@ -87,9 +87,9 @@ export function formatCodeableConcepts({
   isDebug?: boolean | undefined;
 }): string | undefined {
   if (!concepts?.length) return undefined;
-  const formattedConcepts = concepts.map(concept =>
-    formatCodeableConcept({ concept, skipInternalCodes, isDebug })
-  );
+  const formattedConcepts = concepts
+    .map(concept => formatCodeableConcept({ concept, skipInternalCodes, isDebug }))
+    .filter(Boolean);
   if (formattedConcepts.length < 1) return undefined;
   const converted = formattedConcepts.join(FIELD_SEPARATOR);
   return isDebug ? `${label}: ${converted}` : converted;

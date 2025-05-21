@@ -1,6 +1,6 @@
 import { ContactPoint } from "@medplum/fhirtypes";
-import { FIELD_SEPARATOR } from "./separator";
 import { defaultIsDebug } from "./debug";
+import { FIELD_SEPARATOR } from "./separator";
 
 /**
  * Formats a FHIR telecom into a string representation
@@ -19,9 +19,7 @@ export function formatTelecoms({
   isDebug?: boolean | undefined;
 }): string | undefined {
   if (!telecoms?.length) return undefined;
-  const formattedTelecoms = telecoms
-    .map(telecom => formatTelecom({ telecom, isDebug }))
-    .filter(Boolean);
+  const formattedTelecoms = telecoms.flatMap(telecom => formatTelecom({ telecom, isDebug }) ?? []);
   if (formattedTelecoms.length < 1) return undefined;
 
   const formatted = formattedTelecoms.join(FIELD_SEPARATOR);

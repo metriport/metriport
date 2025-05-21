@@ -1,6 +1,6 @@
 import { Reference } from "@medplum/fhirtypes";
-import { FIELD_SEPARATOR } from "./separator";
 import { defaultIsDebug } from "./debug";
+import { FIELD_SEPARATOR } from "./separator";
 
 /**
  * Formats a FHIR reference into a string representation
@@ -14,11 +14,11 @@ export function formatReferences({
   label?: string;
   isDebug?: boolean | undefined;
 }): string | undefined {
-  if (!references?.length) return "";
+  if (!references?.length) return undefined;
 
-  const formattedRefs = references
-    .map(reference => formatReference({ reference, isDebug }))
-    .filter(Boolean);
+  const formattedRefs = references.flatMap(
+    reference => formatReference({ reference, isDebug }) ?? []
+  );
   if (formattedRefs.length < 1) return undefined;
 
   const formatted = formattedRefs.join(FIELD_SEPARATOR);

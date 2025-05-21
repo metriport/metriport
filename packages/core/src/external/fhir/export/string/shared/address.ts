@@ -1,6 +1,6 @@
 import { Address } from "@medplum/fhirtypes";
-import { FIELD_SEPARATOR } from "./separator";
 import { defaultIsDebug } from "./debug";
+import { FIELD_SEPARATOR } from "./separator";
 /**
  * Formats a FHIR address into a string representation
  * @param addresses - List of FHIR addresses to format
@@ -18,9 +18,9 @@ export function formatAddresses({
   isDebug?: boolean | undefined;
 }): string | undefined {
   if (!addresses?.length) return undefined;
-  const formattedAddresses = addresses
-    .map(address => formatAddress({ address, isDebug }))
-    .filter(Boolean);
+  const formattedAddresses = addresses.flatMap(
+    address => formatAddress({ address, isDebug }) ?? []
+  );
   if (formattedAddresses.length < 1) return undefined;
   const formatted = formattedAddresses.join(FIELD_SEPARATOR);
   return isDebug && label ? `${label}: ${formatted}` : formatted;

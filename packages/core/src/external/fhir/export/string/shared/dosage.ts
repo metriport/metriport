@@ -2,6 +2,7 @@ import { Dosage, DosageDoseAndRate } from "@medplum/fhirtypes";
 import { formatCodeableConcept } from "./codeable-concept";
 import { defaultIsDebug } from "./debug";
 import { formatQuantity } from "./quantity";
+import { formatRange } from "./range";
 import { FIELD_SEPARATOR } from "./separator";
 
 export function formatDosages({
@@ -36,9 +37,9 @@ export function formatDosage({
     .filter(Boolean);
   const components = [
     text && isDebug ? `Text: ${text}` : text,
-    timing && isDebug ? `Timing: ${timing}` : timing,
-    route && formatCodeableConcept({ concept: route, label: "Route", isDebug }),
-    method && formatCodeableConcept({ concept: method, label: "Method", isDebug }),
+    formatCodeableConcept({ concept: timing, label: "Timing", isDebug }),
+    formatCodeableConcept({ concept: route, label: "Route", isDebug }),
+    formatCodeableConcept({ concept: method, label: "Method", isDebug }),
     doseAndRateStr && doseAndRateStr.join(FIELD_SEPARATOR),
   ].filter(Boolean);
   if (components.length < 1) return undefined;
@@ -57,11 +58,11 @@ export function formatDosageDoseAndRate({
   const { type, doseRange, doseQuantity, rateRatio, rateRange, rateQuantity } = dosageAndRate;
   const drComponents = [
     formatCodeableConcept({ concept: type, label: "Type", isDebug }),
-    doseRange && isDebug ? `Dose Range: ${doseRange}` : doseRange,
-    doseQuantity && formatQuantity({ quantity: doseQuantity, label: "Dose", isDebug }),
-    rateRatio && isDebug ? `Rate Ratio: ${rateRatio}` : rateRatio,
-    rateRange && isDebug ? `Rate Range: ${rateRange}` : rateRange,
-    rateQuantity && formatQuantity({ quantity: rateQuantity, label: "Rate", isDebug }),
+    formatRange({ range: doseRange, label: "Dose Range", isDebug }),
+    formatQuantity({ quantity: doseQuantity, label: "Dose", isDebug }),
+    formatRange({ range: rateRatio, label: "Rate Ratio", isDebug }),
+    formatRange({ range: rateRange, label: "Rate Range", isDebug }),
+    formatQuantity({ quantity: rateQuantity, label: "Rate", isDebug }),
   ].filter(Boolean);
   if (drComponents.length < 1) return undefined;
   const formattedDosage = drComponents.join(FIELD_SEPARATOR);

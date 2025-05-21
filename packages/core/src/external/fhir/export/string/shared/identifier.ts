@@ -9,9 +9,10 @@ export function formatIdentifiers({
   identifiers: Identifier[] | undefined;
   systemsToInclude?: string[] | undefined;
 }): string | undefined {
-  const formatted = identifiers
-    ?.map(identifier => formatIdentifier({ identifier, systemsToInclude }))
-    .filter(Boolean);
+  if (!identifiers) return undefined;
+  const formatted = identifiers.flatMap(
+    identifier => formatIdentifier({ identifier, systemsToInclude }) ?? []
+  );
   const deduped = uniq(formatted);
   if (!deduped || deduped.length < 1) return undefined;
   return deduped.join(FIELD_SEPARATOR);
