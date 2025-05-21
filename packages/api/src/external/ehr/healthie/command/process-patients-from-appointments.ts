@@ -216,7 +216,6 @@ async function getAppointmentsFromApi({
     environment,
     cxId,
     practiceId,
-    lookupMode,
   };
   if (lookupMode === LookupModes.Appointments) {
     const { startRange, endRange } = getLookForwardTimeRange({

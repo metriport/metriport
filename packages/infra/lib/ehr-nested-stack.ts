@@ -199,6 +199,20 @@ export class EhrNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
+    const ehrBundleBucket = new s3.Bucket(this, "EhrBundleBucket", {
+      bucketName: props.config.ehrBundleBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedMethods: [s3.HttpMethods.GET],
+        },
+      ],
+    });
+    this.ehrBundleBucket = ehrBundleBucket;
+
     this.getAppointmentsLambda = this.setupGetAppointmentslambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -215,21 +229,8 @@ export class EhrNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       ehrResponsesBucket: props.ehrResponsesBucket,
+      ehrBundleBucket: this.ehrBundleBucket,
     });
-
-    const ehrBundleBucket = new s3.Bucket(this, "EhrBundleBucket", {
-      bucketName: props.config.ehrBundleBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.GET],
-        },
-      ],
-    });
-    this.ehrBundleBucket = ehrBundleBucket;
 
     const syncPatient = this.setupSyncPatient({
       lambdaLayers: props.lambdaLayers,
@@ -325,8 +326,17 @@ export class EhrNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     ehrResponsesBucket: s3.Bucket | undefined;
+    ehrBundleBucket: s3.Bucket;
   }): Lambda {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, ehrResponsesBucket } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      sentryDsn,
+      alarmAction,
+      ehrResponsesBucket,
+      ehrBundleBucket,
+    } = ownProps;
     const { name, entry, lambda: lambdaSettings } = settings().getBundleByResourceType;
 
     const lambda = createLambda({
@@ -337,8 +347,9 @@ export class EhrNestedStack extends NestedStack {
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         ...(ehrResponsesBucket ? { EHR_RESPONSES_BUCKET_NAME: ehrResponsesBucket.bucketName } : {}),
+        EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
       vpc,
@@ -346,6 +357,7 @@ export class EhrNestedStack extends NestedStack {
     });
 
     if (ehrResponsesBucket) ehrResponsesBucket.grantWrite(lambda);
+    ehrBundleBucket.grantReadWrite(lambda);
 
     return lambda;
   }
