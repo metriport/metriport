@@ -3,6 +3,8 @@ export type FileFieldSchema<T extends object> = {
   [K in keyof T]: FileField<T, K>;
 }[keyof T][];
 
+export type FileRowValidator<T extends object> = (row: object) => row is T;
+
 // Describes a single field for a row in a generated file.
 export interface FileField<T extends object, K extends keyof T = keyof T> {
   field: number;
@@ -33,4 +35,19 @@ export function dateToTimeString(date: Date, includeCentisecond = false) {
   } else {
     return [hour, minute, second].join("");
   }
+}
+
+export function fromSurescriptsInteger(value: string): number | undefined {
+  if (value.trim() === "") return undefined;
+
+  const parsed = parseInt(value, 10);
+  if (Number.isFinite(parsed)) {
+    return parsed;
+  } else {
+    return undefined;
+  }
+}
+
+export function toSurescriptsInteger(value: number) {
+  return value.toFixed(0);
 }
