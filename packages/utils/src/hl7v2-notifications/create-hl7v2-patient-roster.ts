@@ -4,28 +4,43 @@ dotenv.config();
 import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-roster-generator";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { config } from "../../../infra/config/staging";
 
 const isLocal = true;
-const configs = getEnvVarOrFail("HIE_CONFIGS"); // You can get this from the config files in metriport-internal repo
+const hieName = "";
 
 /**
- * This script is used to trigger the generation and upload of the HL7v2 subscription roster to the S3 bucket.
+ * Triggers generation and upload of HL7v2 subscription roster to S3.
+ *
+ * Required env vars:
+ *
+ * >> local only
+ * - API_URL: Base URL of the API
+ * - HL7V2_ROSTER_BUCKET_NAME: S3 bucket for roster files
+ *
+ * >> remote only
+ * - AWS_REGION: AWS region for Lambda
+ * - HL7V2_ROSTER_UPLOAD_LAMBDA_NAME: Name of Lambda function
  *
  * Usage:
- * - Set the `isLocal` to specify if you want a local test or a remote Lambda invocation
- * - Set the required env vars
- * - Run the script with this command from /packages/utils: `ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
+ * 1. Set `isLocal` flag for local vs Lambda execution
+ * 2. Set `hieName` to point to a key in the HIE config
+ * 3. Run: `ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
  */
 async function main() {
   try {
-    const config = JSON.parse(configs);
     const startedAt = Date.now();
 
     if (isLocal) {
       const apiUrl = getEnvVarOrFail("API_URL");
       const bucketName = getEnvVarOrFail("HL7V2_ROSTER_BUCKET_NAME");
 
-      await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(config);
+      const hieConfig = config.hl7Notification?.hieConfigs?.[hieName];
+      if (!hieConfig) {
+        throw new Error("Config not found - try again");
+      }
+
+      await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(hieConfig);
     } else {
       const region = getEnvVarOrFail("AWS_REGION");
       const lambdaName = getEnvVarOrFail("HL7V2_ROSTER_UPLOAD_LAMBDA_NAME");
