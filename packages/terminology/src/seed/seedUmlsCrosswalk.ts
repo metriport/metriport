@@ -5,7 +5,7 @@ import { createInterface } from "node:readline";
 import { Readable, Transform, TransformCallback } from "node:stream";
 import * as unzip from "unzip-stream";
 import { TerminologyClient } from "../client";
-import { lookupDisplay } from "./shared";
+import { createLookupParameters, lookupDisplay } from "./shared";
 
 const IFA_RULE_REGEX = /^IFA \d+ &#x7C;/;
 

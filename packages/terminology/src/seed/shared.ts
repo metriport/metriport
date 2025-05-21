@@ -31,7 +31,7 @@ export async function lookupDisplay(
   }
 }
 
-function createLookupParameters(system: string, code: string): Parameters {
+export function createLookupParameters(system: string, code: string): Parameters {
   return {
     resourceType: "Parameters",
     parameter: [

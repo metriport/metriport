@@ -33,6 +33,7 @@
     "@metriport/shared": "^0.13.0",
     "aws-sdk": "^2.1243.0",
     "axios": "^1.8.2",
+    "csv-parser": "^3.2.0",
     "dayjs": "^1.11.9",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
