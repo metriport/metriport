@@ -45,11 +45,16 @@ export async function searchLexicalFhir({
           patientId: patient.id,
           query,
         }),
-      "searchLexicalFhir",
+      "searchFhirResources",
       log
     ),
     timed(
-      () => searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query }),
+      () =>
+        searchDocuments({
+          cxId: patient.cxId,
+          patientId: patient.id,
+          contentFilter: query,
+        }),
       "searchDocuments",
       log
     ),
@@ -99,19 +104,19 @@ export async function searchLexicalFhir({
 }
 
 async function searchFhirResources({
-  query,
   cxId,
   patientId,
+  query,
 }: {
-  query: string;
   cxId: string;
   patientId: string;
+  query: string;
 }): Promise<FhirSearchResult[]> {
   const searchService = new OpenSearchFhirSearcher(getConfigs());
   return await searchService.search({
-    query,
     cxId,
     patientId,
+    query,
   });
 }
 

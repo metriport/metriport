@@ -1,4 +1,5 @@
 import { contentFieldName } from "../index";
+import { cleanupQuery } from "../query";
 import { getPatientFilters } from "../shared/filters";
 
 export type LexicalSearchParams = {
@@ -12,7 +13,7 @@ export type LexicalSearchParams = {
  */
 export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSearchParams) {
   const isMatchQuery = query.startsWith("$");
-  const actualQuery = query.replace(new RegExp(`^\\$\\s*`, "g"), "").trim();
+  const actualQuery = cleanupQuery(query);
   if (isMatchQuery) {
     return {
       _source: {

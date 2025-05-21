@@ -32,16 +32,21 @@ export async function searchLexical({
     timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
     timed(
       () =>
-        searchOpenSearch({
+        searchOpenSearchLexical({
           cxId: patient.cxId,
           patientId: patient.id,
           query,
         }),
-      "searchLexical",
+      "searchOpenSearchLexical",
       log
     ),
     timed(
-      () => searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query }),
+      () =>
+        searchDocuments({
+          cxId: patient.cxId,
+          patientId: patient.id,
+          contentFilter: query,
+        }),
       "searchDocuments",
       log
     ),
@@ -98,7 +103,7 @@ function isInDocRefResults(
   return docRefResults.some(r => r.id === resourceId);
 }
 
-async function searchOpenSearch({
+async function searchOpenSearchLexical({
   query,
   cxId,
   patientId,

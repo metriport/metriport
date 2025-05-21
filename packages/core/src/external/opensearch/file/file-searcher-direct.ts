@@ -1,8 +1,9 @@
 import { Client } from "@opensearch-project/opensearch";
 import { contentFieldName, OpenSearchConfigDirectAccess, OpenSearchResponse } from "..";
 import { out } from "../../../util";
-import { OpenSearchFileSearcher, SearchRequest } from "./file-searcher";
 import { SearchResult } from "../index-based-on-file";
+import { cleanupQuery } from "../query";
+import { OpenSearchFileSearcher, SearchRequest } from "./file-searcher";
 
 export type OpenSearchFileSearcherDirectConfig = OpenSearchConfigDirectAccess;
 
@@ -23,8 +24,9 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
         bool: {
           must: [
             {
-              query_string: {
-                query,
+              // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
+              simple_query_string: {
+                query: cleanupQuery(query),
                 fields: ["content"],
                 analyze_wildcard: true,
               },
