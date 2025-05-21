@@ -42,6 +42,7 @@ import * as documentUploader from "./api-stack/document-upload";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { EhrNestedStack } from "./ehr-nested-stack";
+import { SurescriptsNestedStack } from "./surescripts-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
@@ -57,7 +58,7 @@ import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
-import { SurescriptsNestedStack } from "./surescripts-stack";
+
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
@@ -464,7 +465,6 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Rate Limiting
     //-------------------------------------------
-
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
       config: props.config,
       alarmAction: slackNotification?.alarmAction,
