@@ -30,12 +30,16 @@ export class TerminologyClient {
     return response.data;
   }
 
-  async importCode(parameters: Parameters): Promise<OperationOutcome[]> {
-    const response = await axios.post(`${this.baseUrl}/code-system/import`, parameters, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  async importCode(parameters: Parameters, isOverwrite = false): Promise<OperationOutcome[]> {
+    const response = await axios.post(
+      `${this.baseUrl}/code-system/import?isOverwrite=${isOverwrite}`,
+      parameters,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
     return response.data;
   }
 

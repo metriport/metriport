@@ -47,14 +47,17 @@ export type CodeSystemImportParameters = {
   property?: ImportedProperty[];
 };
 
-export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirResponse> {
+export async function codeSystemImportHandler(
+  req: FhirRequest,
+  isOverwrite: boolean
+): Promise<FhirResponse> {
   try {
     const params = parseInputParameters(operation, req);
     if (!params.system) {
       return [normalizeOperationOutcome(new Error("System is Required"))];
     }
     const codeSystem = await findCodeSystemResource(params.system);
-    await importCodeSystemSqlite(codeSystem, params.concept, params.property);
+    await importCodeSystemSqlite(codeSystem, params.concept, params.property, isOverwrite);
     return [allOk];
   } catch (err) {
     return [normalizeOperationOutcome(err)];
@@ -64,7 +67,8 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 export async function importCodeSystemSqlite(
   codeSystem: CodeSystem,
   concepts?: Coding[],
-  properties?: ImportedProperty[]
+  properties?: ImportedProperty[],
+  isOverwrite?: boolean
 ): Promise<void> {
   const db = getTermServerClient();
   if (concepts?.length) {
@@ -74,12 +78,15 @@ export async function importCodeSystemSqlite(
       display: c.display,
     }));
     const params = rows.flatMap(row => [row.system, row.code, row.display]);
-    const query = `
-      INSERT INTO coding (system, code, display)
+    const query = isOverwrite
+      ? `INSERT INTO coding (system, code, display)
       VALUES ${rows.map(() => "(?, ?, ?)").join(", ")}
       ON CONFLICT(system, code) DO UPDATE SET
-        display = excluded.display
-    `;
+        display = excluded.display`
+      : `INSERT INTO coding (system, code, display)
+        VALUES ${rows.map(() => "(?, ?, ?)").join(", ")}
+        ON CONFLICT(system, code) DO NOTHING
+      `;
     await db.run(query, params);
   }
 
