@@ -98,6 +98,56 @@ describe("codeable-concept", () => {
       const formatted = formatCodeableConcept({ concept });
       expect(formatted).toEqual(`${text}`);
     });
+
+    describe("text deduplication", () => {
+      it("should duplicate text when it exactly matches a coding display", () => {
+        const concept: CodeableConcept = {
+          text: "Some condition",
+          coding: [{ system: "http://example.org", code: "123", display: "Some condition" }],
+        };
+        const result = formatCodeableConcept({ concept, isDebug: true, label: "Condition" });
+        expect(result).toBe("Condition: 123 (Some condition)");
+      });
+
+      it("should duplicate text when it matches the whole coding output format", () => {
+        const concept: CodeableConcept = {
+          text: "123 (Some condition)",
+          coding: [{ system: "http://example.org", code: "123", display: "Some condition" }],
+        };
+        const result = formatCodeableConcept({ concept, isDebug: true, label: "Condition" });
+        expect(result).toBe("Condition: 123 (Some condition)");
+      });
+
+      it("should not include text when it is only a substring of coding display", () => {
+        const concept: CodeableConcept = {
+          text: "condition",
+          coding: [{ system: "http://example.org", code: "123", display: "Some condition type" }],
+        };
+        const result = formatCodeableConcept({ concept, isDebug: true, label: "Condition" });
+        expect(result).toBe("Condition: 123 (Some condition type)");
+      });
+
+      it("should include text when a coding display is a substring of the text", () => {
+        const concept: CodeableConcept = {
+          text: "Advanced cardiac condition",
+          coding: [{ system: "http://example.org", code: "123", display: "condition" }],
+        };
+        const result = formatCodeableConcept({ concept, isDebug: true, label: "Condition" });
+        expect(result).toBe("Condition: Advanced cardiac condition: 123 (condition)");
+      });
+
+      it("should handle multiple codings where text matches one display", () => {
+        const concept: CodeableConcept = {
+          text: "Primary condition",
+          coding: [
+            { system: "http://example.org/1", code: "123", display: "Primary condition" },
+            { system: "http://example.org/2", code: "456", display: "Secondary symptom" },
+          ],
+        };
+        const result = formatCodeableConcept({ concept, isDebug: true, label: "Condition" });
+        expect(result).toBe("Condition: 123 (Primary condition) / 456 (Secondary symptom)");
+      });
+    });
   });
 });
 
