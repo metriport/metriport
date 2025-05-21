@@ -27,9 +27,15 @@ type SearchSummaryOutput = {
   }[];
 };
 
-//--------------------------------
-// AI-based search summary generation
-//--------------------------------
+/**
+ * TODO: [ENG-331] This function is currently not being used in production.
+ * AI-based search summary generation that processes a FHIR bundle and generates a summary
+ * with citations based on the provided question.
+ *
+ * @param question - The search question to generate a summary for
+ * @param bundle - The FHIR bundle containing resources to analyze
+ * @returns SearchSummaryOutput
+ */
 export async function generateSearchSummary(
   question: string,
   bundle: Bundle<Resource>
