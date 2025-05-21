@@ -98,9 +98,14 @@ async function executeWithSshListeners<F extends (...args: unknown[]) => Promise
   client: SshSftpClient,
   fn: F
 ): Promise<T | void> {
+  let executionCompleted = false;
   let executionError: Error | undefined;
-  function errorHandler(error: Error) {
-    executionError = error;
+  function errorHandler(error?: Error) {
+    if (error != null && error instanceof Error) {
+      executionError = error;
+    } else if (!executionCompleted) {
+      executionError = new Error("Socket was closed before execution completed");
+    }
   }
   client.on("error", errorHandler);
   client.on("end", errorHandler);
@@ -109,6 +114,7 @@ async function executeWithSshListeners<F extends (...args: unknown[]) => Promise
   let result: T | undefined | void = undefined;
   try {
     result = await fn(client);
+    executionCompleted = true;
   } catch (error) {
     if (error instanceof Error) {
       executionError = error;
