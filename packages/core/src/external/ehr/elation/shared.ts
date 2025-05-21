@@ -13,7 +13,7 @@ export async function createElationHealthClient({
   environment: string;
   cxId: string;
   practiceId: string;
-  tokenId: string;
+  tokenId?: string;
 }) {
   if (!isElationEnv(environment)) {
     throw new BadRequestError("Invalid environment", undefined, {
@@ -21,7 +21,7 @@ export async function createElationHealthClient({
       environment,
     });
   }
-  const twoLeggedAuthTokenInfo = await getTokenInfo(tokenId);
+  const twoLeggedAuthTokenInfo = tokenId ? await getTokenInfo(tokenId) : undefined;
   return await ElationHealthApi.create({
     twoLeggedAuthTokenInfo,
     practiceId,

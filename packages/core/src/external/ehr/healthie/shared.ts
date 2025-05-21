@@ -4,7 +4,7 @@ import HealthieApi, { isHealthieEnv } from ".";
 import { getSecrets } from "../api/get-client-key-and-secret";
 import { GetSecretsApiKeyResult, getSecretsApiKeySchema } from "../shared";
 
-export async function createElationHealthClient({
+export async function createHealthieClient({
   environment,
   cxId,
   practiceId,

@@ -13,7 +13,7 @@ export async function createAthenaHealthClient({
   environment: string;
   cxId: string;
   practiceId: string;
-  tokenId: string;
+  tokenId?: string;
 }) {
   if (!isAthenaEnv(environment)) {
     throw new BadRequestError("Invalid environment", undefined, {
@@ -21,7 +21,7 @@ export async function createAthenaHealthClient({
       environment,
     });
   }
-  const twoLeggedAuthTokenInfo = await getTokenInfo(tokenId);
+  const twoLeggedAuthTokenInfo = tokenId ? await getTokenInfo(tokenId) : undefined;
   return await AthenaHealthApi.create({
     twoLeggedAuthTokenInfo,
     practiceId,

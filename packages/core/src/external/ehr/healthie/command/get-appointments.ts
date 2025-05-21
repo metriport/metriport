@@ -1,51 +1,31 @@
-import { BadRequestError } from "@metriport/shared";
-import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getSecrets } from "../../api/get-client-key-and-secret";
-import { getTokenInfo } from "../../api/get-token-info";
-import { GetAppointmentsClientRequest } from "../../lambdas/appointment/get-appointments/ehr-get-appointments";
-import { GetSecretsOauthResult, getSecretsOauthSchema } from "../../shared";
-import CanvasApi from "../index";
+import { BadRequestError, EhrSources } from "@metriport/shared";
+import { AppointmentAttendee } from "@metriport/shared/interface/external/ehr/healthie/appointment";
+import { GetAppointmentsClientRequest } from "../../lambdas/get-appointments/ehr-get-appointments";
+import { createHealthieClient } from "../shared";
 
 export async function getAppointments(
   params: GetAppointmentsClientRequest
-): Promise<SlimBookedAppointment[]> {
-  if (!params.fromDate) {
-    throw new BadRequestError("fromDate is required", undefined, {
-      ehr: EhrSources.canvas,
-      cxId: params.cxId,
-      practiceId: params.practiceId,
+): Promise<AppointmentAttendee[]> {
+  const { cxId, practiceId, fromDate, toDate, environment } = params;
+  if (!fromDate || !toDate) {
+    throw new BadRequestError("fromDate and toDate are required", undefined, {
+      method: "getAppointments",
+      ehr: EhrSources.healthie,
+      cxId,
+      practiceId,
+      fromDate: fromDate?.toISOString(),
+      toDate: toDate?.toISOString(),
     });
   }
-  if (!params.toDate) {
-    throw new BadRequestError("toDate is required", undefined, {
-      ehr: EhrSources.canvas,
-      cxId: params.cxId,
-      practiceId: params.practiceId,
-    });
-  }
-  const twoLeggedAuthTokenInfo = await getTokenInfo(params.tokenId);
-  const client = await CanvasApi.create({
-    twoLeggedAuthTokenInfo,
-    practiceId: params.practiceId,
-    environment: params.environment,
-    getSecrets: async () => {
-      const secrets = await getSecrets<GetSecretsOauthResult>({
-        ehr: EhrSources.canvas,
-        cxId: params.cxId,
-        practiceId: params.practiceId,
-        schema: getSecretsOauthSchema,
-      });
-      return {
-        clientKey: secrets.clientKey,
-        clientSecret: secrets.clientSecret,
-      };
-    },
+  const client = await createHealthieClient({
+    environment,
+    cxId,
+    practiceId,
   });
   const appointments = await client.getAppointments({
-    cxId: params.cxId,
-    fromDate: params.fromDate,
-    toDate: params.toDate,
+    cxId,
+    startAppointmentDate: fromDate,
+    endAppointmentDate: toDate,
   });
   return appointments;
 }

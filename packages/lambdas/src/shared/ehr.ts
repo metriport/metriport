@@ -1,4 +1,5 @@
-import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/appointment/get-appointments/ehr-get-appointments";
+import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments";
+import { GetBundleByResourceTypeMethods } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type";
 import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/elation/link-patient/elation-link-patient";
 import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/healthie/link-patient/healthie-link-patient";
 import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient";
@@ -98,4 +99,16 @@ export const ehrGetAppointmentsSchema = z.object({
   practiceId: z.string(),
   fromDate: z.coerce.date().optional(),
   toDate: z.coerce.date().optional(),
+});
+
+export const ehrGetBundleByResourceTypeSchema = z.object({
+  ehr: z.nativeEnum(EhrSources),
+  environment: z.string(),
+  method: z.nativeEnum(GetBundleByResourceTypeMethods),
+  tokenId: z.string().optional(),
+  cxId: z.string(),
+  practiceId: z.string(),
+  metriportPatientId: z.string(),
+  ehrPatientId: z.string(),
+  resourceType: z.string(),
 });

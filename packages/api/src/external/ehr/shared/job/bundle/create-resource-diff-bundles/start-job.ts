@@ -1,5 +1,5 @@
 import { getSupportedResourcesByEhr } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
+import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/jobs/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { completePatientJob } from "../../../../../../command/job/patient/complete";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
