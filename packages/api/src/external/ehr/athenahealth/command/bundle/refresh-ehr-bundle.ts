@@ -1,5 +1,8 @@
+import { GetBundleByResourceTypeMethods } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type";
+import { buildEhrGetBundleByResourceTypeHandler } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type-factory";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { RefreshEhrBundleParamsForClient } from "../../../shared/utils/bundle/types";
-import { createAthenaClient } from "../../shared";
+import { createAthenaClientWithTokenIdAndEnvironment } from "../../shared";
 
 export async function refreshEhrBundle({
   cxId,
@@ -8,11 +11,20 @@ export async function refreshEhrBundle({
   metriportPatientId,
   resourceType,
 }: RefreshEhrBundleParamsForClient): Promise<void> {
-  const api = await createAthenaClient({ cxId, practiceId });
-  await api.getBundleByResourceType({
+  const { tokenId, environment } = await createAthenaClientWithTokenIdAndEnvironment({
     cxId,
-    athenaPatientId: ehrPatientId,
+    practiceId,
+  });
+  const handler = buildEhrGetBundleByResourceTypeHandler();
+  await handler.getBundleByResourceType({
+    ehr: EhrSources.athena,
+    environment,
+    method: GetBundleByResourceTypeMethods.athenaGetBundleByResourceType,
+    tokenId,
+    cxId,
+    practiceId,
     metriportPatientId,
+    ehrPatientId,
     resourceType,
     useCachedBundle: false,
   });
