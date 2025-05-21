@@ -172,7 +172,7 @@ router.post(
 
     log(`Requesting ingestion of ${patientIds.length} patients (asynchronously)...`);
     for (const patientId of patientIds) {
-      await makeIngestConsolidated().ingest({ cxId, patientId });
+      await makeIngestConsolidated().ingestIntoSearchEngine({ cxId, patientId });
     }
     log(`Done`);
 

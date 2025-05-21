@@ -20,7 +20,10 @@ export class IngestConsolidatedSqs implements IngestConsolidated {
     private readonly sqsClient = new SQSClient({ region })
   ) {}
 
-  async ingest({ cxId, patientId }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
+  async ingestIntoSearchEngine({
+    cxId,
+    patientId,
+  }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
     const payload = JSON.stringify({ cxId, patientId });
     await this.sqsClient.sendMessageToQueue(this.queueUrl, payload);
     return true;

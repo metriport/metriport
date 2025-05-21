@@ -6,5 +6,5 @@ export type IngestConsolidatedParams = {
 export type IngestConsolidatedResult = boolean;
 
 export interface IngestConsolidated {
-  ingest(params: IngestConsolidatedParams): Promise<IngestConsolidatedResult>;
+  ingestIntoSearchEngine(params: IngestConsolidatedParams): Promise<IngestConsolidatedResult>;
 }

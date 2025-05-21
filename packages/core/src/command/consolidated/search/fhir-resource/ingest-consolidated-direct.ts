@@ -17,7 +17,10 @@ import { ingestLexicalFhir } from "./ingest-lexical-fhir";
 export class IngestConsolidatedDirect implements IngestConsolidated {
   constructor(private readonly apiUrl = Config.getApiUrl()) {}
 
-  async ingest({ cxId, patientId }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
+  async ingestIntoSearchEngine({
+    cxId,
+    patientId,
+  }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
     const { log } = out(`cx ${cxId}`);
 
     const patientLoader = new PatientLoaderMetriportAPI(this.apiUrl);

@@ -27,7 +27,7 @@ export const handler = capture.wrapHandler(
     process.env.SEARCH_PASSWORD = opensearchPassword;
 
     const ingester = new IngestConsolidatedDirect();
-    await ingester.ingest(params);
+    await ingester.ingestIntoSearchEngine(params);
 
     log(`Done.`);
   }
