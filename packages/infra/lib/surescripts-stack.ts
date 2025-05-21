@@ -451,6 +451,7 @@ export class SurescriptsNestedStack extends NestedStack {
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
     medicationBundleBucket.grantReadWrite(lambda);
     surescriptsReplicaBucket.grantReadWrite(lambda);
 

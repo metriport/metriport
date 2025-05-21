@@ -703,6 +703,15 @@ export class APIStack extends Stack {
       lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
     );
 
+    // Grant API invocation for Surescripts workflow steps
+    const lambdasToGrantInvoke = [
+      synchronizeSftpLambda,
+      receiveFlatFileResponseLambda,
+      receiveVerificationResponseLambda,
+      sendPatientRequestLambda,
+    ];
+    lambdasToGrantInvoke.forEach(lambda => lambda?.grantInvoke(apiService.taskDefinition.taskRole));
+
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
