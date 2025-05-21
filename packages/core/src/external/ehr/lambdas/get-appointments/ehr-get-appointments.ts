@@ -17,6 +17,7 @@ export type GetAppointmentsRequest = {
   tokenId?: string;
   cxId: string;
   practiceId: string;
+  departmentIds?: string[];
   fromDate?: Date;
   toDate?: Date;
 };

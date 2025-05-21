@@ -13,6 +13,7 @@ export type GetBundleByResourceTypeRequest = {
   metriportPatientId: string;
   ehrPatientId: string;
   resourceType: string;
+  useCachedBundle: boolean;
 };
 
 export interface EhrGetBundleByResourceTypeHandler {

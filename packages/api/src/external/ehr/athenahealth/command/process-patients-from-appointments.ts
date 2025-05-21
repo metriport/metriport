@@ -1,4 +1,6 @@
-import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
+import { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
+import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments";
+import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
@@ -23,7 +25,7 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { LookupMode, LookupModes, createAthenaClient } from "../shared";
+import { LookupMode, LookupModes, createAthenaClientWithTokenIdAndEnvironment } from "../shared";
 import { SyncAthenaPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
@@ -149,11 +151,16 @@ async function getAppointments({
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );
-  const api = await createAthenaClient({ cxId, practiceId });
+  const { tokenId, environment, client } = await createAthenaClientWithTokenIdAndEnvironment({
+    cxId,
+    practiceId,
+  });
   try {
     let appointments = await getAppointmentsFromApi({
-      api,
+      environment,
+      tokenId,
       cxId,
+      practiceId,
       departmentIds,
       lookupMode,
       log,
@@ -168,8 +175,8 @@ async function getAppointments({
         return {
           cxId,
           practiceId,
-          patientId: api.createPatientId(appointment.patientid),
-          departmentId: api.createDepartmentId(appointment.departmentid),
+          patientId: client.createPatientId(appointment.patientid),
+          departmentId: client.createDepartmentId(appointment.departmentid),
         };
       }),
     };
@@ -180,44 +187,59 @@ async function getAppointments({
   }
 }
 
-type GetAppointmentsFromApiParams = Omit<GetAppointmentsParams, "practiceId"> & {
-  api: AthenaHealthApi;
+type GetAppointmentsFromApiParams = GetAppointmentsParams & {
+  environment: AthenaEnv;
+  tokenId: string;
   log: typeof console.log;
 };
 
 async function getAppointmentsFromApi({
-  api,
+  environment,
+  tokenId,
   cxId,
+  practiceId,
   departmentIds,
   lookupMode,
   log,
 }: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
+  const handler = buildEhrGetAppointmentsHandler();
+  const handlerParams = {
+    ehr: EhrSources.athena,
+    environment,
+    tokenId,
+    cxId,
+    practiceId,
+    departmentIds,
+  };
   if (lookupMode === LookupModes.Appointments) {
     const { startRange, endRange } = getLookForwardTimeRange({
       lookForward: appointmentsLookForward,
     });
     log(`Getting appointments from ${startRange} to ${endRange}`);
-    return await api.getAppointments({
-      cxId,
-      departmentIds,
-      startAppointmentDate: startRange,
-      endAppointmentDate: endRange,
+    return await handler.getAppointments<BookedAppointment>({
+      ...handlerParams,
+      method: AppointmentMethods.athenaGetAppointments,
+      fromDate: startRange,
+      toDate: endRange,
     });
   }
   if (lookupMode === LookupModes.FromSubscription) {
     log(`Getting change events since last call`);
-    return await api.getAppointmentsFromSubscription({ cxId, departmentIds });
+    return await handler.getAppointments<BookedAppointment>({
+      ...handlerParams,
+      method: AppointmentMethods.athenaGetAppointmentFromSubscriptionEvents,
+    });
   }
   if (lookupMode === LookupModes.FromSubscriptionBackfill) {
     const { startRange, endRange } = getLookBackTimeRange({
       lookBack: subscriptionBackfillLookBack,
     });
     log(`Getting already-processed change events from ${startRange} to ${endRange}`);
-    return await api.getAppointmentsFromSubscription({
-      cxId,
-      departmentIds,
-      startProcessedDate: startRange,
-      endProcessedDate: endRange,
+    return await handler.getAppointments<BookedAppointment>({
+      ...handlerParams,
+      method: AppointmentMethods.athenaGetAppointmentFromSubscriptionEvents,
+      fromDate: startRange,
+      toDate: endRange,
     });
   }
   throw new MetriportError("Invalid lookup mode @ AthenaHealth", undefined, { cxId, lookupMode });

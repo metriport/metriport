@@ -5,8 +5,16 @@ import { createCanvasClient } from "../shared";
 export async function getBundleByResourceType(
   params: GetBundleByResourceTypeClientRequest
 ): Promise<Bundle> {
-  const { cxId, practiceId, resourceType, environment, tokenId, metriportPatientId, ehrPatientId } =
-    params;
+  const {
+    environment,
+    tokenId,
+    cxId,
+    practiceId,
+    metriportPatientId,
+    ehrPatientId,
+    resourceType,
+    useCachedBundle,
+  } = params;
   const client = await createCanvasClient({
     environment,
     cxId,
@@ -18,6 +26,7 @@ export async function getBundleByResourceType(
     metriportPatientId,
     canvasPatientId: ehrPatientId,
     resourceType,
+    useCachedBundle,
   });
   return bundle;
 }
