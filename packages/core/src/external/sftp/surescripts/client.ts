@@ -7,6 +7,8 @@ export interface SurescriptsSftpConfig extends Partial<SftpConfig> {
   senderPassword?: string;
   receiverId?: string;
   production?: boolean; // defaults to false
+  publicKey?: string;
+  privateKey?: string;
 }
 
 export enum TransmissionType {
@@ -36,21 +38,23 @@ export class SurescriptsSftpClient extends SftpClient {
       host: Config.getSurescriptsHost(),
       port: 22,
       username: Config.getSurescriptsSftpSenderId(),
-      password: Config.getSurescriptsSftpPublicKey(),
-      privateKey: Config.getSurescriptsSftpPrivateKey(),
+      password: config.publicKey ?? Config.getSurescriptsSftpPublicKey(),
+      privateKey: config.privateKey ?? Config.getSurescriptsSftpPrivateKey(),
     });
+
+    // 10 byte ID generator
     this.idGenerator = createIdGenerator(10);
 
     this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId();
-    this.senderPassword = config.senderPassword ?? Config.getSurescriptsSftpPublicKey();
+    this.senderPassword = config.senderPassword ?? Config.getSurescriptsSftpSenderPassword();
     this.usage = config.production ? "production" : "test";
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
-  createTransmission<T extends TransmissionType>(type: T, population: string): Transmission<T> {
+  createTransmission<T extends TransmissionType>(type: T, cxId: string): Transmission<T> {
     return {
       type,
-      population,
+      population: cxId,
       id: this.idGenerator().toString("ascii"),
       date: new Date(),
       compression: "gzip",
