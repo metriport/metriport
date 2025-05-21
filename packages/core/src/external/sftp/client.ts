@@ -96,7 +96,7 @@ export function createWritableBuffer() {
 
 async function executeWithSshListeners<F extends (...args: unknown[]) => Promise<T | void>, T>(
   client: SshSftpClient,
-  fn: F
+  executionHandler: F
 ): Promise<T | void> {
   let executionCompleted = false;
   let executionError: Error | undefined;
@@ -113,7 +113,7 @@ async function executeWithSshListeners<F extends (...args: unknown[]) => Promise
 
   let result: T | undefined | void = undefined;
   try {
-    result = await fn(client);
+    result = await executionHandler(client);
     executionCompleted = true;
   } catch (error) {
     if (error instanceof Error) {
