@@ -24,8 +24,8 @@ export class IngestConsolidatedSqs implements IngestConsolidated {
     cxId,
     patientId,
   }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
-    const payload = JSON.stringify({ cxId, patientId });
-    await this.sqsClient.sendMessageToQueue(this.queueUrl, payload);
+    const payload: IngestConsolidatedParams = { cxId, patientId };
+    await this.sqsClient.sendMessageToQueue(this.queueUrl, JSON.stringify(payload));
     return true;
   }
 }

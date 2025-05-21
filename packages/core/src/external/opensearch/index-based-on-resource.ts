@@ -16,4 +16,4 @@ export const indexDefinition: Record<keyof IndexFields, { type: string }> = {
   content: { type: "text" },
 };
 
-export type SearchResult = Omit<IndexFields, "content">;
+export type SearchResult = Omit<IndexFields, "content"> & { id: string };

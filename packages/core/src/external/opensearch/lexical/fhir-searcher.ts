@@ -3,12 +3,12 @@ import { Client } from "@opensearch-project/opensearch";
 import { out } from "../../../util";
 import {
   OpenSearchConfigDirectAccess,
-  OpenSearchResponse,
   OpenSearchResponseGet,
   OpenSearchResponseHit,
 } from "../index";
 import { FhirSearchResult } from "../index-based-on-fhir";
 import { indexDefinition } from "../index-based-on-resource";
+import { paginatedSearch } from "../paginate";
 import { getEntryId } from "../shared/id";
 import { createLexicalSearchQuery } from "./lexical-search";
 
@@ -30,31 +30,29 @@ export class OpenSearchFhirSearcher {
   constructor(readonly config: OpenSearchFhirSearcherConfig) {}
 
   async search({ cxId, patientId, query }: SearchRequest): Promise<FhirSearchResult[]> {
-    const { log, debug } = out(`${this.constructor.name}.search - cx ${cxId}, pt ${patientId}`);
+    const { log } = out(`${this.constructor.name}.search - cx ${cxId}, pt ${patientId}`);
 
     const { indexName, endpoint, username, password } = this.config;
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
     log(`Searching on index ${indexName}...`);
-    const queryPayload = createLexicalSearchQuery({
+    const searchRequest = createLexicalSearchQuery({
       cxId,
       patientId,
       query,
     });
 
-    const response = (
-      await client.search({
-        index: indexName,
-        body: queryPayload,
-      })
-    ).body as OpenSearchResponse<FhirSearchResult>;
-    debug(`Response: `, () => JSON.stringify(response));
+    const response = await paginatedSearch<FhirSearchResult>({
+      client,
+      indexName,
+      searchRequest,
+      mapResults,
+      pageSize: 20,
+    });
 
-    const items = response.hits.hits ?? [];
-    log(`Successfully searched, got ${items.length} results`);
-
-    return this.mapResult(items);
+    log(`Successfully searched, got ${response.count} results`);
+    return response.items;
   }
 
   async getById(id: string): Promise<FhirSearchResult | undefined>;
@@ -95,19 +93,6 @@ export class OpenSearchFhirSearcher {
     }
   }
 
-  private mapResult(input: OpenSearchResponseHit<FhirSearchResult>[]): FhirSearchResult[] {
-    if (!input) return [];
-    return input.map(hit => {
-      return {
-        cxId: hit._source.cxId,
-        patientId: hit._source.patientId,
-        resourceType: hit._source.resourceType,
-        resourceId: hit._source.resourceId,
-        rawContent: hit._source.rawContent,
-      };
-    });
-  }
-
   async createIndexIfNotExists(): Promise<void> {
     const { indexName, endpoint, username, password } = this.config;
     const auth = { username, password };
@@ -124,4 +109,18 @@ export class OpenSearchFhirSearcher {
     const body = { mappings: { properties: indexDefinition } };
     await client.indices.create({ index: indexName, body });
   }
+}
+
+function mapResults(input: OpenSearchResponseHit<FhirSearchResult>[]): FhirSearchResult[] {
+  if (!input) return [];
+  return input.map(hit => {
+    return {
+      id: hit._id,
+      cxId: hit._source.cxId,
+      patientId: hit._source.patientId,
+      resourceType: hit._source.resourceType,
+      resourceId: hit._source.resourceId,
+      rawContent: hit._source.rawContent,
+    };
+  });
 }

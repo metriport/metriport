@@ -31,3 +31,6 @@ export type OpenSearchResponseGet<T> = {
   found: boolean;
   _source: T;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type OpenSearchRequestBody = Record<string, any>;
