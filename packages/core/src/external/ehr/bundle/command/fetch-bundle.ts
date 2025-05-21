@@ -8,7 +8,7 @@ import { BundleWithLastModified } from "@metriport/shared/interface/external/ehr
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Config } from "../../../../util/config";
-import { log, out } from "../../../../util/log";
+import { out } from "../../../../util/log";
 import {
   BundleKeyBaseParams,
   createKeyMap,
@@ -49,6 +49,9 @@ export async function fetchBundle({
   getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
+  const { log } = out(
+    `Ehr fetchBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}  `
+  );
   if (isResourceDiffBundleType(bundleType) && !jobId) {
     throw new BadRequestError(
       "Job ID must be provided when fetching resource diff bundles",
@@ -56,9 +59,6 @@ export async function fetchBundle({
       { metriportPatientId, ehrPatientId, bundleType, jobId }
     );
   }
-  const { log } = out(
-    `Ehr fetchBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}  `
-  );
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];
   if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
@@ -119,6 +119,9 @@ export async function fetchBundlePreSignedUrl({
   jobId,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundlePreSignedUrlParams): Promise<string | undefined> {
+  const { log } = out(
+    `Ehr fetchBundlePreSignedUrl - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType}  `
+  );
   if (isResourceDiffBundleType(bundleType) && !jobId) {
     throw new BadRequestError(
       "Job ID must be provided when fetching resource diff bundles",

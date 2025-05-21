@@ -219,12 +219,12 @@ class AthenaHealthApi {
       getSecrets: this.getSecrets,
     });
     const url = `${this.baseUrl}/oauth2/v1/token`;
-    const fhirScoprs = supportedAthenaHealthResources
+    const fhirScopes = supportedAthenaHealthResources
       .map(resource => `system/${resource}.read`)
       .join(" ");
     const data = {
       grant_type: "client_credentials",
-      scope: `athena/service/Athenanet.MDP.* ${fhirScoprs}`,
+      scope: `athena/service/Athenanet.MDP.* ${fhirScopes}`,
     };
 
     try {
