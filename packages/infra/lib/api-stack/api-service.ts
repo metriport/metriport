@@ -164,12 +164,6 @@ export function createAPIService({
   healthieLinkPatientQueue: IQueue;
   ehrRefreshEhrBundlesQueue: IQueue;
   ehrBundleBucket: s3.IBucket;
-  surescriptsReplicaBucket: s3.IBucket;
-  medicationBundleBucket: s3.IBucket;
-  surescriptsSynchronizeSftpQueue: IQueue;
-  surescriptsSendPatientRequestQueue: IQueue;
-  surescriptsReceiveVerificationResponseQueue: IQueue;
-  surescriptsReceiveFlatFileResponseQueue: IQueue;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
@@ -186,6 +180,12 @@ export function createAPIService({
   semanticSearchEndpoint: string | undefined;
   semanticSearchIndexName: string | undefined;
   semanticSearchModelId: string | undefined;
+  surescriptsReplicaBucket: s3.IBucket;
+  medicationBundleBucket: s3.IBucket;
+  surescriptsSynchronizeSftpQueue: IQueue;
+  surescriptsSendPatientRequestQueue: IQueue;
+  surescriptsReceiveVerificationResponseQueue: IQueue;
+  surescriptsReceiveFlatFileResponseQueue: IQueue;
   // TODO eng-41 Make this an actual Secret before going to prod
   semanticSearchAuth: { userName: string; secret: string } | undefined;
   featureFlagsTable: dynamodb.Table;
@@ -504,7 +504,26 @@ export function createAPIService({
     queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
-
+  provideAccessToQueue({
+    accessType: "send",
+    queue: surescriptsSynchronizeSftpQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: surescriptsSendPatientRequestQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: surescriptsReceiveVerificationResponseQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: surescriptsReceiveFlatFileResponseQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
   // Allow access to search services/infra
   provideAccessToQueue({
     accessType: "send",
