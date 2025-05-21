@@ -35,12 +35,13 @@ export class SearchConsolidatedDirect implements SearchConsolidated {
     query,
     useFhir = true,
   }: SearchConsolidatedParams): Promise<SearchConsolidatedResult> {
-    const searchResult = query
-      ? useFhir
-        ? await searchLexicalFhir({ patient, query })
-        : await searchLexical({ patient, query })
-      : // TODO eng-268 Consider always getting data from OpenSearch, if no query then only filter by cxId and patientId
-        await getConsolidatedPatientData({ patient });
+    const searchResult =
+      query != undefined
+        ? useFhir
+          ? await searchLexicalFhir({ patient, query })
+          : await searchLexical({ patient, query })
+        : // TODO eng-268 Consider always getting data from OpenSearch, if no query then only filter by cxId and patientId
+          await getConsolidatedPatientData({ patient });
 
     if (!searchResult || !searchResult.entry || searchResult.entry.length < 1) {
       return { resourceCount: 0 };
