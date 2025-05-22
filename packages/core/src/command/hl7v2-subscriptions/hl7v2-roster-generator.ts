@@ -4,19 +4,18 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
-import _ from "lodash";
-import { Patient, PatientData } from "../../domain/patient";
+import { Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
+import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
 import {
   HieConfig,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
   MetriportToHieFieldMapping,
-  addressFields,
 } from "./types";
 import { createScrambledId } from "./utils";
 
@@ -152,47 +151,33 @@ export function createRosterRow(
 ): RosterRow {
   const result: RosterRow = {};
 
-  // Handle top-level fields
-  for (const [metriportSubscriberField, hieField] of Object.entries(mapping)) {
-    if (metriportSubscriberField === "address") continue; // Skip address, we'll handle it separately
-    const value = _.get(source, metriportSubscriberField);
-    if (typeof hieField === "string" && value !== undefined) {
-      result[hieField] = String(value);
-    }
-  }
-
-  const addressMapping = mapping.address;
-
-  let addressIndex = 0;
-  for (const address of addressMapping) {
-    const currentSubscriberAddress = source.address[addressIndex];
-    if (!currentSubscriberAddress) continue;
-    for (const field of addressFields) {
-      const hieField = address[field];
-      const value = _.get(currentSubscriberAddress, field);
-      if (value !== undefined) {
-        result[hieField] = String(value);
-      }
-    }
-    addressIndex++;
+  for (const [sourceKey, columnName] of Object.entries(mapping)) {
+    const value = source[sourceKey as keyof RosterRowData];
+    result[columnName] = value ?? "";
   }
 
   return result;
 }
 
-export type RosterRowData = Pick<
-  PatientData,
-  "firstName" | "lastName" | "dob" | "address" | "genderAtBirth"
-> & {
+export type RosterRowData = {
   id: string;
   cxId: string;
   rosterGenerationDate: string;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  middleName: string | undefined;
+  genderAtBirth: string | undefined;
   scrambledId: string;
   ssn: string | undefined;
   driversLicense: string | undefined;
   phone: string | undefined;
   email: string | undefined;
-  middleName: string | undefined;
+  address1AddressLine1: string | undefined;
+  address1AddressLine2: string | undefined;
+  address1City: string | undefined;
+  address1State: string | undefined;
+  address1Zip: string | undefined;
   insuranceId: string | undefined;
   insuranceCompanyId: string | undefined;
   insuranceCompanyName: string | undefined;
@@ -210,9 +195,9 @@ export function mapPatientToRosterRowData(p: Patient, states: string[]): RosterR
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
   const rosterGenerationDate = dayjs().format("YYYY-MM-DD");
-  const authorizingParticipantFacilityCode = p.facilityIds[0];
+  const authorizingParticipantFacilityCode = "TESTFACCODE";
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
-  const assigningAuthorityIdentifier = "Authority ID Placeholder";
+  const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
 
   return {
     id: p.id,
@@ -224,7 +209,11 @@ export function mapPatientToRosterRowData(p: Patient, states: string[]): RosterR
     middleName: "",
     dob: data.dob,
     genderAtBirth: data.genderAtBirth,
-    address: addresses,
+    address1AddressLine1: addresses[0]?.addressLine1,
+    address1AddressLine2: addresses[0]?.addressLine2,
+    address1City: addresses[0]?.city,
+    address1State: addresses[0]?.state,
+    address1Zip: addresses[0]?.zip,
     insuranceId: undefined,
     insuranceCompanyId: undefined,
     insuranceCompanyName: undefined,
