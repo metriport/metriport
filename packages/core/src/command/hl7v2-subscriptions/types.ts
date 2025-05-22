@@ -17,8 +17,10 @@ export type HieAddressFieldMapping = {
 };
 
 export type MetriportToHieFieldMapping = {
+  rosterGenerationDate?: string;
   scrambledId: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   dob: string;
   genderAtBirth: string;
@@ -27,6 +29,12 @@ export type MetriportToHieFieldMapping = {
   email?: string;
   driversLicense?: string;
   address: HieAddressFieldMapping[];
+  insuranceId?: string;
+  insuranceCompanyId?: string;
+  insuranceCompanyName?: string;
+  assigningAuthorityIdentifier?: string;
+  authorizingParticipantFacilityCode?: string;
+  authorizingParticipantMrn?: string;
 };
 
 export type HieConfig = {

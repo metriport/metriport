@@ -12,6 +12,7 @@ describe("AdtRosterGenerator", () => {
   let patientId: string;
   let cxId: string;
   let scrambledId: string;
+
   beforeEach(() => {
     jest.clearAllMocks();
     scrambleIdMock = jest.spyOn(packIdsModule, "createScrambledId");
@@ -20,11 +21,12 @@ describe("AdtRosterGenerator", () => {
     scrambledId = `${cxId}_${patientId}`;
     scrambleIdMock.mockReturnValueOnce(scrambledId);
   });
+
   afterAll(() => {
     jest.restoreAllMocks();
   });
 
-  describe("convertPatientsToHieFormat", () => {
+  describe("mapPatientToRosterRowData", () => {
     const mockSchema = {
       scrambledId: "ID",
       firstName: "FIRST NAME",

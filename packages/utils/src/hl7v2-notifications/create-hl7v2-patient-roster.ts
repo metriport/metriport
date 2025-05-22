@@ -2,12 +2,13 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-roster-generator";
+import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { config } from "../../../infra/config/staging";
+import { HixnyTestConfig } from "../../../infra/config/config-data/staging/api-infra/hie-configs";
 
 const isLocal = true;
-const hieName = "";
+const hieConfig = HixnyTestConfig as HieConfig;
 
 /**
  * Triggers generation and upload of HL7v2 subscription roster to S3.
@@ -17,6 +18,7 @@ const hieName = "";
  * >> local only
  * - API_URL: Base URL of the API
  * - HL7V2_ROSTER_BUCKET_NAME: S3 bucket for roster files
+ * - HL7_BASE64_SCRAMBLER_SEED: Seed for base64 scrambling
  *
  * >> remote only
  * - AWS_REGION: AWS region for Lambda
@@ -35,11 +37,6 @@ async function main() {
       const apiUrl = getEnvVarOrFail("API_URL");
       const bucketName = getEnvVarOrFail("HL7V2_ROSTER_BUCKET_NAME");
 
-      const hieConfig = config.hl7Notification?.hieConfigs?.[hieName];
-      if (!hieConfig) {
-        throw new Error("Config not found - try again");
-      }
-
       await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(hieConfig);
     } else {
       const region = getEnvVarOrFail("AWS_REGION");
@@ -50,7 +47,7 @@ async function main() {
         .invoke({
           FunctionName: lambdaName,
           InvocationType: "RequestResponse",
-          Payload: JSON.stringify(config),
+          Payload: JSON.stringify(hieConfig),
         })
         .promise();
     }
