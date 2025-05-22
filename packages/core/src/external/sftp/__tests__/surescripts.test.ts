@@ -7,7 +7,7 @@ describe("Surescripts SFTP Client", () => {
       senderId: "TestSenderId",
       senderPassword: "TestSenderPassword",
       username: "test",
-      password: "test",
+      publicKey: "test",
       privateKey: "test",
     });
 
@@ -19,7 +19,7 @@ describe("Surescripts SFTP Client", () => {
       senderId: "TestSenderId",
       senderPassword: "TestSenderPassword",
       username: "test",
-      password: "test",
+      publicKey: "test",
       privateKey: "test",
     });
 
