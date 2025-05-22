@@ -4,7 +4,7 @@ import { Context, getFrom, GetWithoutParams } from "../util";
 
 export const uuidSchema = z.string().uuid();
 
-function validateUUID(id: string, propName?: string): string {
+export function validateUUID(id: string, propName?: string): string {
   return uuidSchema.parse(
     id,
     propName
