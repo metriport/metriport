@@ -13,12 +13,15 @@ import {
 } from "./schema/load";
 
 import {
-  FileFieldSchema,
-  FileRowValidator,
-  FileValidator,
-  OutgoingFileRowSchema,
-  OutgoingFileSchema,
-} from "./schema/shared";
+  patientVerificationHeaderOrder,
+  patientVerificationDetailOrder,
+  isPatientVerificationHeader,
+  isPatientVerificationDetail,
+  patientVerificationFooterOrder,
+  isPatientVerificationFooter,
+} from "./schema/verification";
+
+import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 import { parseNameDemographics } from "./demographics";
 
@@ -112,50 +115,54 @@ export function toSurescriptsPatientLoadRow<T extends object>(
   schema: z.ZodObject<z.ZodRawShape>,
   order: OutgoingFileRowSchema<T>
 ): Buffer {
-  if (!schema.safeParse(data).success) throw new Error("Invalid data");
+  if (!schema.safeParse(data).success) {
+    console.log("Invalid data", data);
+  }
   return Buffer.from(order.map(field => field.toSurescripts(data)).join("|"), "ascii");
 }
 
-export function fromSurescriptsFile<H extends object, D extends object, F extends object>(
-  message: Buffer,
-  schema: OutgoingFileSchema<H, D, F>,
-  validator: FileValidator<H, D, F>
-) {
-  // Split Surescripts message into a 2D array of strings with resolved pipe escape sequence
-  const rows = message.toString("ascii").split("\n");
-
-  const table = rows.map(row => row.split("|").map(cell => cell.trim().replace(/\\F\\/g, "|")));
-  const header = table.shift();
-  const details = table.slice(0, -1);
-  const footer = table.pop();
+export function fromSurescriptsVerificationFile(message: Buffer) {
+  const rows = message
+    .toString("ascii")
+    .split("\n")
+    .map(row => row.split("|").map(cell => cell.trim().replace(/\\F\\/g, "|")));
+  const header = rows.shift();
+  const details = rows.slice(0, -1);
+  const footer = rows.pop();
 
   if (!header) throw new Error("Header is required");
-  if (!details) throw new Error("Details are required");
+  if (!details || details.length === 0) throw new Error("Details are required");
   if (!footer) throw new Error("Footer is required");
 
-  const headerData = parseSurescriptsRow(header, schema.header, validator.header);
-  const detailsData = details.map(detail =>
-    parseSurescriptsRow(detail, schema.detail, validator.detail)
+  const headerData = fromSurescriptsRow(
+    header,
+    patientVerificationHeaderOrder,
+    isPatientVerificationHeader
   );
-  const footerData = parseSurescriptsRow(footer, schema.footer, validator.footer);
+  const detailsData = details.map(detail =>
+    fromSurescriptsRow(detail, patientVerificationDetailOrder, isPatientVerificationDetail)
+  );
+  const footerData = fromSurescriptsRow(
+    footer,
+    patientVerificationFooterOrder,
+    isPatientVerificationFooter
+  );
 
   return { header: headerData, details: detailsData, footer: footerData };
 }
 
-function parseSurescriptsRow<T extends object>(
+function fromSurescriptsRow<T extends object>(
   row: string[],
-  fieldSchema: FileFieldSchema<T>,
-  validator: FileRowValidator<T>
+  rowOrder: IncomingFileRowSchema<T>,
+  rowValidator: (data: object) => data is T
 ): T {
   const data: Partial<T> = {};
-  for (const field of fieldSchema) {
+  for (const field of rowOrder) {
     if (field.key) {
-      if (field.fromSurescripts) {
-        data[field.key] = field.fromSurescripts(row[field.field] ?? "");
-      }
+      data[field.key] = field.fromSurescripts(row[field.field] ?? "");
     }
   }
-  if (validator(data)) {
+  if (rowValidator(data)) {
     return data;
   } else throw new Error("Invalid row");
 }

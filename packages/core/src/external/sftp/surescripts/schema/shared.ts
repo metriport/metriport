@@ -7,7 +7,7 @@ export type OutgoingFileRowSchema<T extends object> = {
   [K in keyof T]: OutgoingFileField<T, K>;
 }[keyof T][];
 
-export type IncomingFileFieldSchema<T extends object> = {
+export type IncomingFileRowSchema<T extends object> = {
   [K in keyof T]: IncomingFileField<T, K>;
 }[keyof T][];
 
@@ -114,6 +114,31 @@ export function fromSurescriptsString() {
   };
 }
 
+export function fromSurescriptsDate() {
+  return function (value: string): Date {
+    if (value.length !== 8) {
+      throw new Error(`Invalid date: ${value}`);
+    }
+    const year = value.substring(0, 4);
+    const month = value.substring(4, 6);
+    const day = value.substring(6, 8);
+    return new Date(`${year}-${month}-${day}`);
+  };
+}
+
+export function fromSurescriptsTime(centisecond = true) {
+  return function (value: string): Date {
+    if (value.length !== 6 + (centisecond ? 2 : 0)) {
+      throw new Error(`Invalid time: ${value}`);
+    }
+    const hour = value.substring(0, 2);
+    const minute = value.substring(2, 4);
+    const second = value.substring(4, 6);
+    const csecond = value.substring(6, 8);
+    return new Date(`${hour}:${minute}:${second}${centisecond ? `.${csecond}` : ""}`);
+  };
+}
+
 export function toSurescriptsArray<T extends object>(
   key: keyof T,
   enumerated: string[],
@@ -163,15 +188,30 @@ export function toSurescriptsTime<T extends object>(
   };
 }
 
-export function fromSurescriptsInteger(value: string): number | undefined {
-  if (value.trim() === "") return undefined;
+export function fromSurescriptsInteger() {
+  return function (value: string): number {
+    if (value.trim() === "") throw new Error(`Invalid value: ${value}`);
 
-  const parsed = parseInt(value, 10);
-  if (Number.isFinite(parsed)) {
-    return parsed;
-  } else {
-    return undefined;
-  }
+    const parsed = parseInt(value, 10);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    } else {
+      throw new Error(`Invalid value: ${value}`);
+    }
+  };
+}
+
+export function fromSurescriptsIntegerOrUndefined() {
+  return function (value: string): number | undefined {
+    if (value.trim() === "") return undefined;
+
+    const parsed = parseInt(value, 10);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    } else {
+      return undefined;
+    }
+  };
 }
 
 export function toSurescriptsInteger<T extends object>(

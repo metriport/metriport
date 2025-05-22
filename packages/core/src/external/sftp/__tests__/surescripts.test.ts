@@ -1,9 +1,10 @@
-import SurescriptsSftpClient from "../surescripts/client";
+import { SurescriptsSftpClient } from "../surescripts/client";
 import { TransmissionType } from "../surescripts/client";
 
 describe("Surescripts SFTP Client", () => {
   it("should create a client", () => {
     const client = new SurescriptsSftpClient({
+      host: "TestHost",
       senderId: "TestSenderId",
       senderPassword: "TestSenderPassword",
       username: "test",
@@ -16,6 +17,7 @@ describe("Surescripts SFTP Client", () => {
 
   it("should create a transmission", () => {
     const client = new SurescriptsSftpClient({
+      host: "TestHost",
       senderId: "TestSenderId",
       senderPassword: "TestSenderPassword",
       username: "test",
