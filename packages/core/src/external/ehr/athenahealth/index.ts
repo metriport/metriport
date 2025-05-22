@@ -755,13 +755,13 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
     );
-    let params = { patient: `${this.createPatientId(athenaPatientId)}`, _count: "1000" };
-    if (resourceType === "Coverage") {
-      params = { ...params, _count: coverageCount };
-    }
-    if (resourceType === "MedicationRequest") {
-      params = { ...params, intent: medicationRequestIntents.join(",") };
-    }
+    const params = {
+      patient: `${this.createPatientId(athenaPatientId)}`,
+      _count: resourceType === "Coverage" ? coverageCount : "1000",
+      ...(resourceType === "MedicationRequest"
+        ? { intent: medicationRequestIntents.join(",") }
+        : undefined),
+    };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
