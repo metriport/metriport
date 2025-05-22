@@ -8,6 +8,7 @@ import {
   CVX_URL,
   ICD_10_URL,
   LOINC_URL,
+  NDC_URL,
   RXNORM_URL,
   SNOMED_URL,
 } from "../../util/constants";
@@ -23,7 +24,15 @@ export type CodeSystemLookupOutput = {
 export const termServerUrl = Config.getTermServerUrl();
 const bulkLookupUrl = "code-system/lookup/bulk";
 
-export const supportedSystems = [ICD_10_URL, SNOMED_URL, LOINC_URL, RXNORM_URL, CPT_URL, CVX_URL];
+export const supportedSystems = [
+  ICD_10_URL,
+  SNOMED_URL,
+  LOINC_URL,
+  RXNORM_URL,
+  CPT_URL,
+  CVX_URL,
+  NDC_URL,
+];
 
 export function isSystemValid(system: string) {
   const trimmedSystem = system.trim();

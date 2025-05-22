@@ -154,6 +154,7 @@ export const config: EnvConfigNonSandbox = {
     deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
     incomingMessageBucketName: "test-incoming-message-bucket-name",
     outgoingMessageBucketName: "test-outgoing-message-bucket-name",
+    hl7ConversionBucketName: "test-hl7-conversion-bucket-name",
     notificationWebhookSenderQueue: {
       arn: "arn:aws:sqs:us-west-1:000000000000:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       url: "https://sqs.us-west-1.amazonaws.com/000000000000/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -210,6 +211,8 @@ export const config: EnvConfigNonSandbox = {
   },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  medicationBundleBucketName: "test-medication-bundle-bucket",
+  surescriptsReplicaBucketName: "test-surescripts-replica-bucket",
   ehrBundleBucketName: "test-ehr-bundle-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",

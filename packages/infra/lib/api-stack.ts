@@ -42,6 +42,7 @@ import * as documentUploader from "./api-stack/document-upload";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { EhrNestedStack } from "./ehr-nested-stack";
+import { SurescriptsNestedStack } from "./surescripts-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
@@ -57,6 +58,7 @@ import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
@@ -116,7 +118,7 @@ export class APIStack extends Stack {
     // Buckets
     //-------------------------------------------
     let outgoingHl7NotificationBucket: s3.IBucket | undefined;
-    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+    if (props.config.hl7Notification) {
       outgoingHl7NotificationBucket = s3.Bucket.fromBucketName(
         this,
         "OutgoingHl7MessageBucket",
@@ -298,6 +300,17 @@ export class APIStack extends Stack {
       ],
     });
 
+    let hl7ConversionBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      hl7ConversionBucket = new s3.Bucket(this, "HL7ConversionBucket", {
+        bucketName: props.config.hl7Notification.hl7ConversionBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+      });
+    }
+
     let ehrResponsesBucket: s3.Bucket | undefined;
     if (!isSandbox(props.config)) {
       ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
@@ -372,7 +385,7 @@ export class APIStack extends Stack {
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+    if (props.config.hl7Notification && outgoingHl7NotificationBucket && hl7ConversionBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
         "Hl7NotificationWebhookSenderNestedStack",
@@ -382,6 +395,7 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
           outgoingHl7NotificationBucket,
+          hl7ConversionBucket,
           secrets,
         }
       );
@@ -415,8 +429,6 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       healthieLinkPatientQueue,
       healthieLinkPatientLambda,
-      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
-      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
       computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
       refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
       refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
@@ -427,6 +439,27 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
       medicalDocumentsBucket,
+    });
+
+    //-------------------------------------------
+    // Surescripts
+    //-------------------------------------------
+    const {
+      synchronizeSftpLambda: surescriptsSynchronizeSftpLambda,
+      synchronizeSftpQueue: surescriptsSynchronizeSftpQueue,
+      receiveFlatFileResponseLambda: surescriptsReceiveFlatFileResponseLambda,
+      receiveVerificationResponseLambda: surescriptsReceiveVerificationResponseLambda,
+      sendPatientRequestLambda: surescriptsSendPatientRequestLambda,
+      sendPatientRequestQueue: surescriptsSendPatientRequestQueue,
+      receiveFlatFileResponseQueue: surescriptsReceiveFlatFileResponseQueue,
+      receiveVerificationResponseQueue: surescriptsReceiveVerificationResponseQueue,
+      surescriptsReplicaBucket,
+      medicationBundleBucket,
+    } = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+      config: props.config,
+      vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+      lambdaLayers,
     });
 
     //-------------------------------------------
@@ -543,7 +576,6 @@ export class APIStack extends Stack {
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
-      ehrStartResourceDiffBundlesQueue,
       ehrRefreshEhrBundlesQueue,
       ehrBundleBucket,
       generalBucket,
@@ -568,6 +600,12 @@ export class APIStack extends Stack {
             secret: props.config.semanticOpenSearch.password,
           }
         : undefined,
+      surescriptsReplicaBucket,
+      medicationBundleBucket,
+      surescriptsSynchronizeSftpQueue,
+      surescriptsSendPatientRequestQueue,
+      surescriptsReceiveVerificationResponseQueue,
+      surescriptsReceiveFlatFileResponseQueue,
       featureFlagsTable,
       cookieStore,
     });
@@ -647,11 +685,14 @@ export class APIStack extends Stack {
       ehrSyncPatientLambda,
       elationLinkPatientLambda,
       healthieLinkPatientLambda,
-      ehrStartResourceDiffBundlesLambda,
       ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
+      surescriptsReceiveFlatFileResponseLambda,
+      surescriptsReceiveVerificationResponseLambda,
+      surescriptsSendPatientRequestLambda,
+      surescriptsSynchronizeSftpLambda,
     ];
     lambdasToGetApiUrl.forEach(lambda =>
       lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
@@ -664,7 +705,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
+    medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,

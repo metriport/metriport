@@ -111,7 +111,6 @@ export function createAPIService({
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
-  ehrStartResourceDiffBundlesQueue,
   ehrRefreshEhrBundlesQueue,
   ehrBundleBucket,
   generalBucket,
@@ -131,6 +130,12 @@ export function createAPIService({
   semanticSearchEndpoint,
   semanticSearchIndexName,
   semanticSearchModelId,
+  surescriptsReplicaBucket,
+  medicationBundleBucket,
+  surescriptsSynchronizeSftpQueue,
+  surescriptsSendPatientRequestQueue,
+  surescriptsReceiveVerificationResponseQueue,
+  surescriptsReceiveFlatFileResponseQueue,
   featureFlagsTable,
   cookieStore,
 }: {
@@ -157,7 +162,6 @@ export function createAPIService({
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
-  ehrStartResourceDiffBundlesQueue: IQueue;
   ehrRefreshEhrBundlesQueue: IQueue;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
@@ -176,6 +180,12 @@ export function createAPIService({
   semanticSearchEndpoint: string | undefined;
   semanticSearchIndexName: string | undefined;
   semanticSearchModelId: string | undefined;
+  surescriptsReplicaBucket: s3.IBucket;
+  medicationBundleBucket: s3.IBucket;
+  surescriptsSynchronizeSftpQueue: IQueue;
+  surescriptsSendPatientRequestQueue: IQueue;
+  surescriptsReceiveVerificationResponseQueue: IQueue;
+  surescriptsReceiveFlatFileResponseQueue: IQueue;
   // TODO eng-41 Make this an actual Secret before going to prod
   semanticSearchAuth: { userName: string; secret: string } | undefined;
   featureFlagsTable: dynamodb.Table;
@@ -301,7 +311,6 @@ export function createAPIService({
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
-          EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL: ehrStartResourceDiffBundlesQueue.queueUrl,
           EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
           EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
@@ -368,6 +377,14 @@ export function createAPIService({
           ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
+          MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
+          SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
+          SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsSynchronizeSftpQueue.queueUrl,
+          SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL: surescriptsSendPatientRequestQueue.queueUrl,
+          SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
+            surescriptsReceiveVerificationResponseQueue.queueUrl,
+          SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
+            surescriptsReceiveFlatFileResponseQueue.queueUrl,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -452,6 +469,8 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  surescriptsReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
@@ -482,15 +501,29 @@ export function createAPIService({
   });
   provideAccessToQueue({
     accessType: "send",
-    queue: ehrStartResourceDiffBundlesQueue,
+    queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
   provideAccessToQueue({
     accessType: "send",
-    queue: ehrRefreshEhrBundlesQueue,
+    queue: surescriptsSynchronizeSftpQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
-
+  provideAccessToQueue({
+    accessType: "send",
+    queue: surescriptsSendPatientRequestQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: surescriptsReceiveVerificationResponseQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: surescriptsReceiveFlatFileResponseQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
   // Allow access to search services/infra
   provideAccessToQueue({
     accessType: "send",
