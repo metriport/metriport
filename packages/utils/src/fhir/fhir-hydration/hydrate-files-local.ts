@@ -4,11 +4,11 @@ dotenv.config();
 import { Bundle } from "@medplum/fhirtypes";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import { getFileContents, getFileNames } from "../shared/fs";
-import { getEnvVarOrFail } from "@metriport/shared";
+import { getFileContents, getFileNames } from "../../shared/fs";
 
 const termServerUrl = getEnvVarOrFail("TERM_SERVER_URL");
 

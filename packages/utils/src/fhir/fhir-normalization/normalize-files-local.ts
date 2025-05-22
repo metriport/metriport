@@ -7,7 +7,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import { getFileContents, getFileNames } from "../shared/fs";
+import { getFileContents, getFileNames } from "../../shared/fs";
 
 /**
  * Takes all the JSON files from the specified folder, and normalizes them, storing the result in the same folder, with the `_normalized` suffix.
