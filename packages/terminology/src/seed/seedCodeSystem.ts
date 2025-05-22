@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { DbClient } from "../sqlClient";
-import { umlsSources } from "./seedUmlsLookup";
+import { umlsSources } from "./classes";
 
 export async function seedCodeSystems(client: DbClient): Promise<void> {
   for (const source of Object.values(umlsSources)) {

@@ -23,7 +23,5 @@ async function lookupConceptMap(params: ConceptMapTranslateParameters): Promise<
   const query =
     'SELECT * FROM "concept_map" WHERE "source" = ? AND "sourceCode" = ? AND "target" = ?';
   const result = await dbClient.selectOne(query, [params.system, params.code, params.targetsystem]);
-  const conceptMap = JSON.parse(result.content);
-  console.log(`ConceptMap: ${JSON.stringify(conceptMap)}`);
-  return conceptMap;
+  return JSON.parse(result.content);
 }

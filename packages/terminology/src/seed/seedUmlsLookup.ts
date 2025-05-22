@@ -1,23 +1,12 @@
 // Licensed under Apache. See LICENSE-APACHE in the repo root for license information.
-import { CodeSystem, Coding, Parameters } from "@medplum/fhirtypes";
+import { Coding, Parameters } from "@medplum/fhirtypes";
 import { WriteStream, createReadStream } from "node:fs";
 import { argv, env } from "node:process";
 import { createInterface } from "node:readline";
 import { Readable, Transform, TransformCallback } from "node:stream";
 import * as unzip from "unzip-stream";
-import {
-  cpt,
-  cvx,
-  icd10cm,
-  icd10pcs,
-  loinc,
-  ndcCodeSystem,
-  rxnorm,
-  snomed,
-} from "../operations/definitions/codeSystem";
-
 import { TerminologyClient } from "../client";
-import { UmlsAttribute, UmlsConcept } from "./classes";
+import { UmlsAttribute, UmlsConcept, UmlsSource, umlsSources } from "./classes";
 import { sendParameters } from "./shared";
 
 /**
@@ -47,35 +36,6 @@ import { sendParameters } from "./shared";
  * Abbreviations Used in Data Elements
  * https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/abbreviations.html
  */
-
-type UmlsSource = { system: string; tty: string[]; resource: CodeSystem };
-
-export const umlsSources: Record<string, UmlsSource> = {
-  SNOMEDCT_US: { system: "http://snomed.info/sct", tty: ["FN", "PT", "SY"], resource: snomed },
-  LNC: {
-    system: "http://loinc.org",
-    tty: ["LC", "LPDN", "LA", "DN", "HC", "LN", "LG"],
-    resource: loinc,
-  },
-  RXNORM: {
-    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-    tty: ["PSN", "MIN", "SBD", "SCD", "SBDG", "SCDG", "GPCK", "SY"],
-    resource: rxnorm,
-  },
-  CPT: {
-    system: "http://www.ama-assn.org/go/cpt",
-    tty: ["PT", "HT", "POS", "MP", "GLP"],
-    resource: cpt,
-  },
-  CVX: { system: "http://hl7.org/fhir/sid/cvx", tty: ["PT"], resource: cvx },
-  ICD10PCS: { system: "http://hl7.org/fhir/sid/icd-10-pcs", tty: ["PT", "HT"], resource: icd10pcs },
-  ICD10CM: { system: "http://hl7.org/fhir/sid/icd-10-cm", tty: ["PT", "HT"], resource: icd10cm },
-  NDC: {
-    system: "http://hl7.org/fhir/sid/ndc",
-    tty: [], // Add these when RxNorm > NDC crosswalks are in place
-    resource: ndcCodeSystem,
-  },
-};
 
 class EOF extends Error {
   message = "<EOF>";

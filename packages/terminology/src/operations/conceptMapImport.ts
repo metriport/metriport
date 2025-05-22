@@ -50,11 +50,12 @@ function generateReverseConceptMaps(conceptMap: ConceptMap): ConceptMap[] {
 }
 
 export async function conceptMapImportHandler(
-  req: FhirRequest
+  req: FhirRequest,
+  isReversible: boolean
 ): Promise<FhirResponse | ConceptMap[]> {
   try {
     const conceptMap = req.body as ConceptMap;
-    const reverseMaps = generateReverseConceptMaps(conceptMap);
+    const reverseMaps = isReversible ? generateReverseConceptMaps(conceptMap) : [];
     const allMaps = [conceptMap, ...reverseMaps];
 
     const dbClient = getTermServerClient();
@@ -62,38 +63,8 @@ export async function conceptMapImportHandler(
       INSERT INTO "concept_map" ("id", "content", "source", "sourceCode", "target", "targetCode")
       VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(source, sourceCode, target) DO UPDATE SET
-      content = json_patch(
-        content,
-        json('{"group":[{"element":[' || json_object(
-          'code', json_extract(content, '$.group[0].element[0].code'),
-          'target', (
-            SELECT json_group_array(
-              json_object(
-                'code', value,
-                'equivalence', 'narrower'
-              )
-            )
-            FROM (
-              SELECT DISTINCT value
-              FROM (
-                SELECT json_extract(value, '$.code') as value
-                FROM json_each(json_extract(content, '$.group[0].element[0].target'))
-                UNION
-                SELECT json_extract(value, '$.code') as value
-                FROM json_each(?)
-              )
-            )
-          )
-        ) || ']}]}')
-      ),
-      targetCode = (
-        SELECT json_group_array(DISTINCT value)
-        FROM (
-          SELECT value FROM json_each(targetCode)
-          UNION ALL
-          SELECT value FROM json_each(?)
-        )
-      )
+      content = excluded.content,
+      targetCode = excluded.targetCode
     `;
 
     try {

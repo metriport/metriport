@@ -30,21 +30,35 @@ export class TerminologyClient {
     return response.data;
   }
 
-  async importCode(parameters: Parameters): Promise<OperationOutcome[]> {
-    const response = await axios.post(`${this.baseUrl}/code-system/import`, parameters, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  async importCode(parameters: Parameters, isOverwrite = false): Promise<OperationOutcome[]> {
+    const response = await axios.post(
+      `${this.baseUrl}/code-system/import?isOverwrite=${isOverwrite}`,
+      parameters,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
     return response.data;
   }
 
-  async importConceptMap(conceptMap: ConceptMap): Promise<ConceptMap[] | OperationOutcome[]> {
-    const response = await axios.post(`${this.baseUrl}/concept-map/import`, conceptMap, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  async importConceptMap(
+    conceptMap: ConceptMap,
+    isReversible: boolean
+  ): Promise<ConceptMap[] | OperationOutcome[]> {
+    const queryParams = new URLSearchParams();
+    queryParams.set("isReversible", isReversible.toString());
+
+    const response = await axios.post(
+      `${this.baseUrl}/concept-map/import?${queryParams.toString()}`,
+      conceptMap,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
     return response.data;
   }
 
