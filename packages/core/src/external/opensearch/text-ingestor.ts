@@ -90,6 +90,12 @@ export class OpenSearchTextIngestor {
     const defaultLogger = out(`${this.constructor.name}.ingestBulk - cx ${cxId}, pt ${patientId}`);
     const { log } = getLog(defaultLogger, this.settings.logLevel);
 
+    const errors: Map<string, number> = new Map();
+    if (resources.length < 1) {
+      log(`No resources to ingest`);
+      return errors;
+    }
+
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
@@ -98,7 +104,6 @@ export class OpenSearchTextIngestor {
     const startedAt = Date.now();
 
     let errorCount = 0;
-    const errors: Map<string, number> = new Map();
     const _onItemError = onItemError ?? buildOnItemError(errors);
 
     const chunks = chunk(resources, bulkChunkSize);
@@ -130,6 +135,8 @@ export class OpenSearchTextIngestor {
     indexName: string;
     client: Client;
   }): Promise<number> {
+    if (resources.length < 1) return 0;
+
     const defaultLogger = out(
       `${this.constructor.name}.ingestBulkInternal - cx ${cxId}, pt ${patientId}`
     );
