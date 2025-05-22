@@ -38,6 +38,13 @@ const confirmationTime = dayjs.duration(10, "seconds");
 const region = getEnvVarOrFail("AWS_REGION");
 const s3Utils = new S3Utils(region);
 
+if (
+  medicalDocsBucketName.toLowerCase().includes("prod") ||
+  conversionsBucketName.toLowerCase().includes("prod")
+) {
+  throw new Error("This script is not allowed to run on production buckets");
+}
+
 async function main() {
   await sleep(100);
   initRunsFolder();
