@@ -21,7 +21,7 @@ const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveFlatFileResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
 const maxConcurrencyForSftpOperations = 1;
-const maxConcurrencyForFileOperations = 4;
+const maxConcurrencyForFileOperations = 1;
 
 interface SurescriptsSettings {
   synchronizeSftp: QueueAndLambdaSettings;
