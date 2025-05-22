@@ -10,8 +10,11 @@ export class SurescriptsReplica {
   private readonly bucket: string;
   private readonly sftpClient: SurescriptsSftpClient;
 
-  constructor({ sftpClient, bucket }: { sftpClient: SurescriptsSftpClient; bucket?: string }) {
-    this.sftpClient = sftpClient;
+  constructor({
+    sftpClient,
+    bucket,
+  }: { sftpClient?: SurescriptsSftpClient; bucket?: string } = {}) {
+    this.sftpClient = sftpClient ?? new SurescriptsSftpClient({});
     this.s3 = new S3Utils(process.env.AWS_REGION ?? "us-east-2");
     this.bucket = bucket ?? Config.getSurescriptsReplicaBucketName();
   }
