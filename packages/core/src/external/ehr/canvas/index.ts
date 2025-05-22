@@ -81,17 +81,12 @@ export const supportedCanvasResources = [
   "DiagnosticReport",
   "Encounter",
   "Goal",
-  "Group",
   "Immunization",
-  "Location",
   "Media",
-  "MedicationStatement",
   "MedicationRequest",
+  "MedicationStatement",
   "Observation",
-  //"Organization",
-  //"Practitioner",
   "Procedure",
-  "Immunization",
 ];
 export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
 export function isSupportedCanvasResource(

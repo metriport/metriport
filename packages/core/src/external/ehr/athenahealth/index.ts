@@ -166,7 +166,6 @@ export const supportedAthenaHealthResources = [
   "Procedure",
   "Specimen",
   "Device",
-  "DocumentReference",
   "ServiceRequest",
   "Encounter",
   "Coverage",
