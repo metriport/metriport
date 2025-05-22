@@ -72,7 +72,7 @@ export class Hl7v2RosterGenerator {
     const rosterCsv = this.generateCsv(convertedSubscribers);
     log("Created CSV");
 
-    const fileName = this.buildDocumentNameForHl7v2Roster(config.name, subscriptions);
+    const fileName = this.createFileKeyHl7v2Roster(config.name, subscriptions);
 
     await storeInS3WithRetries({
       s3Utils: this.s3Utils,
@@ -121,21 +121,10 @@ export class Hl7v2RosterGenerator {
     return stringify(records, { header: true, quoted: true });
   }
 
-  private buildDocumentNameForHl7v2Roster(
-    hieName: string,
-    subscriptions: Hl7v2Subscription[]
-  ): string {
+  private createFileKeyHl7v2Roster(hieName: string, subscriptions: Hl7v2Subscription[]): string {
     const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
     return `${todaysDate}/${hieName}/${subscriptions.join("-")}.${CSV_FILE_EXTENSION}`;
   }
-}
-
-export function convertPatientsToHieFormat(
-  patients: Patient[],
-  mapping: MetriportToHieFieldMapping,
-  states: USState[]
-): RosterRow[] {
-  return patients.map(s => createRosterRow(mapPatientToRosterRowData(s, states), mapping));
 }
 
 export function convertPatientToRosterRow(
@@ -155,11 +144,11 @@ export function createRosterRow(
   Object.entries(mapping).forEach(([key, columnName]) => {
     if (columnName && isRosterRowKey(key, source)) {
       result[columnName] = source[key] ?? "";
+    } else {
+      throw new MetriportError(
+        `source key '${key}' for column '${columnName}' not found in RosterRowData`
+      );
     }
-
-    throw new MetriportError(
-      `source key ${key} for column ${columnName} not found in RosterRowData`
-    );
   });
 
   return result;

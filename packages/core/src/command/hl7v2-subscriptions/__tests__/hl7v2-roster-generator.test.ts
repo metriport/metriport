@@ -4,6 +4,7 @@ import { makePatient } from "../../../domain/__tests__/patient";
 import { Address } from "../../../domain/address";
 import * as rosterGeneratorModule from "../hl7v2-roster-generator";
 import * as packIdsModule from "../utils";
+import _ from "lodash";
 
 const states = [USState.MA];
 
@@ -27,21 +28,21 @@ describe("AdtRosterGenerator", () => {
   });
 
   describe("mapPatientToRosterRowData", () => {
-    const mockSchema = {
+    const mockMinimalSchema = {
       scrambledId: "ID",
       firstName: "FIRST NAME",
       lastName: "LAST NAME",
       dob: "DOB",
+    };
+
+    const mockSchema = {
+      ...mockMinimalSchema,
       genderAtBirth: "GENDER",
-      address: [
-        {
-          addressLine1: "STREET ADDRESS",
-          addressLine2: "STREET NUMBER",
-          city: "CITY",
-          state: "STATE",
-          zip: "ZIP",
-        },
-      ],
+      address1AddressLine1: "STREET ADDRESS", // TODO: remove this
+      address1AddressLine2: "STREET NUMBER",
+      address1City: "CITY",
+      address1State: "STATE",
+      address1Zip: "ZIP",
       phone: "PHONE",
       email: "EMAIL",
       ssn: "SSN",
@@ -50,6 +51,7 @@ describe("AdtRosterGenerator", () => {
 
     const baseAddress: Address = {
       addressLine1: "123 Main St",
+      addressLine2: "Unit 1",
       city: "Boston",
       state: USState.MA,
       zip: "02108",
@@ -93,21 +95,15 @@ describe("AdtRosterGenerator", () => {
         },
       });
 
-      const subscribers = [patient];
-
-      const result = rosterGeneratorModule.convertPatientsToHieFormat(
-        subscribers,
-        mockSchema,
-        states
-      );
+      const result = rosterGeneratorModule.convertPatientToRosterRow(patient, mockSchema, states);
 
       expect(scrambleIdMock).toHaveBeenCalledTimes(1);
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result).toEqual({
         ID: scrambledId,
         "FIRST NAME": "John",
         "LAST NAME": "Doe",
         "STREET ADDRESS": baseAddress.addressLine1,
+        "STREET NUMBER": baseAddress.addressLine2,
         CITY: baseAddress.city,
         STATE: baseAddress.state,
         ZIP: baseAddress.zip,
@@ -120,7 +116,7 @@ describe("AdtRosterGenerator", () => {
       });
     });
 
-    it("should handle missing optional fields", () => {
+    it("should include empty strings for fields present in the schema but not in the patient", () => {
       const patient = makePatient({
         id: patientId,
         cxId,
@@ -135,26 +131,18 @@ describe("AdtRosterGenerator", () => {
       delete patient.data.contact;
       delete patient.data.personalIdentifiers;
 
-      const subscribers = [patient];
-      const result = rosterGeneratorModule.convertPatientsToHieFormat(
-        subscribers,
-        mockSchema,
-        states
-      );
+      const result = rosterGeneratorModule.convertPatientToRosterRow(patient, mockSchema, states);
 
       expect(scrambleIdMock).toHaveBeenCalledTimes(1);
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        ID: scrambledId,
-        "FIRST NAME": "Jane",
-        "LAST NAME": "Smith",
-        "STREET ADDRESS": baseAddress.addressLine1,
-        CITY: baseAddress.city,
-        STATE: baseAddress.state,
-        ZIP: baseAddress.zip,
-        DOB: "1985-12-31",
-        GENDER: "F",
-      });
+      expect(
+        _.isMatch(result, {
+          "DRIVERS LICENSE": "",
+          EMAIL: "",
+          PHONE: "",
+          SSN: "",
+          GENDER: "F",
+        })
+      ).toBe(true);
     });
 
     it("should only keep addresses from relevant states", () => {
@@ -188,26 +176,18 @@ describe("AdtRosterGenerator", () => {
       delete patient.data.contact;
       delete patient.data.personalIdentifiers;
 
-      const subscribers = [patient];
-      const result = rosterGeneratorModule.convertPatientsToHieFormat(
-        subscribers,
-        mockSchema,
-        states
-      );
+      const result = rosterGeneratorModule.convertPatientToRosterRow(patient, mockSchema, states);
 
       expect(scrambleIdMock).toHaveBeenCalledTimes(1);
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        ID: scrambledId,
-        "FIRST NAME": "Jane",
-        "LAST NAME": "Smith",
-        "STREET ADDRESS": baseAddress.addressLine1,
-        CITY: baseAddress.city,
-        STATE: baseAddress.state,
-        ZIP: baseAddress.zip,
-        DOB: "1985-12-31",
-        GENDER: "F",
-      });
+      expect(
+        _.isMatch(result, {
+          "STREET ADDRESS": baseAddress.addressLine1,
+          "STREET NUMBER": baseAddress.addressLine2,
+          CITY: baseAddress.city,
+          STATE: baseAddress.state,
+          ZIP: baseAddress.zip,
+        })
+      ).toBe(true);
     });
   });
 });
