@@ -1,11 +1,12 @@
 import { MetriportError, USState, executeWithNetworkRetries } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
-import { Patient } from "../../domain/patient";
-import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
+import { Patient, PatientData } from "../../domain/patient";
+import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
@@ -21,7 +22,7 @@ import { createScrambledId } from "./utils";
 
 const region = Config.getAWSRegion();
 
-type SubscriberRecord = Record<string, string>;
+type RosterRow = Record<string, string>;
 
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
@@ -45,10 +46,12 @@ export class Hl7v2RosterGenerator {
       subscriptions,
     };
 
-    log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
-
+    log(`Running with this config: ${JSON.stringify(loggingDetails, null, 2)}`);
+    log(`Getting all subscribed patients...`);
     const patients = await executeWithNetworkRetries(
-      async () => this.getAllSubscribedPatients(states, subscriptions),
+      async () => {
+        return this.getAllSubscribedPatients(states, subscriptions);
+      },
       {
         maxAttempts: NUMBER_OF_ATTEMPTS,
         initialDelay: BASE_DELAY.asMilliseconds(),
@@ -63,7 +66,9 @@ export class Hl7v2RosterGenerator {
       });
     }
 
-    const convertedSubscribers = convertPatientsToHieFormat(patients, config.mapping, states);
+    const convertedSubscribers = patients.map(p =>
+      convertPatientToRosterRow(p, config.mapping, states)
+    );
     const rosterCsv = this.generateCsv(convertedSubscribers);
     log("Created CSV");
 
@@ -84,7 +89,7 @@ export class Hl7v2RosterGenerator {
       },
     });
 
-    log("Done");
+    log(`Saved in S3: ${this.bucketName}/${fileName}`);
     return rosterCsv;
   }
 
@@ -111,7 +116,7 @@ export class Hl7v2RosterGenerator {
     return allSubscribers;
   }
 
-  private generateCsv(records: SubscriberRecord[]): string {
+  private generateCsv(records: RosterRow[]): string {
     if (records.length === 0) return "";
     return stringify(records, { header: true, quoted: true });
   }
@@ -129,22 +134,28 @@ export function convertPatientsToHieFormat(
   patients: Patient[],
   mapping: MetriportToHieFieldMapping,
   states: USState[]
-): SubscriberRecord[] {
-  return patients.map(s =>
-    convertSubscriberToHieFormat(mapPatientToSubscriber(s, states), mapping)
-  );
+): RosterRow[] {
+  return patients.map(s => createRosterRow(mapPatientToRosterRowData(s, states), mapping));
 }
 
-export function convertSubscriberToHieFormat(
-  subscriber: Hl7v2Subscriber,
+export function convertPatientToRosterRow(
+  patient: Patient,
+  mapping: MetriportToHieFieldMapping,
+  states: USState[]
+): RosterRow {
+  return createRosterRow(mapPatientToRosterRowData(patient, states), mapping);
+}
+
+export function createRosterRow(
+  source: RosterRowData,
   mapping: MetriportToHieFieldMapping
-): SubscriberRecord {
-  const result: SubscriberRecord = {};
+): RosterRow {
+  const result: RosterRow = {};
 
   // Handle top-level fields
   for (const [metriportSubscriberField, hieField] of Object.entries(mapping)) {
     if (metriportSubscriberField === "address") continue; // Skip address, we'll handle it separately
-    const value = _.get(subscriber, metriportSubscriberField);
+    const value = _.get(source, metriportSubscriberField);
     if (typeof hieField === "string" && value !== undefined) {
       result[hieField] = String(value);
     }
@@ -154,7 +165,7 @@ export function convertSubscriberToHieFormat(
 
   let addressIndex = 0;
   for (const address of addressMapping) {
-    const currentSubscriberAddress = subscriber.address[addressIndex];
+    const currentSubscriberAddress = source.address[addressIndex];
     if (!currentSubscriberAddress) continue;
     for (const field of addressFields) {
       const hieField = address[field];
@@ -169,7 +180,28 @@ export function convertSubscriberToHieFormat(
   return result;
 }
 
-export function mapPatientToSubscriber(p: Patient, states: string[]): Hl7v2Subscriber {
+export type RosterRowData = Pick<
+  PatientData,
+  "firstName" | "lastName" | "dob" | "address" | "genderAtBirth"
+> & {
+  id: string;
+  cxId: string;
+  rosterGenerationDate: string;
+  scrambledId: string;
+  ssn: string | undefined;
+  driversLicense: string | undefined;
+  phone: string | undefined;
+  email: string | undefined;
+  middleName: string | undefined;
+  insuranceId: string | undefined;
+  insuranceCompanyId: string | undefined;
+  insuranceCompanyName: string | undefined;
+  authorizingParticipantFacilityCode: string | undefined;
+  authorizingParticipantMrn: string | undefined;
+  assigningAuthorityIdentifier: string | undefined;
+};
+
+export function mapPatientToRosterRowData(p: Patient, states: string[]): RosterRowData {
   const data = p.data;
   const addresses = data.address.filter(a => states.includes(a.state));
   const ssn = data.personalIdentifiers?.find(id => id.type === "ssn")?.value;
@@ -177,19 +209,31 @@ export function mapPatientToSubscriber(p: Patient, states: string[]): Hl7v2Subsc
   const phone = data.contact?.find(c => c.phone)?.phone;
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
+  const rosterGenerationDate = dayjs().format("YYYY-MM-DD");
+  const authorizingParticipantFacilityCode = p.facilityIds[0];
+  const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
+  const assigningAuthorityIdentifier = "Authority ID Placeholder";
 
   return {
     id: p.id,
     cxId: p.cxId,
+    rosterGenerationDate,
     scrambledId,
     lastName: data.lastName,
     firstName: data.firstName,
+    middleName: "",
     dob: data.dob,
     genderAtBirth: data.genderAtBirth,
     address: addresses,
-    ...(ssn ? { ssn } : undefined),
-    ...(driversLicense ? { driversLicense } : undefined),
-    ...(phone ? { phone } : undefined),
-    ...(email ? { email } : undefined),
+    insuranceId: undefined,
+    insuranceCompanyId: undefined,
+    insuranceCompanyName: undefined,
+    authorizingParticipantFacilityCode,
+    authorizingParticipantMrn,
+    assigningAuthorityIdentifier,
+    ssn,
+    driversLicense,
+    phone,
+    email,
   };
 }
