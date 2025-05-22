@@ -114,10 +114,29 @@ export function fromSurescriptsString() {
   };
 }
 
+export function fromSurescriptsStringOrUndefined() {
+  return function (value: string): string | undefined {
+    if (value.trim().length === 0) return undefined;
+    return value.replace(/\\F\\/g, "|");
+  };
+}
+
 export function fromSurescriptsDate() {
   return function (value: string): Date {
     if (value.length !== 8) {
       throw new Error(`Invalid date: ${value}`);
+    }
+    const year = value.substring(0, 4);
+    const month = value.substring(4, 6);
+    const day = value.substring(6, 8);
+    return new Date(`${year}-${month}-${day}`);
+  };
+}
+
+export function fromSurescriptsDateOrUndefined() {
+  return function (value: string): Date | undefined {
+    if (value.length !== 8) {
+      return undefined;
     }
     const year = value.substring(0, 4);
     const month = value.substring(4, 6);
