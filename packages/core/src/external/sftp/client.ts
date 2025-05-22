@@ -35,9 +35,47 @@ export class SftpClient implements SftpClientImpl {
     this.privateKey = privateKey;
   }
 
+  private async executeWithSshListeners<T, F extends (client: SshSftpClient) => Promise<T>>(
+    executionHandler: F
+  ): Promise<T> {
+    let executionCompleted = false;
+    let executionError: Error | undefined;
+    function errorHandler(error?: Error) {
+      if (error != null && error instanceof Error) {
+        executionError = error;
+      } else if (!executionCompleted) {
+        executionError = new Error("Socket was closed before execution completed");
+      }
+    }
+    this.client.on("error", errorHandler);
+    this.client.on("end", errorHandler);
+    this.client.on("close", errorHandler);
+
+    let result: T | undefined;
+    try {
+      result = await executionHandler(this.client);
+      executionCompleted = true;
+    } catch (error) {
+      if (error instanceof Error) {
+        executionError = error;
+      } else {
+        executionError = new Error(String(error));
+      }
+    }
+
+    this.client.removeListener("error", errorHandler);
+    this.client.removeListener("end", errorHandler);
+    this.client.removeListener("close", errorHandler);
+
+    if (executionError) {
+      throw executionError;
+    }
+    return result as T;
+  }
+
   async connect() {
-    executeWithSshListeners(this.client, () =>
-      this.client.connect({
+    await this.executeWithSshListeners(client =>
+      client.connect({
         host: this.host,
         port: this.port,
         username: this.username,
@@ -50,23 +88,26 @@ export class SftpClient implements SftpClientImpl {
   }
 
   async disconnect() {
-    await this.client.end();
+    await this.executeWithSshListeners(client => client.end());
   }
 
   async read(remotePath: string): Promise<Buffer> {
     const { writable, getBuffer } = createWritableBuffer();
-    await this.client.get(remotePath, writable);
+    await this.executeWithSshListeners(client => client.get(remotePath, writable));
     return getBuffer();
   }
 
   async list(remotePath: string): Promise<string[]> {
-    const files = await this.client.list(remotePath);
-    return files.map(file => file.name);
+    const files: string[] = await this.executeWithSshListeners(async client => {
+      const files = await client.list(remotePath);
+      return files.map(file => file.name);
+    });
+    return files;
   }
 
   async exists(remotePath: string): Promise<boolean> {
     try {
-      const info = await this.client.exists(remotePath);
+      const info = await this.executeWithSshListeners(client => client.exists(remotePath));
       return info !== false;
     } catch (error) {
       return false;
@@ -74,7 +115,7 @@ export class SftpClient implements SftpClientImpl {
   }
 
   async write(remotePath: string, content: Buffer): Promise<boolean> {
-    await this.client.put(content, remotePath);
+    await this.executeWithSshListeners(client => client.put(content, remotePath));
     return true;
   }
 }
@@ -92,44 +133,4 @@ export function createWritableBuffer() {
 
   const getBuffer = () => Buffer.concat(chunks);
   return { writable, getBuffer };
-}
-
-async function executeWithSshListeners<F extends (...args: unknown[]) => Promise<T | void>, T>(
-  client: SshSftpClient,
-  executionHandler: F
-): Promise<T | void> {
-  let executionCompleted = false;
-  let executionError: Error | undefined;
-  function errorHandler(error?: Error) {
-    if (error != null && error instanceof Error) {
-      executionError = error;
-    } else if (!executionCompleted) {
-      executionError = new Error("Socket was closed before execution completed");
-    }
-  }
-  client.on("error", errorHandler);
-  client.on("end", errorHandler);
-  client.on("close", errorHandler);
-
-  let result: T | undefined | void = undefined;
-  try {
-    result = await executionHandler(client);
-    executionCompleted = true;
-  } catch (error) {
-    if (error instanceof Error) {
-      executionError = error;
-    } else {
-      executionError = new Error(String(error));
-    }
-  }
-
-  client.removeListener("error", errorHandler);
-  client.removeListener("end", errorHandler);
-  client.removeListener("close", errorHandler);
-
-  if (executionError) {
-    throw executionError;
-  } else if (result) {
-    return result;
-  }
 }

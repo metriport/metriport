@@ -240,8 +240,8 @@ export class Config {
   static getSurescriptsBundleBucketName(): string {
     return getEnvVarOrFail("SURESCRIPTS_BUNDLE_BUCKET_NAME");
   }
-  static getSurescriptsSynchronizeLambdaName(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SYNCHRONIZE_LAMBDA_NAME");
+  static getSurescriptsSynchronizeQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SYNCHRONIZE_QUEUE_URL");
   }
   static getSurescriptsSendPatientRequestQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL");
