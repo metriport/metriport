@@ -1,6 +1,7 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { getBundleByResourceType as getBundleByResourceTypeAthena } from "../../athenahealth/command/get-bundle-by-resource-type";
 import { getBundleByResourceType as getBundleByResourceTypeCanvas } from "../../canvas/command/get-bundle-by-resource-type";
 
 export type GetBundleByResourceTypeRequest = {
@@ -27,6 +28,7 @@ export type GetBundleByResourceTypeClientRequest = Omit<
 
 export enum GetBundleByResourceTypeMethods {
   canvasGetBundleByResourceType = "canvasGetBundleByResourceType",
+  athenaGetBundleByResourceType = "athenaGetBundleByResourceType",
 }
 
 export type GetBundleByResourceTypeMethodsMap = Record<
@@ -35,6 +37,9 @@ export type GetBundleByResourceTypeMethodsMap = Record<
 >;
 
 export const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeMethodsMap = {
+  [EhrSources.athena]: {
+    [GetBundleByResourceTypeMethods.athenaGetBundleByResourceType]: getBundleByResourceTypeAthena,
+  },
   [EhrSources.canvas]: {
     [GetBundleByResourceTypeMethods.canvasGetBundleByResourceType]: getBundleByResourceTypeCanvas,
   },

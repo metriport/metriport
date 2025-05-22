@@ -2,7 +2,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getCxMappingsByCustomer } from "../../../../../../command/mapping/cx";
+import { getCxMappingOrFail, getCxMappingsByCustomer } from "../../../../../../command/mapping/cx";
 import { getPatientMappings } from "../../../../../../command/mapping/patient";
 import { startCreateResourceDiffBundlesJob } from "./start-job";
 
@@ -35,6 +35,21 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
         ehrPatientId: patientMapping.externalId,
         requestId,
       }).catch(processAsyncError(`${EhrSources.canvas} startCreateResourceDiffBundlesJobAtEhr`));
+    } else if (patientMapping.source === EhrSources.athena) {
+      const patientPrefix = patientMapping.externalId.split(".")[0];
+      if (!patientPrefix) {
+        throw new MetriportError("Invalid patient ID", undefined, {
+          ehrPatientId: patientMapping.externalId,
+        });
+      }
+      const athenaPracticeId = `a-1.${patientPrefix}`;
+      startCreateResourceDiffBundlesJobAtEhr({
+        ehr: EhrSources.athena,
+        cxId,
+        practiceId: athenaPracticeId,
+        ehrPatientId: patientMapping.externalId,
+        requestId,
+      }).catch(processAsyncError(`${EhrSources.athena} startCreateResourceDiffBundlesJobAtEhr`));
     }
   }
 }
@@ -42,20 +57,19 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
 async function startCreateResourceDiffBundlesJobAtEhr({
   ehr,
   cxId,
+  practiceId,
   ehrPatientId,
   requestId,
 }: {
   ehr: EhrSources;
   cxId: string;
+  practiceId?: string;
   ehrPatientId: string;
   requestId: string;
 }): Promise<void> {
-  const cxMappings = await getCxMappingsByCustomer({ cxId, source: ehr });
-  const cxMapping = cxMappings[0];
-  if (!cxMapping) throw new MetriportError("CX mapping not found", undefined, { ehr, cxId });
-  if (cxMappings.length > 1) {
-    throw new MetriportError("Multiple CX mappings found", undefined, { ehr, cxId });
-  }
+  const cxMapping = practiceId
+    ? await getCxMappingOrFail({ source: ehr, externalId: practiceId })
+    : await getCxMappingWithoutPracticeId({ cxId, ehr });
   await startCreateResourceDiffBundlesJob({
     ehr,
     cxId,
@@ -63,4 +77,14 @@ async function startCreateResourceDiffBundlesJobAtEhr({
     ehrPatientId,
     requestId,
   });
+}
+
+async function getCxMappingWithoutPracticeId({ cxId, ehr }: { cxId: string; ehr: EhrSources }) {
+  const cxMappings = await getCxMappingsByCustomer({ cxId, source: ehr });
+  const cxMapping = cxMappings[0];
+  if (!cxMapping) throw new MetriportError("CX mapping not found", undefined, { ehr, cxId });
+  if (cxMappings.length > 1) {
+    throw new MetriportError("Multiple CX mappings found", undefined, { ehr, cxId });
+  }
+  return cxMapping;
 }

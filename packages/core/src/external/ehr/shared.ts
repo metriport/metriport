@@ -1,8 +1,7 @@
-import { Coding, Condition } from "@medplum/fhirtypes";
+import { Bundle, Coding, Condition, Resource } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
-  BundleWithLastModified,
   JwtTokenInfo,
   MetriportError,
   NotFoundError,
@@ -10,6 +9,11 @@ import {
   executeWithRetries,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  EhrFhirResource,
+  EhrFhirResourceBundle,
+  createBundleFromResourceList,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import dayjs from "dayjs";
@@ -22,6 +26,8 @@ import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import { BundleType } from "./bundle/bundle-shared";
+import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import { getSecrets } from "./api/get-client-key-and-secret";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
 
@@ -337,40 +343,86 @@ export function getConditionStatus(condition: Condition): string | undefined {
   return undefined;
 }
 
-/**
- * Fetches a bundle from S3 for the given bundle type and resource type
- * Checks if the bundle is younger than the max age, if so, it returns the bundle, otherwise it returns undefined.
- *
- * @param ehr - The EHR source.
- * @param cxId - The CX ID.
- * @param metriportPatientId - The Metriport ID.
- * @param ehrPatientId - The EHR patient ID.
- * @param bundleType - The bundle type.
- * @param resourceType - The resource type of the bundle.
- * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
- * @returns The bundle with the last modified date if it is younger than the max age, otherwise undefined.
- */
-export async function fetchBundleUsingTtl({
-  ehr,
-  cxId,
-  metriportPatientId,
-  ehrPatientId,
-  bundleType,
-  resourceType,
-  s3BucketName = Config.getEhrBundleBucketName(),
-}: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
+type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
+
+async function fetchEhrBundleIfYoungerThanMaxAge(
+  params: Omit<FetchEhrBundleParams, "getLastModified">
+): Promise<Bundle | undefined> {
   const bundle = await fetchBundle({
-    ehr,
-    cxId,
-    metriportPatientId,
-    ehrPatientId,
-    bundleType,
-    resourceType,
-    s3BucketName,
+    ...params,
+    bundleType: BundleType.EHR,
     getLastModified: true,
   });
   if (!bundle || !bundle.lastModified) return undefined;
   const age = dayjs.duration(buildDayjs().diff(bundle.lastModified));
   if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) return undefined;
+  return bundle.bundle;
+}
+
+/**
+ * Fetches a bundle from the EHR for the given bundle type and resource type.
+ * Uses cached EHR bundle if available and requested. Refreshes the cache if the bundle
+ * is fetched from the EHR.
+ *
+ * @param ehr - The EHR source.
+ * @param cxId - The CX ID.
+ * @param metriportPatientId - The Metriport ID.
+ * @param ehrPatientId - The EHR patient ID.
+ * @param resourceType - The resource type of the bundle.
+ * @param fetchResourcesFromEhr - A function that fetches the resources from the EHR.
+ * @param useCachedBundle - Whether to use the cached bundle. Optional, defaults to true.
+ * @returns The bundle.
+ */
+export async function fetchEhrBundleUsingCache({
+  fetchResourcesFromEhr,
+  useCachedBundle = true,
+  ...params
+}: FetchEhrBundleParams & {
+  fetchResourcesFromEhr: () => Promise<EhrFhirResource[]>;
+  useCachedBundle?: boolean;
+}): Promise<Bundle> {
+  if (useCachedBundle) {
+    const cachedBundle = await fetchEhrBundleIfYoungerThanMaxAge({ ...params });
+    if (cachedBundle) return cachedBundle;
+  }
+  const fhirResources = await fetchResourcesFromEhr();
+  const invalidEntry = fhirResources.find(r => r.resourceType !== params.resourceType);
+  if (invalidEntry) {
+    throw new BadRequestError("Invalid bundle", undefined, {
+      resourceType: params.resourceType,
+      resourceTypeInBundle: invalidEntry.resourceType,
+    });
+  }
+  const bundle = createBundleFromResourceList(fhirResources as Resource[]);
+  await createOrReplaceBundle({
+    ...params,
+    bundleType: BundleType.EHR,
+    bundle,
+  });
   return bundle;
+}
+
+/**
+ * Fetches FHIR resources from the EHR for the given resource type.
+ * Pagination is handled automatically.
+ *
+ * @param makeRequest - The function that makes the request to the EHR FHIR endpoint.
+ * @param url - The URL of the bundle.
+ * @param acc - The accumulator of the resources.
+ * @returns The FHIR resources.
+ */
+export async function fetchEhrFhirResourcesWithPagination({
+  makeRequest,
+  url,
+  acc = [],
+}: {
+  makeRequest: (url: string) => Promise<EhrFhirResourceBundle>;
+  url: string | undefined;
+  acc?: EhrFhirResource[] | undefined;
+}): Promise<EhrFhirResource[]> {
+  if (!url) return acc;
+  const fhirResourceBundle = await makeRequest(url);
+  acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
+  const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
+  return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });
 }

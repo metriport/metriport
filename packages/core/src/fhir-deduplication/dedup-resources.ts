@@ -128,9 +128,13 @@ export function deduplicateResources<T extends Resource>({ resources }: { resour
       ).combinedResources;
       break;
     default:
-      throw new BadRequestError(`Unsupported resource type: ${resourceType}`, undefined, {
-        resourceType,
-      });
+      throw new BadRequestError(
+        "Unsupported resource type for deduplicating resources",
+        undefined,
+        {
+          resourceType,
+        }
+      );
   }
   return deduplicatedResources as T[];
 }
