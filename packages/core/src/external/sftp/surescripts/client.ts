@@ -1,6 +1,7 @@
 import { Config } from "../../../util/config";
 import { IdGenerator, createIdGenerator } from "../id-generator";
 import { SftpClient, SftpConfig } from "../client";
+import { dateToString } from "./schema/shared";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -72,10 +73,10 @@ export class SurescriptsSftpClient extends SftpClient {
   // }
 }
 
-export default SurescriptsSftpClient;
-
-// function getTransmissionFileName<T>(transmission: Transmission<T>): string {
-//   return `${transmission.population}${transmission.id}${transmission.date}${
-//     transmission.compression ? `.${transmission.compression}` : ""
-//   }`;
-// }
+export function getPatientLoadFileName<T extends TransmissionType>(
+  transmission: Transmission<T>
+): string {
+  return `Metriport_PMA_${dateToString(transmission.date)}${
+    transmission.compression ? "." + transmission.compression : ""
+  }`;
+}
