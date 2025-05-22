@@ -21,6 +21,8 @@ import {
   isPatientVerificationFooter,
 } from "./schema/verification";
 
+import { isValidNpiNumber } from "@metriport/shared/common/npi-number";
+
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 import { parseNameDemographics } from "./demographics";
@@ -30,7 +32,7 @@ export function canGenerateSurescriptsMessage(
   patients: Patient[]
 ): boolean {
   if (patients.length === 0) return false;
-  if (transmission.npiNumber == null || transmission.npiNumber.trim().length === 0) return false;
+  if (!isValidNpiNumber(transmission.npiNumber)) return false;
   return true;
 }
 
