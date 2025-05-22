@@ -118,12 +118,12 @@ const settings: SurescriptsSettings = {
 function surescriptsEnvironmentVariablesAndSecrets({
   nestedStack,
   surescripts,
-  surescriptsReplicaBucketName,
+  surescriptsReplicaBucket,
   medicationBundleBucket,
 }: {
   nestedStack: SurescriptsNestedStack;
   surescripts: EnvConfig["surescripts"];
-  surescriptsReplicaBucketName: string;
+  surescriptsReplicaBucket: s3.Bucket;
   medicationBundleBucket: s3.Bucket;
 }): { envVars: Record<string, string>; secrets: secret.ISecret[] } {
   if (!surescripts) {
@@ -134,7 +134,7 @@ function surescriptsEnvironmentVariablesAndSecrets({
     SURESCRIPTS_SFTP_HOST: surescripts.surescriptsHost,
     SURESCRIPTS_SFTP_SENDER_ID: surescripts.surescriptsSenderId,
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
-    SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucketName,
+    SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
     MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
   };
 
@@ -163,6 +163,7 @@ function surescriptsEnvironmentVariablesAndSecrets({
 function buildSecret(nestedStack: SurescriptsNestedStack, name: string): secret.ISecret {
   return secret.Secret.fromSecretNameV2(nestedStack, name, name);
 }
+
 interface SurescriptsNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
@@ -204,7 +205,7 @@ export class SurescriptsNestedStack extends NestedStack {
     const { envVars, secrets } = surescriptsEnvironmentVariablesAndSecrets({
       nestedStack: this,
       surescripts: props.config.surescripts,
-      surescriptsReplicaBucketName: props.config.surescriptsReplicaBucketName,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       medicationBundleBucket: this.medicationBundleBucket,
     });
 
@@ -316,9 +317,7 @@ export class SurescriptsNestedStack extends NestedStack {
     });
 
     surescriptsReplicaBucket.grantReadWrite(lambda);
-    if (medicationBundleBucket && job === "receiveFlatFileResponse") {
-      medicationBundleBucket.grantReadWrite(lambda);
-    }
+    medicationBundleBucket?.grantReadWrite(lambda);
 
     lambda.addEventSource(
       new SqsEventSource(queue, {

@@ -377,16 +377,14 @@ export function createAPIService({
           ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
-          ...(props.config.surescripts && {
-            MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
-            SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
-            SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsSynchronizeSftpQueue.queueUrl,
-            SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL: surescriptsSendPatientRequestQueue.queueUrl,
-            SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
-              surescriptsReceiveVerificationResponseQueue.queueUrl,
-            SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
-              surescriptsReceiveFlatFileResponseQueue.queueUrl,
-          }),
+          MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
+          SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
+          SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsSynchronizeSftpQueue.queueUrl,
+          SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL: surescriptsSendPatientRequestQueue.queueUrl,
+          SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
+            surescriptsReceiveVerificationResponseQueue.queueUrl,
+          SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
+            surescriptsReceiveFlatFileResponseQueue.queueUrl,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
