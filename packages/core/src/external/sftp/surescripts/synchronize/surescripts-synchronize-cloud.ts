@@ -1,34 +1,26 @@
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../../../util/config";
-import * as AWS from "aws-sdk";
-import { makeLambdaClient } from "../../../aws/lambda";
+import { SQSClient } from "../../../aws/sqs";
 import {
   SurescriptsSynchronizeHandler,
   ProcessSynchronizeRequest,
 } from "./surescripts-synchronize";
 
 export class SurescriptsSynchronizeCloud implements SurescriptsSynchronizeHandler {
-  private readonly lambdaClient: AWS.Lambda;
+  private readonly sqsClient: SQSClient;
 
   constructor(
-    private readonly surescriptsSynchronizeLambdaName: string,
+    private readonly surescriptsSynchronizeQueueUrl: string,
     region?: string,
-    lambdaClient?: AWS.Lambda
+    sqsClient?: SQSClient
   ) {
-    this.lambdaClient = lambdaClient ?? makeLambdaClient(region ?? Config.getAWSRegion());
+    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
   async processSynchronize(params: ProcessSynchronizeRequest): Promise<void> {
     const payload = JSON.stringify(params);
-    await this.lambdaClient.invoke({
-      FunctionName: this.surescriptsSynchronizeLambdaName,
-      InvocationType: "Event",
-      Payload: payload,
+    await executeWithNetworkRetries(async () => {
+      await this.sqsClient.sendMessageToQueue(this.surescriptsSynchronizeQueueUrl, payload, {});
     });
-    // getLambdaResultPayload({
-    //   result,
-    //   lambdaName: this.surescriptsSynchronizeLambdaName,
-    //   failGracefully: true,
-    //   failOnEmptyResponse: true,
-    // });
   }
 }

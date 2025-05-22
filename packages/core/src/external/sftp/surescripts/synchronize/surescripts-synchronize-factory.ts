@@ -8,6 +8,6 @@ export function buildSurescriptsSynchronizeHandler(): SurescriptsSynchronizeHand
     const waitTimeAtTheEndInMillis = 0;
     return new SurescriptsSynchronizeLocal(waitTimeAtTheEndInMillis);
   }
-  const surescriptsSynchronizeLambdaName = Config.getSurescriptsSynchronizeLambdaName();
-  return new SurescriptsSynchronizeCloud(surescriptsSynchronizeLambdaName);
+  const surescriptsSynchronizeQueueUrl = Config.getSurescriptsSynchronizeQueueUrl();
+  return new SurescriptsSynchronizeCloud(surescriptsSynchronizeQueueUrl);
 }
