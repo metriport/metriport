@@ -16,6 +16,7 @@ import {
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
   MetriportToHieFieldMapping,
+  RosterRowData,
 } from "./types";
 import { createScrambledId } from "./utils";
 
@@ -151,40 +152,24 @@ export function createRosterRow(
 ): RosterRow {
   const result: RosterRow = {};
 
-  for (const [sourceKey, columnName] of Object.entries(mapping)) {
-    const value = source[sourceKey as keyof RosterRowData];
-    result[columnName] = value ?? "";
-  }
+  Object.entries(mapping).forEach(([key, columnName]) => {
+    if (columnName && isRosterRowKey(key, source)) {
+      result[columnName] = source[key] ?? "";
+    }
+
+    throw new MetriportError(
+      `source key ${key} for column ${columnName} not found in RosterRowData`
+    );
+  });
 
   return result;
 }
 
-export type RosterRowData = {
-  id: string;
-  cxId: string;
-  rosterGenerationDate: string;
-  firstName: string;
-  lastName: string;
-  dob: string;
-  middleName: string | undefined;
-  genderAtBirth: string | undefined;
-  scrambledId: string;
-  ssn: string | undefined;
-  driversLicense: string | undefined;
-  phone: string | undefined;
-  email: string | undefined;
-  address1AddressLine1: string | undefined;
-  address1AddressLine2: string | undefined;
-  address1City: string | undefined;
-  address1State: string | undefined;
-  address1Zip: string | undefined;
-  insuranceId: string | undefined;
-  insuranceCompanyId: string | undefined;
-  insuranceCompanyName: string | undefined;
-  authorizingParticipantFacilityCode: string | undefined;
-  authorizingParticipantMrn: string | undefined;
-  assigningAuthorityIdentifier: string | undefined;
-};
+type RosterRowKey = keyof RosterRowData;
+
+function isRosterRowKey(key: string, obj: RosterRowData): key is RosterRowKey {
+  return key in obj;
+}
 
 export function mapPatientToRosterRowData(p: Patient, states: string[]): RosterRowData {
   const data = p.data;
