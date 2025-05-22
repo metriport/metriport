@@ -2,6 +2,7 @@ import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk"
 import { isCWEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { groupBy } from "lodash";
@@ -149,7 +150,8 @@ export async function recreatePatientAtCW(
 
       // remove old patient
       log(`Deleting old patient from CW...`);
-      await commonWell.deletePatient(queryMeta, originalCWPatientId);
+      const cwApi: CommonWellAPI = commonWell; // makes the compiler happy inside executeWithRetriesCw
+      await executeWithRetriesCw(() => cwApi.deletePatient(queryMeta, originalCWPatientId));
     }
 
     return { originalCWPatientId, newCWPatientId };
