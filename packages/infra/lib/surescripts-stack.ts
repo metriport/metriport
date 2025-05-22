@@ -172,6 +172,7 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
+  medicationBundleBucket: s3.Bucket;
 }
 
 export class SurescriptsNestedStack extends NestedStack {
@@ -198,12 +199,7 @@ export class SurescriptsNestedStack extends NestedStack {
       versioned: true,
     });
 
-    this.medicationBundleBucket = new s3.Bucket(this, "MedicationBundleBucket", {
-      bucketName: props.config.medicationBundleBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    this.medicationBundleBucket = props.medicationBundleBucket;
 
     const { envVars, secrets } = surescriptsEnvironmentVariablesAndSecrets({
       nestedStack: this,

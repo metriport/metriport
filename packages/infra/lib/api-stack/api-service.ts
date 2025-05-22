@@ -180,12 +180,12 @@ export function createAPIService({
   semanticSearchEndpoint: string | undefined;
   semanticSearchIndexName: string | undefined;
   semanticSearchModelId: string | undefined;
-  surescriptsReplicaBucket: s3.IBucket;
-  medicationBundleBucket: s3.IBucket;
-  surescriptsSynchronizeSftpQueue: IQueue;
-  surescriptsSendPatientRequestQueue: IQueue;
-  surescriptsReceiveVerificationResponseQueue: IQueue;
-  surescriptsReceiveFlatFileResponseQueue: IQueue;
+  surescriptsReplicaBucket?: s3.IBucket;
+  medicationBundleBucket?: s3.IBucket;
+  surescriptsSynchronizeSftpQueue?: IQueue;
+  surescriptsSendPatientRequestQueue?: IQueue;
+  surescriptsReceiveVerificationResponseQueue?: IQueue;
+  surescriptsReceiveFlatFileResponseQueue?: IQueue;
   // TODO eng-41 Make this an actual Secret before going to prod
   semanticSearchAuth: { userName: string; secret: string } | undefined;
   featureFlagsTable: dynamodb.Table;
@@ -377,14 +377,20 @@ export function createAPIService({
           ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
-          MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
-          SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
-          SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsSynchronizeSftpQueue.queueUrl,
-          SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL: surescriptsSendPatientRequestQueue.queueUrl,
-          SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
-            surescriptsReceiveVerificationResponseQueue.queueUrl,
-          SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
-            surescriptsReceiveFlatFileResponseQueue.queueUrl,
+          ...(medicationBundleBucket != null && {
+            MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
+          }),
+          ...(!isSandbox(props.config) &&
+            props.config.surescripts && {
+              SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket?.bucketName,
+              SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsSynchronizeSftpQueue?.queueUrl,
+              SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL:
+                surescriptsSendPatientRequestQueue?.queueUrl,
+              SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
+                surescriptsReceiveVerificationResponseQueue?.queueUrl,
+              SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
+                surescriptsReceiveFlatFileResponseQueue?.queueUrl,
+            }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -469,8 +475,15 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
-  medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
-  surescriptsReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+
+  if (medicationBundleBucket) {
+    medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  }
+
+  if (surescriptsReplicaBucket) {
+    surescriptsReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  }
+
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
@@ -504,26 +517,39 @@ export function createAPIService({
     queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: surescriptsSynchronizeSftpQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: surescriptsSendPatientRequestQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: surescriptsReceiveVerificationResponseQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: surescriptsReceiveFlatFileResponseQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
+
+  if (surescriptsSynchronizeSftpQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: surescriptsSynchronizeSftpQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (surescriptsSendPatientRequestQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: surescriptsSendPatientRequestQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (surescriptsReceiveVerificationResponseQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: surescriptsReceiveVerificationResponseQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (surescriptsReceiveFlatFileResponseQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: surescriptsReceiveFlatFileResponseQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
   // Allow access to search services/infra
   provideAccessToQueue({
     accessType: "send",

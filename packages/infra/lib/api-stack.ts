@@ -56,6 +56,7 @@ import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
 import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 
@@ -444,23 +445,52 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Surescripts
     //-------------------------------------------
-    const {
-      synchronizeSftpLambda: surescriptsSynchronizeSftpLambda,
-      synchronizeSftpQueue: surescriptsSynchronizeSftpQueue,
-      receiveFlatFileResponseLambda: surescriptsReceiveFlatFileResponseLambda,
-      receiveVerificationResponseLambda: surescriptsReceiveVerificationResponseLambda,
-      sendPatientRequestLambda: surescriptsSendPatientRequestLambda,
-      sendPatientRequestQueue: surescriptsSendPatientRequestQueue,
-      receiveFlatFileResponseQueue: surescriptsReceiveFlatFileResponseQueue,
-      receiveVerificationResponseQueue: surescriptsReceiveVerificationResponseQueue,
-      surescriptsReplicaBucket,
-      medicationBundleBucket,
-    } = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
-      config: props.config,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-      lambdaLayers,
+    let surescriptsSynchronizeSftpLambda: Lambda | undefined;
+    let surescriptsSynchronizeSftpQueue: Queue | undefined;
+    let surescriptsReceiveFlatFileResponseLambda: Lambda | undefined;
+    let surescriptsReceiveVerificationResponseLambda: Lambda | undefined;
+    let surescriptsSendPatientRequestLambda: Lambda | undefined;
+    let surescriptsSendPatientRequestQueue: Queue | undefined;
+    let surescriptsReceiveFlatFileResponseQueue: Queue | undefined;
+    let surescriptsReceiveVerificationResponseQueue: Queue | undefined;
+    let surescriptsReplicaBucket: s3.Bucket | undefined;
+
+    const medicationBundleBucket = new s3.Bucket(this, "MedicationBundleBucket", {
+      bucketName: props.config.medicationBundleBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
     });
+
+    if (!isSandbox(props.config)) {
+      const {
+        synchronizeSftpLambda,
+        synchronizeSftpQueue,
+        receiveFlatFileResponseLambda,
+        receiveVerificationResponseLambda,
+        sendPatientRequestLambda,
+        sendPatientRequestQueue,
+        receiveFlatFileResponseQueue,
+        receiveVerificationResponseQueue,
+        surescriptsReplicaBucket: surescriptsReplicaBucketFromStack,
+      } = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+        medicationBundleBucket,
+      });
+
+      surescriptsSynchronizeSftpLambda = synchronizeSftpLambda;
+      surescriptsSynchronizeSftpQueue = synchronizeSftpQueue;
+      surescriptsReceiveFlatFileResponseLambda = receiveFlatFileResponseLambda;
+      surescriptsReceiveVerificationResponseLambda = receiveVerificationResponseLambda;
+      surescriptsSendPatientRequestLambda = sendPatientRequestLambda;
+      surescriptsSendPatientRequestQueue = sendPatientRequestQueue;
+      surescriptsReceiveFlatFileResponseQueue = receiveFlatFileResponseQueue;
+      surescriptsReceiveVerificationResponseQueue = receiveVerificationResponseQueue;
+      surescriptsReplicaBucket = surescriptsReplicaBucketFromStack;
+    }
 
     //-------------------------------------------
     // Rate Limiting
