@@ -20,8 +20,8 @@ const sendPatientRequestLambdaTimeout = Duration.seconds(30);
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveFlatFileResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
-const maxConcurrencyForSftpOperations = 1;
-const maxConcurrencyForFileOperations = 1;
+const maxConcurrencyForSftpOperations = 2;
+const maxConcurrencyForFileOperations = 4;
 
 interface SurescriptsSettings {
   synchronizeSftp: QueueAndLambdaSettings;
@@ -296,7 +296,6 @@ export class SurescriptsNestedStack extends NestedStack {
       ...queueSettings,
       stack: this,
       name,
-      fifo: true,
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,

@@ -13,11 +13,10 @@ import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 import { internalDtoFromModel } from "../../medical/dtos/organizationDTO";
 import { organiationInternalDetailsSchema } from "../../medical/schemas/organization";
-
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- *
  * PUT /internal/organization
  *
  * Creates or updates a organization and registers it within HIEs if new.
@@ -41,6 +40,7 @@ router.put(
       cxId,
       type: orgDetails.businessType,
       data: {
+        shortcode: orgDetails.shortcode,
         name: orgDetails.nameInMetriport,
         type: orgDetails.type,
         location: {
@@ -79,6 +79,22 @@ router.put(
         isObo: false,
       }).catch(processAsyncError("cw.internal.organization"));
     }
+    return res.status(httpStatus.OK).json(internalDtoFromModel(org));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/organization/
+ *
+ * Returns an organization from the db.
+ */
+router.get(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const org = await getOrganizationOrFail({ cxId });
+
     return res.status(httpStatus.OK).json(internalDtoFromModel(org));
   })
 );
