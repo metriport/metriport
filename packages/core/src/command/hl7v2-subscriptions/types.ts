@@ -10,12 +10,6 @@ export type SftpConfig = {
   remotePath: string;
 };
 
-export const addressFields = ["addressLine1", "addressLine2", "city", "state", "zip"] as const;
-export type AddressField = (typeof addressFields)[number];
-export type HieAddressFieldMapping = {
-  [K in AddressField]: string;
-};
-
 export type MetriportToHieFieldMapping = {
   rosterGenerationDate?: string;
   scrambledId: string;
@@ -28,7 +22,11 @@ export type MetriportToHieFieldMapping = {
   phone?: string;
   email?: string;
   driversLicense?: string;
-  address: HieAddressFieldMapping[];
+  address1AddressLine1?: string;
+  address1AddressLine2?: string;
+  address1City?: string;
+  address1State?: string;
+  address1Zip?: string;
   insuranceId?: string;
   insuranceCompanyId?: string;
   insuranceCompanyName?: string;
