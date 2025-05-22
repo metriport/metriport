@@ -5,10 +5,10 @@ import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscription
 import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { HixnyTestConfig } from "../../../infra/config/config-data/staging/api-infra/hie-configs";
+import { TestHieConfig } from "../../../infra/config/config-data/staging/api-infra/hie-configs";
 
 const isLocal = true;
-const hieConfig = HixnyTestConfig as HieConfig;
+const config = TestHieConfig as HieConfig;
 
 /**
  * Triggers generation and upload of HL7v2 subscription roster to S3.
@@ -37,7 +37,7 @@ async function main() {
       const apiUrl = getEnvVarOrFail("API_URL");
       const bucketName = getEnvVarOrFail("HL7V2_ROSTER_BUCKET_NAME");
 
-      await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(hieConfig);
+      await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(config);
     } else {
       const region = getEnvVarOrFail("AWS_REGION");
       const lambdaName = getEnvVarOrFail("HL7V2_ROSTER_UPLOAD_LAMBDA_NAME");
@@ -47,7 +47,7 @@ async function main() {
         .invoke({
           FunctionName: lambdaName,
           InvocationType: "RequestResponse",
-          Payload: JSON.stringify(hieConfig),
+          Payload: JSON.stringify(config),
         })
         .promise();
     }
