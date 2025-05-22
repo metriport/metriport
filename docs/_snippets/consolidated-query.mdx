@@ -4,6 +4,9 @@
 <ResponseField name="status" type="string" required>
   The status of the request. Can be one of `processing`, `completed`, or `failed`.
 </ResponseField>
+<ResponseField name="conversionType" type="string" required>
+  The format of the resulting data. Can be one of `pdf`, `html`, or `json`.
+</ResponseField>
 <ResponseField name="startedAt" type="string" optional>
   The date and time the request was started - formatted `YYYY-MM-DDTHH:MM:SSZ` as per ISO 8601.
 </ResponseField>
@@ -17,7 +20,4 @@
 <ResponseField name="dateFrom" type="string" optional>
   The end date (inclusive) for which to filter resources to count - formatted `YYYY-MM-DD` as per
   ISO 8601.
-</ResponseField>
-<ResponseField name="conversionType" type="string" required>
-  The format of the resulting data. Can be one of `pdf`, `html`, or `json`.
 </ResponseField>
