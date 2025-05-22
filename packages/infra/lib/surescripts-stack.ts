@@ -45,7 +45,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: 1,
     },
     waitTime: synchronizeSftpWaitTime,
   },
@@ -67,7 +67,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: 1,
     },
     waitTime: Duration.seconds(0),
   },
@@ -88,7 +88,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: 1,
     },
     waitTime: Duration.seconds(0),
   },
@@ -109,7 +109,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: 1,
     },
     waitTime: Duration.seconds(0),
   },
