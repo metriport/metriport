@@ -1,5 +1,5 @@
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
-import { EhrSyncPatientLocal } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-local";
+import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient";
+import { EhrSyncPatientLocal } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";

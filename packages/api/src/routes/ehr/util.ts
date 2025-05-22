@@ -12,8 +12,9 @@ export type PathDetails = {
 export function validatePath(req: Request, paths: PathDetails[]): PathDetails {
   const validPaths = paths.filter(path => path.pathRegex.test(req.path));
   if (validPaths.length === 0) throw new BadRequestError(`Invalid path ${req.path}`);
-  if (validPaths.length > 1)
+  if (validPaths.length > 1) {
     throw new BadRequestError(`More than one path matched for ${req.path}`);
+  }
   return validPaths[0];
 }
 

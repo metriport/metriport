@@ -1,5 +1,5 @@
 import {
-  getBundleFunctions,
+  getBundleClientFunctions,
   validateAndPrepareBundleFetchOrRefresh,
 } from "../../utils/bundle/functions";
 import { RefreshEhrBundleParams, RefreshEhrBundleParamsForClient } from "../../utils/bundle/types";
@@ -20,7 +20,7 @@ export async function refreshEhrBundles({
   ehrPatientId,
   resourceType,
 }: RefreshEhrBundleParams): Promise<void> {
-  const { refreshEhrBundle } = getBundleFunctions(ehr);
+  const { refreshEhrBundle } = getBundleClientFunctions(ehr);
   const { metriportPatientId, resourceTypes } = await validateAndPrepareBundleFetchOrRefresh({
     ehr,
     cxId,

@@ -54,7 +54,7 @@ export function getLookForwardTimeRangeWithOffset({
 } {
   const currentDatetime = buildDayjs();
   const startRange = buildDayjs(currentDatetime).add(offset).toDate();
-  const endRange = buildDayjs(currentDatetime).add(lookForward).toDate();
+  const endRange = buildDayjs(currentDatetime).add(offset).add(lookForward).toDate();
   if (startRange > endRange) throw new BadRequestError("Start range is greater than end range");
   return {
     startRange,

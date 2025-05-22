@@ -423,6 +423,8 @@ export class APIStack extends Stack {
     // EHR
     //-------------------------------------------
     const {
+      getAppointmentsLambda: ehrGetAppointmentsLambda,
+      getBundleByResourceTypeLambda: ehrGetBundleByResourceTypeLambda,
       syncPatientQueue: ehrSyncPatientQueue,
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
@@ -438,6 +440,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
+      ehrResponsesBucket,
       medicalDocumentsBucket,
     });
 
@@ -577,6 +580,8 @@ export class APIStack extends Stack {
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
       ehrRefreshEhrBundlesQueue,
+      ehrGetAppointmentsLambda,
+      ehrGetBundleByResourceTypeLambda,
       ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -687,6 +692,8 @@ export class APIStack extends Stack {
       healthieLinkPatientLambda,
       ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
+      ehrGetAppointmentsLambda,
+      ehrGetBundleByResourceTypeLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
       surescriptsReceiveFlatFileResponseLambda,

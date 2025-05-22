@@ -3,8 +3,8 @@ import { EhrSources } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { createCondition } from "../../../external/ehr/canvas/command/create-condition";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
+import { writeConditionToFhir } from "../../../external/ehr/canvas/command/write-back/condition";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
@@ -113,7 +113,7 @@ router.post(
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
-    const conditionDetails = await createCondition({
+    const conditionDetails = await writeConditionToFhir({
       cxId,
       canvasPatientId,
       canvasPracticeId,

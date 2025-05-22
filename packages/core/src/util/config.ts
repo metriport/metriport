@@ -212,6 +212,12 @@ export class Config {
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
   }
+  static getEhrGetAppointmentsLambdaName(): string {
+    return getEnvVarOrFail("EHR_GET_APPOINTMENTS_LAMBDA_NAME");
+  }
+  static getEhrGetBundleByResourceTypeLambdaName(): string {
+    return getEnvVarOrFail("EHR_GET_BUNDLE_BY_RESOURCE_TYPE_LAMBDA_NAME");
+  }
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }

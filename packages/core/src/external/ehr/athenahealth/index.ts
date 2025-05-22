@@ -1,4 +1,5 @@
 import {
+  Bundle,
   Condition,
   Medication,
   MedicationAdministration,
@@ -52,6 +53,10 @@ import {
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import {
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import {
   Patient,
   patientSchema,
   PatientSearch,
@@ -68,12 +73,16 @@ import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
   createDataParams,
+  fetchEhrBundleUsingCache,
+  fetchEhrFhirResourcesWithPagination,
   formatDate,
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  GetSecretsOauthFunction,
   makeRequest,
   MakeRequestParamsInEhr,
+  processOauthSecrets,
 } from "../shared";
 
 const parallelRequests = 5;
@@ -112,6 +121,9 @@ vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
 
 const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
 
+const medicationRequestIntents = ["proposal", "plan", "order", "option"];
+const coverageCount = "50";
+
 const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
@@ -141,11 +153,50 @@ type DataPoint = {
   bp?: BloodPressure | undefined;
 };
 
+export const supportedAthenaHealthResources = [
+  "AllergyIntolerance",
+  "CarePlan",
+  "Condition",
+  "DiagnosticReport",
+  "Goal",
+  "Immunization",
+  "MedicationDispense",
+  "MedicationRequest",
+  "Observation",
+  "Procedure",
+  "Specimen",
+  "Device",
+  "ServiceRequest",
+  "Encounter",
+  "Coverage",
+  "RelatedPerson",
+  "CareTeam",
+];
+
+export const scopes = [
+  ...supportedAthenaHealthResources,
+  "Media",
+  "Medication",
+  "Binary",
+  "Location",
+  "Organization",
+  "Practitioner",
+  "Provenance",
+];
+
+export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
+export function isSupportedAthenaHealthResource(
+  resourceType: string
+): resourceType is SupportedAthenaHealthResource {
+  return supportedAthenaHealthResources.includes(resourceType);
+}
+
 class AthenaHealthApi {
   private axiosInstanceFhir: AxiosInstance;
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  private getSecrets: GetSecretsOauthFunction | undefined;
   private practiceId: string;
 
   private constructor(private config: AthenaHealthApiConfig) {
@@ -154,6 +205,7 @@ class AthenaHealthApi {
     this.axiosInstanceFhir = axios.create({});
     this.axiosInstanceProprietary = axios.create({});
     this.baseUrl = `https://${config.environment}.platform.athenahealth.com`;
+    this.getSecrets = config.getSecrets;
   }
 
   public static async create(config: AthenaHealthApiConfig): Promise<AthenaHealthApi> {
@@ -167,18 +219,27 @@ class AthenaHealthApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
+    const secrets = await processOauthSecrets({
+      ehr: EhrSources.athena,
+      secrets: {
+        ...(this.config.clientKey && { clientKey: this.config.clientKey }),
+        ...(this.config.clientSecret && { clientSecret: this.config.clientSecret }),
+      },
+      getSecrets: this.getSecrets,
+    });
     const url = `${this.baseUrl}/oauth2/v1/token`;
+    const fhirScopes = scopes.map(resource => `system/${resource}.read`).join(" ");
     const data = {
       grant_type: "client_credentials",
-      scope: "athena/service/Athenanet.MDP.* system/Patient.read",
+      scope: `athena/service/Athenanet.MDP.* system/Patient.read ${fhirScopes}`,
     };
 
     try {
       const response = await axios.post(url, createDataParams(data), {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         auth: {
-          username: this.config.clientKey,
-          password: this.config.clientSecret,
+          username: secrets.clientKey,
+          password: secrets.clientSecret,
         },
       });
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
@@ -676,6 +737,65 @@ class AthenaHealthApi {
       });
     }
     return allMedicationReferences;
+  }
+
+  async getBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    resourceType,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    resourceType: SupportedAthenaHealthResource;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+    );
+    const params = {
+      patient: `${this.createPatientId(athenaPatientId)}`,
+      _count: resourceType === "Coverage" ? coverageCount : "1000",
+      ...(resourceType === "MedicationRequest"
+        ? { intent: medicationRequestIntents.join(",") }
+        : undefined),
+    };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: athenaPatientId,
+      resourceType,
+    };
+    const fetchResourcesFromEhr = () =>
+      fetchEhrFhirResourcesWithPagination({
+        makeRequest: (url: string) =>
+          this.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: athenaPatientId,
+            s3Path: `fhir-resources-${resourceType}`,
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          }),
+        url: resourceTypeUrl,
+      });
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.athena,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: athenaPatientId,
+      resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    return bundle;
   }
 
   async subscribeToEvent({
