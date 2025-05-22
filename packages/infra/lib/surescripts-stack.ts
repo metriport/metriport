@@ -20,6 +20,8 @@ const sendPatientRequestLambdaTimeout = Duration.seconds(30);
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveFlatFileResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
+const maxConcurrencyForSftpOperations = 2;
+const maxConcurrencyForFileOperations = 4;
 
 interface SurescriptsSettings {
   synchronizeSftp: QueueAndLambdaSettings;
@@ -46,6 +48,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: synchronizeSftpWaitTime,
   },
@@ -67,6 +70,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: maxConcurrencyForFileOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -87,6 +91,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: maxConcurrencyForFileOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -107,6 +112,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: maxConcurrencyForFileOperations,
     },
     waitTime: Duration.seconds(0),
   },
