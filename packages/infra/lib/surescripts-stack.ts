@@ -19,6 +19,8 @@ const synchronizeSftpWaitTime = Duration.seconds(1);
 const sendPatientRequestLambdaTimeout = Duration.seconds(30);
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveFlatFileResponseLambdaTimeout = Duration.seconds(30);
+const alarmMaxAgeOfOldestMessage = Duration.hours(1);
+const maxConcurrencyForFileOperations = 4;
 
 interface SurescriptsSettings {
   synchronizeSftp: QueueAndLambdaSettings;
@@ -36,7 +38,7 @@ const settings: SurescriptsSettings = {
       timeout: synchronizeSftpTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      alarmMaxAgeOfOldestMessage,
       maxMessageCountAlarmThreshold: 1000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(synchronizeSftpTimeout.toSeconds() * 2 + 1),
@@ -58,7 +60,7 @@ const settings: SurescriptsSettings = {
       timeout: sendPatientRequestLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(3),
+      alarmMaxAgeOfOldestMessage,
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(sendPatientRequestLambdaTimeout.toSeconds() * 2 + 1),
@@ -67,7 +69,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: maxConcurrencyForFileOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -79,7 +81,7 @@ const settings: SurescriptsSettings = {
       timeout: receiveVerificationLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      alarmMaxAgeOfOldestMessage,
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(receiveVerificationLambdaTimeout.toSeconds() * 2 + 1),
@@ -88,7 +90,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: maxConcurrencyForFileOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -100,7 +102,7 @@ const settings: SurescriptsSettings = {
       timeout: receiveFlatFileResponseLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      alarmMaxAgeOfOldestMessage,
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(receiveFlatFileResponseLambdaTimeout.toSeconds() * 2 + 1),
@@ -109,7 +111,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: maxConcurrencyForFileOperations,
     },
     waitTime: Duration.seconds(0),
   },
