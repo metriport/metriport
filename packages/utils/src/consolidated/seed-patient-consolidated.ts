@@ -30,6 +30,9 @@ const destinationPatientId = "";
 // Set this to true to save the JSON Bundlefiles to the local filesystem, pre and post ID replacement
 const isDebugJsonBundles = false;
 
+// Set this to only copy files with this in the filename (uses includes, case sensitive)
+const filenameFilter = undefined;
+
 // STOP! Never point these to production buckets!
 const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const conversionsBucketName = getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
@@ -63,11 +66,14 @@ async function main() {
   async function copyData(bucketName: string) {
     console.log(`>>> Processing bucket ${bucketName}...`);
     const sourceFiles = await s3Utils.listObjects(bucketName, sourceFilenamePrefix);
-    if (sourceFiles.length < 1) return;
-    console.log(`... found ${sourceFiles.length} files to copy`);
+    const filteredFiles = filenameFilter
+      ? sourceFiles.filter(file => file.Key?.includes(filenameFilter))
+      : sourceFiles;
+    if (filteredFiles.length < 1) return;
+    console.log(`... found ${filteredFiles.length} files to copy`);
 
     await executeAsynchronously(
-      sourceFiles,
+      filteredFiles,
       async sourceFile => {
         const sourceFileKey = sourceFile.Key;
         if (!sourceFileKey) return;
@@ -82,7 +88,7 @@ async function main() {
 
         // if (isMimeTypeXML(fileType)) return;
 
-        if (fileType === "application/json") {
+        if (fileType === "application/json" || sourceFileKey.endsWith(".json")) {
           // load the file in memory, replace the patient IDs in the FHIR Bundle, store that at the destination
           const contents = await s3Utils.getFileContentsAsString(bucketName, sourceFileKey);
           const contentsWithIdReplaced = contents.replaceAll(sourcePatientId, destinationPatientId);
