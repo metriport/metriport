@@ -3,8 +3,8 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import fs from "fs";
-import { runsFolderName } from "../../shared/folder";
-import { fileExists } from "../../shared/fs";
+import { runsFolderName } from "../../../shared/folder";
+import { fileExists } from "../../../shared/fs";
 
 const s3FilenameFilter = "_consolidated_";
 

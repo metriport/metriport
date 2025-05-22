@@ -9,7 +9,7 @@ import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
-import { getFileContentsAsync, getFileNames } from "../shared/fs";
+import { getFileContentsAsync, getFileNames } from "../../shared/fs";
 
 dayjs.extend(duration);
 

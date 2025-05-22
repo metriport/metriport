@@ -5,7 +5,7 @@ import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { getFileContentsAsync, getFileNames } from "../shared/fs";
+import { getFileContentsAsync, getFileNames } from "../../shared/fs";
 
 dayjs.extend(duration);
 
