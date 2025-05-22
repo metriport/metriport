@@ -1,7 +1,7 @@
-import { AllergyIntolerance } from "@medplum/fhirtypes";
+import { AllergyIntolerance, AllergyIntoleranceReaction } from "@medplum/fhirtypes";
 import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
 import { formatAnnotations } from "../shared/annotation";
-import { formatCodeableConcept } from "../shared/codeable-concept";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
 import { formatReference } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
@@ -40,6 +40,11 @@ export class AllergyIntoleranceToString implements FHIRResourceToString<AllergyI
         parts.push(statusStr);
       }
     }
+
+    allergy.reaction?.forEach(reaction => {
+      const reactionStr = formatAllergyReaction(reaction, isDebug);
+      if (reactionStr) parts.push(reactionStr);
+    });
 
     if (allergy.type) {
       parts.push(isDebug ? `Type: ${allergy.type}` : allergy.type);
@@ -111,4 +116,24 @@ export class AllergyIntoleranceToString implements FHIRResourceToString<AllergyI
 
     return parts.join(FIELD_SEPARATOR);
   }
+}
+
+function formatAllergyReaction(reaction: AllergyIntoleranceReaction, isDebug?: boolean): string {
+  const parts: string[] = [];
+
+  const substanceStr = formatCodeableConcept({
+    concept: reaction.substance,
+    label: "Substance",
+    isDebug,
+  });
+  if (substanceStr) parts.push(substanceStr);
+
+  const manifestationStr = formatCodeableConcepts({
+    concepts: reaction.manifestation,
+    label: "Manifestation",
+    isDebug,
+  });
+  if (manifestationStr) parts.push(manifestationStr);
+
+  return parts.join(FIELD_SEPARATOR);
 }
