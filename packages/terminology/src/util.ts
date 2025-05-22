@@ -1,4 +1,7 @@
+import { MetriportError } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
+
+const normalizationErrorMsg = "Invalid NDC code";
 
 export function asyncHandler(
   f: (
@@ -38,14 +41,22 @@ export function asyncHandler(
  * - 11 digits: keep as is
  * - 10 digits: add leading zero
  */
-export function normalizeNdcCode(ndc: string, isTruncatedAllowed?: boolean): string {
+export function normalizeNdcCode(ndc: string, isTruncatedAllowed = false): string {
   const cleaned = ndc.trim().replace(/\*/g, "0");
   let normalized = "";
 
   if (cleaned.includes("-")) {
     const [labeler, product, pkg] = cleaned.split("-");
-    if (!labeler || !product) throw new Error(`Invalid NDC code: ${cleaned}`);
-    if (!pkg && !isTruncatedAllowed) throw new Error(`Truncated NDC code: ${cleaned}`);
+    if (!labeler || !product)
+      throw new MetriportError(normalizationErrorMsg, undefined, {
+        cleaned,
+        reason: "missing labeler or product",
+      });
+    if (!pkg && !isTruncatedAllowed)
+      throw new MetriportError(normalizationErrorMsg, undefined, {
+        cleaned,
+        reason: "missing package",
+      });
 
     if (labeler.length === 6) {
       normalized += labeler.slice(1);
@@ -54,7 +65,10 @@ export function normalizeNdcCode(ndc: string, isTruncatedAllowed?: boolean): str
     } else if (labeler.length === 4) {
       normalized += `0${labeler}`;
     } else {
-      throw new Error(`Invalid labeler length: ${labeler}`);
+      throw new MetriportError(normalizationErrorMsg, undefined, {
+        cleaned,
+        reason: "invalid labeler length",
+      });
     }
 
     if (product.length === 4) {
@@ -62,13 +76,23 @@ export function normalizeNdcCode(ndc: string, isTruncatedAllowed?: boolean): str
     } else if (product.length === 3) {
       normalized += `0${product}`;
     } else {
-      throw new Error(`Invalid product length: ${product}`);
+      throw new MetriportError(normalizationErrorMsg, undefined, {
+        cleaned,
+        reason: "invalid product length",
+      });
     }
 
     if (pkg && pkg.length === 2) {
       normalized += pkg;
     } else if (pkg && pkg.length === 1) {
       normalized += `0${pkg}`;
+    } else {
+      if (!isTruncatedAllowed) {
+        throw new MetriportError(normalizationErrorMsg, undefined, {
+          cleaned,
+          reason: "invalid package length",
+        });
+      }
     }
 
     return normalized;
@@ -81,6 +105,9 @@ export function normalizeNdcCode(ndc: string, isTruncatedAllowed?: boolean): str
   } else if (cleaned.length === 10) {
     return `0${cleaned}`;
   } else {
-    throw new Error(`Invalid NDC code: ${cleaned}`);
+    throw new MetriportError(normalizationErrorMsg, undefined, {
+      cleaned,
+      reason: "invalid length",
+    });
   }
 }

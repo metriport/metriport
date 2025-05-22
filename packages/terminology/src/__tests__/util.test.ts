@@ -39,11 +39,11 @@ describe("normalizeNdcCode", () => {
     });
 
     it("should throw error for invalid labeler length", () => {
-      expect(() => normalizeNdcCode("123-6789-01")).toThrow("Invalid labeler length");
+      expect(() => normalizeNdcCode("123-6789-01")).toThrow("Invalid NDC code");
     });
 
     it("should throw error for invalid product length", () => {
-      expect(() => normalizeNdcCode("12345-67-01")).toThrow("Invalid product length");
+      expect(() => normalizeNdcCode("12345-67-01")).toThrow("Invalid NDC code");
     });
 
     it("should throw error for missing labeler", () => {
@@ -55,7 +55,7 @@ describe("normalizeNdcCode", () => {
     });
 
     it("should throw error for truncated NDC when isTruncatedAllowed is false", () => {
-      expect(() => normalizeNdcCode("12345-6789")).toThrow("Truncated NDC code");
+      expect(() => normalizeNdcCode("12345-6789")).toThrow("Invalid NDC code");
     });
   });
 
