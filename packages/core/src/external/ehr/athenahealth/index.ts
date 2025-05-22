@@ -121,6 +121,9 @@ vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
 
 const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
 
+const medicationRequestIntents = ["proposal", "plan", "order", "option"];
+const coverageCount = "50";
+
 const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
@@ -157,24 +160,31 @@ export const supportedAthenaHealthResources = [
   "DiagnosticReport",
   "Goal",
   "Immunization",
-  "Media",
   "MedicationDispense",
   "MedicationRequest",
   "Observation",
   "Procedure",
   "Specimen",
-  "Binary",
   "Device",
+  "DocumentReference",
+  "ServiceRequest",
   "Encounter",
   "Coverage",
-  "Group",
   "RelatedPerson",
-  //"Location",
-  //"Organization",
   "CareTeam",
-  //"Practitioner",
+];
+
+export const scopes = [
+  ...supportedAthenaHealthResources,
+  "Media",
+  "Medication",
+  "Binary",
+  "Location",
+  "Organization",
+  "Practitioner",
   "Provenance",
 ];
+
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
   resourceType: string
@@ -219,12 +229,10 @@ class AthenaHealthApi {
       getSecrets: this.getSecrets,
     });
     const url = `${this.baseUrl}/oauth2/v1/token`;
-    const fhirScopes = supportedAthenaHealthResources
-      .map(resource => `system/${resource}.read`)
-      .join(" ");
+    const fhirScopes = scopes.map(resource => `system/${resource}.read`).join(" ");
     const data = {
       grant_type: "client_credentials",
-      scope: `athena/service/Athenanet.MDP.* ${fhirScopes}`,
+      scope: `athena/service/Athenanet.MDP.* system/Patient.read ${fhirScopes}`,
     };
 
     try {
@@ -749,6 +757,12 @@ class AthenaHealthApi {
       `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
     );
     const params = { patient: `${this.createPatientId(athenaPatientId)}`, _count: "1000" };
+    if (resourceType === "Coverage") {
+      params._count = coverageCount;
+    }
+    if (resourceType === "MedicationRequest") {
+      params.intent = medicationRequestIntents.join(",");
+    }
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
