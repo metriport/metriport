@@ -30,6 +30,7 @@ export enum TreatmentType {
 
 export type OrganizationData = {
   name: string;
+  shortcode?: string;
   type: OrgType;
   location: AddressStrict;
 };
