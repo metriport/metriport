@@ -296,7 +296,6 @@ export class SurescriptsNestedStack extends NestedStack {
       ...queueSettings,
       stack: this,
       name,
-      fifo: true,
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
