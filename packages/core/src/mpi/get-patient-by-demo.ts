@@ -60,7 +60,7 @@ export const getPatientByDemo = async ({
 
   if (matchingPatients.length > 1) {
     const msg = `matchPatients returned more than one patient`;
-    log(`WARN: ${msg} - demo: ${JSON.stringify(demo)}, cxId: ${cxId}`);
+    log(`WARN: ${msg} - cxId: ${cxId}, ids: [${matchingPatients.map(p => p.id).join(", ")}]`);
   }
   // Merge the matching patients
   const mpiPatient = useFirstMatchingPatient(matchingPatients);
