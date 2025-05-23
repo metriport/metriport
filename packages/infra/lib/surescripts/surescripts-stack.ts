@@ -1,18 +1,19 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
-import { EnvType } from "./env-type";
-import { createLambda } from "./shared/lambda";
-import { LambdaLayers } from "./shared/lambda-layers";
-import { QueueAndLambdaSettings } from "./shared/settings";
-import { createQueue } from "./shared/sqs";
+import { EnvConfig } from "../../config/env-config";
+import { EnvType } from "../env-type";
+import { createLambda } from "../shared/lambda";
+import { LambdaLayers } from "../shared/lambda-layers";
+import { QueueAndLambdaSettings } from "../shared/settings";
+import { createQueue } from "../shared/sqs";
+import { SurescriptsAssets } from "./types";
 
 const synchronizeSftpTimeout = Duration.minutes(5);
 const synchronizeSftpWaitTime = Duration.seconds(1);
@@ -22,6 +23,7 @@ const receiveFlatFileResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
 const maxConcurrencyForSftpOperations = 2;
 const maxConcurrencyForFileOperations = 4;
+const apiUrlEnvVarName = "API_URL";
 
 interface SurescriptsSettings {
   synchronizeSftp: QueueAndLambdaSettings;
@@ -175,16 +177,16 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 }
 
 export class SurescriptsNestedStack extends NestedStack {
-  readonly synchronizeSftpLambda: Lambda;
-  readonly synchronizeSftpQueue: Queue;
-  readonly sendPatientRequestLambda: Lambda;
-  readonly sendPatientRequestQueue: Queue;
-  readonly receiveVerificationResponseLambda: Lambda;
-  readonly receiveVerificationResponseQueue: Queue;
-  readonly receiveFlatFileResponseLambda: Lambda;
-  readonly receiveFlatFileResponseQueue: Queue;
-  readonly surescriptsReplicaBucket: s3.Bucket;
-  readonly medicationBundleBucket: s3.Bucket;
+  private readonly synchronizeSftpLambda: Lambda;
+  private readonly synchronizeSftpQueue: Queue;
+  private readonly sendPatientRequestLambda: Lambda;
+  private readonly sendPatientRequestQueue: Queue;
+  private readonly receiveVerificationResponseLambda: Lambda;
+  private readonly receiveVerificationResponseQueue: Queue;
+  private readonly receiveFlatFileResponseLambda: Lambda;
+  private readonly receiveFlatFileResponseQueue: Queue;
+  private readonly surescriptsReplicaBucket: s3.Bucket;
+  private readonly medicationBundleBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: SurescriptsNestedStackProps) {
     super(scope, id, props);
@@ -259,6 +261,31 @@ export class SurescriptsNestedStack extends NestedStack {
     }
   }
 
+  getAssets(): SurescriptsAssets {
+    return {
+      synchronizeSftpLambda: this.synchronizeSftpLambda,
+      synchronizeSftpQueue: this.synchronizeSftpQueue,
+      sendPatientRequestLambda: this.sendPatientRequestLambda,
+      sendPatientRequestQueue: this.sendPatientRequestQueue,
+      receiveVerificationResponseLambda: this.receiveVerificationResponseLambda,
+      receiveVerificationResponseQueue: this.receiveVerificationResponseQueue,
+      receiveFlatFileResponseLambda: this.receiveFlatFileResponseLambda,
+      receiveFlatFileResponseQueue: this.receiveFlatFileResponseQueue,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+      medicationBundleBucket: this.medicationBundleBucket,
+    };
+  }
+
+  setApiUrl(apiUrl: string): void {
+    const lambdasToSetApiUrl = [
+      this.synchronizeSftpLambda,
+      this.sendPatientRequestLambda,
+      this.receiveVerificationResponseLambda,
+      this.receiveFlatFileResponseLambda,
+    ];
+    lambdasToSetApiUrl.forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
+  }
+
   private setupLambdaAndQueue<T extends keyof SurescriptsSettings>(
     job: T,
     props: {
@@ -309,6 +336,7 @@ export class SurescriptsNestedStack extends NestedStack {
       name,
       entry,
       envType,
+      runtime: Runtime.NODEJS_20_X,
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
