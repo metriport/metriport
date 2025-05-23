@@ -37,8 +37,10 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  GetSecretsOauthFunction,
   makeRequest,
   MakeRequestParamsInEhr,
+  processOauthSecrets,
 } from "../shared";
 
 const apiUrl = Config.getApiUrl();
@@ -68,6 +70,7 @@ class ElationApi {
   private axiosInstance: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  private getSecrets: GetSecretsOauthFunction | undefined;
   private practiceId: string;
 
   private constructor(private config: ElationApiConfig) {
@@ -75,6 +78,7 @@ class ElationApi {
     this.practiceId = config.practiceId;
     this.axiosInstance = axios.create({});
     this.baseUrl = `https://${config.environment}.elationemr.com/api/2.0`;
+    this.getSecrets = config.getSecrets;
   }
 
   public static async create(config: ElationApiConfig): Promise<ElationApi> {
@@ -88,11 +92,19 @@ class ElationApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
+    const secrets = await processOauthSecrets({
+      ehr: EhrSources.elation,
+      secrets: {
+        ...(this.config.clientKey && { clientKey: this.config.clientKey }),
+        ...(this.config.clientSecret && { clientSecret: this.config.clientSecret }),
+      },
+      getSecrets: this.getSecrets,
+    });
     const url = `${this.baseUrl}/oauth2/token/`;
     const data = {
       grant_type: "client_credentials",
-      client_id: this.config.clientKey,
-      client_secret: this.config.clientSecret,
+      client_id: secrets.clientKey,
+      client_secret: secrets.clientSecret,
     };
 
     try {

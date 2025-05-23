@@ -1,7 +1,7 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { SQSClient } from "../../../external/aws/sqs";
-import { Config } from "../../../util/config";
+import { SQSClient } from "../../../../external/aws/sqs";
+import { Config } from "../../../../util/config";
 import { EhrSyncPatientHandler, ProcessSyncPatientRequest } from "./ehr-sync-patient";
 
 export class EhrSyncPatientCloud implements EhrSyncPatientHandler {

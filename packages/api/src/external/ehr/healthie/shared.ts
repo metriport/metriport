@@ -81,7 +81,10 @@ export function createNames(patient: HealthiePatient): { firstName: string; last
   };
 }
 
-function getHealthieEnv({ cxId, practiceId }: EhrPerPracticeParams): EhrEnvAndApiKey<HealthieEnv> {
+export function getHealthieEnv({
+  cxId,
+  practiceId,
+}: EhrPerPracticeParams): EhrEnvAndApiKey<HealthieEnv> {
   const environment = Config.getHealthieEnv();
   if (!environment) throw new MetriportError("Healthie environment not set");
   if (!isHealthieEnv(environment)) {

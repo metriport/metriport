@@ -113,6 +113,7 @@ export function createAPIService({
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
   ehrRefreshEhrBundlesQueue,
+  ehrGetAppointmentsLambda,
   ehrBundleBucket,
   generalBucket,
   conversionBucket,
@@ -159,6 +160,7 @@ export function createAPIService({
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
   ehrRefreshEhrBundlesQueue: IQueue;
+  ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
@@ -303,6 +305,7 @@ export function createAPIService({
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
           EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
+          EHR_GET_APPOINTMENTS_LAMBDA_NAME: ehrGetAppointmentsLambda.functionName,
           EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME: fhirToBundleCountLambda.functionName,
@@ -460,6 +463,7 @@ export function createAPIService({
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

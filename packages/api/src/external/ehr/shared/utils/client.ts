@@ -1,6 +1,7 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
+import { HealthieEnv } from "@metriport/core/external/ehr/healthie/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import {
   findOrCreateJwtToken,
@@ -8,7 +9,7 @@ import {
 } from "../../../../command/jwt-token";
 import { EhrClientJwtTokenSource } from "./jwt-token";
 
-type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv;
+export type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv;
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   environment: Env;
   clientKey: string;
@@ -20,7 +21,7 @@ export type EhrEnvAndApiKey<Env extends EhrEnv> = {
   apiKey: string;
 };
 
-type EhrClient = AthenaHealthApi | ElationApi | CanvasApi;
+type EhrOauthClient = AthenaHealthApi | ElationApi | CanvasApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   practiceId: string;
@@ -42,6 +43,7 @@ async function getLatestClientJwtTokenInfo({
   return {
     access_token: token.token,
     exp: token.exp,
+    id: token.id,
   };
 }
 
@@ -52,7 +54,7 @@ export type GetEnvParams<Env extends EhrEnv, EnvArgs> = {
 
 export async function createEhrClient<
   Env extends EhrEnv,
-  Client extends EhrClient,
+  Client extends EhrOauthClient,
   EnvArgs = undefined
 >({
   cxId,
@@ -64,7 +66,7 @@ export async function createEhrClient<
   source: EhrClientJwtTokenSource;
   getEnv: GetEnvParams<Env, EnvArgs>;
   getClient: (params: EhrClientParams<Env>) => Promise<Client>;
-}): Promise<Client> {
+}): Promise<{ client: Client; tokenId: string; environment: Env }> {
   const [environment, twoLeggedAuthTokenInfo] = await Promise.all([
     getEnv.getEnv(getEnv.params),
     getLatestClientJwtTokenInfo({ cxId, practiceId, source }),
@@ -77,11 +79,11 @@ export async function createEhrClient<
   const newAuthInfo = client.getTwoLeggedAuthTokenInfo();
   if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
   const data = { cxId, practiceId, source };
-  await findOrCreateJwtToken({
+  const token = await findOrCreateJwtToken({
     token: newAuthInfo.access_token,
     exp: newAuthInfo.exp,
     source,
     data,
   });
-  return client;
+  return { client, tokenId: token.id, environment: environment.environment };
 }
