@@ -274,7 +274,7 @@ export async function getConsolidated({
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
-    const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
+    const shouldCreateMedicalRecord = conversionType != "json" && hasResources;
 
     const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
     const sendAnalytics = (
@@ -443,7 +443,7 @@ export async function getConsolidatedPatientDataAsync({
   fromDashboard,
 }: GetConsolidatedPatientData & {
   requestId: string;
-  conversionType?: ConsolidationConversionType;
+  conversionType: ConsolidationConversionType;
 }): Promise<void> {
   const payload: ConsolidatedSnapshotRequestAsync = {
     patient,

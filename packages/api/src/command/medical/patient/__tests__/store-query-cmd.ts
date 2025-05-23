@@ -35,6 +35,7 @@ export const cqParams: StoreQueryParams = {
         requestId,
         status: "processing",
         startedAt: new Date(),
+        conversionType: "json",
       },
     ],
   },
@@ -57,7 +58,7 @@ export function makeConsolidatedQueryProgress(
     status: params?.status ?? "processing",
     startedAt: params?.startedAt ?? new Date(),
     resources: params?.resources ?? [],
-    conversionType: params?.conversionType,
+    conversionType: params?.conversionType ?? "json",
     dateFrom: dayjs(
       faker.date.past({
         refDate: dateTo,

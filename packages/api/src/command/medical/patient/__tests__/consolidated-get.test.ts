@@ -30,7 +30,9 @@ beforeEach(() => {
 describe("consolidated-get", () => {
   describe("getCurrentConsolidatedProgress", () => {
     it("return undefined when there is no consolidated progress", () => {
-      const resp = getCurrentConsolidatedProgress(undefined, {});
+      const resp = getCurrentConsolidatedProgress(undefined, {
+        conversionType: "json",
+      });
 
       expect(resp).toBeUndefined();
     });
@@ -67,7 +69,9 @@ describe("consolidated-get", () => {
       });
       const resp = getCurrentConsolidatedProgress(
         [consolidatedQueryProgress, secondConsolidatedQueryProgress],
-        {}
+        {
+          conversionType: "json",
+        }
       );
 
       expect(resp).toBeUndefined();
