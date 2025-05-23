@@ -1,17 +1,20 @@
-import { emptyFunction } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { out } from "../../util/log";
-import { capture } from "../../util/notifications";
+import { FhirResourceToText } from "../fhir/export/string/bundle-to-string";
+import { OpenSearchConfigDirectAccess } from "./index";
+import { IndexFields } from "./index-based-on-resource";
 import {
-  BulkOperation,
   BulkResponseErrorItem,
   processErrorsFromBulkResponse,
   OnBulkItemError,
-} from "./bulk";
-import { contentFieldName, OpenSearchIngestorConfig } from "./index";
+  resourceToBulkRequest,
+} from "./shared/bulk";
+import { createDeleteQuery } from "./shared/delete";
+import { getEntryId } from "./shared/id";
+import { getLog, OpenSearchLogLevel } from "./shared/log";
 
 dayjs.extend(duration);
 
@@ -23,20 +26,16 @@ const MAX_BULK_RETRIES = 3;
  * Didn't find a good reference for OpenSearch, so using Elasticsearch's reference:
  * https://www.elastic.co/guide/en/elasticsearch/guide/current/bulk.html#_how_big_is_too_big
  * "A good bulk size to start playing with is around 5-15MB in size."
- * During tests, resources were 99.9% of the time under 250 Bytes.
- * 5MB / 250 Bytes = 20_000
+ * During tests got resource w/ 10KB.
+ * 10MB / 10KB = 1_000
  */
-const bulkChunkSize = 10_000;
+// TODO Don't pre-chunk, but build the chunks on the fly based on the max the server can handle
+// on each bulk request (~5MB)
+const bulkChunkSize = 500;
 
-export type IngestRequest = {
-  cxId: string;
-  patientId: string;
-} & IngestRequestResource;
-export type IngestRequestResource = {
-  resourceType: string;
-  resourceId: string;
-  [contentFieldName]: string;
-};
+export type IngestRequest = IndexFields;
+export type IngestRequestResource = Omit<IndexFields, "cxId" | "patientId">;
+
 export type IngestBulkRequest = {
   cxId: string;
   patientId: string;
@@ -44,26 +43,26 @@ export type IngestBulkRequest = {
   onItemError?: OnBulkItemError | undefined;
 };
 
-export type OpenSearchFileIngestorDirectSettings = {
-  logLevel?: "info" | "debug" | "none";
+export type DeleteRequest = Pick<IndexFields, "cxId" | "patientId">;
+
+export type OpenSearchTextIngestorSettings = {
+  logLevel?: OpenSearchLogLevel;
 };
 
-export type OpenSearchTextIngestorDirectConfig = OpenSearchIngestorConfig & {
-  endpoint: string;
-  username: string;
-  password: string;
-  settings?: OpenSearchFileIngestorDirectSettings;
+export type OpenSearchTextIngestorConfig = OpenSearchConfigDirectAccess & {
+  settings?: OpenSearchTextIngestorSettings;
 };
 
-// TODO eng-41 Make this a factory so we can delegate the processing to a lambda
-export class OpenSearchTextIngestorDirect {
+/**
+ * Ingests text documents/entries in OpenSearch.
+ */
+export class OpenSearchTextIngestor {
   private readonly endpoint: string;
   private readonly username: string;
   private readonly password: string;
-  private readonly settings: OpenSearchFileIngestorDirectSettings;
+  private readonly settings: OpenSearchTextIngestorSettings;
 
-  constructor(readonly config: OpenSearchTextIngestorDirectConfig) {
-    // super(config);
+  constructor(readonly config: OpenSearchTextIngestorConfig) {
     this.endpoint = config.endpoint;
     this.username = config.username;
     this.password = config.password;
@@ -72,15 +71,15 @@ export class OpenSearchTextIngestorDirect {
     };
   }
 
-  async ingest({
+  async ingestSingle({
     cxId,
     patientId,
     resourceType,
     resourceId,
     content,
   }: IngestRequest): Promise<void> {
-    const defaultLogger = out(`ingest - ${cxId} - ${patientId}`);
-    const { log, debug } = this.getLog(defaultLogger);
+    const defaultLogger = out(`${this.constructor.name}.ingest - cx ${cxId}, pt ${patientId}`);
+    const { log, debug } = getLog(defaultLogger, this.settings.logLevel);
 
     const { indexName } = this.config;
     const auth = { username: this.username, password: this.password };
@@ -120,10 +119,16 @@ export class OpenSearchTextIngestorDirect {
    * @param resources - The resources to ingest.
    * @param onItemError - The function to call for each item error, optional. See buildOnItemError()
    *                      for the default implementation.
+   * @returns A map of error type as key and count of errors as value.
    */
-  async ingestBulk({ cxId, patientId, resources, onItemError }: IngestBulkRequest): Promise<void> {
-    const defaultLogger = out(`ingestBulk - ${cxId} - ${patientId}`);
-    const { log } = this.getLog(defaultLogger);
+  async ingestBulk({
+    cxId,
+    patientId,
+    resources,
+    onItemError,
+  }: IngestBulkRequest): Promise<Map<string, number>> {
+    const defaultLogger = out(`${this.constructor.name}.ingestBulk - cx ${cxId}, pt ${patientId}`);
+    const { log } = getLog(defaultLogger, this.settings.logLevel);
 
     const { indexName } = this.config;
     const auth = { username: this.username, password: this.password };
@@ -151,7 +156,7 @@ export class OpenSearchTextIngestorDirect {
 
     const time = Date.now() - startedAt;
     log(`Ingested ${resources.length} resources in ${time} ms, ${errorCount} errors`);
-    if (errors.size > 0) captureErrors({ cxId, patientId, errors, log });
+    return errors;
   }
 
   private async ingestBulkInternal({
@@ -165,8 +170,10 @@ export class OpenSearchTextIngestorDirect {
     indexName: string;
     client: Client;
   }): Promise<number> {
-    const defaultLogger = out(`...ingestBulkInternal - ${cxId} - ${patientId}`);
-    const { debug } = this.getLog(defaultLogger);
+    const defaultLogger = out(
+      `${this.constructor.name}.ingestBulkInternal - cx ${cxId}, pt ${patientId}`
+    );
+    const { debug } = getLog(defaultLogger, this.settings.logLevel);
 
     const operation = "index";
 
@@ -178,6 +185,7 @@ export class OpenSearchTextIngestorDirect {
         patientId,
         resource,
         operation,
+        getEntryId,
       })
     );
 
@@ -194,48 +202,25 @@ export class OpenSearchTextIngestorDirect {
     return errorCount;
   }
 
-  private getLog(defaultLogger: ReturnType<typeof out>): ReturnType<typeof out> {
-    if (this.settings.logLevel === "none") return { debug: emptyFunction, log: emptyFunction };
-    return {
-      debug: this.settings.logLevel === "debug" ? defaultLogger.debug : emptyFunction,
-      log: defaultLogger.log,
-    };
+  async delete({ cxId, patientId }: DeleteRequest): Promise<void> {
+    const defaultLogger = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
+    const { log, debug } = getLog(defaultLogger, this.settings.logLevel);
+
+    const { indexName } = this.config;
+    const auth = { username: this.config.username, password: this.config.password };
+    const client = new Client({ node: this.config.endpoint, auth });
+
+    log(`Deleting resources from index ${indexName}...`);
+    const startedAt = Date.now();
+
+    const response = await client.deleteByQuery({
+      index: indexName,
+      body: createDeleteQuery({ cxId, patientId }),
+    });
+    const time = Date.now() - startedAt;
+    log(`Successfully deleted in ${time} milliseconds`);
+    debug(`Response: `, () => JSON.stringify(response.body));
   }
-}
-
-function resourceToBulkRequest({
-  cxId,
-  patientId,
-  resource,
-  operation,
-}: {
-  cxId: string;
-  patientId: string;
-  resource: IngestRequestResource;
-  operation: BulkOperation;
-}) {
-  const entryId = getEntryId(cxId, patientId, resource.resourceId);
-  const document: IngestRequest = {
-    cxId,
-    patientId,
-    resourceType: resource.resourceType,
-    resourceId: resource.resourceId,
-    content: resource.content,
-  };
-  const cmd = { [operation]: { _id: entryId } };
-  return [cmd, document];
-}
-
-/**
- * Builds the ID for an OpenSearch entry.
- *
- * @param cxId - The cxId of the resource.
- * @param patientId - The patientId of the resource.
- * @param resourceId - The resourceId of the resource.
- * @returns The ID for the OpenSearch entry.
- */
-function getEntryId(cxId: string, patientId: string, resourceId: string): string {
-  return `${cxId}_${patientId}_${resourceId}`;
 }
 
 /**
@@ -253,20 +238,12 @@ function buildOnItemError(errors: Map<string, number>): OnBulkItemError {
   };
 }
 
-function captureErrors({
-  cxId,
-  patientId,
-  errors,
-  log,
-}: {
-  cxId: string;
-  patientId: string;
-  errors: Map<string, number>;
-  log: typeof console.log;
-}) {
-  const errorMapToObj = Object.fromEntries(errors.entries());
-  log(`Errors: `, () => JSON.stringify(errorMapToObj));
-  capture.error("Errors ingesting resources into OpenSearch", {
-    extra: { cxId, patientId, countPerErrorType: JSON.stringify(errorMapToObj, null, 2) },
-  });
+export function convertFhirResourceToTextToIngestRequestResource(
+  resource: FhirResourceToText
+): IngestRequestResource {
+  return {
+    resourceType: resource.type,
+    resourceId: resource.id,
+    content: resource.text,
+  };
 }
