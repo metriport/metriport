@@ -1,111 +1,139 @@
-import { AllergyIntolerance } from "@medplum/fhirtypes";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
+import { AllergyIntolerance, AllergyIntoleranceReaction } from "@medplum/fhirtypes";
+import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAnnotations } from "../shared/annotation";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
-import { formatReferences } from "../shared/reference";
+import { formatReference } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
-import { FHIRResourceToString } from "../types";
 
 /**
  * Converts a FHIR AllergyIntolerance resource to a string representation
  */
 export class AllergyIntoleranceToString implements FHIRResourceToString<AllergyIntolerance> {
-  toString(allergy: AllergyIntolerance): string | undefined {
+  toString(allergy: AllergyIntolerance, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
-    let hasRelevantData = false;
+    let hasMinimumData = defaultHasMinimumData;
 
-    // Add identifier
-    const identifierStr = formatIdentifiers(allergy.identifier);
+    const identifierStr = formatIdentifiers({ identifiers: allergy.identifier });
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add clinical status
     if (allergy.clinicalStatus) {
-      const statusStr = formatCodeableConcepts([allergy.clinicalStatus], "Clinical Status");
+      const statusStr = formatCodeableConcept({
+        concept: allergy.clinicalStatus,
+        label: "Clinical Status",
+        isDebug,
+      });
       if (statusStr) {
         parts.push(statusStr);
       }
     }
 
-    // Add verification status
     if (allergy.verificationStatus) {
-      const statusStr = formatCodeableConcepts([allergy.verificationStatus], "Verification Status");
+      const statusStr = formatCodeableConcept({
+        concept: allergy.verificationStatus,
+        label: "Verification Status",
+        isDebug,
+      });
       if (statusStr) {
         parts.push(statusStr);
       }
     }
 
-    // Add type
+    allergy.reaction?.forEach(reaction => {
+      const reactionStr = formatAllergyReaction(reaction, isDebug);
+      if (reactionStr) parts.push(reactionStr);
+    });
+
     if (allergy.type) {
-      parts.push(`Type: ${allergy.type}`);
-      hasRelevantData = true;
+      parts.push(isDebug ? `Type: ${allergy.type}` : allergy.type);
+      hasMinimumData = true;
     }
 
-    // Add category
     if (allergy.category) {
-      parts.push(`Category: ${allergy.category.join(", ")}`);
-      hasRelevantData = true;
+      parts.push(
+        isDebug
+          ? `Category: ${allergy.category.join(FIELD_SEPARATOR)}`
+          : allergy.category.join(FIELD_SEPARATOR)
+      );
+      hasMinimumData = true;
     }
 
-    // Add criticality
     if (allergy.criticality) {
-      parts.push(`Criticality: ${allergy.criticality}`);
+      parts.push(isDebug ? `Criticality: ${allergy.criticality}` : allergy.criticality);
     }
 
-    // Add code
     if (allergy.code) {
-      const codeStr = formatCodeableConcepts([allergy.code], "Code");
+      const codeStr = formatCodeableConcept({ concept: allergy.code, label: "Code", isDebug });
       if (codeStr) {
         parts.push(codeStr);
-        hasRelevantData = true;
+        hasMinimumData = true;
       }
     }
 
-    // Add onset
     if (allergy.onsetDateTime) {
-      parts.push(`Onset: ${allergy.onsetDateTime}`);
+      parts.push(isDebug ? `Onset: ${allergy.onsetDateTime}` : allergy.onsetDateTime);
     }
 
-    // Add recorded date
     if (allergy.recordedDate) {
-      parts.push(`Recorded: ${allergy.recordedDate}`);
+      parts.push(isDebug ? `Recorded: ${allergy.recordedDate}` : allergy.recordedDate);
     }
 
-    // Add recorder
     if (allergy.recorder) {
-      const recorderStr = formatReferences([allergy.recorder], "Recorder");
+      const recorderStr = formatReference({
+        reference: allergy.recorder,
+        label: "Recorder",
+        isDebug,
+      });
       if (recorderStr) {
         parts.push(recorderStr);
       }
     }
 
-    // Add asserter
     if (allergy.asserter) {
-      const asserterStr = formatReferences([allergy.asserter], "Asserter");
+      const asserterStr = formatReference({
+        reference: allergy.asserter,
+        label: "Asserter",
+        isDebug,
+      });
       if (asserterStr) {
         parts.push(asserterStr);
       }
     }
 
-    // Add last occurrence
     if (allergy.lastOccurrence) {
-      parts.push(`Last Occurrence: ${allergy.lastOccurrence}`);
+      parts.push(isDebug ? `Last Occurrence: ${allergy.lastOccurrence}` : allergy.lastOccurrence);
     }
 
-    // Add note
-    if (allergy.note) {
-      const notes = allergy.note
-        .map(note => note.text)
-        .filter(Boolean)
-        .join(FIELD_SEPARATOR);
-      if (notes) {
-        parts.push(`Note: ${notes}`);
-        hasRelevantData = true;
-      }
+    const notes = formatAnnotations({ annotations: allergy.note, label: "Note", isDebug });
+    if (notes) {
+      parts.push(notes);
+      hasMinimumData = true;
     }
 
-    if (!hasRelevantData) return undefined;
+    if (!hasMinimumData) return undefined;
 
     return parts.join(FIELD_SEPARATOR);
   }
+}
+
+function formatAllergyReaction(reaction: AllergyIntoleranceReaction, isDebug?: boolean): string {
+  const parts: string[] = [];
+
+  const substanceStr = formatCodeableConcept({
+    concept: reaction.substance,
+    label: "Substance",
+    isDebug,
+  });
+  if (substanceStr) parts.push(substanceStr);
+
+  const manifestationStr = formatCodeableConcepts({
+    concepts: reaction.manifestation,
+    label: "Manifestation",
+    isDebug,
+  });
+  if (manifestationStr) parts.push(manifestationStr);
+
+  return parts.join(FIELD_SEPARATOR);
 }

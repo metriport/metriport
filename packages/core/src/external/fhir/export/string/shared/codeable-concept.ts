@@ -1,19 +1,34 @@
 import { CodeableConcept } from "@medplum/fhirtypes";
-import { checkDeny, isAllowedSystem } from "./deny";
+import { codeAndDisplayToString } from "./code-display";
+import { formatCoding, getCode } from "./coding";
+import { defaultIsDebug } from "./debug";
+import { emptyIfDenied, isAllowedSystem } from "./deny";
 import { FIELD_SEPARATOR } from "./separator";
-
 const SEP_BETWEEN_CODING = "/";
 const SEP_BETWEEN_TEXT_AND_CODING = ":";
 
 /**
  * Formats a single FHIR codeable concept into a string representation
  * @param concept - FHIR codeable concept to format
+ * @param label - Label to prefix the formatted string with
+ * @param skipInternalCodes - Whether to skip internal codes from 3rd party systems
+ * @param isDebug - Whether to include the label in the output
  * @returns Formatted string of codeable concept
  */
-export function formatCodeableConcept(concept: CodeableConcept | undefined): string | undefined {
+export function formatCodeableConcept({
+  concept,
+  label,
+  skipInternalCodes,
+  isDebug = defaultIsDebug,
+}: {
+  concept: CodeableConcept | undefined;
+  label?: string;
+  skipInternalCodes?: boolean | undefined;
+  isDebug?: boolean | undefined;
+}): string | undefined {
   if (!concept) return undefined;
 
-  const textPre = checkDeny(concept.text);
+  const textPre = emptyIfDenied(concept.text);
   const text = textPre ? textPre.trim() : undefined;
 
   const emptyCode = "<!empty!>";
@@ -21,23 +36,19 @@ export function formatCodeableConcept(concept: CodeableConcept | undefined): str
     concept.coding?.reduce((acc, cur) => {
       const system = isAllowedSystem(cur.system);
       if (!system) return acc;
-      const codePre = checkDeny(cur.code);
-      const code = codePre ? codePre.trim() : undefined;
-      const displayPre = checkDeny(cur.display);
-      const display = displayPre ? displayPre.trim() : undefined;
+      const code = getCode({ coding: cur, skipInternalCodes });
+      const codeAndDisplay = formatCoding({ coding: cur, skipInternalCodes });
       if (code) {
         if (acc[code]) return acc;
-        acc[code] = codeAndDisplayToString(code, display);
-        return acc;
+        if (codeAndDisplay) {
+          acc[code] = codeAndDisplay;
+          return acc;
+        }
       }
-      const altCode = "";
-      const codeAndDisplay = codeAndDisplayToString(altCode, cur.display);
-      if (!codeAndDisplay) return acc;
-      if (acc[emptyCode]) {
-        acc[emptyCode] = acc[emptyCode] + "; " + codeAndDisplay;
-      } else {
-        acc[emptyCode] = codeAndDisplay;
-      }
+      const altCodeAndDisplay = codeAndDisplayToString(undefined, cur.display);
+      if (!altCodeAndDisplay) return acc;
+      if (acc[emptyCode]) acc[emptyCode] = acc[emptyCode] + "; " + altCodeAndDisplay;
+      else acc[emptyCode] = altCodeAndDisplay;
       return acc;
     }, {} as Record<string, string>) ?? {};
 
@@ -51,28 +62,35 @@ export function formatCodeableConcept(concept: CodeableConcept | undefined): str
 
   if (!codingStr && !text) return undefined;
   if (!codingStr && text) return text;
-  return `${text ?? ""}${text ? `${SEP_BETWEEN_TEXT_AND_CODING} ` : ""}${codingStr}`;
-}
-
-function codeAndDisplayToString(code: string, display: string | undefined): string {
-  return code + (display ? `${code ? " " : ""}(${display})` : "");
+  const labelStr = isDebug && label ? `${label}: ` : "";
+  const textStr = text && !codingStr.includes(text) ? `${text}${SEP_BETWEEN_TEXT_AND_CODING} ` : "";
+  return `${labelStr}${textStr}${codingStr}`;
 }
 
 /**
  * Formats a list of FHIR codeable concepts into a string representation
  * @param concepts - List of FHIR codeable concepts to format
  * @param label - Label to prefix the formatted string with
+ * @param skipInternalCodes - Whether to skip internal codes from 3rd party systems
+ * @param isDebug - Whether to include the label in the output
  * @returns Formatted string of codeable concepts
  */
-export function formatCodeableConcepts(
-  concepts: CodeableConcept[] | undefined,
-  label: string
-): string | undefined {
+export function formatCodeableConcepts({
+  concepts,
+  label,
+  skipInternalCodes,
+  isDebug = defaultIsDebug,
+}: {
+  concepts: CodeableConcept[] | undefined;
+  label: string;
+  skipInternalCodes?: boolean | undefined;
+  isDebug?: boolean | undefined;
+}): string | undefined {
   if (!concepts?.length) return undefined;
-
-  const formattedConcepts = concepts.map(formatCodeableConcept).filter(Boolean);
-  if (!formattedConcepts.length) return undefined;
-
+  const formattedConcepts = concepts
+    .map(concept => formatCodeableConcept({ concept, skipInternalCodes, isDebug }))
+    .filter(Boolean);
+  if (formattedConcepts.length < 1) return undefined;
   const converted = formattedConcepts.join(FIELD_SEPARATOR);
-  return `${label}: ${converted}`;
+  return isDebug ? `${label}: ${converted}` : converted;
 }
