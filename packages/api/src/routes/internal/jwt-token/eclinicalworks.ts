@@ -20,11 +20,6 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const token = getAuthorizationToken(req);
-    if (!token) {
-      return res
-        .status(httpStatus.UNAUTHORIZED)
-        .json({ message: "Authorization token is missing" });
-    }
     const tokenStatus = await checkJwtToken({
       token,
       source: eclinicalworksDashSource,
@@ -46,12 +41,6 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const token = getAuthorizationToken(req);
-    if (!token) {
-      return res
-        .status(httpStatus.UNAUTHORIZED)
-        .json({ message: "Authorization token is missing" });
-    }
-
     const data = createJwtSchema.parse(req.body);
     await saveJwtToken({
       token,

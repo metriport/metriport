@@ -11,7 +11,7 @@ import {
 
 export const tokenEhrPatientIdQueryParam = "eclinicalworksPatientIdFromToken";
 
-function parseEclinicalworksPracticeIdDash(
+function parseEClinicalWorksPracticeIdDash(
   tokenData: JwtTokenData,
   tokenId: string
 ): ParseResponse {
@@ -31,7 +31,7 @@ function parseEclinicalworksPracticeIdDash(
 }
 
 export function processCxIdDash(req: Request, res: Response, next: NextFunction) {
-  processCxIdShared(req, eclinicalworksDashSource, parseEclinicalworksPracticeIdDash)
+  processCxIdShared(req, eclinicalworksDashSource, parseEClinicalWorksPracticeIdDash)
     .then(next)
     .catch(next);
 }
