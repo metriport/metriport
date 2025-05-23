@@ -13,6 +13,11 @@ import { searchDocuments } from "../document-reference/search";
 /**
  * Performs a semantic search on a patient's consolidated resources in OpenSearch
  * and returns the resources from consolidated that match the search results.
+ *
+ * @param patient The patient to search.
+ * @param query The query to search for.
+ * @param maxNumberOfResults The maximum number of results to return. From 0 to 10_000.
+ *                           Optional, defaults to 10_000.
  */
 export async function searchSemantic({
   patient,
@@ -100,7 +105,7 @@ async function searchOpenSearch({
   patientId: string;
   maxNumberOfResults?: number | undefined;
   similarityThreshold?: number | undefined;
-}) {
+}): Promise<SearchResult[]> {
   const region = Config.getAWSRegion();
   const endpoint = Config.getSemanticSearchEndpoint();
   const indexName = Config.getSemanticSearchIndexName();

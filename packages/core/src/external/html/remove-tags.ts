@@ -20,7 +20,7 @@ const regexGenericWords = new RegExp(
   "g"
 );
 // removes the tag w/ attributes, but without content
-const regexHTML = new RegExp(
+const regexHtml = new RegExp(
   `</?(${htmlStopWords.map(w => w.toLowerCase()).join("|")})(\\s.*?)?/?>`,
   "g"
 );
@@ -70,7 +70,7 @@ export function removeHtmlTags({
   // The order is important!
   const step1 = runStep(() => contents.trim(), "trim");
   const regexSteps = [
-    (input: string) => regexStep(input, regexHTML, " "),
+    (input: string) => regexStep(input, regexHtml, " "),
     (input: string) => regexStep(input, regexFormatting, " "),
     (input: string) => regexStep(input, regexMarkupAttributes, " $<content> "),
     (input: string) => regexStep(input, regexAdditionalMarkup, " $<content> "),

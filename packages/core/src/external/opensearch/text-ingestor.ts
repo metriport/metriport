@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { out } from "../../util/log";
+import { FhirResourceToText } from "../fhir/export/string/bundle-to-string";
 import { OpenSearchConfigDirectAccess } from "./index";
 import { IndexFields } from "./index-based-on-resource";
 import {
@@ -234,5 +235,15 @@ function buildOnItemError(errors: Map<string, number>): OnBulkItemError {
   return (error: BulkResponseErrorItem) => {
     const count = errors.get(error.type) ?? 0;
     errors.set(error.type, count + 1);
+  };
+}
+
+export function convertFhirResourceToTextToIngestRequestResource(
+  resource: FhirResourceToText
+): IngestRequestResource {
+  return {
+    resourceType: resource.type,
+    resourceId: resource.id,
+    content: resource.text,
   };
 }

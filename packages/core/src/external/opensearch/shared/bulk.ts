@@ -1,8 +1,8 @@
 import { ApiResponse } from "@opensearch-project/opensearch";
-import { IngestRequest } from "../text-ingestor";
-import { IngestRequestResource } from "../text-ingestor";
+import { IngestRequest, IngestRequestResource } from "../text-ingestor";
 
 export type BulkOperation = "index" | "create" | "update" | "delete";
+export type BulkRequest = Partial<Record<BulkOperation, { _id: string }>>;
 
 type RawBulkResponseErrorBody = {
   errors: boolean;
@@ -79,7 +79,7 @@ export function resourceToBulkRequest({
   resource: IngestRequestResource;
   operation: BulkOperation;
   getEntryId: (cxId: string, patientId: string, resourceId: string) => string;
-}) {
+}): [BulkRequest, IngestRequest] {
   const entryId = getEntryId(cxId, patientId, resource.resourceId);
   const document: IngestRequest = {
     cxId,

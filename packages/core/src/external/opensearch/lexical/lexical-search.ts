@@ -8,7 +8,7 @@ export type LexicalSearchParams = {
 };
 
 /**
- * Generates a lexical search query to be executed against a OpenSearch index.
+ * Generates a lexical search query to be executed against an OpenSearch index.
  */
 export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSearchParams) {
   const isMatchQuery = query.startsWith("$");
