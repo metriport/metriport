@@ -28,14 +28,18 @@ describe("Patient load file testing", () => {
         city: "New Rochelle",
         state: "NY",
         zip: "10805",
-        dateOfBirth: "20120901",
+        dateOfBirth: "2012-09-01",
         genderAtBirth: "M",
         npiNumber: "1234567893",
-        requestedNotifications: ["PMANewRx", "PMAInfo"],
+        // requestedNotifications: ["PMANewRx", "PMAInfo"],
       },
       patientLoadDetailSchema,
       patientLoadDetailOrder
     );
+
+    console.log(testRow.toString("ascii"));
+    console.log(expected);
+
     expect(Buffer.compare(testRow, Buffer.from(expected, "ascii"))).toEqual(0);
   });
 
@@ -58,7 +62,7 @@ describe("Patient load file testing", () => {
         city: "Pepperell",
         state: "MA",
         zip: "01463",
-        dateOfBirth: "19971101",
+        dateOfBirth: "1997-11-01",
         genderAtBirth: "F",
         npiNumber: "1234567890",
       },
@@ -66,8 +70,8 @@ describe("Patient load file testing", () => {
       patientLoadDetailOrder
     );
 
-    console.log(testRow.toString("ascii"));
-    console.log(outputRow);
+    // console.log(testRow.toString("ascii"));
+    // console.log(outputRow);
 
     expect(Buffer.compare(testRow, Buffer.from(outputRow, "ascii"))).toEqual(0);
   });

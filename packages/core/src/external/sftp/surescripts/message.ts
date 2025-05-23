@@ -117,8 +117,10 @@ export function toSurescriptsPatientLoadRow<T extends object>(
   schema: z.ZodObject<z.ZodRawShape>,
   order: OutgoingFileRowSchema<T>
 ): Buffer {
-  if (!schema.safeParse(data).success) {
-    console.log("Invalid data", data);
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    // console.log("Invalid data", parsed.error, parsed.error.issues);
+    throw new Error("Invalid data");
   }
   return Buffer.from(order.map(field => field.toSurescripts(data)).join("|"), "ascii");
 }

@@ -163,10 +163,12 @@ export function toSurescriptsArray<T extends object>(
   enumerated: string[],
   { optional = false }: { optional?: boolean } = {}
 ) {
+  const enumeratedSet = new Set(enumerated);
+
   return function (sourceObject: T): string {
     const value = sourceObject[key];
     if (Array.isArray(value)) {
-      return value.filter(item => enumerated.includes(item)).join(",");
+      return value.filter(item => enumeratedSet.has(item)).join(",");
     } else if (optional && value == null) {
       return "";
     } else {
@@ -183,6 +185,8 @@ export function toSurescriptsDate<T extends object>(
     const value = sourceObject[key];
     if (value instanceof Date) {
       return dateToString(value);
+    } else if (typeof value === "string") {
+      return value.replace(/-/g, "");
     } else if (optional && value == null) {
       return "";
     } else {

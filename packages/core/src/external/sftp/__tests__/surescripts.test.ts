@@ -6,6 +6,7 @@ describe("Surescripts SFTP Client", () => {
     const client = new SurescriptsSftpClient({
       host: "TestHost",
       senderId: "TestSenderId",
+      receiverId: "TestReceiverId",
       senderPassword: "TestSenderPassword",
       username: "test",
       publicKey: "test",
@@ -20,6 +21,7 @@ describe("Surescripts SFTP Client", () => {
       host: "TestHost",
       senderId: "TestSenderId",
       senderPassword: "TestSenderPassword",
+      receiverId: "TestReceiverId",
       username: "test",
       publicKey: "test",
       privateKey: "test",

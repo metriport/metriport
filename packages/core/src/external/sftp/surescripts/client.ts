@@ -37,9 +37,9 @@ export class SurescriptsSftpClient extends SftpClient {
   constructor(config: SurescriptsSftpConfig) {
     super({
       ...config,
-      host: Config.getSurescriptsHost(),
+      host: config.host ?? Config.getSurescriptsHost(),
       port: 22,
-      username: Config.getSurescriptsSftpSenderId(),
+      username: config.username ?? Config.getSurescriptsSftpSenderId(),
       password: config.publicKey ?? Config.getSurescriptsSftpPublicKey(),
       privateKey: config.privateKey ?? Config.getSurescriptsSftpPrivateKey(),
     });
