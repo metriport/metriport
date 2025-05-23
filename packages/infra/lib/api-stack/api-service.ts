@@ -118,6 +118,7 @@ export function createAPIService({
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
+  medicationBundleBucket,
   fhirToBundleLambda,
   fhirToBundleCountLambda,
   fhirToMedicalRecordLambda2,
@@ -164,6 +165,7 @@ export function createAPIService({
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
+  medicationBundleBucket: s3.IBucket;
   fhirToBundleLambda: ILambda;
   fhirToBundleCountLambda: ILambda;
   fhirToMedicalRecordLambda2: ILambda | undefined;
@@ -276,19 +278,15 @@ export function createAPIService({
             USAGE_URL: props.config.usageReportUrl,
           }),
           CONVERSION_RESULT_BUCKET_NAME: conversionBucket.bucketName,
-          ...(props.config.medicalDocumentsBucketName && {
-            MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
-          }),
-          ...(props.config.medicalDocumentsUploadBucketName && {
-            MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
-          }),
-          // TODO we have access to ehrResponsesBucket here, can't we use it instead of a config?
-          ...(props.config.ehrResponsesBucketName && {
-            EHR_RESPONSES_BUCKET_NAME: props.config.ehrResponsesBucketName,
+          MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+          MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
+          ...(ehrResponsesBucket?.bucketName && {
+            EHR_RESPONSES_BUCKET_NAME: ehrResponsesBucket.bucketName,
           }),
           ...(isSandbox(props.config) && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
+          MEDICATION_BUNDLE_BUCKET_NAME: medicationBundleBucket.bucketName,
           PROPELAUTH_AUTH_URL: props.config.propelAuth.authUrl,
           PROPELAUTH_PUBLIC_KEY: props.config.propelAuth.publicKey,
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
@@ -369,7 +367,6 @@ export function createAPIService({
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
           ...(surescriptsAssets && {
-            MEDICATION_BUNDLE_BUCKET_NAME: surescriptsAssets.medicationBundleBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
             SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsAssets.synchronizeSftpQueue.queueUrl,
             SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL:
@@ -463,9 +460,9 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
   if (surescriptsAssets) {
-    surescriptsAssets.medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
     surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
       fargateService.taskDefinition.taskRole
     );

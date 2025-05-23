@@ -300,6 +300,13 @@ export class APIStack extends Stack {
       ],
     });
 
+    const medicationBundleBucket = new s3.Bucket(this, "MedicationBundleBucket", {
+      bucketName: props.config.medicationBundleBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+    });
+
     let hl7ConversionBucket: s3.Bucket | undefined;
     if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -451,6 +458,7 @@ export class APIStack extends Stack {
         vpc: this.vpc,
         alarmAction: slackNotification?.alarmAction,
         lambdaLayers,
+        medicationBundleBucket,
       });
     }
 
@@ -574,6 +582,7 @@ export class APIStack extends Stack {
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
+      medicationBundleBucket,
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
