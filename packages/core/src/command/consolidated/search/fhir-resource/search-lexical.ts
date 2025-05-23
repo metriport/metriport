@@ -14,6 +14,12 @@ import { searchDocuments } from "../document-reference/search";
 /**
  * Performs a lexical search on a patient's consolidated resources in OpenSearch
  * and returns the resources from consolidated that match the search results.
+ *
+ * @param patient The patient to search.
+ * @param query The query to search for.
+ * @param maxNumberOfResults The maximum number of results to return. From 0 to 10_000.
+ *                           Optional, defaults to 10_000.
+ * @returns The search results.
  */
 export async function searchLexical({
   patient,
@@ -30,24 +36,23 @@ export async function searchLexical({
   log(`Getting consolidated and searching OS...`);
   const startedAt = Date.now();
 
+  const getConsolidatedPromise = () => getConsolidatedPatientData({ patient });
+
+  const searchOpenSearchPromise = () =>
+    searchOpenSearch({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      query,
+      maxNumberOfResults,
+    });
+
+  const searchDocumentsPromise = () =>
+    searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query });
+
   const [consolidated, searchResults, docRefResults] = await Promise.all([
-    timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
-    timed(
-      () =>
-        searchOpenSearch({
-          cxId: patient.cxId,
-          patientId: patient.id,
-          query,
-          maxNumberOfResults,
-        }),
-      "searchOpenSearch",
-      log
-    ),
-    timed(
-      () => searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query }),
-      "searchDocuments",
-      log
-    ),
+    timed(getConsolidatedPromise, "getConsolidatedPatientData", log),
+    timed(searchOpenSearchPromise, "searchOpenSearch", log),
+    timed(searchDocumentsPromise, "searchDocuments", log),
   ]);
   const elapsedTime = Date.now() - startedAt;
   log(
@@ -106,7 +111,7 @@ async function searchOpenSearch({
   cxId: string;
   patientId: string;
   maxNumberOfResults?: number | undefined;
-}) {
+}): Promise<SearchResult[]> {
   // TODO eng-41 make this a factory so we can delegate the processing to a lambda
   const searchService = new OpenSearchLexicalSearcher({
     region: Config.getAWSRegion(),
