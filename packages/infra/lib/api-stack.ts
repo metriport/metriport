@@ -604,15 +604,6 @@ export class APIStack extends Stack {
       searchEndpoint: searchDomainEndpoint,
       searchAuth: { userName: searchDomainUserName, secret: searchDomainSecret },
       searchIndexName: ccdaSearchIndexName,
-      semanticSearchEndpoint: props.config.semanticOpenSearch?.endpoint,
-      semanticSearchIndexName: props.config.semanticOpenSearch?.indexName,
-      semanticSearchModelId: props.config.semanticOpenSearch?.modelId,
-      semanticSearchAuth: props.config.semanticOpenSearch
-        ? {
-            userName: props.config.semanticOpenSearch.userName,
-            secret: props.config.semanticOpenSearch.password,
-          }
-        : undefined,
       featureFlagsTable,
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
