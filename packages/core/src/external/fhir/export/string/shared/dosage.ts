@@ -5,6 +5,7 @@ import { formatQuantity } from "./quantity";
 import { formatRange } from "./range";
 import { formatRatio } from "./ratio";
 import { FIELD_SEPARATOR } from "./separator";
+import { formatTiming } from "./timing";
 
 export function formatDosages({
   dosages,
@@ -38,7 +39,7 @@ export function formatDosage({
     .filter(Boolean);
   const components = [
     text && isDebug ? `Text: ${text}` : text,
-    formatCodeableConcept({ concept: timing, label: "Timing", isDebug }),
+    formatTiming({ timing, label: "Timing", isDebug }),
     formatCodeableConcept({ concept: route, label: "Route", isDebug }),
     formatCodeableConcept({ concept: method, label: "Method", isDebug }),
     doseAndRateStr && doseAndRateStr.join(FIELD_SEPARATOR),
