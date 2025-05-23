@@ -1,5 +1,6 @@
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
+import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
 import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
@@ -125,12 +126,4 @@ async function searchOpenSearchLexical({
     cxId,
     patientId,
   });
-}
-
-async function timed<T>(fn: () => Promise<T>, name: string, log: typeof console.log) {
-  const startedAt = Date.now();
-  const res = await fn();
-  const elapsedTime = Date.now() - startedAt;
-  log(`Done ${name} in ${elapsedTime} ms`);
-  return res;
 }

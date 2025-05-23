@@ -20,4 +20,4 @@ export const indexDefinition: Record<keyof FhirIndexFields, { type: string }> = 
   rawContent: { type: "text" },
 };
 
-export type FhirSearchResult = Omit<FhirIndexFields, "content">;
+export type FhirSearchResult = Omit<FhirIndexFields, "content"> & { id: string };

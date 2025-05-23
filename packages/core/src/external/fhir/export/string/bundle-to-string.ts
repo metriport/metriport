@@ -50,7 +50,7 @@ import { PractitionerToString } from "./resources/practitioner";
 import { ProcedureToString } from "./resources/procedure";
 import { RelatedPersonToString } from "./resources/related-person";
 
-const resourceTypesToSkip: string[] = ["Patient"];
+const resourceTypesToSkip: string[] = ["Patient", "Binary"];
 
 type ResourceTypeMap = {
   AllergyIntolerance: AllergyIntolerance;
@@ -131,7 +131,7 @@ export type FhirResourceToText = {
 export function bundleToString(bundle: Bundle, isDebug = false): FhirResourceToText[] {
   if (!bundle.entry?.length) return [];
 
-  return bundle.entry.flatMap(entry => {
+  const resp = bundle.entry.flatMap(entry => {
     const resource = entry.resource;
     if (!resource || !resource.id) return [];
     const text = resourceToString(resource, isDebug);
@@ -142,6 +142,7 @@ export function bundleToString(bundle: Bundle, isDebug = false): FhirResourceToT
       text,
     };
   });
+  return resp;
 }
 
 export function resourceToString(resource: Resource, isDebug?: boolean): string | undefined {

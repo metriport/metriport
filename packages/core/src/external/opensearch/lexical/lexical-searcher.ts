@@ -1,7 +1,8 @@
 import { Client } from "@opensearch-project/opensearch";
 import { out } from "../../../util";
-import { OpenSearchConfigDirectAccess, OpenSearchResponse, OpenSearchResponseHit } from "../index";
+import { OpenSearchConfigDirectAccess, OpenSearchResponseHit } from "../index";
 import { indexDefinition, SearchResult } from "../index-based-on-resource";
+import { paginatedSearch } from "../paginate";
 import { createLexicalSearchQuery } from "./lexical-search";
 
 export type OpenSearchLexicalSearcherConfig = OpenSearchConfigDirectAccess;
@@ -16,43 +17,29 @@ export class OpenSearchLexicalSearcher {
   constructor(readonly config: OpenSearchLexicalSearcherConfig) {}
 
   async search({ cxId, patientId, query }: SearchRequest): Promise<SearchResult[]> {
-    const { log, debug } = out(`${this.constructor.name}.search - cx ${cxId}, pt ${patientId}`);
+    const { log } = out(`${this.constructor.name}.search - cx ${cxId}, pt ${patientId}`);
 
     const { indexName, endpoint, username, password } = this.config;
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
     log(`Searching on index ${indexName}...`);
-    const queryPayload = createLexicalSearchQuery({
+    const searchRequest = createLexicalSearchQuery({
       cxId,
       patientId,
       query,
     });
 
-    const response = (
-      await client.search({
-        index: indexName,
-        body: queryPayload,
-      })
-    ).body as OpenSearchResponse<SearchResult>;
-    debug(`Response: `, () => JSON.stringify(response));
-
-    const items = response.hits.hits ?? [];
-    log(`Successfully searched, got ${items.length} results`);
-
-    return this.mapResult(items);
-  }
-
-  private mapResult(input: OpenSearchResponseHit<SearchResult>[]): SearchResult[] {
-    if (!input) return [];
-    return input.map(hit => {
-      return {
-        cxId: hit._source.cxId,
-        patientId: hit._source.patientId,
-        resourceType: hit._source.resourceType,
-        resourceId: hit._source.resourceId,
-      };
+    const response = await paginatedSearch<SearchResult>({
+      client,
+      indexName,
+      searchRequest,
+      mapResults,
     });
+
+    log(`Successfully searched, got ${response.count} results`);
+
+    return response.items;
   }
 
   async createIndexIfNotExists(): Promise<void> {
@@ -71,4 +58,17 @@ export class OpenSearchLexicalSearcher {
     const body = { mappings: { properties: indexDefinition } };
     await client.indices.create({ index: indexName, body });
   }
+}
+
+function mapResults(input: OpenSearchResponseHit<SearchResult>[]): SearchResult[] {
+  if (!input) return [];
+  return input.map(hit => {
+    return {
+      id: hit._id,
+      cxId: hit._source.cxId,
+      patientId: hit._source.patientId,
+      resourceType: hit._source.resourceType,
+      resourceId: hit._source.resourceId,
+    };
+  });
 }

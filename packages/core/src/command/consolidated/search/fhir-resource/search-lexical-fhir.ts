@@ -1,6 +1,7 @@
 import { Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
+import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
 import {
@@ -168,12 +169,4 @@ async function getResource(
   if (!hydratedResource) return undefined;
   const resource = JSON.parse(hydratedResource[rawContentFieldName]) as Resource;
   return resource;
-}
-
-async function timed<T>(fn: () => Promise<T>, name: string, log: typeof console.log) {
-  const startedAt = Date.now();
-  const res = await fn();
-  const elapsedTime = Date.now() - startedAt;
-  log(`Done ${name} in ${elapsedTime} ms`);
-  return res;
 }

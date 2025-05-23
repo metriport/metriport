@@ -199,10 +199,7 @@ router.get(
     const queryParam = getFrom("query").optional("query", req);
     const query = queryParam ? queryParam.trim() : undefined;
 
-    // TODO ENG-268 temporary while we don't choose one approach
-    const useFhir = getFromQueryAsBoolean("useFhir", req);
-
-    const result = await makeSearchConsolidated().search({ patient, query, useFhir });
+    const result = await makeSearchConsolidated().search({ patient, query });
 
     return res.status(status.OK).json(result);
   })

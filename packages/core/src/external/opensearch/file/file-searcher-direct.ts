@@ -20,6 +20,7 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
 
     debug(`Searching on index ${indexName}...`);
     const queryPayload = {
+      size: 1_000,
       query: {
         bool: {
           must: [

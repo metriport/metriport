@@ -6,8 +6,8 @@ import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import { parseCxIdAndJob, parsePatientId } from "./shared/parse-body";
 import {
-  parseCxIdAndJob,
   parseDisableWebhooksOrFail,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidatedOrFail,
@@ -74,9 +74,7 @@ function parseBody(body?: unknown): ProcessPatientQueryRequest {
   if (rowNumberRaw == undefined) throw new Error(`Missing rowNumber`);
   if (typeof rowNumberRaw !== "number") throw new Error(`Invalid rowNumber`);
 
-  const patientIdRaw = bodyAsJson.patientId;
-  if (!patientIdRaw) throw new Error(`Missing patientId`);
-  if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
+  const patientIdRaw = parsePatientId(bodyAsJson);
 
   const dataPipelineRequestIdRaw = bodyAsJson.dataPipelineRequestId;
   if (!dataPipelineRequestIdRaw) throw new Error(`Missing dataPipelineRequestId`);
