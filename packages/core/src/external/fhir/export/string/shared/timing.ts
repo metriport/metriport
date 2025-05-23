@@ -2,9 +2,11 @@ import { Timing, TimingRepeat } from "@medplum/fhirtypes";
 import { formatCodeableConcept } from "./codeable-concept";
 import { defaultIsDebug } from "./debug";
 import { formatDuration } from "./duration";
+import { formatNumeric, formatNumericWithMax } from "./numeric";
 import { formatPeriod } from "./period";
 import { formatRange } from "./range";
 import { FIELD_SEPARATOR } from "./separator";
+import { formatStrings } from "./string";
 
 export function formatTiming({
   timing,
@@ -66,59 +68,49 @@ function formatTimingRepeat({
     formatDuration({ duration: boundsDuration, label: "Bounds Duration", isDebug }),
     formatRange({ range: boundsRange, label: "Bounds Range", isDebug }),
     formatPeriod({ period: boundsPeriod, label: "Bounds Period", isDebug }),
-    count !== undefined
-      ? countMax !== undefined
-        ? isDebug
-          ? `Count: ${count}-${countMax}`
-          : `${count}-${countMax}`
-        : isDebug
-        ? `Count: ${count}`
-        : count
-      : undefined,
-    duration !== undefined
-      ? durationMax !== undefined
-        ? isDebug
-          ? `Duration: ${duration}-${durationMax} ${durationUnit}`
-          : `${duration}-${durationMax} ${durationUnit}`
-        : isDebug
-        ? `Duration: ${duration} ${durationUnit}`
-        : duration
-      : undefined,
-    frequency !== undefined
-      ? frequencyMax !== undefined
-        ? isDebug
-          ? `Frequency: ${frequency}-${frequencyMax}`
-          : `${frequency}-${frequencyMax}`
-        : isDebug
-        ? `Frequency: ${frequency}`
-        : frequency
-      : undefined,
-    period !== undefined
-      ? periodMax !== undefined
-        ? isDebug
-          ? `Period: ${period}-${periodMax} ${periodUnit}`
-          : `${period}-${periodMax} ${periodUnit}`
-        : isDebug
-        ? `Period: ${period} ${periodUnit}`
-        : period
-      : undefined,
-    dayOfWeek && isDebug
-      ? `Days: ${dayOfWeek.join(FIELD_SEPARATOR)}`
-      : dayOfWeek
-      ? dayOfWeek.join(FIELD_SEPARATOR)
-      : undefined,
-    timeOfDay && isDebug
-      ? `Times: ${timeOfDay.join(FIELD_SEPARATOR)}`
-      : timeOfDay
-      ? timeOfDay.join(FIELD_SEPARATOR)
-      : undefined,
-    when && isDebug
-      ? `When: ${when.join(FIELD_SEPARATOR)}`
-      : when
-      ? when.join(FIELD_SEPARATOR)
-      : undefined,
-    offset !== undefined && isDebug ? `Offset: ${offset} minutes` : `${offset} minutes`,
-  ].filter(s => s != undefined && s.toString().trim().length > 0);
+    formatNumericWithMax({
+      value: count,
+      valueMax: countMax,
+      label: "Count",
+      isDebug,
+    }),
+    formatNumericWithMax({
+      value: duration,
+      valueMax: durationMax,
+      unit: durationUnit,
+      label: "Duration",
+      isDebug,
+    }),
+    formatNumericWithMax({
+      value: frequency,
+      valueMax: frequencyMax,
+      label: "Frequency",
+      isDebug,
+    }),
+    formatNumericWithMax({
+      value: period,
+      valueMax: periodMax,
+      unit: periodUnit,
+      label: "Period",
+      isDebug,
+    }),
+    formatStrings({
+      values: dayOfWeek,
+      label: "Days",
+      isDebug,
+    }),
+    formatStrings({
+      values: timeOfDay,
+      label: "Times",
+      isDebug,
+    }),
+    formatStrings({
+      values: when,
+      label: "When",
+      isDebug,
+    }),
+    formatNumeric({ value: offset, unit: "minutes", label: "Offset", isDebug }),
+  ].filter(s => s !== undefined && s.toString().trim().length > 0);
 
   if (components.length < 1) return undefined;
 
