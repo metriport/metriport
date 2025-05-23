@@ -1,7 +1,7 @@
 import { Config } from "../../../util/config";
 import { IdGenerator, createIdGenerator } from "../id-generator";
 import { SftpClient, SftpConfig } from "../client";
-import { dateToString } from "./schema/shared";
+import { convertDateToString } from "@metriport/shared/common/date";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -15,6 +15,11 @@ export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "passwor
 export enum TransmissionType {
   Enroll = "ENR",
   Unenroll = "UNR",
+}
+
+export interface SurescriptsRequester {
+  cxId: string;
+  npiNumber: string;
 }
 
 export interface Transmission<T extends TransmissionType> {
@@ -53,9 +58,17 @@ export class SurescriptsSftpClient extends SftpClient {
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
+  createEnrollment(requester: SurescriptsRequester): Transmission<TransmissionType.Enroll> {
+    return this.createTransmission(TransmissionType.Enroll, requester);
+  }
+
+  createUnenrollment(requester: SurescriptsRequester): Transmission<TransmissionType.Unenroll> {
+    return this.createTransmission(TransmissionType.Unenroll, requester);
+  }
+
   createTransmission<T extends TransmissionType>(
     type: T,
-    { npiNumber, cxId }: { npiNumber: string; cxId: string }
+    { npiNumber, cxId }: SurescriptsRequester
   ): Transmission<T> {
     return {
       type,
@@ -67,6 +80,11 @@ export class SurescriptsSftpClient extends SftpClient {
     };
   }
 
+  getPatientLoadFileName(transmission: Transmission<TransmissionType>): string {
+    return `Metriport_PMA_${convertDateToString(transmission.date)}-${transmission.id}${
+      transmission.compression ? "." + transmission.compression : ""
+    }`;
+  }
   // sendTransmission(transmission: Transmission<TransmissionType>): Promise<void> {
   // const message = toSurescriptsMessage(this, transmission.population, transmission.type);
   // return this.write(transmission.id, message);
@@ -76,7 +94,7 @@ export class SurescriptsSftpClient extends SftpClient {
 export function getPatientLoadFileName<T extends TransmissionType>(
   transmission: Transmission<T>
 ): string {
-  return `Metriport_PMA_${dateToString(transmission.date)}${
+  return `Metriport_PMA_${convertDateToString(transmission.date)}${
     transmission.compression ? "." + transmission.compression : ""
   }`;
 }

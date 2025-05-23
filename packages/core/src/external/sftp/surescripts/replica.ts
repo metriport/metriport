@@ -1,7 +1,7 @@
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../../external/aws/s3";
 
-import { SurescriptsSftpClient } from "./client";
+import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 
 type SurescriptsDirectory = "from_surescripts" | "to_surescripts";
 
@@ -17,6 +17,18 @@ export class SurescriptsReplica {
     this.sftpClient = sftpClient ?? new SurescriptsSftpClient({});
     this.s3 = new S3Utils(process.env.AWS_REGION ?? "us-east-2");
     this.bucket = bucket ?? Config.getSurescriptsReplicaBucketName();
+  }
+
+  async writePatientLoadFileToStorage(
+    transmission: Transmission<TransmissionType>,
+    message: Buffer
+  ) {
+    const fileName = this.sftpClient.getPatientLoadFileName(transmission);
+    await this.s3.uploadFile({
+      bucket: this.bucket,
+      key: "to_surescripts/" + fileName,
+      file: message,
+    });
   }
 
   async copyFromSurescripts(directory: SurescriptsDirectory, dryRun = false) {
