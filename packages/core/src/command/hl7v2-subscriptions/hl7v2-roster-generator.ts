@@ -1,9 +1,11 @@
-import { MetriportError, USState, executeWithNetworkRetries } from "@metriport/shared";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
+import _ from "lodash";
+import { OrganizationBizType, OrgType } from "../../domain/organization";
 import { Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
@@ -19,15 +21,52 @@ import {
   RosterRowData,
 } from "./types";
 import { createScrambledId } from "./utils";
-
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
 
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
+const GET_ORGANIZATION_ENDPOINT = `internal/organization`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
+
+import { z } from "zod";
+
+/**
+ * TODO: Remove this once we have proper monorepo wide API response types.
+ * This will happen once we have a proper sdk generation or just move all our DTO types to /shared
+ *
+ * @deprecated Refactor DTOs to shared
+ */
+const InternalOrganizationDTOSchema = z.object({
+  oid: z.string(),
+  cxId: z.string(),
+  name: z.string(),
+  shortcode: z.string().optional(),
+  type: z.nativeEnum(OrgType),
+  location: z.object({
+    addressLine1: z.string(),
+    addressLine2: z.string().optional(),
+    city: z.string(),
+    state: z.string(),
+    zip: z.string(),
+    country: z.string(),
+  }),
+  businessType: z.nativeEnum(OrganizationBizType),
+  cqApproved: z.boolean(),
+  cqActive: z.boolean(),
+  cwApproved: z.boolean(),
+  cwActive: z.boolean(),
+});
+
+/**
+ * TODO: Remove this once we have proper monorepo wide API response types.
+ * This will happen once we have a proper sdk generation or just move all our DTO types to /shared
+ *
+ * @deprecated Refactor DTOs to shared
+ */
+type InternalOrganizationDTO = z.infer<typeof InternalOrganizationDTOSchema>;
 
 export class Hl7v2RosterGenerator {
   private readonly s3Utils: S3Utils;
@@ -66,10 +105,25 @@ export class Hl7v2RosterGenerator {
       });
     }
 
-    const convertedSubscribers = patients.map(p =>
-      convertPatientToRosterRow(p, config.mapping, states)
-    );
-    const rosterCsv = this.generateCsv(convertedSubscribers);
+    const cxIds = new Set(patients.map(p => p.cxId));
+
+    const orgs = await this.getOrganizations([...cxIds]);
+    const orgsByCxId = _.keyBy(orgs, "cxId");
+
+    const rosterRowInputs = patients.map(p => {
+      const org = orgsByCxId[p.cxId];
+      if (org) {
+        return createRosterRowInput(p, org, states);
+      }
+
+      throw new MetriportError(`Organization ${p.cxId} not found for patient ${p.id}`, undefined, {
+        patientId: p.id,
+        cxId: p.cxId,
+      });
+    });
+
+    const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
+    const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
     const fileName = this.createFileKeyHl7v2Roster(config.name, subscriptions);
@@ -116,6 +170,17 @@ export class Hl7v2RosterGenerator {
     return allSubscribers;
   }
 
+  private async getOrganizations(cxIds: string[]): Promise<InternalOrganizationDTO[]> {
+    const currentUrl = `${this.apiUrl}/${GET_ORGANIZATION_ENDPOINT}`;
+    const baseParams = { cxIds: cxIds.join(",") };
+
+    const response: AxiosResponse<InternalOrganizationDTO[]> = await axios.get(currentUrl, {
+      params: baseParams,
+    });
+
+    return response.data;
+  }
+
   private generateCsv(records: RosterRow[]): string {
     if (records.length === 0) return "";
     return stringify(records, { header: true, quoted: true });
@@ -125,14 +190,6 @@ export class Hl7v2RosterGenerator {
     const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
     return `${todaysDate}/${hieName}/${subscriptions.join("-")}.${CSV_FILE_EXTENSION}`;
   }
-}
-
-export function convertPatientToRosterRow(
-  patient: Patient,
-  mapping: MetriportToHieFieldMapping,
-  states: USState[]
-): RosterRow {
-  return createRosterRow(mapPatientToRosterRowData(patient, states), mapping);
 }
 
 export function createRosterRow(
@@ -159,8 +216,11 @@ type RosterRowKey = keyof RosterRowData;
 function isRosterRowKey(key: string, obj: RosterRowData): key is RosterRowKey {
   return key in obj;
 }
-
-export function mapPatientToRosterRowData(p: Patient, states: string[]): RosterRowData {
+export function createRosterRowInput(
+  p: Patient,
+  org: { shortcode?: string | undefined },
+  states: string[]
+): RosterRowData {
   const data = p.data;
   const addresses = data.address.filter(a => states.includes(a.state));
   const ssn = data.personalIdentifiers?.find(id => id.type === "ssn")?.value;
@@ -176,6 +236,7 @@ export function mapPatientToRosterRowData(p: Patient, states: string[]): RosterR
   return {
     id: p.id,
     cxId: p.cxId,
+    shortcode: org.shortcode,
     rosterGenerationDate,
     scrambledId,
     lastName: data.lastName,
