@@ -72,10 +72,10 @@ async function storeSearchResult({
   // TODO eng-268 create a dedicated bucket for this
   const bucket = Config.getMedicalDocumentsBucketName();
   const keyPrefix = buildNewS3KeyPrefix(cxId, patientId);
-  const resultKey = keyPrefix + "-result." + JSON_FILE_EXTENSION;
-  const queryKey = keyPrefix + "-query." + TXT_FILE_EXTENSION;
+  const resultKey = `${keyPrefix}-result.${JSON_FILE_EXTENSION}`;
+  const queryKey = `${keyPrefix}-query.${TXT_FILE_EXTENSION}`;
 
-  const queryAsText = query ? query : "<empty>";
+  const queryAsText = query ?? "<empty>";
   const resultAsText = JSON.stringify(result);
 
   await Promise.all([

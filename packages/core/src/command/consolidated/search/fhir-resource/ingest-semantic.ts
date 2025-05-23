@@ -4,12 +4,14 @@ import { OpenSearchTextIngestor } from "../../../../external/opensearch/text-ing
 import { out } from "../../../../util";
 import { Config } from "../../../../util/config";
 import { getConsolidatedAsText } from "../../consolidated-get";
+import { convertFhirResourceToTextToIngestRequestResource } from "../../../../external/opensearch/text-ingestor";
 
 // TODO eng-268 remove this and everything related to semantic, unless we're keeping it for eng-41
 /**
  * Ingest a patient's consolidated resources into OpenSearch for semantic search.
  *
  * @param patient The patient to ingest.
+ * @param onItemError A callback to handle errors when ingesting a resource.
  */
 export async function ingestSemantic({
   patient,
@@ -32,11 +34,7 @@ export async function ingestSemantic({
   });
 
   const startedAt = Date.now();
-  const resources = convertedResources.map(resource => ({
-    resourceType: resource.type,
-    resourceId: resource.id,
-    content: resource.text,
-  }));
+  const resources = convertedResources.map(convertFhirResourceToTextToIngestRequestResource);
   await ingestor.ingestBulk({
     cxId: patient.cxId,
     patientId: patient.id,
