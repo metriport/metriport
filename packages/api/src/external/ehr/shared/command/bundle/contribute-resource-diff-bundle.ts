@@ -12,7 +12,8 @@ import { ContributeBundleParams } from "../../utils/bundle/types";
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
  * @param ehrPatientId - The patient id of the EHR patient.
- * @param presignedUrl - The presigned URL of the bundle.
+ * @param resourceType - The resource type.
+ * @param jobId - The job ID.
  */
 export async function contributeResourceDiffBundle({
   ehr,
