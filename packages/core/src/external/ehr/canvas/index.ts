@@ -792,6 +792,68 @@ class CanvasApi {
     return bundle;
   }
 
+  async getResourceBundleByResourceId({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    resourceType,
+    resourceId,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    canvasPatientId: string;
+    resourceType: string;
+    resourceId: string;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `Canvas getResourceBundleById - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+    );
+    if (!isSupportedCanvasResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
+    const params = { _id: resourceId };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: canvasPatientId,
+      resourceType,
+      resourceId,
+    };
+    const fetchResourcesFromEhr = () =>
+      fetchEhrFhirResourcesWithPagination({
+        makeRequest: (url: string) =>
+          this.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: canvasPatientId,
+            s3Path: `fhir-resources-${resourceType}/resourceId/${resourceId}`,
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          }),
+        url: resourceTypeUrl,
+      });
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      resourceType,
+      resourceId,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    return bundle;
+  }
+
   async getAppointments({
     cxId,
     fromDate,
