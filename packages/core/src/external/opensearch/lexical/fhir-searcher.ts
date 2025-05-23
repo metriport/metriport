@@ -6,8 +6,7 @@ import {
   OpenSearchResponseGet,
   OpenSearchResponseHit,
 } from "../index";
-import { FhirSearchResult } from "../index-based-on-fhir";
-import { indexDefinition } from "../index-based-on-resource";
+import { FhirSearchResult, indexDefinition } from "../index-based-on-fhir";
 import { paginatedSearch } from "../paginate";
 import { getEntryId } from "../shared/id";
 import { createLexicalSearchQuery } from "./lexical-search";

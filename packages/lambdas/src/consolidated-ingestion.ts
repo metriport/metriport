@@ -35,7 +35,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
   log(`Got opensearch password, running ingestion...`);
 
   const ingester = new IngestConsolidatedDirect();
-  await ingester.ingestIntoSearchEngine(params);
+  await ingester.ingestConsolidatedIntoSearchEngine(params);
 
   log(`Done.`);
 });

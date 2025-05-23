@@ -56,11 +56,11 @@ export async function recreateConsolidated({
 
     const ingestor = makeIngestConsolidated();
     ingestor
-      .ingestIntoSearchEngine({
+      .ingestConsolidatedIntoSearchEngine({
         cxId: patient.cxId,
         patientId: patient.id,
       })
-      .catch(processAsyncError("Post-DQ ingestIntoSearchEngine"));
+      .catch(processAsyncError("Post-DQ ingestConsolidatedIntoSearchEngine"));
 
     if (isDq) {
       startCreateResourceDiffBundlesJobsAcrossEhrs({
