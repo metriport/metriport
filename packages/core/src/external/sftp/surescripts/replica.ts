@@ -45,19 +45,61 @@ export class SurescriptsReplica {
     for (const file of sftpFiles) {
       const key = directory + "/" + file;
 
-      if (s3FileSet.has(key)) {
-        console.log(`File ${key} exists in S3`);
-      } else if (dryRun) {
-        console.log(`Will copy:    SFTP /${directory}/${file} --> S3 ${key}`);
-      } else {
-        const content = await this.sftpClient.read(`/${directory}/${file}`);
-        console.log("Read " + content.length + " bytes from SFTP");
-        await this.s3.uploadFile({
-          bucket: this.bucket,
-          key,
-          file: content,
-        });
+      if (!s3FileSet.has(key)) {
+        await this.copyFileFromSurescripts(directory, file, dryRun);
       }
     }
   }
+
+  async copyFileFromSurescripts(
+    directory: SurescriptsDirectory,
+    fileName: string,
+    dryRun = false
+  ): Promise<Buffer | null> {
+    const exists = await this.sftpClient.exists(`/${directory}/${fileName}`);
+    if (!exists) {
+      console.log(`File ${fileName} does not exist in SFTP directory ${directory}`);
+      return null;
+    }
+
+    if (dryRun) {
+      console.log(`Will copy:    SFTP /${directory}/${fileName} --> S3 ${directory}/${fileName}`);
+      return null;
+    } else {
+      const content = await this.sftpClient.read(`/${directory}/${fileName}`);
+      console.log("Read " + content.length + " bytes from SFTP");
+      await this.s3.uploadFile({
+        bucket: this.bucket,
+        key: directory + "/" + fileName,
+        file: content,
+      });
+      console.log("Copied " + fileName + " from SFTP to S3");
+      return content;
+    }
+  }
+
+  async copyFileToSurescripts(directory: SurescriptsDirectory, fileName: string): Promise<Buffer> {
+    const s3Key = getS3Key(directory, fileName);
+    const s3FileExists = await this.s3.fileExists(this.bucket, s3Key);
+    if (!s3FileExists) {
+      throw new Error(`Object "${s3Key}" does not exist in Surescripts replica`);
+    }
+
+    console.log(`Downloading ${s3Key} from S3`);
+    const content = await this.s3.downloadFile({
+      bucket: this.bucket,
+      key: s3Key,
+    });
+    await this.sftpClient.write(getAbsoluteSftpPath(directory, fileName), content);
+    console.log("Copied " + fileName + " from S3 to SFTP");
+    return content;
+  }
+}
+
+function getAbsoluteSftpPath(directory: SurescriptsDirectory, fileName: string) {
+  return `/${directory}/${fileName}`;
+}
+
+function getS3Key(directory: SurescriptsDirectory, fileName: string) {
+  return `${directory}/${fileName}`;
 }
