@@ -3,6 +3,8 @@ import {
   isValidISODate,
   validateDateIsAfter1900,
   validateIsPastOrPresentSafe,
+  convertDateToString,
+  convertDateToTimeString,
 } from "../date";
 
 describe("shared date functions", () => {
@@ -121,5 +123,34 @@ describe("buildDayjsFromCompactDate", () => {
     const invalidDate = "20240226123000";
     const result = buildDayjsFromCompactDate(invalidDate);
     expect(result.format()).toBe("2024-02-26T12:30:00Z");
+  });
+});
+
+describe("convertDateToString", () => {
+  it("converts date to YYYYMMDD format", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date)).toBe("20240226");
+  });
+
+  it("converts date to YYYY-MM-DD format", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date, "-")).toBe("2024-02-26");
+  });
+
+  it("converts date to YYYYMMDD format with separator", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date, "-")).toBe("2024-02-26");
+  });
+});
+
+describe("convertDateToTimeString", () => {
+  it("converts date to HHMMSS format", () => {
+    const date = new Date("2024-02-26T12:30:00");
+    expect(convertDateToTimeString(date)).toBe("123000");
+  });
+
+  it("converts date to HHMMSSCC format", () => {
+    const date = new Date("2024-02-26T12:30:00.123");
+    expect(convertDateToTimeString(date, { includeCentisecond: true })).toBe("12300012");
   });
 });

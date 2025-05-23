@@ -4,6 +4,7 @@ import {
   toSurescriptsInteger,
   toSurescriptsEnum,
   toSurescriptsString,
+  toSurescriptsUUID,
   toSurescriptsDate,
   toSurescriptsTime,
   toSurescriptsArray,
@@ -173,7 +174,7 @@ export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = 
   {
     field: 3,
     key: "patientId",
-    toSurescripts: toSurescriptsString("patientId"),
+    toSurescripts: ({ patientId }) => toSurescriptsUUID(patientId),
   },
   {
     field: 4,

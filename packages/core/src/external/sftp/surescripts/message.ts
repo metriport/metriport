@@ -114,15 +114,17 @@ export function toSurescriptsPatientLoadFile(
 
 export function toSurescriptsPatientLoadRow<T extends object>(
   data: T,
-  schema: z.ZodObject<z.ZodRawShape>,
-  order: OutgoingFileRowSchema<T>
+  objectSchema: z.ZodObject<z.ZodRawShape>,
+  fieldSchema: OutgoingFileRowSchema<T>
 ): Buffer {
-  const parsed = schema.safeParse(data);
+  const parsed = objectSchema.safeParse(data);
   if (!parsed.success) {
     // console.log("Invalid data", parsed.error, parsed.error.issues);
     throw new Error("Invalid data");
   }
-  return Buffer.from(order.map(field => field.toSurescripts(data)).join("|"), "ascii");
+  const fields = fieldSchema.map(field => field.toSurescripts(data));
+  const outputRow = fields.join("|") + "\n";
+  return Buffer.from(outputRow, "ascii");
 }
 
 export function fromSurescriptsVerificationFile(message: Buffer) {
@@ -134,9 +136,9 @@ export function fromSurescriptsVerificationFile(message: Buffer) {
   const details = rows.slice(0, -1);
   const footer = rows.pop();
 
-  if (!header) throw new Error("Header is required");
-  if (!details || details.length === 0) throw new Error("Details are required");
-  if (!footer) throw new Error("Footer is required");
+  if (!header) throw new Error("Header is missing");
+  if (!details || details.length === 0) throw new Error("Details are missing");
+  if (!footer) throw new Error("Footer is missing");
 
   const headerData = fromSurescriptsRow(
     header,
@@ -157,16 +159,16 @@ export function fromSurescriptsVerificationFile(message: Buffer) {
 
 function fromSurescriptsRow<T extends object>(
   row: string[],
-  rowOrder: IncomingFileRowSchema<T>,
-  rowValidator: (data: object) => data is T
+  fieldSchema: IncomingFileRowSchema<T>,
+  objectValidator: (data: object) => data is T
 ): T {
   const data: Partial<T> = {};
-  for (const field of rowOrder) {
+  for (const field of fieldSchema) {
     if (field.key) {
       data[field.key] = field.fromSurescripts(row[field.field] ?? "");
     }
   }
-  if (rowValidator(data)) {
+  if (objectValidator(data)) {
     return data;
   } else throw new Error("Invalid row");
 }

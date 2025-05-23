@@ -2,11 +2,11 @@ import { z } from "zod";
 import {
   IncomingFileRowSchema,
   fromSurescriptsString,
+  fromSurescriptsUUID,
   fromSurescriptsDate,
   fromSurescriptsEnum,
   fromSurescriptsTime,
   fromSurescriptsInteger,
-  fromSurescriptsIntegerOrUndefined,
 } from "./shared";
 
 export const patientVerificationHeaderSchema = z.object({
@@ -153,7 +153,7 @@ export const patientVerificationDetailOrder: IncomingFileRowSchema<PatientVerifi
   {
     field: 2,
     key: "sourceRecordSequenceNumber",
-    fromSurescripts: fromSurescriptsIntegerOrUndefined(),
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
   },
   {
     field: 3,
@@ -163,7 +163,7 @@ export const patientVerificationDetailOrder: IncomingFileRowSchema<PatientVerifi
   {
     field: 4,
     key: "patientId",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsUUID,
   },
   {
     field: 5,
@@ -221,16 +221,16 @@ export const patientVerificationFooterOrder: IncomingFileRowSchema<PatientVerifi
   {
     field: 2,
     key: "errorRecords",
-    fromSurescripts: fromSurescriptsIntegerOrUndefined(),
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
   },
   {
     field: 3,
     key: "loadedRecords",
-    fromSurescripts: fromSurescriptsIntegerOrUndefined(),
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
   },
   {
     field: 4,
     key: "totalErrors",
-    fromSurescripts: fromSurescriptsIntegerOrUndefined(),
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
   },
 ];

@@ -108,3 +108,30 @@ export function sortDate(
     ? buildDayjs(date1).diff(buildDayjs(date2))
     : buildDayjs(date2).diff(buildDayjs(date1));
 }
+
+// Convert to YYYYMMDD or YYYY-MM-DD format
+export function convertDateToString(date: Date, separator = "") {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const dateOfMonth = date.getDate().toString().padStart(2, "0");
+  return [year, month, dateOfMonth].join(separator);
+}
+
+// Convert to HHMMSS or HHMMSSCC format
+export function convertDateToTimeString(
+  date: Date,
+  { includeCentisecond = false }: { includeCentisecond?: boolean } = {}
+) {
+  const hour = date.getHours().toString().padStart(2, "0");
+  const minute = date.getMinutes().toString().padStart(2, "0");
+  const second = date.getSeconds().toString().padStart(2, "0");
+
+  if (includeCentisecond) {
+    const centisecond = Math.round(date.getMilliseconds() / 10)
+      .toString()
+      .padStart(2, "0");
+    return [hour, minute, second, centisecond].join("");
+  } else {
+    return [hour, minute, second].join("");
+  }
+}
