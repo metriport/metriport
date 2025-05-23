@@ -19,7 +19,7 @@ export class SurescriptsReplica {
     this.bucket = bucket ?? Config.getSurescriptsReplicaBucketName();
   }
 
-  async synchronize(directory: SurescriptsDirectory, dryRun = false) {
+  async copyFromSurescripts(directory: SurescriptsDirectory, dryRun = false) {
     await this.sftpClient.connect();
     const sftpFiles = await this.sftpClient.list("/" + directory);
     const s3Files = await this.s3.listObjects(this.bucket, directory + "/");
