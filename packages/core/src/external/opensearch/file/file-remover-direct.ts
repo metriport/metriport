@@ -1,5 +1,5 @@
 import { Client } from "@opensearch-project/opensearch";
-import { out } from "../../util";
+import { out } from "../../../util";
 import { OpenSearchFileRemover, OpenSearchFileRemoverConfig } from "./file-remover";
 
 export type OpenSearchFileRemoverDirectConfig = OpenSearchFileRemoverConfig & {

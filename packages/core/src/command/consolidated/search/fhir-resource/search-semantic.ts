@@ -1,17 +1,23 @@
 import { SearchSetBundle } from "@metriport/shared/medical";
-import { Patient } from "../../../domain/patient";
-import { out } from "../../../util";
-import { Config } from "../../../util/config";
-import { DocumentReferenceWithId } from "../../fhir/document/document-reference";
-import { toFHIR as patientToFhir } from "../../fhir/patient/conversion";
-import { buildBundleEntry } from "../../fhir/shared/bundle";
-import { searchDocuments } from "../search-documents";
-import { OpenSearchSemanticSearcherDirect, SearchResult } from "./semantic-searcher-direct";
-import { getConsolidated } from "./shared";
+import { Patient } from "../../../../domain/patient";
+import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
+import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
+import { buildBundleEntry, buildSearchSetBundle } from "../../../../external/fhir/shared/bundle";
+import { SearchResult } from "../../../../external/opensearch/index-based-on-resource";
+import { OpenSearchSemanticSearcher } from "../../../../external/opensearch/semantic/semantic-searcher";
+import { out } from "../../../../util";
+import { Config } from "../../../../util/config";
+import { getConsolidatedPatientData } from "../../consolidated-get";
+import { searchDocuments } from "../document-reference/search";
 
 /**
  * Performs a semantic search on a patient's consolidated resources in OpenSearch
  * and returns the resources from consolidated that match the search results.
+ *
+ * @param patient The patient to search.
+ * @param query The query to search for.
+ * @param maxNumberOfResults The maximum number of results to return. From 0 to 10_000.
+ *                           Optional, defaults to 10_000.
  */
 export async function searchSemantic({
   patient,
@@ -32,7 +38,7 @@ export async function searchSemantic({
   const startedAt = Date.now();
 
   const [consolidated, searchResults, docRefResults] = await Promise.all([
-    getConsolidated({ patient }),
+    getConsolidatedPatientData({ patient }),
     searchOpenSearch({
       cxId: patient.cxId,
       patientId: patient.id,
@@ -66,12 +72,8 @@ export async function searchSemantic({
 
   log(`Done, returning ${sliced.length} filtered resources...`);
 
-  return {
-    resourceType: "Bundle",
-    type: "searchset",
-    total: sliced.length,
-    entry: sliced,
-  };
+  const bundle = buildSearchSetBundle({ entries: sliced });
+  return bundle;
 }
 
 function isInSemanticResults(
@@ -103,7 +105,7 @@ async function searchOpenSearch({
   patientId: string;
   maxNumberOfResults?: number | undefined;
   similarityThreshold?: number | undefined;
-}) {
+}): Promise<SearchResult[]> {
   const region = Config.getAWSRegion();
   const endpoint = Config.getSemanticSearchEndpoint();
   const indexName = Config.getSemanticSearchIndexName();
@@ -112,7 +114,7 @@ async function searchOpenSearch({
   const modelId = Config.getSemanticSearchModelId();
 
   // TODO eng-41 make this a factory so we can delegate the processing to a lambda
-  const searchService = new OpenSearchSemanticSearcherDirect({
+  const searchService = new OpenSearchSemanticSearcher({
     region,
     endpoint,
     indexName,

@@ -62,6 +62,10 @@ export class Config {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
 
+  static getLexicalSearchIndexName(): string {
+    return getEnvVarOrFail("LEXICAL_SEARCH_INDEX");
+  }
+
   static getSemanticSearchEndpoint(): string {
     return getEnvVarOrFail("SEMANTIC_SEARCH_ENDPOINT");
   }
