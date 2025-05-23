@@ -124,12 +124,15 @@ export async function createConsolidatedFromConversions({
     contentType: "application/json",
   });
 
-  const ingestor = makeIngestConsolidated();
-  ingestor
-    .ingestConsolidatedIntoSearchEngine({ cxId, patientId })
-    .catch(
-      processAsyncError("createConsolidatedFromConversions.ingestConsolidatedIntoSearchEngine")
+  try {
+    const ingestor = makeIngestConsolidated();
+    await ingestor.ingestConsolidatedIntoSearchEngine({ cxId, patientId });
+  } catch (error) {
+    // intentionally not re-throwing
+    processAsyncError("createConsolidatedFromConversions.ingestConsolidatedIntoSearchEngine")(
+      error
     );
+  }
 
   log(`Done`);
   return bundle;

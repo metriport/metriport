@@ -16,6 +16,7 @@ import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
+import { getConsolidatedIngestionConnectorSettings } from "./lambdas-nested-stack-settings";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -62,6 +63,7 @@ type GenericConsolidatedLambdaProps = {
   sentryDsn: string | undefined;
   alarmAction: SnsAction | undefined;
   featureFlagsTable: dynamodb.Table;
+  consolidatedIngestionQueue: IQueue;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
 };
 
@@ -176,6 +178,11 @@ export class LambdasNestedStack extends NestedStack {
       alarmSnsAction: props.alarmAction,
     });
 
+    this.consolidatedIngestionQueue = this.setupConsolidatedIngestionQueue({
+      envType: props.config.environmentType,
+      alarmAction: props.alarmAction,
+    });
+
     this.fhirToBundleLambda = this.setupFhirBundleLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -187,6 +194,7 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
+      consolidatedIngestionQueue: this.consolidatedIngestionQueue,
     });
     this.fhirToBundleCountLambda = this.setupFhirBundleCountLambda({
       lambdaLayers: props.lambdaLayers,
@@ -199,6 +207,7 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
+      consolidatedIngestionQueue: this.consolidatedIngestionQueue,
     });
 
     this.consolidatedSearchLambda = this.setupConsolidatedSearchLambda({
@@ -217,7 +226,7 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
     });
 
-    const consolidatedIngestionConnector = this.setupConsolidatedIngestionConnector({
+    this.consolidatedIngestionLambda = this.setupConsolidatedIngestionLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -231,8 +240,6 @@ export class LambdasNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     });
-    this.consolidatedIngestionQueue = consolidatedIngestionConnector.queue;
-    this.consolidatedIngestionLambda = consolidatedIngestionConnector.lambda;
 
     this.acmCertificateMonitorLambda = this.setupAcmCertificateMonitor({
       lambdaLayers: props.lambdaLayers,
@@ -647,6 +654,7 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction,
     featureFlagsTable,
     bedrock,
+    consolidatedIngestionQueue,
   }: GenericConsolidatedLambdaProps): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -669,6 +677,7 @@ export class LambdasNestedStack extends NestedStack {
           BEDROCK_VERSION: bedrock?.anthropicVersion,
           AI_BRIEF_MODEL_ID: bedrock?.modelId,
         }),
+        CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
@@ -683,6 +692,8 @@ export class LambdasNestedStack extends NestedStack {
     conversionsBucket.grantRead(theLambda);
 
     featureFlagsTable.grantReadData(theLambda);
+
+    consolidatedIngestionQueue.grantSendMessages(theLambda);
 
     // Always add the bedrock policy to the lambda, regardless of whether bedrock is defined or not
     addBedrockPolicyToLambda(theLambda);
@@ -761,7 +772,25 @@ export class LambdasNestedStack extends NestedStack {
     return theLambda;
   }
 
-  private setupConsolidatedIngestionConnector(ownProps: {
+  private setupConsolidatedIngestionQueue(ownProps: {
+    envType: EnvType;
+    alarmAction: SnsAction | undefined;
+  }): IQueue {
+    const { envType, alarmAction } = ownProps;
+    const settings = getConsolidatedIngestionConnectorSettings();
+    const name = settings.name;
+
+    const theQueue = createQueue({
+      stack: this,
+      name,
+      envType,
+      alarmSnsAction: alarmAction,
+      ...settings.queue,
+    });
+
+    return theQueue;
+  }
+  private setupConsolidatedIngestionLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -774,10 +803,10 @@ export class LambdasNestedStack extends NestedStack {
     openSearchConsolidatedIndexName: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-  }): { lambda: Lambda; queue: IQueue } {
-    const name = "ConsolidatedIngestion";
+  }): Lambda {
+    const settings = getConsolidatedIngestionConnectorSettings();
+    const name = settings.name;
     const lambdaEntry = "consolidated-ingestion";
-    const lambdaTimeout = Duration.minutes(3);
     const {
       lambdaLayers,
       vpc,
@@ -792,38 +821,6 @@ export class LambdasNestedStack extends NestedStack {
       sentryDsn,
       alarmAction,
     } = ownProps;
-
-    const settings = {
-      queue: {
-        fifo: false,
-        createRetryLambda: false,
-        maxReceiveCount: 2,
-        alarmMaxAgeOfOldestMessage: Duration.seconds(lambdaTimeout.toSeconds() * 3),
-        maxMessageCountAlarmThreshold: 5_000,
-        visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
-        receiveMessageWaitTime: Duration.seconds(2),
-      },
-      lambda: {
-        runtime: lambda.Runtime.NODEJS_20_X,
-        memory: 1024,
-        timeout: lambdaTimeout,
-      },
-      eventSource: {
-        batchSize: 1,
-        maxBatchingWindow: Duration.seconds(0),
-        maxConcurrency: 5, // how many lambdas can hit the OpenSearch service at once
-        // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
-        reportBatchItemFailures: false,
-      },
-    };
-
-    const theQuue = createQueue({
-      stack: this,
-      name,
-      envType,
-      alarmSnsAction: alarmAction,
-      ...settings.queue,
-    });
 
     const theLambda = createLambda({
       stack: this,
@@ -850,14 +847,16 @@ export class LambdasNestedStack extends NestedStack {
       ...settings.lambda,
     });
 
-    theLambda.addEventSource(new SqsEventSource(theQuue, settings.eventSource));
+    theLambda.addEventSource(
+      new SqsEventSource(this.consolidatedIngestionQueue, settings.eventSource)
+    );
 
     bundleBucket.grantReadWrite(theLambda);
     fhirToBundleLambda.grantInvoke(theLambda);
     openSearchAuth.secret.grantRead(theLambda);
     featureFlagsTable.grantReadData(theLambda);
 
-    return { lambda: theLambda, queue: theQuue };
+    return theLambda;
   }
 
   /**
