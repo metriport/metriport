@@ -20,8 +20,9 @@ export const patientVerificationHeaderSchema = z.object({
   transmissionControlNumber: z.string().min(1).max(10), // generated during file load
   transmissionDate: z.date(),
   transmissionTime: z.array(z.number()),
-  usage: z.enum(["test", "production"]),
-  loadStatus: z.enum(["success", "partial_success", "failure"]),
+  usage: z.enum(["T", "P"]),
+  // 01 = success, 02 = partial success, 03 = failure
+  loadStatus: z.enum(["01", "02", "03"]),
   loadStatusDescription: z.string().min(1).max(250),
 });
 
@@ -88,32 +89,12 @@ export const patientVerificationHeaderOrder: IncomingFileRowSchema<PatientVerifi
   {
     field: 11,
     key: "usage",
-    fromSurescripts: (value: string) => {
-      switch (value) {
-        case "T":
-          return "test";
-        case "P":
-          return "production";
-        default:
-          throw new Error(`Invalid file type: ${value}`);
-      }
-    },
+    fromSurescripts: fromSurescriptsEnum(["T", "P"]),
   },
   {
     field: 12,
     key: "loadStatus",
-    fromSurescripts: (value: string) => {
-      switch (value) {
-        case "01":
-          return "success";
-        case "02":
-          return "partial_success";
-        case "03":
-          return "failure";
-        default:
-          throw new Error(`Invalid load status: ${value}`);
-      }
-    },
+    fromSurescripts: fromSurescriptsEnum(["01", "02", "03"]),
   },
   {
     field: 13,
@@ -128,7 +109,7 @@ export const patientVerificationDetailSchema = z.object({
   sourceRecordSequenceNumber: z.number().optional(),
   assigningAuthority: z.string().min(1).max(64).optional(),
   patientId: z.string().min(1).max(35),
-  errorType: z.enum(["warning", "error", "fatal"]),
+  errorType: z.enum(["W", "E", "F"]), // W = warning, E = error, F = fatal
   errorCode: z.string().min(1).max(10),
   errorDescription: z.string().min(1).max(250),
 });
@@ -168,18 +149,7 @@ export const patientVerificationDetailOrder: IncomingFileRowSchema<PatientVerifi
   {
     field: 5,
     key: "errorType",
-    fromSurescripts: (value: string) => {
-      switch (value) {
-        case "W":
-          return "warning";
-        case "E":
-          return "error";
-        case "F":
-          return "fatal";
-        default:
-          throw new Error(`Invalid error type: ${value}`);
-      }
-    },
+    fromSurescripts: fromSurescriptsEnum(["W", "E", "F"]),
   },
   {
     field: 6,
