@@ -3,8 +3,8 @@ import { toFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, sleep } from "@metriport/shared";
+import { log } from "console";
 import { UniqueConstraintError } from "sequelize";
-import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { createOrganizationId } from "../customer-sequence/create-id";
@@ -34,7 +34,7 @@ export async function createOrganization({
     cwActive,
   });
 
-  await createTenantIfNotExists(org);
+  log("FHIR server removed, skipping tenant creation in FHIR server");
   const fhirOrg = toFHIR(org);
   await upsertOrgToFHIRServer(org.cxId, fhirOrg);
 
