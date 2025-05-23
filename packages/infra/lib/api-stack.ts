@@ -1,11 +1,11 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -42,7 +42,6 @@ import * as documentUploader from "./api-stack/document-upload";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { EhrNestedStack } from "./ehr-nested-stack";
-import { SurescriptsNestedStack } from "./surescripts-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
@@ -51,14 +50,14 @@ import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
-import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
-import { Secrets, getSecrets } from "./shared/secrets";
+import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
-import { Queue } from "aws-cdk-lib/aws-sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -445,51 +444,14 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Surescripts
     //-------------------------------------------
-    let surescriptsSynchronizeSftpLambda: Lambda | undefined;
-    let surescriptsSynchronizeSftpQueue: Queue | undefined;
-    let surescriptsReceiveFlatFileResponseLambda: Lambda | undefined;
-    let surescriptsReceiveVerificationResponseLambda: Lambda | undefined;
-    let surescriptsSendPatientRequestLambda: Lambda | undefined;
-    let surescriptsSendPatientRequestQueue: Queue | undefined;
-    let surescriptsReceiveFlatFileResponseQueue: Queue | undefined;
-    let surescriptsReceiveVerificationResponseQueue: Queue | undefined;
-    let surescriptsReplicaBucket: s3.Bucket | undefined;
-
-    const medicationBundleBucket = new s3.Bucket(this, "MedicationBundleBucket", {
-      bucketName: props.config.medicationBundleBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
-
-    if (!isSandbox(props.config)) {
-      const {
-        synchronizeSftpLambda,
-        synchronizeSftpQueue,
-        receiveFlatFileResponseLambda,
-        receiveVerificationResponseLambda,
-        sendPatientRequestLambda,
-        sendPatientRequestQueue,
-        receiveFlatFileResponseQueue,
-        receiveVerificationResponseQueue,
-        surescriptsReplicaBucket: surescriptsReplicaBucketFromStack,
-      } = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
+    if (props.config.surescripts) {
+      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
         config: props.config,
         vpc: this.vpc,
         alarmAction: slackNotification?.alarmAction,
         lambdaLayers,
-        medicationBundleBucket,
       });
-
-      surescriptsSynchronizeSftpLambda = synchronizeSftpLambda;
-      surescriptsSynchronizeSftpQueue = synchronizeSftpQueue;
-      surescriptsReceiveFlatFileResponseLambda = receiveFlatFileResponseLambda;
-      surescriptsReceiveVerificationResponseLambda = receiveVerificationResponseLambda;
-      surescriptsSendPatientRequestLambda = sendPatientRequestLambda;
-      surescriptsSendPatientRequestQueue = sendPatientRequestQueue;
-      surescriptsReceiveFlatFileResponseQueue = receiveFlatFileResponseQueue;
-      surescriptsReceiveVerificationResponseQueue = receiveVerificationResponseQueue;
-      surescriptsReplicaBucket = surescriptsReplicaBucketFromStack;
     }
 
     //-------------------------------------------
@@ -630,14 +592,9 @@ export class APIStack extends Stack {
             secret: props.config.semanticOpenSearch.password,
           }
         : undefined,
-      surescriptsReplicaBucket,
-      medicationBundleBucket,
-      surescriptsSynchronizeSftpQueue,
-      surescriptsSendPatientRequestQueue,
-      surescriptsReceiveVerificationResponseQueue,
-      surescriptsReceiveFlatFileResponseQueue,
       featureFlagsTable,
       cookieStore,
+      surescriptsAssets: surescriptsStack?.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -719,14 +676,10 @@ export class APIStack extends Stack {
       ehrRefreshEhrBundlesLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
-      surescriptsReceiveFlatFileResponseLambda,
-      surescriptsReceiveVerificationResponseLambda,
-      surescriptsSendPatientRequestLambda,
-      surescriptsSynchronizeSftpLambda,
     ];
-    lambdasToGetApiUrl.forEach(lambda =>
-      lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
-    );
+    const apiUrl = `http://${apiDirectUrl}`;
+    lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
+    if (surescriptsStack) surescriptsStack.setApiUrl(apiDirectUrl);
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket

@@ -7,12 +7,13 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
-import { EnvType } from "./env-type";
-import { createLambda } from "./shared/lambda";
-import { LambdaLayers } from "./shared/lambda-layers";
-import { QueueAndLambdaSettings } from "./shared/settings";
-import { createQueue } from "./shared/sqs";
+import { EnvConfig } from "../../config/env-config";
+import { EnvType } from "../env-type";
+import { createLambda } from "../shared/lambda";
+import { LambdaLayers } from "../shared/lambda-layers";
+import { QueueAndLambdaSettings } from "../shared/settings";
+import { createQueue } from "../shared/sqs";
+import { SurescriptsAssets } from "./types";
 
 const synchronizeSftpTimeout = Duration.minutes(5);
 const synchronizeSftpWaitTime = Duration.seconds(1);
@@ -22,6 +23,7 @@ const receiveFlatFileResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
 const maxConcurrencyForSftpOperations = 2;
 const maxConcurrencyForFileOperations = 4;
+const apiUrlEnvVarName = "API_URL";
 
 interface SurescriptsSettings {
   synchronizeSftp: QueueAndLambdaSettings;
@@ -172,20 +174,19 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
-  medicationBundleBucket: s3.Bucket;
 }
 
 export class SurescriptsNestedStack extends NestedStack {
-  readonly synchronizeSftpLambda: Lambda;
-  readonly synchronizeSftpQueue: Queue;
-  readonly sendPatientRequestLambda: Lambda;
-  readonly sendPatientRequestQueue: Queue;
-  readonly receiveVerificationResponseLambda: Lambda;
-  readonly receiveVerificationResponseQueue: Queue;
-  readonly receiveFlatFileResponseLambda: Lambda;
-  readonly receiveFlatFileResponseQueue: Queue;
-  readonly surescriptsReplicaBucket: s3.Bucket;
-  readonly medicationBundleBucket: s3.Bucket;
+  private readonly synchronizeSftpLambda: Lambda;
+  private readonly synchronizeSftpQueue: Queue;
+  private readonly sendPatientRequestLambda: Lambda;
+  private readonly sendPatientRequestQueue: Queue;
+  private readonly receiveVerificationResponseLambda: Lambda;
+  private readonly receiveVerificationResponseQueue: Queue;
+  private readonly receiveFlatFileResponseLambda: Lambda;
+  private readonly receiveFlatFileResponseQueue: Queue;
+  private readonly surescriptsReplicaBucket: s3.Bucket;
+  private readonly medicationBundleBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: SurescriptsNestedStackProps) {
     super(scope, id, props);
@@ -199,7 +200,12 @@ export class SurescriptsNestedStack extends NestedStack {
       versioned: true,
     });
 
-    this.medicationBundleBucket = props.medicationBundleBucket;
+    this.medicationBundleBucket = new s3.Bucket(this, "MedicationBundleBucket", {
+      bucketName: props.config.medicationBundleBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+    });
 
     const { envVars, secrets } = surescriptsEnvironmentVariablesAndSecrets({
       nestedStack: this,
@@ -253,6 +259,31 @@ export class SurescriptsNestedStack extends NestedStack {
       secret.grantRead(this.receiveVerificationResponseLambda);
       secret.grantRead(this.receiveFlatFileResponseLambda);
     }
+  }
+
+  getAssets(): SurescriptsAssets {
+    return {
+      synchronizeSftpLambda: this.synchronizeSftpLambda,
+      synchronizeSftpQueue: this.synchronizeSftpQueue,
+      sendPatientRequestLambda: this.sendPatientRequestLambda,
+      sendPatientRequestQueue: this.sendPatientRequestQueue,
+      receiveVerificationResponseLambda: this.receiveVerificationResponseLambda,
+      receiveVerificationResponseQueue: this.receiveVerificationResponseQueue,
+      receiveFlatFileResponseLambda: this.receiveFlatFileResponseLambda,
+      receiveFlatFileResponseQueue: this.receiveFlatFileResponseQueue,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+      medicationBundleBucket: this.medicationBundleBucket,
+    };
+  }
+
+  setApiUrl(apiUrl: string): void {
+    const lambdasToSetApiUrl = [
+      this.synchronizeSftpLambda,
+      this.sendPatientRequestLambda,
+      this.receiveVerificationResponseLambda,
+      this.receiveFlatFileResponseLambda,
+    ];
+    lambdasToSetApiUrl.forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
   }
 
   private setupLambdaAndQueue<T extends keyof SurescriptsSettings>(
