@@ -49,7 +49,6 @@ program
     console.log(`Read ${patients.length} patients from ${patientData}`);
     console.log(patients);
 
-    // TODO: patient load source
     const message = toSurescriptsPatientLoadFile(client, transmission, patients);
 
     const fileName = client.getPatientLoadFileName(transmission);
@@ -67,13 +66,7 @@ async function readPatientData(patientData: string): Promise<Patient[]> {
     const patients: Patient[] = [];
     const headers: string[] = [];
     fs.createReadStream(patientData)
-      .pipe(
-        csv({
-          mapHeaders: ({ header }: { header: string }) => {
-            return header.replace(/[!@#$%^&*()+=\[\]\\';,./{}|":<>?~_\s]/gi, ""); //eslint-disable-line
-          },
-        })
-      )
+      .pipe(csv())
       .on("headers", async (parsedHeaders: string[]) => {
         headers.push(...parsedHeaders);
       })
