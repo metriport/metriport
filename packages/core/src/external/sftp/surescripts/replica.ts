@@ -31,6 +31,11 @@ export class SurescriptsReplica {
     });
   }
 
+  async synchronize(dryRun = false) {
+    await this.copyFromSurescripts("from_surescripts", dryRun);
+    // TODO: copy outgoing messages from history folder
+  }
+
   async copyFromSurescripts(directory: SurescriptsDirectory, dryRun = false) {
     await this.sftpClient.connect();
     const sftpFiles = await this.sftpClient.list("/" + directory);

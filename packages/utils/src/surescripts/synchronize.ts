@@ -10,18 +10,24 @@ program
   .name("synchronize")
   .option("-d, --dry-run", "Dry run the synchronization")
   .option("-a, --all", "Synchronize all files")
-  .option("-f, --file <file>", "Synchronize a specific file")
+  .option("-t, --transmission <id>", "Synchronize a specific transmission")
   .description(
     "Ensure one or all files are synchronized between the Surescripts SFTP server and the S3 bucket"
   )
   .showHelpAfterError()
   .version("1.0.0")
   .action(async () => {
-    const { dryRun } = program.opts();
+    const { dryRun, all, file } = program.opts();
 
+    console.log(all, file);
     const replica = new SurescriptsReplica();
-    await replica.synchronize("from_surescripts", dryRun);
-    await replica.synchronize("to_surescripts", dryRun);
+    if (dryRun) {
+      await replica.synchronize(dryRun);
+    } else if (all) {
+      await replica.synchronize(true);
+    } else {
+      console.log("File", file);
+    }
   });
 
 export default program;
