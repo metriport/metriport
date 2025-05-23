@@ -1,7 +1,7 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
@@ -336,6 +336,7 @@ export class SurescriptsNestedStack extends NestedStack {
       name,
       entry,
       envType,
+      runtime: Runtime.NODEJS_20_X,
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
