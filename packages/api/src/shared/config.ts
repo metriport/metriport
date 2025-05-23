@@ -287,22 +287,6 @@ export class Config {
     return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 
-  static getSearchIngestionQueueUrl(): string {
-    return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
-  }
-  static getSearchEndpoint(): string {
-    return getEnvVarOrFail("SEARCH_ENDPOINT");
-  }
-  static getSearchUsername(): string {
-    return getEnvVarOrFail("SEARCH_USERNAME");
-  }
-  static getSearchPassword(): string {
-    return getEnvVarOrFail("SEARCH_PASSWORD");
-  }
-  static getSearchIndexName(): string {
-    return getEnvVarOrFail("SEARCH_INDEX");
-  }
-
   static getCWManagementUrl(): string | undefined {
     return getEnvVar("CW_MANAGEMENT_URL");
   }
@@ -346,6 +330,10 @@ export class Config {
   }
   static getHealthieApiKeyMap(): string | undefined {
     return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
+  }
+
+  static getEClinicalWorksEnv(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 
   static getRateLimitTableName(): string | undefined {

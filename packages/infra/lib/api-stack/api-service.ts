@@ -332,6 +332,8 @@ export function createAPIService({
               SEMANTIC_SEARCH_PASSWORD: semanticSearchAuth.secret,
               SEMANTIC_SEARCH_INDEX: semanticSearchIndexName,
               SEMANTIC_SEARCH_MODEL_ID: semanticSearchModelId,
+              // TODO eng-268 move this out of the API when we have it running on lambdas
+              LEXICAL_SEARCH_INDEX: semanticSearchIndexName,
             }),
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
             CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
@@ -360,6 +362,7 @@ export function createAPIService({
             EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
             EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
+            EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
