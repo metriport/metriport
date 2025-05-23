@@ -7,7 +7,7 @@ import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
+import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
@@ -15,9 +15,11 @@ import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
+import { processAsyncError } from "../../util/error/shared";
 import { controlDuration } from "../../util/race-control";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
+import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
 
 dayjs.extend(duration);
 
@@ -121,6 +123,13 @@ export async function createConsolidatedFromConversions({
     file: Buffer.from(JSON.stringify(bundle)),
     contentType: "application/json",
   });
+
+  const ingestor = makeIngestConsolidated();
+  ingestor
+    .ingestConsolidatedIntoSearchEngine({ cxId, patientId })
+    .catch(
+      processAsyncError("createConsolidatedFromConversions.ingestConsolidatedIntoSearchEngine")
+    );
 
   log(`Done`);
   return bundle;

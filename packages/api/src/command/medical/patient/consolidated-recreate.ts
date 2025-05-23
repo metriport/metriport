@@ -54,6 +54,8 @@ export async function recreateConsolidated({
       await connector.execute(payload);
     }
 
+    log(`Consolidated recreated`);
+
     const ingestor = makeIngestConsolidated();
     ingestor
       .ingestConsolidatedIntoSearchEngine({
