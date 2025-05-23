@@ -332,6 +332,10 @@ export class Config {
     return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
   }
 
+  static getEClinicalWorksEnv(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
+  }
+
   static getRateLimitTableName(): string | undefined {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
