@@ -9,7 +9,7 @@ import {
 } from "./ehr-contribute-resource-diff-bundles";
 
 /**
- * This class is used to compute resource diff bundles in the cloud.
+ * This class is used to contribute resource diff bundles in the cloud.
  * It sends messages to the resource diff bundle queue for each resource type.
  * The queue is configured to deduplicate messages based on the payload.
  *
