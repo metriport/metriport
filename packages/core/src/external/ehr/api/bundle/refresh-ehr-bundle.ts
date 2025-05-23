@@ -9,7 +9,7 @@ export type RefreshEhrBundleParams = Omit<ApiBaseParams, "departmentId"> & {
 };
 
 /**
- * Refreshes the EHR bundle for the given resource type from the API.
+ * Sends a request to the API to refresh the EHR bundle for the given resource type.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
