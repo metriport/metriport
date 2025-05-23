@@ -209,6 +209,9 @@ export class Config {
   static getEhrRefreshEhrBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_REFRESH_EHR_BUNDLES_QUEUE_URL");
   }
+  static getEhrContributeDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
   }

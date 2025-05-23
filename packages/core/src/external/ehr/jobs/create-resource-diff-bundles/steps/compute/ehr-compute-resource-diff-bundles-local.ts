@@ -9,12 +9,15 @@ import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../api/job/
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
+import { buildEhrContributeResourceDiffBundlesHandler } from "../contribute/ehr-contribute-resource-diff-bundles-factory";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
 } from "./ehr-compute-resource-diff-bundles";
 
 export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
+  private readonly next = buildEhrContributeResourceDiffBundlesHandler();
+
   constructor(private readonly waitTimeInMillis: number) {}
 
   async computeResourceDiffBundles(payload: ComputeResourceDiffBundlesRequest): Promise<void> {
@@ -120,10 +123,7 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
             })
           : undefined,
       ]);
-      await setCreateResourceDiffBundlesJobEntryStatus({
-        ...entryStatusParams,
-        entryStatus: "successful",
-      });
+      await this.next.contributeResourceDiffBundles(payload);
     } catch (error) {
       if (reportError) {
         await setCreateResourceDiffBundlesJobEntryStatus({

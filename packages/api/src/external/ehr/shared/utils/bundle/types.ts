@@ -9,13 +9,17 @@ type BaseBundleParams = {
   resourceType?: string;
 };
 
-export type FetchBundleParams = BaseBundleParams & { bundleType: BundleType; jobId?: string };
+export type FetchBundleParams = Omit<BaseBundleParams, "practiceId"> & {
+  bundleType: BundleType;
+  jobId?: string;
+};
 
-export type RefreshEhrBundleParams = BaseBundleParams;
-
-export type ContributeEhrOnlyBundleParams = Omit<BaseBundleParams, "resourceType"> & {
+export type ContributeBundleParams = Omit<BaseBundleParams, "practiceId"> & {
+  resourceType: string;
   jobId: string;
 };
+
+export type RefreshEhrBundleParams = BaseBundleParams;
 
 type BaseBundleParamsForClient = Omit<BaseBundleParams, "ehr" | "resourceType"> & {
   resourceType: string;
