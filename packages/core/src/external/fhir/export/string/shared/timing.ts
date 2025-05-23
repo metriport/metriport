@@ -102,13 +102,23 @@ function formatTimingRepeat({
         ? `Period: ${period} ${periodUnit}`
         : period
       : undefined,
-    dayOfWeek && isDebug ? `Days: ${dayOfWeek.join(FIELD_SEPARATOR)}` : dayOfWeek,
-    timeOfDay && isDebug ? `Times: ${timeOfDay.join(FIELD_SEPARATOR)}` : timeOfDay,
-    when && isDebug ? `When: ${when.join(FIELD_SEPARATOR)}` : when,
+    dayOfWeek && isDebug
+      ? `Days: ${dayOfWeek.join(FIELD_SEPARATOR)}`
+      : dayOfWeek
+      ? dayOfWeek.join(FIELD_SEPARATOR)
+      : undefined,
+    timeOfDay && isDebug
+      ? `Times: ${timeOfDay.join(FIELD_SEPARATOR)}`
+      : timeOfDay
+      ? timeOfDay.join(FIELD_SEPARATOR)
+      : undefined,
+    when && isDebug
+      ? `When: ${when.join(FIELD_SEPARATOR)}`
+      : when
+      ? when.join(FIELD_SEPARATOR)
+      : undefined,
     offset !== undefined && isDebug ? `Offset: ${offset} minutes` : `${offset} minutes`,
-  ]
-    .flatMap(s => s ?? [])
-    .filter(s => s.toString().trim().length > 0);
+  ].filter(s => s != undefined && s.toString().trim().length > 0);
 
   if (components.length < 1) return undefined;
 
