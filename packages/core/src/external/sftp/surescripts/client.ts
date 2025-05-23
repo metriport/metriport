@@ -32,7 +32,7 @@ export interface Transmission<T extends TransmissionType> {
 }
 
 export class SurescriptsSftpClient extends SftpClient {
-  private idGenerator: IdGenerator;
+  private transmissionIdGenerator: IdGenerator;
 
   senderId: string;
   senderPassword: string;
@@ -50,7 +50,7 @@ export class SurescriptsSftpClient extends SftpClient {
     });
 
     // 10 byte ID generator
-    this.idGenerator = createIdGenerator(10);
+    this.transmissionIdGenerator = createIdGenerator(10);
 
     this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId();
     this.senderPassword = config.senderPassword ?? Config.getSurescriptsSftpSenderPassword();
@@ -74,7 +74,7 @@ export class SurescriptsSftpClient extends SftpClient {
       type,
       npiNumber,
       cxId,
-      id: this.idGenerator().toString("ascii"),
+      id: this.transmissionIdGenerator().toString("ascii"),
       date: new Date(),
       compression: "gzip",
     };
