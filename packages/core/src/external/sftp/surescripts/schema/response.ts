@@ -1,16 +1,69 @@
 import { z } from "zod";
+import { DEA_SCHEDULE_CODES, PAYMENT_CODES, PLAN_CODES } from "../codes";
 
 import {
   fromSurescriptsDate,
+  fromSurescriptsUtcDate,
   fromSurescriptsEnum,
   fromSurescriptsInteger,
   fromSurescriptsString,
   IncomingFileRowSchema,
+  fromSurescriptsUUID,
 } from "./shared";
 
+export const flatFileHeaderSchema = z.object({
+  recordType: z.enum(["HDR"]),
+  version: z.enum(["3.0"]),
+  receiverId: z.string(),
+  senderId: z.string(),
+  populationId: z.string(),
+  transmissionId: z.string(),
+  sentTime: z.date(),
+});
+
+export type FlatFileHeader = z.infer<typeof flatFileHeaderSchema>;
+
+export const flatFileHeaderOrder: IncomingFileRowSchema<FlatFileHeader> = [
+  {
+    field: 0,
+    key: "recordType",
+    fromSurescripts: fromSurescriptsEnum(["HDR"]),
+  },
+  {
+    field: 1,
+    key: "version",
+    fromSurescripts: fromSurescriptsEnum(["3.0"]),
+  },
+  {
+    field: 2,
+    key: "receiverId",
+    fromSurescripts: fromSurescriptsString(),
+  },
+  {
+    field: 3,
+    key: "senderId",
+    fromSurescripts: fromSurescriptsString(),
+  },
+  {
+    field: 4,
+    key: "populationId",
+    fromSurescripts: fromSurescriptsString(),
+  },
+  {
+    field: 5,
+    key: "transmissionId",
+    fromSurescripts: fromSurescriptsString(),
+  },
+  {
+    field: 6,
+    key: "sentTime",
+    fromSurescripts: fromSurescriptsUtcDate(),
+  },
+];
+
 export const flatFileRowSchema = z.object({
-  recordType: z.string(),
-  recordSequenceNumber: z.string(),
+  recordType: z.enum(["DTL"]),
+  recordSequenceNumber: z.number(),
   messageId: z.string(),
   sentTime: z.date(),
   status: z.string(),
@@ -21,11 +74,11 @@ export const flatFileRowSchema = z.object({
   patientLastName: z.string(),
   patientFirstName: z.string(),
   patientDOB: z.date(),
-  patientGender: z.string(),
+  patientGender: z.enum(["M", "F", "N", "U"]),
   patientZipCode: z.string(),
   startDate: z.date(),
   endDate: z.date(),
-  consent: z.string(),
+  consent: z.enum(["Y"]),
   drugDescription: z.string().optional(),
   productCode: z.string().optional(),
   productCodeQualifier: z.string().optional(),
@@ -34,7 +87,7 @@ export const flatFileRowSchema = z.object({
   drugDatabaseCodeQualifier: z.string().optional(),
   strengthFormCode: z.string().optional(),
   strengthUnitOfMeasure: z.string().optional(),
-  deaSchedule: z.string().optional(),
+  deaSchedule: z.enum(DEA_SCHEDULE_CODES).optional(),
   quantityDispensed: z.string().optional(),
   codeListQualifier: z.string().optional(),
   unitSourceCode: z.string().optional(),
@@ -81,12 +134,12 @@ export const flatFileRowSchema = z.object({
   rxReferenceNumber: z.string().optional(),
   electronicPrescriptionOrder: z.string().optional(),
   patientPrimaryPhoneNumber: z.string().optional(),
-  planCode: z.number().optional(),
-  paymentCode: z.number().optional(),
+  planCode: z.enum(PLAN_CODES).optional(),
+  paymentCode: z.enum(PAYMENT_CODES).optional(),
   planNetworkBIN: z.number().optional(),
-  planNetworkPCN: z.number().optional(),
+  planNetworkPCN: z.string().optional(),
   planNetworkGroupId: z.string().optional(),
-  cardholderNumber: z.string().optional(),
+  insuranceIdNumber: z.string().optional(),
   sexAssignedAtBirth: z.enum(["M", "F", "U", "I"]).optional(),
   diagnosisDetails: z.string().optional(),
   ndcNumber: z.string().optional(),
@@ -98,12 +151,12 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   {
     field: 0,
     key: "recordType",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsEnum(["DTL"]),
   },
   {
     field: 1,
     key: "recordSequenceNumber",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsInteger(),
   },
   {
     field: 2,
@@ -113,7 +166,7 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   {
     field: 3,
     key: "sentTime",
-    fromSurescripts: fromSurescriptsDate(),
+    fromSurescripts: fromSurescriptsUtcDate(),
   },
   {
     field: 4,
@@ -138,7 +191,7 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   {
     field: 8,
     key: "patientId",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsUUID,
   },
   {
     field: 9,
@@ -158,7 +211,7 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   {
     field: 12,
     key: "patientGender",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsEnum(["M", "F", "N", "U"]),
   },
   {
     field: 13,
@@ -178,7 +231,7 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   {
     field: 16,
     key: "consent",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsEnum(["Y"]),
   },
   {
     field: 17,
@@ -210,7 +263,7 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
     key: "drugDatabaseCodeQualifier",
     fromSurescripts: fromSurescriptsString({ optional: true }),
   },
-  // Field 23-24 are not in use
+  // Field 23-24 are no longer in use
   {
     field: 25,
     key: "strengthFormCode",
@@ -224,7 +277,7 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   {
     field: 27,
     key: "deaSchedule",
-    fromSurescripts: fromSurescriptsString({ optional: true }),
+    fromSurescripts: fromSurescriptsEnum(DEA_SCHEDULE_CODES, { optional: true }),
   },
   {
     field: 28,
@@ -461,12 +514,12 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   {
     field: 77,
     key: "planCode",
-    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+    fromSurescripts: fromSurescriptsEnum(PLAN_CODES, { optional: true }),
   },
   {
     field: 78,
     key: "paymentCode",
-    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+    fromSurescripts: fromSurescriptsEnum(PAYMENT_CODES, { optional: true }),
   },
   {
     field: 79,
@@ -476,7 +529,7 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   {
     field: 80,
     key: "planNetworkPCN",
-    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+    fromSurescripts: fromSurescriptsString({ optional: true }),
   },
   {
     field: 81,
@@ -485,7 +538,7 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
   },
   {
     field: 82,
-    key: "cardholderNumber",
+    key: "insuranceIdNumber",
     fromSurescripts: fromSurescriptsString({ optional: true }),
   },
   {
@@ -502,5 +555,80 @@ export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
     field: 85,
     key: "ndcNumber",
     fromSurescripts: fromSurescriptsString({ optional: true }),
+  },
+  // Surescripts indicates they will add more fields here in the future
+];
+
+export const flatFileFooterSchema = z.object({
+  recordType: z.enum(["TRL"]),
+  processedRecordCount: z.number(),
+  medicationCount: z.number().optional(),
+  medicationFromPbmCount: z.number().optional(),
+  medicationFromPharmacyCount: z.number().optional(),
+  patientsFound: z.number().optional(),
+  patientsFoundWithLargeHistory: z.number().optional(), // more than 300 medications
+  patientsFoundWithIncompleteHistory: z.number().optional(),
+  patientsFoundWithNoHistory: z.number().optional(),
+  patientsNotFound: z.number().optional(),
+  processingErrors: z.number().optional(),
+});
+
+type FlatFileFooter = z.infer<typeof flatFileFooterSchema>;
+
+export const flatFileFooterOrder: IncomingFileRowSchema<FlatFileFooter> = [
+  {
+    field: 0,
+    key: "recordType",
+    fromSurescripts: fromSurescriptsEnum(["TRL"]),
+  },
+  {
+    field: 1,
+    key: "processedRecordCount",
+    fromSurescripts: fromSurescriptsInteger(),
+  },
+  {
+    field: 2,
+    key: "medicationCount",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+  },
+  {
+    field: 3,
+    key: "medicationFromPbmCount",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+  },
+  {
+    field: 4,
+    key: "medicationFromPharmacyCount",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+  },
+  {
+    field: 5,
+    key: "patientsFound",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+  },
+  {
+    field: 6,
+    key: "patientsFoundWithIncompleteHistory",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+  },
+  {
+    field: 7,
+    key: "patientsFoundWithNoHistory",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+  },
+  {
+    field: 8,
+    key: "patientsNotFound",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+  },
+  {
+    field: 9,
+    key: "processingErrors",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
+  },
+  {
+    field: 10,
+    key: "patientsFoundWithLargeHistory",
+    fromSurescripts: fromSurescriptsInteger({ optional: true }),
   },
 ];

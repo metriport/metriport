@@ -51,7 +51,7 @@ type FieldTypeFromSurescripts<T, O extends FieldOption> = O extends { optional: 
   : T;
 
 export function fromSurescriptsEnum<T extends string, O extends FieldOption>(
-  enumerated: T[],
+  enumerated: readonly T[],
   option: O = {} as O
 ) {
   return function (value: string): FieldTypeFromSurescripts<T, O> {
@@ -133,6 +133,18 @@ export function fromSurescriptsDate<O extends FieldOption>(option: O = {} as O) 
     const month = value.substring(4, 6);
     const day = value.substring(6, 8);
     return new Date(`${year}-${month}-${day}`);
+  };
+}
+
+export function fromSurescriptsUtcDate<O extends FieldOption>({
+  useUtc = false,
+}: { useUtc?: boolean } = {}) {
+  return function (value: string): FieldTypeFromSurescripts<Date, O> {
+    const timestamp = Date.parse(value);
+    if (Number.isNaN(timestamp)) {
+      throw new Error(`Invalid date: ${value}`);
+    }
+    return new Date(timestamp + (useUtc ? 0 : new Date().getTimezoneOffset() * 60000));
   };
 }
 

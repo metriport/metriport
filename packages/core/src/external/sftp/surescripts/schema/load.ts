@@ -10,26 +10,19 @@ import {
   toSurescriptsArray,
 } from "./shared";
 
-// PATIENT FILE LOAD
-// These are schemas for the first row (header) and subsequent rows (details) of a patient load operation.
+// The first row of a patient load file
 export const patientLoadHeaderSchema = z.object({
   recordType: z.literal("HDR"),
-  version: z.enum(["2.0", "3.0"]),
+  version: z.enum(["3.0"]),
   usage: z.enum(["test", "production"]),
-
   senderId: z.string().length(15),
   senderPassword: z.string().min(1).max(10),
   receiverId: z.string().length(15),
   patientPopulationId: z.string().min(1).max(64),
   lookBackInMonths: z.number().min(1).max(12).optional().default(12),
-
   transmissionId: z.string().length(10),
   transmissionDate: z.date(),
-
-  // PAT = Patient Notifications and Panel enrollment
-  // PNM = Panel enrollment
-  // PMA = Patient Notifications enrollment
-  transmissionFileType: z.enum(["PAT", "PNM", "PMA"]),
+  transmissionFileType: z.enum(["PAT", "PNM", "PMA"]), // PNM = Panel enrollment
   transmissionAction: z.enum(["U"]).optional(),
   fileSchedule: z.enum(["ADHOC"]).optional(),
   extractDate: z.date().optional(),
@@ -46,7 +39,7 @@ export const patientLoadHeaderOrder: OutgoingFileRowSchema<PatientLoadHeader> = 
   {
     field: 1,
     key: "version",
-    toSurescripts: toSurescriptsEnum("version", ["2.0", "3.0"]),
+    toSurescripts: toSurescriptsEnum("version", ["3.0"]),
   },
   {
     field: 2,
