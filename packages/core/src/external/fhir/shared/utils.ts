@@ -1,7 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { normalizeFhir } from "../normalization/normalize-fhir";
-import { buildBundle } from "./bundle";
+import { buildBundle, RequiredBundleType } from "./bundle";
 import { MetriportError } from "@metriport/shared";
 import { cloneDeep } from "lodash";
 
@@ -16,7 +16,7 @@ export function mergeBundles({
   patientId: string;
   existing: Bundle<Resource>;
   current: Bundle<Resource>;
-  bundleType: NonNullable<Bundle["type"]>;
+  bundleType: RequiredBundleType;
 }): Bundle<Resource> {
   if (!existing.entry || !current.entry) {
     throw new MetriportError(

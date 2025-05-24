@@ -151,16 +151,6 @@ export function buildReferenceFromStringRelative(
   return { id, type, reference };
 }
 
-export function buildBundle({
-  type = "searchset",
-  entries = [],
-}: {
-  type?: Bundle["type"];
-  entries?: BundleEntry[];
-} = {}): Bundle {
-  return { resourceType: "Bundle", total: entries.length, type, entry: entries };
-}
-
 export function buildBundleFromResources({
   type = "searchset",
   resources,
@@ -176,10 +166,36 @@ export function buildBundleFromResources({
   };
 }
 
+export type RequiredBundleType = NonNullable<Bundle["type"]>;
+
+export type BundleType<B extends RequiredBundleType, R extends Resource> = Bundle<R> & {
+  type?: B;
+};
+
+export type ReturnBundleType<B extends RequiredBundleType, R extends Resource> = Required<
+  Pick<BundleType<B, R>, "type">
+> &
+  Omit<BundleType<B, R>, "type">;
+
+export function buildBundle<B extends RequiredBundleType, R extends Resource>({
+  type,
+  entries = [],
+}: {
+  type: B;
+  entries?: BundleEntry<R>[];
+}): ReturnBundleType<B, R> {
+  return {
+    resourceType: "Bundle" as const,
+    total: entries.length,
+    type,
+    entry: entries,
+  };
+}
+
 export function buildCollectionBundle<T extends Resource = Resource>(
   entries: BundleEntry<T>[] = []
 ): CollectionBundle<T> {
-  return buildBundle({ type: "collection", entries }) as CollectionBundle<T>;
+  return buildBundle({ type: "collection", entries });
 }
 
 export function buildSearchSetBundle<T extends Resource = Resource>({
@@ -187,7 +203,7 @@ export function buildSearchSetBundle<T extends Resource = Resource>({
 }: {
   entries?: BundleEntry<T>[];
 } = {}): SearchSetBundle<T> {
-  return buildBundle({ type: "searchset", entries }) as SearchSetBundle<T>;
+  return buildBundle({ type: "searchset" as const, entries });
 }
 
 export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {

@@ -470,6 +470,12 @@ export class S3Utils {
     }
     try {
       const resp = (await executeWithRetriesS3(() =>
+        /**
+         * TODO: Switch to using the aws-sdk v3 client.
+         *
+         * The types on the aws-sdk v2 `upload()` method have not been
+         * maintained / kept up to date, hence the type assertion.
+         */
         this._s3.upload(uploadParams).promise()
       )) as UploadFileResult;
       return resp;
