@@ -9,6 +9,10 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 const isLocal = true;
 const config: HieConfig = {} as HieConfig;
 
+if (!config.name || !config.mapping) {
+  throw new Error("Remember to set the config object! See the tsdoc for more info.");
+}
+
 /**
  * Triggers generation and upload of HL7v2 subscription roster to S3.
  *
