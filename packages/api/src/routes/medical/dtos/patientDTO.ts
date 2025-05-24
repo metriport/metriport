@@ -10,6 +10,7 @@ export type PatientDTO = {
   externalId?: string;
   additionalIds?: PatientSourceIdentifierMap;
   dateCreated?: Date;
+  hieOptOut?: boolean;
 } & DemographicsDTO;
 
 export type InternalPatientDTO = BaseDTO &
@@ -28,6 +29,7 @@ export function dtoFromModel(patient: PatientWithIdentifiers): PatientDTO {
     externalId: patient.externalId,
     additionalIds: patient.additionalIds,
     dateCreated: patient.createdAt,
+    hieOptOut: patient.hieOptOut,
     firstName,
     lastName,
     dob,
@@ -56,6 +58,7 @@ export function internalDtoFromModel(patient: PatientWithIdentifiers): InternalP
     externalId: patient.externalId,
     additionalIds: patient.additionalIds,
     dateCreated: patient.createdAt,
+    hieOptOut: patient.hieOptOut,
     firstName,
     lastName,
     dob,
