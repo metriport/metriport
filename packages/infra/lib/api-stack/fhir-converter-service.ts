@@ -6,8 +6,11 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { Runtime } from "aws-cdk-lib/aws-lambda";
+import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
+import path from "path";
 import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { vCPU } from "../shared/fargate";
@@ -44,7 +47,7 @@ export function createFHIRConverterService(
   props: FhirConverterServiceProps,
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
-): { service: FargateService; address: string } {
+): { service: FargateService; address: string; lambda: nodejs.NodejsFunction } {
   const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
   // Create a new Amazon Elastic Container Service (ECS) cluster
@@ -153,5 +156,41 @@ export function createFHIRConverterService(
     alarmAction,
   });
 
-  return { service: fargateService.service, address: serverAddress };
+  const lambda = new nodejs.NodejsFunction(stack, "FhirConverterNodeJsLambda", {
+    functionName: "FhirConverterNodeJsLambda",
+    entry: path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "fhir-converter",
+      "src",
+      "ccda-to-fhir-lambda-nodelambda.js"
+    ),
+    timeout: Duration.minutes(10),
+    memorySize: 4096,
+    handler: "handler",
+    runtime: Runtime.NODEJS_18_X,
+    bundling: {
+      commandHooks: {
+        beforeBundling(inputDir: string, outputDir: string): string[] {
+          return [`cp -r ${inputDir}/packages/fhir-converter/src/templates/${outputDir}/`];
+        },
+        afterBundling(): string[] {
+          return [];
+        },
+        beforeInstall(): string[] {
+          return [];
+        },
+      },
+      environment: {
+        NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
+        ENV_TYPE: props.config.environmentType, // staging, production, sandbox
+        ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
+      },
+    },
+  });
+
+  return { service: fargateService.service, address: serverAddress, lambda };
 }
