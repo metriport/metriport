@@ -176,11 +176,11 @@ export class Hl7v2RosterGenerator {
     const currentUrl = `${this.apiUrl}/${GET_ORGANIZATION_ENDPOINT}`;
     const baseParams = { cxIds: cxIds.join(",") };
 
-    const response: AxiosResponse<InternalOrganizationDTO[]> = await axios.get(currentUrl, {
+    const response: AxiosResponse = await axios.get(currentUrl, {
       params: baseParams,
     });
 
-    return response.data;
+    return InternalOrganizationDTOSchema.array().parse(response.data);
   }
 
   private generateCsv(records: RosterRow[]): string {
