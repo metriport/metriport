@@ -219,8 +219,44 @@ export class Config {
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }
-
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
+  }
+
+  static getSurescriptsHost(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
+  }
+  static getSurescriptsSftpSenderId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_ID");
+  }
+  static getSurescriptsSftpSenderPassword(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_PASSWORD");
+  }
+  static getSurescriptsSftpReceiverId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_RECEIVER_ID");
+  }
+  static getSurescriptsSftpPublicKey(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PUBLIC_KEY");
+  }
+  static getSurescriptsSftpPrivateKey(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PRIVATE_KEY");
+  }
+  static getSurescriptsReplicaBucketName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_REPLICA_BUCKET_NAME");
+  }
+  static getSurescriptsBundleBucketName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_BUNDLE_BUCKET_NAME");
+  }
+  static getSurescriptsSynchronizeQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SYNCHRONIZE_QUEUE_URL");
+  }
+  static getSurescriptsSendPatientRequestQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL");
+  }
+  static getSurescriptsReceiveVerificationResponseQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL");
+  }
+  static getSurescriptsReceiveFlatFileResponseQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL");
   }
 }
