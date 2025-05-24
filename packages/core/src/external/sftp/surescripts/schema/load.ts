@@ -118,9 +118,9 @@ export const patientLoadDetailSchema = z.object({
   recordType: z.enum(["PAT", "PNM", "PMA"]),
   recordSequenceNumber: z.number(),
   assigningAuthority: z.string().min(1).max(64),
-  patientId: z.string().min(1).max(36),
-  lastName: z.string().min(1).max(36),
-  firstName: z.string().min(1).max(36),
+  patientId: z.string().min(1).max(35),
+  lastName: z.string().min(2).max(35),
+  firstName: z.string().min(2).max(35),
   middleName: z.string().max(36).optional(),
   prefix: z.string().max(10).optional(),
   suffix: z.string().max(20).optional(),
@@ -134,7 +134,7 @@ export const patientLoadDetailSchema = z.object({
     .min(8)
     .max(10)
     .regex(/^\d{4}-?\d{2}-?\d{2}$/),
-  genderAtBirth: z.enum(["M", "F", "U"]),
+  genderAtBirth: z.enum(["M", "F", "N", "U"]), // n - non-binary, u - unknown
   npiNumber: z.string().min(1).max(10),
   endMonitoringDate: z.date().optional(),
   requestedNotifications: z
@@ -150,8 +150,6 @@ export const patientLoadDetailSchema = z.object({
       ])
     )
     .optional(),
-  startDate: z.date().optional(),
-  endDate: z.date().optional(),
   primaryPhone: z.string().max(10).optional(),
 });
 
@@ -189,42 +187,77 @@ export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = 
   {
     field: 6,
     key: "middleName",
-    toSurescripts: toSurescriptsString("middleName", { optional: true }),
+    toSurescripts: toSurescriptsString("middleName", {
+      optional: true,
+      minLength: 2,
+      maxLength: 35,
+      truncate: true,
+    }),
   },
   {
     field: 7,
     key: "prefix",
-    toSurescripts: toSurescriptsString("prefix", { optional: true }),
+    toSurescripts: toSurescriptsString("prefix", {
+      optional: true,
+      minLength: 1,
+      maxLength: 10,
+      truncate: true,
+    }),
   },
   {
     field: 8,
     key: "suffix",
-    toSurescripts: toSurescriptsString("suffix", { optional: true }),
+    toSurescripts: toSurescriptsString("suffix", {
+      optional: true,
+      minLength: 1,
+      maxLength: 20,
+      truncate: true,
+    }),
   },
   {
     field: 9,
     key: "addressLine1",
-    toSurescripts: toSurescriptsString("addressLine1", { optional: true }),
+    toSurescripts: toSurescriptsString("addressLine1", {
+      optional: true,
+      minLength: 1,
+      maxLength: 55,
+      truncate: true,
+    }),
   },
   {
     field: 10,
     key: "addressLine2",
-    toSurescripts: toSurescriptsString("addressLine2", { optional: true }),
+    toSurescripts: toSurescriptsString("addressLine2", {
+      optional: true,
+      minLength: 1,
+      maxLength: 55,
+      truncate: true,
+    }),
   },
   {
     field: 11,
     key: "city",
-    toSurescripts: toSurescriptsString("city", { optional: true }),
+    toSurescripts: toSurescriptsString("city", {
+      optional: true,
+      minLength: 2,
+      maxLength: 30,
+      truncate: true,
+    }),
   },
   {
     field: 12,
     key: "state",
-    toSurescripts: toSurescriptsString("state", { optional: true }),
+    toSurescripts: toSurescriptsString("state", {
+      optional: true,
+      minLength: 2,
+      maxLength: 55,
+      truncate: true,
+    }),
   },
   {
     field: 13,
     key: "zip",
-    toSurescripts: toSurescriptsString("zip"),
+    toSurescripts: toSurescriptsString("zip", { minLength: 5, maxLength: 10 }),
   },
   {
     field: 14,
@@ -234,7 +267,7 @@ export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = 
   {
     field: 15,
     key: "genderAtBirth",
-    toSurescripts: toSurescriptsEnum("genderAtBirth", ["M", "F", "U"]),
+    toSurescripts: toSurescriptsEnum("genderAtBirth", ["M", "F", "N", "U"]),
   },
   {
     field: 16,
@@ -271,38 +304,6 @@ export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = 
 ];
 
 export type PatientLoadDetail = z.infer<typeof patientLoadDetailSchema>;
-
-// Patient unload schema (another possible row in a PFL operation)
-const patientUnloadSchema = z.object({
-  recordType: z.enum(["UNR"]),
-  recordSequenceNumber: z.number(),
-  product: z.enum(["PMA"]),
-  endMonitoringDate: z.date(),
-});
-export type PatientUnload = z.infer<typeof patientUnloadSchema>;
-
-export const patientUnloadOrder: OutgoingFileRowSchema<PatientUnload> = [
-  {
-    field: 0,
-    key: "recordType",
-    toSurescripts: toSurescriptsEnum("recordType", ["UNR"]),
-  },
-  {
-    field: 1,
-    key: "recordSequenceNumber",
-    toSurescripts: toSurescriptsInteger("recordSequenceNumber"),
-  },
-  {
-    field: 2,
-    key: "product",
-    toSurescripts: toSurescriptsEnum("product", ["PMA"]),
-  },
-  {
-    field: 3,
-    key: "endMonitoringDate",
-    toSurescripts: toSurescriptsDate("endMonitoringDate"),
-  },
-];
 
 export const patientLoadFooterSchema = z.object({
   recordType: z.string().length(3),

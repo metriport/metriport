@@ -116,7 +116,7 @@ export function toSurescriptsPatientLoadRow<T extends object>(
 ): Buffer {
   const parsed = objectSchema.safeParse(data);
   if (!parsed.success) {
-    // console.log("Invalid data", parsed.error, parsed.error.issues);
+    console.log("Invalid data", parsed.error, parsed.error.issues);
     throw new Error("Invalid data");
   }
   const fields = fieldSchema.map(field => field.toSurescripts(data));

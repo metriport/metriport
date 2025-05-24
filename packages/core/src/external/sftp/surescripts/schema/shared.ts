@@ -42,6 +42,9 @@ export interface IncomingFileField<T extends object, K extends keyof T = keyof T
 
 interface FieldOption {
   optional?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  truncate?: boolean;
 }
 type FieldTypeFromSurescripts<T, O extends FieldOption> = O extends { optional: true }
   ? T | undefined
