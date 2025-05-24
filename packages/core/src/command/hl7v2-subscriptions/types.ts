@@ -13,7 +13,6 @@ export type SftpConfig = {
 export type RosterRowData = {
   id: string;
   cxId: string;
-  shortcode: string | undefined;
   rosterGenerationDate: string;
   firstName: string;
   lastName: string;
