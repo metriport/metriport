@@ -6,13 +6,13 @@ import { Command } from "commander";
 import { SurescriptsSftpClient } from "@metriport/core/external/sftp/surescripts/client";
 import { SurescriptsApi } from "@metriport/core/external/sftp/surescripts/api";
 import { toSurescriptsPatientLoadFile } from "@metriport/core/external/sftp/surescripts/message";
-import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
+// import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
 
 const program = new Command();
 
 program
   .name("generate-plf")
-  .option("-cx, --cx-id <cx>", "The CX ID of the requester")
+  .option("-c, --cx-id <cx>", "The CX ID of the requester")
   .option("-f, --facility-id <facility>", "The facility ID of the requester")
   .description("Generate a patient load file and place into the outgoing replica directory")
   .showHelpAfterError()
@@ -40,11 +40,15 @@ program
     const patientIds = await api.getPatientIds(cxId);
     const patients = await Promise.all(patientIds.patientIds.map(id => api.getPatient(cxId, id)));
     console.log("Found " + patients.length + " patients");
-    const message = toSurescriptsPatientLoadFile(client, transmission, []);
 
+    const message = toSurescriptsPatientLoadFile(client, transmission, patients);
+    console.log("Message generated");
+    console.log(message.toString("ascii"));
+
+    console.log("Writing to replica");
     // const fileName = client.getPatientLoadFileName(transmission);
-    const replica = new SurescriptsReplica({ sftpClient: client });
-    await replica.writePatientLoadFileToStorage(transmission, message);
+    // const replica = new SurescriptsReplica({ sftpClient: client });
+    // await replica.writePatientLoadFileToStorage(transmission, message);
   });
 
 export default program;

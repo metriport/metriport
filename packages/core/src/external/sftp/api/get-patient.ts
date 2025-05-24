@@ -19,10 +19,10 @@ const patientSchema = z.object({
   genderAtBirth: z.enum(["M", "F", "O", "U"]),
   address: z.array(
     z.object({
-      addressLine1: z.string(),
-      addressLine2: z.string(),
-      city: z.string(),
-      state: z.string(),
+      addressLine1: z.string().optional(),
+      addressLine2: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
       zip: z.string(),
     })
   ),
