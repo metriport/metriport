@@ -5,10 +5,10 @@ import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscription
 import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { HixnyTestConfig } from "../../../infra/config/config-data/staging/api-infra/hie-configs";
+import { TestHieConfig } from "../../../infra/config/config-data/staging/api-infra/hie-configs";
 
 const isLocal = true;
-const config = HixnyTestConfig as HieConfig;
+const config = TestHieConfig as HieConfig;
 
 /**
  * Triggers generation and upload of HL7v2 subscription roster to S3.

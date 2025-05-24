@@ -107,6 +107,7 @@ export class Hl7v2RosterGenerator {
 
     const cxIds = new Set(patients.map(p => p.cxId));
 
+    log(`Getting all organizations for patients...`);
     const orgs = await this.getOrganizations([...cxIds]);
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
