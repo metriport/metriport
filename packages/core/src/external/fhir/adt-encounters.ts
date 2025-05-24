@@ -21,7 +21,16 @@ export function createPrefixAdtEncounter({
   return `cxId=${cxId}/ptId=${patientId}/ADT/${encounterId}`;
 }
 
-export function createFileKeyAdtLatest({
+/**
+ * Creates the file key that points to the
+ * source of truth or "current state" for a given ADT encounter.
+ *
+ * @param cxId Customer ID
+ * @param patientId Patient ID
+ * @param encounterId Encounter ID
+ * @returns The file key for the latest ADT encounter
+ */
+export function createFileKeyAdtEncounterSourceOfTruth({
   cxId,
   patientId,
   encounterId,
@@ -37,7 +46,18 @@ export function createFileKeyAdtLatest({
   })}/latest.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
 }
 
-export function createFileKeyAdtEncounter({
+/**
+ * Creates the file key for the ADT to FHIR conversion
+ *
+ * @param cxId Customer ID
+ * @param patientId Patient ID
+ * @param encounterId Encounter ID
+ * @param timestamp Timestamp of the message
+ * @param messageId Message ID
+ * @param messageCode Message code
+ * @param triggerEvent Trigger event
+ */
+export function createFileKeyAdtConversion({
   cxId,
   patientId,
   encounterId,
@@ -61,7 +81,8 @@ export function createFileKeyAdtEncounter({
 }
 
 /**
- * Uploads the raw ADT conversion output to S3
+ * Uploads the ADT to FHIR conversion output to S3
+ *
  * @param cxId Customer ID
  * @param patientId Patient ID
  * @param encounterId Encounter ID
@@ -99,7 +120,7 @@ export async function saveAdtConversionBundle({
     `saveAdtConversionBundle - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
 
-  const newMessageBundleFileKey = createFileKeyAdtEncounter({
+  const newMessageBundleFileKey = createFileKeyAdtConversion({
     cxId,
     patientId,
     encounterId,
@@ -122,7 +143,8 @@ export async function saveAdtConversionBundle({
 }
 
 /**
- * Retrieves the ADT-sourced encounter from S3
+ * Retrieves an ADT-sourced encounter from S3
+ *
  * @param cxId Customer ID
  * @param patientId Patient ID
  * @param encounterId Encounter ID
@@ -141,7 +163,7 @@ export async function getAdtSourcedEncounter({
     `getAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
 
-  const fileKey = createFileKeyAdtLatest({
+  const fileKey = createFileKeyAdtEncounterSourceOfTruth({
     cxId,
     patientId,
     encounterId,
@@ -226,7 +248,7 @@ export async function putAdtSourcedEncounter({
     `putAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
 
-  const fileKey = createFileKeyAdtLatest({
+  const fileKey = createFileKeyAdtEncounterSourceOfTruth({
     cxId,
     patientId,
     encounterId,
