@@ -231,14 +231,13 @@ export function createRosterRowInput(
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
   const rosterGenerationDate = dayjs().format("YYYY-MM-DD");
-  const authorizingParticipantFacilityCode = "TESTFACCODE";
+  const authorizingParticipantFacilityCode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
 
   return {
     id: p.id,
     cxId: p.cxId,
-    shortcode: org.shortcode,
     rosterGenerationDate,
     scrambledId,
     lastName: data.lastName,
