@@ -168,6 +168,33 @@ jobs:
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}
 
+      # Buckets Stack
+      - name: Diff Buckets CDK Stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "diff"
+          cdk_version: "2.122.0"
+          cdk_stack: "BucketsStack"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+      - name: Deploy Buckets CDK Stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "deploy --verbose --require-approval never"
+          cdk_version: "2.122.0"
+          cdk_stack: "BucketsStack"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+          METRIPORT_VERSION: ${{ github.sha }}
+
       - name: Diff HL7 Notification Routing Stack CDK
         uses: metriport/deploy-with-cdk@master
         if: inputs.hl7_notification_stack != null
