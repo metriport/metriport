@@ -26,6 +26,7 @@ import { isValidNpiNumber } from "@metriport/shared/common/npi-number";
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 import { parseNameDemographics } from "./demographics";
+import { GetPatientResponse } from "../api/get-patient";
 
 export function canGenerateSurescriptsMessage(
   transmission: Transmission<TransmissionType>,
@@ -39,7 +40,7 @@ export function canGenerateSurescriptsMessage(
 export function toSurescriptsPatientLoadFile(
   client: SurescriptsSftpClient,
   transmission: Transmission<TransmissionType>,
-  patients: Patient[]
+  patients: GetPatientResponse[]
 ): Buffer {
   const header = toSurescriptsPatientLoadRow(
     {
@@ -63,15 +64,11 @@ export function toSurescriptsPatientLoadFile(
 
   const details = patients
     .map((patient, index) => {
-      const { firstName, middleName, lastName, prefix, suffix } = parseNameDemographics(
-        patient.data
-      );
-      const gender = patient.data.genderAtBirth ?? "U";
+      const { firstName, middleName, lastName, prefix, suffix } = parseNameDemographics(patient);
+      const gender = patient.genderAtBirth ?? "U";
       const genderAtBirth = gender === "O" ? "U" : gender;
 
-      const address = Array.isArray(patient.data.address)
-        ? patient.data.address[0]
-        : patient.data.address;
+      const address = Array.isArray(patient.address) ? patient.address[0] : patient.address;
       if (!address) return null;
 
       return toSurescriptsPatientLoadRow(
@@ -90,7 +87,7 @@ export function toSurescriptsPatientLoadFile(
           city: address.city,
           state: address.state,
           zip: address.zip,
-          dateOfBirth: patient.data.dob.replace(/-/g, ""), // TODO: check order
+          dateOfBirth: patient.dob.replace(/-/g, ""), // TODO: check order
           genderAtBirth,
           npiNumber: transmission.npiNumber,
         },

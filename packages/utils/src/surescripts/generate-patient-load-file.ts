@@ -1,88 +1,50 @@
 #!/usr/bin/env node
-import fs from "fs";
-import path from "path";
 import dotenv from "dotenv";
-import csv from "csv-parser";
 dotenv.config();
 
 import { Command } from "commander";
 import { SurescriptsSftpClient } from "@metriport/core/external/sftp/surescripts/client";
+import { SurescriptsApi } from "@metriport/core/external/sftp/surescripts/api";
 import { toSurescriptsPatientLoadFile } from "@metriport/core/external/sftp/surescripts/message";
 import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
-import { Patient } from "@metriport/core/domain/patient";
-import { filePathIsInGitRepository } from "./shared";
 
 const program = new Command();
 
 program
   .name("generate-plf")
-  .option("-npi, --npi-number <npi>", "The NPI number of the requester")
   .option("-cx, --cx-id <cx>", "The CX ID of the requester")
-  .option("-d, --patient-data <file>", "A patient data source to use")
-  .option(
-    "-out, --out-dir <dir>",
-    "A specified directory location to write the patient load file for manual verification"
-  )
+  .option("-f, --facility-id <facility>", "The facility ID of the requester")
   .description("Generate a patient load file and place into the outgoing replica directory")
   .showHelpAfterError()
   .version("1.0.0")
   .action(async () => {
-    const { outDir, npiNumber, cxId, patientData } = program.opts();
+    const { cxId, facilityId } = program.opts();
     console.log("Generating patient load file...");
 
     if (!cxId) throw new Error("CX ID is required");
-    if (!npiNumber) throw new Error("NPI number is required");
-    if (outDir && !fs.statSync(outDir).isDirectory())
-      throw new Error("Output directory must exist");
-    if (!patientData || !fs.statSync(patientData).isFile())
-      throw new Error("Patient data source must be a file");
-    if (filePathIsInGitRepository(patientData))
-      throw new Error("Patient data source must not be in a git repository");
+    if (!facilityId) throw new Error("Facility ID is required");
 
+    const api = new SurescriptsApi();
     const client = new SurescriptsSftpClient({});
+
+    const customer = await api.getCustomer(cxId);
+    const facility = customer.facilities.find(f => f.id === facilityId);
+
+    if (!facility) throw new Error(`Facility ${facilityId} not found`);
+
     const transmission = client.createEnrollment({
-      npiNumber,
+      npiNumber: facility.npi,
       cxId,
     });
 
-    const patients = await readPatientData(patientData);
-    console.log(`Read ${patients.length} patients from ${patientData}`);
-    console.log(patients);
+    const patientIds = await api.getPatientIds(cxId);
+    const patients = await Promise.all(patientIds.patientIds.map(id => api.getPatient(cxId, id)));
+    console.log("Found " + patients.length + " patients");
+    const message = toSurescriptsPatientLoadFile(client, transmission, []);
 
-    const message = toSurescriptsPatientLoadFile(client, transmission, patients);
-
-    const fileName = client.getPatientLoadFileName(transmission);
-    if (outDir) {
-      console.log(`Writing patient load file to ${outDir}`);
-      fs.writeFileSync(path.join(outDir, fileName), message, "ascii");
-    } else {
-      const replica = new SurescriptsReplica({ sftpClient: client });
-      await replica.writePatientLoadFileToStorage(transmission, message);
-    }
+    // const fileName = client.getPatientLoadFileName(transmission);
+    const replica = new SurescriptsReplica({ sftpClient: client });
+    await replica.writePatientLoadFileToStorage(transmission, message);
   });
-
-async function readPatientData(patientData: string): Promise<Patient[]> {
-  const promise = new Promise<Patient[]>(function (resolve, reject) {
-    const patients: Patient[] = [];
-    const headers: string[] = [];
-    fs.createReadStream(patientData)
-      .pipe(csv())
-      .on("headers", async (parsedHeaders: string[]) => {
-        headers.push(...parsedHeaders);
-      })
-      .on("data", async data => {
-        try {
-          patients.push(data);
-        } catch (error) {
-          reject(error);
-        }
-      })
-      .on("end", async () => {
-        return resolve(patients);
-      })
-      .on("error", reject);
-  });
-  return await promise;
-}
 
 export default program;
