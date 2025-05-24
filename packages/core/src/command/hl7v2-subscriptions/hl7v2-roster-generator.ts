@@ -85,17 +85,18 @@ export class Hl7v2RosterGenerator {
       subscriptions,
     };
 
-    log(`Running with this config: ${JSON.stringify(loggingDetails, null, 2)}`);
-    log(`Getting all subscribed patients...`);
-    const patients = await executeWithNetworkRetries(
-      async () => {
-        return this.getAllSubscribedPatients(states, subscriptions);
-      },
-      {
+    const simpleExecuteWithRetries = async <T>(functionToExecute: () => Promise<T>) => {
+      return await executeWithNetworkRetries(functionToExecute, {
         maxAttempts: NUMBER_OF_ATTEMPTS,
         initialDelay: BASE_DELAY.asMilliseconds(),
         log,
-      }
+      });
+    };
+
+    log(`Running with this config: ${JSON.stringify(loggingDetails, null, 2)}`);
+    log(`Getting all subscribed patients...`);
+    const patients = await simpleExecuteWithRetries(() =>
+      this.getAllSubscribedPatients(states, subscriptions)
     );
     log(`Found ${patients.length} total patients`);
 
@@ -108,7 +109,7 @@ export class Hl7v2RosterGenerator {
     const cxIds = new Set(patients.map(p => p.cxId));
 
     log(`Getting all organizations for patients...`);
-    const orgs = await this.getOrganizations([...cxIds]);
+    const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]));
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
     const rosterRowInputs = patients.map(p => {
