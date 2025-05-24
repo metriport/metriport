@@ -4,8 +4,8 @@ dotenv.config();
 import { Config } from "@metriport/core/util/config";
 import { sleep } from "@metriport/shared";
 import { v4 as uuidv4 } from "uuid";
-import { convertCDAToFHIR } from "../../../api/src/external/fhir-converter/converter";
-import { elapsedTimeAsStr } from "../shared/duration";
+import { convertCDAToFHIR } from "../../../../api/src/external/fhir-converter/converter";
+import { elapsedTimeAsStr } from "../../shared/duration";
 
 /**
  * This script is used to convert CDA files to FHIR using the FHIR Converter connector in the

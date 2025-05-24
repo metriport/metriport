@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { isDirectory } from "../shared/fs";
+import { isDirectory } from "../../shared/fs";
 import { countResourcesPerDirectory, getResourceCountByFile } from "./shared";
 
 /**
