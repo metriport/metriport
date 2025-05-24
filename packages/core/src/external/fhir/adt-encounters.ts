@@ -192,11 +192,11 @@ export async function mergeBundleIntoAdtSourcedEncounter({
   const currentEncounter = !existingEncounterData
     ? newEncounterData
     : mergeBundles({
-        bundleType: "collection",
         cxId,
         patientId,
         existing: existingEncounterData,
         current: newEncounterData,
+        bundleType: "collection",
       });
 
   return await putAdtSourcedEncounter({
