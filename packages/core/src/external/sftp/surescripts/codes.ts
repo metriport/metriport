@@ -1,3 +1,56 @@
+export const PREFIXES = [
+  "mr",
+  "mrs",
+  "ms",
+  "dr",
+  "prof",
+  "rev",
+  "st",
+  "hon",
+  "honorable",
+  "honorable mr",
+  "honorable mrs",
+  "honorable ms",
+  "honorable dr",
+  "honorable prof",
+  "honorable rev",
+  "honorable st",
+] as const;
+export const SUFFIXES = [
+  "jr",
+  "sr",
+  "ii",
+  "iii",
+  "iv",
+  "v",
+  "vi",
+  "vii",
+  "viii",
+  "ix",
+  "x",
+  "2nd",
+  "3rd",
+  "4th",
+  "5th",
+  "6th",
+  "7th",
+  "8th",
+  "9th",
+  "10th",
+] as const;
+export type Prefix = (typeof PREFIXES)[number];
+export type Suffix = (typeof SUFFIXES)[number];
+
+export const PREFIX_SET = new Set(PREFIXES);
+export const SUFFIX_SET = new Set(SUFFIXES);
+
+export function isPrefix(prefix: string): prefix is Prefix {
+  return PREFIX_SET.has(prefix as Prefix);
+}
+export function isSuffix(suffix: string): suffix is Suffix {
+  return SUFFIX_SET.has(suffix as Suffix);
+}
+
 export const DEA_SCHEDULE_CODES = [
   "C38046",
   "C48672",

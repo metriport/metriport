@@ -25,7 +25,7 @@ import { isValidNpiNumber } from "@metriport/shared/common/npi-number";
 
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
-import { parseNameDemographics } from "./demographics";
+import { makeNameDemographics, makeGenderDemographics } from "./shared";
 import { GetPatientResponse } from "../api/get-patient";
 
 export function canGenerateSurescriptsMessage(
@@ -64,9 +64,8 @@ export function toSurescriptsPatientLoadFile(
 
   const details = patients
     .map((patient, index) => {
-      const { firstName, middleName, lastName, prefix, suffix } = parseNameDemographics(patient);
-      const gender = patient.genderAtBirth ?? "U";
-      const genderAtBirth = gender === "O" ? "U" : gender;
+      const { firstName, middleName, lastName, prefix, suffix } = makeNameDemographics(patient);
+      const genderAtBirth = makeGenderDemographics(patient.genderAtBirth);
 
       const address = Array.isArray(patient.address) ? patient.address[0] : patient.address;
       if (!address) return null;
@@ -87,7 +86,7 @@ export function toSurescriptsPatientLoadFile(
           city: address.city,
           state: address.state,
           zip: address.zip,
-          dateOfBirth: patient.dob.replace(/-/g, ""), // TODO: check order
+          dateOfBirth: patient.dob.replace(/-/g, ""),
           genderAtBirth,
           npiNumber: transmission.npiNumber,
         },
@@ -116,7 +115,7 @@ export function toSurescriptsPatientLoadRow<T extends object>(
 ): Buffer {
   const parsed = objectSchema.safeParse(data);
   if (!parsed.success) {
-    console.log("Invalid data", parsed.error, parsed.error.issues);
+    console.log(parsed.error, parsed.error.issues);
     throw new Error("Invalid data");
   }
   const fields = fieldSchema.map(field => field.toSurescripts(data));
