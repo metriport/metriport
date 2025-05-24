@@ -2,23 +2,38 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-roster-generator";
+import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 const isLocal = true;
-const configs = getEnvVarOrFail("HIE_CONFIGS"); // You can get this from the config files in metriport-internal repo
+const config: HieConfig = {} as HieConfig;
+
+if (!config.name || !config.mapping) {
+  throw new Error("Remember to set the config object! See the tsdoc for more info.");
+}
 
 /**
- * This script is used to trigger the generation and upload of the HL7v2 subscription roster to the S3 bucket.
+ * Triggers generation and upload of HL7v2 subscription roster to S3.
+ *
+ * Required env vars:
+ *
+ * >> local only
+ * - API_URL: Base URL of the API
+ * - HL7V2_ROSTER_BUCKET_NAME: S3 bucket for roster files
+ * - HL7_BASE64_SCRAMBLER_SEED: Seed for base64 scrambling
+ *
+ * >> remote only
+ * - AWS_REGION: AWS region for Lambda
+ * - HL7V2_ROSTER_UPLOAD_LAMBDA_NAME: Name of Lambda function
  *
  * Usage:
- * - Set the `isLocal` to specify if you want a local test or a remote Lambda invocation
- * - Set the required env vars
- * - Run the script with this command from /packages/utils: `ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
+ * 1. Set `isLocal` flag for local vs Lambda execution
+ * 2. Set `config` to one of the HieConfig object from `config/staging.ts`
+ * 3. Run: `npx ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
  */
 async function main() {
   try {
-    const config = JSON.parse(configs);
     const startedAt = Date.now();
 
     if (isLocal) {
