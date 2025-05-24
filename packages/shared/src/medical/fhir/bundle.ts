@@ -4,6 +4,10 @@ export interface SearchSetBundle<T extends Resource = Resource> extends Omit<Bun
   type: "searchset";
 }
 
+export interface CollectionBundle<T extends Resource = Resource> extends Omit<Bundle<T>, "type"> {
+  type: "collection";
+}
+
 export function parseFhirBundle(value: string): Bundle | undefined {
   const parsed = JSON.parse(value);
   if (parsed && typeof parsed === "object" && parsed.resourceType === "Bundle") {

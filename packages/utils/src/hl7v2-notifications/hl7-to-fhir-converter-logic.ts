@@ -7,7 +7,6 @@ import { getOrCreateMessageDatetime } from "@metriport/core/command/hl7v2-subscr
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import fs from "fs";
-import { Config } from "@metriport/core/util/config";
 
 /**
  * Processes HL7v2 ADT messages from a file and converts them to FHIR format using the HL7 to FHIR Converter.
@@ -43,8 +42,6 @@ import { Config } from "@metriport/core/util/config";
  * 3. Run the script using ts-node
  */
 const apiUrl = getEnvVarOrFail("API_URL");
-const oldBucketName = Config.getHl7OutgoingMessageBucketName();
-const bucketName = Config.getHl7ConversionBucketName();
 
 const filePath = "";
 const fileName = "";
@@ -60,7 +57,7 @@ function invokeLambdaLogic() {
 
     try {
       const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
-      new Hl7NotificationWebhookSenderDirect(apiUrl, oldBucketName, bucketName).execute({
+      new Hl7NotificationWebhookSenderDirect(apiUrl).execute({
         cxId,
         patientId,
         message,

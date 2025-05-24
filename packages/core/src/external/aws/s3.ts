@@ -35,11 +35,33 @@ const protocolRegex = /^https?:\/\//;
 export type GetSignedUrlWithBucketAndKey = {
   bucketName: string;
   fileName: string;
+  /**
+   * Duration in seconds for which the signed URL will be valid
+   */
   durationSeconds?: number;
+  /**
+   * The version ID of the object the presigned URL is for, if applicable
+   */
+  versionId?: string;
 };
+
 export type GetSignedUrlWithLocation = {
+  /**
+   * The S3 location string (typically in format s3://bucket-name/file-name)
+   */
   location: string;
+  /**
+   * Duration in seconds for which the signed URL will be valid
+   */
   durationSeconds?: number;
+  /**
+   * The version ID of the object the presigned URL is for, if applicable
+   */
+  versionId?: string;
+};
+
+export type UploadFileResult = AWS.S3.ManagedUpload.SendData & {
+  VersionId?: string;
 };
 
 export type UploadParams = {
@@ -258,6 +280,17 @@ export class S3Utils {
     return false;
   }
 
+  /**
+   * Returns a presigned URL for a file in an S3 bucket.
+   *
+   * @param params - Parameters for generating a signed URL
+   * @param params.bucketName - The name of the S3 bucket (when using bucket+key format)
+   * @param params.fileName - The key/filename of the object (when using bucket+key format)
+   * @param params.location - Full S3 location in the format 's3://bucket-name/key' (alternative to providing bucketName+fileName)
+   * @param params.versionId - Optional version ID of the object
+   * @param params.durationSeconds - Optional duration in seconds for URL validity
+   * @returns Promise<string> - The presigned URL for the file
+   */
   async getSignedUrl(params: GetSignedUrlWithBucketAndKey): Promise<string>;
   async getSignedUrl(params: GetSignedUrlWithLocation): Promise<string>;
   async getSignedUrl(
@@ -270,6 +303,7 @@ export class S3Utils {
       return this.getSignedUrlInternal({
         bucketName,
         fileName: key,
+        ...(params.versionId ? { versionId: params.versionId } : {}),
         ...(params.durationSeconds ? { durationSeconds: params.durationSeconds } : undefined),
       });
     } else {
@@ -281,16 +315,19 @@ export class S3Utils {
     bucketName,
     fileName,
     durationSeconds,
+    versionId,
   }: {
     bucketName: string;
     fileName: string;
     durationSeconds?: number;
+    versionId?: string;
   }): Promise<string> {
     return executeWithRetriesS3(() =>
       this.s3.getSignedUrlPromise("getObject", {
         Bucket: bucketName,
         Key: fileName,
         Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
+        ...(versionId ? { VersionId: versionId } : {}),
       })
     );
   }
@@ -421,7 +458,7 @@ export class S3Utils {
     file,
     contentType,
     metadata,
-  }: UploadParams): Promise<AWS.S3.ManagedUpload.SendData> {
+  }: UploadParams): Promise<UploadFileResult> {
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
@@ -432,7 +469,15 @@ export class S3Utils {
       uploadParams.ContentType = contentType;
     }
     try {
-      const resp = await executeWithRetriesS3(() => this._s3.upload(uploadParams).promise());
+      const resp = (await executeWithRetriesS3(() =>
+        /**
+         * TODO: Switch to using the aws-sdk v3 client.
+         *
+         * The types on the aws-sdk v2 `upload()` method have not been
+         * maintained / kept up to date, hence the type assertion.
+         */
+        this._s3.upload(uploadParams).promise()
+      )) as UploadFileResult;
       return resp;
     } catch (error) {
       const { log } = out("uploadFile");

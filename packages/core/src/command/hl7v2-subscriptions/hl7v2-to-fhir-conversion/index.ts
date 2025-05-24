@@ -7,7 +7,7 @@ import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extension
 import { capture, out } from "../../../util";
 import { mapEncounterAndRelatedResources } from "./adt/encounter";
 import { getHl7MessageTypeOrFail, getMessageUniqueIdentifier } from "./msh";
-import { buildHl7MessageFileKey } from "./shared";
+import { createFileKeyHl7Message } from "./shared";
 
 export type Hl7ToFhirParams = {
   cxId: string;
@@ -32,7 +32,7 @@ export function convertHl7v2MessageToFhir({
   const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
   const messageId = getMessageUniqueIdentifier(message);
 
-  const filePath = buildHl7MessageFileKey({
+  const filePath = createFileKeyHl7Message({
     cxId,
     patientId,
     timestamp: timestampString,
