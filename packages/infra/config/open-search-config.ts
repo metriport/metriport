@@ -14,15 +14,7 @@ export type LambdaConfig = {
 export type OpenSearchConnectorConfig = {
   openSearch: Omit<OpenSearchConstructProps, "region" | "vpc" | "awsAccount"> & {
     indexName: string;
+    lexicalIndexName: string; // TODO eng-268 rename this to consolidatedSearchIndexName
   };
   lambda: LambdaConfig;
-};
-
-export type SemanticOpenSearchConfig = {
-  modelId: string;
-  endpoint: string;
-  indexName: string;
-  userName: string;
-  // TODO eng-41 Remove this and move it to an actual Secret before going to prod
-  password: string;
 };

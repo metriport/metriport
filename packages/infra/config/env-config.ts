@@ -1,10 +1,10 @@
 import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
-import { IHEGatewayProps } from "./ihe-gateway-config";
-import { OpenSearchConnectorConfig, SemanticOpenSearchConfig } from "./open-search-config";
-import { PatientImportProps } from "./patient-import";
 import { Hl7NotificationConfig } from "./hl7-notification-config";
+import { IHEGatewayProps } from "./ihe-gateway-config";
+import { OpenSearchConnectorConfig } from "./open-search-config";
+import { PatientImportProps } from "./patient-import";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -144,7 +144,6 @@ type EnvConfigBase = {
     anthropicVersion: string;
   };
   openSearch: OpenSearchConnectorConfig;
-  semanticOpenSearch?: SemanticOpenSearchConfig;
   carequality?: {
     secretNames: {
       CQ_MANAGEMENT_API_KEY: string;

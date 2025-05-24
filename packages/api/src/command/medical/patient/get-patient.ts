@@ -3,7 +3,7 @@ import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/cor
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
 import { BadRequestError, NotFoundError, USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
-import { Op, QueryTypes, Transaction } from "sequelize";
+import { QueryTypes, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
 import {
   PatientMapping,
@@ -53,6 +53,17 @@ export async function matchPatient(
   return await getPatientByDemo({ cxId, demo });
 }
 
+/**
+ * Paginated search of Patients.
+ *
+ * @param cxId - The customer ID.
+ * @param patientIds - An optional array of patient IDs to filter the results by.
+ * @param facilityId - An optional facility ID to filter the results by.
+ * @param fullTextSearchFilters - An optional string of full text search filters to apply to the results.
+ * @param pagination - An optional pagination object to paginate the results. If provided, only
+ *                     patients for the current page will be returned.
+ * @returns The list of patients matching the search criteria.
+ */
 export async function getPatients({
   cxId,
   patientIds,
@@ -220,29 +231,6 @@ function getPatientsSharedReplacements(
     ...(patientIds ? { patientIds } : {}),
     ...(fullTextSearchFilters ? { filters: fullTextSearchFilters } : {}),
   };
-}
-
-export async function getPatientIds({
-  facilityId,
-  cxId,
-}: {
-  facilityId?: string;
-  cxId: string;
-}): Promise<string[]> {
-  const patients = await PatientModel.findAll({
-    attributes: ["id"],
-    where: {
-      cxId,
-      ...(facilityId
-        ? {
-            facilityIds: {
-              [Op.contains]: [facilityId],
-            },
-          }
-        : undefined),
-    },
-  });
-  return patients.map(p => p.dataValues.id);
 }
 
 /**

@@ -11,7 +11,8 @@ import { chunk } from "lodash";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
-import { getPatientIds, getPatientOrFail } from "../get-patient";
+import { getPatientOrFail } from "../get-patient";
+import { getPatientIds } from "../get-patient-read-only";
 
 type PatientSettingsUpsertResults = {
   patientsNotFound?: string[];

@@ -1,3 +1,4 @@
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../../domain/patient";
 import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
@@ -24,26 +25,22 @@ import { searchDocuments } from "../document-reference/search";
 export async function searchLexical({
   patient,
   query,
-  maxNumberOfResults = 10_000,
 }: {
   patient: Patient;
   query: string;
-  /** From 0 to 10_000, optional, defaults to 10_000 */
-  maxNumberOfResults?: number | undefined;
 }): Promise<SearchSetBundle> {
   const { log } = out(`searchLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
   log(`Getting consolidated and searching OS...`);
-  const startedAt = Date.now();
+  const startedAt = new Date();
 
   const getConsolidatedPromise = () => getConsolidatedPatientData({ patient });
 
-  const searchOpenSearchPromise = () =>
-    searchOpenSearch({
+  const searchOpenSearchLexicalPromise = () =>
+    searchOpenSearchLexical({
       cxId: patient.cxId,
       patientId: patient.id,
       query,
-      maxNumberOfResults,
     });
 
   const searchDocumentsPromise = () =>
@@ -51,16 +48,16 @@ export async function searchLexical({
 
   const [consolidated, searchResults, docRefResults] = await Promise.all([
     timed(getConsolidatedPromise, "getConsolidatedPatientData", log),
-    timed(searchOpenSearchPromise, "searchOpenSearch", log),
+    timed(searchOpenSearchLexicalPromise, "searchOpenSearchLexical", log),
     timed(searchDocumentsPromise, "searchDocuments", log),
   ]);
-  const elapsedTime = Date.now() - startedAt;
   log(
-    `Done, got ${searchResults.length} search results and ${consolidated.entry?.length} consolidated ` +
-      `resources in ${elapsedTime} ms, filtering consolidated based on search results...`
+    `Done, got ${searchResults.length} search results and ${consolidated.entry?.length} consolidated resources ` +
+      `in ${elapsedTimeFromNow(startedAt)} ms, filtering consolidated based on search results...`
   );
 
-  const filteredResources =
+  let subStartedAt = new Date();
+  const filteredMutable =
     consolidated.entry?.filter(entry => {
       const resourceId = entry.resource?.id;
       const resourceType = entry.resource?.resourceType;
@@ -71,15 +68,20 @@ export async function searchLexical({
           isInDocRefResults(docRefResults, resourceId, resourceType))
       );
     }) ?? [];
+  log(`Filtered to ${filteredMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
 
-  const sliced = filteredResources.slice(0, maxNumberOfResults - 1);
   const patientEntry = buildBundleEntry(patientToFhir(patient));
-  sliced.push(patientEntry);
+  filteredMutable.push(patientEntry);
 
-  const filteredBundle = buildSearchSetBundle({ entries: sliced });
+  const filteredBundle = buildSearchSetBundle({ entries: filteredMutable });
+
+  subStartedAt = new Date();
   const hydrated = addMissingReferences(filteredBundle, consolidated);
+  log(`Hydrated to ${hydrated.total} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
 
-  log(`Done, returning ${hydrated.entry?.length} filtered resources...`);
+  log(
+    `Done in ${elapsedTimeFromNow(startedAt)} ms, returning ${hydrated.entry?.length} resources...`
+  );
 
   return hydrated as SearchSetBundle;
 }
@@ -101,22 +103,20 @@ function isInDocRefResults(
   return docRefResults.some(r => r.id === resourceId);
 }
 
-async function searchOpenSearch({
+async function searchOpenSearchLexical({
   query,
   cxId,
   patientId,
-  maxNumberOfResults,
 }: {
   query: string;
   cxId: string;
   patientId: string;
-  maxNumberOfResults?: number | undefined;
-}): Promise<SearchResult[]> {
-  // TODO eng-41 make this a factory so we can delegate the processing to a lambda
+}) {
+  // TODO eng-268 make this a factory so we can delegate the processing to a lambda
   const searchService = new OpenSearchLexicalSearcher({
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
-    indexName: Config.getLexicalSearchIndexName(),
+    indexName: Config.getConsolidatedSearchIndexName(),
     username: Config.getSearchUsername(),
     password: Config.getSearchPassword(),
   });
@@ -124,7 +124,6 @@ async function searchOpenSearch({
     query,
     cxId,
     patientId,
-    maxNumberOfResults,
   });
 }
 
