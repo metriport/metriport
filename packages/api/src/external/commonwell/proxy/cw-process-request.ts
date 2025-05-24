@@ -132,13 +132,13 @@ function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams 
 export function prepareBundle(resources: Resource[], params: URLSearchParams): Bundle<Resource> {
   const { documentReferences, otherResources } = splitResources(resources);
   const filteredDocRefs = applyFilterParams(documentReferences, params);
-  if (filteredDocRefs.length < 1) return buildBundle();
+  if (filteredDocRefs.length < 1) return buildBundle({ type: "searchset" });
 
   const updatedDocRefs = adjustAttachmentURLs(filteredDocRefs);
   const consolidatedResources = [...updatedDocRefs, ...otherResources];
   const uniqueResources = uniqBy(consolidatedResources, r => r.id);
   const bundleEntries: BundleEntry[] = uniqueResources.map(r => ({ resource: r }));
-  const bundle = buildBundle({ entries: bundleEntries });
+  const bundle = buildBundle({ entries: bundleEntries, type: "searchset" });
   return bundle;
 }
 
