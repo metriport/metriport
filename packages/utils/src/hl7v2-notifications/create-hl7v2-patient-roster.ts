@@ -5,10 +5,9 @@ import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscription
 import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { TestHieConfig } from "../../../infra/config/config-data/staging/api-infra/hie-configs";
 
 const isLocal = true;
-const config = TestHieConfig as HieConfig;
+const config: HieConfig = {} as HieConfig;
 
 /**
  * Triggers generation and upload of HL7v2 subscription roster to S3.
@@ -26,8 +25,8 @@ const config = TestHieConfig as HieConfig;
  *
  * Usage:
  * 1. Set `isLocal` flag for local vs Lambda execution
- * 2. Set `hieName` to point to a key in the HIE config
- * 3. Run: `ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
+ * 2. Set `config` to one of the HieConfig object from `config/staging.ts`
+ * 3. Run: `npx ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
  */
 async function main() {
   try {
