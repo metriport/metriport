@@ -23,7 +23,6 @@ describe("AdtRosterGenerator", () => {
 
   const mockSchema = {
     ...mockMinimalSchema,
-    shortcode: "ASSIGNING AUTHORITY IDENTIFIER",
     genderAtBirth: "GENDER",
     address1AddressLine1: "STREET ADDRESS", // TODO: remove this
     address1AddressLine2: "STREET NUMBER",
@@ -34,6 +33,8 @@ describe("AdtRosterGenerator", () => {
     email: "EMAIL",
     ssn: "SSN",
     driversLicense: "DRIVERS LICENSE",
+    authorizingParticipantFacilityCode: "AUTHORIZING PARTICIPANT FACILITY CODE",
+    assigningAuthorityIdentifier: "ASSIGNING AUTHORITY IDENTIFIER",
   };
 
   const baseAddress: Address = {
@@ -158,7 +159,6 @@ describe("AdtRosterGenerator", () => {
         ID: scrambledId,
         "FIRST NAME": "John",
         "LAST NAME": "Doe",
-        "ASSIGNING AUTHORITY IDENTIFIER": "TESTCODE",
         "STREET ADDRESS": baseAddress.addressLine1,
         "STREET NUMBER": baseAddress.addressLine2,
         CITY: baseAddress.city,
@@ -170,6 +170,8 @@ describe("AdtRosterGenerator", () => {
         GENDER: "M",
         PHONE: "600-700-8000",
         EMAIL: "john@doe.com",
+        "AUTHORIZING PARTICIPANT FACILITY CODE": "TESTCODE",
+        "ASSIGNING AUTHORITY IDENTIFIER": "METRIPORT",
       });
     });
 
