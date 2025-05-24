@@ -197,6 +197,7 @@ export const config: EnvConfigNonSandbox = {
           address1City: "CITY",
           address1State: "STATE",
           address1Zip: "ZIP",
+          authorizingParticipantFacilityCode: "FACCODE",
           assigningAuthorityIdentifier: "ASSIGNERID",
         },
       },
