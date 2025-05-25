@@ -7,7 +7,7 @@ import {
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { BadRequestError, errorToString } from "@metriport/shared";
+import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
 import { chunk } from "lodash";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
@@ -219,32 +219,35 @@ async function verifyPatients({
   facilityId,
   cxId,
 }: {
-  patientIds: string[];
+  patientIds?: string[];
   facilityId?: string;
   cxId: string;
 }): Promise<{
   validPatientIds: string[];
   invalidPatientIds: string[];
 }> {
-  if (patientIds.length < 1) {
-    return {
-      validPatientIds: [],
-      invalidPatientIds: [],
-    };
+  if ((!patientIds && !facilityId) || (patientIds && facilityId)) {
+    throw new MetriportError("Exactly one of patientIds or facilityId must be provided");
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = { cxId };
+
+  if (patientIds) {
+    where.id = patientIds;
+  }
+  if (facilityId) {
+    where.facilityIds = { [Op.contains]: [facilityId] };
   }
 
   const patients = await PatientModel.findAll({
-    where: {
-      id: patientIds,
-      cxId,
-      ...(facilityId && {
-        facilityIds: { [Op.contains]: [facilityId] },
-      }),
-    },
+    where,
     attributes: ["id"],
   });
+
   const foundPatientIds = new Set(patients.map(p => p.id));
-  const invalidPatientIds = patientIds.filter(id => !foundPatientIds.has(id));
+  const invalidPatientIds = patientIds?.filter(id => !foundPatientIds.has(id)) ?? [];
+
   return {
     validPatientIds: Array.from(foundPatientIds),
     invalidPatientIds,
