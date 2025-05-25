@@ -4,13 +4,15 @@ const subscriptionsSchema = z.object({
   adt: z.boolean().optional(),
 });
 
-export type PatientSubscriptions = z.infer<typeof subscriptionsSchema>;
+export const patientSettingsSchema = z.object({
+  subscriptions: subscriptionsSchema.optional(),
+});
+
+export type PatientSettings = z.infer<typeof patientSettingsSchema>;
 
 export const upsertPatientSettingsBaseSchema = z.object({
   cxId: z.string(),
-  settings: z.object({
-    subscriptions: subscriptionsSchema.optional(),
-  }),
+  settings: patientSettingsSchema,
 });
 
 export const upsertPatientSettingsSchema = upsertPatientSettingsBaseSchema.and(
