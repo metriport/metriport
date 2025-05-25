@@ -91,8 +91,8 @@ async function upsertPatientSettingsByPatientSelector({
 
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
-    facilityId,
-    patientIds,
+    ...(facilityId && { facilityId }),
+    ...(patientIds && patientIds.length > 0 && { patientIds }),
   });
 
   if (validPatientIds.length === 0) {
