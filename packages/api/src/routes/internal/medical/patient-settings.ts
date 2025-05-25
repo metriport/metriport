@@ -1,16 +1,17 @@
 import { patientSettingsSchema } from "@metriport/api-sdk";
+import { upsertPatientSettingsBaseSchema } from "@metriport/api-sdk/medical/models/patient-settings";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import {
+  upsertPatientSettingsByFacility,
+  upsertPatientSettingsByPatient,
   upsertPatientSettingsForCx,
-  upsertPatientSettingsForPatientList,
 } from "../../../command/medical/patient/settings/create-patient-settings";
 import { requestLogger } from "../../helpers/request-logger";
-import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFromQueryAsArrayOrFail } from "../../util";
+import { asyncHandler } from "../../util";
 
 dayjs.extend(duration);
 
@@ -21,11 +22,11 @@ const defaultSettings = {};
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/settings/
  *
- * Creates or updates patient settings for a select list of patient IDs.
+ * Creates or updates patient settings for a select set of patients.
  *
  * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The facility ID. Optional.
- * @param req.query.patientIds List of patient IDs to update.
+ * @param req.query.facilityId The facility ID. Either this or patientIds must be provided.
+ * @param req.query.patientIds List of patient IDs to update. Either this or facilityId must be provided.
  * @param req.body The patient settings to apply. Optional, defaults to empty object.
  * @returns 200 with the results of the operation.
  */
@@ -33,18 +34,22 @@ router.post(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getUUIDFrom("query", req, "facilityId").optional();
-    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
-    const settings = patientSettingsSchema.parse(req.body) ?? defaultSettings;
+    const { cxId, settings, ...rest } = patientSettingsSchema.parse(req.body) ?? defaultSettings;
 
-    const result = await upsertPatientSettingsForPatientList({
-      cxId,
-      facilityId,
-      patientIds,
-      settings,
-    });
-
+    let result;
+    if (rest.type === "patientList") {
+      result = await upsertPatientSettingsByPatient({
+        cxId,
+        settings,
+        patientIds: rest.patientIds,
+      });
+    } else if (rest.type === "facility") {
+      result = await upsertPatientSettingsByFacility({
+        cxId,
+        settings,
+        facilityId: rest.facilityId,
+      });
+    }
     return res.status(status.OK).json(result);
   })
 );
@@ -55,7 +60,6 @@ router.post(
  * Creates or updates patient settings across all patients for a CX.
  *
  * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The facility ID. Optional.
  * @param req.body The patient settings to apply. Optional, defaults to empty object.
  * @returns 200 with the results of the operation.
  */
@@ -63,13 +67,10 @@ router.post(
   "/bulk",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getUUIDFrom("query", req, "facilityId").optional();
-    const settings = patientSettingsSchema.parse(req.body) ?? defaultSettings;
+    const { cxId, settings } = upsertPatientSettingsBaseSchema.parse(req.body) ?? defaultSettings;
 
     const result = await upsertPatientSettingsForCx({
       cxId,
-      facilityId,
       settings,
     });
 
