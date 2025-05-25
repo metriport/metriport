@@ -1,5 +1,4 @@
-import { patientSettingsSchema } from "@metriport/api-sdk";
-import { upsertPatientSettingsBaseSchema } from "@metriport/api-sdk/medical/models/patient-settings";
+import { upsertPatientSettingsSchema } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -12,6 +11,7 @@ import {
 } from "../../../command/medical/patient/settings/create-patient-settings";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler } from "../../util";
+import { MetriportError } from "../../../../../shared/dist";
 
 dayjs.extend(duration);
 
@@ -35,7 +35,8 @@ router.post(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, settings, ...rest } = patientSettingsSchema.parse(req.body) ?? defaultSettings;
+    const { cxId, settings, ...rest } =
+      upsertPatientSettingsSchema.parse(req.body) ?? defaultSettings;
 
     let result;
     if (rest.type === "patientList") {
@@ -50,7 +51,12 @@ router.post(
         settings,
         facilityId: rest.facilityId,
       });
+    } else {
+      throw new MetriportError("Invalid operation type", undefined, {
+        status: status.BAD_REQUEST,
+      });
     }
+
     return res.status(status.OK).json(result);
   })
 );
@@ -68,7 +74,7 @@ router.post(
   "/bulk",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, settings } = upsertPatientSettingsBaseSchema.parse(req.body) ?? defaultSettings;
+    const { cxId, settings } = upsertPatientSettingsSchema.parse(req.body) ?? defaultSettings;
 
     const result = await upsertPatientSettingsForCx({
       cxId,
