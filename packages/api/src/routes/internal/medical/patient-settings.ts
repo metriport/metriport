@@ -1,4 +1,4 @@
-import { upsertPatientSettingsSchema } from "@metriport/api-sdk";
+import { upsertPatientSettingsBaseSchema, upsertPatientSettingsSchema } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -74,7 +74,7 @@ router.post(
   "/bulk",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, settings } = upsertPatientSettingsSchema.parse(req.body) ?? defaultSettings;
+    const { cxId, settings } = upsertPatientSettingsBaseSchema.parse(req.body) ?? defaultSettings;
 
     const result = await upsertPatientSettingsForCx({
       cxId,
