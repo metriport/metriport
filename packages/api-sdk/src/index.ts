@@ -80,6 +80,7 @@ export {
 export { PatientDTO } from "./medical/models/patientDTO";
 export { NetworkEntry } from "./medical/models/network-entry";
 export {
+  upsertPatientSettingsBaseSchema,
   upsertPatientSettingsSchema,
   patientSettingsSchema,
 } from "./medical/models/patient-settings";
