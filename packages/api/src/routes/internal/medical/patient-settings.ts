@@ -25,6 +25,7 @@ const defaultSettings = {};
  * Creates or updates patient settings for a select set of patients.
  *
  * @param req.query.cxId The customer ID.
+ * @param req.query.type The type of operation to perform. Either "patientList" or "facility".
  * @param req.query.facilityId The facility ID. Either this or patientIds must be provided.
  * @param req.query.patientIds List of patient IDs to update. Either this or facilityId must be provided.
  * @param req.body The patient settings to apply. Optional, defaults to empty object.
