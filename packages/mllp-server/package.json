@@ -1,6 +1,6 @@
 {
   "name": "mllp-server",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "MLLP server that reads HL7 messages off of a raw tcp connection",
   "main": "app.js",
   "private": true,
