@@ -101,9 +101,9 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     ]);
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
-      bucketName: result.Bucket,
-      fileName: result.Key,
-      versionId: result.VersionId,
+      bucketName: result.bucket,
+      fileName: result.key,
+      versionId: result.versionId,
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
 

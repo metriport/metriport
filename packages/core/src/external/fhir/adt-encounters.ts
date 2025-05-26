@@ -204,7 +204,7 @@ export async function mergeBundleIntoAdtSourcedEncounter({
   patientId: string;
   encounterId: string;
   newEncounterData: Bundle<Resource>;
-}): Promise<{ Bucket: string; Key: string; VersionId: string }> {
+}): Promise<{ bucket: string; key: string; versionId: string }> {
   const existingEncounterData = await getAdtSourcedEncounter({
     cxId,
     patientId,
@@ -240,9 +240,9 @@ export async function putAdtSourcedEncounter({
   encounterId: string;
   bundle: Bundle<Resource>;
 }): Promise<{
-  Bucket: string;
-  Key: string;
-  VersionId: string;
+  bucket: string;
+  key: string;
+  versionId: string;
 }> {
   const { log } = out(
     `putAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
@@ -255,13 +255,13 @@ export async function putAdtSourcedEncounter({
   });
 
   log(`Uploading ADT encounter to S3 bucket: ${s3BucketName} at key: ${fileKey}`);
-  const { VersionId, ...result } = await s3Utils.uploadFile({
+  const { versionId, ...result } = await s3Utils.uploadFile({
     bucket: s3BucketName,
     key: fileKey,
     file: Buffer.from(JSON.stringify(bundle)),
   });
 
-  if (!VersionId) {
+  if (!versionId) {
     throw new MetriportError(
       "VersionId is required - you may be writing to the wrong bucket",
       undefined,
@@ -274,6 +274,6 @@ export async function putAdtSourcedEncounter({
 
   return {
     ...result,
-    VersionId,
+    versionId,
   };
 }

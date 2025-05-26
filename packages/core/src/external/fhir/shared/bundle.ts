@@ -203,7 +203,7 @@ export function buildSearchSetBundle<T extends Resource = Resource>({
 }: {
   entries?: BundleEntry<T>[];
 } = {}): SearchSetBundle<T> {
-  return buildBundle({ type: "searchset" as const, entries });
+  return buildBundle({ type: "searchset", entries });
 }
 
 export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {

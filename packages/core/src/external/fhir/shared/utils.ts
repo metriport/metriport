@@ -19,14 +19,10 @@ export function mergeBundles({
   bundleType: RequiredBundleType;
 }): Bundle<Resource> {
   if (!existing.entry || !current.entry) {
-    throw new MetriportError(
-      `Entry field on bundles must exist: existing: ${!!existing.entry} current: ${!!current.entry}`,
-      undefined,
-      {
-        existingEntry: !!existing.entry,
-        currentEntry: !!current.entry,
-      }
-    );
+    throw new MetriportError(`Entry field on both bundles must exist`, undefined, {
+      existingEntry: !!existing.entry,
+      currentEntry: !!current.entry,
+    });
   }
 
   const newBundle = buildBundle({

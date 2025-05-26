@@ -60,8 +60,16 @@ export type GetSignedUrlWithLocation = {
   versionId?: string;
 };
 
-export type UploadFileResult = AWS.S3.ManagedUpload.SendData & {
-  VersionId?: string;
+// export type UploadFileResult = AWS.S3.ManagedUpload.SendData & {
+//   VersionId?: string;
+// };
+
+export type UploadFileResult = {
+  location: string;
+  etag: string;
+  bucket: string;
+  key: string;
+  versionId: string | undefined;
 };
 
 export type UploadParams = {
@@ -452,6 +460,13 @@ export class S3Utils {
     await executeWithRetriesS3(() => this.s3Client.send(copyObjectCommand));
   }
 
+  /**
+   * TODO: Switch to using the aws-sdk v3 client.
+   *
+   * The types on the aws-sdk v2 `upload()` method have not been
+   * maintained / kept up to date, hence the type assertion after the
+   * `this._s3.upload()` call.
+   */
   async uploadFile({
     bucket,
     key,
@@ -470,15 +485,16 @@ export class S3Utils {
     }
     try {
       const resp = (await executeWithRetriesS3(() =>
-        /**
-         * TODO: Switch to using the aws-sdk v3 client.
-         *
-         * The types on the aws-sdk v2 `upload()` method have not been
-         * maintained / kept up to date, hence the type assertion.
-         */
         this._s3.upload(uploadParams).promise()
-      )) as UploadFileResult;
-      return resp;
+      )) as AWS.S3.ManagedUpload.SendData & { VersionId?: string };
+
+      return {
+        location: resp.Location,
+        etag: resp.ETag,
+        bucket: resp.Bucket,
+        key: resp.Key,
+        versionId: resp.VersionId,
+      };
     } catch (error) {
       const { log } = out("uploadFile");
       log(`Error during upload: ${errorToString(error)}`);
