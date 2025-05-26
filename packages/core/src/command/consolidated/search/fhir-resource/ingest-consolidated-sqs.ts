@@ -10,7 +10,7 @@ import {
   IngestConsolidated,
   IngestConsolidatedParams,
   IngestConsolidatedResult,
-  IngestMultiplConsolidatedParams,
+  IngestMultipleConsolidatedParams,
 } from "./ingest-consolidated";
 
 // TODO eng-268 consider creating a lambda to add the msgs to SQS so the API since this could take a few min
@@ -37,10 +37,10 @@ export class IngestConsolidatedSqs implements IngestConsolidated {
   async ingestConsolidatedIntoSearchEngine({
     cxId,
     patientIds,
-  }: IngestMultiplConsolidatedParams): Promise<IngestConsolidatedResult>;
+  }: IngestMultipleConsolidatedParams): Promise<IngestConsolidatedResult>;
 
   async ingestConsolidatedIntoSearchEngine(
-    params: IngestConsolidatedParams | IngestMultiplConsolidatedParams
+    params: IngestConsolidatedParams | IngestMultipleConsolidatedParams
   ): Promise<IngestConsolidatedResult> {
     if ("patientIds" in params) {
       await executeAsynchronously(

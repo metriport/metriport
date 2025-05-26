@@ -2,7 +2,7 @@ export type IngestConsolidatedParams = {
   cxId: string;
   patientId: string;
 };
-export type IngestMultiplConsolidatedParams = {
+export type IngestMultipleConsolidatedParams = {
   cxId: string;
   patientIds: string[];
 };
@@ -15,6 +15,6 @@ export interface IngestConsolidated {
   ): Promise<IngestConsolidatedResult>;
 
   ingestConsolidatedIntoSearchEngine(
-    params: IngestMultiplConsolidatedParams
+    params: IngestMultipleConsolidatedParams
   ): Promise<IngestConsolidatedResult>;
 }
