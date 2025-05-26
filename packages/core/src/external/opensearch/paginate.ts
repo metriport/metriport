@@ -19,9 +19,10 @@ export type Response<PageItem> = {
 /**
  * Paginate an OpenSearch search request
  * @param client The OpenSearch client
+ * @param indexName The name of the index to search
  * @param searchRequest The search request to paginate
  * @param pageSize The size of the page
- * @param pageNumber The number of the page
+ * @param mapResults Function to map search hits to typed items
  * @returns The paginated search request
  */
 export async function paginatedSearch<T extends PageItem>({

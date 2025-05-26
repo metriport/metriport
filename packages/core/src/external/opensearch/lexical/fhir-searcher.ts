@@ -101,6 +101,8 @@ export class OpenSearchFhirSearcher {
   }): Promise<FhirSearchResult[]> {
     const { log } = out(`${this.constructor.name}.getByIds - ids: ${ids.length}`);
 
+    if (ids.length === 0) return [];
+
     const { indexName, endpoint, username, password } = this.config;
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });

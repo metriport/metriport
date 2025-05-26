@@ -75,7 +75,6 @@ type ResourceTypeMap = {
   Practitioner: Practitioner;
   Procedure: Procedure;
   RelatedPerson: RelatedPerson;
-  // TODO REMOVE THIS
   Patient: Patient;
 };
 
