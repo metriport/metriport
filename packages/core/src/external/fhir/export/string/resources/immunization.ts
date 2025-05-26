@@ -1,109 +1,114 @@
 import { Immunization } from "@medplum/fhirtypes";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
-import { checkDeny } from "../shared/deny";
+import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAnnotations } from "../shared/annotation";
+import { formatCodeableConcept } from "../shared/codeable-concept";
+import { emptyIfDenied } from "../shared/deny";
 import { formatIdentifiers } from "../shared/identifier";
 import { formatQuantity } from "../shared/quantity";
-import { formatReferences } from "../shared/reference";
+import { formatReference, formatReferences } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
-import { FHIRResourceToString } from "../types";
 
 /**
  * Converts a FHIR Immunization resource to a string representation
  */
 export class ImmunizationToString implements FHIRResourceToString<Immunization> {
-  toString(immunization: Immunization): string | undefined {
+  toString(immunization: Immunization, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
+    let hasMinimumData = defaultHasMinimumData;
 
-    // Add identifier
-    const identifierStr = formatIdentifiers(immunization.identifier);
+    const identifierStr = formatIdentifiers({ identifiers: immunization.identifier });
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add status
     if (immunization.status) {
-      parts.push(`Status: ${immunization.status}`);
+      parts.push(isDebug ? `Status: ${immunization.status}` : immunization.status);
     }
 
-    // Add vaccine code
-    if (immunization.vaccineCode) {
-      const codeStr = formatCodeableConcepts([immunization.vaccineCode], "Vaccine");
-      if (codeStr) {
-        parts.push(codeStr);
-      }
+    const codeStr = formatCodeableConcept({
+      concept: immunization.vaccineCode,
+      label: "Vaccine",
+      isDebug,
+    });
+    if (codeStr) {
+      parts.push(codeStr);
+      hasMinimumData = true;
     }
 
-    // Add occurrence
     if (immunization.occurrenceDateTime) {
-      parts.push(`Occurrence: ${immunization.occurrenceDateTime}`);
+      parts.push(
+        isDebug ? `Occurrence: ${immunization.occurrenceDateTime}` : immunization.occurrenceDateTime
+      );
     }
 
-    // Add primary source
-    if (immunization.primarySource !== undefined) {
-      parts.push(`Primary Source: ${immunization.primarySource}`);
+    if (immunization.primarySource) {
+      parts.push(`Primary Source`);
     }
 
-    // Add manufacturer
-    if (immunization.manufacturer) {
-      const manufacturerStr = formatReferences([immunization.manufacturer], "Manufacturer");
-      if (manufacturerStr) {
-        parts.push(manufacturerStr);
-      }
+    const manufacturerStr = formatReference({
+      reference: immunization.manufacturer,
+      label: "Manufacturer",
+      isDebug,
+    });
+    if (manufacturerStr) {
+      parts.push(manufacturerStr);
     }
 
-    // Add lot number
-    if (immunization.lotNumber) {
-      const lotNumber = checkDeny(immunization.lotNumber);
-      if (lotNumber) {
-        parts.push(`Lot Number: ${lotNumber}`);
-      }
+    const lotNumber = emptyIfDenied(immunization.lotNumber);
+    if (lotNumber) {
+      parts.push(isDebug ? `Lot Number: ${lotNumber}` : lotNumber);
+      hasMinimumData = true;
     }
 
-    // Add expiration date
     if (immunization.expirationDate) {
-      parts.push(`Expiration: ${immunization.expirationDate}`);
+      parts.push(
+        isDebug ? `Expiration: ${immunization.expirationDate}` : immunization.expirationDate
+      );
     }
 
-    // Add site
-    if (immunization.site) {
-      const siteStr = formatCodeableConcepts([immunization.site], "Site");
-      if (siteStr) {
-        parts.push(siteStr);
-      }
+    const siteStr = formatCodeableConcept({
+      concept: immunization.site,
+      label: "Site",
+      isDebug,
+    });
+    if (siteStr) {
+      parts.push(siteStr);
     }
 
-    // Add route
-    if (immunization.route) {
-      const routeStr = formatCodeableConcepts([immunization.route], "Route");
-      if (routeStr) {
-        parts.push(routeStr);
-      }
+    const routeStr = formatCodeableConcept({
+      concept: immunization.route,
+      label: "Route",
+      isDebug,
+    });
+    if (routeStr) {
+      parts.push(routeStr);
     }
 
-    // Add dose quantity
-    if (immunization.doseQuantity) {
-      const doseStr = formatQuantity(immunization.doseQuantity, "Dose");
-      if (doseStr) {
-        parts.push(doseStr);
-      }
+    const doseStr = formatQuantity({
+      quantity: immunization.doseQuantity,
+      label: "Dose",
+      isDebug,
+    });
+    if (doseStr) {
+      parts.push(doseStr);
     }
 
-    // Add performer
-    const performerStr = formatReferences(immunization.performer, "Performer");
+    const performerStr = formatReferences({
+      references: immunization.performer,
+      label: "Performer",
+      isDebug,
+    });
     if (performerStr) {
       parts.push(performerStr);
     }
 
-    // Add note
-    if (immunization.note) {
-      const notes = immunization.note
-        .map(note => note.text)
-        .filter(Boolean)
-        .join(FIELD_SEPARATOR);
-      if (notes) {
-        parts.push(`Note: ${notes}`);
-      }
+    const notes = formatAnnotations({ annotations: immunization.note, label: "Note", isDebug });
+    if (notes) {
+      parts.push(notes);
+      hasMinimumData = true;
     }
+
+    if (!hasMinimumData) return undefined;
 
     return parts.join(FIELD_SEPARATOR);
   }

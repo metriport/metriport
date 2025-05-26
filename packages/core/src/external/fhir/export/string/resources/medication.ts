@@ -1,94 +1,103 @@
 import { Medication } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
-import { FIELD_SEPARATOR } from "../shared/separator";
+import { FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
-import { formatReferences } from "../shared/reference";
 import { formatQuantity } from "../shared/quantity";
+import { formatReferences } from "../shared/reference";
+import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR Medication resource to a string representation
  */
 export class MedicationToString implements FHIRResourceToString<Medication> {
-  toString(medication: Medication): string {
+  toString(medication: Medication, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
 
-    // Add identifier
-    const identifierStr = formatIdentifiers(medication.identifier);
+    const identifierStr = formatIdentifiers({ identifiers: medication.identifier });
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add code
     if (medication.code) {
-      const codeStr = formatCodeableConcepts([medication.code], "Code");
-      if (codeStr) {
-        parts.push(codeStr);
-      }
+      const codeStr = formatCodeableConcepts({
+        concepts: [medication.code],
+        label: "Code",
+        isDebug,
+      });
+      if (codeStr) parts.push(codeStr);
     }
 
-    // Add status
     if (medication.status) {
-      parts.push(`Status: ${medication.status}`);
+      parts.push(isDebug ? `Status: ${medication.status}` : medication.status);
     }
 
-    // Add manufacturer
     if (medication.manufacturer) {
-      const manufacturerStr = formatReferences([medication.manufacturer], "Manufacturer");
+      const manufacturerStr = formatReferences({
+        references: [medication.manufacturer],
+        label: "Manufacturer",
+        isDebug,
+      });
       if (manufacturerStr) {
         parts.push(manufacturerStr);
       }
     }
 
-    // Add form
     if (medication.form) {
-      const formStr = formatCodeableConcepts([medication.form], "Form");
+      const formStr = formatCodeableConcepts({
+        concepts: [medication.form],
+        label: "Form",
+        isDebug,
+      });
       if (formStr) {
         parts.push(formStr);
       }
     }
 
-    // Add amount
     if (medication.amount) {
-      const amountStr = formatQuantity(medication.amount, "Amount");
+      const amountStr = formatQuantity({ quantity: medication.amount, label: "Amount", isDebug });
       if (amountStr) {
         parts.push(amountStr);
       }
     }
 
-    // Add ingredient
-    if (medication.ingredient) {
-      const ingredients = medication.ingredient
-        .map(ingredient => {
-          const item = ingredient.itemCodeableConcept
-            ? formatCodeableConcepts([ingredient.itemCodeableConcept], "Ingredient")
-            : ingredient.itemReference
-            ? formatReferences([ingredient.itemReference], "Ingredient")
-            : "";
-          const strength = ingredient.strength
-            ? formatQuantity(ingredient.strength, "Strength")
-            : "";
-          return [item, strength].filter(Boolean).join(" ");
-        })
-        .filter(Boolean)
-        .join(FIELD_SEPARATOR);
-      if (ingredients) {
-        parts.push(ingredients);
-      }
+    const ingredients = medication.ingredient
+      ?.map(ingredient => {
+        const item = formatCodeableConcept({
+          concept: ingredient.itemCodeableConcept,
+          label: "Ingredient",
+          isDebug,
+        });
+        // : ingredient.itemReference
+        // ? formatReferences({
+        //     references: [ingredient.itemReference],
+        //     label: "Ingredient",
+        //     isDebug,
+        //   })
+        const strength = formatQuantity({
+          quantity: ingredient.strength,
+          label: "Strength",
+          isDebug,
+        });
+        return [item, strength].filter(Boolean).join(FIELD_SEPARATOR);
+      })
+      .filter(Boolean)
+      .join(FIELD_SEPARATOR);
+    if (ingredients) {
+      parts.push(ingredients);
     }
 
-    // Add batch
     if (medication.batch) {
       const batch = medication.batch;
       const batchParts = [];
       if (batch.lotNumber) {
-        batchParts.push(`Lot: ${batch.lotNumber}`);
+        batchParts.push(isDebug ? `Lot: ${batch.lotNumber}` : batch.lotNumber);
       }
       if (batch.expirationDate) {
-        batchParts.push(`Expires: ${batch.expirationDate}`);
+        batchParts.push(isDebug ? `Expires: ${batch.expirationDate}` : batch.expirationDate);
       }
       if (batchParts.length > 0) {
-        parts.push(`Batch: ${batchParts.join(", ")}`);
+        const batchStr = batchParts.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Batch: ${batchStr}` : batchStr);
       }
     }
 

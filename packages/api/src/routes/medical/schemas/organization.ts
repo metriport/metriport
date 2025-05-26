@@ -20,6 +20,7 @@ export const organiationInternalDetailsSchema = z
     nameInMetriport: z.string().min(1),
     businessType: organizationBizTypeSchema,
     type: orgTypeSchema,
+    shortcode: z.string().optional(),
     // CQ
     cqApproved: z.boolean().optional(),
     cqActive: z.boolean().optional(),

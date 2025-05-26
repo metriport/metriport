@@ -1,7 +1,7 @@
 import { Resource } from "@medplum/fhirtypes";
 import { errorToString, sleep } from "@metriport/shared";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { getConsolidated } from "../../../../../../../command/consolidated/consolidated-get";
+import { getConsolidatedFile } from "../../../../../../../command/consolidated/consolidated-get";
 import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
 import { deduplicateResources } from "../../../../../../../fhir-deduplication/dedup-resources";
 import { out } from "../../../../../../../util/log";
@@ -146,7 +146,7 @@ async function getMetriportResourcesFromS3({
   patientId: string;
   resourceType: string;
 }): Promise<Resource[]> {
-  const consolidated = await getConsolidated({ cxId, patientId });
+  const consolidated = await getConsolidatedFile({ cxId, patientId });
   if (!consolidated?.bundle?.entry) return [];
   const resources = consolidated.bundle.entry.filter(
     entry => entry.resource?.resourceType === resourceType

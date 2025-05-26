@@ -3,6 +3,7 @@ export enum EhrSources {
   elation = "elation",
   canvas = "canvas",
   healthie = "healthie",
+  eclinicalworks = "eclinicalworks",
 }
 export const ehrSources = [...Object.values(EhrSources)] as const;
 export type EhrSource = (typeof ehrSources)[number];
