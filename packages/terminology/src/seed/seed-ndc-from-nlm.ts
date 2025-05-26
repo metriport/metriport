@@ -48,25 +48,17 @@ const ndcToRxNormMapTemplate: ConceptMap = {
   ],
 };
 
-async function main(): Promise<void> {
-  const [archivePath] = argv.slice(2);
-  if (!archivePath) {
-    return Promise.reject(
-      new Error(
-        "Missing argument: specify path to UMLS release archive (e.g. umls-2023AB-full.zip)\nUsage: npm run umls <archivePath> <clientID> <clientSecret> [baseUrl]"
-      )
-    );
-  }
-  let resolve: () => void, reject: (e: Error) => void;
-  const result = new Promise<void>((_resolve, _reject) => {
+async function loadArchive(archivePath: string): Promise<Record<string, RxNormToNdcMapping>> {
+  let resolve: (map: Record<string, RxNormToNdcMapping>) => void;
+  let reject: (e: Error) => void;
+  const result = new Promise<Record<string, RxNormToNdcMapping>>((_resolve, _reject) => {
     resolve = _resolve;
     reject = _reject;
   });
 
-  const client = new TerminologyClient();
-
   const rxNormCodeToStringMap: Record<string, RxNormToNdcMapping> = Object.create(null);
   let remainingParts = 2;
+
   createReadStream(archivePath)
     .pipe(unzip.Parse())
     .pipe(
@@ -102,20 +94,31 @@ async function main(): Promise<void> {
           }
         },
       })
-        .on("finish", async () => {
-          try {
-            await sendRxNormToNdcMappings(rxNormCodeToStringMap, client);
-            await createRxNormNdcCrosswalks(rxNormCodeToStringMap, client);
-            resolve();
-          } catch (error: unknown) {
-            reject(error instanceof Error ? error : new Error(String(error)));
-          }
+        .on("finish", () => {
+          resolve(rxNormCodeToStringMap);
         })
         .on("error", err => {
-          return err instanceof EOF ? resolve() : reject(err);
+          return err instanceof EOF ? resolve(rxNormCodeToStringMap) : reject(err);
         })
     );
   return result;
+}
+
+async function main(): Promise<void> {
+  const [archivePath] = argv.slice(2);
+  if (!archivePath) {
+    return Promise.reject(
+      new Error(
+        "Missing argument: specify path to UMLS release archive (e.g. umls-2023AB-full.zip)\nUsage: npm run umls <archivePath> <clientID> <clientSecret> [baseUrl]"
+      )
+    );
+  }
+
+  const client = new TerminologyClient();
+  const rxNormCodeToStringMap = await loadArchive(archivePath);
+
+  await sendRxNormToNdcMappings(rxNormCodeToStringMap, client);
+  await createRxNormNdcCrosswalks(rxNormCodeToStringMap, client);
 }
 
 async function fillMapWithRxNormAttributes(
@@ -128,8 +131,9 @@ async function fillMapWithRxNormAttributes(
   for await (const line of rl) {
     const concept = new UmlsConcept(line);
     const source = umlsSources[concept.SAB];
+    if (!source) continue;
 
-    const isNotRxNorm = !source || source.system !== rxnorm.url;
+    const isNotRxNorm = source.system !== rxnorm.url;
     const isNotEnglish = concept.LAT !== "ENG";
     const isNotPreferredTermType = !source.tty.includes(concept.TTY);
     const isSuppressed = concept.SUPPRESS !== "N";
