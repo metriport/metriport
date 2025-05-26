@@ -230,8 +230,11 @@ async function verifyPatients({
     throw new MetriportError("Exactly one of patientIds or facilityId must be provided");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { cxId };
+  const where: {
+    cxId: string;
+    id?: string[];
+    facilityIds?: { [Op.contains]: string[] };
+  } = { cxId };
 
   if (patientIds) {
     where.id = patientIds;
