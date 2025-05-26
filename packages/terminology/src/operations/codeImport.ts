@@ -78,15 +78,11 @@ export async function importCodeSystemSqlite(
       display: c.display,
     }));
     const params = rows.flatMap(row => [row.system, row.code, row.display]);
-    const query = isOverwrite
-      ? `INSERT INTO coding (system, code, display)
+    const onConflict = isOverwrite ? "DO UPDATE SET display = excluded.display" : "DO NOTHING";
+    const query = `INSERT INTO coding (system, code, display)
       VALUES ${rows.map(() => "(?, ?, ?)").join(", ")}
-      ON CONFLICT(system, code) DO UPDATE SET
-        display = excluded.display`
-      : `INSERT INTO coding (system, code, display)
-        VALUES ${rows.map(() => "(?, ?, ?)").join(", ")}
-        ON CONFLICT(system, code) DO NOTHING
-      `;
+      ON CONFLICT(system, code) ${onConflict}`;
+
     await db.run(query, params);
   }
 

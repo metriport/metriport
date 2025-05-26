@@ -2,6 +2,7 @@ import { Parameters } from "@medplum/fhirtypes";
 import { toTitleCase } from "@metriport/shared";
 import csv from "csv-parser";
 import fs from "fs";
+import _ from "lodash";
 import { argv } from "node:process";
 import { TerminologyClient } from "../client";
 import { normalizeNdcCode } from "../util";
@@ -79,14 +80,7 @@ async function main() {
   try {
     const products = await parseCsv<Product>(productsFilePath, PRODUCT_HEADERS);
     const packages = await parseCsv<Package>(packagesFilePath, PACKAGE_HEADERS);
-
-    // Group packages by PRODUCTNDC
-    const packagesByNdc: Record<string, Package[]> = packages.reduce((acc, pkg) => {
-      const ndc = pkg["PRODUCTNDC"];
-      if (!acc[ndc]) acc[ndc] = [];
-      acc[ndc].push(pkg);
-      return acc;
-    }, {} as Record<string, Package[]>);
+    const packagesByNdc = _.groupBy(packages, "PRODUCTNDC");
 
     // Merge products with their packages
     const productsWithPkg: ProductWithPackages[] = products.map(product => ({
@@ -95,38 +89,24 @@ async function main() {
     }));
 
     const drugRows: DrugRow[] = [];
-    const seenCodes = new Set<string>();
 
     let numErrors = 0;
     for (const product of productsWithPkg) {
-      const baseDisplay = buildBaseDisplay(product);
-
-      // Add the product NDC code if not seen before
-      const productCode = normalizeNdcCode(product.PRODUCTNDC, true);
-      if (!seenCodes.has(productCode)) {
-        drugRows.push({
-          code: productCode,
-          display: baseDisplay,
-        });
-        seenCodes.add(productCode);
-      }
-
-      // Add package NDC codes if not seen before
-      for (const pkg of product.packages) {
+      const addDrugRow = (code: string, display: string) => {
         try {
-          const packageCode = normalizeNdcCode(pkg.NDCPACKAGECODE);
-          if (!seenCodes.has(packageCode)) {
-            drugRows.push({
-              code: packageCode,
-              display: buildDisplay(product, pkg),
-            });
-            seenCodes.add(packageCode);
-          }
-        } catch (err) {
-          // Ignore invalid NDC codes
+          drugRows.push({ code: normalizeNdcCode(code, code === product.PRODUCTNDC), display });
+        } catch {
           numErrors++;
         }
-      }
+      };
+
+      // Add the product NDC code
+      addDrugRow(product.PRODUCTNDC, buildBaseDisplay(product));
+
+      // Add package NDC codes
+      product.packages.forEach(pkg => {
+        addDrugRow(pkg.NDCPACKAGECODE, buildDisplayWithPackage(product, pkg));
+      });
     }
 
     console.log(`Found ${drugRows.length} unique NDC codes.`);
@@ -167,7 +147,7 @@ function buildBaseDisplay(drug: ProductWithPackages): string {
   } ${drug.ACTIVE_INGRED_UNIT} ${toTitleCase(drug.ROUTENAME)} ${toTitleCase(drug.DOSAGEFORMNAME)}`;
 }
 
-function buildDisplay(drug: ProductWithPackages, pkg: Package): string {
+function buildDisplayWithPackage(drug: ProductWithPackages, pkg: Package): string {
   return `${buildBaseDisplay(drug)}, ${pkg.PACKAGEDESCRIPTION}`;
 }
 

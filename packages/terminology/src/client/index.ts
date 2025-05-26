@@ -1,9 +1,9 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-import axios from "axios";
-import { Parameters, ConceptMap, OperationOutcome } from "@medplum/fhirtypes";
+import { ConceptMap, OperationOutcome, Parameters } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/shared";
+import axios from "axios";
+import * as dotenv from "dotenv";
 import { CodeSystemLookupOutput } from "../operations/codeLookup";
+dotenv.config();
 
 export class TerminologyClient {
   private baseUrl: string;
@@ -31,15 +31,12 @@ export class TerminologyClient {
   }
 
   async importCode(parameters: Parameters, isOverwrite = false): Promise<OperationOutcome[]> {
-    const response = await axios.post(
-      `${this.baseUrl}/code-system/import?isOverwrite=${isOverwrite}`,
-      parameters,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await axios.post(`${this.baseUrl}/code-system/import`, parameters, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      params: { isOverwrite },
+    });
     return response.data;
   }
 
@@ -47,18 +44,12 @@ export class TerminologyClient {
     conceptMap: ConceptMap,
     isReversible: boolean
   ): Promise<ConceptMap[] | OperationOutcome[]> {
-    const queryParams = new URLSearchParams();
-    queryParams.set("isReversible", isReversible.toString());
-
-    const response = await axios.post(
-      `${this.baseUrl}/concept-map/import?${queryParams.toString()}`,
-      conceptMap,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await axios.post(`${this.baseUrl}/concept-map`, conceptMap, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      params: { isReversible },
+    });
     return response.data;
   }
 

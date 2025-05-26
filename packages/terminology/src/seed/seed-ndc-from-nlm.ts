@@ -36,7 +36,7 @@ type RxNormToNdcMapping = {
   tty: string;
 };
 
-const ndcToRxNormTemplateMap: ConceptMap = {
+const ndcToRxNormMapTemplate: ConceptMap = {
   resourceType: "ConceptMap",
   status: "active",
   group: [
@@ -128,17 +128,13 @@ async function fillMapWithRxNormAttributes(
   for await (const line of rl) {
     const concept = new UmlsConcept(line);
     const source = umlsSources[concept.SAB];
-    if (!source || source.system !== rxnorm.url) {
-      // Ignore non-RxNorm concepts
-      continue;
-    } else if (concept.LAT !== "ENG") {
-      // Ignore non-English
-      continue;
-    } else if (!source.tty.includes(concept.TTY)) {
-      // Use only preferred term types for the display string
-      continue;
-    } else if (concept.SUPPRESS !== "N") {
-      // Skip suppressible terms
+
+    const isNotRxNorm = !source || source.system !== rxnorm.url;
+    const isNotEnglish = concept.LAT !== "ENG";
+    const isNotPreferredTermType = !source.tty.includes(concept.TTY);
+    const isSuppressed = concept.SUPPRESS !== "N";
+
+    if (isNotRxNorm || isNotEnglish || isNotPreferredTermType || isSuppressed) {
       continue;
     }
 
@@ -230,12 +226,12 @@ async function createRxNormNdcCrosswalks(
 
     for (const ndcCode of mapping.ndcCodings) {
       const ndcToRxNormMap = {
-        ...ndcToRxNormTemplateMap,
-        ...(ndcToRxNormTemplateMap.group?.[0]
+        ...ndcToRxNormMapTemplate,
+        ...(ndcToRxNormMapTemplate.group?.[0]
           ? {
               group: [
                 {
-                  ...ndcToRxNormTemplateMap.group[0],
+                  ...ndcToRxNormMapTemplate.group[0],
                   element: [
                     {
                       code: ndcCode.code,
@@ -291,19 +287,17 @@ async function fillMapWithNdcMappings(
   for await (const line of rl) {
     const attr = new UmlsAttribute(line);
     // ATN is target system name (i.e. NDC)
-    const targetSystem = attr.ATN;
-    if (targetSystem !== "NDC") {
+    const isNdcSystem = !!(attr.ATN && attr.ATN === "NDC");
+    if (!isNdcSystem) {
       skipped++;
       continue;
     }
 
     const source = umlsSources[attr.SAB];
-    if (!source || source.system !== rxnorm.url) {
-      // Ignore non-RxNorm concepts
-      skipped++;
-      continue;
-    } else if (attr.SUPPRESS !== "N") {
-      // Skip suppressible terms
+    const isNotRxNorm = !source || source.system !== rxnorm.url;
+    const isSuppressed = attr.SUPPRESS !== "N";
+
+    if (isNotRxNorm || isSuppressed) {
       skipped++;
       continue;
     }

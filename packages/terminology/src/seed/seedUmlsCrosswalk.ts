@@ -241,17 +241,14 @@ async function processConceptMap(inStream: Readable): Promise<void> {
     const concept = new UmlsConceptMap(line);
     const config = CONCEPT_MAP_CONFIGS[concept.MAPSETCUI];
 
-    if (!config) {
-      skippedCount++;
-      continue;
-    }
+    // Conditional mappings, dependent on other mappings, are not supported
+    const isConditionalMapping = !!(concept.MAPRULE && IFA_RULE_REGEX.test(concept.MAPRULE));
 
-    if (concept.MAPRULE && IFA_RULE_REGEX.test(concept.MAPRULE)) {
-      skippedCount++;
-      continue;
-    }
+    // Only support mappings with a relationship of "RO"
+    // see https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/abbreviations.html#mrdoc_REL:~:text=RO,narrower%2C%20or%20broader
+    const isRelationshipMapping = concept.REL === "RO";
 
-    if (concept.REL != "RO") {
+    if (!config || isConditionalMapping || !isRelationshipMapping) {
       skippedCount++;
       continue;
     }
