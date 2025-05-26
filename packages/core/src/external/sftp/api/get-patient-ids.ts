@@ -7,7 +7,7 @@ import { z } from "zod";
 
 interface GetPatientIdsParams {
   cxId: string;
-  facilityId?: string;
+  facilityId?: string | undefined;
 }
 
 const getPatientIdsResponseSchema = z.object({
@@ -28,7 +28,7 @@ export async function getPatientIds(
 ) {
   const { log, debug } = out(`Surescripts getPatientIds - cxId ${cxId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
-  const queryParams = new URLSearchParams({ cxId, ...(facilityId ? { facilityId } : {}) });
+  const queryParams = new URLSearchParams({ cxId, facilityId: facilityId ?? "" });
   const getPatientUrl = `/internal/patient/ids?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {

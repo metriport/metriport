@@ -17,8 +17,11 @@ export class SurescriptsApi {
     return getCustomer({ cxId }, this.axiosInstance);
   }
 
-  async getPatientIds(cxId: string): Promise<GetPatientIdsResponse> {
-    return getPatientIds({ cxId }, this.axiosInstance);
+  async getPatientIds(
+    cxId: string,
+    facilityId?: string | undefined
+  ): Promise<GetPatientIdsResponse> {
+    return getPatientIds({ cxId, facilityId }, this.axiosInstance);
   }
 
   async getPatient(cxId: string, patientId: string): Promise<GetPatientResponse> {
