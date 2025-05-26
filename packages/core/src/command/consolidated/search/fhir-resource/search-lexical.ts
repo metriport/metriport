@@ -2,7 +2,7 @@ import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../../domain/patient";
 import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
-import { buildBundleEntry, buildSearchSetBundle } from "../../../../external/fhir/shared/bundle";
+import { buildBundle, buildBundleEntry } from "../../../../external/fhir/shared/bundle";
 import { SearchResult } from "../../../../external/opensearch/index-based-on-resource";
 import { OpenSearchLexicalSearcher } from "../../../../external/opensearch/lexical/lexical-searcher";
 import { out } from "../../../../util";
@@ -76,7 +76,7 @@ export async function searchLexical({
   const patientEntry = buildBundleEntry(patientToFhir(patient));
   sliced.push(patientEntry);
 
-  const filteredBundle = buildSearchSetBundle({ entries: sliced });
+  const filteredBundle = buildBundle({ type: "searchset", entries: sliced });
   const hydrated = addMissingReferences(filteredBundle, consolidated);
 
   log(`Done, returning ${hydrated.entry?.length} filtered resources...`);

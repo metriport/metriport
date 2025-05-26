@@ -1,10 +1,10 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
 import { mergeBundles } from "./shared/utils";
-import { MetriportError } from "@metriport/shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getHl7ConversionBucketName();
@@ -28,9 +28,9 @@ export function createPrefixAdtEncounter({
  * @param cxId Customer ID
  * @param patientId Patient ID
  * @param encounterId Encounter ID
- * @returns The file key for the latest ADT encounter
+ * @returns The file key for the ADT encounter
  */
-export function createFileKeyAdtEncounterSourceOfTruth({
+export function createFileKeyAdtSourcedEncounter({
   cxId,
   patientId,
   encounterId,
@@ -43,7 +43,7 @@ export function createFileKeyAdtEncounterSourceOfTruth({
     cxId,
     patientId,
     encounterId,
-  })}/latest.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
+  })}/encounter.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
 }
 
 /**
@@ -133,11 +133,11 @@ export async function saveAdtConversionBundle({
   log(
     `Uploading conversion result to S3 bucket: ${s3BucketName}. Filepath: ${newMessageBundleFileKey}`
   );
-  const result = (await s3Utils.uploadFile({
+  const result = await s3Utils.uploadFile({
     bucket: s3BucketName,
     key: newMessageBundleFileKey,
     file: Buffer.from(JSON.stringify(bundle)),
-  })) as AWS.S3.ManagedUpload.SendData & { VersionId: string };
+  });
 
   return result;
 }
@@ -163,7 +163,7 @@ export async function getAdtSourcedEncounter({
     `getAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
 
-  const fileKey = createFileKeyAdtEncounterSourceOfTruth({
+  const fileKey = createFileKeyAdtSourcedEncounter({
     cxId,
     patientId,
     encounterId,
@@ -185,8 +185,8 @@ export async function getAdtSourcedEncounter({
 }
 
 /**
- * If an existing encounter exists, merge the new bundle into it
- * Otherwise, set the encounter to be the new bundle
+ * If an encounter already exists for the encounterId, merge the new bundle into it
+ * Otherwise, set the encounter to the new bundle.
  *
  * @param cxId Customer ID
  * @param patientId Patient ID
@@ -248,7 +248,7 @@ export async function putAdtSourcedEncounter({
     `putAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
 
-  const fileKey = createFileKeyAdtEncounterSourceOfTruth({
+  const fileKey = createFileKeyAdtSourcedEncounter({
     cxId,
     patientId,
     encounterId,
