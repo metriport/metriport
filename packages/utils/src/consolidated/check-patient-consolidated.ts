@@ -57,6 +57,7 @@ async function main() {
     checkBundle(bundle, cxId, patientId);
   } catch (error) {
     log(`>>> Error: ${error}`);
+    process.exit(1);
   }
 
   const ellapsed = Date.now() - startedAt;
