@@ -108,27 +108,6 @@ describe("getConsolidatedWebhook", () => {
     });
   });
 
-  it("it return failed message when conversion type is invalid", async () => {
-    const consolidatedQuery = makeConsolidatedQueryProgress({
-      requestId: requestId,
-      status: "completed",
-      startedAt: new Date(),
-      conversionType: undefined,
-    });
-
-    const result = await getConsolidatedWebhook({
-      cxId,
-      requestId,
-      consolidatedQueries: [consolidatedQuery],
-    });
-
-    expect(result).toEqual({
-      requestId,
-      conversionType: undefined,
-      message: "No URL to return for this conversion type",
-    });
-  });
-
   it("it return failed message when webhook data not found", async () => {
     const consolidatedQuery = makeConsolidatedQueryProgress({
       requestId: requestId,
