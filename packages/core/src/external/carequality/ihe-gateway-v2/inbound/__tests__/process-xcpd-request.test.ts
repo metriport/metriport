@@ -16,10 +16,11 @@ describe("Process Inbound Xcpd Request", () => {
   beforeEach(() => {
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
       return Promise.resolve({
-        Location: "http://example.com/mockurl",
-        ETag: '"mockedetag"',
-        Bucket: "mockedbucket",
-        Key: "mockedkey",
+        location: "http://example.com/mockurl",
+        eTag: '"mockedetag"',
+        bucket: "mockedbucket",
+        key: "mockedkey",
+        versionId: "mockVersionId",
       });
     });
   });
@@ -63,10 +64,11 @@ describe("Process Inbound Xcpd Response", () => {
   beforeEach(() => {
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
       return Promise.resolve({
-        Location: "http://example.com/mockurl",
-        ETag: '"mockedetag"',
-        Bucket: "mockedbucket",
-        Key: "mockedkey",
+        location: "http://example.com/mockurl",
+        eTag: '"mockedetag"',
+        bucket: "mockedbucket",
+        key: "mockedkey",
+        versionId: "mockVersionId",
       });
     });
   });

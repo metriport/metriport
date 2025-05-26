@@ -66,7 +66,7 @@ export type GetSignedUrlWithLocation = {
 
 export type UploadFileResult = {
   location: string;
-  etag: string;
+  eTag: string;
   bucket: string;
   key: string;
   versionId: string | undefined;
@@ -490,7 +490,7 @@ export class S3Utils {
 
       return {
         location: resp.Location,
-        etag: resp.ETag,
+        eTag: resp.ETag,
         bucket: resp.Bucket,
         key: resp.Key,
         versionId: resp.VersionId,
