@@ -1,4 +1,5 @@
 import { Resource } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { timed } from "@metriport/shared/util/duration";
@@ -66,7 +67,12 @@ export async function searchLexicalFhir({
   const resourcesMutable = fhirResourcesResults.flatMap(r => {
     const resourceAsString = r[rawContentFieldName];
     if (!resourceAsString) return [];
-    return JSON.parse(resourceAsString) as Resource;
+    try {
+      return JSON.parse(resourceAsString) as Resource;
+    } catch (error) {
+      log(`Error parsing resource ${resourceAsString}: ${errorToString(error)}`);
+      return [];
+    }
   });
   resourcesMutable.push(...docRefResults);
   log(
