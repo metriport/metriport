@@ -27,6 +27,7 @@ const apiMode = APIMode.production;
 
 const BATCH_SIZE = 5_000;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
+const AMOUNT_ENTRIES_PER_STRINGIFY = 1_000;
 
 const dirName = "cq-directory";
 const getFolderName = buildGetDirPathInside(dirName);
@@ -77,7 +78,7 @@ async function main() {
   const orgs = await downloadCQDirectory(apiKey, apiMode);
   console.log(`Downloaded ${orgs.length} organizations, storing them on file ${outputFilename}`);
 
-  const chunks = chunk(orgs, 1_000);
+  const chunks = chunk(orgs, AMOUNT_ENTRIES_PER_STRINGIFY);
   let idx = 0;
   fs.appendFileSync(outputFilename, "{");
   for (const chunk of chunks) {
