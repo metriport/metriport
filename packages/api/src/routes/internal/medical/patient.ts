@@ -669,8 +669,8 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
- *        Accepts "pdf" or "html". Defaults to no conversion.
+ * @param req.query.conversionType Required to indicate how the medical record should be rendered.
+ *        Accepts "pdf", "html", or "json".
  * @return Patient's consolidated data.
  */
 router.get(
@@ -683,10 +683,8 @@ router.get(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const typeRaw = getFrom("query").optional("conversionType", req);
-    const conversionType = typeRaw
-      ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
-      : undefined;
+    const typeRaw = getFrom("query").orFail("conversionType", req);
+    const conversionType = consolidationConversionTypeSchema.parse(typeRaw.toLowerCase());
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const data = await getConsolidated({

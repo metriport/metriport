@@ -266,6 +266,9 @@ type EnvConfigBase = {
         EHR_HEALTHIE_API_KEY_MAP: string;
       };
     };
+    eclinicalworks: {
+      env: string;
+    };
   };
   surescripts?: {
     surescriptsSenderId: string;

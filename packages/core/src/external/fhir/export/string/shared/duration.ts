@@ -1,6 +1,5 @@
 import { Duration } from "@medplum/fhirtypes";
 import { defaultIsDebug } from "./debug";
-import { FIELD_SEPARATOR } from "./separator";
 
 /**
  * Formats a FHIR Duration object into a string representation
@@ -15,11 +14,12 @@ export function formatDuration({
   isDebug?: boolean | undefined;
 }): string | undefined {
   if (!duration) return undefined;
+  const { value, unit, code } = duration;
   const parts: string[] = [];
-  if (duration.value !== undefined) parts.push(duration.value.toString());
-  if (duration.unit) parts.push(duration.unit);
-  if (duration.code) parts.push(`(${duration.code})`);
+  if (value != undefined) parts.push(value.toString());
+  if (unit) parts.push(unit);
+  if (code) parts.push(`(${code})`);
   if (parts.length < 1) return undefined;
-  const formattedDuration = parts.join(FIELD_SEPARATOR);
+  const formattedDuration = parts.join(" ");
   return isDebug && label ? `${label}: ${formattedDuration}` : formattedDuration;
 }

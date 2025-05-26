@@ -121,7 +121,7 @@ export async function getConsolidatedPatientDataAsync({
   fromDashboard,
 }: GetConsolidatedPatientData & {
   requestId: string;
-  conversionType?: ConsolidationConversionType;
+  conversionType: ConsolidationConversionType;
 }): Promise<void> {
   const payload: ConsolidatedSnapshotRequestAsync = {
     patient,
@@ -139,6 +139,14 @@ export async function getConsolidatedPatientDataAsync({
     .catch(processAsyncError("Failed to get consolidated patient data async", undefined, true));
 }
 
+/**
+ * Get consolidated patient data as a list of FHIR resources in string/text format.
+ *
+ * The output is focused on searching, not a complete representation of the FHIR resources.
+ *
+ * @param patient The patient to get the consolidated data for.
+ * @returns The consolidated data as text.
+ */
 export async function getConsolidatedAsText({
   patient,
 }: {

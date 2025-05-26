@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { out } from "../../util/log";
+import { FhirResourceToText } from "../fhir/export/string/bundle-to-string";
 import { OpenSearchConfigDirectAccess } from "./index";
 import { IndexFields } from "./index-based-on-resource";
 import {
@@ -228,4 +229,14 @@ function resourceToBulkRequest({
   };
   const cmd = { [operation]: { _id: entryId } };
   return [cmd, document];
+}
+
+export function convertFhirResourceToTextToIngestRequestResource(
+  resource: FhirResourceToText
+): IngestRequestResource {
+  return {
+    resourceType: resource.type,
+    resourceId: resource.id,
+    content: resource.text,
+  };
 }

@@ -16,6 +16,12 @@ import { searchDocuments } from "../document-reference/search";
 /**
  * Performs a lexical search on a patient's consolidated resources in OpenSearch
  * and returns the resources from consolidated that match the search results.
+ *
+ * @param patient The patient to search.
+ * @param query The query to search for.
+ * @param maxNumberOfResults The maximum number of results to return. From 0 to 10_000.
+ *                           Optional, defaults to 10_000.
+ * @returns The search results.
  */
 export async function searchLexical({
   patient,
@@ -29,28 +35,22 @@ export async function searchLexical({
   log(`Getting consolidated and searching OS...`);
   const startedAt = new Date();
 
+  const getConsolidatedPromise = () => getConsolidatedPatientData({ patient });
+
+  const searchOpenSearchLexicalPromise = () =>
+    searchOpenSearchLexical({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      query,
+    });
+
+  const searchDocumentsPromise = () =>
+    searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query });
+
   const [consolidated, searchResults, docRefResults] = await Promise.all([
-    timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
-    timed(
-      () =>
-        searchOpenSearchLexical({
-          cxId: patient.cxId,
-          patientId: patient.id,
-          query,
-        }),
-      "searchOpenSearchLexical",
-      log
-    ),
-    timed(
-      () =>
-        searchDocuments({
-          cxId: patient.cxId,
-          patientId: patient.id,
-          contentFilter: query,
-        }),
-      "searchDocuments",
-      log
-    ),
+    timed(getConsolidatedPromise, "getConsolidatedPatientData", log),
+    timed(searchOpenSearchLexicalPromise, "searchOpenSearchLexical", log),
+    timed(searchDocumentsPromise, "searchDocuments", log),
   ]);
   log(
     `Done, got ${searchResults.length} search results and ${consolidated.entry?.length} consolidated resources ` +

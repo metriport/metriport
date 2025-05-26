@@ -40,9 +40,10 @@ const router = Router();
  * @param req.query.patientIds The patient IDs.
  * @param req.query.minAgeInMinutes The minimum age in minutes for the queries to be processed (optional,
  *        defaults to 60 minutes).
+ * @param req.query.skipWebhooks Whether to skip sending webhook to the customer.
  * @param req.query.dryRun Whether to simply return what would be done or actually execute the changes
  *        and commands.
- * @return The list of consolidated queries that where be executed (or would be executed, if dryRun is true).
+ * @return The list of consolidated queries that were executed (or would be executed, if dryRun is true).
  */
 router.post(
   "/query",

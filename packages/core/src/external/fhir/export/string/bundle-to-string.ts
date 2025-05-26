@@ -121,7 +121,7 @@ export type FhirResourceToText = {
 
 /**
  * Converts a FHIR Bundle to a list of string representations of its resources.
- *
+ * Focused on searching, so not a complete representation of the FHIR resources.
  * Skips unsupported resources - @see isSupportedResource
  *
  * @param bundle - FHIR Bundle to convert

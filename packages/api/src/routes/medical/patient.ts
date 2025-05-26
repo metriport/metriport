@@ -274,12 +274,12 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.conversionType Required to indicate the file format you get the document back in.
+ *        Accepts "pdf", "html", and "json". The Webhook payload will contain a signed URL to download
+ *        the file, which is active for 3 minutes.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.conversionType Optional to indicate the file format you get the document back in.
- *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
- *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
  * @return status for querying the Patient's consolidated data.
@@ -293,10 +293,10 @@ router.post(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const type = getFrom("query").optional("conversionType", req);
+    const type = getFrom("query").orFail("conversionType", req);
     const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
 
-    const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
+    const conversionType = consolidationConversionTypeSchema.parse(type);
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const respPayload = await startConsolidatedQuery({

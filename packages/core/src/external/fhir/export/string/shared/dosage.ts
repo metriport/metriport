@@ -3,7 +3,9 @@ import { formatCodeableConcept } from "./codeable-concept";
 import { defaultIsDebug } from "./debug";
 import { formatQuantity } from "./quantity";
 import { formatRange } from "./range";
+import { formatRatio } from "./ratio";
 import { FIELD_SEPARATOR } from "./separator";
+import { formatTiming } from "./timing";
 
 export function formatDosages({
   dosages,
@@ -15,7 +17,7 @@ export function formatDosages({
   isDebug?: boolean | undefined;
 }): string | undefined {
   if (!dosages?.length) return undefined;
-  const dosagesStr = dosages.map(dosage => formatDosage({ dosage })).filter(Boolean);
+  const dosagesStr = dosages.map(dosage => formatDosage({ dosage, isDebug })).filter(Boolean);
   if (dosagesStr.length < 1) return undefined;
   const formattedDosages = dosagesStr.join(FIELD_SEPARATOR);
   return isDebug && label ? `${label}: ${formattedDosages}` : formattedDosages;
@@ -37,7 +39,7 @@ export function formatDosage({
     .filter(Boolean);
   const components = [
     text && isDebug ? `Text: ${text}` : text,
-    formatCodeableConcept({ concept: timing, label: "Timing", isDebug }),
+    formatTiming({ timing, label: "Timing", isDebug }),
     formatCodeableConcept({ concept: route, label: "Route", isDebug }),
     formatCodeableConcept({ concept: method, label: "Method", isDebug }),
     doseAndRateStr && doseAndRateStr.join(FIELD_SEPARATOR),
@@ -60,7 +62,7 @@ export function formatDosageDoseAndRate({
     formatCodeableConcept({ concept: type, label: "Type", isDebug }),
     formatRange({ range: doseRange, label: "Dose Range", isDebug }),
     formatQuantity({ quantity: doseQuantity, label: "Dose", isDebug }),
-    formatRange({ range: rateRatio, label: "Rate Ratio", isDebug }),
+    formatRatio({ ratio: rateRatio, label: "Rate Ratio", isDebug }),
     formatRange({ range: rateRange, label: "Rate Range", isDebug }),
     formatQuantity({ quantity: rateQuantity, label: "Rate", isDebug }),
   ].filter(Boolean);

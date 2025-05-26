@@ -4,7 +4,10 @@ import {
   OpenSearchLexicalSearcherConfig,
 } from "../../../../external/opensearch/lexical/lexical-searcher";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
-import { OpenSearchTextIngestor } from "../../../../external/opensearch/text-ingestor";
+import {
+  convertFhirResourceToTextToIngestRequestResource,
+  OpenSearchTextIngestor,
+} from "../../../../external/opensearch/text-ingestor";
 import { capture, out } from "../../../../util";
 import { Config } from "../../../../util/config";
 import { getConsolidatedAsText } from "../../consolidated-get";
@@ -13,6 +16,7 @@ import { getConsolidatedAsText } from "../../consolidated-get";
  * Ingest a patient's consolidated resources into OpenSearch for lexical search.
  *
  * @param patient The patient to ingest.
+ * @param onItemError A callback to handle errors when ingesting a resource.
  */
 export async function ingestLexical({
   patient,
@@ -34,11 +38,7 @@ export async function ingestLexical({
   ]);
 
   const startedAt = Date.now();
-  const resources = convertedResources.map(resource => ({
-    resourceType: resource.type,
-    resourceId: resource.id,
-    content: resource.text,
-  }));
+  const resources = convertedResources.map(convertFhirResourceToTextToIngestRequestResource);
   const errors = await ingestor.ingestBulk({
     cxId: patient.cxId,
     patientId: patient.id,
