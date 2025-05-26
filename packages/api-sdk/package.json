@@ -58,8 +58,8 @@
   },
   "dependencies": {
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/commonwell-sdk": "^5.9.3-alpha.0",
-    "@metriport/shared": "^0.23.5-alpha.0",
+    "@metriport/commonwell-sdk": "^5.9.3",
+    "@metriport/shared": "^0.23.5",
     "axios": "^1.8.2",
     "dayjs": "^1.11.7",
     "dotenv": "^16.3.1",
@@ -77,5 +77,6 @@
     "ts-essentials": "^9.3.1",
     "ts-jest": "29.1.1",
     "typescript": "^4.9.5"
-  }
+  },
+  "gitHead": "98570bd9fa0651ba364d76092c52f9618f94a80b"
 }
