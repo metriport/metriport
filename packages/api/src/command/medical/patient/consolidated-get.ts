@@ -5,13 +5,13 @@ import {
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
-import {
-  getConsolidatedPatientData,
-  getConsolidatedPatientDataAsync,
-} from "@metriport/core/command/consolidated/consolidated-get";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import {
+  getConsolidatedPatientDataAsync,
+  getConsolidatedPatientData,
+} from "@metriport/core/command/consolidated/consolidated-get";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
@@ -259,7 +259,7 @@ export async function getConsolidated({
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
-    const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
+    const shouldCreateMedicalRecord = conversionType != "json" && hasResources;
 
     const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
     const sendAnalytics = (

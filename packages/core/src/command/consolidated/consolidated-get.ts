@@ -121,7 +121,7 @@ export async function getConsolidatedPatientDataAsync({
   fromDashboard,
 }: GetConsolidatedPatientData & {
   requestId: string;
-  conversionType?: ConsolidationConversionType;
+  conversionType: ConsolidationConversionType;
 }): Promise<void> {
   const payload: ConsolidatedSnapshotRequestAsync = {
     patient,
