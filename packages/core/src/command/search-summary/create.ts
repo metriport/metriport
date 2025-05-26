@@ -2,12 +2,13 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { errorToString } from "@metriport/shared";
+import { MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
 import { createPromptWithJsonOutput } from "./prompts";
-import { prepareBundleForAiSummarization } from "./filter";
+import { prepareBundleForAiSummarization } from "../ai-brief/filter";
 
 const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
 const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
@@ -26,9 +27,15 @@ type SearchSummaryOutput = {
   }[];
 };
 
-//--------------------------------
-// AI-based search summary generation
-//--------------------------------
+/**
+ * TODO: [ENG-331] This function is currently not being used in production.
+ * AI-based search summary generation that processes a FHIR bundle and generates a summary
+ * with citations based on the provided question.
+ *
+ * @param question - The search question to generate a summary for
+ * @param bundle - The FHIR bundle containing resources to analyze
+ * @returns SearchSummaryOutput
+ */
 export async function generateSearchSummary(
   question: string,
   bundle: Bundle<Resource>
@@ -79,10 +86,10 @@ export async function generateSearchSummary(
     if (!result.text) return undefined;
 
     // Parse the LLM output to extract the summary and citations
-    const outputWithCitations = parseSummaryWithCitations(result.text);
+    const outputWithCitations = parseSummaryWithCitations(result.text, log);
     return outputWithCitations;
   } catch (err) {
-    const msg = `AI brief generation failure`;
+    const msg = `Search summary generation failure`;
     log(`${msg} - ${errorToString(err)}`);
     throw err;
   }
@@ -92,7 +99,10 @@ export async function generateSearchSummary(
  * Parse LLM response to extract citations
  * This parses a summary with citation markers in [DOC X] format
  */
-async function parseSummaryWithCitations(llmResponse: string): Promise<SearchSummaryOutput> {
+async function parseSummaryWithCitations(
+  llmResponse: string,
+  log = console.log
+): Promise<SearchSummaryOutput> {
   try {
     // Parse JSON response
     const parsedResponse = JSON.parse(llmResponse);
@@ -108,8 +118,8 @@ async function parseSummaryWithCitations(llmResponse: string): Promise<SearchSum
       relevantResources: parsedResponse.relevantResources,
     };
   } catch (error) {
-    console.error("Error parsing LLM response:", error);
-    throw new Error("Failed to process summary");
+    log(`Error parsing LLM response: ${errorToString(error)}`);
+    throw new MetriportError("Failed to process summary", error);
   }
 }
 
