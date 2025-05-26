@@ -166,3 +166,15 @@ export function createFileKeyHl7Message({
 export function formatDateToHl7(date: Date): string {
   return buildDayjs(date).format("YYYYMMDDHHmmss");
 }
+
+export function hl7ToIso8601(hl7DateString: string): string {
+  // Parse YYYYMMDDHHMMSS format
+  const year = hl7DateString.substring(0, 4);
+  const month = hl7DateString.substring(4, 6);
+  const day = hl7DateString.substring(6, 8);
+  const hour = hl7DateString.substring(8, 10);
+  const minute = hl7DateString.substring(10, 12);
+  const second = hl7DateString.substring(12, 14);
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+}
