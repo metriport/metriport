@@ -54,14 +54,3 @@ export function processErrorsFromBulkResponse(
   });
   return errorCount;
 }
-
-export function bulkResponseErrorToString(
-  singleItem: RawBulkResponseErrorItem,
-  operation: BulkOperation
-): string | undefined {
-  const itemOp = singleItem[operation];
-  if (!itemOp) return undefined;
-  const errorAsAny = itemOp.error?.reason;
-  if (!errorAsAny) return undefined;
-  return typeof errorAsAny === "string" ? errorAsAny : JSON.stringify(errorAsAny);
-}

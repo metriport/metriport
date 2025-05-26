@@ -16,7 +16,6 @@ import {
 } from "./shared/bulk";
 import { createDeleteQuery } from "./shared/delete";
 import { getEntryId } from "./shared/id";
-import { getLog, OpenSearchLogLevel } from "./shared/log";
 
 dayjs.extend(duration);
 
@@ -49,13 +48,7 @@ export type IngestBulkRequest = {
 
 export type DeleteRequest = Pick<FhirIndexFields, "cxId" | "patientId">;
 
-export type OpenSearchFhirIngestorSettings = {
-  logLevel?: OpenSearchLogLevel;
-};
-
-export type OpenSearchFhirIngestorConfig = OpenSearchConfigDirectAccess & {
-  settings?: OpenSearchFhirIngestorSettings;
-};
+export type OpenSearchFhirIngestorConfig = OpenSearchConfigDirectAccess;
 
 /**
  * Ingests text documents/entries in OpenSearch.
@@ -65,16 +58,12 @@ export class OpenSearchFhirIngestor {
   private readonly username: string;
   private readonly password: string;
   private readonly indexName: string;
-  private readonly settings: OpenSearchFhirIngestorSettings;
 
   constructor(config: OpenSearchFhirIngestorConfig) {
     this.endpoint = config.endpoint;
     this.username = config.username;
     this.password = config.password;
     this.indexName = config.indexName;
-    this.settings = {
-      logLevel: config.settings?.logLevel ?? "none",
-    };
   }
 
   /**
@@ -93,8 +82,7 @@ export class OpenSearchFhirIngestor {
     resources,
     onItemError,
   }: IngestBulkRequest): Promise<Map<string, number>> {
-    const defaultLogger = out(`${this.constructor.name}.ingestBulk - cx ${cxId}, pt ${patientId}`);
-    const { log } = getLog(defaultLogger, this.settings.logLevel);
+    const { log } = out(`${this.constructor.name}.ingestBulk - cx ${cxId}, pt ${patientId}`);
 
     const errors: Map<string, number> = new Map();
     if (resources.length < 1) {
@@ -150,10 +138,9 @@ export class OpenSearchFhirIngestor {
     client: Client;
     mutatingMissingResourceIdsByType: Record<string, string[]>;
   }): Promise<number> {
-    const defaultLogger = out(
+    const { debug } = out(
       `${this.constructor.name}.ingestBulkInternal - cx ${cxId}, pt ${patientId}`
     );
-    const { debug } = getLog(defaultLogger, this.settings.logLevel);
 
     const operation = "index";
 
@@ -195,8 +182,7 @@ export class OpenSearchFhirIngestor {
   }
 
   async delete({ cxId, patientId }: DeleteRequest): Promise<void> {
-    const defaultLogger = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
-    const { log, debug } = getLog(defaultLogger, this.settings.logLevel);
+    const { log, debug } = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
 
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };

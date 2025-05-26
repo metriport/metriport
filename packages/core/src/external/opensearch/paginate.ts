@@ -1,5 +1,4 @@
 import { Client } from "@opensearch-project/opensearch";
-import { out } from "../../util";
 import { OpenSearchRequestBody, OpenSearchResponse, OpenSearchResponseHit } from "./index";
 
 /**
@@ -72,7 +71,6 @@ async function searchPage<T>({
   searchAfter?: string | undefined;
   mapResults: (page: OpenSearchResponseHit<T>[]) => T[];
 }): Promise<T[]> {
-  const { debug } = out(`searchPage`);
   const paginatedRequest = {
     ...searchRequest,
     size: pageSize,
@@ -81,7 +79,6 @@ async function searchPage<T>({
   };
   const response = await client.search({ index: indexName, body: paginatedRequest });
   const body = response.body as OpenSearchResponse<T>;
-  debug(`Response: `, () => JSON.stringify(response));
   if (!body.hits.hits) return [];
   return mapResults(body.hits.hits);
 }

@@ -1,6 +1,6 @@
 import { contentFieldName, OpenSearchRequestBody } from "../index";
 import { cleanupQuery } from "../query";
-import { getPatientFilters } from "../shared/filters";
+import { getGeneralParams, getPatientFilters } from "../shared/query";
 
 export type LexicalSearchParams = {
   query: string;
@@ -18,12 +18,7 @@ export function createLexicalSearchQuery({
 }: LexicalSearchParams): OpenSearchRequestBody {
   const isMatchQuery = query.startsWith("$");
   const actualQuery = cleanupQuery(query);
-  const generalParams = {
-    _source: {
-      // removes these from the response
-      exclude: ["content_embedding", contentFieldName],
-    },
-  };
+  const generalParams = getGeneralParams();
   if (isMatchQuery) {
     return {
       ...generalParams,

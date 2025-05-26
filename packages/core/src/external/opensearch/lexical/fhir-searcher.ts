@@ -9,6 +9,7 @@ import {
 import { FhirSearchResult, indexDefinition } from "../index-based-on-fhir";
 import { paginatedSearch } from "../paginate";
 import { getEntryId } from "../shared/id";
+import { createSearchByIdsQuery } from "../shared/query";
 import { createLexicalSearchQuery } from "./lexical-search";
 
 export type OpenSearchFhirSearcherConfig = OpenSearchConfigDirectAccess;
@@ -47,13 +48,14 @@ export class OpenSearchFhirSearcher {
       indexName,
       searchRequest,
       mapResults,
-      pageSize: 20,
     });
 
     log(`Successfully searched, got ${response.count} results`);
     return response.items;
   }
 
+  // TODO eng-268 Make this a list of IDs so we can return many at the same time
+  // See https://docs.opensearch.org/docs/latest/query-dsl/term/ids/
   async getById(id: string): Promise<FhirSearchResult | undefined>;
   async getById({
     cxId,
@@ -61,9 +63,7 @@ export class OpenSearchFhirSearcher {
     resourceId,
   }: GetByIdRequest): Promise<FhirSearchResult | undefined>;
   async getById(params: string | GetByIdRequest): Promise<FhirSearchResult | undefined> {
-    const { log, debug } = out(
-      `${this.constructor.name}.getById - params ${JSON.stringify(params)}`
-    );
+    const { log } = out(`${this.constructor.name}.getById - params ${JSON.stringify(params)}`);
 
     const entryId =
       typeof params === "string"
@@ -74,7 +74,6 @@ export class OpenSearchFhirSearcher {
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
-    log(`Getting by id ${entryId} on index ${indexName}...`);
     try {
       const response = (
         await client.get({
@@ -82,7 +81,6 @@ export class OpenSearchFhirSearcher {
           id: entryId,
         })
       ).body as OpenSearchResponseGet<FhirSearchResult>;
-      debug(`Response: `, () => JSON.stringify(response));
 
       if (!response.found) return undefined;
       return response._source;
@@ -90,6 +88,38 @@ export class OpenSearchFhirSearcher {
       log(`Error getting by id ${entryId} on index ${indexName}: ${errorToString(error)}`);
       return undefined;
     }
+  }
+
+  async getByIds({
+    cxId,
+    patientId,
+    ids,
+  }: {
+    cxId: string;
+    patientId: string;
+    ids: string[];
+  }): Promise<FhirSearchResult[]> {
+    const { log } = out(`${this.constructor.name}.getByIds - ids: ${ids.length}`);
+
+    const { indexName, endpoint, username, password } = this.config;
+    const auth = { username, password };
+    const client = new Client({ node: endpoint, auth });
+
+    log(`Searching on index ${indexName}...`);
+    const searchRequest = createSearchByIdsQuery({
+      cxId,
+      patientId,
+      ids,
+    });
+
+    const response = await paginatedSearch<FhirSearchResult>({
+      client,
+      indexName,
+      searchRequest,
+      mapResults,
+    });
+
+    return response.items;
   }
 
   async createIndexIfNotExists(): Promise<void> {

@@ -15,16 +15,19 @@ import {
 } from "../../../../external/opensearch/index-based-on-fhir";
 import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
 import { getEntryId } from "../../../../external/opensearch/shared/id";
-import { executeAsynchronously, out } from "../../../../util";
+import { out } from "../../../../util";
 import { searchDocuments } from "../document-reference/search";
 import { getConfigs } from "./fhir-config";
 
-const numberOfParallelHydrationQueries = 10;
 const maxHydrationAttempts = 5;
 
 /**
  * Performs a lexical search on a patient's consolidated resources in OpenSearch
  * and returns the resources from consolidated that match the search results.
+ *
+ * @param patient The patient to search.
+ * @param query The query to search for.
+ * @returns The search results.
  */
 export async function searchLexicalFhir({
   patient,
@@ -38,30 +41,23 @@ export async function searchLexicalFhir({
   log(`Getting consolidated and searching OS...`);
   const startedAt = new Date();
 
+  const searchFhirResourcesPromise = () =>
+    searchFhirResources({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      query,
+    });
+
+  const searchDocumentsPromise = () =>
+    searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query });
+
   const [fhirResourcesResults, docRefResults] = await Promise.all([
-    timed(
-      () =>
-        searchFhirResources({
-          cxId: patient.cxId,
-          patientId: patient.id,
-          query,
-        }),
-      "searchFhirResources",
-      log
-    ),
-    timed(
-      () =>
-        searchDocuments({
-          cxId: patient.cxId,
-          patientId: patient.id,
-          contentFilter: query,
-        }),
-      "searchDocuments",
-      log
-    ),
+    timed(searchFhirResourcesPromise, "searchFhirResources", log),
+    timed(searchDocumentsPromise, "searchDocuments", log),
   ]);
+
   log(
-    `Got ${fhirResourcesResults.length} Resources and ${
+    `Got ${fhirResourcesResults.length} resources and ${
       docRefResults.length
     } DocRefs in ${elapsedTimeFromNow(startedAt)} ms, hydrating search results...`
   );
@@ -85,9 +81,7 @@ export async function searchLexicalFhir({
     patientId: patient.id,
     resources: resourcesMutable,
   });
-  log(
-    `Hydrated to ${hydratedMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)}} ms.`
-  );
+  log(`Hydrated to ${hydratedMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
 
   const patientResource = patientToFhir(patient);
   hydratedMutable.push(patientResource);
@@ -135,17 +129,23 @@ async function hydrateMissingReferences({
   const { missingReferences } = getReferencesFromResources({ resources });
   if (missingReferences.length < 1 || iteration >= maxHydrationAttempts) return resources;
 
-  const resourcesToAdd: Resource[] = [];
-  await executeAsynchronously(
-    missingReferences,
-    async reference => {
-      const referenceId = reference.id;
-      if (referenceId === patientId) return;
-      const hydratedResource = await getResource(cxId, patientId, referenceId);
-      if (hydratedResource) resourcesToAdd.push(hydratedResource);
-    },
-    { numberOfParallelExecutions: numberOfParallelHydrationQueries }
-  );
+  const missingRefIds = missingReferences.flatMap(r => {
+    const referenceId = r.id;
+    if (!referenceId || referenceId === patientId) return [];
+    return getEntryId(cxId, patientId, referenceId);
+  });
+
+  const searchService = new OpenSearchFhirSearcher(getConfigs());
+  const openSearchResults = await searchService.getByIds({
+    cxId,
+    patientId,
+    ids: missingRefIds,
+  });
+  if (!openSearchResults || openSearchResults.length < 1) return resources;
+  const resourcesToAdd = openSearchResults.map(r => {
+    const resource = JSON.parse(r[rawContentFieldName]) as Resource;
+    return resource;
+  });
 
   const hydratedResourcesToAdd = await hydrateMissingReferences({
     cxId,
@@ -156,17 +156,4 @@ async function hydrateMissingReferences({
 
   const result = [...resources, ...hydratedResourcesToAdd];
   return result;
-}
-
-async function getResource(
-  cxId: string,
-  patientId: string,
-  referenceId: string
-): Promise<Resource | undefined> {
-  const entryId = getEntryId(cxId, patientId, referenceId);
-  const searchService = new OpenSearchFhirSearcher(getConfigs());
-  const hydratedResource = await searchService.getById(entryId);
-  if (!hydratedResource) return undefined;
-  const resource = JSON.parse(hydratedResource[rawContentFieldName]) as Resource;
-  return resource;
 }
