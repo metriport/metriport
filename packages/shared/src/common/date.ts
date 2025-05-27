@@ -2,6 +2,7 @@ import dayjs, { ConfigType } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { CustomErrorParams, z } from "zod";
 import { BadRequestError } from "../error/bad-request";
+import { MetriportError } from "../error/metriport-error";
 
 dayjs.extend(utc);
 
@@ -107,4 +108,62 @@ export function sortDate(
   return sortingOrder === "desc"
     ? buildDayjs(date1).diff(buildDayjs(date2))
     : buildDayjs(date2).diff(buildDayjs(date1));
+}
+
+export function isValidHl7Timestamp(input: string): boolean {
+  if (!input || input.length !== 14) {
+    throw new MetriportError("Invalid HL7 date string format: expected YYYYMMDDHHMMSS");
+  }
+
+  if (!/^\d{14}$/.test(input)) {
+    throw new MetriportError("Invalid HL7 date string: must contain only digits");
+  }
+
+  // Parse YYYYMMDDHHMMSS format
+  // const year = input.substring(0, 4);
+  const month = input.substring(4, 6);
+  const day = input.substring(6, 8);
+  const hour = input.substring(8, 10);
+  const minute = input.substring(10, 12);
+  const second = input.substring(12, 14);
+
+  // Validate date components
+  const monthNum = parseInt(month);
+  const dayNum = parseInt(day);
+  const hourNum = parseInt(hour);
+  const minuteNum = parseInt(minute);
+  const secondNum = parseInt(second);
+
+  if (monthNum < 1 || monthNum > 12) {
+    throw new MetriportError("Invalid month in HL7 date string");
+  }
+  if (dayNum < 1 || dayNum > 31) {
+    throw new MetriportError("Invalid day in HL7 date string");
+  }
+  if (hourNum > 23 || minuteNum > 59 || secondNum > 59) {
+    throw new MetriportError("Invalid time in HL7 date string");
+  }
+
+  return true;
+}
+
+/**
+ * Converts an HL7 timestamp to an ISO 8601 formatted date string.
+ *
+ * @param hl7DateString The HL7 timestamp to convert
+ * @returns ISO 8601 formatted date string
+ */
+export function hl7ToIso8601(hl7DateString: string): string {
+  if (!isValidHl7Timestamp(hl7DateString)) {
+    throw new MetriportError("Invalid HL7 timestamp");
+  }
+
+  const year = hl7DateString.substring(0, 4);
+  const month = hl7DateString.substring(4, 6);
+  const day = hl7DateString.substring(6, 8);
+  const hour = hl7DateString.substring(8, 10);
+  const minute = hl7DateString.substring(10, 12);
+  const second = hl7DateString.substring(12, 14);
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
 }

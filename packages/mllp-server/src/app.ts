@@ -12,8 +12,8 @@ import {
 import {
   createFileKeyHl7Message,
   getCxIdAndPatientIdOrFail,
-  hl7ToIso8601,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { hl7ToIso8601 } from "@metriport/shared/common/date";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "@metriport/core/util";
