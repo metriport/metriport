@@ -490,7 +490,7 @@ export class EhrNestedStack extends NestedStack {
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
