@@ -2,7 +2,7 @@ import { SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../../domain/patient";
 import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
-import { buildBundle, buildBundleEntry } from "../../../../external/fhir/shared/bundle";
+import { buildBundleEntry, buildSearchSetBundle } from "../../../../external/fhir/shared/bundle";
 import { SearchResult } from "../../../../external/opensearch/index-based-on-resource";
 import { OpenSearchSemanticSearcher } from "../../../../external/opensearch/semantic/semantic-searcher";
 import { out } from "../../../../util";
@@ -72,7 +72,7 @@ export async function searchSemantic({
 
   log(`Done, returning ${sliced.length} filtered resources...`);
 
-  const bundle = buildBundle({ type: "searchset", entries: sliced });
+  const bundle = buildSearchSetBundle(sliced);
   return bundle;
 }
 

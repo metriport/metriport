@@ -7,7 +7,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
 import { fullDateQueryForResource, getPatientFilter } from "../patient/resource-filter";
-import { buildBundle, getReferencesFromResources } from "../shared/bundle";
+import { buildSearchSetBundle, getReferencesFromResources } from "../shared/bundle";
 import { findDocIdExtension } from "../shared/extensions/doc-id-extension";
 import { getReferencesFromFHIR } from "../shared/references";
 
@@ -126,7 +126,7 @@ export async function getConsolidatedFhirBundle({
     }
     return { resource: entry };
   });
-  return buildBundle({ type: "searchset", entries });
+  return buildSearchSetBundle(entries);
 }
 
 const searchResources = async <K extends ResourceType>(

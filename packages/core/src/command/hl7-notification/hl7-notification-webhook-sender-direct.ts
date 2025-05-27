@@ -9,7 +9,7 @@ import {
   saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
-import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/shared/bundle";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
@@ -134,5 +134,5 @@ function prependPatientToBundle({
 }): Bundle<Resource> {
   const fhirPatientEntry = buildBundleEntry(fhirPatient);
   const combinedEntries = bundle.entry ? [fhirPatientEntry, ...bundle.entry] : [];
-  return buildBundle({ type: "collection", entries: combinedEntries });
+  return buildCollectionBundle(combinedEntries);
 }
