@@ -72,23 +72,6 @@ export class Config {
     return getEnvVarOrFail("CONSOLIDATED_INGESTION_QUEUE_URL");
   }
 
-  // TODO eng-268 remove these and everything related to semantic, unless we're keeping it for eng-41
-  static getSemanticSearchEndpoint(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_ENDPOINT");
-  }
-  static getSemanticSearchUsername(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_USERNAME");
-  }
-  static getSemanticSearchPassword(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_PASSWORD");
-  }
-  static getSemanticSearchIndexName(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_INDEX");
-  }
-  static getSemanticSearchModelId(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_MODEL_ID");
-  }
-
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
