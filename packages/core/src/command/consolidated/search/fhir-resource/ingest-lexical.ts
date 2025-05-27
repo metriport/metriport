@@ -10,14 +10,14 @@ import { getConfigs } from "./fhir-config";
  *
  * @param patient The patient to ingest.
  */
-export async function ingestLexicalFhir({
+export async function ingestLexical({
   patient,
   onItemError,
 }: {
   patient: Patient;
   onItemError?: OnBulkItemError;
 }) {
-  const { log } = out(`ingestLexicalFhir - cx ${patient.cxId}, pt ${patient.id}`);
+  const { log } = out(`ingestLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
   const ingestor = new OpenSearchFhirIngestor(getConfigs());
 

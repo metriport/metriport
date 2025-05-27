@@ -1,4 +1,4 @@
-import { OpenSearchFhirSearcherConfig } from "../../../../external/opensearch/lexical/fhir-searcher";
+import { OpenSearchFhirSearcherConfig } from "../../../../external/opensearch/lexical/lexical-searcher";
 import { Config } from "../../../../util/config";
 
 export function getConfigs(): OpenSearchFhirSearcherConfig {

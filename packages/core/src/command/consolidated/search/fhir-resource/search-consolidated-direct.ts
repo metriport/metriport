@@ -16,7 +16,7 @@ import {
   SearchConsolidatedParams,
   SearchConsolidatedResult,
 } from "./search-consolidated";
-import { searchLexicalFhir } from "./search-lexical-fhir";
+import { searchLexicalFhir } from "./search-lexical";
 
 dayjs.extend(duration);
 

@@ -14,7 +14,7 @@ import {
   FhirSearchResult,
   rawContentFieldName,
 } from "../../../../external/opensearch/index-based-on-fhir";
-import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
+import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/lexical-searcher";
 import { getEntryId } from "../../../../external/opensearch/shared/id";
 import { out } from "../../../../util";
 import { searchDocuments } from "../document-reference/search";
