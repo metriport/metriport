@@ -60,10 +60,6 @@ export type GetSignedUrlWithLocation = {
   versionId?: string;
 };
 
-// export type UploadFileResult = AWS.S3.ManagedUpload.SendData & {
-//   VersionId?: string;
-// };
-
 export type UploadFileResult = {
   location: string;
   eTag: string;
