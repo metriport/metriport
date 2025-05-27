@@ -13,7 +13,7 @@ import {
   createFileKeyHl7Message,
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { hl7ToIso8601 } from "@metriport/shared/common/date";
+import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "@metriport/core/util";
@@ -43,7 +43,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(async ({ message }) => {
-        const timestamp = hl7ToIso8601(getOrCreateMessageDatetime(message));
+        const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const messageId = getMessageUniqueIdentifier(message);
         log(
           `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
