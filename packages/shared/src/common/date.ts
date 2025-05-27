@@ -2,7 +2,6 @@ import dayjs, { ConfigType } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { CustomErrorParams, z } from "zod";
 import { BadRequestError } from "../error/bad-request";
-import { MetriportError } from "../error/metriport-error";
 
 dayjs.extend(utc);
 
@@ -110,13 +109,21 @@ export function sortDate(
     : buildDayjs(date2).diff(buildDayjs(date1));
 }
 
+/**
+ * Validates if timestamp adheres to YYYYMMDDHHMMSS format
+ * and is a valid date.
+ *
+ * @param input The HL7 timestamp to validate
+ * @throws {BadRequestError} If the HL7 timestamp is invalid
+ * @returns True if the HL7 timestamp is valid
+ */
 export function throwIfInvalidHl7Timestamp(input: string): boolean {
   if (!input || input.length !== 14) {
-    throw new MetriportError("Invalid HL7 date string format: expected YYYYMMDDHHMMSS");
+    throw new BadRequestError("Invalid HL7 date string format: expected YYYYMMDDHHMMSS");
   }
 
   if (!/^\d{14}$/.test(input)) {
-    throw new MetriportError("Invalid HL7 date string: must contain only digits");
+    throw new BadRequestError("Invalid HL7 date string: must contain only digits");
   }
 
   // Parse YYYYMMDDHHMMSS format
@@ -135,20 +142,20 @@ export function throwIfInvalidHl7Timestamp(input: string): boolean {
   const secondNum = parseInt(second);
 
   if (monthNum < 1 || monthNum > 12) {
-    throw new MetriportError("Invalid month in HL7 date string");
+    throw new BadRequestError("Invalid month in HL7 date string");
   }
   if (dayNum < 1 || dayNum > 31) {
-    throw new MetriportError("Invalid day in HL7 date string");
+    throw new BadRequestError("Invalid day in HL7 date string");
   }
   if (hourNum > 23 || minuteNum > 59 || secondNum > 59) {
-    throw new MetriportError("Invalid time in HL7 date string");
+    throw new BadRequestError("Invalid time in HL7 date string");
   }
 
   const dateStr = `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
   const parsedDate = buildDayjs(dateStr);
 
   if (!parsedDate.isValid()) {
-    throw new MetriportError("Invalid HL7 timestamp");
+    throw new BadRequestError("Invalid HL7 timestamp");
   }
 
   return true;

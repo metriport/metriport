@@ -77,7 +77,7 @@ export function createFileKeyAdtConversion({
     cxId,
     patientId,
     encounterId,
-  })}/${timestamp}_${messageId}_ADT_${triggerEvent}.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
+  })}/${timestamp}_${messageId}_${triggerEvent}.${HL7_FILE_EXTENSION}.${JSON_FILE_EXTENSION}`;
 }
 
 /**

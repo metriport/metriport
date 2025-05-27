@@ -1,8 +1,8 @@
-import { MetriportError, NotFoundError } from "@metriport/shared";
-import { OrganizationModel } from "../../../models/medical/organization";
-import { Op } from "sequelize";
 import { Organization } from "@metriport/core/domain/organization";
+import { NotFoundError } from "@metriport/shared";
 import _ from "lodash";
+import { Op } from "sequelize";
+import { OrganizationModel } from "../../../models/medical/organization";
 
 type Filter = Pick<OrganizationModel, "cxId"> & Partial<Pick<OrganizationModel, "id">>;
 
@@ -32,7 +32,7 @@ export async function getOrganizationsOrFail({
   const foundCxIds = orgs.map(o => o.cxId);
   const missingCxIds = _.difference(cxIds, foundCxIds);
   if (missingCxIds.length > 0) {
-    throw new MetriportError(`Could not find all organizations`, undefined, {
+    throw new NotFoundError(`Could not find all organizations`, undefined, {
       missingCxIds: missingCxIds.join(", "),
     });
   }
