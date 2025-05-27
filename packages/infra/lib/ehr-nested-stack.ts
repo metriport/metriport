@@ -470,7 +470,7 @@ export class EhrNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
+      lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
       alarmSnsAction: alarmAction,
     });
