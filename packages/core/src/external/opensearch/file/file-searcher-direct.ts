@@ -2,7 +2,7 @@ import { Client } from "@opensearch-project/opensearch";
 import { contentFieldName, OpenSearchConfigDirectAccess, OpenSearchResponse } from "..";
 import { out } from "../../../util";
 import { SearchResult } from "../index-based-on-file";
-import { cleanupQuery } from "../query";
+import { cleanupQuery } from "../shared/query";
 import { OpenSearchFileSearcher, SearchRequest } from "./file-searcher";
 
 export type OpenSearchFileSearcherDirectConfig = OpenSearchConfigDirectAccess;

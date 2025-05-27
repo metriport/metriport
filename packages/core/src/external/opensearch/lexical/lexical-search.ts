@@ -1,6 +1,10 @@
 import { contentFieldName, OpenSearchRequestBody } from "../index";
-import { cleanupQuery } from "../query";
-import { getGeneralParams, getPatientFilters } from "../shared/query";
+import {
+  cleanupQuery,
+  getGeneralParams,
+  getPatientFilters,
+  simpleQueryStringPrefix,
+} from "../shared/query";
 
 export type LexicalSearchParams = {
   query: string;
@@ -16,7 +20,7 @@ export function createLexicalSearchQuery({
   cxId,
   patientId,
 }: LexicalSearchParams): OpenSearchRequestBody {
-  const isMatchQuery = query.startsWith("$");
+  const isMatchQuery = !query.startsWith(simpleQueryStringPrefix);
   const actualQuery = cleanupQuery(query);
   const generalParams = getGeneralParams();
   if (isMatchQuery) {
