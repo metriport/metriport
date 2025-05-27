@@ -110,7 +110,7 @@ export function sortDate(
     : buildDayjs(date2).diff(buildDayjs(date1));
 }
 
-export function isValidHl7Timestamp(input: string): boolean {
+export function throwIfInvalidHl7Timestamp(input: string): boolean {
   if (!input || input.length !== 14) {
     throw new MetriportError("Invalid HL7 date string format: expected YYYYMMDDHHMMSS");
   }
@@ -120,7 +120,7 @@ export function isValidHl7Timestamp(input: string): boolean {
   }
 
   // Parse YYYYMMDDHHMMSS format
-  // const year = input.substring(0, 4);
+  const year = input.substring(0, 4);
   const month = input.substring(4, 6);
   const day = input.substring(6, 8);
   const hour = input.substring(8, 10);
@@ -144,6 +144,13 @@ export function isValidHl7Timestamp(input: string): boolean {
     throw new MetriportError("Invalid time in HL7 date string");
   }
 
+  const dateStr = `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+  const parsedDate = buildDayjs(dateStr);
+
+  if (!parsedDate.isValid()) {
+    throw new MetriportError("Invalid HL7 timestamp");
+  }
+
   return true;
 }
 
@@ -154,9 +161,7 @@ export function isValidHl7Timestamp(input: string): boolean {
  * @returns ISO 8601 formatted date string
  */
 export function hl7ToIso8601(hl7DateString: string): string {
-  if (!isValidHl7Timestamp(hl7DateString)) {
-    throw new MetriportError("Invalid HL7 timestamp");
-  }
+  throwIfInvalidHl7Timestamp(hl7DateString);
 
   const year = hl7DateString.substring(0, 4);
   const month = hl7DateString.substring(4, 6);
@@ -165,5 +170,5 @@ export function hl7ToIso8601(hl7DateString: string): string {
   const minute = hl7DateString.substring(10, 12);
   const second = hl7DateString.substring(12, 14);
 
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
 }
