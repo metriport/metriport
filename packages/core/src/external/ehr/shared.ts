@@ -1,4 +1,11 @@
-import { Coding, Condition } from "@medplum/fhirtypes";
+import {
+  AllergyIntolerance,
+  AllergyIntoleranceReaction,
+  Coding,
+  Condition,
+  Immunization,
+  Observation,
+} from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
@@ -18,7 +25,7 @@ import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
-import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
+import { CVX_CODE, ICD_10_CODE, LOINC_CODE, SNOMED_CODE } from "../../util/constants";
 import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
@@ -69,7 +76,7 @@ export type MakeRequestParams<T> = {
   s3Path: string;
   axiosInstance: AxiosInstance;
   url: string;
-  method: "GET" | "POST" | "PATCH" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   data?: RequestData | undefined;
   headers?: Record<string, string> | undefined;
   schema: z.Schema<T>;
@@ -270,6 +277,83 @@ export function getConditionStatus(condition: Condition): string | undefined {
   const status = condition.clinicalStatus?.text ?? statusFromCoding[0];
   if (status) return status.replace(qualifierSuffix, "").trim();
   return undefined;
+}
+
+export function getImmunizationCvxCoding(immunization: Immunization): Coding | undefined {
+  const code = immunization.vaccineCode;
+  const cvxCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(CVX_CODE);
+  });
+  if (!cvxCoding) return undefined;
+  return cvxCoding;
+}
+
+export function getImmunizationCvxCode(immunization: Immunization): string | undefined {
+  const cvxCoding = getImmunizationCvxCoding(immunization);
+  if (!cvxCoding) return undefined;
+  return cvxCoding.code;
+}
+
+export function getImmunizationAdministerDate(immunization: Immunization): string | undefined {
+  const administeredDate = immunization.occurrenceDateTime;
+  if (administeredDate) return administeredDate;
+  const administeredString = immunization.occurrenceString;
+  if (!administeredString) return undefined;
+  const parsedDate = buildDayjs(administeredString);
+  if (!parsedDate.isValid()) return undefined;
+  return parsedDate.toISOString();
+}
+
+export function getObservationLoincCoding(observation: Observation): Coding | undefined {
+  const code = observation.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(LOINC_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getObservationResultStatus(observation: Observation): string | undefined {
+  return observation.status?.toUpperCase();
+}
+
+export function getObservationUnitAndValue(observation: Observation): [string, string] | undefined {
+  const unit = observation.valueQuantity?.unit;
+  if (!unit) return undefined;
+  const value = observation.valueQuantity?.value;
+  if (!value) return undefined;
+  return [unit, value.toString()];
+}
+
+export function getObservationReferenceRange(observation: Observation): string | undefined {
+  const referenceRange = observation.referenceRange?.[0];
+  if (!referenceRange) return undefined;
+  if (referenceRange.text) return referenceRange.text;
+  if (referenceRange.low && referenceRange.high) {
+    return `${referenceRange.low.value} - ${referenceRange.high.value}`;
+  }
+  return undefined;
+}
+
+export function getAllergyIntoleranceReactionSnomedCoding(
+  allergyIntoleranceReaction: AllergyIntoleranceReaction
+): Coding | undefined {
+  const code = allergyIntoleranceReaction.substance;
+  if (!code) return undefined;
+  const snomedCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(SNOMED_CODE);
+  });
+  if (!snomedCoding) return undefined;
+  return snomedCoding;
+}
+
+export function getAllergyIntoleranceOnsetDate(
+  allergyIntolerance: AllergyIntolerance
+): string | undefined {
+  return allergyIntolerance.onsetDateTime ?? allergyIntolerance.onsetPeriod?.start;
 }
 
 /**

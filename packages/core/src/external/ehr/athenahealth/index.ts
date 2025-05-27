@@ -1,5 +1,7 @@
 import {
+  AllergyIntolerance,
   Condition,
+  Immunization,
   Medication,
   MedicationAdministration,
   MedicationDispense,
@@ -15,6 +17,18 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
+  AllergenReference,
+  AllergenReferences,
+  allergenReferencesSchema,
+  Allergies,
+  allergiesSchema,
+  Allergy,
+  AllergyReactionReference,
+  AllergyReactionReferences,
+  allergyReactionReferencesSchema,
+  AllergySeverityReference,
+  AllergySeverityReferences,
+  allergySeverityReferencesSchema,
   AppointmentEvent,
   AppointmentEventListResponse,
   appointmentEventListResponseSchema,
@@ -23,6 +37,18 @@ import {
   BookedAppointmentListResponse,
   bookedAppointmentListResponseSchema,
   bookedAppointmentSchema,
+  CreatedAllergy,
+  createdAllergySchema,
+  CreatedAllergySuccess,
+  createdAllergySuccessSchema,
+  CreatedEncounter,
+  createdEncounterSchema,
+  CreatedEncounterSuccess,
+  createdEncounterSuccessSchema,
+  CreatedLabResult,
+  createdLabResultSchema,
+  CreatedLabResultSuccess,
+  createdLabResultSuccessSchema,
   CreatedMedication,
   createdMedicationSchema,
   CreatedMedicationSuccess,
@@ -35,6 +61,10 @@ import {
   createdSubscriptionSchema,
   CreatedSubscriptionSuccess,
   createdSubscriptionSuccessSchema,
+  CreatedVaccine,
+  createdVaccineSchema,
+  CreatedVaccineSuccess,
+  createdVaccineSuccessSchema,
   CreatedVitals,
   createdVitalsSchema,
   CreatedVitalsSuccess,
@@ -69,9 +99,17 @@ import {
   ApiConfig,
   createDataParams,
   formatDate,
+  getAllergyIntoleranceOnsetDate,
+  getAllergyIntoleranceReactionSnomedCoding,
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  getImmunizationAdministerDate,
+  getImmunizationCvxCode,
+  getObservationLoincCoding,
+  getObservationReferenceRange,
+  getObservationResultStatus,
+  getObservationUnitAndValue,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -300,6 +338,42 @@ class AthenaHealthApi {
     return patient;
   }
 
+  async getPatientAllergy({
+    cxId,
+    patientId,
+    departmentId,
+    allergenId,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    allergenId: string;
+  }): Promise<Allergy | undefined> {
+    const { debug } = out(
+      `AthenaHealth getAllergies - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const params = {
+      departmentid: this.stripDepartmentId(departmentId),
+    };
+    const queryParams = new URLSearchParams(params);
+    const allergiesUrl = `/patients/${this.stripPatientId(
+      patientId
+    )}/allergies?${queryParams.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const allergies = await this.makeRequest<Allergies>({
+      cxId,
+      patientId,
+      s3Path: "allergies",
+      method: "GET",
+      url: allergiesUrl,
+      schema: allergiesSchema,
+      additionalInfo,
+      debug,
+    });
+    const allergy = allergies.allergies.find(a => a.allergenid === allergenId);
+    return allergy;
+  }
+
   async getCustomFieldsForPatient({
     cxId,
     patientId,
@@ -473,6 +547,300 @@ class AthenaHealthApi {
     return createdProblemSuccessSchema.parse(createdProblem);
   }
 
+  async createVaccine({
+    cxId,
+    patientId,
+    departmentId,
+    immunization,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    immunization: Immunization;
+  }): Promise<CreatedVaccineSuccess> {
+    const { debug } = out(
+      `AthenaHealth createVaccine - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+    );
+    const chartVaccineUrl = `/chart/${this.stripPatientId(patientId)}/vaccines`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+      immunizationId: immunization.id,
+    };
+    const cvxCode = getImmunizationCvxCode(immunization);
+    if (!cvxCode) {
+      throw new BadRequestError("No CVX code found for immunization", undefined, additionalInfo);
+    }
+    const administeredDate = getImmunizationAdministerDate(immunization);
+    if (!administeredDate) {
+      throw new BadRequestError(
+        "No administer date found for immunization",
+        undefined,
+        additionalInfo
+      );
+    }
+    const data = {
+      departmentid: this.stripDepartmentId(departmentId),
+      cvx: cvxCode,
+      administereddate: this.formatDate(administeredDate),
+      THIRDPARTYUSERNAME: undefined,
+      PATIENTFACINGCALL: undefined,
+    };
+    const createdVaccine = await this.makeRequest<CreatedVaccine>({
+      cxId,
+      patientId,
+      s3Path: `chart/vaccine/${additionalInfo.immunizationId ?? "unknown"}`,
+      method: "PUT",
+      data,
+      url: chartVaccineUrl,
+      schema: createdVaccineSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!createdVaccine.success) {
+      throw new MetriportError("Vaccine creation failed", undefined, {
+        ...additionalInfo,
+        error: createdVaccine.errormessage,
+      });
+    }
+    return createdVaccineSuccessSchema.parse(createdVaccine);
+  }
+
+  async createLabResultDocument({
+    cxId,
+    patientId,
+    departmentId,
+    observation,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    observation: Observation;
+  }): Promise<CreatedLabResultSuccess> {
+    const { debug } = out(
+      `AthenaHealth createLabResult - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+    );
+    const chartLabResultUrl = `/patients/${this.stripPatientId(patientId)}/documents/labresult`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+      observationId: observation.id,
+    };
+    const loincCoding = getObservationLoincCoding(observation);
+    if (!loincCoding) {
+      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
+    }
+    const unitAndValue = getObservationUnitAndValue(observation);
+    if (!unitAndValue) {
+      throw new BadRequestError(
+        "No unit or value found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const [unit, value] = unitAndValue;
+    const referenceRange = getObservationReferenceRange(observation);
+    if (!referenceRange) {
+      throw new BadRequestError(
+        "No reference range found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const resultStatus = getObservationResultStatus(observation);
+    if (!resultStatus) {
+      throw new BadRequestError(
+        "No result status found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const analytes = [
+      {
+        analytename: loincCoding.display,
+        loinc: loincCoding.code,
+        referenceRange: referenceRange,
+        units: unit,
+        value: value,
+        resultstatus: resultStatus,
+        note: "Added via Metriport App",
+      },
+    ];
+    const data = {
+      departmentid: this.stripDepartmentId(departmentId),
+      analytes,
+    };
+    const createdLabResult = await this.makeRequest<CreatedLabResult>({
+      cxId,
+      patientId,
+      s3Path: `chart/labresult/${additionalInfo.observationId ?? "unknown"}`,
+      method: "POST",
+      data,
+      url: chartLabResultUrl,
+      schema: createdLabResultSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!createdLabResult.success) {
+      throw new MetriportError("Lab result creation failed", undefined, {
+        ...additionalInfo,
+        error: createdLabResult.errormessage,
+      });
+    }
+    return createdLabResultSuccessSchema.parse(createdLabResult);
+  }
+
+  async createEncounterDocument({
+    cxId,
+    patientId,
+    departmentId,
+    encounterText,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    encounterText: string;
+  }): Promise<CreatedEncounterSuccess> {
+    const { debug } = out(
+      `AthenaHealth createEncounter - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+    );
+    const chartEncounterUrl = `/patients/${this.stripPatientId(
+      patientId
+    )}/documents/encounterdocument`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+    };
+    const data = {
+      departmentid: this.stripDepartmentId(departmentId),
+      textdata: encounterText,
+      documentsubclass: "PROGRESSNOTE",
+    };
+    const createdEncounter = await this.makeRequest<CreatedEncounter>({
+      cxId,
+      patientId,
+      s3Path: `chart/encounterdocument`,
+      method: "POST",
+      data,
+      url: chartEncounterUrl,
+      schema: createdEncounterSchema,
+      additionalInfo,
+      debug,
+    });
+    if (!createdEncounter.success) {
+      throw new MetriportError("Encounter document creation failed", undefined, {
+        ...additionalInfo,
+        error: createdEncounter.errormessage,
+      });
+    }
+    return createdEncounterSuccessSchema.parse(createdEncounter);
+  }
+
+  async createAllergy({
+    cxId,
+    patientId,
+    departmentId,
+    allergyIntolerance,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    allergyIntolerance: AllergyIntolerance;
+  }): Promise<CreatedAllergySuccess> {
+    const { debug } = out(
+      `AthenaHealth createAllergy - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+    );
+    const chartAllergyUrl = `/chart/${this.stripPatientId(patientId)}/allergies`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+      allergyIntoleranceId: allergyIntolerance.id,
+    };
+    const allergenOptions = await this.searchForAllergen({
+      cxId,
+      patientId,
+      allergyIntolerance: allergyIntolerance,
+    });
+    const firstOption = allergenOptions[0];
+    if (!firstOption) {
+      throw new BadRequestError("No allergen options found via search", undefined, additionalInfo);
+    }
+    const existingAllergy = await this.getPatientAllergy({
+      cxId,
+      patientId,
+      departmentId,
+      allergenId: firstOption.allergenid,
+    });
+    const existingReactions = existingAllergy?.reactions ?? [];
+    const newReactions = allergyIntolerance.reaction ?? [];
+    if (existingReactions.length < 1 && newReactions.length < 1) {
+      throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
+    }
+    const possibleReactions = await this.getCompleteAllergyReactions({ cxId });
+    const possibleSeverities = await this.getCompleteAllergySeverities({ cxId });
+    const reactions = [
+      ...existingReactions,
+      ...newReactions.flatMap(reaction => {
+        const snomedCoding = getAllergyIntoleranceReactionSnomedCoding(reaction);
+        if (!snomedCoding) return [];
+        const reactionReference = possibleReactions.find(r => r.snomedcode === snomedCoding.code);
+        if (!reactionReference) return [];
+        const severity = reaction.severity;
+        const severityReference = possibleSeverities.find(s => s.severity === severity);
+        if (!severityReference) return [];
+        return {
+          reactionname: reactionReference.reactionname,
+          snomedcode: reactionReference.snomedcode,
+          severity: severityReference.severity,
+          severitysnomedcode: severityReference.snomedcode,
+        };
+      }),
+    ];
+    const criticality = allergyIntolerance.criticality;
+    const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
+    const allergies = [
+      {
+        allergenid: firstOption.allergenid,
+        allergenname: firstOption.allergenname,
+        criticality: criticality,
+        note: "Added via Metriport App",
+        onsetdate: this.formatDate(onsetDate),
+        reactions: [uniqBy(reactions, "snomedcode")],
+      },
+    ];
+    const data = {
+      departmentid: this.stripDepartmentId(departmentId),
+      allergies: allergies,
+      THIRDPARTYUSERNAME: undefined,
+      PATIENTFACINGCALL: undefined,
+    };
+    const createdAllergy = await this.makeRequest<CreatedAllergy>({
+      cxId,
+      patientId,
+      s3Path: `chart/allergy/${additionalInfo.allergyIntoleranceId ?? "unknown"}`,
+      method: "POST",
+      data,
+      url: chartAllergyUrl,
+      schema: createdAllergySchema,
+      additionalInfo,
+      debug,
+    });
+    if (!createdAllergy.success) {
+      throw new MetriportError("Allergy creation failed", undefined, {
+        ...additionalInfo,
+        error: createdAllergy.errormessage,
+      });
+    }
+    return createdAllergySuccessSchema.parse(createdAllergy);
+  }
   async createVitals({
     cxId,
     patientId,
@@ -676,6 +1044,142 @@ class AthenaHealthApi {
       });
     }
     return allMedicationReferences;
+  }
+
+  async searchForAllergen({
+    cxId,
+    patientId,
+    allergyIntolerance,
+  }: {
+    cxId: string;
+    patientId: string;
+    allergyIntolerance: AllergyIntolerance;
+  }): Promise<AllergenReference[]> {
+    const { log, debug } = out(
+      `AthenaHealth searchForAllergen - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const referenceUrl = "/reference/allergies";
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      allergyIntoleranceId: allergyIntolerance.id,
+    };
+    const searchValues = allergyIntolerance.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
+    if (!searchValues || searchValues.length === 0) {
+      throw new BadRequestError(
+        "No search values for searching allergy references",
+        undefined,
+        additionalInfo
+      );
+    }
+    const searchValuesWithAtLeastTwoParts = searchValues.filter(
+      searchValue => searchValue.length >= 2
+    );
+    if (searchValuesWithAtLeastTwoParts.length === 0) {
+      throw new BadRequestError(
+        "No search values with at least two parts",
+        undefined,
+        additionalInfo
+      );
+    }
+    const allAllergenReferences: AllergenReference[] = [];
+    const searchAllergenErrors: { error: unknown; searchValue: string }[] = [];
+    const searchAllergenArgs: string[] = searchValuesWithAtLeastTwoParts;
+    await executeAsynchronously(
+      searchAllergenArgs,
+      async (searchValue: string) => {
+        try {
+          const allergenReferences = await this.makeRequest<AllergenReferences>({
+            cxId,
+            patientId,
+            s3Path: `reference/allergies/${searchValue}`,
+            method: "GET",
+            url: `${referenceUrl}?searchvalue=${searchValue}`,
+            schema: allergenReferencesSchema,
+            additionalInfo,
+            debug,
+          });
+          allAllergenReferences.push(...allergenReferences);
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          log(
+            `Failed to search for allergen with search value ${searchValue}. Cause: ${errorToString(
+              error
+            )}`
+          );
+          searchAllergenErrors.push({ error, searchValue });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
+      }
+    );
+    if (searchAllergenErrors.length > 0) {
+      const msg = `Failure while searching for some allergens @ AthenaHealth`;
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          searchAllergenArgsCount: searchAllergenArgs.length,
+          searchAllergenErrorsCount: searchAllergenErrors.length,
+          errors: searchAllergenErrors,
+          context: "athenahealth.search-for-allergen",
+        },
+        level: "warning",
+      });
+    }
+    return allAllergenReferences;
+  }
+
+  async getCompleteAllergyReactions({
+    cxId,
+  }: {
+    cxId: string;
+  }): Promise<AllergyReactionReference[]> {
+    const { debug } = out(
+      `AthenaHealth searchForAllergyReactions - cxId ${cxId} practiceId ${this.practiceId}`
+    );
+    const referenceUrl = "/reference/allergies/reactions";
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+    };
+    const allergyReactionReferences = await this.makeRequest<AllergyReactionReferences>({
+      cxId,
+      s3Path: "reference/allergies/reactions",
+      method: "GET",
+      url: referenceUrl,
+      schema: allergyReactionReferencesSchema,
+      additionalInfo,
+      debug,
+    });
+    return allergyReactionReferences;
+  }
+
+  async getCompleteAllergySeverities({
+    cxId,
+  }: {
+    cxId: string;
+  }): Promise<AllergySeverityReference[]> {
+    const { debug } = out(
+      `AthenaHealth getAllergySeverities - cxId ${cxId} practiceId ${this.practiceId}`
+    );
+    const referenceUrl = "/reference/allergies/severities";
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+    };
+    const allergySeverityReferences = await this.makeRequest<AllergySeverityReferences>({
+      cxId,
+      s3Path: "reference/allergies/severities",
+      method: "GET",
+      url: referenceUrl,
+      schema: allergySeverityReferencesSchema,
+      additionalInfo,
+      debug,
+    });
+    return allergySeverityReferences;
   }
 
   async subscribeToEvent({

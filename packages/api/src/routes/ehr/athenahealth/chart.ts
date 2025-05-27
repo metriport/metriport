@@ -1,9 +1,9 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { writeMedicationToChart } from "../../../external/ehr/athenahealth/command/write-medication-to-chart";
-import { writeConditionToChart } from "../../../external/ehr/athenahealth/command/write-condition-to-chart";
-import { writeVitalsToChart } from "../../../external/ehr/athenahealth/command/write-vitals-to-chart";
+import { writeMedicationToChart } from "../../../external/ehr/athenahealth/command/write-back/medication";
+import { writeConditionToChart } from "../../../external/ehr/athenahealth/command/write-back/candition";
+import { writeVitalsToChart } from "../../../external/ehr/athenahealth/command/write-back/vitals";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
 import { handleParams } from "../../helpers/handle-params";

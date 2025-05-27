@@ -14,7 +14,7 @@ export type CreatedMedicationSuccess = z.infer<typeof createdMedicationSuccessSc
 
 const medicationReferenceSchema = z.object({
   medication: z.string(),
-  medicationid: z.number(),
+  medicationid: z.coerce.number(),
 });
 export type MedicationReference = z.infer<typeof medicationReferenceSchema>;
 export const medicationReferencesSchema = medicationReferenceSchema.array();
