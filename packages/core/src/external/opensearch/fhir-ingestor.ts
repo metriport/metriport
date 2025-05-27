@@ -16,7 +16,6 @@ import {
 } from "./shared/bulk";
 import { createDeleteQuery } from "./shared/delete";
 import { getEntryId } from "./shared/id";
-import { getLog, OpenSearchLogLevel } from "./shared/log";
 
 dayjs.extend(duration);
 
@@ -49,13 +48,7 @@ export type IngestBulkRequest = {
 
 export type DeleteRequest = Pick<FhirIndexFields, "cxId" | "patientId">;
 
-export type OpenSearchFhirIngestorSettings = {
-  logLevel?: OpenSearchLogLevel;
-};
-
-export type OpenSearchFhirIngestorConfig = OpenSearchConfigDirectAccess & {
-  settings?: OpenSearchFhirIngestorSettings;
-};
+export type OpenSearchFhirIngestorConfig = OpenSearchConfigDirectAccess;
 
 /**
  * Ingests text documents/entries in OpenSearch.
@@ -65,16 +58,12 @@ export class OpenSearchFhirIngestor {
   private readonly username: string;
   private readonly password: string;
   private readonly indexName: string;
-  private readonly settings: OpenSearchFhirIngestorSettings;
 
   constructor(config: OpenSearchFhirIngestorConfig) {
     this.endpoint = config.endpoint;
     this.username = config.username;
     this.password = config.password;
     this.indexName = config.indexName;
-    this.settings = {
-      logLevel: config.settings?.logLevel ?? "none",
-    };
   }
 
   /**
@@ -93,8 +82,13 @@ export class OpenSearchFhirIngestor {
     resources,
     onItemError,
   }: IngestBulkRequest): Promise<Map<string, number>> {
-    const defaultLogger = out(`${this.constructor.name}.ingestBulk - cx ${cxId}, pt ${patientId}`);
-    const { log } = getLog(defaultLogger, this.settings.logLevel);
+    const { log } = out(`${this.constructor.name}.ingestBulk - cx ${cxId}, pt ${patientId}`);
+
+    const errors: Map<string, number> = new Map();
+    if (resources.length < 1) {
+      log(`No resources to ingest`);
+      return errors;
+    }
 
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
@@ -104,8 +98,8 @@ export class OpenSearchFhirIngestor {
     const startedAt = Date.now();
 
     let errorCount = 0;
-    const errors: Map<string, number> = new Map();
     const _onItemError = onItemError ?? buildOnItemError(errors);
+    const mutatingMissingResourceIdsByType: Record<string, string[]> = {};
 
     const chunks = chunk(resources, bulkChunkSize);
     for (const resourceChunk of chunks) {
@@ -116,12 +110,18 @@ export class OpenSearchFhirIngestor {
         indexName,
         client,
         onItemError: _onItemError,
+        mutatingMissingResourceIdsByType,
       });
       errorCount += errorCountChunk;
     }
 
     const time = Date.now() - startedAt;
     log(`Ingested ${resources.length} resources in ${time} ms, ${errorCount} errors`);
+    if (Object.keys(mutatingMissingResourceIdsByType).length > 0) {
+      log(`WARNING - Resource not ingested because missing relevant info:`, () =>
+        JSON.stringify(mutatingMissingResourceIdsByType)
+      );
+    }
     return errors;
   }
 
@@ -132,29 +132,41 @@ export class OpenSearchFhirIngestor {
     indexName,
     client,
     onItemError,
+    mutatingMissingResourceIdsByType,
   }: IngestBulkRequest & {
     indexName: string;
     client: Client;
+    mutatingMissingResourceIdsByType: Record<string, string[]>;
   }): Promise<number> {
-    const defaultLogger = out(
+    const { debug } = out(
       `${this.constructor.name}.ingestBulkInternal - cx ${cxId}, pt ${patientId}`
     );
-    const { debug } = getLog(defaultLogger, this.settings.logLevel);
 
     const operation = "index";
 
     debug(`Ingesting ${resources.length} resources into index ${indexName}...`);
 
-    const bulkRequest = resources.flatMap(
-      resource =>
-        resourceToBulkRequest({
-          cxId,
-          patientId,
-          resource,
-          operation,
-          getEntryId,
-        }) ?? []
-    );
+    const bulkRequest = resources.flatMap(resource => {
+      const resourceToRequest = resourceToBulkRequest({
+        cxId,
+        patientId,
+        resource,
+        operation,
+        getEntryId,
+      });
+      if (resourceToRequest) return resourceToRequest;
+      const missingResourceIds = mutatingMissingResourceIdsByType[resource.resourceType];
+      if (resource.id) {
+        if (missingResourceIds) missingResourceIds.push(resource.id);
+        else mutatingMissingResourceIdsByType[resource.resourceType] = [resource.id];
+      }
+      return [];
+    });
+
+    if (bulkRequest.length === 0) {
+      debug(`No converted resources to ingest`);
+      return 0;
+    }
 
     const startedAt = Date.now();
     const response = await client.bulk(
@@ -170,8 +182,7 @@ export class OpenSearchFhirIngestor {
   }
 
   async delete({ cxId, patientId }: DeleteRequest): Promise<void> {
-    const defaultLogger = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
-    const { log, debug } = getLog(defaultLogger, this.settings.logLevel);
+    const { log, debug } = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
 
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
@@ -244,10 +255,8 @@ function resourceToIndexField({
     });
   }
   const content = resourceToString(resource);
-  if (!content) {
-    out(`WARNING`).log(`Resource ${resourceId} of type ${resourceType} could not be converted`);
-    return undefined;
-  }
+  if (!content) return undefined;
+
   const document: FhirIndexFields = {
     cxId,
     patientId,

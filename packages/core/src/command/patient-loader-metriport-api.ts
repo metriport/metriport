@@ -32,6 +32,8 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
       { retryOnTimeout: true }
     );
     const patient = getDomainFromDTO(response.data);
+    patient.id = id;
+    patient.cxId = cxId;
     validatePatient(patient);
     return patient;
   }

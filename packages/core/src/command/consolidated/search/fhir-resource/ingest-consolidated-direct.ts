@@ -5,8 +5,8 @@ import {
   IngestConsolidated,
   IngestConsolidatedParams,
   IngestConsolidatedResult,
+  IngestMultipleConsolidatedParams,
 } from "./ingest-consolidated";
-import { ingestLexical } from "./ingest-lexical";
 import { ingestLexicalFhir } from "./ingest-lexical-fhir";
 
 /**
@@ -17,15 +17,40 @@ import { ingestLexicalFhir } from "./ingest-lexical-fhir";
 export class IngestConsolidatedDirect implements IngestConsolidated {
   constructor(private readonly apiUrl = Config.getApiUrl()) {}
 
-  async ingest({ cxId, patientId }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
-    const { log } = out(`cx ${cxId}`);
+  async ingestConsolidatedIntoSearchEngine({
+    cxId,
+    patientId,
+  }: IngestConsolidatedParams): Promise<IngestConsolidatedResult>;
+
+  async ingestConsolidatedIntoSearchEngine({
+    cxId,
+    patientIds,
+  }: IngestMultipleConsolidatedParams): Promise<IngestConsolidatedResult>;
+
+  async ingestConsolidatedIntoSearchEngine(
+    params: IngestConsolidatedParams | IngestMultipleConsolidatedParams
+  ): Promise<IngestConsolidatedResult> {
+    if ("patientIds" in params) {
+      for (const patientId of params.patientIds) {
+        await this.ingestSingle({ cxId: params.cxId, patientId });
+      }
+    } else {
+      await this.ingestSingle(params);
+    }
+    return true;
+  }
+
+  private async ingestSingle({
+    cxId,
+    patientId,
+  }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
+    const { log } = out(`cx ${cxId}, pt ${patientId}`);
 
     const patientLoader = new PatientLoaderMetriportAPI(this.apiUrl);
     const patient = await patientLoader.getOneOrFail({ cxId, id: patientId });
 
-    log(`Retrieved patient ${patientId}, indexing its consolidated data...`);
-    // TODO eng-268 temporary while we don't choose one approach - REMOVE THE ONE NOT BEING USED
-    await Promise.all([ingestLexical({ patient }), ingestLexicalFhir({ patient })]);
+    log(`Retrieved patient, indexing its consolidated data...`);
+    await ingestLexicalFhir({ patient });
 
     log(`Done`);
     return true;

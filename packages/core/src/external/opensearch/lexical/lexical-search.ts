@@ -1,6 +1,6 @@
-import { contentFieldName } from "../index";
+import { contentFieldName, OpenSearchRequestBody } from "../index";
 import { cleanupQuery } from "../query";
-import { getPatientFilters } from "../shared/filters";
+import { getGeneralParams, getPatientFilters } from "../shared/query";
 
 export type LexicalSearchParams = {
   query: string;
@@ -11,15 +11,17 @@ export type LexicalSearchParams = {
 /**
  * Generates a lexical search query to be executed against an OpenSearch index.
  */
-export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSearchParams) {
+export function createLexicalSearchQuery({
+  query,
+  cxId,
+  patientId,
+}: LexicalSearchParams): OpenSearchRequestBody {
   const isMatchQuery = query.startsWith("$");
   const actualQuery = cleanupQuery(query);
+  const generalParams = getGeneralParams();
   if (isMatchQuery) {
     return {
-      _source: {
-        // removes these from the response
-        exclude: ["content_embedding", contentFieldName],
-      },
+      ...generalParams,
       query: {
         bool: {
           must: [
@@ -43,10 +45,7 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
     };
   }
   return {
-    _source: {
-      // removes these from the response
-      exclude: ["content_embedding", contentFieldName],
-    },
+    ...generalParams,
     query: {
       bool: {
         must: [

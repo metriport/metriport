@@ -20,11 +20,9 @@ export async function ingestLexicalFhir({
 }) {
   const { log } = out(`ingestLexicalFhir - cx ${patient.cxId}, pt ${patient.id}`);
 
-  const ingestor = new OpenSearchFhirIngestor({
-    ...getConfigs(),
-    settings: { logLevel: "info" },
-  });
+  const ingestor = new OpenSearchFhirIngestor(getConfigs());
 
+  log("Getting consolidated and cleaning up the index...");
   const [bundle] = await Promise.all([
     getConsolidatedPatientData({ patient }),
     ingestor.delete({ cxId: patient.cxId, patientId: patient.id }),
@@ -38,6 +36,7 @@ export async function ingestLexicalFhir({
       return resource;
     }) ?? [];
 
+  log("Done, calling ingestBulk...");
   const startedAt = Date.now();
   const errors = await ingestor.ingestBulk({
     cxId: patient.cxId,

@@ -1,5 +1,4 @@
 import { makeIngestConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-consolidated-factory";
-import { initializeLexicalIndex } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical";
 import { initializeFhirIndex } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical-fhir";
 import { out } from "@metriport/core/util/log";
 import { BadRequestError } from "@metriport/shared";
@@ -161,7 +160,7 @@ router.post(
     const { log } = out(`internal ingest - cx ${cxId}`);
 
     // TODO eng-268 temporary while we don't choose one approach
-    await Promise.all([initializeLexicalIndex(), initializeFhirIndex()]);
+    await initializeFhirIndex();
 
     log(`Initialized indexes (if needed), patient IDs count: ${patientIds.length}`);
 
@@ -172,9 +171,7 @@ router.post(
     }
 
     log(`Requesting ingestion of ${patientIds.length} patients (asynchronously)...`);
-    for (const patientId of patientIds) {
-      await makeIngestConsolidated().ingest({ cxId, patientId });
-    }
+    await makeIngestConsolidated().ingestConsolidatedIntoSearchEngine({ cxId, patientIds });
     log(`Done`);
 
     return res.sendStatus(status.OK);
