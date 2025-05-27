@@ -1,11 +1,15 @@
-import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import {
+  executeWithNetworkRetries,
+  InternalOrganizationDTO,
+  internalOrganizationDTOSchema,
+  MetriportError,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
-import { OrganizationBizType, OrgType } from "../../domain/organization";
 import { Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
@@ -30,43 +34,6 @@ const GET_ORGANIZATION_ENDPOINT = `internal/organization`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
-
-import { z } from "zod";
-
-/**
- * TODO: Remove this once we have proper monorepo wide API response types.
- * This will happen once we have a proper sdk generation or just move all our DTO types to /shared
- *
- * @deprecated Refactor DTOs to shared
- */
-const InternalOrganizationDTOSchema = z.object({
-  oid: z.string(),
-  cxId: z.string(),
-  name: z.string(),
-  shortcode: z.string().optional(),
-  type: z.nativeEnum(OrgType),
-  location: z.object({
-    addressLine1: z.string(),
-    addressLine2: z.string().optional(),
-    city: z.string(),
-    state: z.string(),
-    zip: z.string(),
-    country: z.string(),
-  }),
-  businessType: z.nativeEnum(OrganizationBizType),
-  cqApproved: z.boolean(),
-  cqActive: z.boolean(),
-  cwApproved: z.boolean(),
-  cwActive: z.boolean(),
-});
-
-/**
- * TODO: Remove this once we have proper monorepo wide API response types.
- * This will happen once we have a proper sdk generation or just move all our DTO types to /shared
- *
- * @deprecated Refactor DTOs to shared
- */
-type InternalOrganizationDTO = z.infer<typeof InternalOrganizationDTOSchema>;
 
 export class Hl7v2RosterGenerator {
   private readonly s3Utils: S3Utils;
@@ -93,7 +60,7 @@ export class Hl7v2RosterGenerator {
       });
     };
 
-    log(`Running with this config: ${JSON.stringify(loggingDetails, null, 2)}`);
+    log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
     const patients = await simpleExecuteWithRetries(() =>
       this.getAllSubscribedPatients(states, subscriptions)
@@ -180,7 +147,7 @@ export class Hl7v2RosterGenerator {
       params: baseParams,
     });
 
-    return InternalOrganizationDTOSchema.array().parse(response.data);
+    return internalOrganizationDTOSchema.array().parse(response.data);
   }
 
   private generateCsv(records: RosterRow[]): string {
