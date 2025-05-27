@@ -15,11 +15,9 @@ import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
-import { processAsyncError } from "../../util/error/shared";
 import { controlDuration } from "../../util/race-control";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
-import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
 
 dayjs.extend(duration);
 
@@ -124,15 +122,16 @@ export async function createConsolidatedFromConversions({
     contentType: "application/json",
   });
 
-  try {
-    const ingestor = makeIngestConsolidated();
-    await ingestor.ingestConsolidatedIntoSearchEngine({ cxId, patientId });
-  } catch (error) {
-    // intentionally not re-throwing
-    processAsyncError("createConsolidatedFromConversions.ingestConsolidatedIntoSearchEngine")(
-      error
-    );
-  }
+  // TODO eng-268 Re-enable this if we decide to ingest into OS for all patients
+  // try {
+  //   const ingestor = makeIngestConsolidated();
+  //   await ingestor.ingestConsolidatedIntoSearchEngine({ cxId, patientId });
+  // } catch (error) {
+  //   // intentionally not re-throwing
+  //   processAsyncError("createConsolidatedFromConversions.ingestConsolidatedIntoSearchEngine")(
+  //     error
+  //   );
+  // }
 
   log(`Done`);
   return bundle;
