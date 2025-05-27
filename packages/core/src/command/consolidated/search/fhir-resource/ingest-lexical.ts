@@ -10,7 +10,7 @@ import { getConfigs } from "./fhir-config";
  *
  * @param patient The patient to ingest.
  */
-export async function ingestLexical({
+export async function ingestPatientConsolidated({
   patient,
   onItemError,
 }: {

@@ -7,7 +7,7 @@ import {
   IngestConsolidatedResult,
   IngestMultipleConsolidatedParams,
 } from "./ingest-consolidated";
-import { ingestLexical } from "./ingest-lexical";
+import { ingestPatientConsolidated } from "./ingest-lexical";
 
 /**
  * Ingests a patient's consolidated data directly into OpenSearch.
@@ -48,7 +48,7 @@ export class IngestConsolidatedDirect implements IngestConsolidated {
     const patient = await patientLoader.getOneOrFail({ cxId, id: patientId });
 
     log(`Retrieved patient, indexing its consolidated data...`);
-    await ingestLexical({ patient });
+    await ingestPatientConsolidated({ patient });
 
     log(`Done`);
     return true;
