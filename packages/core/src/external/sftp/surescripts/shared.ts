@@ -49,7 +49,7 @@ export function shiftMiddleNameToFirstName(patient: NameDemographics): NameDemog
 
   if (patient.middleName.length > 0) {
     const middleNamePart = patient.middleName.split(" ");
-    shiftedPatient.firstName = patient.firstName + " " + middleNamePart.shift() ?? "";
+    shiftedPatient.firstName = [patient.firstName, middleNamePart.shift()].join(" ");
     shiftedPatient.middleName = middleNamePart.join(" ");
   }
   return shiftedPatient;

@@ -3,8 +3,10 @@ import { S3Utils } from "../../../external/aws/s3";
 
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 
-type SurescriptsDirectory = "from_surescripts" | "to_surescripts";
-
+type SurescriptsDirectory = "from_surescripts" | "to_surescripts" | "history";
+const INCOMING_NAME = "from_surescripts";
+const OUTGOING_NAME = "to_surescripts";
+const HISTORY_NAME = "name";
 export class SurescriptsReplica {
   private readonly s3: S3Utils;
   private readonly bucket: string;
@@ -31,75 +33,117 @@ export class SurescriptsReplica {
     });
   }
 
-  async synchronize(dryRun = false) {
-    await this.copyFromSurescripts("from_surescripts", dryRun);
-    // TODO: copy outgoing messages from history folder
+  async receiveVerificationResponse(transmission: Transmission<TransmissionType>) {
+    const fileName = await this.sftpClient.findVerificationFileName(transmission);
+    if (fileName) {
+      const content = await this.sftpClient.read(`/${INCOMING_NAME}/${fileName}`);
+      await this.s3.uploadFile({
+        bucket: this.bucket,
+        key: getS3Key(INCOMING_NAME, fileName),
+        file: content,
+      });
+    }
   }
 
-  async copyFromSurescripts(directory: SurescriptsDirectory, dryRun = false) {
+  async receiveFlatFileResponse(transmission: Transmission) {
+    const fileName = await this.sftpClient.findFlatFileResponseName(transmission);
+    if (fileName) {
+      const content = await this.sftpClient.read(`/${INCOMING_NAME}/${fileName}`);
+      await this.s3.uploadFile({
+        bucket: this.bucket,
+        key: getS3Key(INCOMING_NAME, fileName),
+        file: content,
+      });
+    }
+  }
+
+  async synchronize(dryRun = false) {
+    await this.copyFromSurescripts(dryRun);
+  }
+
+  async copyFromSurescripts(dryRun = false) {
     await this.sftpClient.connect();
-    const sftpFiles = await this.sftpClient.list("/" + directory);
-    const s3Files = await this.s3.listObjects(this.bucket, directory + "/");
+    const sftpFiles = await this.sftpClient.list("/" + INCOMING_NAME);
+    const s3Files = await this.s3.listObjects(this.bucket, INCOMING_NAME + "/");
     const s3FileSet = new Set(s3Files.map(file => file.Key));
 
-    for (const file of sftpFiles) {
-      const key = directory + "/" + file;
+    for (const fileName of sftpFiles) {
+      const key = getS3Key(INCOMING_NAME, fileName);
 
       if (!s3FileSet.has(key)) {
-        await this.copyFileFromSurescripts(directory, file, dryRun);
+        await this.copyFileFromSurescripts(fileName, dryRun);
       }
     }
   }
 
   async copyFileFromSurescripts(
-    directory: SurescriptsDirectory,
-    fileName: string,
-    dryRun = false
+    fileName: string, // the base file name, without any directory prefixes
+    dryRun = false // only return the content without copying to S3
   ): Promise<Buffer | null> {
-    const exists = await this.sftpClient.exists(`/${directory}/${fileName}`);
+    const sftpFileName = getSftpFileName(INCOMING_NAME, fileName);
+    const exists = await this.sftpClient.exists(sftpFileName);
     if (!exists) {
-      console.log(`File ${fileName} does not exist in SFTP directory ${directory}`);
       return null;
     }
 
-    if (dryRun) {
-      console.log(`Will copy:    SFTP /${directory}/${fileName} --> S3 ${directory}/${fileName}`);
-      return null;
-    } else {
-      const content = await this.sftpClient.read(`/${directory}/${fileName}`);
-      console.log("Read " + content.length + " bytes from SFTP");
+    const content = await this.sftpClient.read(sftpFileName);
+    if (!dryRun) {
+      const s3Key = getS3Key(INCOMING_NAME, fileName);
       await this.s3.uploadFile({
         bucket: this.bucket,
-        key: directory + "/" + fileName,
+        key: s3Key,
         file: content,
       });
-      console.log("Copied " + fileName + " from SFTP to S3");
-      return content;
+    }
+    return content;
+  }
+
+  async copyToSurescripts(dryRun = false) {
+    await this.sftpClient.connect();
+
+    const sftpHistory = await this.sftpClient.list("/" + HISTORY_NAME);
+    const sftpHistorySet = new Set(sftpHistory);
+
+    const s3Files = await this.s3.listObjects(this.bucket, OUTGOING_NAME + "/");
+
+    for (const s3File of s3Files) {
+      if (!s3File.Key) continue;
+
+      const outgoingFileName = s3File.Key.substring(OUTGOING_NAME.length + 1);
+      const sftpHistoryName = `${outgoingFileName}.${this.sftpClient.senderId}`;
+      if (!sftpHistorySet.has(sftpHistoryName)) {
+        await this.copyFileToSurescripts(outgoingFileName, dryRun);
+      }
     }
   }
 
-  async copyFileToSurescripts(directory: SurescriptsDirectory, fileName: string): Promise<Buffer> {
-    const s3Key = getS3Key(directory, fileName);
+  async copyFileToSurescripts(
+    fileName: string, // the base file name, without any directory prefixes
+    dryRun = false // only return the content without uploading to SFTP
+  ): Promise<Buffer | null> {
+    const s3Key = getS3Key(OUTGOING_NAME, fileName);
     const s3FileExists = await this.s3.fileExists(this.bucket, s3Key);
     if (!s3FileExists) {
-      throw new Error(`Object "${s3Key}" does not exist in Surescripts replica`);
+      return null;
     }
 
-    console.log(`Downloading ${s3Key} from S3`);
     const content = await this.s3.downloadFile({
       bucket: this.bucket,
       key: s3Key,
     });
-    await this.sftpClient.write(getAbsoluteSftpPath(directory, fileName), content);
-    console.log("Copied " + fileName + " from S3 to SFTP");
+
+    if (!dryRun) {
+      const sftpFileName = getSftpFileName(OUTGOING_NAME, fileName);
+      await this.sftpClient.write(sftpFileName, content);
+    }
     return content;
   }
 }
 
-function getAbsoluteSftpPath(directory: SurescriptsDirectory, fileName: string) {
-  return `/${directory}/${fileName}`;
-}
-
 function getS3Key(directory: SurescriptsDirectory, fileName: string) {
   return `${directory}/${fileName}`;
+}
+
+function getSftpFileName(directory: SurescriptsDirectory, fileName: string) {
+  return `/${directory}/${fileName}`;
 }

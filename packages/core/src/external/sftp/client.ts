@@ -29,6 +29,7 @@ export class SftpClient implements SftpClientImpl {
   protected readonly username: string;
   protected readonly password: string;
   protected readonly privateKey: string;
+  private connected = false;
   private connectionEnded = false;
 
   constructor({ host, port, username, password, privateKey }: SftpConfig) {
@@ -96,9 +97,12 @@ export class SftpClient implements SftpClientImpl {
       client.on("end", this.sshErrorHandler);
       client.on("close", this.sshErrorHandler);
     });
+    this.connected = true;
   }
 
   async disconnect(): Promise<void> {
+    if (!this.connected) return;
+
     await this.executeWithSshListeners(async client => {
       client.removeListener("error", this.sshErrorHandler);
       client.removeListener("end", this.sshErrorHandler);
@@ -107,6 +111,7 @@ export class SftpClient implements SftpClientImpl {
     });
 
     this.connectionEnded = true;
+    this.connected = false;
   }
 
   async read(
@@ -122,9 +127,9 @@ export class SftpClient implements SftpClientImpl {
     return content;
   }
 
-  async list(remotePath: string): Promise<string[]> {
+  async list(remotePath: string, filter?: SshSftpClient.ListFilterFunction): Promise<string[]> {
     const files: string[] = await this.executeWithSshListeners(async client => {
-      const files = await client.list(remotePath);
+      const files = await client.list(remotePath, filter);
       return files.map(file => file.name);
     });
     return files;

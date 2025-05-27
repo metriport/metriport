@@ -1,7 +1,7 @@
 import { Config } from "../../../util/config";
 import { IdGenerator, createIdGenerator } from "../id-generator";
 import { SftpClient, SftpConfig } from "../client";
-import { convertDateToString } from "@metriport/shared/common/date";
+import { convertDateToString, convertDateToTimeString } from "@metriport/shared/common/date";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -22,13 +22,17 @@ export interface SurescriptsRequester {
   npiNumber: string;
 }
 
-export interface Transmission<T extends TransmissionType> {
+export interface Transmission<T extends TransmissionType = TransmissionType> {
   type: T;
   npiNumber: string;
   cxId: string;
   id: string;
   date: Date;
-  compression?: "gzip";
+  dateString: string; // YYYYMMDD
+  timeString: string; // HHMMSSCC (with centiseconds)
+  requestFileName: string;
+  responseFileName: string;
+  compression?: "gzip" | undefined;
 }
 
 export class SurescriptsSftpClient extends SftpClient {
@@ -68,27 +72,60 @@ export class SurescriptsSftpClient extends SftpClient {
 
   createTransmission<T extends TransmissionType>(
     type: T,
-    { npiNumber, cxId }: SurescriptsRequester
+    { npiNumber, cxId }: SurescriptsRequester,
+    compression = true
   ): Transmission<T> {
+    const transmissionId = this.transmissionIdGenerator().toString("ascii");
+    const now = new Date();
+    const dateString = convertDateToString(now);
+    const timeString = convertDateToTimeString(now, { includeCentisecond: true });
+
+    const requestFileName = ["Metriport_PMA_", dateString, "-", transmissionId].join("");
+    const responseFileName = [cxId].join("");
+
     return {
       type,
       npiNumber,
       cxId,
-      id: this.transmissionIdGenerator().toString("ascii"),
-      date: new Date(),
-      compression: "gzip",
+      id: transmissionId,
+      date: now,
+      dateString,
+      timeString,
+      requestFileName,
+      responseFileName,
+      compression: compression ? "gzip" : undefined,
     };
   }
 
-  getPatientLoadFileName(transmission: Transmission<TransmissionType>): string {
+  getPatientLoadFileName(transmission: Transmission): string {
     return `Metriport_PMA_${convertDateToString(transmission.date)}-${transmission.id}${
       transmission.compression ? "." + transmission.compression : ""
     }`;
   }
-  // sendTransmission(transmission: Transmission<TransmissionType>): Promise<void> {
-  // const message = toSurescriptsMessage(this, transmission.population, transmission.type);
-  // return this.write(transmission.id, message);
-  // }
+
+  async findVerificationFileName(transmission: Transmission): Promise<string | undefined> {
+    const results = await this.list("/from_surescripts", info => {
+      return (
+        info.name.startsWith(transmission.requestFileName) && info.name.endsWith(".gz-extract.rsp")
+      );
+    });
+    return results[0];
+  }
+
+  async findFlatFileResponseName(transmission: Transmission): Promise<string | undefined> {
+    const transmissionDateTimeSuffix = [
+      "_",
+      transmission.dateString,
+      transmission.timeString.substring(0, 6), // remove centiseconds
+      ".gz",
+    ].join("");
+    const results = await this.list("/from_surescripts", info => {
+      return (
+        info.name.startsWith(transmission.cxId) && info.name.endsWith(transmissionDateTimeSuffix)
+      );
+    });
+    return results[0];
+  }
 }
 
 export function getPatientLoadFileName<T extends TransmissionType>(
