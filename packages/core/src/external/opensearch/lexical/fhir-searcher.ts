@@ -6,7 +6,7 @@ import {
   OpenSearchResponseGet,
   OpenSearchResponseHit,
 } from "../index";
-import { FhirSearchResult, indexDefinition } from "../index-based-on-fhir";
+import { FhirSearchResult } from "../index-based-on-fhir";
 import { paginatedSearch } from "../paginate";
 import { getEntryId } from "../shared/id";
 import { createSearchByIdsQuery } from "../shared/query";
@@ -54,8 +54,6 @@ export class OpenSearchFhirSearcher {
     return response.items;
   }
 
-  // TODO eng-268 Make this a list of IDs so we can return many at the same time
-  // See https://docs.opensearch.org/docs/latest/query-dsl/term/ids/
   async getById(id: string): Promise<FhirSearchResult | undefined>;
   async getById({
     cxId,
@@ -122,23 +120,6 @@ export class OpenSearchFhirSearcher {
     });
 
     return response.items;
-  }
-
-  async createIndexIfNotExists(): Promise<void> {
-    const { indexName, endpoint, username, password } = this.config;
-    const auth = { username, password };
-    const client = new Client({ node: endpoint, auth });
-
-    const indexExistsResp = await client.indices.exists({
-      index: indexName,
-      include_defaults: false,
-      ignore_unavailable: false,
-    });
-    const indexExists = Boolean(indexExistsResp.body);
-    if (indexExists) return;
-
-    const body = { mappings: { properties: indexDefinition } };
-    await client.indices.create({ index: indexName, body });
   }
 }
 

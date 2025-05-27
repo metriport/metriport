@@ -11,13 +11,4 @@ export type FhirIndexFields = {
   [rawContentFieldName]: string;
 };
 
-export const indexDefinition: Record<keyof FhirIndexFields, { type: string }> = {
-  cxId: { type: "keyword" },
-  patientId: { type: "keyword" },
-  resourceType: { type: "keyword" },
-  resourceId: { type: "keyword" },
-  content: { type: "text" },
-  rawContent: { type: "text" },
-};
-
 export type FhirSearchResult = Omit<FhirIndexFields, "content"> & { id: string };

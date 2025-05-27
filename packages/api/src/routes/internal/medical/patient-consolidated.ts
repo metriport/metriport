@@ -1,5 +1,4 @@
 import { makeIngestConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-consolidated-factory";
-import { initializeFhirIndex } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical-fhir";
 import { out } from "@metriport/core/util/log";
 import { BadRequestError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -158,9 +157,6 @@ router.post(
     const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
 
     const { log } = out(`internal ingest - cx ${cxId}`);
-
-    // TODO eng-268 temporary while we don't choose one approach
-    await initializeFhirIndex();
 
     log(`Initialized indexes (if needed), patient IDs count: ${patientIds.length}`);
 

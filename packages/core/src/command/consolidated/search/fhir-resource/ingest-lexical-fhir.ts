@@ -1,6 +1,5 @@
 import { Patient } from "../../../../domain/patient";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
-import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
 import { capture, out } from "../../../../util";
 import { getConsolidatedPatientData } from "../../consolidated-get";
@@ -49,14 +48,6 @@ export async function ingestLexicalFhir({
   if (errors.size > 0) captureErrors({ cxId: patient.cxId, patientId: patient.id, errors, log });
 
   log(`Ingested ${resources.length} resources in ${elapsedTime} ms`);
-}
-
-/**
- * Initialize the lexical index in OpenSearch.
- */
-export async function initializeFhirIndex() {
-  const searchService = new OpenSearchFhirSearcher(getConfigs());
-  await searchService.createIndexIfNotExists();
 }
 
 function captureErrors({

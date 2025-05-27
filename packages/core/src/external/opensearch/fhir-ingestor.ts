@@ -118,7 +118,7 @@ export class OpenSearchFhirIngestor {
     const time = Date.now() - startedAt;
     log(`Ingested ${resources.length} resources in ${time} ms, ${errorCount} errors`);
     if (Object.keys(mutatingMissingResourceIdsByType).length > 0) {
-      log(`WARNING - Resource not ingested because missing relevant info:`, () =>
+      log(`WARNING - Resource not ingested, either missing relevant info or not ingestible:`, () =>
         JSON.stringify(mutatingMissingResourceIdsByType)
       );
     }
