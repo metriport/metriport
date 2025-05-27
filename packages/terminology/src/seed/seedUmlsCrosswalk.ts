@@ -261,9 +261,8 @@ async function processConceptMap(inStream: Readable): Promise<void> {
 
       if (concept.TOID.endsWith("?")) {
         const partialCode = concept.TOID.slice(0, -1);
-        const partialTargetLookup = await client.lookupPartialCode(
-          createLookupParameters(config.target, partialCode)
-        );
+        const lookupParameters = createLookupParameters(config.target, partialCode);
+        const partialTargetLookup = await client.lookupPartialCode(lookupParameters);
 
         for (const partialTarget of partialTargetLookup) {
           const targetDisplay = partialTarget.display;

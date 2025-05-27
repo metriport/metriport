@@ -27,7 +27,7 @@ export class TerminologyClient {
         "Content-Type": "application/json",
       },
     });
-    return response.data;
+    return response.data.response;
   }
 
   async importCode(parameters: Parameters, isOverwrite = false): Promise<OperationOutcome[]> {
