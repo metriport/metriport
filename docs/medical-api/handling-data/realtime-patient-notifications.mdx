@@ -114,7 +114,7 @@ if (event.meta.type === "patient.admit") {
 }
 if (event.meta.type === "patient.transfer") {
   const payload = event.payload as PatientTransferPayload;
-  // process discharge message
+  // process transfer message
 }
 if (event.meta.type === "patient.discharge") {
   const payload = event.payload as PatientDischargePayload;
@@ -477,5 +477,4 @@ A Patient Discharge event indicates the end of a patient's stay in a healthcare 
 
 The below is an example of a full FHIR encounter
 
-{" "}
 <Snippet file="example-adt-encounter-json.mdx" />
