@@ -166,9 +166,7 @@ function surescriptsEnvironmentVariablesAndSecrets({
 }
 
 function buildSecret(nestedStack: SurescriptsNestedStack, name: string): secret.ISecret {
-  return new secret.Secret(nestedStack, name, {
-    secretName: name,
-  });
+  return secret.Secret.fromSecretNameV2(nestedStack, name, name);
 }
 
 interface SurescriptsNestedStackProps extends NestedStackProps {
