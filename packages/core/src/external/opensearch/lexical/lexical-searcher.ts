@@ -127,7 +127,7 @@ function mapResults(input: OpenSearchResponseHit<FhirSearchResult>[]): FhirSearc
   if (!input) return [];
   return input.map(hit => {
     return {
-      id: hit._id,
+      entryId: hit._id,
       cxId: hit._source.cxId,
       patientId: hit._source.patientId,
       resourceType: hit._source.resourceType,

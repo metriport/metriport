@@ -9,7 +9,7 @@ import { OpenSearchRequestBody, OpenSearchResponse, OpenSearchResponseHit } from
 
 const DEFAULT_PAGE_SIZE = 10_000;
 
-export type PageItem = { id: string };
+export type PageItem = { entryId: string };
 
 export type Response<PageItem> = {
   items: PageItem[];
@@ -49,7 +49,7 @@ export async function paginatedSearch<T extends PageItem>({
 
     page = await searchPage<T>({
       ...searchParams,
-      searchAfter: lastItem.id,
+      searchAfter: lastItem.entryId,
     });
     mutatingItems.push(...page);
   }

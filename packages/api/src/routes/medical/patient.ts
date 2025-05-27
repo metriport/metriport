@@ -189,7 +189,6 @@ router.get(
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.query The query to search for.
- * @param req.query.useFhir Whether to use the FHIR index for the search.
  */
 router.get(
   "/consolidated/search",

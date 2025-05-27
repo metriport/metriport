@@ -23,21 +23,21 @@ import { getConfigs } from "./fhir-config";
 const maxHydrationAttempts = 5;
 
 /**
- * Performs a lexical search on a patient's consolidated resources in OpenSearch
- * and returns the resources from consolidated that match the search results.
+ * Performs a search on a patient's consolidated resources in OpenSearch/OS
+ * and returns the resources stored in the OS results.
  *
  * @param patient The patient to search.
  * @param query The query to search for.
  * @returns The search results.
  */
-export async function searchLexicalFhir({
+export async function searchPatientConsolidated({
   patient,
   query,
 }: {
   patient: Patient;
   query: string;
 }): Promise<SearchSetBundle> {
-  const { log } = out(`searchLexicalFhir - cx ${patient.cxId}, pt ${patient.id}`);
+  const { log } = out(`searchPatientConsolidated - cx ${patient.cxId}, pt ${patient.id}`);
 
   log(`Getting consolidated and searching OS...`);
   const startedAt = new Date();

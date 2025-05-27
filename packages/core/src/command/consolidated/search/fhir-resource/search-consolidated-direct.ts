@@ -16,7 +16,7 @@ import {
   SearchConsolidatedParams,
   SearchConsolidatedResult,
 } from "./search-consolidated";
-import { searchLexicalFhir } from "./search-lexical";
+import { searchPatientConsolidated } from "./search-lexical";
 
 dayjs.extend(duration);
 
@@ -32,7 +32,7 @@ export class SearchConsolidatedDirect implements SearchConsolidated {
   async search({ patient, query }: SearchConsolidatedParams): Promise<SearchConsolidatedResult> {
     const searchResult =
       query != undefined
-        ? await searchLexicalFhir({ patient, query })
+        ? await searchPatientConsolidated({ patient, query })
         : // TODO eng-268 Consider always getting data from OpenSearch, if no query then only filter by cxId and patientId
           await getConsolidatedPatientData({ patient });
 

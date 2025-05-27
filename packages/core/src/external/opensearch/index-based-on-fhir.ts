@@ -11,4 +11,4 @@ export type FhirIndexFields = {
   [rawContentFieldName]: string;
 };
 
-export type FhirSearchResult = Omit<FhirIndexFields, "content"> & { id: string };
+export type FhirSearchResult = Omit<FhirIndexFields, "content"> & { entryId: string };
