@@ -11,8 +11,6 @@ import { ingestLexical } from "./ingest-lexical";
 
 /**
  * Ingests a patient's consolidated data directly into OpenSearch.
- *
- * WIP: Currently ingesting in both indexes, text only and text+fhir!
  */
 export class IngestConsolidatedDirect implements IngestConsolidated {
   constructor(private readonly apiUrl = Config.getApiUrl()) {}

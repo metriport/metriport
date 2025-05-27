@@ -13,8 +13,6 @@ import {
   IngestMultipleConsolidatedParams,
 } from "./ingest-consolidated";
 
-// TODO eng-268 consider creating a lambda to add the msgs to SQS so the API since this could take a few min
-
 /**
  * Ingests a patient's consolidated data into OpenSearch through a queue.
  *
