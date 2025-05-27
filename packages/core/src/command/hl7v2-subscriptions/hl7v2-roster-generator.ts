@@ -52,13 +52,13 @@ export class Hl7v2RosterGenerator {
       subscriptions,
     };
 
-    const simpleExecuteWithRetries = async <T>(functionToExecute: () => Promise<T>) => {
+    async function simpleExecuteWithRetries<T>(functionToExecute: () => Promise<T>) {
       return await executeWithNetworkRetries(functionToExecute, {
         maxAttempts: NUMBER_OF_ATTEMPTS,
         initialDelay: BASE_DELAY.asMilliseconds(),
         log,
       });
-    };
+    }
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
