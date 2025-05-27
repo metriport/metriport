@@ -117,7 +117,7 @@ export function sortDate(
  * @throws {BadRequestError} If the HL7 timestamp is invalid
  * @returns True if the HL7 timestamp is valid
  */
-export function throwIfInvalidHl7Timestamp(input: string): boolean {
+export function throwIfInvalidBasicIso8601(input: string): boolean {
   if (!input || input.length !== 14) {
     throw new BadRequestError("Invalid HL7 date string format: expected YYYYMMDDHHMMSS");
   }
@@ -167,15 +167,15 @@ export function throwIfInvalidHl7Timestamp(input: string): boolean {
  * @param hl7DateString The HL7 timestamp to convert
  * @returns ISO 8601 formatted date string
  */
-export function hl7ToIso8601(hl7DateString: string): string {
-  throwIfInvalidHl7Timestamp(hl7DateString);
+export function basicToExtendedIso8601(basicIso8601: string): string {
+  throwIfInvalidBasicIso8601(basicIso8601);
 
-  const year = hl7DateString.substring(0, 4);
-  const month = hl7DateString.substring(4, 6);
-  const day = hl7DateString.substring(6, 8);
-  const hour = hl7DateString.substring(8, 10);
-  const minute = hl7DateString.substring(10, 12);
-  const second = hl7DateString.substring(12, 14);
+  const year = basicIso8601.substring(0, 4);
+  const month = basicIso8601.substring(4, 6);
+  const day = basicIso8601.substring(6, 8);
+  const hour = basicIso8601.substring(8, 10);
+  const minute = basicIso8601.substring(10, 12);
+  const second = basicIso8601.substring(12, 14);
 
   return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
 }
