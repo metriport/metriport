@@ -749,15 +749,12 @@ export class LambdasNestedStack extends NestedStack {
         SEARCH_ENDPOINT: openSearchEndpoint,
         SEARCH_USERNAME: openSearchAuth.userName,
         SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
-        // TODO eng-268 temporary while we don't choose one approach - not used by the "fhir" approach
-        FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
-        // TODO eng-268 temporary while we don't choose one approach - REMOVE THE ONE NOT BEING USED
         SEARCH_INDEX: openSearchDocumentsIndexName,
         CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
-      memory: 4096, // TODO eng-268 consider increasing to 6144
+      memory: 4096,
       timeout: lambdaTimeout,
       isEnableInsights: true,
       vpc,
@@ -790,6 +787,7 @@ export class LambdasNestedStack extends NestedStack {
 
     return theQueue;
   }
+
   private setupConsolidatedIngestionLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -833,9 +831,6 @@ export class LambdasNestedStack extends NestedStack {
         SEARCH_ENDPOINT: openSearchEndpoint,
         SEARCH_USERNAME: openSearchAuth.userName,
         SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
-        // TODO eng-268 temporary while we don't choose one approach - not used by the "fhir" approach
-        FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
-        // TODO eng-268 temporary while we don't choose one approach - REMOVE THE ONE NOT BEING USED
         SEARCH_INDEX: openSearchDocumentsIndexName,
         CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),

@@ -49,6 +49,7 @@ export class SearchConsolidatedDirect implements SearchConsolidated {
   }
 }
 
+// TODO ENG-269 store those in a diff repository (RDS or DDB)
 async function storeSearchResult({
   cxId,
   patientId,
@@ -62,7 +63,6 @@ async function storeSearchResult({
 }): Promise<string> {
   const s3 = new S3Utils(Config.getAWSRegion());
 
-  // TODO eng-268 create a dedicated bucket for this
   const bucket = Config.getMedicalDocumentsBucketName();
   const keyPrefix = buildNewS3KeyPrefix(cxId, patientId);
   const resultKey = `${keyPrefix}-result.${JSON_FILE_EXTENSION}`;

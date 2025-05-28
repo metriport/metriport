@@ -16,7 +16,7 @@ export const getConsolidatedIngestionConnectorSettings = () => {
     },
     lambda: {
       runtime: lambda.Runtime.NODEJS_20_X,
-      memory: 1024,
+      memory: 2048,
       timeout: lambdaTimeout,
     },
     eventSource: {
