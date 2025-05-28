@@ -12,6 +12,7 @@ export type OrganizationDTO = BaseDTO & {
 
 export type InternalOrganizationDTO = BaseDTO &
   OrganizationDTO & {
+    cxId: string;
     businessType: OrganizationBizType;
     cqApproved: boolean;
     cqActive: boolean;
@@ -32,16 +33,10 @@ export function dtoFromModel(org: Organization): OrganizationDTO {
 }
 
 export function internalDtoFromModel(org: Organization): InternalOrganizationDTO {
-  const { shortcode, name, type, location } = org.data;
-
   return {
-    ...toBaseDTO(org),
-    oid: org.oid,
+    ...dtoFromModel(org),
+    cxId: org.cxId,
     businessType: org.type,
-    name,
-    shortcode,
-    type,
-    location,
     cqApproved: org.cqApproved,
     cqActive: org.cqActive,
     cwApproved: org.cwApproved,
