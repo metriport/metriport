@@ -31,7 +31,6 @@ export interface Transmission<T extends TransmissionType = TransmissionType> {
   dateString: string; // YYYYMMDD
   timeString: string; // HHMMSSCC (with centiseconds)
   requestFileName: string;
-  responseFileName: string;
   compression?: "gzip" | undefined;
 }
 
@@ -81,7 +80,6 @@ export class SurescriptsSftpClient extends SftpClient {
     const timeString = convertDateToTimeString(now, { includeCentisecond: true });
 
     const requestFileName = ["Metriport_PMA_", dateString, "-", transmissionId].join("");
-    const responseFileName = [cxId].join("");
 
     return {
       type,
@@ -92,7 +90,6 @@ export class SurescriptsSftpClient extends SftpClient {
       dateString,
       timeString,
       requestFileName,
-      responseFileName,
       compression: compression ? "gzip" : undefined,
     };
   }
