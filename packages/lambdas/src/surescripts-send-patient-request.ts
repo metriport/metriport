@@ -5,8 +5,7 @@ import { SurescriptsApi } from "@metriport/core/external/sftp/surescripts/api";
 import { SurescriptsSftpClient } from "@metriport/core/external/sftp/surescripts/client";
 import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
 import { getSurescriptSecrets } from "./shared/surescripts";
-import { GetPatientResponse } from "@metriport/core/external/sftp/api/get-patient";
-import { FacilityResponse } from "@metriport/core/external/sftp/api/get-customer";
+import { GetPatientResponse, FacilityResponse } from "@metriport/core/external/sftp/api/shared";
 import { toSurescriptsPatientLoadFile } from "@metriport/core/external/sftp/surescripts/message";
 
 capture.init();
