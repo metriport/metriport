@@ -122,8 +122,6 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
 
-    await this.makeSureIndexExists(client, indexName, log);
-
     // add a document to the index
     const document: IndexFields = {
       cxId,
@@ -149,21 +147,5 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     if (this.settings.logLevel === "none") return () => {}; //eslint-disable-line @typescript-eslint/no-empty-function
     if (this.settings.logLevel === "debug") return defaultLogger.debug;
     return defaultLogger.log;
-  }
-
-  async makeSureIndexExists(client: Client, indexName: string, log = console.log) {
-    const indexExists = Boolean((await client.indices.exists({ index: indexName })).body);
-    if (!indexExists) {
-      log(`Index ${indexName} doesn't exist, creating one...`);
-      const indexProperties: Record<keyof IndexFields, { type: string }> = {
-        cxId: { type: "keyword" },
-        patientId: { type: "keyword" },
-        s3FileName: { type: "keyword" },
-        content: { type: "text" },
-      };
-      const body = { mappings: { properties: indexProperties } };
-      const createResult = (await client.indices.create({ index: indexName, body })).body;
-      log(`Created index ${indexName}: ${JSON.stringify(createResult)}`);
-    }
   }
 }
