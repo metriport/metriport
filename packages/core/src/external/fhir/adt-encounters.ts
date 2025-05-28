@@ -7,7 +7,6 @@ import { S3Utils } from "../aws/s3";
 import { mergeBundles } from "./shared/utils";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
-const s3BucketName = Config.getHl7ConversionBucketName();
 
 export function createPrefixAdtEncounter({
   cxId,
@@ -119,6 +118,7 @@ export async function saveAdtConversionBundle({
   const { log } = out(
     `saveAdtConversionBundle - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
+  const s3BucketName = Config.getHl7ConversionBucketName();
 
   const newMessageBundleFileKey = createFileKeyAdtConversion({
     cxId,
@@ -162,6 +162,7 @@ export async function getAdtSourcedEncounter({
   const { log } = out(
     `getAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
+  const s3BucketName = Config.getHl7ConversionBucketName();
 
   const fileKey = createFileKeyAdtSourcedEncounter({
     cxId,
@@ -247,6 +248,7 @@ export async function putAdtSourcedEncounter({
   const { log } = out(
     `putAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
+  const s3BucketName = Config.getHl7ConversionBucketName();
 
   const fileKey = createFileKeyAdtSourcedEncounter({
     cxId,
