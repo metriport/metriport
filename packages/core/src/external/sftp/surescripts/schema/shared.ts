@@ -1,4 +1,6 @@
 import { convertDateToString, convertDateToTimeString } from "@metriport/shared/common/date";
+import { MetriportError } from "@metriport/shared";
+import dayjs from "dayjs";
 
 // Describes a single field mapping from an object to a row in a pipe-delimited file
 interface FileField<T extends object, K extends keyof T = keyof T> {
@@ -60,7 +62,10 @@ export function fromSurescriptsEnum<T extends string, O extends FieldOption>(
     } else if (value === "" && option.optional) {
       return undefined as FieldTypeFromSurescripts<T, O>;
     } else {
-      throw new Error(`Invalid value: ${value}`);
+      throw new MetriportError(`Invalid value: ${value}`, "from_surescripts_enum", {
+        value,
+        options: enumerated.join(","),
+      });
     }
   };
 }
@@ -77,7 +82,10 @@ export function toSurescriptsEnum<T extends object>(
     } else if (option.optional && value == null) {
       return "";
     } else {
-      throw new Error(`Invalid value: ${value}`);
+      throw new MetriportError(`Invalid value: ${value}`, "to_surescripts_enum", {
+        value: String(value),
+        options: enumerated.join(","),
+      });
     }
   };
 }
@@ -90,7 +98,10 @@ export function toSurescriptsString<T extends object>(key: keyof T, option: Fiel
     } else if (option.optional && value == null) {
       return "";
     } else {
-      throw new Error(`Invalid value: ${value}`);
+      throw new MetriportError(`Invalid value: ${value}`, "to_surescripts_string", {
+        value: String(value),
+        key: String(key),
+      });
     }
   };
 }
@@ -126,69 +137,13 @@ export function fromSurescriptsDate<O extends FieldOption>(option: O = {} as O) 
       if (option.optional && value.length === 0) {
         return undefined as FieldTypeFromSurescripts<Date, O>;
       } else {
-        throw new Error(`Invalid date: ${value}`);
+        throw new MetriportError(`Invalid date: ${value}`);
       }
     }
     const year = value.substring(0, 4);
     const month = value.substring(4, 6);
     const day = value.substring(6, 8);
     return new Date(`${year}-${month}-${day}`);
-  };
-}
-
-export function fromSurescriptsUtcDate<O extends FieldOption>({
-  useUtc = false,
-}: { useUtc?: boolean } = {}) {
-  return function (value: string): FieldTypeFromSurescripts<Date, O> {
-    const timestamp = Date.parse(value);
-    if (Number.isNaN(timestamp)) {
-      throw new Error(`Invalid date: ${value}`);
-    }
-    return new Date(timestamp + (useUtc ? 0 : new Date().getTimezoneOffset() * 60000));
-  };
-}
-
-export function fromSurescriptsDateOrUndefined() {
-  return function (value: string): Date | undefined {
-    if (value.length !== 8) {
-      return undefined;
-    }
-    const year = value.substring(0, 4);
-    const month = value.substring(4, 6);
-    const day = value.substring(6, 8);
-    return new Date(`${year}-${month}-${day}`);
-  };
-}
-
-export function fromSurescriptsTime(centisecond = true) {
-  return function (value: string): Date {
-    if (value.length !== 6 + (centisecond ? 2 : 0)) {
-      throw new Error(`Invalid time: ${value}`);
-    }
-    const hour = value.substring(0, 2);
-    const minute = value.substring(2, 4);
-    const second = value.substring(4, 6);
-    const csecond = value.substring(6, 8);
-    return new Date(`${hour}:${minute}:${second}${centisecond ? `.${csecond}` : ""}`);
-  };
-}
-
-export function toSurescriptsArray<T extends object>(
-  key: keyof T,
-  enumerated: string[],
-  { optional = false }: { optional?: boolean } = {}
-) {
-  const enumeratedSet = new Set(enumerated);
-
-  return function (sourceObject: T): string {
-    const value = sourceObject[key];
-    if (Array.isArray(value)) {
-      return value.filter(item => enumeratedSet.has(item)).join(",");
-    } else if (optional && value == null) {
-      return "";
-    } else {
-      throw new Error(`Invalid value: ${value}`);
-    }
   };
 }
 
@@ -207,6 +162,27 @@ export function toSurescriptsDate<T extends object>(
     } else {
       throw new Error(`Invalid value: ${value}`);
     }
+  };
+}
+
+export function fromSurescriptsUtcDate<O extends FieldOption>({
+  useUtc = false,
+}: { useUtc?: boolean } = {}) {
+  return function (value: string): FieldTypeFromSurescripts<Date, O> {
+    const timestamp = Date.parse(value);
+    if (Number.isNaN(timestamp)) {
+      throw new Error(`Invalid date: ${value}`);
+    }
+    return new Date(timestamp + (useUtc ? 0 : new Date().getTimezoneOffset() * 60000));
+  };
+}
+
+export function fromSurescriptsTime({ centisecond = true }: { centisecond?: boolean } = {}) {
+  return function (value: string): Date {
+    if (value.length !== 6 + (centisecond ? 2 : 0)) {
+      throw new Error(`Invalid time: ${value}`);
+    }
+    return dayjs(value, "HHmmssSS").toDate();
   };
 }
 

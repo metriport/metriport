@@ -7,7 +7,6 @@ import {
   toSurescriptsUUID,
   toSurescriptsDate,
   toSurescriptsTime,
-  toSurescriptsArray,
 } from "./shared";
 
 // The first row of a patient load file
@@ -130,19 +129,6 @@ export const patientLoadDetailSchema = z.object({
   genderAtBirth: z.enum(["M", "F", "N", "U"]), // n - non-binary, u - unknown
   npiNumber: z.string().min(1).max(10),
   endMonitoringDate: z.date().optional(),
-  requestedNotifications: z
-    .array(
-      z.enum([
-        "PMANewRx",
-        "PMARefill",
-        "PMANewSubscriber",
-        "PMAControlledSubstance",
-        "PMANoRefillsRemaining",
-        "PMARefillNotPickedUp",
-        "PMAInfo",
-      ])
-    )
-    .optional(),
   primaryPhone: z.string().max(10).optional(),
 });
 
@@ -271,23 +257,6 @@ export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = 
     field: 17,
     key: "endMonitoringDate",
     toSurescripts: toSurescriptsDate("endMonitoringDate", { optional: true }),
-  },
-  {
-    field: 18,
-    key: "requestedNotifications",
-    toSurescripts: toSurescriptsArray(
-      "requestedNotifications",
-      [
-        "PMANewRx",
-        "PMARefill",
-        "PMANewSubscriber",
-        "PMAControlledSubstance",
-        "PMANoRefillsRemaining",
-        "PMARefillNotPickedUp",
-        "PMAInfo",
-      ],
-      { optional: true }
-    ),
   },
   {
     field: 19,
