@@ -1,12 +1,9 @@
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../../external/aws/s3";
-
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
+import { SurescriptsDirectory, SurescriptsSynchronizeEvent } from "./types";
+import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
 
-type SurescriptsDirectory = "from_surescripts" | "to_surescripts" | "history";
-const INCOMING_NAME = "from_surescripts";
-const OUTGOING_NAME = "to_surescripts";
-const HISTORY_NAME = "name";
 export class SurescriptsReplica {
   private readonly s3: S3Utils;
   private readonly bucket: string;
@@ -57,8 +54,15 @@ export class SurescriptsReplica {
     }
   }
 
-  async synchronize(dryRun = false) {
-    await this.copyFromSurescripts(dryRun);
+  async synchronize(event: SurescriptsSynchronizeEvent) {
+    if (event.fromSurescripts) {
+      await this.copyFromSurescripts(event.dryRun);
+    }
+    if (event.toSurescripts) {
+      await this.copyToSurescripts(event.dryRun);
+    } else if (event.fileName) {
+      await this.copyFileFromSurescripts(event.fileName, event.dryRun);
+    }
   }
 
   async copyFromSurescripts(dryRun = false) {

@@ -1,16 +1,6 @@
 import { isPrefix, isSuffix } from "./codes";
 import { GenderAtBirth } from "../../../domain/patient";
-
-// Non-binary N is mapped to by O
-type SurescriptsGender = "M" | "F" | "N" | "U";
-
-export interface NameDemographics {
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  prefix: string;
-  suffix: string;
-}
+import { SurescriptsGender, NameDemographics } from "./types";
 
 export function makeNameDemographics({
   firstName,

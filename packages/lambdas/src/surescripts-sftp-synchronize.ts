@@ -4,20 +4,14 @@ import { prefixedLog } from "./shared/log";
 import { SurescriptsSftpClient } from "@metriport/core/external/sftp/surescripts/client";
 import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
 import { getSurescriptSecrets } from "./shared/surescripts";
+import { SurescriptsSynchronizeEvent } from "@metriport/core/external/sftp/surescripts/types";
 
 capture.init();
 
 const log = prefixedLog("surescripts");
 
-interface SurescriptsSynchronizeEvent {
-  dryRun?: boolean;
-  transmissionId?: string;
-  fromSurescripts?: boolean;
-  toSurescripts?: boolean;
-}
-
 // Stub which will be integrated with Surescripts commands
-export const handler = capture.wrapHandler(async ({ dryRun }: SurescriptsSynchronizeEvent) => {
+export const handler = capture.wrapHandler(async (event: SurescriptsSynchronizeEvent) => {
   const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
     await getSurescriptSecrets();
 
@@ -32,6 +26,6 @@ export const handler = capture.wrapHandler(async ({ dryRun }: SurescriptsSynchro
     bucket: Config.getSurescriptsReplicaBucketName(),
   });
 
-  await replica.synchronize(dryRun);
+  await replica.synchronize(event);
   log(`Synchronized surescripts`);
 });

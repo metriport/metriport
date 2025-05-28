@@ -22,6 +22,7 @@ const getCustomerResponseSchema = z.object({
 });
 
 export type GetCustomerResponse = z.infer<typeof getCustomerResponseSchema>;
+export type FacilityResponse = GetCustomerResponse["facilities"][number];
 
 /**
  * Sends a request to the API to get customer data.
