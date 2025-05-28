@@ -1,25 +1,25 @@
-import { Observation } from "@medplum/fhirtypes";
-import { CreatedLabResultSuccess } from "@metriport/shared/interface/external/ehr/athenahealth/lab-result";
+import { Procedure } from "@medplum/fhirtypes";
+import { CreatedSurgicalHistorySuccess } from "@metriport/shared/interface/external/ehr/athenahealth/surgical-history";
 import { createAthenaClient } from "../../shared";
 
-export async function writeLabToChart({
+export async function writeProcedureToChart({
   cxId,
   athenaPatientId,
   athenaPracticeId,
   athenaDepartmentId,
-  observation,
+  procedure,
 }: {
   cxId: string;
   athenaPatientId: string;
   athenaPracticeId: string;
   athenaDepartmentId: string;
-  observation: Observation;
-}): Promise<CreatedLabResultSuccess> {
+  procedure: Procedure;
+}): Promise<CreatedSurgicalHistorySuccess> {
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
-  return await api.createLabResultDocument({
+  return await api.createSurgicalHistory({
     cxId,
     patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
-    observation,
+    procedure,
   });
 }

@@ -11,3 +11,4 @@ export * from "./lab-result";
 export * from "./vaccine";
 export * from "./encounter";
 export * from "./allergy";
+export * from "./surgical-history";
