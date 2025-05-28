@@ -1,4 +1,3 @@
-import { UpsertPatientSettingsBase } from "@metriport/api-sdk/medical/models/patient-settings";
 import {
   PatientSettings,
   PatientSettingsCreate,
@@ -7,9 +6,8 @@ import {
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
+import { BadRequestError, errorToString, UpsertPatientSettingsBulk } from "@metriport/shared";
 import { chunk } from "lodash";
-import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
 import { getPatientIds, getPatientOrFail } from "../get-patient";
@@ -60,39 +58,16 @@ export async function createPatientSettings({
   return newPatientSettings.dataValues;
 }
 
-export async function upsertPatientSettingsByPatient(params: {
-  cxId: string;
-  patientIds: string[];
-  settings: PatientSettingsData;
-}): Promise<PatientSettingsUpsertResults> {
-  return upsertPatientSettingsByPatientSelector(params);
-}
-
-export async function upsertPatientSettingsByFacility(params: {
-  cxId: string;
-  facilityId: string;
-  settings: PatientSettingsData;
-}): Promise<PatientSettingsUpsertResults> {
-  return upsertPatientSettingsByPatientSelector(params);
-}
-
-async function upsertPatientSettingsByPatientSelector({
+export async function upsertPatientSettingsByPatientIds({
   cxId,
-  facilityId,
-  patientIds = [],
+  patientIds,
   settings,
-}: {
-  cxId: string;
-  facilityId?: string;
-  patientIds?: string[];
-  settings: PatientSettingsData;
-}): Promise<PatientSettingsUpsertResults> {
+}: UpsertPatientSettingsBulk): Promise<PatientSettingsUpsertResults> {
   const { log } = out(`upsertPatientSettingsForPatientList - cx ${cxId}`);
 
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
-    ...(facilityId && { facilityId }),
-    ...(patientIds && patientIds.length > 0 && { patientIds }),
+    patientIds,
   });
 
   if (validPatientIds.length === 0) {
@@ -216,35 +191,16 @@ export async function upsertPatientSettingsForCx({
 
 async function verifyPatients({
   patientIds,
-  facilityId,
   cxId,
 }: {
-  patientIds?: string[];
-  facilityId?: string;
+  patientIds: string[];
   cxId: string;
 }): Promise<{
   validPatientIds: string[];
   invalidPatientIds: string[];
 }> {
-  if ((!patientIds && !facilityId) || (patientIds && facilityId)) {
-    throw new MetriportError("Exactly one of patientIds or facilityId must be provided");
-  }
-
-  const where: {
-    cxId: string;
-    id?: string[];
-    facilityIds?: { [Op.contains]: string[] };
-  } = { cxId };
-
-  if (patientIds) {
-    where.id = patientIds;
-  }
-  if (facilityId) {
-    where.facilityIds = { [Op.contains]: [facilityId] };
-  }
-
   const patients = await PatientModel.findAll({
-    where,
+    where: { cxId, id: patientIds },
     attributes: ["id"],
   });
 
