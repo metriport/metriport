@@ -96,7 +96,7 @@ async function getAppointments({
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const { tokenId, environment } = await createCanvasClientWithTokenIdAndEnvironment({
+  const { tokenId } = await createCanvasClientWithTokenIdAndEnvironment({
     cxId,
     practiceId,
   });
@@ -108,7 +108,6 @@ async function getAppointments({
     const handler = buildEhrGetAppointmentsHandler();
     const appointments = await handler.getAppointments<SlimBookedAppointment>({
       ehr: EhrSources.canvas,
-      environment,
       method: AppointmentMethods.canvasGetAppointments,
       tokenId,
       cxId,

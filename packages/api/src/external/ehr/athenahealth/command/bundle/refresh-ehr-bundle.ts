@@ -11,14 +11,13 @@ export async function refreshEhrBundle({
   metriportPatientId,
   resourceType,
 }: RefreshEhrBundleParamsForClient): Promise<void> {
-  const { tokenId, environment } = await createAthenaClientWithTokenIdAndEnvironment({
+  const { tokenId } = await createAthenaClientWithTokenIdAndEnvironment({
     cxId,
     practiceId,
   });
   const handler = buildEhrGetBundleByResourceTypeHandler();
   await handler.getBundleByResourceType({
     ehr: EhrSources.athena,
-    environment,
     method: GetBundleByResourceTypeMethods.athenaGetBundleByResourceType,
     tokenId,
     cxId,

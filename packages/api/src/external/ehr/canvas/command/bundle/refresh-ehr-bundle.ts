@@ -11,14 +11,13 @@ export async function refreshEhrBundle({
   metriportPatientId,
   resourceType,
 }: RefreshEhrBundleParamsForClient): Promise<void> {
-  const { tokenId, environment } = await createCanvasClientWithTokenIdAndEnvironment({
+  const { tokenId } = await createCanvasClientWithTokenIdAndEnvironment({
     cxId,
     practiceId,
   });
   const handler = buildEhrGetBundleByResourceTypeHandler();
   await handler.getBundleByResourceType({
     ehr: EhrSources.canvas,
-    environment,
     method: GetBundleByResourceTypeMethods.canvasGetBundleByResourceType,
     tokenId,
     cxId,
