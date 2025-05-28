@@ -39,10 +39,9 @@ export async function setCreateResourceDiffBundlesJobEntryStatus({
   const queryParams = new URLSearchParams({
     cxId,
     practiceId,
-    jobId,
     entryStatus,
   });
-  const updateJobUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/diff/set-entry-status?${queryParams.toString()}`;
+  const updateJobUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/diff/${jobId}/set-entry-status?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
       return api.post(updateJobUrl);
