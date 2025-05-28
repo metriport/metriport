@@ -1,7 +1,6 @@
 import { GetBundleByResourceTypeRequest } from "@metriport/core/external/ehr/command/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type";
 import { EhrGetBundleByResourceTypeDirect } from "@metriport/core/external/ehr/command/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type-direct";
 import { MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { ehrGetBundleByResourceTypeSchema } from "./shared/ehr";
@@ -16,7 +15,7 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 
 // TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
 
   const startedAt = new Date().getTime();

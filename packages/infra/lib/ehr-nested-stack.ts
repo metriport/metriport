@@ -351,7 +351,7 @@ export class EhrNestedStack extends NestedStack {
         EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
