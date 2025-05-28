@@ -41,6 +41,7 @@
     "aws-cdk-lib": "~2.133.0",
     "constructs": "^10.2.69",
     "dotenv": "^16.3.1",
+    "esbuild-linux-64": "^0.15.18",
     "source-map-support": "^0.5.21"
   }
 }
