@@ -20,7 +20,7 @@ export interface SftpClientImpl {
   exists(remotePath: string): Promise<boolean>;
 }
 
-type SshSftpExecutionHandler<T> = (client: SshSftpClient) => Promise<T>;
+type SftpExecutionHandler<T> = (this: SftpClient, client: SshSftpClient) => Promise<T>;
 
 export class SftpClient implements SftpClientImpl {
   protected readonly client: SshSftpClient;
@@ -48,7 +48,7 @@ export class SftpClient implements SftpClientImpl {
     this.privateKey = privateKey;
   }
 
-  private async executeWithSshListeners<T, F extends SshSftpExecutionHandler<T>>(
+  private async executeWithSshListeners<T, F extends SftpExecutionHandler<T>>(
     executionHandler: F
   ): Promise<T> {
     if (this.connectionEnded) {
@@ -66,7 +66,7 @@ export class SftpClient implements SftpClientImpl {
 
     let result: T | undefined;
     try {
-      result = await executionHandler(this.client);
+      result = await executionHandler.call(this, this.client);
     } catch (error) {
       executionError = error;
     }
@@ -79,7 +79,7 @@ export class SftpClient implements SftpClientImpl {
   }
 
   async connect(): Promise<void> {
-    await this.executeWithSshListeners(async client => {
+    await this.executeWithSshListeners(async function (client) {
       await client.connect({
         host: this.host,
         port: this.port,
@@ -100,7 +100,7 @@ export class SftpClient implements SftpClientImpl {
   async disconnect(): Promise<void> {
     if (!this.connected) return;
 
-    await this.executeWithSshListeners(async client => {
+    await this.executeWithSshListeners(async function (client) {
       client.removeListener("error", this.sshErrorHandler);
       client.removeListener("end", this.sshErrorHandler);
       client.removeListener("close", this.sshErrorHandler);
@@ -116,7 +116,9 @@ export class SftpClient implements SftpClientImpl {
     { decompress = false }: { decompress?: boolean } = {}
   ): Promise<Buffer> {
     const { writable, getBuffer } = createWritableBuffer();
-    await this.executeWithSshListeners(client => client.get(remotePath, writable));
+    await this.executeWithSshListeners(async function (client) {
+      return client.get(remotePath, writable);
+    });
     const content = getBuffer();
     if (decompress) {
       return ungzip(content);
@@ -125,7 +127,7 @@ export class SftpClient implements SftpClientImpl {
   }
 
   async list(remotePath: string, filter?: SshSftpClient.ListFilterFunction): Promise<string[]> {
-    const files: string[] = await this.executeWithSshListeners(async client => {
+    const files: string[] = await this.executeWithSshListeners(async function (client) {
       const files = await client.list(remotePath, filter);
       return files.map(file => file.name);
     });
@@ -134,7 +136,9 @@ export class SftpClient implements SftpClientImpl {
 
   async exists(remotePath: string): Promise<boolean> {
     try {
-      const info = await this.executeWithSshListeners(client => client.exists(remotePath));
+      const info = await this.executeWithSshListeners(async function (client) {
+        return client.exists(remotePath);
+      });
       return info !== false;
     } catch (error) {
       return false;
@@ -149,7 +153,9 @@ export class SftpClient implements SftpClientImpl {
     if (compress) {
       content = await gzip(content);
     }
-    await this.executeWithSshListeners(client => client.put(content, remotePath));
+    await this.executeWithSshListeners(async function (client) {
+      return client.put(content, remotePath);
+    });
     return true;
   }
 }
