@@ -1,6 +1,7 @@
 import SshSftpClient from "ssh2-sftp-client";
 import { gzip, ungzip } from "node-gzip";
 import { Writable } from "stream";
+import { MetriportError } from "@metriport/shared";
 
 export interface SftpConfig {
   host: string;
@@ -19,9 +20,11 @@ export interface SftpClientImpl {
   exists(remotePath: string): Promise<boolean>;
 }
 
+type SshSftpExecutionHandler<T> = (client: SshSftpClient) => Promise<T>;
+
 export class SftpClient implements SftpClientImpl {
   protected readonly client: SshSftpClient;
-  private sshError: Error[] = [];
+  private sshError: unknown[] = [];
   private sshErrorHandler: (...args: unknown[]) => void;
 
   protected readonly host: string;
@@ -34,13 +37,8 @@ export class SftpClient implements SftpClientImpl {
 
   constructor({ host, port, username, password, privateKey }: SftpConfig) {
     this.client = new SshSftpClient();
-    this.sshError = [];
     this.sshErrorHandler = (error: unknown) => {
-      if (error instanceof Error) {
-        this.sshError.push(error);
-      } else if (error != null) {
-        this.sshError.push(new Error(String(error)));
-      }
+      this.sshError.push(error);
     };
 
     this.host = host;
@@ -50,35 +48,34 @@ export class SftpClient implements SftpClientImpl {
     this.privateKey = privateKey;
   }
 
-  private async executeWithSshListeners<T, F extends (client: SshSftpClient) => Promise<T>>(
+  private async executeWithSshListeners<T, F extends SshSftpExecutionHandler<T>>(
     executionHandler: F
   ): Promise<T> {
     if (this.connectionEnded) {
-      throw new Error(
-        "The SftpClient has been disconnected and should not be reused. Re-initialize a new SftpClient to perform further operations."
+      throw new MetriportError(
+        "The SftpClient has been disconnected and should not be reused. Re-initialize a new SftpClient to perform further operations.",
+        "disconnected",
+        {
+          context: "sftp.client.executeWithSshListeners",
+        }
       );
     }
 
     this.sshError = [];
-    let executionError: Error | undefined;
+    let executionError: unknown;
 
     let result: T | undefined;
     try {
       result = await executionHandler(this.client);
     } catch (error) {
-      if (error instanceof Error) {
-        executionError = error;
-      } else if (error != null) {
-        executionError = new Error(String(error));
-      }
+      executionError = error;
     }
 
     if (executionError) {
       throw executionError;
     } else if (this.sshError.length > 0) {
       throw this.sshError[0];
-    }
-    return result as T;
+    } else return result as T;
   }
 
   async connect(): Promise<void> {
@@ -157,7 +154,6 @@ export class SftpClient implements SftpClientImpl {
   }
 }
 
-// Returns a writable stream and a function to get the joined buffer
 export function createWritableBuffer(): { writable: Writable; getBuffer: () => Buffer } {
   const chunks: Buffer[] = [];
 
