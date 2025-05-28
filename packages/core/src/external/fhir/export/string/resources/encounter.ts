@@ -1,57 +1,48 @@
 import { Encounter } from "@medplum/fhirtypes";
-import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
-import { checkDeny } from "../shared/deny";
+import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatCoding } from "../shared/coding";
+import { emptyIfDenied } from "../shared/deny";
 import { formatIdentifiers } from "../shared/identifier";
 import { FIELD_SEPARATOR } from "../shared/separator";
-import { FHIRResourceToString } from "../types";
 
 /**
  * Converts a FHIR Encounter resource to a string representation
  */
 export class EncounterToString implements FHIRResourceToString<Encounter> {
-  toString(encounter: Encounter): string | undefined {
+  toString(encounter: Encounter, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
-    let hasRelevantData = false;
-    // Add identifier
-    const identifierStr = formatIdentifiers(encounter.identifier);
+    let hasMinimumData = defaultHasMinimumData;
+
+    const identifierStr = formatIdentifiers({ identifiers: encounter.identifier });
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add status
-    if (encounter.status) {
-      const status = checkDeny(encounter.status);
-      if (status) {
-        parts.push(`Status: ${status}`);
-        hasRelevantData = true;
-      }
+    const status = emptyIfDenied(encounter.status);
+    if (status) {
+      parts.push(isDebug ? `Status: ${status}` : status);
+      hasMinimumData = true;
     }
 
-    // Add class
-    if (encounter.class) {
-      const codeStr = formatCodeableConcept(encounter.class);
-      if (codeStr) {
-        parts.push(`Class: ${codeStr}`);
-        hasRelevantData = true;
-      }
+    const codeStr = formatCoding({ coding: encounter.class });
+    if (codeStr) {
+      parts.push(isDebug ? `Class: ${codeStr}` : codeStr);
+      hasMinimumData = true;
     }
 
-    // Add type
-    if (encounter.type) {
-      const types = formatCodeableConcepts(encounter.type, "Type");
-      if (types) {
-        parts.push(types);
-        hasRelevantData = true;
-      }
+    const types = formatCodeableConcepts({ concepts: encounter.type, label: "Type", isDebug });
+    if (types) {
+      parts.push(types);
+      hasMinimumData = true;
     }
 
-    // Add period
     if (encounter.period) {
       const start = encounter.period.start ?? "unknown";
       const end = encounter.period.end ?? "ongoing";
-      parts.push(`Period: ${start} to ${end}`);
+      parts.push(isDebug ? `Period: ${start} to ${end}` : `${start} to ${end}`);
     }
-    if (!hasRelevantData) return undefined;
+    if (!hasMinimumData) return undefined;
 
     return parts.join(FIELD_SEPARATOR);
   }

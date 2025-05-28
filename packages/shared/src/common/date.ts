@@ -135,3 +135,73 @@ export function convertDateToTimeString(
     return [hour, minute, second].join("");
   }
 }
+/**
+ * Validates if timestamp adheres to YYYYMMDDHHMMSS format
+ * and is a valid date.
+ *
+ * @param input The HL7 timestamp to validate
+ * @throws {BadRequestError} If the HL7 timestamp is invalid
+ * @returns True if the HL7 timestamp is valid
+ */
+export function throwIfInvalidBasicIso8601(input: string): boolean {
+  if (!input || input.length !== 14) {
+    throw new BadRequestError("Invalid HL7 date string format: expected YYYYMMDDHHMMSS");
+  }
+
+  if (!/^\d{14}$/.test(input)) {
+    throw new BadRequestError("Invalid HL7 date string: must contain only digits");
+  }
+
+  // Parse YYYYMMDDHHMMSS format
+  const year = input.substring(0, 4);
+  const month = input.substring(4, 6);
+  const day = input.substring(6, 8);
+  const hour = input.substring(8, 10);
+  const minute = input.substring(10, 12);
+  const second = input.substring(12, 14);
+
+  // Validate date components
+  const monthNum = parseInt(month);
+  const dayNum = parseInt(day);
+  const hourNum = parseInt(hour);
+  const minuteNum = parseInt(minute);
+  const secondNum = parseInt(second);
+
+  if (monthNum < 1 || monthNum > 12) {
+    throw new BadRequestError("Invalid month in HL7 date string");
+  }
+  if (dayNum < 1 || dayNum > 31) {
+    throw new BadRequestError("Invalid day in HL7 date string");
+  }
+  if (hourNum > 23 || minuteNum > 59 || secondNum > 59) {
+    throw new BadRequestError("Invalid time in HL7 date string");
+  }
+
+  const dateStr = `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+  const parsedDate = buildDayjs(dateStr);
+
+  if (!parsedDate.isValid()) {
+    throw new BadRequestError("Invalid HL7 timestamp");
+  }
+
+  return true;
+}
+
+/**
+ * Converts an HL7 timestamp to an ISO 8601 formatted date string.
+ *
+ * @param hl7DateString The HL7 timestamp to convert
+ * @returns ISO 8601 formatted date string
+ */
+export function basicToExtendedIso8601(basicIso8601: string): string {
+  throwIfInvalidBasicIso8601(basicIso8601);
+
+  const year = basicIso8601.substring(0, 4);
+  const month = basicIso8601.substring(4, 6);
+  const day = basicIso8601.substring(6, 8);
+  const hour = basicIso8601.substring(8, 10);
+  const minute = basicIso8601.substring(10, 12);
+  const second = basicIso8601.substring(12, 14);
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+}
