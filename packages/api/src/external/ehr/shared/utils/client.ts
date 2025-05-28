@@ -10,7 +10,7 @@ import {
 } from "../../../../command/jwt-token";
 import { EhrClientJwtTokenSource } from "./jwt-token";
 
-type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv | EClinicalWorksEnv;
+export type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv | EClinicalWorksEnv;
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   environment: Env;
   clientKey: string;

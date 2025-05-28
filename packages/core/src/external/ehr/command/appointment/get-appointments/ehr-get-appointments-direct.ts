@@ -2,26 +2,26 @@ import { BadRequestError } from "@metriport/shared";
 import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getAppointments as getAppointmentsCanvas } from "../../../canvas/command/get-appointments";
+import { EhrGetAppointmentsHandler, GetAppointmentsRequest } from "./ehr-get-appointments";
 
-export type GetAppointmentsRequest = {
-  ehr: EhrSource;
-  environment: string;
-  method: AppointmentMethods;
-  tokenId?: string;
-  cxId: string;
-  practiceId: string;
-  fromDate?: Date;
-  toDate?: Date;
-};
-
-export interface EhrGetAppointmentsHandler {
-  getAppointments<T>(request: GetAppointmentsRequest): Promise<T[]>;
+export class EhrGetAppointmentsDirect implements EhrGetAppointmentsHandler {
+  async getAppointments<T>({ ehr, method, ...params }: GetAppointmentsRequest): Promise<T[]> {
+    if (!isAppointmentMethod(method)) {
+      throw new BadRequestError(`Invalid appointment method`, undefined, { method });
+    }
+    const handler = getEhrGetAppointmentsHandler<T>(ehr, method);
+    return await handler({ ...params });
+  }
 }
 
 export type GetAppointmentsClientRequest = Omit<GetAppointmentsRequest, "ehr" | "method">;
 
 export enum AppointmentMethods {
   canvasGetAppointments = "canvasGetAppointments",
+}
+
+function isAppointmentMethod(method: string): method is AppointmentMethods {
+  return Object.values(AppointmentMethods).includes(method as AppointmentMethods);
 }
 
 export type GetAppointmentsMap = {
@@ -33,6 +33,7 @@ export type GetAppointmentsMap = {
       params: GetAppointmentsClientRequest
     ) => Promise<SlimBookedAppointment[]>;
   };
+  [EhrSources.eclinicalworks]: undefined;
 };
 
 export const ehrGetAppointmentsMap: GetAppointmentsMap = {
@@ -42,6 +43,7 @@ export const ehrGetAppointmentsMap: GetAppointmentsMap = {
   [EhrSources.canvas]: {
     [AppointmentMethods.canvasGetAppointments]: getAppointmentsCanvas,
   },
+  [EhrSources.eclinicalworks]: undefined,
 };
 
 export function getEhrGetAppointmentsHandler<T>(

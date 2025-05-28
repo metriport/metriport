@@ -18,11 +18,12 @@ type ApiKeySecretsFunction<T extends EhrEnv> = (params: EhrPerPracticeParams) =>
 
 export type SecretsFunction<T extends EhrEnv> = OauthSecretsFunction<T> | ApiKeySecretsFunction<T>;
 
-const secretsFunctionsBy: Record<EhrSource, SecretsFunction<EhrEnv>> = {
+const secretsFunctionsBy: Record<EhrSource, SecretsFunction<EhrEnv> | undefined> = {
   [EhrSources.canvas]: getCanvasEnv,
   [EhrSources.athena]: getAthenaEnv,
   [EhrSources.elation]: getElationEnv,
   [EhrSources.healthie]: getHealthieEnv,
+  [EhrSources.eclinicalworks]: undefined,
 };
 
 export function getSecretsFunction(ehr: EhrSources): SecretsFunction<EhrEnv> {
